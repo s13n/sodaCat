@@ -24,15 +24,15 @@ import os
 class PerFormatter:
     def __init__(self, **keywords):
         self.enumTemplate      = Template(keywords.get('enum'     , '\n\t/** $description */\n\t$name = $value,'))
-        self.enumsTemplate     = Template(keywords.get('enums'    , '\ninline namespace ${name}_ {\nexport enum $name : $type {$enums\n};\n} // namespace ${name}_\n'))
+        self.enumsTemplate     = Template(keywords.get('enums'    , '\ninline namespace ${name}_ {\nEXPORT enum $name : $type {$enums\n};\n} // namespace ${name}_\n'))
         self.regEnumsTemplate  = Template(keywords.get('regEnums' , '\ninline namespace ${name}_ {$enums} // namespace ${name}_\n'))
         self.bitfieldTemplate  = Template(keywords.get('bitfield' , '\n\t/** $description */\n\t$type $name:$width;'))
         self.resBitsTemplate   = Template(keywords.get('resBits'  , '\n\t$type _$res:$width;\t// reserved'))
         self.typeTemplate      = Template(keywords.get('type'     , 'HwReg<struct $name>'))
         self.resBytesTemplate  = Template(keywords.get('resBytes' , '\n\tuint8_t _$res[$bytes];\t// reserved'))
         self.fieldTemplate     = Template(keywords.get('field'    , '\n\t/** $description */\n\t$type $name;'))
-        self.fieldsTemplate    = Template(keywords.get('fields'   , '\n/** $description */\nexport struct $name {$fields\n};\n'))
-        self.registersTemplate = Template(keywords.get('registers', '\n$types\n/** $description */\nexport struct $name {$regs\n}; // size = $size\n'))
+        self.fieldsTemplate    = Template(keywords.get('fields'   , '\n/** $description */\nEXPORT struct $name {$fields\n};\n'))
+        self.registersTemplate = Template(keywords.get('registers', '\n$types\n/** $description */\nEXPORT struct $name {$regs\n}; // size = $size\n'))
         self.addressTemplate   = Template(keywords.get('address'  , '\t$type$usage;\t// offset = $offset, size = $size\n'))
         self.interruptTemplate = Template(keywords.get('interrupt', '\tException ex$name;\t//!< $description\n'))
         self.parameterTemplate = Template(keywords.get('parameter', '\tuint16_t $name:$bits;\t//!< $description\n'))
@@ -41,11 +41,11 @@ $prefix
 inline namespace $name {$enums
 $types
 /** $description */
-export struct $name {$regs
+EXPORT struct $name {$regs
 }; // size = $size
 
 /** Integration of peripheral in the SoC. */
-export struct Integration {
+EXPORT struct Integration {
 $params$ints$blocks};
 
 } // inline namespace $name
@@ -182,14 +182,30 @@ per = yaml.load(Path(sys.argv[1]))
 fmt = PerFormatter()
 
 prefixTemplate = Template("""// File was generated, do not edit!
-export module $mod;
+#pragma once
 
-import registers;
-#include <cstdint>
+#ifdef MODULE_$mod
+#   define EXPORT export
+#else
+#   include "registers.hpp"
+#   define EXPORT
+#endif
 
 namespace $ns {""")
 
-postfixTemplate = Template("} // namespace $ns")
+postfixTemplate = Template("""} // namespace $ns
 
-filename, ext = os.path.splitext(sys.argv[2])
-print(fmt.formatPeripheral(per, prefixTemplate.substitute(ns=sys.argv[3], mod=os.path.basename(filename)), postfixTemplate.substitute(ns=sys.argv[3])), file=open(sys.argv[2], mode = 'w'))
+#undef EXPORT
+""")
+
+print(fmt.formatPeripheral(per, prefixTemplate.substitute(ns=sys.argv[3], mod=os.path.basename(sys.argv[2])), postfixTemplate.substitute(ns=sys.argv[3])), file=open(sys.argv[2] + '.hpp', mode = 'w'))
+
+cppTemplate = Template("""// File was generated, do not edit!
+module;
+#include <cstdint>
+export module $mod;
+#define MODULE_$mod
+import registers;
+#include "$mod.hpp"
+""")
+print(cppTemplate.substitute(mod=os.path.basename(sys.argv[2])), file=open(sys.argv[2] + '.cpp', mode = 'w'))

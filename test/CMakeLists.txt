@@ -6,11 +6,11 @@ set(CMAKE_CXX_STANDARD 20)
 add_library(soc-data-testlib)
 
 macro(generate_peripheral model)
-    add_custom_command(OUTPUT ${model}.cpp
-        COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/headerPer.py ${CMAKE_SOURCE_DIR}/data/ST/H757/${model}.yaml ${CMAKE_CURRENT_BINARY_DIR}/${model}.cpp stm32h7
+    add_custom_command(OUTPUT ${model}.cpp ${model}.hpp
+        COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/headerPer.py ${CMAKE_SOURCE_DIR}/data/ST/H757/${model}.yaml ${CMAKE_CURRENT_BINARY_DIR}/${model} stm32h7
         MAIN_DEPENDENCY ${CMAKE_SOURCE_DIR}/data/ST/H757/${model}.yaml
         DEPENDS ${CMAKE_SOURCE_DIR}/tools/headerPer.py
-        COMMENT Generating ${model}.cpp for STM32H7
+        COMMENT Generating ${model}.hpp/.cpp for STM32H7
     )
     target_sources(soc-data-testlib PUBLIC
         FILE_SET CXX_MODULES BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR} FILES
@@ -44,12 +44,13 @@ generate_peripheral(OPAMP)
 generate_peripheral(DFSDM)
 generate_peripheral(SPI)
 generate_peripheral(RTC)
+generate_peripheral(FMC)
 
-add_custom_command(OUTPUT H757.cpp
-    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/headerChip.py ${CMAKE_SOURCE_DIR}/data/ST/H757/H757.yaml ${CMAKE_CURRENT_BINARY_DIR}/H757.cpp stm32h7
+add_custom_command(OUTPUT H757.cpp H757.hpp
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/headerChip.py ${CMAKE_SOURCE_DIR}/data/ST/H757/H757.yaml ${CMAKE_CURRENT_BINARY_DIR}/H757 stm32h7
     MAIN_DEPENDENCY ${CMAKE_SOURCE_DIR}/data/ST/H757/H757.yaml
     DEPENDS ${CMAKE_SOURCE_DIR}/tools/headerChip.py
-    COMMENT Generating H757.cpp for STM32H7
+    COMMENT Generating H757.cpp/.hpp for STM32H7
 )
 
 target_include_directories(soc-data-testlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
@@ -64,3 +65,7 @@ target_sources(soc-data-testlib PUBLIC
 
 add_executable(soc-data-test main.cpp)
 target_link_libraries(soc-data-test PUBLIC soc-data-testlib)
+target_sources(soc-data-test PUBLIC
+    ${CMAKE_CURRENT_BINARY_DIR}/H757.hpp
+    ${CMAKE_CURRENT_BINARY_DIR}/MDMA.hpp
+)
