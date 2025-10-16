@@ -77,19 +77,19 @@ signals:
   # ===========================
   - name: ref1_ck
     kind: derived
-    from: [PLLSRC_mux, DIVM1]
+    from: ["PLLSRC_mux", "DIVM1"]
     frequency: { min_mhz: 1, max_mhz: 16 }
     description: "PLL1 reference after DIVM1 (must be 1–16 MHz)."
 
   - name: ref2_ck
     kind: derived
-    from: [PLLSRC_mux, DIVM2]
+    from: ["PLLSRC_mux", "DIVM2"]
     frequency: { min_mhz: 1, max_mhz: 16 }
     description: "PLL2 reference after DIVM2."
 
   - name: ref3_ck
     kind: derived
-    from: [PLLSRC_mux, DIVM3]
+    from: ["PLLSRC_mux", "DIVM3"]
     frequency: { min_mhz: 1, max_mhz: 16 }
     description: "PLL3 reference after DIVM3."
 
@@ -245,6 +245,64 @@ signals:
       divider: { reg: RCC_D2CFGR, field: D2PPRE2, factors: [1,2,4,8,16] }
     description: "APB2 bus clock."
 
+  # ===========================
+  # Microcontroller Clock Outputs (MCO)
+  # ===========================
+  - name: mco1_src_ck
+    kind: mux_output
+    from: ["hsi_ck", "lse_ck", "hse_ck", "pll1_q_ck", "hsi48_ck"]
+    control:
+      mux:
+        reg: RCC_CFGR
+        field: MCO1SEL
+        encoding:
+          "000": hsi_ck        # HSI
+          "001": lse_ck        # LSE
+          "010": hse_ck        # HSE
+          "011": pll1_q_ck     # PLL1 (MCO1 uses PLL1_Q on H7)
+          "100": hsi48_ck      # HSI48
+      notes: "RCC_CFGR.MCO1SEL; ensure GPIO pin speed supports chosen frequency."
+    description: "MCO1 source selection."
+
+  - name: mco1_ck
+    kind: divided
+    from: ["mco1_src_ck"]
+    control:
+      divider:
+        reg: RCC_CFGR
+        field: MCO1PRE
+        range: "[1..15]"
+        notes: "Prescaler 1..15. Keep below max pin speed."
+    description: "MCO1 output clock after prescaler."
+
+  - name: mco2_src_ck
+    kind: mux_output
+    from: ["sys_ck", "pll2_p_ck", "hse_ck", "pll1_p_ck", "csi_ck", "lsi_ck"]
+    control:
+      mux:
+        reg: RCC_CFGR
+        field: MCO2SEL
+        encoding:
+          "000": sys_ck        # System clock
+          "001": pll2_p_ck     # PLL2 (MCO2 uses PLL2_P on H7)
+          "010": hse_ck        # HSE
+          "011": pll1_p_ck     # PLL1 (MCO2 uses PLL1_P on H7)
+          "100": csi_ck        # CSI
+          "101": lsi_ck        # LSI
+      notes: "RCC_CFGR.MCO2SEL; ensure GPIO pin speed supports chosen frequency."
+    description: "MCO2 source selection."
+
+  - name: mco2_ck
+    kind: divided
+    from: ["mco2_src_ck"]
+    control:
+      divider:
+        reg: RCC_CFGR
+        field: MCO2PRE
+        range: "[1..15]"
+        notes: "Prescaler 1..15. Keep below max pin speed."
+    description: "MCO2 output clock after prescaler."
+
 sources:
   - name: HSI
     outputs: [hsi_ck]
@@ -393,6 +451,25 @@ dividers:
     control: { reg: RCC_D2CFGR, field: D2PPRE2, factors: [1,2,4,8,16] }
     description: "APB2 prescaler."
 
+  # --- MCO prescalers ---
+  - id: MCO1PRE
+    input: mco1_src_ck
+    output: mco1_ck
+    control:
+      reg: RCC_CFGR
+      field: MCO1PRE
+      range: "[1..15]"
+    description: "MCO1 prescaler."
+
+  - id: MCO2PRE
+    input: mco2_src_ck
+    output: mco2_ck
+    control:
+      reg: RCC_CFGR
+      field: MCO2PRE
+      range: "[1..15]"
+    description: "MCO2 prescaler."
+
 gates:
   - id: DMA1EN
     clock: dma1_bus_ck
@@ -451,6 +528,7 @@ constraints_and_rules:
   - "AXI/AHB bus matrix ≤ 200 MHz."
   - "SDMMC identification mode: SDMMC_CK < 400 kHz via CLKDIV."
   - "ΣΔ fractional update on-the-fly: clear PLLxFRACEN → write PLLxFRACN → set PLLxFRACEN."
+  - "MCO outputs: ensure selected source/prescaler keeps pin frequency within max GPIO pin speed (see datasheet)."
 
 text_snippets:
   - id: oscillators_overview
