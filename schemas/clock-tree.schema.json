@@ -1,0 +1,373 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/mcu-clock-tree.schema.json",
+  "title": "MCU Clock-Tree Specification",
+  "type": "object",
+  "required": ["family", "reference_manual", "signals"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema/application document version (your spec version), e.g., '1.0.0'."
+    },
+    "family": {
+      "type": "string",
+      "description": "Marketing family or SoC series name (e.g., 'STM32H7')."
+    },
+    "reference_manual": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "description": "Primary reference manual identifier (e.g., 'RM0399')." },
+        "devices": { "type": "array", "items": { "type": "string" } },
+        "revision": { "type": "string" },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+
+    "signals": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Signal" },
+      "description": "Distinct clock signals that can be muxed/divided/gated or are sources."
+    },
+
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "outputs"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "outputs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "description": { "type": "string" }
+        }
+      }
+    },
+
+    "muxes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Mux" }
+    },
+
+    "dividers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Divider" }
+    },
+
+    "gates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Gate" }
+    },
+
+    "kernel_clock_examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["peripheral"],
+        "additionalProperties": false,
+        "properties": {
+          "peripheral": { "type": "string" },
+          "kernel_clock": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "selector": { "$ref": "#/$defs/MuxControl" },
+              "divider": { "$ref": "#/$defs/DividerControl" },
+              "output": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          },
+          "selector": { "$ref": "#/$defs/MuxControl" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+
+    "constraints_and_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "text_snippets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "text": { "type": "string" }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "Signal": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "kind": {
+          "type": "string",
+          "enum": ["source", "derived", "pll_vco", "pll_output", "mux_output", "divided"]
+        },
+        "from": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Upstream nodes (names) used to derive this signal."
+        },
+        "frequency": { "$ref": "#/$defs/Frequency" },
+        "frequency_limit": { "$ref": "#/$defs/Frequency" },
+        "control": { "$ref": "#/$defs/Control" },
+        "description": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "Frequency": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nominal_hz": { "type": "number" },
+        "nominal_khz": { "type": "number" },
+        "nominal_mhz": { "type": "number" },
+        "nominal_options_mhz": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "min_hz": { "type": "number" },
+        "max_hz": { "type": "number" },
+        "min_khz": { "type": "number" },
+        "max_khz": { "type": "number" },
+        "min_mhz": { "type": "number" },
+        "max_mhz": { "type": "number" },
+        "ranges_mhz": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["min", "max"],
+            "additionalProperties": true,
+            "properties": {
+              "when": { "type": "string", "description": "Conditional (e.g., 'VCOSEL=VCOH')." },
+              "min": { "type": "number" },
+              "max": { "type": "number" }
+            }
+          }
+        },
+        "notes": { "type": "string" }
+      },
+      "oneOf": [
+        { "required": ["nominal_hz"] },
+        { "required": ["nominal_khz"] },
+        { "required": ["nominal_mhz"] },
+        { "required": ["nominal_options_mhz"] },
+        { "required": ["min_hz", "max_hz"] },
+        { "required": ["min_khz", "max_khz"] },
+        { "required": ["min_mhz", "max_mhz"] },
+        { "required": ["ranges_mhz"] }
+      ]
+    },
+
+    "Control": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enable": { "$ref": "#/$defs/EnableControl" },
+        "ready_flag": { "$ref": "#/$defs/FlagControl" },
+        "mux": { "$ref": "#/$defs/MuxControl" },
+        "status": { "$ref": "#/$defs/StatusControl" },
+        "divider": { "$ref": "#/$defs/DividerControl" },
+        "output_enables": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "reg": { "type": "string" },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "additionalProperties": true,
+                "properties": {
+                  "name": { "type": "string" },
+                  "enables": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/RegisterField" }
+        },
+        "n_divider": { "$ref": "#/$defs/RegisterField" },
+        "p_divider": { "$ref": "#/$defs/RegisterField" },
+        "q_divider": { "$ref": "#/$defs/RegisterField" },
+        "r_divider": { "$ref": "#/$defs/RegisterField" }
+      }
+    },
+
+    "EnableControl": {
+      "type": "object",
+      "required": ["reg", "bit"],
+      "additionalProperties": false,
+      "properties": {
+        "reg": { "type": "string" },
+        "bit": { "type": "string" },
+        "polarity": { "type": "string", "enum": ["active_high", "active_low"], "default": "active_high" }
+      }
+    },
+
+    "FlagControl": {
+      "type": "object",
+      "required": ["reg", "bit"],
+      "additionalProperties": false,
+      "properties": {
+        "reg": { "type": "string" },
+        "bit": { "type": "string" }
+      }
+    },
+
+    "StatusControl": {
+      "type": "object",
+      "required": ["reg", "field"],
+      "additionalProperties": false,
+      "properties": {
+        "reg": { "type": "string" },
+        "field": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+
+    "RegisterField": {
+      "type": "object",
+      "required": ["reg", "field"],
+      "additionalProperties": false,
+      "properties": {
+        "reg": { "type": "string" },
+        "field": { "type": "string" },
+        "range": { "type": "string" },
+        "factors": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "number"] }
+        },
+        "encoding": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Bitfield value mapping to named inputs."
+        },
+        "note": { "type": "string" }
+      }
+    },
+
+    "MuxControl": {
+      "type": "object",
+      "required": ["reg", "field", "encoding"],
+      "additionalProperties": false,
+      "properties": {
+        "reg": { "type": "string" },
+        "field": { "type": "string" },
+        "encoding": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Mapping from encoded field values to input signal names."
+        },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "DividerControl": {
+      "type": "object",
+      "required": ["reg", "field"],
+      "additionalProperties": false,
+      "properties": {
+        "reg": { "type": "string" },
+        "field": { "type": "string" },
+        "factors": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "range": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+
+    "Mux": {
+      "type": "object",
+      "required": ["id", "inputs", "output_to", "control"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "inputs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "output_to": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "control": { "$ref": "#/$defs/MuxControl" },
+        "description": { "type": "string" }
+      }
+    },
+
+    "Divider": {
+      "type": "object",
+      "required": ["id", "input", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "input": { "type": "string" },
+        "output": { "type": "string" },
+        "control": { "$ref": "#/$defs/DividerControl" },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": true,
+            "properties": {
+              "name": { "type": "string" },
+              "kind": { "type": "string" },
+              "from": { "type": "string" }
+            }
+          }
+        },
+        "description": { "type": "string" }
+      }
+    },
+
+    "Gate": {
+      "type": "object",
+      "required": ["id", "clock", "control"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "clock": { "type": "string" },
+        "control": { "$ref": "#/$defs/EnableControl" },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}
