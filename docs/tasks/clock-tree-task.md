@@ -32,7 +32,8 @@ that sodaCat can use to generate headers and frequency resolvers.
 
 3. **Muxes, dividers, gates**  
    - **Muxes:** `muxes[]` with `reg`, `field`, and an `inputs` array.
-     The array length must be a power of two, determined by the bitfield width.
+     Each mux must declare a single output signal name using the output field.
+     The inputs array length must be a power of two, determined by the bitfield width.
      Each index corresponds to a bit pattern:
      * Valid signal names select that input.
      * Use "" for off states.
