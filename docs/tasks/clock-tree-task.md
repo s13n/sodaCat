@@ -13,6 +13,12 @@ that sodaCat can use to generate headers and frequency resolvers.
 
 ## Required content
 
+### Frequency Specification Guidelines
+- All frequency values must be expressed in **Hz**.
+- If source material provides values in kHz or MHz, convert them:
+  - `1 kHz = 1,000 Hz`
+  - `1 MHz = 1,000,000 Hz`
+
 1. **Distinct signals**  
    Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]` entry:
    - Oscillators (HSI/CSI/HSE/HSI48/LSE/LSI, etc.)
@@ -46,7 +52,15 @@ that sodaCat can use to generate headers and frequency resolvers.
 
 ---
 
-## Conventions & naming
+
+4. **Frequency limits**
+Attach constraints to the **producing nodes**:
+- Oscillator ranges (e.g., HSE: `min_hz: 4_000_000`, `max_hz: 48_000_000`)
+- PLL reference window (e.g., `min_hz: 1_000_000`, `max_hz: 16_000_000` after DIVM)
+- VCO ranges (e.g., `min_hz: 192_000_000`, `max_hz: 960_000_000`; use `ranges_hz` for conditional ranges)
+- Domain maxima (e.g., bus matrix `max_hz: 200_000_000`)
+- Any per-peripheral kernel clock minima/maxima
+
 
 - Signals: `lower_snake_case` (e.g., `hse_ck`, `pll1_p_ck`, `sys_ck`).
 - Register names: exact RM names (e.g., `RCC_CFGR`, `RCC_PLLCKSELR`).
