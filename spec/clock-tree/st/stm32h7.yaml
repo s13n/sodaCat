@@ -272,29 +272,39 @@ sources:
   description: Internal 48 MHz RC.
 muxes:
 - id: PLLSRC_mux
+  output_to:
+  - ref1_ck
+  - ref2_ck
+  - ref3_ck
   inputs:
   - hsi_ck
   - csi_ck
   - hse_ck
   - ""
-  output_to:
-  - ref1_ck
-  - ref2_ck
-  - ref3_ck
   control:
+    inputs:
+    - hsi_ck
+    - csi_ck
+    - hse_ck
+    - ""
     reg: RCC_PLLCKSELR
     field: PLLSRC
     notes: Set '11' (none) if no PLL is used to save power.
   description: Common PLL source selection feeding DIVM1/2/3.
 - id: SYSCLK_mux
+  output_to:
+  - sys_ck
   inputs:
   - hsi_ck
   - csi_ck
   - hse_ck
   - pll1_p_ck
-  output_to:
-  - sys_ck
   control:
+    inputs:
+    - hsi_ck
+    - csi_ck
+    - hse_ck
+    - pll1_p_ck
     reg: RCC_CFGR
     field: SW
   description: System clock source selection (status in RCC_CFGR.SWS).
@@ -532,10 +542,11 @@ kernel_clock_examples:
     selector:
       reg: SDMMC_CLKCR
       field: SELCLKRX
-      encoding:
-        '00': sdmmc_io_in_ck
-        '01': SDMMC_CKIN_feedback
-        '10': sdmmc_fb_ck
+      inputs:
+      - sdmmc_io_in_ck
+      - SDMMC_CKIN_feedback
+      - sdmmc_fb_ck
+      - "-reserved-"
     notes: Identification mode requires SDMMC_CK < 400 kHz using CLKDIV; DDR needs
       divided clock and valid width.
   description: SDMMC receive clock selection and identification mode constraint.
