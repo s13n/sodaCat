@@ -31,7 +31,12 @@ that sodaCat can use to generate headers and frequency resolvers.
    List each top-level oscillator under `sources[]` with its output signal names.
 
 3. **Muxes, dividers, gates**  
-   - **Muxes:** `muxes[]` with `reg`, `field`, and an `encoding` map (value → input signal name).  
+   - **Muxes:** `muxes[]` with `reg`, `field`, and an `inputs` array.
+     The array length must be a power of two, determined by the bitfield width.
+     Each index corresponds to a bit pattern:
+     * Valid signal names select that input.
+     * Use "" for off states.
+     * Use "-reserved-" for reserved bit patterns.  
    - **Dividers:** `dividers[]` with `reg/field` and `factors` or `range`.  
    - **Gates:** `gates[]` with `reg/bit` to map bus/peripheral clock enables.
 
