@@ -95,3 +95,59 @@ Attach constraints to the **producing nodes**:
      --schema schemas/clock-tree.schema.json \
      --docs "spec/clock-tree/**/*.y*ml"
 5. Open PR with a short note: RM ID, sections used, and known device caveats.
+
+
+## ✅ PLL Modeling Enhancements (STM32H7)
+
+### Summary
+
+The `plls:` section has been added to the clock tree YAML spec to model PLL feedback dividers, including both integer and fractional components. This enables accurate frequency computation and register value generation for STM32H7 and similar MCU families.
+
+### Structure
+
+Each PLL entry includes:
+
+- `name`: Identifier for the PLL
+- `input`: Reference clock signal
+- `output`: VCO output signal
+- `feedback_integer`:  
+  - `reg`: Register name  
+  - `field`: Bitfield name  
+  - `value_range`: Min/max allowed values  
+  - `offset`: Applied before scaling  
+  - `scale`: Applied after offset (default 1)
+- `feedback_fraction` *(optional)*:  
+  - Same structure as `feedback_integer`, with typical scale of 8192 for 13-bit fractional PLLs
+- `vco_limits`: Min/max allowed VCO frequency
+- `vco_formula`: Optional formula for computing VCO frequency
+- `description`: Human-readable comment
+
+### Example
+
+```yaml
+plls:
+  - name: PLL1
+    input: ref1_ck
+    output: vco1_ck
+    feedback_integer:
+      reg: RCC_PLL1DIVR
+      field: DIVN
+      value_range: { min: 8, max: 432 }
+      offset: -1
+      scale: 1
+    feedback_fraction:
+      reg: RCC_PLL1FRACR
+      field: FRACN
+      value_range: { min: 0, max: 8191 }
+      offset: 0
+      scale: 8192
+    vco_limits: { min: 192000000, max: 960000000 }
+    vco_formula: "ref * (DIVN + FRACN / 8192)"
+    description: "Main PLL for CPU and high-speed peripherals"
+```
+
+### Notes
+
+- `feedback_fraction` is optional and omitted for integer-only PLLs.
+- `offset` and `scale` allow flexible encoding of register values.
+- The structure supports both forward and reverse frequency calculations.
