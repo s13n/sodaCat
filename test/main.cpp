@@ -1,9 +1,13 @@
 // test for soc-data
 
 #include <cstdint>
-
-import H757;
+#if 0
 import MDMA;
+import H757;
+#else
+#include "MDMA.hpp"
+#include "H757.hpp"
+#endif
 
 using namespace stm32h7;
 

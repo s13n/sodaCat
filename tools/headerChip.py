@@ -9,14 +9,15 @@ from pathlib import Path
 from string import Template
 import sys
 import os
+import re
 
 class ChipFormatter:
     def __init__(self, **keywords):
         self.instanceParamTemplate= Template(keywords.get('instanceParam',  '\n\t.$name = ${value}u,'))
         self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.ex$name = ${value}u + interruptOffset,'))
-        self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\nimport $model;'))
+        self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$model.hpp"'))
         self.instanceDeclTemplate = Template(keywords.get('instanceDecl', """\n/** Integration parameters for $name */
-export constexpr struct $model::Integration i_$name = {$params$ints$init};
+EXPORT constexpr struct $model::Integration i_$name = {$params$ints$init};
 """))
     
     def createParameters(self, instance):
@@ -53,20 +54,37 @@ chip = yaml.load(Path(sys.argv[1]))
 fmt = ChipFormatter()
 
 prefixTemplate = Template("""// File was generated, do not edit!
-export module $name;
-$incl
-import registers;
+#pragma once
+
+#ifdef MODULE_CHIP
+#   define EXPORT export
+#else $incl
+#   define EXPORT
+#endif
 
 namespace $ns {
 
-export constexpr Exception interruptOffset = $interruptOffset;\t//!< Exception number of first interrupt
+EXPORT constexpr Exception interruptOffset = $interruptOffset;\t//!< Exception number of first interrupt
 """)
 
 postfixTemplate = Template("""
                            
 } // namespace $ns
+
+#undef EXPORT
 """)
 
-filename, ext = os.path.splitext(sys.argv[2])
-header = fmt.createHeader(chip, sys.argv[3], os.path.basename(filename), prefixTemplate, postfixTemplate)
-print(header, file=open(filename + ext, mode = 'w'))
+header = fmt.createHeader(chip, sys.argv[3], os.path.basename(sys.argv[2]), prefixTemplate, postfixTemplate)
+print(header, file=open(sys.argv[2] + '.hpp', mode = 'w'))
+
+#TODO: Find a better way to extract the import list
+imports = [re.search(r'"(\w+)\.hpp"', l).group(1) for l in header.splitlines() if '#   include ' in l]
+
+cppTemplate = Template("""// File was generated, do not edit!
+export module $mod;
+#define MODULE_CHIP
+import $incl;
+import registers;
+#include "$mod.hpp"
+""")
+print(cppTemplate.substitute(mod=os.path.basename(sys.argv[2]), incl=';\nimport '.join(imports)), file=open(sys.argv[2] + '.cpp', mode = 'w'))
