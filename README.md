@@ -1,5 +1,7 @@
 # sodaCat
 
+!Clock spec validation
+
 SodaCat maintains a database of chip information for microcontrollers,
 systems-on-chip, and similar hardware. The database is mainly aimed at
 supporting automatic code generation, for example generating C or C++ header
