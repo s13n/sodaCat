@@ -1,0 +1,453 @@
+version: "1.0.0"
+family: STM32H7
+
+reference_manual:
+  id: RM0399
+  devices: [STM32H745, STM32H755, STM32H747, STM32H757]
+  revision: "Rev.4"
+  notes:
+    - "Clock sources: HSI, CSI (~4 MHz), HSE (4–48 MHz), LSE (32.768 kHz), LSI (~32 kHz), HSI48 (48 MHz)."
+    - "System clock sources: HSE, HSI, CSI, or PLL1_P via RCC_CFGR.SW."
+    - "PLL ref (after DIVM) 1–16 MHz; ΣΔ fractional supported; VCO ranges per VCOSEL."
+
+metadata:
+  modeling_goals:
+    - "Each gate/mux/divider/source appears as a distinct node."
+    - "Frequency limits live on producing nodes (sources, PLL VCOs, domain/bus outputs)."
+    - "Descriptions paraphrase RM text; device-dependent notes in 'notes'."
+
+signals:
+  # ===========================
+  # Primary oscillators / sources
+  # ===========================
+  - name: hsi_ck
+    kind: source
+    frequency:
+      nominal_options_mhz: [8, 16, 32, 64]
+      notes: "Availability depends on device/options; see DS."
+    control:
+      enable: { reg: RCC_CR, bit: HSION }
+      ready_flag: { reg: RCC_CR, bit: HSIRDY }
+    description: "High-speed internal RC; can feed SYSCLK and PLL."
+
+  - name: csi_ck
+    kind: source
+    frequency: { nominal_mhz: 4 }
+    control:
+      enable: { reg: RCC_CR, bit: CSION }
+      ready_flag: { reg: RCC_CR, bit: CSIRDY }
+    description: "Low-power internal RC (~4 MHz); can feed SYSCLK and PLL."
+
+  - name: hse_ck
+    kind: source
+    frequency: { min_mhz: 4, max_mhz: 48 }
+    control:
+      enable: { reg: RCC_CR, bit: HSEON }
+      bypass: { reg: RCC_CR, bit: HSEBYP, mode: "external clock on OSC_IN (bypass)" }
+      ready_flag: { reg: RCC_CR, bit: HSERDY }
+    description: "External high-speed crystal/clock (4–48 MHz); feeds SYSCLK and PLL."
+
+  - name: lse_ck
+    kind: source
+    frequency: { nominal_hz: 32768 }
+    control:
+      enable: { reg: RCC_BDCR, bit: LSEON }
+      ready_flag: { reg: RCC_BDCR, bit: LSERDY }
+      bypass: { reg: RCC_BDCR, bit: LSEBYP }
+    description: "Low-speed external 32.768 kHz in backup domain."
+
+  - name: lsi_ck
+    kind: source
+    frequency:
+      nominal_hz: 32000
+      notes: "Approximate; see DS for tolerance."
+    control:
+      enable: { reg: RCC_CSR, bit: LSION }
+      ready_flag: { reg: RCC_CSR, bit: LSIRDY }
+    description: "Low-speed internal RC (~32 kHz), for IWDG/RTC as selected."
+
+  - name: hsi48_ck
+    kind: source
+    frequency: { nominal_mhz: 48 }
+    control:
+      enable: { reg: RCC_CR, bit: HSI48ON }
+      ready_flag: { reg: RCC_CR, bit: HSI48RDY }
+    description: "48 MHz internal RC (USB and others, device-dependent)."
+
+  # ===========================
+  # PLL reference clocks (after DIVM)
+  # ===========================
+  - name: ref1_ck
+    kind: derived
+    from: [PLLSRC_mux, DIVM1]
+    frequency: { min_mhz: 1, max_mhz: 16 }
+    description: "PLL1 reference after DIVM1 (must be 1–16 MHz)."
+
+  - name: ref2_ck
+    kind: derived
+    from: [PLLSRC_mux, DIVM2]
+    frequency: { min_mhz: 1, max_mhz: 16 }
+    description: "PLL2 reference after DIVM2."
+
+  - name: ref3_ck
+    kind: derived
+    from: [PLLSRC_mux, DIVM3]
+    frequency: { min_mhz: 1, max_mhz: 16 }
+    description: "PLL3 reference after DIVM3."
+
+  # ===========================
+  # PLL1 VCO + outputs
+  # ===========================
+  - name: vco1_ck
+    kind: pll_vco
+    from: ref1_ck
+    frequency:
+      ranges_mhz:
+        - { when: "PLL1VCOSEL=VCOH", min: 192, max: 960 }
+        - { when: "PLL1VCOSEL=VCOL", min: 150, max: 420 }
+      notes: "Choose VCOL when ref1_ck ≤ 2 MHz; otherwise VCOH."
+    control:
+      fields:
+        - { reg: RCC_PLLCFGR, field: PLL1VCOSEL }
+        - { reg: RCC_PLLCFGR, field: PLL1RGE }
+        - { reg: RCC_PLLCFGR, field: PLL1FRACEN }
+        - { reg: RCC_PLL1DIVR, field: PLL1N, range: "[4..512]" }
+    description: "PLL1 VCO (integer/fractional ΣΔ; FRAC update on-the-fly)."
+
+  - name: pll1_p_ck
+    kind: pll_output
+    from: [vco1_ck, PLL1_DIVP]
+    description: "PLL1 'P' output; can feed SYSCLK."
+
+  - name: pll1_q_ck
+    kind: pll_output
+    from: [vco1_ck, PLL1_DIVQ]
+    description: "PLL1 'Q' output (kernel clocks)."
+
+  - name: pll1_r_ck
+    kind: pll_output
+    from: [vco1_ck, PLL1_DIVR]
+    description: "PLL1 'R' output (e.g., TRACE)."
+
+  # ===========================
+  # PLL2 VCO + outputs
+  # ===========================
+  - name: vco2_ck
+    kind: pll_vco
+    from: ref2_ck
+    frequency:
+      ranges_mhz:
+        - { when: "PLL2VCOSEL=VCOH", min: 192, max: 960 }
+        - { when: "PLL2VCOSEL=VCOL", min: 150, max: 420 }
+    control:
+      fields:
+        - { reg: RCC_PLLCFGR, field: PLL2VCOSEL }
+        - { reg: RCC_PLLCFGR, field: PLL2RGE }
+        - { reg: RCC_PLLCFGR, field: PLL2FRACEN }
+        - { reg: RCC_PLL2DIVR, field: PLL2N, range: "[4..512]" }
+    description: "PLL2 VCO; same constraints as PLL1."
+
+  - name: pll2_p_ck
+    kind: pll_output
+    from: [vco2_ck, PLL2_DIVP]
+    description: "PLL2 'P' output."
+
+  - name: pll2_q_ck
+    kind: pll_output
+    from: [vco2_ck, PLL2_DIVQ]
+    description: "PLL2 'Q' output."
+
+  - name: pll2_r_ck
+    kind: pll_output
+    from: [vco2_ck, PLL2_DIVR]
+    description: "PLL2 'R' output."
+
+  # ===========================
+  # PLL3 VCO + outputs
+  # ===========================
+  - name: vco3_ck
+    kind: pll_vco
+    from: ref3_ck
+    frequency:
+      ranges_mhz:
+        - { when: "PLL3VCOSEL=VCOH", min: 192, max: 960 }
+        - { when: "PLL3VCOSEL=VCOL", min: 150, max: 420 }
+    control:
+      fields:
+        - { reg: RCC_PLLCFGR, field: PLL3VCOSEL }
+        - { reg: RCC_PLLCFGR, field: PLL3RGE }
+        - { reg: RCC_PLLCFGR, field: PLL3FRACEN }
+        - { reg: RCC_PLL3DIVR, field: PLL3N, range: "[4..512]" }
+    description: "PLL3 VCO; same constraints as PLL1/2."
+
+  - name: pll3_p_ck
+    kind: pll_output
+    from: [vco3_ck, PLL3_DIVP]
+    description: "PLL3 'P' output."
+
+  - name: pll3_q_ck
+    kind: pll_output
+    from: [vco3_ck, PLL3_DIVQ]
+    description: "PLL3 'Q' output."
+
+  - name: pll3_r_ck
+    kind: pll_output
+    from: [vco3_ck, PLL3_DIVR]
+    description: "PLL3 'R' output."
+
+  # ===========================
+  # System and domain/bus clocks
+  # ===========================
+  - name: sys_ck
+    kind: mux_output
+    from: [hse_ck, hsi_ck, csi_ck, pll1_p_ck]
+    control:
+      mux:
+        reg: RCC_CFGR
+        field: SW
+        encoding: { "00": hsi_ck, "01": csi_ck, "10": hse_ck, "11": pll1_p_ck }
+      status: { reg: RCC_CFGR, field: SWS }
+    description: "System clock; switch occurs only when target is ready."
+
+  - name: d1_cpu_ck
+    kind: divided
+    from: sys_ck
+    control:
+      divider: { reg: RCC_D1CFGR, field: D1CPRE, factors: [1,2,4,8,16,64,128,256,512] }
+    description: "CPU1 clock (D1 domain)."
+
+  - name: hclk_bus_matrix
+    kind: divided
+    from: d1_cpu_ck
+    control:
+      divider: { reg: RCC_D1CFGR, field: HPRE, factors: [1,2,4,8,16] }
+    frequency_limit:
+      max_mhz: 200
+    description: "AXI/AHB bus matrix clock; ≤ 200 MHz."
+
+  - name: pclk3
+    kind: divided
+    from: hclk_bus_matrix
+    control:
+      divider: { reg: RCC_D1CFGR, field: D1PPRE, factors: [1,2,4,8,16] }
+    description: "APB3 bus clock."
+
+  - name: pclk1
+    kind: divided
+    from: hclk_bus_matrix
+    control:
+      divider: { reg: RCC_D2CFGR, field: D2PPRE1, factors: [1,2,4,8,16] }
+    description: "APB1 bus clock."
+
+  - name: pclk2
+    kind: divided
+    from: hclk_bus_matrix
+    control:
+      divider: { reg: RCC_D2CFGR, field: D2PPRE2, factors: [1,2,4,8,16] }
+    description: "APB2 bus clock."
+
+sources:
+  - name: HSI
+    outputs: [hsi_ck]
+    description: "Internal high-speed RC."
+  - name: CSI
+    outputs: [csi_ck]
+    description: "Internal ~4 MHz RC."
+  - name: HSE
+    outputs: [hse_ck]
+    description: "External/crystal 4–48 MHz."
+  - name: LSE
+    outputs: [lse_ck]
+    description: "External 32.768 kHz."
+  - name: LSI
+    outputs: [lsi_ck]
+    description: "Internal ~32 kHz RC."
+  - name: HSI48
+    outputs: [hsi48_ck]
+    description: "Internal 48 MHz RC."
+
+muxes:
+  - id: PLLSRC_mux
+    inputs: [hsi_ck, csi_ck, hse_ck, none]
+    output_to: [ref1_ck, ref2_ck, ref3_ck]
+    control:
+      reg: RCC_PLLCKSELR
+      field: PLLSRC
+      encoding: { "00": hsi_ck, "01": csi_ck, "10": hse_ck, "11": none }
+      notes: "Set '11' (none) if no PLL is used to save power."
+    description: "Common PLL source selection feeding DIVM1/2/3."
+
+  - id: SYSCLK_mux
+    inputs: [hsi_ck, csi_ck, hse_ck, pll1_p_ck]
+    output_to: [sys_ck]
+    control:
+      reg: RCC_CFGR
+      field: SW
+      encoding: { "00": hsi_ck, "01": csi_ck, "10": hse_ck, "11": pll1_p_ck }
+    description: "System clock source selection (status in RCC_CFGR.SWS)."
+
+dividers:
+  # --- PLL input pre-dividers ---
+  - id: DIVM1
+    input: PLLSRC_mux
+    output: ref1_ck
+    control: { reg: RCC_PLLCKSELR, field: DIVM1, range: "[1..63]" }
+    description: "PLL1 pre-divider; ensures 1–16 MHz at ref1_ck."
+
+  - id: DIVM2
+    input: PLLSRC_mux
+    output: ref2_ck
+    control: { reg: RCC_PLLCKSELR, field: DIVM2, range: "[1..63]" }
+    description: "PLL2 pre-divider."
+
+  - id: DIVM3
+    input: PLLSRC_mux
+    output: ref3_ck
+    control: { reg: RCC_PLLCKSELR, field: DIVM3, range: "[1..63]" }
+    description: "PLL3 pre-divider."
+
+  # --- PLL1 post-dividers ---
+  - id: PLL1_DIVP
+    input: vco1_ck
+    output: pll1_p_ck
+    control: { reg: RCC_PLL1DIVR, field: PLL1P, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVP1EN." }
+    description: "PLL1 P output divider."
+
+  - id: PLL1_DIVQ
+    input: vco1_ck
+    output: pll1_q_ck
+    control: { reg: RCC_PLL1DIVR, field: PLL1Q, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVQ1EN." }
+    description: "PLL1 Q output divider."
+
+  - id: PLL1_DIVR
+    input: vco1_ck
+    output: pll1_r_ck
+    control: { reg: RCC_PLL1DIVR, field: PLL1R, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVR1EN." }
+    description: "PLL1 R output divider."
+
+  # --- PLL2 post-dividers ---
+  - id: PLL2_DIVP
+    input: vco2_ck
+    output: pll2_p_ck
+    control: { reg: RCC_PLL2DIVR, field: PLL2P, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVP2EN." }
+    description: "PLL2 P output divider."
+
+  - id: PLL2_DIVQ
+    input: vco2_ck
+    output: pll2_q_ck
+    control: { reg: RCC_PLL2DIVR, field: PLL2Q, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVQ2EN." }
+    description: "PLL2 Q output divider."
+
+  - id: PLL2_DIVR
+    input: vco2_ck
+    output: pll2_r_ck
+    control: { reg: RCC_PLL2DIVR, field: PLL2R, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVR2EN." }
+    description: "PLL2 R output divider."
+
+  # --- PLL3 post-dividers ---
+  - id: PLL3_DIVP
+    input: vco3_ck
+    output: pll3_p_ck
+    control: { reg: RCC_PLL3DIVR, field: PLL3P, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVP3EN." }
+    description: "PLL3 P output divider."
+
+  - id: PLL3_DIVQ
+    input: vco3_ck
+    output: pll3_q_ck
+    control: { reg: RCC_PLL3DIVR, field: PLL3Q, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVQ3EN." }
+    description: "PLL3 Q output divider."
+
+  - id: PLL3_DIVR
+    input: vco3_ck
+    output: pll3_r_ck
+    control: { reg: RCC_PLL3DIVR, field: PLL3R, range: "[2..128]", notes: "Enable with RCC_PLLCFGR.DIVR3EN." }
+    description: "PLL3 R output divider."
+
+  # --- System & bus prescalers ---
+  - id: D1CPRE
+    input: sys_ck
+    output: d1_cpu_ck
+    control: { reg: RCC_D1CFGR, field: D1CPRE, factors: [1,2,4,8,16,64,128,256,512] }
+    description: "CPU1 prescaler (D1 domain)."
+
+  - id: HPRE
+    input: d1_cpu_ck
+    output: hclk_bus_matrix
+    control: { reg: RCC_D1CFGR, field: HPRE, factors: [1,2,4,8,16] }
+    description: "AXI/AHB bus matrix prescaler."
+
+  - id: D1PPRE
+    input: hclk_bus_matrix
+    output: pclk3
+    control: { reg: RCC_D1CFGR, field: D1PPRE, factors: [1,2,4,8,16] }
+    description: "APB3 prescaler."
+
+  - id: D2PPRE1
+    input: hclk_bus_matrix
+    output: pclk1
+    control: { reg: RCC_D2CFGR, field: D2PPRE1, factors: [1,2,4,8,16] }
+    description: "APB1 prescaler."
+
+  - id: D2PPRE2
+    input: hclk_bus_matrix
+    output: pclk2
+    control: { reg: RCC_D2CFGR, field: D2PPRE2, factors: [1,2,4,8,16] }
+    description: "APB2 prescaler."
+
+gates:
+  - id: DMA1EN
+    clock: dma1_bus_ck
+    control: { reg: RCC_AHB1ENR, bit: DMA1EN }
+    description: "DMA1 bus interface clock gate (AHB1)."
+
+  - id: ADC12EN
+    clock: adc12_bus_ck
+    control: { reg: RCC_AHB1ENR, bit: ADC12EN }
+    description: "ADC1/2 bus interface clock gate; ADC kernel clock selected separately."
+
+  - id: USB1OTGHSEN
+    clock: usb1otg_bus_ck
+    control: { reg: RCC_AHB1ENR, bit: USB1OTGHSEN }
+    description: "USB1 OTG HS peripheral bus clock gate."
+
+  - id: ETH1MACEN
+    clock: eth1mac_bus_ck
+    control: { reg: RCC_AHB1ENR, bit: ETH1MACEN }
+    description: "Ethernet MAC bus interface clock gate."
+
+  - id: ETH1TXEN
+    clock: eth1tx_ck
+    control: { reg: RCC_AHB1ENR, bit: ETH1TXEN }
+    description: "Ethernet TX clock gate."
+
+  - id: ETH1RXEN
+    clock: eth1rx_ck
+    control: { reg: RCC_AHB1ENR, bit: ETH1RXEN }
+    description: "Ethernet RX clock gate."
+
+kernel_clock_examples:
+  - peripheral: SDMMC1
+    kernel_clock:
+      selector:
+        reg: SDMMC_CLKCR
+        field: SELCLKRX
+        encoding:
+          "00": sdmmc_io_in_ck
+          "01": SDMMC_CKIN_feedback
+          "10": sdmmc_fb_ck
+      notes: "Identification mode requires SDMMC_CK < 400 kHz using CLKDIV; DDR needs divided clock and valid width."
+    description: "SDMMC receive clock selection and identification mode constraint."
+
+  - peripheral: SPDIFRX
+    kernel_clock:
+      notes: "Ensure spdifrx_ker_ck ≥ 704 × Fs. Examples: Fs=48 kHz → ≥33.8 MHz; 96 kHz → ≥67.6 MHz; 192 kHz → ≥135.2 MHz."
+    description: "Minimum kernel frequency vs sampling rate."
+
+constraints_and_rules:
+  - "PLL ref (refx_ck) must be 1–16 MHz after DIVM; set PLLxRGE accordingly; choose VCOL if ref ≤ 2 MHz else VCOH."
+  - "PLL VCO ranges: VCOH 192–960 MHz; VCOL 150–420 MHz."
+  - "SYSCLK sources: HSE, HSI, CSI, or PLL1_P via RCC_CFGR.SW (status in SWS)."
+  - "HSE range: 4–48 MHz (crystal or bypassed external clock)."
+  - "LSE 32.768 kHz; LSI ~32 kHz; control via RCC_BDCR/RCC_CSR."
+  - "AXI/AHB bus matrix ≤ 200 MHz."
+  - "SDMMC identification mode: SDMMC_CK < 400 kHz via CLKDIV."
