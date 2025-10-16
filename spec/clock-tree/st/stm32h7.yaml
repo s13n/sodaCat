@@ -245,6 +245,11 @@ signals:
   from:
   - mco2_src_ck
   description: MCO2 output clock after prescaler.
+- name: pllsrc_mux_out_ck
+  kind: mux_output
+  from:
+  - PLLSRC_mux
+  description: Output of PLLSRC_mux feeding DIVM1/2/3.
 sources:
 - name: HSI
   outputs:
@@ -272,10 +277,7 @@ sources:
   description: Internal 48 MHz RC.
 muxes:
 - id: PLLSRC_mux
-  output_to:
-  - ref1_ck
-  - ref2_ck
-  - ref3_ck
+  output: pllsrc_mux_out_ck
   inputs:
   - hsi_ck
   - csi_ck
@@ -292,8 +294,7 @@ muxes:
     notes: Set '11' (none) if no PLL is used to save power.
   description: Common PLL source selection feeding DIVM1/2/3.
 - id: SYSCLK_mux
-  output_to:
-  - sys_ck
+  output: sys_ck
   inputs:
   - hsi_ck
   - csi_ck
@@ -310,7 +311,7 @@ muxes:
   description: System clock source selection (status in RCC_CFGR.SWS).
 dividers:
 - id: DIVM1
-  input: PLLSRC_mux
+  input: pllsrc_mux_out_ck
   output: ref1_ck
   control:
     reg: RCC_PLLCKSELR
@@ -318,7 +319,7 @@ dividers:
     range: '[1..63]'
   description: "PLL1 pre-divider; ensures 1\u201316 MHz at ref1_ck."
 - id: DIVM2
-  input: PLLSRC_mux
+  input: pllsrc_mux_out_ck
   output: ref2_ck
   control:
     reg: RCC_PLLCKSELR
@@ -326,7 +327,7 @@ dividers:
     range: '[1..63]'
   description: PLL2 pre-divider.
 - id: DIVM3
-  input: PLLSRC_mux
+  input: pllsrc_mux_out_ck
   output: ref3_ck
   control:
     reg: RCC_PLLCKSELR
