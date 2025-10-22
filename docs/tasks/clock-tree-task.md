@@ -13,6 +13,19 @@ that sodaCat can use to generate headers and frequency resolvers.
 
 ## Required content
 
+### Top-level object structure
+
+The following fields are defined for the top-level object:
+- `family`: Name of chip family
+- `signals`: Array of signals.
+- `gates`: Array of gates.
+- `dividers`: Array of dividers.
+- `muxes`: Array of multiplexers.
+- `plls`: Array of PLLs.
+- `sources`: Array of signal sources.
+
+The array fields are described in more detail below.
+
 ### List of distinct clock signals
 
 Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]` entry:
