@@ -24,9 +24,14 @@ The following fields are defined for the top-level object:
 - `plls`: Array of PLLs.
 - `sources`: Array of signal sources.
 
-The array fields are described in more detail below.
+The array fields are described in more detail in their respective chapters
+below. Each entry has a few common fields:
 
-### List of distinct clock signals
+- `name`: The unique identifier of the functional block. Mandatory. 
+- `description`: Human-readable comment giving a concise functional description
+  from the manual. Optional.
+
+### `signals` array
 
 Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]` entry:
 - Internal oscillators
@@ -40,14 +45,19 @@ Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]
 Use the signal name as used in the reference manual, if possible. If no name is
 available, use the name of the functional block where the signal originates.
 
-### List of clock gates
+### `gates` array
 
 Model any functional block that gates a clock signal, where the gate is
 controlled by a register bit, as its entry in the `gates[]` array.
 
 Describe the register bit that controls the gate.
 
-### List of clock dividers
+The fields of an entry in the `gates[]` array are:
+- `reg`: Register name
+- `bit`: Name of bit in register.
+- `inverted`: If present and true, register bit turns off when set.
+
+### `dividers` array
 
 Model any functional block that divides a clock signal, as its own entry in the
 `dividers[]` array.
@@ -57,7 +67,13 @@ list the bitfield values along with the resulting divisor.
 
 If the divisor is fixed, with no controlling register, list the divisor.
 
-### List of clock multiplexers
+The fields of an entry in the `dividers[]` array are:
+- `reg`: Register name
+- `field`: Name of bitfield in register
+- `factors`: array of divisor values corresponding to bitfield values. Size must
+  be a power of two, corresponding to bitfield.
+
+### `muxes` array
 
 Model any functional block that selects between clock signals, as its own entry
 in the `muxes[]` array.
@@ -65,7 +81,18 @@ in the `muxes[]` array.
 List the different input sources in the same order as the bitfield values to
 select them. Describe the register and bitfield that controls the Muxer.
 
-### List of PLLs
+The fields of an entry in the `muxes[]` array are:
+- `reg`: Register name
+- `field`: Name of bitfield in register
+- `inputs`: array of input signal names. The inputs array length must be a power
+  of two, determined by the bitfield width. Each index corresponds to a bit
+  pattern in numeric order:
+  * Valid signal names select that input.
+  * Use "" for off states.
+  * Use null for reserved bit patterns.
+- `output`: The signal name at the output of the multiplexer. Mandatory.
+
+### `plls` array
 
 Model any functional block that multiplies the clock frequency by an integer or
 fractional factor as an entry in the `plls[]` array.
@@ -73,7 +100,24 @@ fractional factor as an entry in the `plls[]` array.
 Describe the register and bitfields that control the multiplier factor. Describe
 the frequency limits of the input and the output signal.
 
-### List of frequency sources
+The fields of an entry in the `plls[]` array are:
+- `input`: Reference clock signal, input of the phase detector
+- `output`: VCO output signal
+- `feedback_integer`:  
+  - `reg`: Register name  
+  - `field`: Bitfield name  
+  - `value_range`: Min/max allowed values  
+  - `offset`: Applied before scaling  
+  - `scale`: Applied after offset (default 1)
+- `feedback_fraction`: Same structure as `feedback_integer`, only present when
+  PLL supports fractional mode. Omitted for integer-only PLLs.
+- `vco_limits`: Min/max allowed VCO frequency
+- `vco_formula`: Optional formula for computing VCO frequency
+
+Note: `offset` and `scale` allow flexible encoding of register values.
+The structure supports both forward and reverse frequency calculations.
+
+### `sources` array
 
 Model any functional block that generates a clock signal as its own entry in the
 `sources[]` array.
@@ -93,60 +137,6 @@ and/or its frequency.
 - If source material provides values in kHz or MHz, convert them:
   - `1 kHz = 1,000 Hz`
   - `1 MHz = 1,000,000 Hz`
-
-### Common fields
-
-The following fields are common for the various models:
-- `id`: The unique identifier of the functional block. Mandatory. 
-- `description`: Human-readable comment giving a concise functional description
-  from the manual. Optional.
-
-### Modeling muxes
-
-The fields of an entry in the `muxes[]` array are:
-- `reg`: Register name
-- `field`: Name of bitfield in register
-- `inputs`: array of input signal names. The inputs array length must be a power
-  of two, determined by the bitfield width. Each index corresponds to a bit
-  pattern in numeric order:
-  * Valid signal names select that input.
-  * Use "" for off states.
-  * Use null for reserved bit patterns.
-- `output`: The signal name at the output of the multiplexer. Mandatory.
-
-### Modeling dividers
-
-The fields of an entry in the `dividers[]` array are:
-- `reg`: Register name
-- `field`: Name of bitfield in register
-- `factors`: array of divisor values corresponding to bitfield values. Size must
-  be a power of two, corresponding to bitfield.
-
-### Modeling gates  
-
-The fields of an entry in the `gates[]` array are:
-- `reg`: Register name
-- `bit`: Name of bit in register.
-- `inverted`: If present and true, register bit turns off when set.
-
-### Modeling PLLs
-
-The fields of an entry in the `plls[]` array are:
-- `input`: Reference clock signal, input of the phase detector
-- `output`: VCO output signal
-- `feedback_integer`:  
-  - `reg`: Register name  
-  - `field`: Bitfield name  
-  - `value_range`: Min/max allowed values  
-  - `offset`: Applied before scaling  
-  - `scale`: Applied after offset (default 1)
-- `feedback_fraction`: Same structure as `feedback_integer`, only present when
-  PLL supports fractional mode. Omitted for integer-only PLLs.
-- `vco_limits`: Min/max allowed VCO frequency
-- `vco_formula`: Optional formula for computing VCO frequency
-
-Note: `offset` and `scale` allow flexible encoding of register values.
-The structure supports both forward and reverse frequency calculations.
 
 ---
 
