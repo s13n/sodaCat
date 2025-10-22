@@ -42,8 +42,20 @@ Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]
 - External clock outputs
 - Intermediate clock signals between functional blocks
 
-Use the signal name as used in the reference manual, if possible. If no name is
-available, use the name of the functional block where the signal originates.
+Use the signal name as used in the reference manual, if possible. It may be
+available from the clock tree diagram or from a register description. If no name
+is available, use the name of the functional block where the signal originates.
+
+The fields of an entry in the `signals[]` array are:
+- `nominal`: Nominal frequency of the signal. Optional.
+- `min`: Minimal frequency of the signal. Optional.
+- `max`: Maximum frequency of the signal. Optional.
+
+The maximum signal frequency may be obtained from the data sheet rather than the
+reference manual. If there is no minimum frequency, omit the entry. If no
+nominal frequency is known, omit the entry.
+
+There is no need for specifying the unit, as frequencies are always measured in Hz.
 
 ### `gates` array
 
@@ -125,7 +137,15 @@ Model any functional block that generates a clock signal as its own entry in the
 This includes on-chip oscillators, crystal oscillators, or external clock inputs.
 
 Model registers and bitfields that control the oscillator (enable/disable)
-and/or its frequency.
+and/or its frequency, like this:
+
+Provide an array `frequencies` with entries corresponding to the bitfield values
+in the register. If a bitfield value turns off the source, use the frequency 0.
+
+Example: Let the oscillator offer three different output frequencies, and one
+off state, selected by a 2-bit bitfield. The frequencies array might then look
+like this:
+  `frequencies: [0, 12000000, 36000000, 60000000]`
 
 ---
 
@@ -151,9 +171,8 @@ and/or its frequency.
 
 ## Example workflow (for a new family)
 
-1. Duplicate template `spec/clock-tree/templates/clock-tree.template.yaml`.
-2. Fill in oscillators, PLLs (ref, VCO, P/Q/R), SYSCLK, prescalers.
-3. Add 2–5 representative kernel muxes (USART/I2C/SAI/SDMMC/USB/ETH).
+1. Duplicate template `spec/clock-tree/template.yaml`.
+2. Fill in signals, sources, gates, muxes, PLLs, dividers.
 4. Run validation:  
    ```bash
    python tools/validate_clock_specs.py \
