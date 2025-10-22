@@ -13,65 +13,127 @@ that sodaCat can use to generate headers and frequency resolvers.
 
 ## Required content
 
+### List of distinct clock signals
+
+Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]` entry:
+- Internal oscillators
+- External clock inputs and crystal oscillators
+- PLL reference input to the phase detector, VCO output
+- CPU and bus clocks
+- Representative kernel clocks per peripheral
+- External clock outputs
+- Intermediate clock signals between functional blocks
+
+Use the signal name as used in the reference manual, if possible. If no name is
+available, use the name of the functional block where the signal originates.
+
+### List of clock gates
+
+Model any functional block that gates a clock signal, where the gate is
+controlled by a register bit, as its entry in the `gates[]` array.
+
+Describe the register bit that controls the gate.
+
+### List of clock dividers
+
+Model any functional block that divides a clock signal, as its own entry in the
+`dividers[]` array.
+
+If the divider is controlled by a register bitfield, describe the bitfield, and
+list the bitfield values along with the resulting divisor.
+
+If the divisor is fixed, with no controlling register, list the divisor.
+
+### List of clock multiplexers
+
+Model any functional block that selects between clock signals, as its own entry
+in the `muxes[]` array.
+
+List the different input sources in the same order as the bitfield values to
+select them. Describe the register and bitfield that controls the Muxer.
+
+### List of PLLs
+
+Model any functional block that multiplies the clock frequency by an integer or
+fractional factor as an entry in the `plls[]` array.
+
+Describe the register and bitfields that control the multiplier factor. Describe
+the frequency limits of the input and the output signal.
+
+### List of frequency sources
+
+Model any functional block that generates a clock signal as its own entry in the
+`sources[]` array.
+
+This includes on-chip oscillators, crystal oscillators, or external clock inputs.
+
+Model registers and bitfields that control the oscillator (enable/disable)
+and/or its frequency.
+
+---
+
+## Modeling details
+
 ### Frequency Specification Guidelines
+
 - All frequency values must be expressed in **Hz**.
 - If source material provides values in kHz or MHz, convert them:
   - `1 kHz = 1,000 Hz`
   - `1 MHz = 1,000,000 Hz`
 
-1. **Distinct signals**  
-   Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]` entry:
-   - Oscillators (HSI/CSI/HSE/HSI48/LSE/LSI, etc.)
-   - PLL inputs (after DIVM), VCO, and P/Q/R outputs
-   - SYSCLK and bus clocks (D1CPRE/HPRE/APB prescalers)
-   - Representative kernel clocks per peripheral
-   - MCO outputs (optional but recommended)
+### Common fields
 
-2. **Sources**  
-   List each top-level oscillator under `sources[]` with its output signal names.
+The following fields are common for the various models:
+- `id`: The unique identifier of the functional block. Mandatory. 
+- `description`: Human-readable comment giving a concise functional description
+  from the manual. Optional.
 
-3. **Muxes, dividers, gates**  
-   - **Muxes:** `muxes[]` with `reg`, `field`, and an `inputs` array.
-     Each mux must declare a single output signal name using the output field.
-     The inputs array length must be a power of two, determined by the bitfield width.
-     Each index corresponds to a bit pattern:
-     * Valid signal names select that input.
-     * Use "" for off states.
-     * Use "-reserved-" for reserved bit patterns.  
-   - **Dividers:** `dividers[]` with `reg/field` and `factors` or `range`.  
-   - **Gates:** `gates[]` with `reg/bit` to map bus/peripheral clock enables.
+### Modeling muxes
 
-4. **Frequency limits**  
-   Attach constraints to the **producing nodes**:
-   - Oscillator ranges (e.g., HSE 4–48 MHz)
-   - PLL ref window (e.g., 1–16 MHz after DIVM)
-   - VCO ranges (e.g., 192–960 MHz or device-specific alt ranges)
-   - Domain maxima (e.g., bus matrix ≤ 200 MHz)
-   - Any per-peripheral kernel clock minima/maxima
+The fields of an entry in the `muxes[]` array are:
+- `reg`: Register name
+- `field`: Name of bitfield in register
+- `inputs`: array of input signal names. The inputs array length must be a power
+  of two, determined by the bitfield width. Each index corresponds to a bit
+  pattern in numeric order:
+  * Valid signal names select that input.
+  * Use "" for off states.
+  * Use null for reserved bit patterns.
+- `output`: The signal name at the output of the multiplexer. Mandatory.
 
-5. **Descriptions**  
-   Provide a concise `description` per signal/block summarizing the manual’s intent.  
-   Use `notes` for device- or package-specific caveats.
+### Modeling dividers
 
-6. **Device dependencies**  
-   If a limit varies across SKUs, say so in `notes` and link to the datasheet section.
+The fields of an entry in the `dividers[]` array are:
+- `reg`: Register name
+- `field`: Name of bitfield in register
+- `factors`: array of divisor values corresponding to bitfield values. Size must
+  be a power of two, corresponding to bitfield.
 
----
+### Modeling gates  
 
+The fields of an entry in the `gates[]` array are:
+- `reg`: Register name
+- `bit`: Name of bit in register.
+- `inverted`: If present and true, register bit turns off when set.
 
-4. **Frequency limits**
-Attach constraints to the **producing nodes**:
-- Oscillator ranges (e.g., HSE: `min_hz: 4_000_000`, `max_hz: 48_000_000`)
-- PLL reference window (e.g., `min_hz: 1_000_000`, `max_hz: 16_000_000` after DIVM)
-- VCO ranges (e.g., `min_hz: 192_000_000`, `max_hz: 960_000_000`; use `ranges_hz` for conditional ranges)
-- Domain maxima (e.g., bus matrix `max_hz: 200_000_000`)
-- Any per-peripheral kernel clock minima/maxima
+### Modeling PLLs
 
+The fields of an entry in the `plls[]` array are:
+- `input`: Reference clock signal, input of the phase detector
+- `output`: VCO output signal
+- `feedback_integer`:  
+  - `reg`: Register name  
+  - `field`: Bitfield name  
+  - `value_range`: Min/max allowed values  
+  - `offset`: Applied before scaling  
+  - `scale`: Applied after offset (default 1)
+- `feedback_fraction`: Same structure as `feedback_integer`, only present when
+  PLL supports fractional mode. Omitted for integer-only PLLs.
+- `vco_limits`: Min/max allowed VCO frequency
+- `vco_formula`: Optional formula for computing VCO frequency
 
-- Signals: `lower_snake_case` (e.g., `hse_ck`, `pll1_p_ck`, `sys_ck`).
-- Register names: exact RM names (e.g., `RCC_CFGR`, `RCC_PLLCKSELR`).
-- Fields/bits: exact RM names (e.g., `SW`, `PLLSRC`, `DIVM1`, `HSION`).
-- Keep **inputs** and **outputs** consistent with the RM block diagrams.
+Note: `offset` and `scale` allow flexible encoding of register values.
+The structure supports both forward and reverse frequency calculations.
 
 ---
 
@@ -95,59 +157,3 @@ Attach constraints to the **producing nodes**:
      --schema schemas/clock-tree.schema.json \
      --docs "spec/clock-tree/**/*.y*ml"
 5. Open PR with a short note: RM ID, sections used, and known device caveats.
-
-
-## ✅ PLL Modeling Enhancements (STM32H7)
-
-### Summary
-
-The `plls:` section has been added to the clock tree YAML spec to model PLL feedback dividers, including both integer and fractional components. This enables accurate frequency computation and register value generation for STM32H7 and similar MCU families.
-
-### Structure
-
-Each PLL entry includes:
-
-- `name`: Identifier for the PLL
-- `input`: Reference clock signal
-- `output`: VCO output signal
-- `feedback_integer`:  
-  - `reg`: Register name  
-  - `field`: Bitfield name  
-  - `value_range`: Min/max allowed values  
-  - `offset`: Applied before scaling  
-  - `scale`: Applied after offset (default 1)
-- `feedback_fraction` *(optional)*:  
-  - Same structure as `feedback_integer`, with typical scale of 8192 for 13-bit fractional PLLs
-- `vco_limits`: Min/max allowed VCO frequency
-- `vco_formula`: Optional formula for computing VCO frequency
-- `description`: Human-readable comment
-
-### Example
-
-```yaml
-plls:
-  - name: PLL1
-    input: ref1_ck
-    output: vco1_ck
-    feedback_integer:
-      reg: RCC_PLL1DIVR
-      field: DIVN
-      value_range: { min: 8, max: 432 }
-      offset: -1
-      scale: 1
-    feedback_fraction:
-      reg: RCC_PLL1FRACR
-      field: FRACN
-      value_range: { min: 0, max: 8191 }
-      offset: 0
-      scale: 8192
-    vco_limits: { min: 192000000, max: 960000000 }
-    vco_formula: "ref * (DIVN + FRACN / 8192)"
-    description: "Main PLL for CPU and high-speed peripherals"
-```
-
-### Notes
-
-- `feedback_fraction` is optional and omitted for integer-only PLLs.
-- `offset` and `scale` allow flexible encoding of register values.
-- The structure supports both forward and reverse frequency calculations.
