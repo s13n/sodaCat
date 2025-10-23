@@ -24,10 +24,6 @@ signals:
   - { name: frg0clk }
   - { name: frg1clksel }
   - { name: frg1clk }
-  - { name: uartclk }
-  - { name: spiclk }
-  - { name: i2cclk }
-  - { name: i3cclk }
   - { name: lpwr_clk_vulp, nominal: 10000, min: 6000, max: 14000 }
   - { name: acmpclk }
   - { name: adc_sclk }
@@ -46,7 +42,7 @@ signals:
   - { name: gpio1clk }
   - { name: gpiointclk }
   - { name: i2c0clk }
-  - { name: ioconclk }
+  - { name: ioconclk, description: "Register clock for IOCON" }
   - { name: mrtclk }
   - { name: ramclk }
   - { name: romclk }
@@ -56,11 +52,22 @@ signals:
   - { name: uart0clk }
   - { name: uart1clk }
   - { name: uart2clk }
+  - { name: i3cclk, description: "Register clock for I3C" }
+  - { name: i3cfclk }
+  - { name: i3cslowtcclk }
+  - { name: i3cslowclk }
   - { name: wkt_counter_clk }
   - { name: wkt_int_clk }
   - { name: wktclk }
   - { name: wktclkin }
   - { name: wwdtclk }
+  - { name: ioconclkdiv0 }
+  - { name: ioconclkdiv1 }
+  - { name: ioconclkdiv2 }
+  - { name: ioconclkdiv3 }
+  - { name: ioconclkdiv4 }
+  - { name: ioconclkdiv5 }
+  - { name: ioconclkdiv6 }
 
 sources:
   - name: FRO
@@ -68,10 +75,14 @@ sources:
     frequencies: [0, 36000000, 48000000, 60000000]
   - name: CLKIN
     output: clkin
+    description: Special function of PIO0_1
   - name: XTALIN
     output: sys_osc_clk
     reg: SYSOSCCTRL
     field: BYPASS
+  - name: WKTCLKIN
+    output: wktclkin
+    description: Special function of PIO0_28
   - name: LPOSC
     output: lp_osc
     reg: LPOSCCTRL
@@ -157,10 +168,20 @@ muxes:
     inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
     reg: I2C0CLKSEL
     field: SEL
-  - name: I3CCLKSEL
-    output: i3cclk
-    inputs: [fro, main_clk, pll_div_clk]
-    reg: I3CCLKSEL
+  - name: I3CFCLKSEL
+    output: i3cfclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
+    reg: I3CFCLKSEL
+    field: SEL
+  - name: I3CSLOWTCCLKSEL
+    output: i3cslowtcclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
+    reg: I3CSLOWTCCLKSEL
+    field: SEL
+  - name: I3CSLOWCLKSEL
+    output: i3cslowclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
+    reg: I3CSLOWCLKSEL
     field: SEL
   - name: wkt_mux_int
     field: CLKSEL
@@ -246,6 +267,21 @@ dividers:
     output: adc_div_clk
     reg: ADCCLKDIV
     field: DIV
+  - name: I3CFCLKDIV
+    input: i3cfclk
+    output: i3c_fclk
+    reg: I3CCLKDIV
+    field: I3C_FCLK_DIV
+  - name: I3CSLOWTCCLKDIV
+    input: i3cslowtcclk
+    output: i3c_clk_slow_tc
+    reg: I3CCLKDIV
+    field: I3C_SLOW_TC_CLK_DIV
+  - name: I3CSLOWCLKDIV
+    input: i3cslowclk
+    output: i3c_clk_slow
+    reg: I3CCLKDIV
+    field: I3C_SLOW_CLK_DIV
   - name: CLKOUTDIV
     input: clkout_src
     output: clkout
