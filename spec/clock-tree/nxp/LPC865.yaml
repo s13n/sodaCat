@@ -1,57 +1,90 @@
 family: LPC865
 description: Complete clock tree based on UM11607 Figures 7 & 8
 signals:
-  - { name: fro_oscout, min: 36000000, max: 60000000 }
-  - { name: fro_div2, unit: Hz }
-  - { name: fro, unit: Hz }
-  - { name: fro_div, unit: Hz }
+  - { name: fro_oscout, min: 36000000, max: 60000000, description: "The output of the FRO oscillator" }
+  - { name: fro_div2 }
+  - { name: fro }
+  - { name: fro_div }
   - { name: fro_div_wkt, nominal: 750000 }
-  - { name: clkin, max: 60000000 }
-  - { name: xtalin, max: 25000000 }
-  - { name: external_clk, unit: Hz }
+  - { name: clkin, max: 60000000, description: "Internal clock that comes from the main CLKIN pin function." }
+  - { name: sys_osc_clk, max: 25000000, description: "Internal clock that comes from external crystal oscillator" }
+  - { name: external_clk, description: "Internal clock that comes from the crystal oscillator or the CLK_IN pin" }
   - { name: lp_osc, nominal: 1000000 }
   - { name: pll_in, min: 10000000, max: 25000000 }
   - { name: sys_pll0_clk, max: 100000000 }
-  - { name: pll_div_clk, unit: Hz }
-  - { name: main_clk_pre_pll, unit: Hz }
-  - { name: main_clk, unit: Hz }
-  - { name: system_clk, max: 60000000 }
-  - { name: adc_clk, unit: Hz }
-  - { name: adc_div_clk, unit: Hz }
-  - { name: clkout_src, unit: Hz }
-  - { name: clkout, unit: Hz }
-  - { name: frg0clksel, unit: Hz }
-  - { name: frg0clk, unit: Hz }
-  - { name: frg1clksel, unit: Hz }
-  - { name: frg1clk, unit: Hz }
-  - { name: uartclk, unit: Hz }
-  - { name: spiclk, unit: Hz }
-  - { name: i2cclk, unit: Hz }
-  - { name: i3cclk, unit: Hz }
+  - { name: pll_div_clk }
+  - { name: main_clk_pre_pll }
+  - { name: main_clk, description: "The main clock used to generate the system clock and other clocks" }
+  - { name: system_clk, max: 60000000, description: "The clock used for the CPU and the buses" }
+  - { name: adc_clk }
+  - { name: adc_div_clk }
+  - { name: clkout_src }
+  - { name: clkout }
+  - { name: frg0clksel }
+  - { name: frg0clk }
+  - { name: frg1clksel }
+  - { name: frg1clk }
+  - { name: uartclk }
+  - { name: spiclk }
+  - { name: i2cclk }
+  - { name: i3cclk }
   - { name: lpwr_clk_vulp, nominal: 10000, min: 6000, max: 14000 }
-}
+  - { name: acmpclk }
+  - { name: adc_sclk }
+  - { name: crcclk }
+  - { name: dmaclk }
+  - { name: fclk0, description: "Functional clock for UART0" }
+  - { name: fclk1, description: "Functional clock for UART1" }
+  - { name: fclk10, description: "Functional clock for SPI1" }
+  - { name: fclk2, description: "Functional clock for UART2" }
+  - { name: fclk5, description: "Functional clock for I2C0" }
+  - { name: fclk9, description: "Functional clock for SPI0" }
+  - { name: flashclk }
+  - { name: ftm0clk }
+  - { name: ftm1clk }
+  - { name: gpio0clk }
+  - { name: gpio1clk }
+  - { name: gpiointclk }
+  - { name: i2c0clk }
+  - { name: ioconclk }
+  - { name: mrtclk }
+  - { name: ramclk }
+  - { name: romclk }
+  - { name: spi0clk }
+  - { name: spi1clk }
+  - { name: swmclk }
+  - { name: uart0clk }
+  - { name: uart1clk }
+  - { name: uart2clk }
+  - { name: wkt_counter_clk }
+  - { name: wkt_int_clk }
+  - { name: wktclk }
+  - { name: wktclkin }
+  - { name: wwdtclk }
+
 sources:
   - name: FRO
-    signal: fro_oscout
+    output: fro_oscout
+    frequencies: [0, 36000000, 48000000, 60000000]
   - name: CLKIN
-    signal: clkin
+    output: clkin
   - name: XTALIN
-    signal: xtalin
+    output: sys_osc_clk
     reg: SYSOSCCTRL
     field: BYPASS
   - name: LPOSC
-    signal: lp_osc
+    output: lp_osc
     reg: LPOSCCTRL
     field: FREQSEL
   - name: ULPOSC
-    signal: lpwr_clk_vulp
+    output: lpwr_clk_vulp
     reg: DPDCTRL
     field: ULPOSCEN
 
 muxes:
   - name: EXTCLKSEL
     output: external_clk
-    inputs: [xtalin, clkin]
+    inputs: [sys_osc_clk, clkin]
     reg: EXTCLKSEL
     field: SEL
   - name: FROOSCCTRL
@@ -172,6 +205,41 @@ dividers:
     input: main_clk
     output: system_clk
     reg: SYSAHBCLKDIV
+    field: DIV
+  - name: IOCONCLKDIV0
+    input: main_clk
+    output: ioconclkdiv0
+    reg: IOCONFILTCLKDIV0
+    field: DIV
+  - name: IOCONCLKDIV1
+    input: main_clk
+    output: ioconclkdiv1
+    reg: IOCONFILTCLKDIV1
+    field: DIV
+  - name: IOCONCLKDIV2
+    input: main_clk
+    output: ioconclkdiv2
+    reg: IOCONFILTCLKDIV2
+    field: DIV
+  - name: IOCONCLKDIV3
+    input: main_clk
+    output: ioconclkdiv3
+    reg: IOCONFILTCLKDIV3
+    field: DIV
+  - name: IOCONCLKDIV4
+    input: main_clk
+    output: ioconclkdiv4
+    reg: IOCONFILTCLKDIV4
+    field: DIV
+  - name: IOCONCLKDIV5
+    input: main_clk
+    output: ioconclkdiv5
+    reg: IOCONFILTCLKDIV5
+    field: DIV
+  - name: IOCONCLKDIV6
+    input: main_clk
+    output: ioconclkdiv6
+    reg: IOCONFILTCLKDIV6
     field: DIV
   - name: ADCCLKDIV
     input: adc_clk
