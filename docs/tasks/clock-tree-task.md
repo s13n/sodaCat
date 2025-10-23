@@ -172,8 +172,16 @@ like this:
 ## Example workflow (for a new family)
 
 1. Duplicate template `spec/clock-tree/template.yaml`.
-2. Fill in signals, sources, gates, muxes, PLLs, dividers.
-4. Run validation:  
+2. Determine clock tree from the documentation.
+   The clock tree is a directed acyclical graph, with the edges representing signals,
+   and the nodes representing sources, gates, muxes, PLLs, dividers or clock consumers.
+   Those should be gleaned from a clock tree diagram, if found in the manual.
+   Where necessary, lines and arrows need to be traced to find signal names.
+   If signal names are missing, they may be found in register descriptions relating to gates, muxes etc.
+   If nothing can be found, signal names can be derived from the name of the source node.
+3. Fill in the arrays for signals, sources, gates, muxes, PLLs, dividers,
+   from the information found in the previous step.
+4. Run validation:
    ```bash
    python tools/validate_clock_specs.py \
      --schema schemas/clock-tree.schema.json \
