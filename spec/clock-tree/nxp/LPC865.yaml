@@ -1,0 +1,187 @@
+family: LPC865
+description: Complete clock tree based on UM11607 Figures 7 & 8
+signals:
+  - { name: fro_oscout, unit: Hz }
+  - { name: fro_div2, unit: Hz }
+  - { name: fro, unit: Hz }
+  - { name: fro_div, unit: Hz }
+  - { name: fro_div16_clk, nominal: 750000 }
+  - { name: extclk, unit: Hz }
+  - { name: lp_osc, unit: Hz }
+  - { name: pll_in, unit: Hz }
+  - { name: sys_pll0_clk, unit: Hz }
+  - { name: pll_div_clk, unit: Hz }
+  - { name: mainclk_prepll, unit: Hz }
+  - { name: main_clk, unit: Hz }
+  - { name: sys_ahb_clk, unit: Hz }
+  - { name: adc_clk, unit: Hz }
+  - { name: adc_div_clk, unit: Hz }
+  - { name: clkout_src, unit: Hz }
+  - { name: clkout_div_clk, unit: Hz }
+  - { name: frg0clk, unit: Hz }
+  - { name: frg1clk, unit: Hz }
+  - { name: uartclk, unit: Hz }
+  - { name: spiclk, unit: Hz }
+  - { name: i2cclk, unit: Hz }
+  - { name: i3cclk, unit: Hz }
+  - { name: lpwr_clk_vulp, nominal: 10000 }
+}
+sources:
+  - name: FRO
+    signal: fro
+    reg: FROOSCCTRL
+    field: FREQSEL
+  - name: EXTCLK
+    signal: extclk
+    reg: EXTCLKSEL
+    field: SEL
+  - name: LPOSC
+    signal: lp_osc
+    reg: LPOSCCTRL
+    field: FREQSEL
+  - name: ULPOSC
+    signal: lpwr_clk_vulp
+    reg: DPDCTRL
+    field: ULPOSCEN
+
+muxes:
+  - name: FROOSCCTRL
+    output: fro
+    inputs: [fro_oscout, fro_div2]
+    reg: FROOSCCTRL
+    field: FRO_DIRECT
+  - name: SYSPLLCLKSEL
+    output: pll_in
+    inputs: [fro, extclk, lp_osc, fro_div]
+    reg: SYSPLLCLKSEL
+    field: SEL
+  - name: MAINCLKSEL
+    output: mainclk_prepll
+    inputs: [fro, extclk, lp_osc, fro_div]
+    reg: MAINCLKSEL
+    field: SEL
+  - name: MAINCLKPLLSEL
+    output: main_clk
+    inputs: [mainclk_prepll, pll_div_clk]
+    reg: MAINCLKPLLSEL
+    field: SEL
+  - name: UART0CLKSEL
+    output: uartclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div]
+    reg: UART0CLKSEL
+    field: SEL
+  - name: SPI0CLKSEL
+    output: spiclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div]
+    reg: SPI0CLKSEL
+    field: SEL
+  - name: I2C0CLKSEL
+    output: i2cclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div]
+    reg: I2C0CLKSEL
+    field: SEL
+  - name: I3CCLKSEL
+    output: i3cclk
+    inputs: [fro, main_clk, pll_div_clk]
+    reg: I3CCLKSEL
+    field: SEL
+  - name: ADCCLKSEL
+    output: adc_clk
+    inputs: [fro, pll_div_clk]
+    reg: ADCCLKSEL
+    field: SEL
+  - name: CLKOUTSEL
+    output: clkout_src
+    inputs: [fro, main_clk, pll_div_clk, extclk, lp_osc]
+    reg: CLKOUTSEL
+    field: SEL
+  - name: wkt_mux_int
+    field: CLKSEL
+    reg: WKT_CTRL
+    inputs: [fro_div16_clk, lpwr_clk_vulp]
+    output: wkt_int_clk
+  - name: wkt_mux_ext
+    field: SEL_EXTCLK
+    reg: WKT_CTRL
+    inputs: [wkt_int_clk, wktclkin]
+    output: wkt_counter_clk
+
+plls:
+  - name: SYSPLL
+    input: pll_in
+    output: sys_pll0_clk
+    regs:
+      - { reg: SYSPLLCTRL, field: MSEL }
+      - { reg: SYSPLLCTRL, field: PSEL }
+      - { reg: SYSPLLSTAT, field: LOCK }
+
+dividers:
+  - name: FRO_HALF_DIV
+    input: fro_oscout
+    output: fro_div2
+    divisor: 2
+  - name: FRO_DIV
+    input: fro
+    output: fro_div
+    divisor: 2
+  - name: SYSPLLDIV
+    input: sys_pll0_clk
+    output: pll_div_clk
+    reg: SYSPLLDIV
+    field: DIV
+  - name: SYSAHBCLKDIV
+    input: main_clk
+    output: sys_ahb_clk
+    reg: SYSAHBCLKDIV
+    field: DIV
+  - name: ADCCLKDIV
+    input: adc_clk
+    output: adc_div_clk
+    reg: ADCCLKDIV
+    field: DIV
+  - name: CLKOUTDIV
+    input: clkout_src
+    output: clkout_div_clk
+    reg: CLKOUTDIV
+    field: DIV
+  - name: fro_divider
+    input: fro
+    output: fro_div16_clk
+    divisor: 16
+
+fractional_generators:
+  - name: FRG0
+    input: fro
+    output: frg0clk
+    regs:
+      - { reg: FRG0DIV, field: DIV }
+      - { reg: FRG0MULT, field: MULT }
+  - name: FRG1
+    input: fro
+    output: frg1clk
+    regs:
+      - { reg: FRG1DIV, field: DIV }
+      - { reg: FRG1MULT, field: MULT }
+
+gates:
+  - name: UART0CLK
+    input: sys_ahb_clk
+    reg: SYSAHBCLKCTRL0
+    field: UART0
+  - name: SPI0CLK
+    input: sys_ahb_clk
+    reg: SYSAHBCLKCTRL0
+    field: SPI0
+  - name: I2C0CLK
+    input: sys_ahb_clk
+    reg: SYSAHBCLKCTRL0
+    field: I2C0
+  - name: ADC
+    input: sys_ahb_clk
+    reg: SYSAHBCLKCTRL0
+    field: ADC
+
+limits:
+  fro: { min: 36000000, max: 60000000 }
+  sys_ahb_clk: { max: 60000000 }
+  pll: { max: 100000000 }
