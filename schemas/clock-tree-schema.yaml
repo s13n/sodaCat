@@ -1,0 +1,390 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://example.org/schemas/mcu-clock-tree.schema.json
+title: MCU Clock-Tree Specification
+type: object
+required:
+- family
+- reference_manual
+- signals
+additionalProperties: false
+properties:
+  version:
+    type: string
+    description: Schema/application document version (your spec version), e.g., '1.0.0'.
+  family:
+    type: string
+    description: Marketing family or SoC series name (e.g., 'STM32H7').
+  reference_manual:
+    type: object
+    required:
+    - id
+    additionalProperties: true
+    properties:
+      id:
+        type: string
+        description: Primary reference manual identifier (e.g., 'RM0399').
+      devices:
+        type: array
+        items:
+          type: string
+      revision:
+        type: string
+      notes:
+        type: array
+        items:
+          type: string
+  metadata:
+    type: object
+    additionalProperties: true
+  signals:
+    type: array
+    minItems: 1
+    items:
+      $ref: '#/$defs/Signal'
+    description: Distinct clock signals that can be muxed/divided/gated or are sources.
+  sources:
+    type: array
+    items:
+      type: object
+      required:
+      - name
+      - output
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        output:
+          type: string
+        description:
+          type: string
+  muxes:
+    type: array
+    items:
+      $ref: '#/$defs/Mux'
+  plls:
+    type: array
+    items:
+      $ref: '#/$defs/Pll'
+  dividers:
+    type: array
+    items:
+      $ref: '#/$defs/Divider'
+  gates:
+    type: array
+    items:
+      $ref: '#/$defs/Gate'
+  kernel_clock_examples:
+    type: array
+    items:
+      type: object
+      required:
+      - peripheral
+      additionalProperties: false
+      properties:
+        peripheral:
+          type: string
+        kernel_clock:
+          type: object
+          additionalProperties: false
+          properties:
+            selector:
+              $ref: '#/$defs/MuxControl'
+            divider:
+              $ref: '#/$defs/DividerControl'
+            output:
+              type: string
+            notes:
+              type: string
+        selector:
+          $ref: '#/$defs/MuxControl'
+        description:
+          type: string
+  constraints_and_rules:
+    type: array
+    items:
+      type: string
+  text_snippets:
+    type: array
+    items:
+      type: object
+      required:
+      - id
+      - text
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+$defs:
+  BlockBase:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      notes:
+        type: string
+    required:
+    - name
+  Signal:
+    allOf:
+    - $ref: '#/$defs/BlockBase'
+    - additionalProperties: false
+      properties:
+        nominal:
+          type: number
+          description: Nominal clock frequency in Hz
+        min:
+          type: number
+          description: Minimal clock frequency in Hz
+        max:
+          type: number
+          description: Maximal clock frequency in Hz
+  Control:
+    type: object
+    additionalProperties: false
+    properties:
+      enable:
+        $ref: '#/$defs/EnableControl'
+      ready_flag:
+        $ref: '#/$defs/FlagControl'
+      mux:
+        $ref: '#/$defs/MuxControl'
+      status:
+        $ref: '#/$defs/StatusControl'
+      divider:
+        $ref: '#/$defs/DividerControl'
+      output_enables:
+        type: object
+        additionalProperties: false
+        properties:
+          reg:
+            type: string
+          fields:
+            type: array
+            items:
+              type: object
+              required:
+              - name
+              additionalProperties: true
+              properties:
+                name:
+                  type: string
+                enables:
+                  type: string
+                description:
+                  type: string
+      n_divider:
+        $ref: '#/$defs/RegisterField'
+      p_divider:
+        $ref: '#/$defs/RegisterField'
+      q_divider:
+        $ref: '#/$defs/RegisterField'
+      r_divider:
+        $ref: '#/$defs/RegisterField'
+      fields:
+        type: array
+        items:
+          $ref: '#/$defs/RegisterField'
+  EnableControl:
+    type: object
+    required:
+    - reg
+    - bit
+    additionalProperties: false
+    properties:
+      reg:
+        type: string
+      bit:
+        type: string
+      polarity:
+        type: string
+        enum:
+        - active_high
+        - active_low
+        default: active_high
+  FlagControl:
+    type: object
+    required:
+    - reg
+    - bit
+    additionalProperties: false
+    properties:
+      reg:
+        type: string
+      bit:
+        type: string
+  StatusControl:
+    type: object
+    required:
+    - reg
+    - field
+    additionalProperties: false
+    properties:
+      reg:
+        type: string
+      field:
+        type: string
+      description:
+        type: string
+  RegisterField:
+    type: object
+    required:
+    - reg
+    - field
+    not:
+      required:
+      - value_range
+      - values
+    additionalProperties: false
+    properties:
+      reg:
+        type: string
+      field:
+        type: string
+      value_range:
+        type: object
+        required:
+        - max
+        properties:
+          max:
+            type: number
+          min:
+            type: number
+            default: 0
+          offset:
+            type: number
+            default: 0
+          scale:
+            type: number
+            default: 1
+        description: value is from min to max inclusive; scale, then offset, are applied
+          before writing to register field
+      values:
+        type: array
+        items:
+          type: number
+        description: value is one of a list; list index is in register field
+  MuxControl:
+    type: object
+    required:
+    - reg
+    - field
+    - inputs
+    additionalProperties: false
+    properties:
+      reg:
+        type: string
+      field:
+        type: string
+      inputs:
+        type: array
+        items:
+          type: string
+        description: Indexed array of input signal names; use '' for off state and
+          '-reserved-' for reserved entries.
+      notes:
+        type: string
+  DividerControl:
+    type: object
+    required:
+    - reg
+    - field
+    additionalProperties: false
+    properties:
+      reg:
+        type: string
+      field:
+        type: string
+      factors:
+        type: array
+        items:
+          type: number
+      range:
+        type: string
+      notes:
+        type: string
+  Mux:
+    allOf:
+    - $ref: '#/$defs/BlockBase'
+    - required:
+      - inputs
+      - output
+      additionalProperties: false
+      properties:
+        inputs:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Size must be a power of 2, corresponding to the bitfield width
+            in the control. Position in the array must correspond to bitfield encoding.
+        output:
+          type: string
+          description: Name of the output signal from the mux.
+        control:
+          $ref: '#/$defs/MuxControl'
+  Divider:
+    allOf:
+    - $ref: '#/$defs/BlockBase'
+    - required:
+      - input
+      - output
+      additionalProperties: false
+      properties:
+        input:
+          type: string
+        output:
+          type: string
+        control:
+          $ref: '#/$defs/DividerControl'
+  Pll:
+    allOf:
+    - $ref: '#/$defs/BlockBase'
+    - required:
+      - input
+      - output
+      - feedback_integer
+      - vco_limits
+      properties:
+        input:
+          type: string
+          description: Clock signal feeding the PLL phase detector
+        output:
+          type: string
+          description: Clock signal output from the PLL VCO after the post-divider
+        feedback_integer:
+          $ref: '#/$defs/RegisterField'
+        feedback_fraction:
+          $ref: '#/$defs/RegisterField'
+        post_divider:
+          $ref: '#/$defs/RegisterField'
+        vco_limits:
+          type: object
+          required:
+          - min
+          - max
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+          description: Frequency range of VCO before post-divider
+      description: fOut = fIn * M, where M is the feedback divider factor. M is
+        formed by combining integer and (if present) fractional parts.
+  Gate:
+    allOf:
+    - $ref: '#/$defs/BlockBase'
+    - required:
+      - input
+      - output
+      additionalProperties: false
+      properties:
+        input:
+          type: string
+        output:
+          type: string
+        control:
+          $ref: '#/$defs/EnableControl'

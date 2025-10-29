@@ -8,8 +8,8 @@ def main():
     ap.add_argument("-s", "--schema", required=True, help="Path to JSON Schema")
     ap.add_argument("-d", "--docs", nargs="+", required=True, help="YAML spec files or globs")
     args = ap.parse_args()
-
-    schema = json.loads(pathlib.Path(args.schema).read_text(encoding="utf-8"))
+        
+    schema = yaml.safe_load(pathlib.Path(args.schema).read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
     validator = Draft202012Validator(schema)
 
