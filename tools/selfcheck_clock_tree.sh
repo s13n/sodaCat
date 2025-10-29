@@ -4,7 +4,7 @@ set -euo pipefail
 echo "== Checking required files =="
 missing=0
 for p in \
-  schemas/clock-tree.schema.json \
+  schemas/clock-tree.schema.yaml \
   tools/validate_clock_specs.py \
   .github/workflows/clock-spec.yml \
   docs/tasks/clock-tree-task.md \
@@ -27,7 +27,7 @@ echo "== Installing Python deps in $VENV_DIR =="
 
 echo "== Validating specs =="
 "$VENV_DIR/bin/python" tools/validate_clock_specs.py \
-  --schema schemas/clock-tree.schema.json \
+  --schema schemas/clock-tree.schema.yaml \
   --docs "spec/clock-tree/**/*.y*ml"
 
 echo "All good ✅"
