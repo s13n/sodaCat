@@ -295,45 +295,29 @@
     },
     "RegisterField": {
       "type": "object",
-      "required": [
-        "reg",
-        "field"
-      ],
+      "required": [ "reg", "field" ],
+      "not": { "required": [ "value_range", "values" ] },
       "additionalProperties": false,
       "properties": {
-        "reg": {
-          "type": "string"
+        "reg": { "type": "string" },
+        "field": { "type": "string" },
+        "value_range": {
+          "type": "object",
+          "required": [ "max" ],
+          "properties": {
+            "max": { "type": "number" },
+            "min": { "type": "number", "default": 0 },
+            "offset": { "type": "number", "default": 0 },
+            "scale": { "type": "number", "default": 1 }
+          },
+          "description" : "value is from min to max inclusive; scale, then offset, are applied before writing to register field"
         },
-        "field": {
-          "type": "string"
-        },
-        "range": {
-          "type": "string"
-        },
-        "factors": {
+        "values": {
           "type": "array",
           "items": {
             "type": "number"
-          }
-        },
-        "values": {
-          "type": "object",
-          "additionalProperties": {
-            "type": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "encoding": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
           },
-          "description": "Bitfield value mapping to named inputs."
-        },
-        "note": {
-          "type": "string"
+          "description" : "value is one of a list; list index is in register field"
         }
       }
     },
@@ -453,112 +437,25 @@
           "properties": {
             "input": {
               "type": "string",
-              "description": "Clock signal feeding the PLL"
+              "description": "Clock signal feeding the PLL phase detector"
             },
             "output": {
               "type": "string",
-              "description": "Clock signal output from the PLL VCO"
+              "description": "Clock signal output from the PLL VCO after the post-divider"
             },
-            "feedback_integer": {
-              "type": "object",
-              "required": [
-                "reg",
-                "field",
-                "value_range"
-              ],
-              "properties": {
-                "reg": {
-                  "type": "string"
-                },
-                "field": {
-                  "type": "string"
-                },
-                "value_range": {
-                  "type": "object",
-                  "required": [
-                    "min",
-                    "max"
-                  ],
-                  "properties": {
-                    "min": {
-                      "type": "integer"
-                    },
-                    "max": {
-                      "type": "integer"
-                    }
-                  }
-                },
-                "offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Offset applied before scaling"
-                },
-                "scale": {
-                  "type": "integer",
-                  "default": 1,
-                  "description": "Scale factor applied after offset"
-                }
-              }
-            },
-            "feedback_fraction": {
-              "type": "object",
-              "required": [
-                "reg",
-                "field",
-                "value_range"
-              ],
-              "properties": {
-                "reg": {
-                  "type": "string"
-                },
-                "field": {
-                  "type": "string"
-                },
-                "value_range": {
-                  "type": "object",
-                  "required": [
-                    "min",
-                    "max"
-                  ],
-                  "properties": {
-                    "min": {
-                      "type": "integer"
-                    },
-                    "max": {
-                      "type": "integer"
-                    }
-                  }
-                },
-                "offset": {
-                  "type": "integer",
-                  "default": 0,
-                  "description": "Offset applied before scaling"
-                },
-                "scale": {
-                  "type": "integer",
-                  "description": "Scale factor applied after offset"
-                }
-              }
-            },
-            "vco_formula": {
-              "type": "string",
-              "description": "Formula to compute VCO frequency from reference and divider values"
-            },
+            "feedback_integer": { "$ref": "#/$defs/RegisterField" },
+            "feedback_fraction": { "$ref": "#/$defs/RegisterField" },
+            "post_divider": { "$ref": "#/$defs/RegisterField" },
             "vco_limits": {
               "type": "object",
-              "required": [
-                "min",
-                "max"
-              ],
+              "required": [ "min", "max" ],
               "properties": {
-                "min": {
-                  "type": "integer"
-                },
-                "max": {
-                  "type": "integer"
-                }
-              }
-            }
+                "min": { "type": "integer" },
+                "max": { "type": "integer" }
+              },
+              "description": "Frequency range of VCO before post-divider"
+            },
+            "description": "fOut = fIn * M, where M is the feedback divider factor. M is formed by combining integer and (if present) fractional parts."
           }
         }
       ]
