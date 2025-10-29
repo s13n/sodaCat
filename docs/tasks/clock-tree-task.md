@@ -162,7 +162,7 @@ like this:
 
 ## Acceptance criteria
 
-- YAML validates against `schemas/clock-tree.schema.json`.
+- YAML validates against `schemas/clock-tree.schema.yaml`.
 - No missing `reg/field/bit` for muxes/dividers/gates.
 - All producing nodes with limits include `frequency`/`frequency_limit`.
 - A minimal set of kernel examples (at least one timer/serial/storage/USB or ETH).
@@ -184,6 +184,6 @@ like this:
 4. Run validation:
    ```bash
    python tools/validate_clock_specs.py \
-     --schema schemas/clock-tree.schema.json \
+     --schema schemas/clock-tree.schema.yaml \
      --docs "spec/clock-tree/**/*.y*ml"
 5. Open PR with a short note: RM ID, sections used, and known device caveats.
