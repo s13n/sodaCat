@@ -43,17 +43,7 @@ properties:
   sources:
     type: array
     items:
-      type: object
-      required:
-      - name
-      - output
-      properties:
-        name:
-          type: string
-        output:
-          type: string
-        description:
-          type: string
+      $ref: '#/$defs/Source'
   muxes:
     type: array
     items:
@@ -87,51 +77,22 @@ $defs:
     - $ref: '#/$defs/BlockBase'
     - properties:
         nominal:
-          type: number
+          type: integer
           description: Nominal clock frequency in Hz
         min:
-          type: number
+          type: integer
           description: Minimal clock frequency in Hz
         max:
-          type: number
+          type: integer
           description: Maximal clock frequency in Hz
-  RegisterField:
-    type: object
-    required:
-    - reg
-    - field
-    not:
+  Source:
+    allOf:
+    - $ref: '#/$defs/BlockBase'
+    - properties:
+        output:
+          type: string
       required:
-      - value_range
-      - values
-    properties:
-      reg:
-        type: string
-      field:
-        type: string
-      value_range:
-        type: object
-        required:
-        - max
-        properties:
-          max:
-            type: number
-          min:
-            type: number
-            default: 0
-          offset:
-            type: number
-            default: 0
-          scale:
-            type: number
-            default: 1
-        description: value is from min to max inclusive; scale, then offset, are applied
-          before writing to register field
-      values:
-        type: array
-        items:
-          type: number
-        description: value is one of a list; list index is in register field
+      - output
   Mux:
     allOf:
     - $ref: '#/$defs/BlockBase'
@@ -152,19 +113,6 @@ $defs:
           $ref: '#/$defs/MuxControl'
       required:
       - inputs
-      - output
-  Divider:
-    allOf:
-    - $ref: '#/$defs/BlockBase'
-    - properties:
-        input:
-          type: string
-        output:
-          type: string
-        control:
-          $ref: '#/$defs/DividerControl'
-      required:
-      - input
       - output
   Pll:
     allOf:
@@ -198,6 +146,19 @@ $defs:
           description: Frequency range of VCO before post-divider
       description: fOut = fIn * M, where M is the feedback divider factor. M is
         formed by combining integer and (if present) fractional parts.
+  Divider:
+    allOf:
+    - $ref: '#/$defs/BlockBase'
+    - properties:
+        input:
+          type: string
+        output:
+          type: string
+        control:
+          $ref: '#/$defs/DividerControl'
+      required:
+      - input
+      - output
   Gate:
     allOf:
     - $ref: '#/$defs/BlockBase'
@@ -211,6 +172,51 @@ $defs:
       required:
       - input
       - output
+  RegisterField:
+    type: object
+    description: |-
+      Specify bitfield in a register, and how to interpret the value.
+
+      The register and bitfield are identified by name. If needed, there
+      can also be an instance identifier to tell in which functional block
+      the register can be found. How the register can be addressed and
+      accessed is specified elsewhere.
+    required:
+    - reg
+    not:
+      required:
+      - value_range
+      - values
+    properties:
+      instance:
+        type: string
+      reg:
+        type: string
+      field:
+        type: string
+      value_range:
+        type: object
+        required:
+        - max
+        properties:
+          max:
+            type: integer
+          min:
+            type: integer
+            default: 0
+          offset:
+            type: integer
+            default: 0
+          scale:
+            type: integer
+            default: 1
+        description: value is from min to max inclusive; scale, then offset, are applied
+          before writing to register field
+      values:
+        type: array
+        items:
+          type: integer
+        description: value is one of a list; list index is in register field
   MuxControl:
     type: object
     required:
