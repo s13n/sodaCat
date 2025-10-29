@@ -5,7 +5,7 @@ from jsonschema import validate, Draft202012Validator
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-s", "--schema", required=True, help="Path to JSON Schema")
+    ap.add_argument("-s", "--schema", required=True, help="Path to JSON/YAML Schema")
     ap.add_argument("-d", "--docs", nargs="+", required=True, help="YAML spec files or globs")
     args = ap.parse_args()
         
