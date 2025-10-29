@@ -4,9 +4,7 @@ title: MCU Clock-Tree Specification
 type: object
 required:
 - family
-- reference_manual
 - signals
-additionalProperties: false
 properties:
   version:
     type: string
@@ -49,7 +47,6 @@ properties:
       required:
       - name
       - output
-      additionalProperties: false
       properties:
         name:
           type: string
@@ -131,8 +128,7 @@ $defs:
   Signal:
     allOf:
     - $ref: '#/$defs/BlockBase'
-    - additionalProperties: false
-      properties:
+    - properties:
         nominal:
           type: number
           description: Nominal clock frequency in Hz
@@ -309,15 +305,13 @@ $defs:
   Mux:
     allOf:
     - $ref: '#/$defs/BlockBase'
-    - required:
-      - inputs
-      - output
-      additionalProperties: false
-      properties:
+    - properties:
         inputs:
           type: array
           items:
-            type: string
+            type:
+              - string
+              - "null"
           minItems: 1
           description: Size must be a power of 2, corresponding to the bitfield width
             in the control. Position in the array must correspond to bitfield encoding.
@@ -326,20 +320,22 @@ $defs:
           description: Name of the output signal from the mux.
         control:
           $ref: '#/$defs/MuxControl'
+      required:
+      - inputs
+      - output
   Divider:
     allOf:
     - $ref: '#/$defs/BlockBase'
-    - required:
-      - input
-      - output
-      additionalProperties: false
-      properties:
+    - properties:
         input:
           type: string
         output:
           type: string
         control:
           $ref: '#/$defs/DividerControl'
+      required:
+      - input
+      - output
   Pll:
     allOf:
     - $ref: '#/$defs/BlockBase'
@@ -363,9 +359,7 @@ $defs:
           $ref: '#/$defs/RegisterField'
         vco_limits:
           type: object
-          required:
-          - min
-          - max
+          required: [ min, max ]
           properties:
             min:
               type: integer
@@ -377,14 +371,13 @@ $defs:
   Gate:
     allOf:
     - $ref: '#/$defs/BlockBase'
-    - required:
-      - input
-      - output
-      additionalProperties: false
-      properties:
+    - properties:
         input:
           type: string
         output:
           type: string
         control:
           $ref: '#/$defs/EnableControl'
+      required:
+      - input
+      - output
