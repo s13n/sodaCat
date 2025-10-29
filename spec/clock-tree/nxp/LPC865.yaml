@@ -198,10 +198,15 @@ plls:
   - name: SYSPLL
     input: pll_in
     output: sys_pll0_clk
-    regs:
-      - { reg: SYSPLLCTRL, field: MSEL }
-      - { reg: SYSPLLCTRL, field: PSEL }
-      - { reg: SYSPLLSTAT, field: LOCK }
+    feedback_integer:
+      reg: SYSPLLCTRL
+      field: MSEL
+      value_range: { min: 1, max: 32, offset: -1 }
+    post_divider:
+      reg: SYSPLLCTRL
+      field: PSEL
+      values: [ 2, 4, 8, 16 ]
+    vco_limits: { min: 156000000, max: 320000000 }
 
 dividers:
   - name: FRO_HALF_DIV
