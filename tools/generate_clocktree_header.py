@@ -23,8 +23,7 @@ def generate_header(yaml_path, output_path):
     lines.append('    enum class SignalName {')
     for s in signals:
         lines.append(f'        {s["name"]},')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
     # Signal struct
     lines.append('    struct Signal {')
@@ -33,24 +32,21 @@ def generate_header(yaml_path, output_path):
     lines.append('        std::optional<uint32_t> max_freq;')
     lines.append('        std::optional<uint32_t> nominal_freq;')
     lines.append('        const char* description;')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
     # PLL struct
     lines.append('    struct PLL {')
     lines.append('        const char* name;')
     lines.append('        const char* input;')
     lines.append('        const char* output;')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
     # Gate struct
     lines.append('    struct Gate {')
     lines.append('        const char* name;')
     lines.append('        const char* input;')
     lines.append('        const char* output;')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
     # Divider struct
     lines.append('    struct Divider {')
@@ -58,44 +54,37 @@ def generate_header(yaml_path, output_path):
     lines.append('        const char* input;')
     lines.append('        const char* output;')
     lines.append('        uint32_t divisor;')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
     # Signals array
     lines.append('    static constexpr Signal signals[] = {')
     for s in signals:
         lines.append(f'        {{ "{s["name"]}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}" }},')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
     # PLLs array
     lines.append('    static constexpr PLL plls[] = {')
     for p in plls:
         lines.append(f'        {{ "{p["name"]}", "{p["input"]}", "{p["output"]}" }},')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
     # Gates array
     lines.append('    static constexpr Gate gates[] = {')
     for g in gates:
         lines.append(f'        {{ "{g["name"]}", "{g["input"]}", "{g["output"]}" }},')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
     # Dividers array
     lines.append('    static constexpr Divider dividers[] = {')
     for d in dividers:
         divisor = d.get("divisor", 1)
         lines.append(f'        {{ "{d["name"]}", "{d["input"]}", "{d["output"]}", {divisor} }},')
-    lines.append('    };
-')
+    lines.append('    };\n')
 
-    lines.append('};
-')
+    lines.append('};\n')
 
     # Write to output file
-    Path(output_path).write_text("
-".join(lines))
+    Path(output_path).write_text("\n".join(lines))
 
 if __name__ == '__main__':
     generate_header('LPC865.yaml', 'ClockTree.hpp')
