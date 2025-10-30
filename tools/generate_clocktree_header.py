@@ -36,15 +36,15 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     signal_generators = {}
 
     for src in sources:
-        signal_generators[src['output']] = ('Source', src)
+        signal_generators[src['output']] = ('sources', src)
     for pll in plls:
-        signal_generators[pll['output']] = ('PLL', pll)
+        signal_generators[pll['output']] = ('plls', pll)
     for gate in gates:
-        signal_generators[gate['output']] = ('Gate', gate)
+        signal_generators[gate['output']] = ('gates', gate)
     for div in dividers:
-        signal_generators[div['output']] = ('Divider', div)
+        signal_generators[div['output']] = ('dividers', div)
     for mux in muxes:
-        signal_generators[mux['output']] = ('Mux', mux)
+        signal_generators[mux['output']] = ('muxes', mux)
 
     # Header file
     hpp_lines = [
@@ -127,20 +127,30 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         "    Generator generator;",
         "  };",
         "",
+        "  double getFrequency(Signal s) const;",
+        "",
+        "  static constexpr RegisterField *register_fields[];",
         "  static constexpr SignalInfo signals[];",
         "  static constexpr Source sources[];",
         "  static constexpr PLL plls[];",
         "  static constexpr Gate gates[];",
         "  static constexpr Divider dividers[];",
         "  static constexpr Mux muxes[];",
+        "",
+        "private:",
+        "  double get_frequency(const Source *src) const;",
+        "  double get_frequency(const PLL *pll) const;",
+        "  double get_frequency(const Gate *gate) const;",
+        "  double get_frequency(const Divider *div) const;",
+        "  double get_frequency(const Mux *mux) const;",
         "};"
     ])
     Path(hpp_path).write_text("\n".join(hpp_lines))
 
     # Source file
-    cpp_lines = [f'#include "{Path(hpp_path).name}"', ""]
+    cpp_lines = [f'#include "{Path(hpp_path).name}"', "#include <algorithm>", ""]
 
-    cpp_lines.append("constexpr ClockTree::RegisterField ClockTree::register_fields[] = {")
+    cpp_lines.append("constexpr ClockTree::RegisterField *ClockTree::register_fields[] = {")
     for f in field_list:
         reg = f.get("reg", "")
         field = f.get("field", "")
@@ -152,12 +162,12 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     for s in signals:
         name = s["name"]
         gen_type, gen_obj = signal_generators.get(name, ("Source", None))
-        gen_ref = f"&ClockTree::{gen_type.lower()}s[{sources.index(gen_obj)}]" if gen_obj else "nullptr"
+        gen_list = locals().get(gen_type, [])
+        gen_ref = f"&ClockTree::{gen_type}[{gen_list.index(gen_obj)}]" if gen_obj else "nullptr"
         cpp_lines.append(
-            f'  {{ "{name}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}", {gen_type}({gen_ref}) }},'
+            f'  {{ "{name}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}", {gen_ref} }},'
         )
     cpp_lines.append("};\n")
-
 
     cpp_lines.append("constexpr ClockTree::Source ClockTree::sources[] = {")
     for src in sources:
@@ -209,6 +219,46 @@ def generate_header(yaml_path, hpp_path, cpp_path):
             f'  {{ "{m["name"]}", Signal::{signal_enum_map[m["output"]]}, {inputs_str}, {emit_field_ref(m.get("control"))} }},'
         )
     cpp_lines.append("};\n")
+
+    cpp_lines.append('''
+inline double ClockTree::get_frequency(const Source *src) const {
+    if (!src->control) {
+        return src->values.size() > 0 ? src->values.begin()[0] : 0.0;
+    }
+    return src->control->read(); // or map value to frequency
+}
+
+inline double ClockTree::get_frequency(const PLL *pll) const {
+    double input_freq = getFrequency(pll->input);
+    uint32_t fb_int = pll->feedback_integer ? pll->feedback_integer->read() : 1;
+    uint32_t fb_frac = pll->feedback_fraction ? pll->feedback_fraction->read() : 0;
+    uint32_t post_div = pll->post_divider ? pll->post_divider->read() : 1;
+    double fb = fb_int + fb_frac / 65536.0;
+    return (input_freq * fb) / post_div;
+}
+
+inline double ClockTree::get_frequency(const Gate *gate) const {
+    return getFrequency(gate->input);
+}
+
+inline double ClockTree::get_frequency(const Divider *div) const {
+    double input_freq = getFrequency(div->input);
+    uint32_t factor = div->factor ? div->factor->read() : div->value;
+    uint32_t denom = div->denominator ? div->denominator->read() : 1;
+    return input_freq * denom / factor;
+}
+
+inline double ClockTree::get_frequency(const Mux *mux) const {
+    size_t index = mux->control ? mux->control->read() : 0;
+    auto it = mux->inputs.begin();
+    std::advance(it, std::min(index, mux->inputs.size() - 1));
+    return getFrequency(*it);
+}
+
+double ClockTree::getFrequency(Signal s) const {
+    const SignalInfo& info = signals[static_cast<size_t>(s)];
+    return std::visit([this](auto* gen) { return get_frequency(gen); }, info.generator);
+}''')
 
     Path(cpp_path).write_text("\n".join(cpp_lines))
 
