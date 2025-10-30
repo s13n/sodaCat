@@ -110,7 +110,7 @@ $defs:
           type: string
           description: Name of the output signal from the mux.
         control:
-          $ref: '#/$defs/MuxControl'
+          $ref: '#/$defs/RegisterField'
       required:
       - inputs
       - output
@@ -154,11 +154,24 @@ $defs:
           type: string
         output:
           type: string
-        control:
-          $ref: '#/$defs/DividerControl'
+        factor:
+          $ref: '#/$defs/RegisterField'
+        denominator:
+          $ref: '#/$defs/RegisterField'
+        value:
+          type: integer
       required:
       - input
       - output
+      description: |-
+        The divider factor can either be fixed, in which case it is given by the value property,
+        or it can be an integer factor from a register field, or it can be a fractional value
+        given by two register fields, one for the numerator (factor) and one for the denominator.
+
+        When both register(s) and value are given, the value is an offset to be applied after
+        forming the integer or fractional value from the register fields.
+
+        If none is given, the divider doesn't divide (i.e. factor is 1)
   Gate:
     allOf:
     - $ref: '#/$defs/BlockBase'
@@ -172,6 +185,7 @@ $defs:
       required:
       - input
       - output
+      - control
   RegisterField:
     type: object
     description: |-
@@ -217,129 +231,13 @@ $defs:
         items:
           type: integer
         description: value is one of a list; list index is in register field
-  MuxControl:
-    type: object
-    required:
-    - reg
-    - field
-    - inputs
-    additionalProperties: false
-    properties:
-      reg:
-        type: string
-      field:
-        type: string
-      inputs:
-        type: array
-        items:
-          type: string
-        description: Indexed array of input signal names; use '' for off state and
-          '-reserved-' for reserved entries.
-      notes:
-        type: string
-  DividerControl:
-    type: object
-    required:
-    - reg
-    - field
-    additionalProperties: false
-    properties:
-      reg:
-        type: string
-      field:
-        type: string
-      factors:
-        type: array
-        items:
-          type: number
-      range:
-        type: string
-      notes:
-        type: string
-  Control:
-    type: object
-    additionalProperties: false
-    properties:
-      enable:
-        $ref: '#/$defs/EnableControl'
-      ready_flag:
-        $ref: '#/$defs/FlagControl'
-      mux:
-        $ref: '#/$defs/MuxControl'
-      status:
-        $ref: '#/$defs/StatusControl'
-      divider:
-        $ref: '#/$defs/DividerControl'
-      output_enables:
-        type: object
-        additionalProperties: false
-        properties:
-          reg:
-            type: string
-          fields:
-            type: array
-            items:
-              type: object
-              required:
-              - name
-              additionalProperties: true
-              properties:
-                name:
-                  type: string
-                enables:
-                  type: string
-                description:
-                  type: string
-      n_divider:
-        $ref: '#/$defs/RegisterField'
-      p_divider:
-        $ref: '#/$defs/RegisterField'
-      q_divider:
-        $ref: '#/$defs/RegisterField'
-      r_divider:
-        $ref: '#/$defs/RegisterField'
-      fields:
-        type: array
-        items:
-          $ref: '#/$defs/RegisterField'
   EnableControl:
-    type: object
-    required:
-    - reg
-    - bit
-    additionalProperties: false
-    properties:
-      reg:
-        type: string
-      bit:
-        type: string
-      polarity:
-        type: string
-        enum:
-        - active_high
-        - active_low
-        default: active_high
-  FlagControl:
-    type: object
-    required:
-    - reg
-    - bit
-    additionalProperties: false
-    properties:
-      reg:
-        type: string
-      bit:
-        type: string
-  StatusControl:
-    type: object
-    required:
-    - reg
-    - field
-    additionalProperties: false
-    properties:
-      reg:
-        type: string
-      field:
-        type: string
-      description:
-        type: string
+    allOf:
+    - $ref: '#/$defs/RegisterField'
+    - properties:
+        inverted:
+          type: boolean
+          default: false
+      description: |-
+        Register bit that can control a function that can be enabled or disabled.
+        The optional inverted property specifies whether a 0 bit enables or disables.
