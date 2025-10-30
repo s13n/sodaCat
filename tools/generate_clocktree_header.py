@@ -14,104 +14,121 @@ def generate_header(yaml_path, hpp_path, cpp_path):
 
     signals.insert(0, {'name': '', 'description': 'Empty signal'})
     signal_enum_map = {s['name']: ('_' if s['name'] == '' else s['name']) for s in signals}
-
     enum_count = len(signals)
     enum_type = 'uint8_t' if enum_count <= 256 else 'uint16_t' if enum_count <= 65536 else 'uint32_t'
 
-    def emit_field(f):
-        if not f:
-            return "std::nullopt"
-        reg = f.get("reg", "")
-        field = f.get("field", "")
-        offset = f.get("offset", 0)
-        return f'RegisterField{{"{reg}", "{field}", {offset}}}'
+    # Collect unique RegisterFields
+    field_map = {}
+    field_list = []
+
+    def register_field_id(field):
+        key = (field.get("reg", ""), field.get("field", ""), field.get("offset", 0))
+        if key not in field_map:
+            field_map[key] = len(field_list)
+            field_list.append(field)
+        return field_map[key]
+
+    def emit_field_ref(field):
+        if not field:
+            return "nullptr"
+        return f"&register_fields[{register_field_id(field)}]"
 
     # Header file
     hpp_lines = [
         "#pragma once",
-        "#include <optional>",
         "#include <cstdint>",
         "#include <initializer_list>",
         "",
         "class ClockTree {",
-        "  public:",
-        f"    enum class Signal : {enum_type} {{"
+        " public:",
+        f"  enum class Signal : {enum_type} {{"
     ]
     for s in signals:
-        hpp_lines.append(f"        {signal_enum_map[s['name']]},")
-    hpp_lines.append("    };")
+        hpp_lines.append(f"    {signal_enum_map[s['name']]},")
+    hpp_lines.append("  };")
     hpp_lines.append("")
-
     hpp_lines.extend([
-        "    struct SignalInfo {",
-        "        const char* name;",
-        "        std::optional<uint32_t> min_freq;",
-        "        std::optional<uint32_t> max_freq;",
-        "        std::optional<uint32_t> nominal_freq;",
-        "        const char* description;",
-        "    };",
+        "  struct SignalInfo {",
+        "    const char* name;",
+        "    std::optional<uint32_t> min_freq;",
+        "    std::optional<uint32_t> max_freq;",
+        "    std::optional<uint32_t> nominal_freq;",
+        "    const char* description;",
+        "  };",
         "",
-        "    struct RegisterField {",
-        "        const char* reg;",
-        "        const char* field;",
-        "        std::optional<int32_t> offset;",
-        "    };",
+        "  struct RegisterField {",
+        "    const char* reg;",
+        "    const char* field;",
+        "    int32_t offset;",
+        "  };",
         "",
-        "    struct Source {",
-        "        const char* name;",
-        "        Signal output;",
-        "        std::optional<RegisterField> control;",
-        "        std::initializer_list<uint32_t> values;",
-        "        const char* description;",
-        "    };",
+        "  struct Source {",
+        "    const char* name;",
+        "    Signal output;",
+        "    const RegisterField* control;",
+        "    std::initializer_list<uint32_t> values;",
+        "    const char* description;",
+        "  };",
         "",
-        "    struct PLL {",
-        "        const char* name;",
-        "        Signal input;",
-        "        Signal output;",
-        "        RegisterField feedback_integer;",
-        "        std::optional<RegisterField> feedback_fraction;",
-        "        std::optional<RegisterField> post_divider;",
-        "    };",
+        "  struct PLL {",
+        "    const char* name;",
+        "    Signal input;",
+        "    Signal output;",
+        "    const RegisterField* feedback_integer;",
+        "    const RegisterField* feedback_fraction;",
+        "    const RegisterField* post_divider;",
+        "  };",
         "",
-        "    struct Gate {",
-        "        const char* name;",
-        "        Signal input;",
-        "        Signal output;",
-        "        RegisterField control;",
-        "    };",
+        "  struct Gate {",
+        "    const char* name;",
+        "    Signal input;",
+        "    Signal output;",
+        "    const RegisterField* control;",
+        "  };",
         "",
-        "    struct Divider {",
-        "        const char* name;",
-        "        Signal input;",
-        "        Signal output;",
-        "        uint16_t value;",
-        "        std::optional<RegisterField> factor;",
-        "        std::optional<RegisterField> denominator;",
-        "    };",
+        "  struct Divider {",
+        "    const char* name;",
+        "    Signal input;",
+        "    Signal output;",
+        "    uint16_t value;",
+        "    const RegisterField* factor;",
+        "    const RegisterField* denominator;",
+        "  };",
         "",
-        "    struct Mux {",
-        "        const char* name;",
-        "        Signal output;",
-        "        std::initializer_list<Signal> inputs;",
-        "        std::optional<RegisterField> control;",
-        "    };",
+        "  struct Mux {",
+        "    const char* name;",
+        "    Signal output;",
+        "    std::initializer_list<Signal> inputs;",
+        "    const RegisterField* control;",
+        "  };",
         "",
-        "    static constexpr SignalInfo signals[];",
-        "    static constexpr Source sources[];",
-        "    static constexpr PLL plls[];",
-        "    static constexpr Gate gates[];",
-        "    static constexpr Divider dividers[];",
-        "    static constexpr Mux muxes[];",
+        "  static constexpr RegisterField register_fields[];",
+        "  static constexpr SignalInfo signals[];",
+        "  static constexpr Source sources[];",
+        "  static constexpr PLL plls[];",
+        "  static constexpr Gate gates[];",
+        "  static constexpr Divider dividers[];",
+        "  static constexpr Mux muxes[];",
         "};"
     ])
     Path(hpp_path).write_text("\n".join(hpp_lines))
 
     # Source file
     cpp_lines = [f'#include "{Path(hpp_path).name}"', ""]
+
+    cpp_lines.append("constexpr ClockTree::RegisterField ClockTree::register_fields[] = {")
+    for f in field_list:
+        reg = f.get("reg", "")
+        field = f.get("field", "")
+        offset = f.get("offset", 0)
+        cpp_lines.append(f'  {{ "{reg}", "{field}", {offset} }},')
+    cpp_lines.append("};\n")
+
     cpp_lines.append("constexpr ClockTree::SignalInfo ClockTree::signals[] = {")
     for s in signals:
-        cpp_lines.append(f'    {{ "{s["name"]}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}" }},')
+        cpp_lines.append(
+            f'  {{ "{s["name"]}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}" }},'
+        )
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Source ClockTree::sources[] = {")
@@ -120,35 +137,30 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         values = ctrl.get("values", []) if ctrl else []
         values_str = "{ " + ", ".join(str(v) for v in values) + " }"
         cpp_lines.append(
-            f'    {{ "{src["name"]}", Signal::{signal_enum_map[src["output"]]}, '
-            f'{emit_field(ctrl)}, {values_str}, "{src.get("description", "")}" }},'
+            f'  {{ "{src["name"]}", Signal::{signal_enum_map[src["output"]]}, {emit_field_ref(ctrl)}, {values_str}, "{src.get("description", "")}" }},'
         )
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::PLL ClockTree::plls[] = {")
     for p in plls:
         cpp_lines.append(
-            f'    {{ "{p["name"]}", Signal::{signal_enum_map[p["input"]]}, Signal::{signal_enum_map[p["output"]]}, '
-            f'{emit_field(p.get("feedback_integer"))}, '
-            f'{emit_field(p.get("feedback_fraction"))}, '
-            f'{emit_field(p.get("post_divider"))} }},'
+            f'  {{ "{p["name"]}", Signal::{signal_enum_map[p["input"]]}, Signal::{signal_enum_map[p["output"]]}, '
+            f'{emit_field_ref(p.get("feedback_integer"))}, {emit_field_ref(p.get("feedback_fraction"))}, {emit_field_ref(p.get("post_divider"))} }},'
         )
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Gate ClockTree::gates[] = {")
     for g in gates:
         cpp_lines.append(
-            f'    {{ "{g["name"]}", Signal::{signal_enum_map[g["input"]]}, Signal::{signal_enum_map[g["output"]]}, '
-            f'{emit_field(g.get("control"))} }},'
+            f'  {{ "{g["name"]}", Signal::{signal_enum_map[g["input"]]}, Signal::{signal_enum_map[g["output"]]}, {emit_field_ref(g.get("control"))} }},'
         )
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Divider ClockTree::dividers[] = {")
     for d in dividers:
-        value = d.get("value", 0)
         cpp_lines.append(
-            f'    {{ "{d["name"]}", Signal::{signal_enum_map[d["input"]]}, Signal::{signal_enum_map[d["output"]]}, '
-            f'{value}, {emit_field(d.get("factor"))}, {emit_field(d.get("denominator"))} }},'
+            f'  {{ "{d["name"]}", Signal::{signal_enum_map[d["input"]]}, Signal::{signal_enum_map[d["output"]]}, {d.get("value", 0)}, '
+            f'{emit_field_ref(d.get("factor"))}, {emit_field_ref(d.get("denominator"))} }},'
         )
     cpp_lines.append("};\n")
 
@@ -164,8 +176,7 @@ def generate_header(yaml_path, hpp_path, cpp_path):
                 raise KeyError(f"Unknown signal name in mux inputs: {i}")
         inputs_str = "{ " + ", ".join(input_list) + " }"
         cpp_lines.append(
-            f'    {{ "{m["name"]}", Signal::{signal_enum_map[m["output"]]}, {inputs_str}, '
-            f'{emit_field(m.get("control"))} }},'
+            f'  {{ "{m["name"]}", Signal::{signal_enum_map[m["output"]]}, {inputs_str}, {emit_field_ref(m.get("control"))} }},'
         )
     cpp_lines.append("};\n")
 
