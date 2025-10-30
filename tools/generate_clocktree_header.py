@@ -27,10 +27,10 @@ def generate_header(yaml_path, hpp_path, cpp_path):
             field_list.append(field)
         return field_map[key]
 
-    def emit_field_ref(field, mandatory=False):
+    def emit_field_ref(field):
         if not field:
-            return "nullptr" if not mandatory else "/* missing mandatory field */"
-        return f"{'*' if mandatory else '&'}register_fields[{register_field_id(field)}]"
+            return "nullptr"
+        return f"register_fields[{register_field_id(field)}]"
 
     # Map signal name to generator
     signal_generators = {}
@@ -49,6 +49,7 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     # Header file
     hpp_lines = [
         "#pragma once",
+        "#include <array>",
         "#include <cstdint>",
         "#include <initializer_list>",
         "#include <optional>",
@@ -129,14 +130,6 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         "",
         "  double getFrequency(Signal s) const;",
         "",
-        "  static constexpr RegisterField *register_fields[];",
-        "  static constexpr SignalInfo signals[];",
-        "  static constexpr Source sources[];",
-        "  static constexpr PLL plls[];",
-        "  static constexpr Gate gates[];",
-        "  static constexpr Divider dividers[];",
-        "  static constexpr Mux muxes[];",
-        "",
         "private:",
         "  double get_frequency(const Source *src) const;",
         "  double get_frequency(const PLL *pll) const;",
@@ -150,7 +143,7 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     # Source file
     cpp_lines = [f'#include "{Path(hpp_path).name}"', "#include <algorithm>", ""]
 
-    cpp_lines.append("constexpr ClockTree::RegisterField *ClockTree::register_fields[] = {")
+    cpp_lines.append(f"constexpr std::array<ClockTree::RegisterField const *, {len(field_list)}> register_fields = {{")
     for f in field_list:
         reg = f.get("reg", "")
         field = f.get("field", "")
@@ -158,65 +151,65 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         cpp_lines.append(f'  {{ "{reg}", "{field}", {offset} }},')
     cpp_lines.append("};\n")
 
-    cpp_lines.append("constexpr ClockTree::SignalInfo ClockTree::signals[] = {")
-    for s in signals:
-        name = s["name"]
-        gen_type, gen_obj = signal_generators.get(name, ("Source", None))
-        gen_list = locals().get(gen_type, [])
-        gen_ref = f"&ClockTree::{gen_type}[{gen_list.index(gen_obj)}]" if gen_obj else "nullptr"
-        cpp_lines.append(
-            f'  {{ "{name}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}", {gen_ref} }},'
-        )
-    cpp_lines.append("};\n")
-
-    cpp_lines.append("constexpr ClockTree::Source ClockTree::sources[] = {")
+    cpp_lines.append(f"constexpr std::array<ClockTree::Source, {len(sources)}> sources = {{")
     for src in sources:
         ctrl = src.get("control")
         values = ctrl.get("values", []) if ctrl else []
         values_str = "{ " + ", ".join(str(v) for v in values) + " }"
         cpp_lines.append(
-            f'  {{ "{src["name"]}", Signal::{signal_enum_map[src["output"]]}, {emit_field_ref(ctrl)}, {values_str}, "{src.get("description", "")}" }},'
+            f'  {{ "{src["name"]}", ClockTree::Signal::{signal_enum_map[src["output"]]}, {emit_field_ref(ctrl)}, {values_str}, "{src.get("description", "")}" }},'
         )
     cpp_lines.append("};\n")
 
-    cpp_lines.append("constexpr ClockTree::PLL ClockTree::plls[] = {")
+    cpp_lines.append(f"constexpr std::array<ClockTree::PLL, {len(plls)}> plls = {{")
     for p in plls:
         cpp_lines.append(
-            f'  {{ "{p["name"]}", Signal::{signal_enum_map[p["input"]]}, Signal::{signal_enum_map[p["output"]]}, '
-            f'{emit_field_ref(p.get("feedback_integer"), mandatory=True)}, '
+            f'  {{ "{p["name"]}", ClockTree::Signal::{signal_enum_map[p["input"]]}, ClockTree::Signal::{signal_enum_map[p["output"]]}, '
+            f'{emit_field_ref(p.get("feedback_integer"))}, '
             f'{emit_field_ref(p.get("feedback_fraction"))}, '
             f'{emit_field_ref(p.get("post_divider"))} }},'
         )
     cpp_lines.append("};\n")
 
-    cpp_lines.append("constexpr ClockTree::Gate ClockTree::gates[] = {")
+    cpp_lines.append(f"constexpr std::array<ClockTree::Gate, {len(gates)}> gates = {{")
     for g in gates:
         cpp_lines.append(
-            f'  {{ "{g["name"]}", Signal::{signal_enum_map[g["input"]]}, Signal::{signal_enum_map[g["output"]]}, {emit_field_ref(g.get("control"))} }},'
+            f'  {{ "{g["name"]}", ClockTree::Signal::{signal_enum_map[g["input"]]}, ClockTree::Signal::{signal_enum_map[g["output"]]}, {emit_field_ref(g.get("control"))} }},'
         )
     cpp_lines.append("};\n")
 
-    cpp_lines.append("constexpr ClockTree::Divider ClockTree::dividers[] = {")
+    cpp_lines.append(f"constexpr std::array<ClockTree::Divider, {len(dividers)}> dividers = {{")
     for d in dividers:
         cpp_lines.append(
-            f'  {{ "{d["name"]}", Signal::{signal_enum_map[d["input"]]}, Signal::{signal_enum_map[d["output"]]}, {d.get("value", 0)}, '
+            f'  {{ "{d["name"]}", ClockTree::Signal::{signal_enum_map[d["input"]]}, ClockTree::Signal::{signal_enum_map[d["output"]]}, {d.get("value", 0)}, '
             f'{emit_field_ref(d.get("factor"))}, {emit_field_ref(d.get("denominator"))} }},'
         )
     cpp_lines.append("};\n")
 
-    cpp_lines.append("constexpr ClockTree::Mux ClockTree::muxes[] = {")
+    cpp_lines.append(f"constexpr std::array<ClockTree::Mux, {len(muxes)}> muxes = {{")
     for m in muxes:
         input_list = []
         for i in m['inputs']:
             if i in signal_enum_map:
-                input_list.append(f'Signal::{signal_enum_map[i]}')
+                input_list.append(f'ClockTree::Signal::{signal_enum_map[i]}')
             elif i in ['', None]:
-                input_list.append('Signal::_')
+                input_list.append('ClockTree::Signal::_')
             else:
                 raise KeyError(f"Unknown signal name in mux inputs: {i}")
         inputs_str = "{ " + ", ".join(input_list) + " }"
         cpp_lines.append(
-            f'  {{ "{m["name"]}", Signal::{signal_enum_map[m["output"]]}, {inputs_str}, {emit_field_ref(m.get("control"))} }},'
+            f'  {{ "{m["name"]}", ClockTree::Signal::{signal_enum_map[m["output"]]}, {inputs_str}, {emit_field_ref(m.get("control"))} }},'
+        )
+    cpp_lines.append("};\n")
+
+    cpp_lines.append(f"constexpr std::array<ClockTree::SignalInfo, {len(signals)}> signals = {{")
+    for s in signals:
+        name = s["name"]
+        gen_type, gen_obj = signal_generators.get(name, ("Source", None))
+        gen_list = locals().get(gen_type, [])
+        gen_ref = f"&{gen_type}[{gen_list.index(gen_obj)}]" if gen_obj else "{}"
+        cpp_lines.append(
+            f'  {{ "{name}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}", {gen_ref} }},'
         )
     cpp_lines.append("};\n")
 
@@ -250,15 +243,18 @@ inline double ClockTree::get_frequency(const Divider *div) const {
 
 inline double ClockTree::get_frequency(const Mux *mux) const {
     size_t index = mux->control ? mux->control->read() : 0;
-    auto it = mux->inputs.begin();
-    std::advance(it, std::min(index, mux->inputs.size() - 1));
-    return getFrequency(*it);
+    if (index < mux->inputs.size())
+      return getFrequency(*std::next(mux->inputs.begin(), index));
+    return 0.0;
 }
 
 double ClockTree::getFrequency(Signal s) const {
-    const SignalInfo& info = signals[static_cast<size_t>(s)];
-    return std::visit([this](auto* gen) { return get_frequency(gen); }, info.generator);
-}''')
+    size_t index = static_cast<size_t>(s);
+    if (index < signals.size())
+      return std::visit([this](auto* gen) { return get_frequency(gen); }, signals[index].generator);
+    return 0.0;
+}
+''')
 
     Path(cpp_path).write_text("\n".join(cpp_lines))
 
