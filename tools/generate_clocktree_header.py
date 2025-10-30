@@ -17,6 +17,7 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     enum_count = len(signals)
     enum_type = 'uint8_t' if enum_count <= 256 else 'uint16_t' if enum_count <= 65536 else 'uint32_t'
 
+    # Header file
     hpp_lines = [
         "#pragma once",
         "#include <optional>",
@@ -31,6 +32,7 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         hpp_lines.append(f"        {signal_enum_map[s['name']]},")
     hpp_lines.append("    };")
     hpp_lines.append("")
+
     hpp_lines.extend([
         "    struct SignalInfo {",
         "        const char* name;",
@@ -40,9 +42,22 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         "        const char* description;",
         "    };",
         "",
+        "    struct RegisterField {",
+        "        const char* reg;",
+        "        const char* field;",
+        "        std::optional<int32_t> offset;",
+        "    };",
+        "",
         "    struct PLL { const char* name; Signal input; Signal output; };",
         "    struct Gate { const char* name; Signal input; Signal output; };",
-        "    struct Divider { const char* name; Signal input; Signal output; uint32_t divisor; };",
+        "    struct Divider {",
+        "        const char* name;",
+        "        Signal input;",
+        "        Signal output;",
+        "        std::optional<uint32_t> value;",
+        "        std::optional<RegisterField> factor;",
+        "        std::optional<RegisterField> denominator;",
+        "    };",
         "    struct Mux { const char* name; Signal output; std::initializer_list<Signal> inputs; };",
         "",
         "    static constexpr SignalInfo signals[];",
@@ -54,6 +69,7 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     ])
     Path(hpp_path).write_text("\n".join(hpp_lines))
 
+    # Source file
     cpp_lines = [f'#include "{Path(hpp_path).name}"', ""]
     cpp_lines.append("constexpr ClockTree::SignalInfo ClockTree::signals[] = {")
     for s in signals:
@@ -72,8 +88,27 @@ def generate_header(yaml_path, hpp_path, cpp_path):
 
     cpp_lines.append("constexpr ClockTree::Divider ClockTree::dividers[] = {")
     for d in dividers:
-        divisor = d.get("divisor", 1)
-        cpp_lines.append(f'    {{ "{d["name"]}", Signal::{signal_enum_map[d["input"]]}, Signal::{signal_enum_map[d["output"]]}, {divisor} }},')
+        value = d.get("value")
+        factor = d.get("factor")
+        denom = d.get("denominator")
+
+        def emit_field(f):
+            if not f:
+                return "std::nullopt"
+            reg = f.get("reg", "")
+            field = f.get("field", "")
+            offset = f.get("offset", 0)
+            return f'RegisterField{{"{reg}", "{field}", {offset}}}'
+
+        cpp_lines.append(
+            f'    {{ "{d["name"]}", '
+            f'Signal::{signal_enum_map[d["input"]]}, '
+            f'Signal::{signal_enum_map[d["output"]]}, '
+            f'{value if value is not None else "std::nullopt"}, '
+            f'{emit_field(factor)}, '
+            f'{emit_field(denom)}'
+            f' }},'
+        )
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Mux ClockTree::muxes[] = {")
