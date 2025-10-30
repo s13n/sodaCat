@@ -18,6 +18,14 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     enum_count = len(signals)
     enum_type = 'uint8_t' if enum_count <= 256 else 'uint16_t' if enum_count <= 65536 else 'uint32_t'
 
+    def emit_field(f):
+        if not f:
+            return "std::nullopt"
+        reg = f.get("reg", "")
+        field = f.get("field", "")
+        offset = f.get("offset", 0)
+        return f'RegisterField{{"{reg}", "{field}", {offset}}}'
+
     # Header file
     hpp_lines = [
         "#pragma once",
@@ -52,14 +60,27 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         "    struct Source {",
         "        const char* name;",
         "        Signal output;",
-        "        const char* reg;",
-        "        const char* field;",
+        "        std::optional<RegisterField> control;",
         "        std::initializer_list<uint32_t> values;",
         "        const char* description;",
         "    };",
         "",
-        "    struct PLL { const char* name; Signal input; Signal output; };",
-        "    struct Gate { const char* name; Signal input; Signal output; };",
+        "    struct PLL {",
+        "        const char* name;",
+        "        Signal input;",
+        "        Signal output;",
+        "        RegisterField feedback_integer;",
+        "        std::optional<RegisterField> feedback_fraction;",
+        "        std::optional<RegisterField> post_divider;",
+        "    };",
+        "",
+        "    struct Gate {",
+        "        const char* name;",
+        "        Signal input;",
+        "        Signal output;",
+        "        RegisterField control;",
+        "    };",
+        "",
         "    struct Divider {",
         "        const char* name;",
         "        Signal input;",
@@ -68,7 +89,13 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         "        std::optional<RegisterField> factor;",
         "        std::optional<RegisterField> denominator;",
         "    };",
-        "    struct Mux { const char* name; Signal output; std::initializer_list<Signal> inputs; };",
+        "",
+        "    struct Mux {",
+        "        const char* name;",
+        "        Signal output;",
+        "        std::initializer_list<Signal> inputs;",
+        "        std::optional<RegisterField> control;",
+        "    };",
         "",
         "    static constexpr SignalInfo signals[];",
         "    static constexpr Source sources[];",
@@ -89,45 +116,39 @@ def generate_header(yaml_path, hpp_path, cpp_path):
 
     cpp_lines.append("constexpr ClockTree::Source ClockTree::sources[] = {")
     for src in sources:
-        ctrl = src.get("control", {})
-        reg = ctrl.get("reg", "")
-        field = ctrl.get("field", "")
-        values = ctrl.get("values", []) or src.get("frequencies", [])
+        ctrl = src.get("control")
+        values = ctrl.get("values", []) if ctrl else []
         values_str = "{ " + ", ".join(str(v) for v in values) + " }"
-        cpp_lines.append(f'    {{ "{src["name"]}", Signal::{signal_enum_map[src["output"]]}, "{reg}", "{field}", {values_str}, "{src.get("description", "")}" }},')
+        cpp_lines.append(
+            f'    {{ "{src["name"]}", Signal::{signal_enum_map[src["output"]]}, '
+            f'{emit_field(ctrl)}, {values_str}, "{src.get("description", "")}" }},'
+        )
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::PLL ClockTree::plls[] = {")
     for p in plls:
-        cpp_lines.append(f'    {{ "{p["name"]}", Signal::{signal_enum_map[p["input"]]}, Signal::{signal_enum_map[p["output"]]} }},')
+        cpp_lines.append(
+            f'    {{ "{p["name"]}", Signal::{signal_enum_map[p["input"]]}, Signal::{signal_enum_map[p["output"]]}, '
+            f'{emit_field(p.get("feedback_integer"))}, '
+            f'{emit_field(p.get("feedback_fraction"))}, '
+            f'{emit_field(p.get("post_divider"))} }},'
+        )
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Gate ClockTree::gates[] = {")
     for g in gates:
-        cpp_lines.append(f'    {{ "{g["name"]}", Signal::{signal_enum_map[g["input"]]}, Signal::{signal_enum_map[g["output"]]} }},')
+        cpp_lines.append(
+            f'    {{ "{g["name"]}", Signal::{signal_enum_map[g["input"]]}, Signal::{signal_enum_map[g["output"]]}, '
+            f'{emit_field(g.get("control"))} }},'
+        )
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Divider ClockTree::dividers[] = {")
     for d in dividers:
         value = d.get("value", 0)
-        factor = d.get("factor")
-        denom = d.get("denominator")
-
-        def emit_field(f):
-            if not f:
-                return "std::nullopt"
-            reg = f.get("reg", "")
-            field = f.get("field", "")
-            offset = f.get("offset", 0)
-            return f'RegisterField{{"{reg}", "{field}", {offset}}}'
-
         cpp_lines.append(
-            f'    {{ "{d["name"]}", '
-            f'Signal::{signal_enum_map[d["input"]]}, '
-            f'Signal::{signal_enum_map[d["output"]]}, '
-            f'{value}, '
-            f'{emit_field(factor)}, '
-            f'{emit_field(denom)} }},'
+            f'    {{ "{d["name"]}", Signal::{signal_enum_map[d["input"]]}, Signal::{signal_enum_map[d["output"]]}, '
+            f'{value}, {emit_field(d.get("factor"))}, {emit_field(d.get("denominator"))} }},'
         )
     cpp_lines.append("};\n")
 
@@ -142,7 +163,10 @@ def generate_header(yaml_path, hpp_path, cpp_path):
             else:
                 raise KeyError(f"Unknown signal name in mux inputs: {i}")
         inputs_str = "{ " + ", ".join(input_list) + " }"
-        cpp_lines.append(f'    {{ "{m["name"]}", Signal::{signal_enum_map[m["output"]]}, {inputs_str} }},')
+        cpp_lines.append(
+            f'    {{ "{m["name"]}", Signal::{signal_enum_map[m["output"]]}, {inputs_str}, '
+            f'{emit_field(m.get("control"))} }},'
+        )
     cpp_lines.append("};\n")
 
     Path(cpp_path).write_text("\n".join(cpp_lines))
