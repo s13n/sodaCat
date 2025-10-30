@@ -32,12 +32,27 @@ def generate_header(yaml_path, hpp_path, cpp_path):
             return "nullptr" if not mandatory else "/* missing mandatory field */"
         return f"{'*' if mandatory else '&'}register_fields[{register_field_id(field)}]"
 
+    # Map signal name to generator
+    signal_generators = {}
+
+    for src in sources:
+        signal_generators[src['output']] = ('Source', src)
+    for pll in plls:
+        signal_generators[pll['output']] = ('PLL', pll)
+    for gate in gates:
+        signal_generators[gate['output']] = ('Gate', gate)
+    for div in dividers:
+        signal_generators[div['output']] = ('Divider', div)
+    for mux in muxes:
+        signal_generators[mux['output']] = ('Mux', mux)
+
     # Header file
     hpp_lines = [
         "#pragma once",
         "#include <cstdint>",
         "#include <initializer_list>",
         "#include <optional>",
+        "#include <variant>",
         "",
         "class ClockTree {",
         " public:",
@@ -48,18 +63,11 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     hpp_lines.append("  };")
     hpp_lines.append("")
     hpp_lines.extend([
-        "  struct SignalInfo {",
-        "    const char* name;",
-        "    std::optional<uint32_t> min_freq;",
-        "    std::optional<uint32_t> max_freq;",
-        "    std::optional<uint32_t> nominal_freq;",
-        "    const char* description;",
-        "  };",
-        "",
         "  struct RegisterField {",
         "    const char* reg;",
         "    const char* field;",
         "    int32_t offset;",
+        "    virtual uint32_t read() const = 0;",
         "  };",
         "",
         "  struct Source {",
@@ -74,7 +82,7 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         "    const char* name;",
         "    Signal input;",
         "    Signal output;",
-        "    const RegisterField& feedback_integer;",
+        "    const RegisterField* feedback_integer;",
         "    const RegisterField* feedback_fraction;",
         "    const RegisterField* post_divider;",
         "  };",
@@ -102,7 +110,23 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         "    const RegisterField* control;",
         "  };",
         "",
-        "  static constexpr RegisterField register_fields[];",
+        "  using Generator = std::variant<",
+        "    const Source*,",
+        "    const PLL*,",
+        "    const Gate*,",
+        "    const Divider*,",
+        "    const Mux*",
+        "  >;",
+        "",
+        "  struct SignalInfo {",
+        "    const char* name;",
+        "    std::optional<uint32_t> min_freq;",
+        "    std::optional<uint32_t> max_freq;",
+        "    std::optional<uint32_t> nominal_freq;",
+        "    const char* description;",
+        "    Generator generator;",
+        "  };",
+        "",
         "  static constexpr SignalInfo signals[];",
         "  static constexpr Source sources[];",
         "  static constexpr PLL plls[];",
@@ -126,10 +150,14 @@ def generate_header(yaml_path, hpp_path, cpp_path):
 
     cpp_lines.append("constexpr ClockTree::SignalInfo ClockTree::signals[] = {")
     for s in signals:
+        name = s["name"]
+        gen_type, gen_obj = signal_generators.get(name, ("Source", None))
+        gen_ref = f"&ClockTree::{gen_type.lower()}s[{sources.index(gen_obj)}]" if gen_obj else "nullptr"
         cpp_lines.append(
-            f'  {{ "{s["name"]}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}" }},'
+            f'  {{ "{name}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}", {gen_type}({gen_ref}) }},'
         )
     cpp_lines.append("};\n")
+
 
     cpp_lines.append("constexpr ClockTree::Source ClockTree::sources[] = {")
     for src in sources:
