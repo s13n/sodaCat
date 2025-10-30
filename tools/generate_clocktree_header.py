@@ -17,7 +17,6 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     enum_count = len(signals)
     enum_type = 'uint8_t' if enum_count <= 256 else 'uint16_t' if enum_count <= 65536 else 'uint32_t'
 
-    # Collect unique RegisterFields
     field_map = {}
     field_list = []
 
@@ -28,16 +27,17 @@ def generate_header(yaml_path, hpp_path, cpp_path):
             field_list.append(field)
         return field_map[key]
 
-    def emit_field_ref(field):
+    def emit_field_ref(field, mandatory=False):
         if not field:
-            return "nullptr"
-        return f"&register_fields[{register_field_id(field)}]"
+            return "nullptr" if not mandatory else "/* missing mandatory field */"
+        return f"{'*' if mandatory else '&'}register_fields[{register_field_id(field)}]"
 
     # Header file
     hpp_lines = [
         "#pragma once",
         "#include <cstdint>",
         "#include <initializer_list>",
+        "#include <optional>",
         "",
         "class ClockTree {",
         " public:",
@@ -74,7 +74,7 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         "    const char* name;",
         "    Signal input;",
         "    Signal output;",
-        "    const RegisterField* feedback_integer;",
+        "    const RegisterField& feedback_integer;",
         "    const RegisterField* feedback_fraction;",
         "    const RegisterField* post_divider;",
         "  };",
@@ -145,7 +145,9 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     for p in plls:
         cpp_lines.append(
             f'  {{ "{p["name"]}", Signal::{signal_enum_map[p["input"]]}, Signal::{signal_enum_map[p["output"]]}, '
-            f'{emit_field_ref(p.get("feedback_integer"))}, {emit_field_ref(p.get("feedback_fraction"))}, {emit_field_ref(p.get("post_divider"))} }},'
+            f'{emit_field_ref(p.get("feedback_integer"), mandatory=True)}, '
+            f'{emit_field_ref(p.get("feedback_fraction"))}, '
+            f'{emit_field_ref(p.get("post_divider"))} }},'
         )
     cpp_lines.append("};\n")
 
