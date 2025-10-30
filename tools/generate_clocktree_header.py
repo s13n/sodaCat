@@ -17,7 +17,6 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     enum_count = len(signals)
     enum_type = 'uint8_t' if enum_count <= 256 else 'uint16_t' if enum_count <= 65536 else 'uint32_t'
 
-    # Header file content
     hpp_lines = [
         "#pragma once",
         "#include <optional>",
@@ -55,7 +54,6 @@ def generate_header(yaml_path, hpp_path, cpp_path):
     ])
     Path(hpp_path).write_text("\n".join(hpp_lines))
 
-    # Source file content
     cpp_lines = [f'#include "{Path(hpp_path).name}"', ""]
     cpp_lines.append("constexpr ClockTree::SignalInfo ClockTree::signals[] = {")
     for s in signals:
@@ -64,18 +62,18 @@ def generate_header(yaml_path, hpp_path, cpp_path):
 
     cpp_lines.append("constexpr ClockTree::PLL ClockTree::plls[] = {")
     for p in plls:
-        cpp_lines.append(f'    {{ "{p["name"]}", ClockTree::Signal::{signal_enum_map[p["input"]]}, ClockTree::Signal::{signal_enum_map[p["output"]]} }},')
+        cpp_lines.append(f'    {{ "{p["name"]}", Signal::{signal_enum_map[p["input"]]}, Signal::{signal_enum_map[p["output"]]} }},')
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Gate ClockTree::gates[] = {")
     for g in gates:
-        cpp_lines.append(f'    {{ "{g["name"]}", ClockTree::Signal::{signal_enum_map[g["input"]]}, ClockTree::Signal::{signal_enum_map[g["output"]]} }},')
+        cpp_lines.append(f'    {{ "{g["name"]}", Signal::{signal_enum_map[g["input"]]}, Signal::{signal_enum_map[g["output"]]} }},')
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Divider ClockTree::dividers[] = {")
     for d in dividers:
         divisor = d.get("divisor", 1)
-        cpp_lines.append(f'    {{ "{d["name"]}", ClockTree::Signal::{signal_enum_map[d["input"]]}, ClockTree::Signal::{signal_enum_map[d["output"]]}, {divisor} }},')
+        cpp_lines.append(f'    {{ "{d["name"]}", Signal::{signal_enum_map[d["input"]]}, Signal::{signal_enum_map[d["output"]]}, {divisor} }},')
     cpp_lines.append("};\n")
 
     cpp_lines.append("constexpr ClockTree::Mux ClockTree::muxes[] = {")
@@ -83,13 +81,13 @@ def generate_header(yaml_path, hpp_path, cpp_path):
         input_list = []
         for i in m['inputs']:
             if i in signal_enum_map:
-                input_list.append(f'ClockTree::Signal::{signal_enum_map[i]}')
+                input_list.append(f'Signal::{signal_enum_map[i]}')
             elif i in ['', None]:
-                input_list.append('ClockTree::Signal::_')
+                input_list.append('Signal::_')
             else:
                 raise KeyError(f"Unknown signal name in mux inputs: {i}")
         inputs_str = "{ " + ", ".join(input_list) + " }"
-        cpp_lines.append(f'    {{ "{m["name"]}", ClockTree::Signal::{signal_enum_map[m["output"]]}, {inputs_str} }},')
+        cpp_lines.append(f'    {{ "{m["name"]}", Signal::{signal_enum_map[m["output"]]}, {inputs_str} }},')
     cpp_lines.append("};\n")
 
     Path(cpp_path).write_text("\n".join(cpp_lines))
