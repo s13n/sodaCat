@@ -5,7 +5,7 @@ signals:
   - { name: fro_div2 }
   - { name: fro }
   - { name: fro_div }
-  - { name: fro_div_wkt, nominal: 750000 }
+  - { name: wkt_div }
   - { name: clkin, max: 60000000, description: "Internal clock that comes from the main CLKIN pin function." }
   - { name: sys_osc_clk, max: 25000000, description: "Internal clock that comes from external crystal oscillator" }
   - { name: external_clk, description: "Internal clock that comes from the crystal oscillator or the CLK_IN pin" }
@@ -25,6 +25,7 @@ signals:
   - { name: frg1clksel }
   - { name: frg1clk }
   - { name: lpwr_clk_vulp, nominal: 10000, min: 6000, max: 14000 }
+  - { name: lwpwr_clk_vulp }
   - { name: acmpclk }
   - { name: adc_sclk }
   - { name: crcclk }
@@ -110,6 +111,12 @@ muxes:
     control:
       reg: EXTCLKSEL
       field: SEL
+  - name: WKTCLKSEL
+    output: lwpwr_clk_vulp
+    inputs: [fro, lp_osc]
+    control:
+      reg: WKTCLKSEL
+      field: WKTCLKSEL
   - name: FROOSCCTRL
     output: fro
     inputs: [fro_oscout, fro_div2]
@@ -212,13 +219,15 @@ muxes:
     control:
       reg: I3CSLOWCLKSEL
       field: SEL
-  - name: wkt_mux_int
+  - name: WKT_CLKSEL
+    description: This is the first in a chain of multiplexers in the WKT. See UM11607 Fig 43.
     control:
       field: CLKSEL
       reg: WKT_CTRL
-    inputs: [fro_div_wkt, lpwr_clk_vulp]
+    inputs: [wkt_div, lpwr_clk_vulp]
     output: wkt_int_clk
-  - name: wkt_mux_ext
+  - name: WKT_EXTCLK
+    description: This is the second in a chain of multiplexers in the WKT. See UM11607 Fig 43.
     control:
       field: SEL_EXTCLK
       reg: WKT_CTRL
@@ -248,9 +257,9 @@ dividers:
     input: fro
     output: fro_div
     value: 2
-  - name: FRO_DIV_WKT
-    input: fro
-    output: fro_div_wkt
+  - name: WKT_DIV
+    input: lwpwr_clk_vulp
+    output: wkt_div
     value: 16
     description: Divider in the WKT block
   - name: SYSPLLDIV
