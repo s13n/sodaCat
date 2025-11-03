@@ -128,14 +128,14 @@ $postfix"""))
                 elif dim > 1:
                     name = reg['name'].replace('[%s]', '')
                     names = reg['name'] % dim
-                type = reg.get('dataType', defaultType)
-                size = reg.get('size', defaultSize * 8) >> 3
+                size = reg.get('size', defaultSize * 8)
+                type = reg.get('dataType', 'uint%s_t' % size)
                 if 'fields' in reg and reg['fields']:
                     fields, enum = self.formatFieldList(reg['fields'], type)
                     enums += self.regEnumsTemplate.substitute(reg, name=name, enums=enum) if enum else ''
                     structs += self.fieldsTemplate.substitute(reg, name=name, fields=fields, description=description)
                 line = self.fieldTemplate.substitute(reg, name=names, type=self.typeTemplate.substitute(reg, name=name), description=description)
-                list.append([line, addressOffset, size*dim])
+                list.append([line, addressOffset, (size>>3)*dim])
 
         list.sort(key=lambda r:r[1])
         list.append(['', 0xFFFFFFFF, 0])     # dummy
