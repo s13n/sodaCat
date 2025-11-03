@@ -108,10 +108,10 @@ $postfix"""))
         for reg in reglist:
             addressOffset = reg['addressOffset']
             description = reg.get('description', '')
+            dim = reg.get('dim', 1)
             if 'registers' in reg:
                 name = reg['name'].replace('[%s]', '')
                 padSize = reg.get('dimIncrement', 0)
-                dim = reg.get('dim', 0)
                 types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4)
                 enums += enum
                 structs += self.registersTemplate.substitute(name=name, regs=regs, types=types, description=description, size=size)
@@ -119,14 +119,23 @@ $postfix"""))
                 line = self.fieldTemplate.substitute(name=names, type='struct ' + name, description=description)
                 list.append([line, addressOffset, size*dim])
             else:
+                dimIndex = reg.get('dimIndex', "")
+                name = reg['name'].replace('%s', '')
+                names = name
+                if dimIndex:
+                    #TODO: Check if the address offset matches the size
+                    names = ",".join(reg['name'] % item for item in dimIndex.split(","))
+                elif dim > 1:
+                    name = reg['name'].replace('[%s]', '')
+                    names = reg['name'] % dim
                 type = reg.get('dataType', defaultType)
                 size = reg.get('size', defaultSize * 8) >> 3
                 if 'fields' in reg and reg['fields']:
                     fields, enum = self.formatFieldList(reg['fields'], type)
-                    enums += self.regEnumsTemplate.substitute(reg, enums=enum) if enum else ''
-                    structs += self.fieldsTemplate.substitute(reg, fields=fields, description=description)
-                line = self.fieldTemplate.substitute(reg, type=self.typeTemplate.substitute(reg), description=description)
-                list.append([line, addressOffset, size])
+                    enums += self.regEnumsTemplate.substitute(reg, name=name, enums=enum) if enum else ''
+                    structs += self.fieldsTemplate.substitute(reg, name=name, fields=fields, description=description)
+                line = self.fieldTemplate.substitute(reg, name=names, type=self.typeTemplate.substitute(reg, name=name), description=description)
+                list.append([line, addressOffset, size*dim])
 
         list.sort(key=lambda r:r[1])
         list.append(['', 0xFFFFFFFF, 0])     # dummy
