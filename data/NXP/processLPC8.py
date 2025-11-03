@@ -10,11 +10,11 @@ subdir = Path("./data/NXP/LPC8")
 
 # models and instances we want to keep
 modelSet = frozenset({
-#    'ACOMP', 'CRC', 'MRT', 'WWDT', 'WKT',
+    'ACOMP', 'CRC', 'MRT', 'WWDT', 'WKT',
     'ADC', 'DMA', 'FLASH_CTRL', 'FTM0', 'FTM1', 'GPIO', 'I2C', 'I3C', 'INPUTMUX',
     'IOCON', 'PINT', 'PMU', 'SPI', 'SWM', 'SYSCON', 'USART'})
 instSet = frozenset({
-#    'ACOMP', 'CRC', 'MRT0', 'WWDT', 'WKT',
+    'ACOMP', 'CRC', 'MRT0', 'WWDT', 'WKT',
     'ADC0', 'DMA0', 'FLASH_CTRL', 'FTM0', 'FTM1', 'GPIO', 'I2C0', 'I3C0',
     'INPUTMUX', 'IOCON', 'PINT', 'PMU', 'SPI0', 'SPI1',
     'SWM0', 'SYSCON', 'USART0', 'USART1', 'USART2'})
