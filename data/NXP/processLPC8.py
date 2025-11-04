@@ -24,58 +24,107 @@ header = "# Created from LPC865.svd\n"
 root = svd.parse(svdpath)
 chip = svd.collateDevice(root)
 
-### Tweak the data to fix various problems
+### Tweak the data to fit our model and fix various problems
 
-# Tweak the ADC naming
+# Tweak the ACOMP
+acomp = svd.findNamedEntry(chip['peripherals'], 'ACOMP')
+acomp['clocks'] = [ { 'name': 'clk' } ]
+
+# Tweak the ADC
 adc0 = svd.findNamedEntry(chip['peripherals'], 'ADC0')
 adc0['headerStructName'] = 'ADC'
+adc0['clocks'] = [ { 'name': 'sync_clk' }, { 'name': 'async_clk' } ]
 adc0['registers'] = transform.createClusterArray(adc0['registers'], r"DAT(\d+)", {'name': 'DAT', 'description': 'Channel data'})
 transform.renameEntries(adc0['interrupts'], 'name', r'ADC0_([A-Z_0-9]+)', r'\1')
-transform.renameEntries(adc0['interrupts'], 'description', 'ADC0', 'ADC')
 
-# Tweak the DMA naming
+# Tweak the DMA
 dma0 = svd.findNamedEntry(chip['peripherals'], 'DMA0')
 dma0['headerStructName'] = 'DMA'
+dma0['clocks'] = [ { 'name': 'clk' } ]
 transform.renameEntries(dma0['interrupts'], 'name', 'DMA0', 'DMA')
-transform.renameEntries(dma0['interrupts'], 'description', 'DMA0', 'DMA')
 
-# Tweak the I2C naming
+# Tweak the FLASH
+flash = svd.findNamedEntry(chip['peripherals'], 'FLASH_CTRL')
+flash['clocks'] = [ { 'name': 'clk' } ]
+
+# Tweak the FTM0
+ftm0 = svd.findNamedEntry(chip['peripherals'], 'FTM0')
+ftm0['clocks'] = [ { 'name': 'main_clk' }, { 'name': 'extclk' } ]
+transform.renameEntries(ftm0['interrupts'], 'name', 'FTM0', 'FTM')
+
+# Tweak the FTM1
+ftm1 = svd.findNamedEntry(chip['peripherals'], 'FTM1')
+ftm1['clocks'] = [ { 'name': 'main_clk' }, { 'name': 'extclk' } ]
+transform.renameEntries(ftm1['interrupts'], 'name', 'FTM1', 'FTM')
+
+# Tweak the GPIO
+gpio = svd.findNamedEntry(chip['peripherals'], 'GPIO')
+gpio['clocks'] = [ { 'name': 'clk0' }, { 'name': 'clk1' } ]
+
+# Tweak the I2C
 i2c0 = svd.findNamedEntry(chip['peripherals'], 'I2C0')
 i2c0['headerStructName'] = 'I2C'
+i2c0['clocks'] = [ { 'name': 'base_clk' }, { 'name': 'busclk' } ]
 transform.renameEntries(i2c0['interrupts'], 'name', 'I2C0', 'I2C')
-transform.renameEntries(i2c0['interrupts'], 'description', 'I2C0', 'I2C')
 
-# Tweak the I3C naming
+# Tweak the I3C
 i3c0 = svd.findNamedEntry(chip['peripherals'], 'I3C0')
 i3c0['headerStructName'] = 'I3C'
+i3c0['clocks'] = [ { 'name': 'busclk' }, { 'name': 'fclk' }, { 'name': 'clk_slow' }, { 'name': 'clk_slow_tc' } ]
 transform.renameEntries(i3c0['interrupts'], 'name', 'I3C0', 'I3C')
-transform.renameEntries(i3c0['interrupts'], 'description', 'I3C0', 'I3C')
 
-# Tweak the MRT naming
+# Tweak the IOCON
+iocon = svd.findNamedEntry(chip['peripherals'], 'IOCON')
+iocon['clocks'] = [ { 'name': 'busclk' }, { 'name': 'clk0' }, { 'name': 'clk1' }, { 'name': 'clk2' }, { 'name': 'clk3' }, { 'name': 'clk4' }, { 'name': 'clk5' }, { 'name': 'clk6' } ]
+
+# Tweak the MRT
 mrt0 = svd.findNamedEntry(chip['peripherals'], 'MRT0')
 mrt0['headerStructName'] = 'MRT'
+mrt0['clocks'] = [ { 'name': 'pclk' } ]
 transform.renameEntries(mrt0['interrupts'], 'name', 'MRT0', 'MRT')
-transform.renameEntries(mrt0['interrupts'], 'description', 'MRT0', 'MRT')
 
-# Tweak the SWM naming
-swm0 = svd.findNamedEntry(chip['peripherals'], 'SWM0')
-swm0['headerStructName'] = 'SWM'
+# Tweak the PINT
+pint = svd.findNamedEntry(chip['peripherals'], 'PINT')
+pint['clocks'] = [ { 'name': 'busclk' } ]
+transform.renameEntries(pint['interrupts'], 'name', r'PIN_([A-Z_0-9]+)', r'\1')
 
 # Tweak the SPIs
 spi0 = svd.findNamedEntry(chip['peripherals'], 'SPI0')
-transform.renameEntries(spi0['interrupts'], 'description', 'SPI0', 'SPI')
+spi0['clocks'] = [ { 'name': 'base_clk' }, { 'name': 'busclk' } ]
 transform.renameEntries(spi0['interrupts'], 'name', 'SPI0', 'SPI')
+spi0['parameters'] = [
+    { 'name': 'ssel_num', 'value': 4, 'bits': 3, 'min': 0, 'max': 4, 'description': 'number of SSEL signals' },
+    { 'name': 'rx_req', 'value': 6, 'bits': 5, 'min': 0, 'max': 31, 'description': 'DMA receive channel' },
+    { 'name': 'tx_req', 'value': 7, 'bits': 5, 'min': 0, 'max': 31, 'description': 'DMA transmit channel' },
+]
 spi1 = svd.findNamedEntry(chip['peripherals'], 'SPI1')
 transform.renameEntries(spi1['interrupts'], 'name', 'SPI1', 'SPI')
+spi1['parameters'] = [
+    { 'name': 'ssel_num', 'value': 2, 'bits': 3, 'min': 0, 'max': 4, 'description': 'number of SSEL signals' },
+    { 'name': 'rx_req', 'value': 8, 'bits': 5, 'min': 0, 'max': 31, 'description': 'DMA receive channel' },
+    { 'name': 'tx_req', 'value': 9, 'bits': 5, 'min': 0, 'max': 31, 'description': 'DMA transmit channel' },
+]
+
+# Tweak the SWM
+swm0 = svd.findNamedEntry(chip['peripherals'], 'SWM0')
+swm0['headerStructName'] = 'SWM'
 
 # Tweak the USARTs
 usart0 = svd.findNamedEntry(chip['peripherals'], 'USART0')
-transform.renameEntries(usart0['interrupts'], 'description', 'USART0', 'USART')
+usart0['clocks'] = [ { 'name': 'u_clk' }, { 'name': 'busclk' } ]
 transform.renameEntries(usart0['interrupts'], 'name', 'USART0', 'USART')
 usart1 = svd.findNamedEntry(chip['peripherals'], 'USART1')
 transform.renameEntries(usart1['interrupts'], 'name', 'USART1', 'USART')
 usart2 = svd.findNamedEntry(chip['peripherals'], 'USART2')
 transform.renameEntries(usart2['interrupts'], 'name', 'USART2', 'USART')
+
+# Tweak the WKT
+wkt = svd.findNamedEntry(chip['peripherals'], 'WKT')
+wkt['clocks'] = [ { 'name': 'bus_clk' }, { 'name': 'default_clk' }, { 'name': 'lp_clk' }, { 'name': 'ext_clk' } ]
+
+# Tweak the WWDT
+wwdt = svd.findNamedEntry(chip['peripherals'], 'WWDT')
+wwdt['clocks'] = [ { 'name': 'pclk' }, { 'name': 'wdt_clk' } ]
 
 # Add bus info
 chip['buses'] = {
