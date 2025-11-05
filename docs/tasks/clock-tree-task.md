@@ -36,6 +36,11 @@ Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]
 Use the signal name as used in the reference manual, if possible. It may be
 available from the clock tree diagram or from a register description. If no name
 is available, use the name of the functional block where the signal originates.
+Sometimes the name given in a block diagram contains a placeholder (e.g. `x`) that is
+to be substituted for a number or letter denoting the particular instance. For example
+a block diagram may describe the structure of a PLL that exists three times on the
+chip. In the diagram the VCO output signal might be given as `vcox_ck`, but the actual
+signal name would be be `vco1_ck` for the first PLL, and `vco2_ck` for the second, etc.
 
 The maximum signal frequency may be obtained from the data sheet rather than the
 reference manual. If there is no minimum frequency, omit the entry. If no
@@ -89,10 +94,21 @@ the frequency limits of the input and the output signal.
 Note: `offset` and `scale` allow flexible encoding of register values.
 The structure supports both forward and reverse frequency calculations.
 
-Any dividers that come before the phase detector, or after the point where the
-feedback divider picks its input, are not modeled as part of the PLL, but separately
-in the overall model. A divider that is located between the VCO and the feedback
-divider pickoff point, gets modeled as `post_divider`.
+Any dividers that come before the phase detector, or after the pickoff point of the
+feedback divider, are not modeled as part of the PLL, but separately as external
+dividers in the overall model's divider list. Only a divider that is located
+between the VCO and the feedback divider pickoff point, gets modeled as
+`post_divider`. Refer to the PLL block diagram to determine where the feedback
+divider's input signal is taken from.
+
+Here's a modeling checklist for PLLs:
+- Identify the reference input signal
+- Determine feedback pickoff point
+- Model feedback_integer always, and feedback_fraction if applicable
+- Use post_divider only if divider is before feedback pickoff
+- Model reference dividers (before phase detector) as external
+- Model output dividers (after feedback pickoff point) as external
+- Model gates between feedback pickoff point and output dividers as external
 
 ### `sources` array
 
