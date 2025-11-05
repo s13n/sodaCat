@@ -5,31 +5,22 @@ Produce a machine-checkable, vendor-agnostic YAML description of an MCU’s cloc
 that sodaCat can use to generate headers and frequency resolvers.
 
 **Output format**  
-- YAML document conforming to `schemas/clock-tree.schema.json`
+- YAML document conforming to `schemas/clock-tree.schema.yaml`
 - Place new families under `spec/clock-tree/<vendor-or-series>/<family>.yaml`  
   (e.g., `spec/clock-tree/st/stm32h7.yaml`)
 
 ---
 
-## Required content
+## Modeling guide for clock trees
 
-### Top-level object structure
+Refer to the `clock-tree.schema.yaml` file for information about required and optional
+fields, and how to structure the model.
 
-The following fields are defined for the top-level object:
-- `family`: Name of chip family
-- `signals`: Array of signals.
-- `gates`: Array of gates.
-- `dividers`: Array of dividers.
-- `muxes`: Array of multiplexers.
-- `plls`: Array of PLLs.
-- `sources`: Array of signal sources.
+### Top-level fields
 
-The array fields are described in more detail in their respective chapters
-below. Each entry has a few common fields:
-
-- `name`: The unique identifier of the functional block. Mandatory. 
-- `description`: Human-readable comment giving a concise functional description
-  from the manual. Optional.
+Those list the information sources used, the devices covered and general metadata about
+the device tree model. Those may be obtained from the reference manual or user manual
+of the device family.
 
 ### `signals` array
 
@@ -46,16 +37,11 @@ Use the signal name as used in the reference manual, if possible. It may be
 available from the clock tree diagram or from a register description. If no name
 is available, use the name of the functional block where the signal originates.
 
-The fields of an entry in the `signals[]` array are:
-- `nominal`: Nominal frequency of the signal. Optional.
-- `min`: Minimal frequency of the signal. Optional.
-- `max`: Maximum frequency of the signal. Optional.
-
 The maximum signal frequency may be obtained from the data sheet rather than the
 reference manual. If there is no minimum frequency, omit the entry. If no
 nominal frequency is known, omit the entry.
 
-There is no need for specifying the unit, as frequencies are always measured in Hz.
+There is no need for specifying the unit, as frequencies are always given in Hz.
 
 ### `gates` array
 
@@ -63,11 +49,6 @@ Model any functional block that gates a clock signal, where the gate is
 controlled by a register bit, as its entry in the `gates[]` array.
 
 Describe the register bit that controls the gate.
-
-The fields of an entry in the `gates[]` array are:
-- `reg`: Register name
-- `bit`: Name of bit in register.
-- `inverted`: If present and true, register bit turns off when set.
 
 ### `dividers` array
 
@@ -79,11 +60,8 @@ list the bitfield values along with the resulting divisor.
 
 If the divisor is fixed, with no controlling register, list the divisor.
 
-The fields of an entry in the `dividers[]` array are:
-- `reg`: Register name
-- `field`: Name of bitfield in register
-- `factors`: array of divisor values corresponding to bitfield values. Size must
-  be a power of two, corresponding to bitfield.
+Sometimes a divider supports fractional division, in which case there are two
+bitfields controlling the overall ratio.
 
 ### `muxes` array
 
@@ -93,16 +71,12 @@ in the `muxes[]` array.
 List the different input sources in the same order as the bitfield values to
 select them. Describe the register and bitfield that controls the Muxer.
 
-The fields of an entry in the `muxes[]` array are:
-- `reg`: Register name
-- `field`: Name of bitfield in register
-- `inputs`: array of input signal names. The inputs array length must be a power
-  of two, determined by the bitfield width. Each index corresponds to a bit
-  pattern in numeric order:
-  * Valid signal names select that input.
-  * Use "" for off states.
-  * Use null for reserved bit patterns.
-- `output`: The signal name at the output of the multiplexer. Mandatory.
+When a certain muxer input can be selected, but doesn't have a clock signal
+connected to it, the empty source "" should be listed in this position. Selecting
+this input effectively turns off the output clock of the muxer.
+
+When a certain input selection is listed as "reserved" in the manual, i.e. that it
+shouldn't be used, use a null in the respective position in the input list.
 
 ### `plls` array
 
@@ -112,22 +86,13 @@ fractional factor as an entry in the `plls[]` array.
 Describe the register and bitfields that control the multiplier factor. Describe
 the frequency limits of the input and the output signal.
 
-The fields of an entry in the `plls[]` array are:
-- `input`: Reference clock signal, input of the phase detector
-- `output`: VCO output signal
-- `feedback_integer`:  
-  - `reg`: Register name  
-  - `field`: Bitfield name  
-  - `value_range`: Min/max allowed values  
-  - `offset`: Applied before scaling  
-  - `scale`: Applied after offset (default 1)
-- `feedback_fraction`: Same structure as `feedback_integer`, only present when
-  PLL supports fractional mode. Omitted for integer-only PLLs.
-- `vco_limits`: Min/max allowed VCO frequency
-- `vco_formula`: Optional formula for computing VCO frequency
-
 Note: `offset` and `scale` allow flexible encoding of register values.
 The structure supports both forward and reverse frequency calculations.
+
+Any dividers that come before the phase detector, or after the point where the
+feedback divider picks its input, are not modeled as part of the PLL, but separately
+in the overall model. A divider that is located between the VCO and the feedback
+divider pickoff point, gets modeled as `post_divider`.
 
 ### `sources` array
 
@@ -157,6 +122,21 @@ like this:
 - If source material provides values in kHz or MHz, convert them:
   - `1 kHz = 1,000 Hz`
   - `1 MHz = 1,000,000 Hz`
+
+### Choice of names
+
+- Register and bitfield names are usually obtained directly from the register
+  description in the reference manual. If available, also provide as the `instance`
+  field the name of the functional block or peripheral that contains the register.
+  Preserve the case used in the manual.
+- Names should be suitable as identifiers in the most common programming languages,
+  i.e. they shouldn't start with a digit, and should contain only digits, letters
+  and the underscore. Warn when this is not the case.
+
+### Provide description
+
+- Descriptive texts given in the manual for registers, bitfields etc. should be put
+  into `description` fields where appropriate.
 
 ---
 
