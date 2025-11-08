@@ -4,16 +4,21 @@
 #pragma once
 
 #ifdef REGISTERS_MODULE
-#   define REGISTERS_EXPORT export
-#   define REGISTERS_EXPORT_MODULE export module registers
+module;
+#define REGISTERS_EXPORT export
 #else
-#   include <algorithm>
-#   include <bit>
-#   include <cstdint>
-#   include <cstring>
-#   include <type_traits>
-#   include <version>
-#   define REGISTERS_EXPORT
+#define REGISTERS_EXPORT
+#endif
+
+#include <algorithm>
+#include <bit>
+#include <cstdint>
+#include <cstring>
+#include <type_traits>
+#include <version>
+
+#ifdef REGISTERS_MODULE
+export module registers;
 #endif
 
 //! Templated unsigned integer type in the spirit of `boost::uint_t`.
@@ -195,7 +200,7 @@ struct HwReg {
 };
 
 // Bitfield mask for given bitfield
-#define FIELDMASK(t, f) []() constexpr -> ::pelua::Reg<t>::type { ::pelua::Reg<t> r{}; r.f -= 1; return r; }()
+#define FIELDMASK(t, f) [] constexpr { t r{}; r.f -= 1; return std::bit_cast<HwReg<t>::Native>(r); }()
 
 /** Pointer to a hardware register block.
  *
@@ -218,4 +223,5 @@ private:
     std::uintptr_t addr_;
 };
 
+//! Type for representing exceptions/interrupts.
 REGISTERS_EXPORT typedef uint16_t Exception;
