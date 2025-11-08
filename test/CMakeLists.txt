@@ -22,9 +22,9 @@ set_target_properties(soc-data-modules PROPERTIES
 
 macro(generate_peripheral model)
     add_custom_command(OUTPUT ${model}.cpp ${model}.hpp
-        COMMAND python3 ${CMAKE_SOURCE_DIR}/generators/cxx/headerPer.py ${CMAKE_SOURCE_DIR}/models/ST/H757/${model}.yaml ${CMAKE_CURRENT_BINARY_DIR}/${model} stm32h7
+        COMMAND python3 ${CMAKE_SOURCE_DIR}/generators/cxx/generate_peripheral_header.py ${CMAKE_SOURCE_DIR}/models/ST/H757/${model}.yaml ${CMAKE_CURRENT_BINARY_DIR}/${model} stm32h7
         MAIN_DEPENDENCY ${CMAKE_SOURCE_DIR}/models/ST/H757/${model}.yaml
-        DEPENDS ${CMAKE_SOURCE_DIR}/generators/cxx/headerPer.py
+        DEPENDS ${CMAKE_SOURCE_DIR}/generators/cxx/generate_peripheral_header.py
         COMMENT "Generating ${model}.hpp for STM32H7"
     )
     target_sources(soc-data-modules PUBLIC
@@ -69,9 +69,9 @@ generate_peripheral(RTC)
 generate_peripheral(FMC)
 
 add_custom_command(OUTPUT H757.cpp H757.hpp
-    COMMAND python3 ${CMAKE_SOURCE_DIR}/generators/cxx/headerChip.py ${CMAKE_SOURCE_DIR}/models/ST/H757/H757.yaml ${CMAKE_CURRENT_BINARY_DIR}/H757 stm32h7
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/generators/cxx/generate_chip_header.py ${CMAKE_SOURCE_DIR}/models/ST/H757/H757.yaml ${CMAKE_CURRENT_BINARY_DIR}/H757 stm32h7
     MAIN_DEPENDENCY ${CMAKE_SOURCE_DIR}/models/ST/H757/H757.yaml
-    DEPENDS ${CMAKE_SOURCE_DIR}/generators/cxx/headerChip.py
+    DEPENDS ${CMAKE_SOURCE_DIR}/generators/cxx/generate_chip_header.py
     COMMENT "Generating H757.hpp for STM32H7"
 )
 target_sources(soc-data-modules PUBLIC
