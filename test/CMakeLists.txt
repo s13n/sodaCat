@@ -1,4 +1,4 @@
-# CMake file for soc-data
+# CMake file for sodaCat test project
 cmake_minimum_required(VERSION 3.28)
 
 option(FOR_MODULES "Build with C++20 modules support" OFF)
