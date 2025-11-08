@@ -42,7 +42,9 @@ dma0 = svd.findNamedEntry(chip['peripherals'], 'DMA0')
 dma0['headerStructName'] = 'DMA'
 dma0['clocks'] = [ { 'name': 'clk' } ]
 transform.renameEntries(dma0['interrupts'], 'name', 'DMA0', 'DMA')
-
+dma0['parameters'] = [
+    { 'name': 'max_channel', 'value': 15, 'bits': 5, 'min': 0, 'max': 31, 'description': 'index of last channel' },
+]
 def dmaChanParams(name, num):
     return { 'name': name, 'value': num, 'bits': 5, 'min': 0, 'max': 31, 'description': 'DMA receive channel' }
 
