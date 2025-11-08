@@ -47,19 +47,27 @@ EXPORT constexpr struct $model::Integration i_$name = {$params$ints$init};
         
     def createHeader(self, chip, namespace, name, prefix, postfix):
         decl, incl = self.createIntegration(chip['instances'])
-        return prefix.substitute(chip, ns=namespace, name=name, incl=incl) + decl + postfix.substitute(ns=namespace)
+        imports = [re.search(r'"(\w+)\.hpp"', l).group(1) for l in incl.splitlines() if '#   include ' in l]
+        return prefix.substitute(chip, ns=namespace, name=name, incl=incl, imp=';\nimport '.join(imports)) + decl + postfix.substitute(ns=namespace)
                 
 yaml = YAML(typ='safe')
 chip = yaml.load(Path(sys.argv[1]))
 fmt = ChipFormatter()
 
 prefixTemplate = Template("""// File was generated, do not edit!
+#ifdef REGISTERS_MODULE
+module;
+#define EXPORT export
+#else
 #pragma once
-
-#ifdef MODULE_CHIP
-#   define EXPORT export
-#else $incl
-#   define EXPORT
+$incl
+#undef EXPORT
+#define EXPORT
+#endif
+#ifdef REGISTERS_MODULE
+export module $name;
+import registers;
+import $imp;
 #endif
 
 namespace $ns {
@@ -76,15 +84,3 @@ postfixTemplate = Template("""
 
 header = fmt.createHeader(chip, sys.argv[3], os.path.basename(sys.argv[2]), prefixTemplate, postfixTemplate)
 print(header, file=open(sys.argv[2] + '.hpp', mode = 'w'))
-
-#TODO: Find a better way to extract the import list
-imports = [re.search(r'"(\w+)\.hpp"', l).group(1) for l in header.splitlines() if '#   include ' in l]
-
-cppTemplate = Template("""// File was generated, do not edit!
-export module $mod;
-#define MODULE_CHIP
-import $incl;
-import registers;
-#include "$mod.hpp"
-""")
-print(cppTemplate.substitute(mod=os.path.basename(sys.argv[2]), incl=';\nimport '.join(imports)), file=open(sys.argv[2] + '.cpp', mode = 'w'))

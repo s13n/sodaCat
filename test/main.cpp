@@ -1,7 +1,7 @@
 // test for soc-data
 
 #include <cstdint>
-#if 0
+#if REGISTERS_MODULE
 import MDMA;
 import H757;
 #else

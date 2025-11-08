@@ -191,13 +191,21 @@ per = yaml.load(Path(sys.argv[1]))
 fmt = PerFormatter()
 
 prefixTemplate = Template("""// File was generated, do not edit!
-#pragma once
-
-#ifdef MODULE_$mod
-#   define EXPORT export
+#ifdef REGISTERS_MODULE
+module;
+#define EXPORT export
 #else
-#   include "registers.hpp"
-#   define EXPORT
+#pragma once
+#include "registers.hpp"
+#undef EXPORT
+#define EXPORT
+#endif
+
+#include <cstdint>
+
+#ifdef REGISTERS_MODULE
+export module $mod;
+import registers;
 #endif
 
 namespace $ns {""")
@@ -208,13 +216,3 @@ postfixTemplate = Template("""} // namespace $ns
 """)
 
 print(fmt.formatPeripheral(per, prefixTemplate.substitute(ns=sys.argv[3], mod=os.path.basename(sys.argv[2])), postfixTemplate.substitute(ns=sys.argv[3])), file=open(sys.argv[2] + '.hpp', mode = 'w'))
-
-cppTemplate = Template("""// File was generated, do not edit!
-module;
-#include <cstdint>
-export module $mod;
-#define MODULE_$mod
-import registers;
-#include "$mod.hpp"
-""")
-print(cppTemplate.substitute(mod=os.path.basename(sys.argv[2])), file=open(sys.argv[2] + '.cpp', mode = 'w'))
