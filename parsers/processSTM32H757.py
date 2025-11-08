@@ -8,7 +8,7 @@ import svd
 import transform
 from pathlib import Path
 
-subdir = Path("./data/ST/H757")
+subdir = Path("./models/ST/H757")
 
 # models and instances we want to keep
 modelSet = frozenset({'ADC', 'ADC_Common', 'BDMA', 'RCC', 'DAC', 'DMA', 'DMAMUX1', 'DMAMUX2', 'EXTI', 'GPIO', 'I2C',
