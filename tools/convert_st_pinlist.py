@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 import yaml
+import sys
 
 def parse_stm32_xml(xml_path, yaml_path):
     tree = ET.parse(xml_path)
@@ -60,5 +61,5 @@ def parse_stm32_xml(xml_path, yaml_path):
 
     print(f"YAML file written to: {yaml_path}")
 
-# Example usage:
-# parse_stm32_xml("STM32H745XIHx.xml", "stm32h745_pin_list.yaml")
+parse_stm32_xml(sys.argv[1], sys.argv[2])
+# "STM32H745XIHx.xml", "stm32h745_pin_list.yaml"
