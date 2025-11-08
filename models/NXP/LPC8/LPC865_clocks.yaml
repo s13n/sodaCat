@@ -1,0 +1,561 @@
+family: LPC865
+version: 0.9.0
+documents:
+  - id: UM11607
+    revision: "3"
+    url: https://cache.nxp.com/secured/assets/documents/en/reference-manual/UM11607.pdf?fileExt=.pdf
+    devices:
+      - LPC865M201JBD64
+      - LPC865M201JHI48
+      - LPC865M201JHI33
+signals:
+  - { name: fro_oscout, min: 36000000, max: 60000000, description: "The output of the FRO oscillator" }
+  - { name: fro_div2, description: "FRO oscillator divided by 2" }
+  - { name: fro }
+  - { name: fro_div, description: "FRO output divided by 2 via FROOSCCTRL" }
+  - { name: wkt_div }
+  - { name: clkin, max: 60000000, description: "Internal clock that comes from the main CLKIN pin function." }
+  - { name: sys_osc_clk, max: 25000000, description: "Internal clock that comes from external crystal oscillator" }
+  - { name: external_clk, description: "Internal clock that comes from the crystal oscillator or the CLK_IN pin" }
+  - { name: lp_osc, nominal: 1000000 }
+  - { name: pll_in, min: 10000000, max: 25000000 }
+  - { name: sys_pll0_clk, max: 100000000 }
+  - { name: pll_div_clk, description: "PLL output divided via SYSPLLDIV" }
+  - { name: main_clk_pre_pll }
+  - { name: main_clk, description: "The main clock used to generate the system clock and other clocks" }
+  - { name: system_clk, max: 60000000, description: "The clock used for the CPU and the buses" }
+  - { name: adc_clk, description: "ADC clock source selected via ADCCLKSEL" }
+  - { name: adc_div_clk }
+  - { name: clkout_src, description: "Clock source for CLKOUT pin" }
+  - { name: clkout }
+  - { name: frg0clksel, description: "Clock source for fractional rate generator 0" }
+  - { name: frg0clk }
+  - { name: frg1clksel, description: "Clock source for fractional rate generator 1" }
+  - { name: frg1clk }
+  - { name: lpwr_clk_vulp, nominal: 10000, min: 6000, max: 14000 }
+  - { name: lwpwr_clk_vulp }
+  - { name: acmpclk }
+  - { name: adc_sclk }
+  - { name: crcclk }
+  - { name: dmaclk }
+  - { name: fclk0, description: "Functional clock for UART0" }
+  - { name: fclk1, description: "Functional clock for UART1" }
+  - { name: fclk10, description: "Functional clock for SPI1" }
+  - { name: fclk2, description: "Functional clock for UART2" }
+  - { name: fclk5, description: "Functional clock for I2C0" }
+  - { name: fclk9, description: "Functional clock for SPI0" }
+  - { name: flashclk }
+  - { name: ftm0clk }
+  - { name: ftm1clk }
+  - { name: gpio0clk }
+  - { name: gpio1clk }
+  - { name: gpiointclk }
+  - { name: i2c0clk }
+  - { name: ioconclk, description: "Register clock for IOCON" }
+  - { name: mrtclk }
+  - { name: ramclk }
+  - { name: romclk }
+  - { name: spi0clk }
+  - { name: spi1clk }
+  - { name: swmclk }
+  - { name: uart0clk }
+  - { name: uart1clk }
+  - { name: uart2clk }
+  - { name: i3cclk, description: "Register clock for I3C" }
+  - { name: i3cfclk }
+  - { name: i3c_fclk }
+  - { name: i3cslowtcclk }
+  - { name: i3c_clk_slow_tc }
+  - { name: i3cslowclk }
+  - { name: i3c_clk_slow }
+  - { name: wkt_counter_clk }
+  - { name: wkt_int_clk }
+  - { name: wktclk }
+  - { name: wktclkin }
+  - { name: wwdtclk }
+  - { name: ioconclkdiv0 }
+  - { name: ioconclkdiv1 }
+  - { name: ioconclkdiv2 }
+  - { name: ioconclkdiv3 }
+  - { name: ioconclkdiv4 }
+  - { name: ioconclkdiv5 }
+  - { name: ioconclkdiv6 }
+
+sources:
+  - name: FRO
+    output: fro_oscout
+    control:
+      reg: FRO_CTRL_DUMMY
+      field: FREQSEL
+      values: [0, 36000000, 48000000, 60000000]
+  - name: CLKIN
+    output: clkin
+    description: Special function of PIO0_1
+  - name: XTALIN
+    output: sys_osc_clk
+    control:
+      reg: SYSOSCCTRL
+      field: BYPASS
+  - name: WKTCLKIN
+    output: wktclkin
+    description: Special function of PIO0_28
+  - name: LPOSC
+    output: lp_osc
+    control:
+      reg: LPOSCCTRL
+      field: FREQSEL
+      values: [600000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000, 2200000, 2400000, 2600000, 2800000, 3000000, 3200000, 3400000, 4600000]
+  - name: ULPOSC
+    output: lpwr_clk_vulp
+    control:
+      reg: DPDCTRL
+      field: ULPOSCEN
+      values: [0, 10000]
+
+muxes:
+  - name: EXTCLKSEL
+    output: external_clk
+    inputs: [sys_osc_clk, clkin]
+    control:
+      reg: EXTCLKSEL
+      field: SEL
+  - name: WKTCLKSEL
+    output: lwpwr_clk_vulp
+    inputs: [fro, lp_osc]
+    control:
+      reg: WKTCLKSEL
+      field: WKTCLKSEL
+  - name: FROOSCCTRL
+    output: fro
+    inputs: [fro_oscout, fro_div2]
+    control:
+      reg: FROOSCCTRL
+      field: FRO_DIRECT
+  - name: SYSPLLCLKSEL
+    output: pll_in
+    inputs: [fro, external_clk, lp_osc, fro_div]
+    control:
+      reg: SYSPLLCLKSEL
+      field: SEL
+  - name: MAINCLKSEL
+    output: main_clk_pre_pll
+    inputs: [fro, external_clk, lp_osc, fro_div]
+    control:
+      reg: MAINCLKSEL
+      field: SEL
+    description: Selects main clock source before PLL
+  - name: MAINCLKPLLSEL
+    output: main_clk
+    inputs: [main_clk_pre_pll, sys_pll0_clk, "", ""]
+    control:
+      reg: MAINCLKPLLSEL
+      field: SEL
+    description: Selects final main clock source (PLL or pre-PLL)
+  - name: CLKOUTSEL
+    output: clkout_src
+    inputs: [fro, main_clk, pll_div_clk, external_clk, lp_osc, "", "", ""]
+    control:
+      reg: CLKOUTSEL
+      field: SEL
+  - name: ADCCLKSEL
+    output: adc_clk
+    inputs: [fro, pll_div_clk, "", ""]
+    control:
+      reg: ADCCLKSEL
+      field: SEL
+    description: Selects ADC clock source
+  - name: FRG0CLKSEL
+    output: frg0clksel
+    inputs: [fro, main_clk, pll_div_clk, ""]
+    control:
+      reg: FRG0CLKSEL
+      field: SEL
+  - name: FRG1CLKSEL
+    output: frg1clksel
+    inputs: [fro, main_clk, pll_div_clk, ""]
+    control:
+      reg: FRG1CLKSEL
+      field: SEL
+  - name: UART0CLKSEL
+    output: uart0clk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+    control:
+      reg: UART0CLKSEL
+      field: SEL
+  - name: UART1CLKSEL
+    output: uart1clk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+    control:
+      reg: UART1CLKSEL
+      field: SEL
+  - name: UART2CLKSEL
+    output: uart2clk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+    control:
+      reg: UART2CLKSEL
+      field: SEL
+  - name: SPI0CLKSEL
+    output: spi0clk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+    control:
+      reg: SPI0CLKSEL
+      field: SEL
+  - name: SPI1CLKSEL
+    output: spi1clk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+    control:
+      reg: SPI1CLKSEL
+      field: SEL
+  - name: I2C0CLKSEL
+    output: i2c0clk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+    control:
+      reg: I2C0CLKSEL
+      field: SEL
+  - name: I3CFCLKSEL
+    output: i3cfclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
+    control:
+      reg: I3CFCLKSEL
+      field: SEL
+  - name: I3CSLOWTCCLKSEL
+    output: i3cslowtcclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
+    control:
+      reg: I3CSLOWTCCLKSEL
+      field: SEL
+  - name: I3CSLOWCLKSEL
+    output: i3cslowclk
+    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
+    control:
+      reg: I3CSLOWCLKSEL
+      field: SEL
+  - name: WKT_CLKSEL
+    description: This is the first in a chain of multiplexers in the WKT. See UM11607 Fig 43.
+    control:
+      field: CLKSEL
+      reg: WKT_CTRL
+    inputs: [wkt_div, lpwr_clk_vulp]
+    output: wkt_int_clk
+  - name: WKT_EXTCLK
+    description: This is the second in a chain of multiplexers in the WKT. See UM11607 Fig 43.
+    control:
+      field: SEL_EXTCLK
+      reg: WKT_CTRL
+    inputs: [wkt_int_clk, wktclkin]
+    output: wkt_counter_clk
+
+plls:
+  - name: SYSPLL
+    input: pll_in
+    output: sys_pll0_clk
+    feedback_integer:
+      reg: SYSPLLCTRL
+      field: MSEL
+      value_range: { min: 1, max: 32, offset: -1 }
+    post_divider:
+      reg: SYSPLLCTRL
+      field: PSEL
+      values: [ 2, 4, 8, 16 ]
+    vco_limits: { min: 156000000, max: 320000000 }
+
+dividers:
+  - name: FRO_HALF_DIV
+    input: fro_oscout
+    output: fro_div2
+    value: 2
+  - name: FRO_DIV
+    input: fro
+    output: fro_div
+    value: 2
+  - name: WKT_DIV
+    input: lwpwr_clk_vulp
+    output: wkt_div
+    value: 16
+    description: Divider in the WKT block
+  - name: SYSPLLDIV
+    input: sys_pll0_clk
+    output: pll_div_clk
+    factor:
+      reg: SYSPLLDIV
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: SYSAHBCLKDIV
+    input: main_clk
+    output: system_clk
+    factor:
+      reg: SYSAHBCLKDIV
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+    description: Divides main clock to generate system clock
+  - name: IOCONCLKDIV0
+    input: main_clk
+    output: ioconclkdiv0
+    factor:
+      reg: IOCONFILTCLKDIV0
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: IOCONCLKDIV1
+    input: main_clk
+    output: ioconclkdiv1
+    factor:
+      reg: IOCONFILTCLKDIV1
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: IOCONCLKDIV2
+    input: main_clk
+    output: ioconclkdiv2
+    factor:
+      reg: IOCONFILTCLKDIV2
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: IOCONCLKDIV3
+    input: main_clk
+    output: ioconclkdiv3
+    factor:
+      reg: IOCONFILTCLKDIV3
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: IOCONCLKDIV4
+    input: main_clk
+    output: ioconclkdiv4
+    factor:
+      reg: IOCONFILTCLKDIV4
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: IOCONCLKDIV5
+    input: main_clk
+    output: ioconclkdiv5
+    factor:
+      reg: IOCONFILTCLKDIV5
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: IOCONCLKDIV6
+    input: main_clk
+    output: ioconclkdiv6
+    factor:
+      reg: IOCONFILTCLKDIV6
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: ADCCLKDIV
+    input: adc_clk
+    output: adc_div_clk
+    factor:
+      reg: ADCCLKDIV
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+    description: Divides ADC clock source
+  - name: I3CFCLKDIV
+    input: i3cfclk
+    output: i3c_fclk
+    factor:
+      reg: I3CCLKDIV
+      field: I3C_FCLK_DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: I3CSLOWTCCLKDIV
+    input: i3cslowtcclk
+    output: i3c_clk_slow_tc
+    factor:
+      reg: I3CCLKDIV
+      field: I3C_SLOW_TC_CLK_DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: I3CSLOWCLKDIV
+    input: i3cslowclk
+    output: i3c_clk_slow
+    factor:
+      reg: I3CCLKDIV
+      field: I3C_SLOW_CLK_DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: CLKOUTDIV
+    input: clkout_src
+    output: clkout
+    factor:
+      reg: CLKOUTDIV
+      field: DIV
+      value_range:
+        min: 0      # Zero turns off divider
+        max: 255
+  - name: FRG0
+    input: frg0clksel
+    output: frg0clk
+    factor: { reg: FRG0MULT, field: MULT }
+    denominator: { reg: FRG0DIV, field: DIV, offset: -1 }
+    value: 1
+  - name: FRG1
+    input: frg1clksel
+    output: frg1clk
+    factor: { reg: FRG1MULT, field: MULT }
+    denominator: { reg: FRG1DIV, field: DIV, offset: -1 }
+    value: 1
+
+gates:
+  - name: ROMCLK
+    output: romclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: ROM
+  - name: RAMCLK
+    output: ramclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: RAM
+  - name: FLASHCLK
+    output: flashclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: FLASH
+  - name: I2C0CLK
+    output: fclk5
+    input: i2c0clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: I2C0
+  - name: GPIO0CLK
+    output: gpio0clk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: GPIO0
+  - name: SWMCLK
+    output: swmclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: SWM
+  - name: WKTCLK
+    output: wktclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: WKT
+  - name: MRTCLK
+    output: mrtclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: MRT
+  - name: SPI0CLK
+    output: fclk9
+    input: spi0clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: SPI0
+  - name: SPI1CLK
+    output: fclk10
+    input: spi1clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: SPI1
+  - name: CRCCLK
+    output: crcclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: CRC
+  - name: UART0CLK
+    output: fclk0
+    input: uart0clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: UART0
+  - name: UART1CLK
+    output: fclk1
+    input: uart1clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: UART1
+  - name: UART2CLK
+    output: fclk2
+    input: uart2clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: UART2
+  - name: WWDTCLK
+    output: wwdtclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: WWDT
+  - name: IOCONCLK
+    output: ioconclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: IOCON
+  - name: ACMPCLK
+    output: acmpclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: ACMP
+  - name: GPIO1CLK
+    output: gpio1clk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: GPIO1
+  - name: FTM0CLK
+    output: ftm0clk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: FTM0
+  - name: FTM1CLK
+    output: ftm1clk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: FTM1
+  - name: I3CCLK
+    output: i3cclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: I3C
+  - name: ADC
+    output: adc_sclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: ADC
+  - name: GPIOINTCLK
+    output: gpiointclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: GPIO_INT
+  - name: DMACLK
+    output: dmaclk
+    input: system_clk
+    control:
+      reg: SYSAHBCLKCTRL0
+      field: DMA

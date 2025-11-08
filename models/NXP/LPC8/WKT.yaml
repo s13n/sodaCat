@@ -1,0 +1,107 @@
+# Created from LPC865.svd
+
+name: WKT
+description: LPC84x Wake Up Timer(WKT)
+groupName: WKT
+registers:
+  - name: CTRL
+    description: Self wake-up timer control register.
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 15
+    fields:
+      - name: CLKSEL
+        description: 'Select the self wake-up timer clock source. Remark: This bit
+          only has an effect if the SEL_EXTCLK bit is not set.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DIVIDED_FRO_CLOCK
+            description: 'Divided FRO clock. This clock runs at 750 kHz and provides
+              time-out periods of up to approximately 95 minutes in 1.33 us increments.
+              Remark: This clock is not available in not available in Deep-sleep,
+              power-down, deep power-down modes. Do not select this option if the
+              timer is to be used to wake up from one of these modes.'
+            value: 0
+          - name: LOW_POWER_CLOCK
+            description: 'This is the (nominally) 10 kHz clock and provides time-out
+              periods of up to approximately 119 hours in 100 us increments. The accuracy
+              of this clock is limited to +/- 40 % over temperature and processing.
+              Remark: This clock is available in all power modes. Prior to use, the
+              low-power oscillator must be enabled. The oscillator must also be set
+              to remain active in Deep power-down if needed.'
+            value: 1
+      - name: ALARMFLAG
+        description: Wake-up or alarm timer flag.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_TIME_OUT
+            description: No time-out. The self wake-up timer has not timed out. Writing
+              a 0 to has no effect.
+            value: 0
+          - name: TIME_OUT
+            description: Time-out. The self wake-up timer has timed out. This flag
+              generates an interrupt request which can wake up the part from any reduced
+              power mode including Deep power-down if the clock source is the low
+              power oscillator. Writing a 1 clears this status bit.
+            value: 1
+      - name: CLEARCTR
+        description: Clears the self wake-up timer.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect. Reading this bit always returns 0.
+            value: 0
+          - name: CLEAR_THE_COUNTER
+            description: Clear the counter. Counting is halted until a new count value
+              is loaded.
+            value: 1
+      - name: SEL_EXTCLK
+        description: Select external or internal clock source for the self wake-up
+          timer. The internal clock source is selected by the CLKSEL bit in this register
+          if SET_EXTCLK is set to internal.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: INTERNAL
+            description: Internal. The clock source is the internal clock selected
+              by the CLKSEL bit.
+            value: 0
+          - name: EXTERNAL
+            description: External. The self wake-up timer uses the external WKTCLKIN
+              pin.
+            value: 1
+  - name: COUNT
+    description: Counter register.
+    addressOffset: 12
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: VALUE
+        description: A write to this register pre-loads start count value into the
+          timer and starts the count-down sequence. A read reflects the current value
+          of the timer.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+interrupts:
+  - name: WKT
+addressBlocks:
+  - offset: 0
+    size: 16
+    usage: registers
+clocks:
+  - name: bus_clk
+  - name: default_clk
+  - name: lp_clk
+  - name: ext_clk

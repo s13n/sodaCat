@@ -1,0 +1,94 @@
+# Created from LPC865.svd
+
+name: CRC
+description: LPC5411x CRC engine
+groupName: CRC
+registers:
+  - name: MODE
+    description: CRC mode register
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: CRC_POLY
+        description: 'CRC polynomial: 1X = CRC-32 polynomial 01 = CRC-16 polynomial
+          00 = CRC-CCITT polynomial'
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+      - name: BIT_RVS_WR
+        description: 'Data bit order: 1 = Bit order reverse for CRC_WR_DATA (per byte)
+          0 = No bit order reverse for CRC_WR_DATA (per byte)'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: CMPL_WR
+        description: "Data complement: 1 = 1's complement for CRC_WR_DATA 0 = No 1's
+          complement for CRC_WR_DATA"
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: BIT_RVS_SUM
+        description: 'CRC sum bit order: 1 = Bit order reverse for CRC_SUM 0 = No
+          bit order reverse for CRC_SUM'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: CMPL_SUM
+        description: "CRC sum complement: 1 = 1's complement for CRC_SUM 0 = No 1's
+          complement for CRC_SUM"
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+  - name: SEED
+    description: CRC seed register
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 65535
+    resetMask: 4294967295
+    fields:
+      - name: CRC_SEED
+        description: A write access to this register will load CRC seed value to CRC_SUM
+          register with selected bit order and 1's complement pre-processes. A write
+          access to this register will overrule the CRC calculation in progresses.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: SUM
+    description: CRC checksum register
+    alternateGroup: SUM_WR_DATA
+    addressOffset: 8
+    size: 32
+    access: read-only
+    resetValue: 65535
+    resetMask: 4294967295
+    fields:
+      - name: CRC_SUM
+        description: The most recent CRC sum can be read through this register with
+          selected bit order and 1's complement post-processes.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: WR_DATA
+    description: CRC data register
+    alternateGroup: SUM_WR_DATA
+    addressOffset: 8
+    size: 32
+    access: write-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: CRC_WR_DATA
+        description: Data written to this register will be taken to perform CRC calculation
+          with selected bit order and 1's complement pre-process. Any write size 8,
+          16 or 32-bit are allowed and accept back-to-back transactions.
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+addressBlocks:
+  - offset: 0
+    size: 12
+    usage: registers
