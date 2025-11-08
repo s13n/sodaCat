@@ -6,7 +6,7 @@ import svd
 import transform
 from pathlib import Path
 
-subdir = Path("./data/NXP/LPC8")
+subdir = Path("./models/NXP/LPC8")
 
 # models and instances we want to keep
 modelSet = frozenset({
