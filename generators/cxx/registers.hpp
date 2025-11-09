@@ -199,7 +199,7 @@ struct HwReg {
 };
 
 // Bitfield mask for given bitfield
-#define FIELDMASK(t, f) [] constexpr { t r{}; r.f -= 1; return std::bit_cast<HwReg<t>::Native>(r); }()
+#define FIELDMASK(t, f) []() constexpr { t r{}; r.f -= 1; return std::bit_cast<HwReg<t>::Native>(r); }()
 
 /** Pointer to a hardware register block.
  *
