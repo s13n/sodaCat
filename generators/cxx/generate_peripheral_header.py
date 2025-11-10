@@ -73,7 +73,7 @@ $postfix"""))
             if 'enumeratedValues' in field:
                 txt = self.formatEnumList(field['enumeratedValues'])
                 if txt:
-                    enum = self.enumsTemplate.substitute(field, enums=txt, type='uint32_t')
+                    enum = self.enumsTemplate.substitute(field, enums=txt, type=type)
             width = field.get('bitWidth', 1)
             description = field.get('description', '')
             txt = self.bitfieldTemplate.substitute(field, type=type, width=width, description=description)
@@ -180,7 +180,8 @@ $postfix"""))
             
     def formatPeripheral(self, per:dict, prefix:str, postfix:str):
         """ Generate definitions for a peripheral """
-        types, regs, size, enums = self.formatRegisterList(per['registers'], 'uint32_t', 0, 4)
+        defaultSize = per.get('size', 32) >> 3
+        types, regs, size, enums = self.formatRegisterList(per['registers'], 'uint32_t', 0, defaultSize)
         blocks, ints, params = self.formatIntegrationList(per)
         description = per.get('description', '')
         return self.headerTemplate.substitute(per, blocks=blocks, ints=ints, params=params, regs=regs, enums=enums, types=types, description=description, size=size, prefix=prefix, postfix=postfix)
