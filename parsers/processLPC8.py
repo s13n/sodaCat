@@ -11,7 +11,7 @@ subdir = Path("./models/NXP/LPC8")
 # models and instances we want to keep
 modelSet = frozenset({
     'ACOMP', 'CRC', 'MRT', 'WWDT', 'WKT',
-    'ADC', 'DMA', 'FLASH_CTRL', 'FTM0', 'FTM1', 'GPIO', 'I2C', 'I3C', 'INPUTMUX',
+    'ADC', 'DMA', 'FLASH_CTRL', 'FTM', 'GPIO', 'I2C', 'I3C', 'INPUTMUX',
     'IOCON', 'PINT', 'PMU', 'SPI', 'SWM', 'SYSCON', 'USART'})
 instSet = frozenset({
     'ACOMP', 'CRC', 'MRT0', 'WWDT', 'WKT',
@@ -52,15 +52,23 @@ def dmaChanParams(name, num):
 flash = svd.findNamedEntry(chip['peripherals'], 'FLASH_CTRL')
 flash['clocks'] = [ { 'name': 'clk' } ]
 
-# Tweak the FTM0
+# Tweak the FTM0 and FTM1
 ftm0 = svd.findNamedEntry(chip['peripherals'], 'FTM0')
+ftm0['headerStructName'] = 'FTM'
 ftm0['clocks'] = [ { 'name': 'main_clk' }, { 'name': 'extclk' } ]
 transform.renameEntries(ftm0['interrupts'], 'name', 'FTM0', 'FTM')
-
-# Tweak the FTM1
+ftm0['parameters'] = [
+    { 'name': 'max_channel', 'value': 5, 'bits': 3, 'min': 0, 'max': 7, 'description': 'index of last channel' },
+    { 'name': 'qdec', 'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'presence of quadrature decoder' },
+]
 ftm1 = svd.findNamedEntry(chip['peripherals'], 'FTM1')
+ftm1['headerStructName'] = 'FTM'
 ftm1['clocks'] = [ { 'name': 'main_clk' }, { 'name': 'extclk' } ]
 transform.renameEntries(ftm1['interrupts'], 'name', 'FTM1', 'FTM')
+ftm1['parameters'] = [
+    { 'name': 'max_channel', 'value': 3, 'bits': 3, 'min': 0, 'max': 7, 'description': 'index of last channel' },
+    { 'name': 'qdec', 'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'presence of quadrature decoder' },
+]
 
 # Tweak the GPIO
 gpio = svd.findNamedEntry(chip['peripherals'], 'GPIO')
