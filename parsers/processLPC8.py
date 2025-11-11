@@ -62,7 +62,7 @@ ftm0['parameters'] = [
     { 'name': 'qdec', 'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'presence of quadrature decoder' },
 ]
 ftm1 = svd.findNamedEntry(chip['peripherals'], 'FTM1')
-ftm1['headerStructName'] = 'FTM'
+ftm1['@derivedFrom'] = 'FTM0'
 ftm1['clocks'] = [ { 'name': 'main_clk' }, { 'name': 'extclk' } ]
 transform.renameEntries(ftm1['interrupts'], 'name', 'FTM1', 'FTM')
 ftm1['parameters'] = [
