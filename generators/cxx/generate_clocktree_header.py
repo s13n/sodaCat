@@ -1,3 +1,4 @@
+import sys
 import yaml
 from pathlib import Path
 
@@ -54,7 +55,7 @@ def generate_header(yaml_path, hpp_path):
         'enum class Signals {'
     ]
     for s in signals:
-        hpp_lines.append(f"    {signal_enum_map[s['name']]},")
+        hpp_lines.append(f"    {signal_enum_map[s['name']]},  //!< {s.get('description', '')}")
     hpp_lines.append("};")
     hpp_lines.append("")
     
@@ -132,4 +133,5 @@ def generate_header(yaml_path, hpp_path):
 
 
 if __name__ == "__main__":
-    generate_header("models/NXP/LPC8/LPC865_clocks.yaml", "LPC865_clocks.hpp")
+    generate_header(sys.argv[1], sys.argv[2])
+#    generate_header("models/NXP/LPC8/LPC865_clocks.yaml", "LPC865_clocks.hpp")
