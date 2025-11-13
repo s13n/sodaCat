@@ -1,30 +1,31 @@
 # Task: MCU Clock-Tree Specification (YAML) for sodaCat
 
 **Goal**  
-Produce a machine-checkable, vendor-agnostic YAML description of an MCU’s clock tree
-that sodaCat can use to generate headers and frequency resolvers.
+Produce a machine-checkable, vendor-agnostic YAML description of an MCU’s clock
+tree that sodaCat can use to generate headers and frequency resolvers.
 
 **Output format**  
 - YAML document conforming to `schemas/clock-tree.schema.yaml`
-- Place new families under `spec/clock-tree/<vendor-or-series>/<family>.yaml`  
-  (e.g., `spec/clock-tree/st/stm32h7.yaml`)
+- Place new families under `models/<vendor>/<family>/<chip>_clocks.yaml`  
+  (e.g., `models/NXP/LPC8/LPC865_clocks.yaml`)
 
 ---
 
 ## Modeling guide for clock trees
 
-Refer to the `clock-tree.schema.yaml` file for information about required and optional
-fields, and how to structure the model.
+Refer to the `clock-tree.schema.yaml` file for information about required and
+optional fields, and how to structure the model.
 
 ### Top-level fields
 
-Those list the information sources used, the devices covered and general metadata about
-the device tree model. Those may be obtained from the reference manual or user manual
-of the device family.
+Those list the information sources used, the devices covered and general
+metadata about the device tree model. Those may be obtained from the reference
+manual or user manual of the device family.
 
 ### `signals` array
 
-Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]` entry:
+Model any clock that can be *gated*, *muxed*, or *divided* as its own
+`signals[]` entry:
 - Internal oscillators
 - External clock inputs and crystal oscillators
 - PLL reference input to the phase detector, VCO output
@@ -36,11 +37,12 @@ Model any clock that can be *gated*, *muxed*, or *divided* as its own `signals[]
 Use the signal name as used in the reference manual, if possible. It may be
 available from the clock tree diagram or from a register description. If no name
 is available, use the name of the functional block where the signal originates.
-Sometimes the name given in a block diagram contains a placeholder (e.g. `x`) that is
-to be substituted for a number or letter denoting the particular instance. For example
-a block diagram may describe the structure of a PLL that exists three times on the
-chip. In the diagram the VCO output signal might be given as `vcox_ck`, but the actual
-signal name would be be `vco1_ck` for the first PLL, and `vco2_ck` for the second, etc.
+Sometimes the name given in a block diagram contains a placeholder (e.g. `x`)
+that is to be substituted for a number or letter denoting the particular
+instance. For example a block diagram may describe the structure of a PLL that
+exists three times on the chip. In the diagram the VCO output signal might be
+given as `vcox_ck`, but the actual signal name would be be `vco1_ck` for the
+first PLL, and `vco2_ck` for the second, etc.
 
 The maximum signal frequency may be obtained from the data sheet rather than the
 reference manual. If there is no minimum frequency, omit the entry. If no
@@ -77,11 +79,11 @@ List the different input sources in the same order as the bitfield values to
 select them. Describe the register and bitfield that controls the Muxer.
 
 When a certain muxer input can be selected, but doesn't have a clock signal
-connected to it, the empty source "" should be listed in this position. Selecting
-this input effectively turns off the output clock of the muxer.
+connected to it, the empty source "" should be listed in this position.
+Selecting this input effectively turns off the output clock of the muxer.
 
-When a certain input selection is listed as "reserved" in the manual, i.e. that it
-shouldn't be used, use a null in the respective position in the input list.
+When a certain input selection is listed as "reserved" in the manual, i.e. that
+it shouldn't be used, use a null in the respective position in the input list.
 
 ### `plls` array
 
@@ -94,10 +96,10 @@ the frequency limits of the input and the output signal.
 Note: `offset` and `scale` allow flexible encoding of register values.
 The structure supports both forward and reverse frequency calculations.
 
-Any dividers that come before the phase detector, or after the pickoff point of the
-feedback divider, are not modeled as part of the PLL, but separately as external
-dividers in the overall model's divider list. Only a divider that is located
-between the VCO and the feedback divider pickoff point, gets modeled as
+Any dividers that come before the phase detector, or after the pickoff point of
+the feedback divider, are not modeled as part of the PLL, but separately as
+external dividers in the overall model's divider list. Only a divider that is
+located between the VCO and the feedback divider pickoff point, gets modeled as
 `post_divider`. Refer to the PLL block diagram to determine where the feedback
 divider's input signal is taken from.
 
@@ -110,12 +112,13 @@ Here's a modeling checklist for PLLs:
 - Model output dividers (after feedback pickoff point) as external
 - Model gates between feedback pickoff point and output dividers as external
 
-### `sources` array
+### `generators` array
 
 Model any functional block that generates a clock signal as its own entry in the
-`sources[]` array.
+`generators[]` array.
 
-This includes on-chip oscillators, crystal oscillators, or external clock inputs.
+This includes on-chip oscillators, crystal oscillators, or external clock
+inputs.
 
 Model registers and bitfields that control the oscillator (enable/disable)
 and/or its frequency, like this:
@@ -125,8 +128,7 @@ in the register. If a bitfield value turns off the source, use the frequency 0.
 
 Example: Let the oscillator offer three different output frequencies, and one
 off state, selected by a 2-bit bitfield. The frequencies array might then look
-like this:
-  `frequencies: [0, 12000000, 36000000, 60000000]`
+like this: `frequencies: [0, 12000000, 36000000, 60000000]`
 
 ---
 
@@ -142,17 +144,17 @@ like this:
 ### Choice of names
 
 - Register and bitfield names are usually obtained directly from the register
-  description in the reference manual. If available, also provide as the `instance`
-  field the name of the functional block or peripheral that contains the register.
-  Preserve the case used in the manual.
-- Names should be suitable as identifiers in the most common programming languages,
-  i.e. they shouldn't start with a digit, and should contain only digits, letters
-  and the underscore. Warn when this is not the case.
+  description in the reference manual. If available, also provide as the
+  `instance` field the name of the functional block or peripheral that contains
+  the register. Preserve the case used in the manual.
+- Names should be suitable as identifiers in the most common programming
+  languages, i.e. they shouldn't start with a digit, and should contain only
+  digits, letters and the underscore. Warn when this is not the case.
 
 ### Provide description
 
-- Descriptive texts given in the manual for registers, bitfields etc. should be put
-  into `description` fields where appropriate.
+- Descriptive texts given in the manual for registers, bitfields etc. should be
+  put into `description` fields where appropriate.
 
 ---
 
@@ -167,19 +169,25 @@ like this:
 
 ## Example workflow (for a new family)
 
-1. Duplicate template `spec/clock-tree/template.yaml`.
-2. Determine clock tree from the documentation.
-   The clock tree is a directed acyclical graph, with the edges representing signals,
-   and the nodes representing sources, gates, muxes, PLLs, dividers or clock consumers.
-   Those should be gleaned from a clock tree diagram, if found in the manual.
-   Where necessary, lines and arrows need to be traced to find signal names.
-   If signal names are missing, they may be found in register descriptions relating to gates, muxes etc.
-   If nothing can be found, signal names can be derived from the name of the source node.
-3. Fill in the arrays for signals, sources, gates, muxes, PLLs, dividers,
+1. Find relevant documentation of clock tree for the family.\
+   There may be machine readable, structured information in a manufacturer's
+   SDK. This might be files driving a graphical clock tree editor, or XML files
+   documenting the chip as a whole. If nothing suitable is found, the
+   information can also be extracted from the relevant reference manual and/or
+   datasheet for the chip. In this case, the PDF file must be scanned for either
+   textual information, or diagrams depicting the clock tree.
+2. Determine clock tree from the documentation.\
+   The clock tree is a directed acyclical graph, with the edges representing
+   signals, and the nodes representing sources, gates, muxes, PLLs, dividers or
+   clock consumers. Those should be gleaned from a clock tree diagram, if found
+   in the manual. Where necessary, lines and arrows need to be traced to find
+   signal names. If signal names are missing, they may be found in register
+   descriptions relating to gates, muxes etc. If nothing can be found, signal
+   names can be derived from the name of the source node.
+3. Fill in the arrays for signals, generators, gates, muxes, PLLs, dividers,
    from the information found in the previous step.
 4. Run validation:
    ```bash
-   python tools/validate_clock_specs.py \
-     --schema schemas/clock-tree.schema.yaml \
-     --docs "spec/clock-tree/**/*.y*ml"
+   python tools/validate_clock_specs.py --schema schemas/clock-tree.schema.yaml --docs "models/**/*clocks.y*ml"
+   ```
 5. Open PR with a short note: RM ID, sections used, and known device caveats.
