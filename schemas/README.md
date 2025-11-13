@@ -6,5 +6,5 @@ This folder contains schemas for checking models in YAML files.
 ```bash
 python -m pip install PyYAML jsonschema
 python tools/validate_clock_specs.py \
-  --schema schemas/clock-tree.schema.json \
-  --docs "spec/clock-tree/**/*.y*ml"
+  --schema schemas/clock-tree.schema.yaml \
+  --docs "models/**/*clocks.y*ml"
