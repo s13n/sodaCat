@@ -10,7 +10,7 @@ module;
 #include <array>
 #include <cstdint>
 #include <initializer_list>
-#include <optional>
+#include <span>
 #include <variant>
 
 #ifdef REGISTERS_MODULE
@@ -111,11 +111,11 @@ public:
      */
     struct Signal {
         const char* name;
+        Source source;
         uint32_t min_freq;
         uint32_t max_freq;
         uint32_t nominal_freq;
         const char* description;
-        Source source;
     };
 
     /** Get frequency of given signal in Hz. */
@@ -160,11 +160,11 @@ private:
         return getFrequency(*std::next(mux->inputs.begin(), index));
     }
 
-    static constexpr auto signals;
-    static constexpr auto generators;
-    static constexpr auto plls;
-    static constexpr auto gates;
-    static constexpr auto dividers;
-    static constexpr auto muxes;
-    static constexpr auto register_fields;
+    static Signal const signals[];
+    static Generator const generators[];
+    static Pll const plls[];
+    static Gate const gates[];
+    static Divider const dividers[];
+    static Mux const muxes[];
+    static RegisterField const * const register_fields[];
 };

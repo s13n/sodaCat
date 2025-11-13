@@ -59,50 +59,50 @@ def generate_header(yaml_path, hpp_path):
     hpp_lines.append("};")
     hpp_lines.append("")
     
-    hpp_lines.append("template<> constexpr auto ClockTree<Signals>::register_fields = std::to_array<RegisterField const *>({")
+    hpp_lines.append("template<> ClockTree<Signals>::RegisterField const * const ClockTree<Signals>::register_fields[] = {")
     for f in field_list:
         reg = f.get("reg", "")
         field = f.get("field", "")
         offset = f.get("offset", 0)
-        hpp_lines.append(f'  {{ "{reg}", "{field}", {offset} }},')
-    hpp_lines.append("});\n")
+        hpp_lines.append(f'    {{ "{reg}", "{field}", {offset} }},')
+    hpp_lines.append("};\n")
 
-    hpp_lines.append("template<> constexpr auto ClockTree<Signals>::generators = std::to_array<Generator>({")
+    hpp_lines.append("template<> ClockTree<Signals>::Generator const ClockTree<Signals>::generators[] = {")
     for gen in generators:
         ctrl = gen.get("control")
         values = ctrl.get("values", []) if ctrl else []
         values_str = "{ " + ", ".join(str(v) for v in values) + " }"
         hpp_lines.append(
-            f'  {{ "{gen["name"]}", Signals::{signal_enum_map[gen["output"]]}, {emit_field_ref(ctrl)}, {values_str}, "{gen.get("description", "")}" }},'
+            f'    {{ "{gen["name"]}", Signals::{signal_enum_map[gen["output"]]}, {emit_field_ref(ctrl)}, {values_str}, "{gen.get("description", "")}" }},'
         )
-    hpp_lines.append("});\n")
+    hpp_lines.append("};\n")
 
-    hpp_lines.append("template<> constexpr auto ClockTree<Signals>::plls = std::to_array<Pll>({")
+    hpp_lines.append("template<> ClockTree<Signals>::Pll const ClockTree<Signals>::plls[] = {")
     for p in plls:
         hpp_lines.append(
-            f'  {{ "{p["name"]}", Signals::{signal_enum_map[p["input"]]}, Signals::{signal_enum_map[p["output"]]}, '
+            f'    {{ "{p["name"]}", Signals::{signal_enum_map[p["input"]]}, Signals::{signal_enum_map[p["output"]]}, '
             f'{emit_field_ref(p.get("feedback_integer"))}, '
             f'{emit_field_ref(p.get("feedback_fraction"))}, '
             f'{emit_field_ref(p.get("post_divider"))} }},'
         )
-    hpp_lines.append("});\n")
+    hpp_lines.append("};\n")
 
-    hpp_lines.append("template<> constexpr auto ClockTree<Signals>::gates = std::to_array<Gate>({")
+    hpp_lines.append("template<> ClockTree<Signals>::Gate const ClockTree<Signals>::gates[] = {")
     for g in gates:
         hpp_lines.append(
-            f'  {{ "{g["name"]}", Signals::{signal_enum_map[g["input"]]}, Signals::{signal_enum_map[g["output"]]}, {emit_field_ref(g.get("control"))} }},'
+            f'    {{ "{g["name"]}", Signals::{signal_enum_map[g["input"]]}, Signals::{signal_enum_map[g["output"]]}, {emit_field_ref(g.get("control"))} }},'
         )
     hpp_lines.append("};\n")
 
-    hpp_lines.append("template<> constexpr auto ClockTree<Signals>::dividers = std::to_array<Divider>({")
+    hpp_lines.append("template<> ClockTree<Signals>::Divider const ClockTree<Signals>::dividers[] = {")
     for d in dividers:
         hpp_lines.append(
-            f'  {{ "{d["name"]}", Signals::{signal_enum_map[d["input"]]}, Signals::{signal_enum_map[d["output"]]}, {d.get("value", 0)}, '
+            f'    {{ "{d["name"]}", Signals::{signal_enum_map[d["input"]]}, Signals::{signal_enum_map[d["output"]]}, {d.get("value", 0)}, '
             f'{emit_field_ref(d.get("factor"))}, {emit_field_ref(d.get("denominator"))} }},'
         )
     hpp_lines.append("};\n")
 
-    hpp_lines.append("template<> constexpr auto ClockTree<Signals>::muxes = std::to_array<Mux>({")
+    hpp_lines.append("template<> ClockTree<Signals>::Mux const ClockTree<Signals>::muxes[] = {")
     for m in muxes:
         input_list = []
         for i in m['inputs']:
@@ -114,24 +114,23 @@ def generate_header(yaml_path, hpp_path):
                 raise KeyError(f"Unknown signal name in mux inputs: {i}")
         inputs_str = "{ " + ", ".join(input_list) + " }"
         hpp_lines.append(
-            f'  {{ "{m["name"]}", Signals::{signal_enum_map[m["output"]]}, {inputs_str}, {emit_field_ref(m.get("control"))} }},'
+            f'    {{ "{m["name"]}", Signals::{signal_enum_map[m["output"]]}, {inputs_str}, {emit_field_ref(m.get("control"))} }},'
         )
     hpp_lines.append("};\n")
 
-    hpp_lines.append("template<> constexpr auto ClockTree<Signals>::signals = std::to_array<Signal>({")
+    hpp_lines.append("template<> ClockTree<Signals>::Signal const ClockTree<Signals>::signals[] = {")
     for s in signals:
         name = s["name"]
         gen_type, gen_obj = signal_generators.get(name, ("Source", None))
         gen_list = locals().get(gen_type, [])
-        gen_ref = f"&{gen_type}[{gen_list.index(gen_obj)}]" if gen_obj else "{}"
+        gen_ref = f"&{gen_type}[{gen_list.index(gen_obj)}]" if gen_obj else "nullptr"
         hpp_lines.append(
-            f'  {{ "{name}", {s.get("min", "std::nullopt")}, {s.get("max", "std::nullopt")}, {s.get("nominal", "std::nullopt")}, "{s.get("description", "")}", {gen_ref} }},'
+            f'    {{ "{name}", {gen_ref}, {s.get("min", "0")}, {s.get("max", "0")}, {s.get("nominal", "0")}, "{s.get("description", "")}" }},'
         )
-    hpp_lines.append("});\n")
+    hpp_lines.append("};\n")
 
     Path(hpp_path).write_text("\n".join(hpp_lines))
 
 
 if __name__ == "__main__":
     generate_header(sys.argv[1], sys.argv[2])
-#    generate_header("models/NXP/LPC8/LPC865_clocks.yaml", "LPC865_clocks.hpp")
