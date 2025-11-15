@@ -39,19 +39,32 @@ def download_pdf(url):
     print(f"PDF downloaded")
     return temp_file.name
 
-def find_table_pages(pdf, table_number):
+def find_table_pages(pdf, table_number, search_start=1, search_end=None):
     """
     Search for the specified table number in the PDF and return page numbers
+    
+    Args:
+        pdf: PDF document object
+        table_number: Table number to search for
+        search_start: Start page for search (1-based, default: 1)
+        search_end: End page for search (1-based, default: last page)
     
     Returns:
         tuple: (start_page, end_page) or (None, None) if not found
     """
-    print(f"Searching for Table {table_number}...")
+    if search_end is None:
+        search_end = len(pdf.pages)
+    
+    print(f"Searching for Table {table_number} in pages {search_start}-{search_end}...")
     
     start_page = None
     end_page = None
     
-    for page_num, page in enumerate(pdf.pages):
+    for page_num in range(search_start - 1, search_end):
+        if page_num >= len(pdf.pages):
+            break
+            
+        page = pdf.pages[page_num]
         text = page.extract_text()
         if text:
             # Search for "Table X" pattern
@@ -351,13 +364,14 @@ def main():
         epilog="""
 Examples:
   %(prog)s input.pdf output.csv
-  %(prog)s input.pdf output.csv --table 9 --pages 87..88
+  %(prog)s input.pdf output.csv --table 9
+  %(prog)s input.pdf output.csv --table 9 --pages 80..90
   %(prog)s input.pdf output.csv --pages ..10
   %(prog)s input.pdf output.csv --pages 50..
   %(prog)s input.pdf output.csv --drop-columns "0,3"
   %(prog)s input.pdf output.csv --drop-columns "..2,5"
   %(prog)s input.pdf output.csv --drop-columns "10.."
-  %(prog)s https://example.com/file.pdf output.csv -t 9 -s 1 -d "0..2,5"
+  %(prog)s https://example.com/file.pdf output.csv -t 9 -p 80..90 -s 1 -d "0..2,5"
         """
     )
     
@@ -369,7 +383,7 @@ Examples:
                        type=int, 
                        help='Table number (e.g. 9 for "Table 9")')
     parser.add_argument('--pages', '-p', 
-                       help='Page range (e.g. "87-88", "87..88", "..10", "50..", or "5")')
+                       help='Page range for extraction or search (e.g. "87-88", "87..88", "..10", "50..", or "5")')
     parser.add_argument('--skip-header', '-s',
                        type=int,
                        metavar='N',
@@ -400,22 +414,26 @@ Examples:
         # Open PDF to determine page numbers
         with pdfplumber.open(pdf_path) as pdf:
             # Determine page range
+            search_start = 1
+            search_end = len(pdf.pages)
+            
+            # If --pages is specified, use it as search range
+            if args.pages:
+                search_start, search_end = parse_page_range(args.pages, len(pdf.pages))
+                print(f"Search range limited to pages {search_start}-{search_end}")
+            
             if args.table:
-                # Search for table number
-                start_page, end_page = find_table_pages(pdf, args.table)
+                # Search for table number within the specified range
+                start_page, end_page = find_table_pages(pdf, args.table, search_start, search_end)
                 
                 if start_page is None:
-                    print(f"\nError: Table {args.table} not found!")
+                    print(f"\nError: Table {args.table} not found in pages {search_start}-{search_end}!")
                     return 1
                 
-                # Override with --pages if specified
-                if args.pages:
-                    print(f"Note: --pages overrides automatically found pages")
-                    start_page, end_page = parse_page_range(args.pages, len(pdf.pages))
-                
             elif args.pages:
-                # Only page range specified
-                start_page, end_page = parse_page_range(args.pages, len(pdf.pages))
+                # Only page range specified (no table search)
+                start_page = search_start
+                end_page = search_end
             else:
                 # Neither table nor pages specified - use all pages
                 start_page = 1
