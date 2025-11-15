@@ -75,7 +75,7 @@ def find_table_pages(pdf, table_number):
     
     return start_page, end_page
 
-def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_header_rows=None):
+def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_header_rows=None, drop_columns=None):
     """
     Extrahiert Tabelle aus PDF unter Verwendung der Linien zur Zellerkennung
     
@@ -85,6 +85,7 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
         end_page: End-Seite (1-basiert)
         output_csv: Ausgabe CSV-Datei
         skip_header_rows: Anzahl der Header-Zeilen die wiederholt werden (None für automatisch)
+        drop_columns: Set von Spalten-Indizes die entfernt werden sollen
     """
     print(f"\nÖffne PDF: {pdf_path}")
     
@@ -221,6 +222,19 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
         else:
             print("  Keine wiederholten Header gefunden")
     
+    # Entferne Spalten falls angegeben
+    if drop_columns:
+        print(f"\nEntferne Spalten: {sorted(drop_columns)}")
+        original_cols = len(cleaned_rows[0]) if cleaned_rows else 0
+        
+        cleaned_rows = [
+            [cell for idx, cell in enumerate(row) if idx not in drop_columns]
+            for row in cleaned_rows
+        ]
+        
+        new_cols = len(cleaned_rows[0]) if cleaned_rows else 0
+        print(f"  Spalten: {original_cols} → {new_cols}")
+    
     print(f"\nGesamt extrahiert: {len(cleaned_rows)} Zeilen")
     
     # Speichere als CSV
@@ -238,6 +252,34 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
     
     return True
 
+def parse_column_spec(column_spec):
+    """
+    Parse Spalten-Spezifikation wie "0,2,5" oder "0-2,5" in ein Set von Indizes
+    
+    Args:
+        column_spec: String mit Spalten-Spezifikation
+    
+    Returns:
+        Set von Integer-Indizes
+    """
+    if not column_spec:
+        return set()
+    
+    columns = set()
+    parts = column_spec.split(',')
+    
+    for part in parts:
+        part = part.strip()
+        if '-' in part:
+            # Bereich wie "0-2"
+            start, end = part.split('-')
+            columns.update(range(int(start), int(end) + 1))
+        else:
+            # Einzelne Spalte wie "5"
+            columns.add(int(part))
+    
+    return columns
+
 def main():
     parser = argparse.ArgumentParser(
         description='Extrahiert Tabellen aus PDF-Dateien basierend auf Linien',
@@ -247,7 +289,8 @@ Beispiele:
   %(prog)s input.pdf output.csv
   %(prog)s input.pdf output.csv --table 9 --pages 87-88
   %(prog)s input.pdf output.csv --pages 1-5 --skip-header 2
-  %(prog)s https://example.com/file.pdf output.csv --table 9 --skip-header 1
+  %(prog)s input.pdf output.csv --table 9 --skip-header 1 --drop-columns "0,3"
+  %(prog)s https://example.com/file.pdf output.csv --drop-columns "0-2,5"
         """
     )
     
@@ -264,6 +307,9 @@ Beispiele:
                        type=int,
                        metavar='N',
                        help='Anzahl der Header-Zeilen, die auf Folgeseiten entfernt werden sollen (Standard: automatisch)')
+    parser.add_argument('--drop-columns', '-d',
+                       metavar='COLS',
+                       help='Zu entfernende Spalten (z.B. "0,2,5" oder "0-2,5")')
     
     args = parser.parse_args()
     
@@ -317,13 +363,17 @@ Beispiele:
         
         print(f"\nExtrahiere Seiten {start_page} bis {end_page}")
         
+        # Parse Spalten-Spezifikation
+        drop_cols = parse_column_spec(args.drop_columns) if args.drop_columns else None
+        
         # Extrahiere Tabelle
         success = extract_table_from_pdf(
             pdf_path=pdf_path,
             start_page=start_page,
             end_page=end_page,
             output_csv=args.csv_path,
-            skip_header_rows=args.skip_header
+            skip_header_rows=args.skip_header,
+            drop_columns=drop_cols
         )
         
         if success:
