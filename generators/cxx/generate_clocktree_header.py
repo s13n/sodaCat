@@ -31,24 +31,29 @@ def generate_header(yaml_path, hpp_path, namespace):
     def emit_field_ref(field):
         if not field:
             return "{}"
-        return f"Rf({register_field_id(field)})"
+        return f"R({register_field_id(field)})"
 
-    # Map signal name to generator
-    signal_generators = {}
+    # Map signal name to generating element
+    elements = {}
 
     for gen in generators:
-        signal_generators[gen['output']] = (gen['name'], 'generators', gen)
+        last_gen = gen['name']
+        elements[gen['output']] = (last_gen, 'generators', gen)
     for pll in plls:
-        signal_generators[pll['output']] = (pll['name'], 'plls', pll)
+        last_pll = pll['name']
+        elements[pll['output']] = (last_pll, 'plls', pll)
     for gate in gates:
-        signal_generators[gate['output']] = (gate['name'], 'gates', gate)
+        last_gate = gate['name']
+        elements[gate['output']] = (last_gate, 'gates', gate)
     for div in dividers:
-        signal_generators[div['output']] = (div['name'], 'dividers', div)
+        last_div = div['name']
+        elements[div['output']] = (last_div, 'dividers', div)
     for mux in muxes:
-        signal_generators[mux['output']] = (mux['name'], 'muxes', mux)
+        last_mux = mux['name']
+        elements[mux['output']] = (last_mux, 'muxes', mux)
 
     sigIndexType = 'uint8_t' if len(signals) < 255 else 'uint16_t'
-    eleIndexType = 'uint8_t' if len(signal_generators) < 255 else 'uint16_t'
+    eleIndexType = 'uint8_t' if len(elements) < 255 else 'uint16_t'
     fldIndexType = 'uint8_t' if len(field_list) < 255 else 'uint16_t'
     
     # Header file
@@ -83,13 +88,21 @@ def generate_header(yaml_path, hpp_path, namespace):
     for f in field_list:
         hpp_lines.append(f"        {f['name']},  //!< {f.get('description', '')}")
     hpp_lines.append("    };")
+    hpp_lines.append("")
+    hpp_lines.append(f"    static constexpr auto last_gen = Elements::{last_gen};")
+    hpp_lines.append(f"    static constexpr auto last_pll = Elements::{last_pll};")
+    hpp_lines.append(f"    static constexpr auto last_gate= Elements::{last_gate};")
+    hpp_lines.append(f"    static constexpr auto last_div = Elements::{last_div};")
+    hpp_lines.append(f"    static constexpr auto last_mux = Elements::{last_mux};")
     hpp_lines.append("};")
     hpp_lines.append("")
+
     hpp_lines.append("struct Clocks {")
     hpp_lines.append("    using Ix = Indices;")
     hpp_lines.append("    using S = Ix::Signals;")
     hpp_lines.append("    using E = Ix::Elements;")
-    hpp_lines.append("    using Rf = Ix::RegFields;")
+    hpp_lines.append("    using R = Ix::RegFields;")
+    hpp_lines.append("    using Rf = clocktree::RegisterField;")
     hpp_lines.append("    using Ge = clocktree::Generator<Ix>;")
     hpp_lines.append("    using Pl = clocktree::Pll<Ix>;")
     hpp_lines.append("    using Ga = clocktree::Gate<Ix>;")
@@ -98,8 +111,8 @@ def generate_header(yaml_path, hpp_path, namespace):
     hpp_lines.append("    using Si = clocktree::Signal<Ix>;")
     hpp_lines.append("")
     
-    hpp_lines.append(f"    static constexpr std::array<clocktree::RegisterField const *, {len(field_list)+1}> register_fields = {{")
-    hpp_lines.append("        {},")
+    hpp_lines.append("    static constexpr std::array register_fields = {")
+    hpp_lines.append("        Rf{nullptr, nullptr},")
     for f in field_list:
         reg = f.get("reg", "")
         field = f.get("field", "")
@@ -161,7 +174,7 @@ def generate_header(yaml_path, hpp_path, namespace):
     hpp_lines.append("    static constexpr std::array signals = {")
     for s in signals:
         name = s["name"]
-        gen_name, gen_type, gen_obj = signal_generators.get(name, ("_", "Source", None))
+        gen_name, gen_type, gen_obj = elements.get(name, ("_", "Source", None))
         gen_list = locals().get(gen_type, [])
         gen_ref = f"&{gen_type}[{gen_list.index(gen_obj)}]" if gen_obj else "{}"
         hpp_lines.append(

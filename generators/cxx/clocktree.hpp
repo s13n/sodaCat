@@ -20,10 +20,8 @@ export module clocktree;
 namespace clocktree {
     /** Representation of a register field used to control a functional element. */
     struct RegisterField {
-        char const *reg;
-        char const *field;
-        int32_t offset;
-        virtual uint32_t read() const = 0;
+        uint32_t(*get)();       //!< Read register field
+        void(*set)(uint32_t);   //!< Write register field
     };
 
     /** Generator functional element.
@@ -99,43 +97,67 @@ namespace clocktree {
 EXPORT template<typename Base> class ClockTree : public Base {
 public:
     /** Get frequency of given signal in Hz. */
-    uint32_t getFrequency(typename Base::Sig s) const {
+    uint32_t getFrequency(typename Base::S s) const {
         size_t index = static_cast<size_t>(s);
         if (index >= Base::signals.size()) [[unlikely]]
             return 0;
-        return std::visit([this](auto* gen) { return get_frequency(gen); }, Base::signals[index].source);
-    }
-
-private:
-    uint32_t get_frequency(typename Base::Ele src) const {
+        auto elem = Base::signals[index].source;
+        if (size_t(elem) == 0)
+            return 0;
+        if (size_t(elem) <= size_t(Base::Ix::last_gen))
+            return get_frequency(Base::generators[size_t(elem) - 1]);
+        if (size_t(elem) <= size_t(Base::Ix::last_pll))
+            return get_frequency(Base::plls[size_t(elem) - size_t(Base::Ix::last_gen)]);
+        if (size_t(elem) <= size_t(Base::Ix::last_gate))
+            return get_frequency(Base::gates[size_t(elem) - size_t(Base::Ix::last_pll)]);
+        if (size_t(elem) <= size_t(Base::Ix::last_div))
+            return get_frequency(Base::dividers[size_t(elem) - size_t(Base::Ix::last_gate)]);
+        if (size_t(elem) <= size_t(Base::Ix::last_mux))
+            return get_frequency(Base::muxes[size_t(elem) - size_t(Base::Ix::last_div)]);
         return 0;
     }
 
-    uint32_t get_frequency(Pll<typename Base::Ix> const *pll) const {
-        uint32_t input_freq = getFrequency(pll->input);
-        uint32_t fb_int = pll->feedback_integer ? pll->feedback_integer->read() : 1;
-        uint32_t fb_frac = pll->feedback_fraction ? pll->feedback_fraction->read() : 0;
-        uint32_t post_div = pll->post_divider ? pll->post_divider->read() : 1;
+private:
+    uint32_t get_frequency(typename Base::Ge const &gen) const {
+        auto *get_sel = Base::register_fields[size_t(gen.control)].get;
+        size_t index = get_sel ? get_sel() : 0;
+        if (index >= gen.values.size()) [[unlikely]]
+            return 0;
+        return *std::next(gen.values.begin(), index);
+    }
+
+    uint32_t get_frequency(typename Base::Pl const &pll) const {
+        uint32_t input_freq = getFrequency(pll.input);
+        auto *get_int = Base::register_fields[size_t(pll.feedback_integer)].get;
+        uint32_t fb_int = get_int ? get_int() : 1;
+        auto *get_frac = Base::register_fields[size_t(pll.feedback_fraction)].get;
+        uint32_t fb_frac = get_frac ? get_frac() : 0;
+        auto *get_div = Base::register_fields[size_t(pll.post_divider)].get;
+        uint32_t post_div = get_div ? get_div() : 1;
         double fb = fb_int + fb_frac / 65536.0;
         return uint32_t(input_freq * fb / post_div);
     }
 
-    uint32_t get_frequency(Gate<typename Base::Ix> const *gate) const {
-        return getFrequency(gate->input);
+    uint32_t get_frequency(typename Base::Ga const &gate) const {
+        auto *get = Base::register_fields[size_t(gate.control)].get;
+        return get && get() ? getFrequency(gate.input) : 0;
     }
 
-    uint32_t get_frequency(Divider<typename Base::Ix> const *div) const {
-        uint64_t input_freq = getFrequency(div->input);
-        uint32_t factor = div->factor ? div->factor->read() : div->value;
-        uint32_t denom = div->denominator ? div->denominator->read() : 1; 
+    uint32_t get_frequency(typename Base::Di const &div) const {
+        uint64_t input_freq = getFrequency(div.input);
+        auto *get_factor = Base::register_fields[size_t(div.factor)].get;
+        uint32_t factor = get_factor ? get_factor() : div.value;
+        auto *get_denom = Base::register_fields[size_t(div.denominator)].get;
+        uint32_t denom = get_denom ? get_denom() : 1; 
         return uint32_t(input_freq * denom / factor);
     }
 
-    uint32_t get_frequency(Mux<typename Base::Ix> const *mux) const {
-        size_t index = mux->control ? mux->control->read() : 0;
-        if (index >= mux->inputs.size()) [[unlikely]]
+    uint32_t get_frequency(typename Base::Mu const &mux) const {
+        auto *get_sel = Base::register_fields[size_t(mux.control)].get;
+        size_t index = get_sel ? get_sel() : 0;
+        if (index >= mux.inputs.size()) [[unlikely]]
             return 0;
-        return getFrequency(*std::next(mux->inputs.begin(), index));
+        return getFrequency(*std::next(mux.inputs.begin(), index));
     }
 };
 } // namespace
