@@ -158,6 +158,59 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv):
                     cleaned_row.append(cleaned_cell)
             cleaned_rows.append(cleaned_row)
     
+    # Entferne wiederholte Header-Zeilen
+    print("\nEntferne wiederholte Header-Zeilen...")
+    if len(cleaned_rows) > 1:
+        # Identifiziere potenzielle Header (erste Zeile(n))
+        # Wir suchen nach Zeilen, die identisch mit den ersten N Zeilen sind
+        header_candidates = []
+        
+        # Prüfe die ersten 1-5 Zeilen als mögliche Header
+        max_header_rows = min(5, len(cleaned_rows))
+        
+        for num_headers in range(1, max_header_rows + 1):
+            potential_headers = cleaned_rows[:num_headers]
+            duplicates_found = 0
+            
+            # Suche nach Wiederholungen dieser Header-Zeilen im Rest
+            for i in range(num_headers, len(cleaned_rows) - num_headers + 1):
+                if cleaned_rows[i:i+num_headers] == potential_headers:
+                    duplicates_found += 1
+            
+            if duplicates_found > 0:
+                header_candidates.append((num_headers, duplicates_found))
+        
+        # Wähle die Header-Konfiguration mit den meisten Duplikaten
+        if header_candidates:
+            best_header = max(header_candidates, key=lambda x: x[1])
+            num_header_rows = best_header[0]
+            num_duplicates = best_header[1]
+            
+            print(f"  Erkannt: {num_header_rows} Header-Zeile(n), {num_duplicates} Wiederholung(en) gefunden")
+            
+            # Entferne Duplikate
+            header_rows = cleaned_rows[:num_header_rows]
+            deduplicated_rows = [header_rows]
+            
+            i = num_header_rows
+            while i < len(cleaned_rows):
+                # Prüfe ob die nächsten N Zeilen die Header sind
+                if (i + num_header_rows <= len(cleaned_rows) and 
+                    cleaned_rows[i:i+num_header_rows] == header_rows):
+                    # Überspringe diese Header-Wiederholung
+                    print(f"  Überspringe Header-Wiederholung bei Zeile {i+1}")
+                    i += num_header_rows
+                else:
+                    # Normale Datenzeile
+                    deduplicated_rows.append([cleaned_rows[i]])
+                    i += 1
+            
+            # Flache Liste erstellen
+            cleaned_rows = [row for sublist in deduplicated_rows for row in sublist]
+            print(f"  Nach Deduplizierung: {len(cleaned_rows)} Zeilen")
+        else:
+            print("  Keine wiederholten Header gefunden")
+    
     print(f"\nGesamt extrahiert: {len(cleaned_rows)} Zeilen")
     
     # Speichere als CSV
