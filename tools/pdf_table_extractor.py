@@ -75,7 +75,7 @@ def find_table_pages(pdf, table_number):
     
     return start_page, end_page
 
-def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_header_rows=None, drop_columns=None):
+def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_header_rows=None, drop_columns_spec=None):
     """
     Extrahiert Tabelle aus PDF unter Verwendung der Linien zur Zellerkennung
     
@@ -85,7 +85,7 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
         end_page: End-Seite (1-basiert)
         output_csv: Ausgabe CSV-Datei
         skip_header_rows: Anzahl der Header-Zeilen die wiederholt werden (None für automatisch)
-        drop_columns: Set von Spalten-Indizes die entfernt werden sollen
+        drop_columns_spec: String-Spezifikation der zu entfernenden Spalten
     """
     print(f"\nÖffne PDF: {pdf_path}")
     
@@ -223,9 +223,13 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
             print("  Keine wiederholten Header gefunden")
     
     # Entferne Spalten falls angegeben
-    if drop_columns:
-        print(f"\nEntferne Spalten: {sorted(drop_columns)}")
+    if drop_columns_spec:
         original_cols = len(cleaned_rows[0]) if cleaned_rows else 0
+        
+        # Parse mit Kenntnis der Gesamtspaltenanzahl für offene Bereiche
+        drop_columns = parse_column_spec(drop_columns_spec, original_cols)
+        
+        print(f"\nEntferne Spalten: {sorted(drop_columns)}")
         
         cleaned_rows = [
             [cell for idx, cell in enumerate(row) if idx not in drop_columns]
@@ -252,12 +256,49 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
     
     return True
 
-def parse_column_spec(column_spec):
+def parse_page_range(page_spec, total_pages):
     """
-    Parse Spalten-Spezifikation wie "0,2,5" oder "0-2,5" in ein Set von Indizes
+    Parse Seitenbereich wie "87-88" oder "..10" oder "50.."
+    
+    Args:
+        page_spec: String mit Seiten-Spezifikation
+        total_pages: Gesamtanzahl Seiten im PDF
+    
+    Returns:
+        tuple: (start_page, end_page)
+    """
+    # Unterstütze sowohl '-' als auch '..' als Trennzeichen
+    if '-' in page_spec or '..' in page_spec:
+        separator = '..' if '..' in page_spec else '-'
+        parts = page_spec.split(separator)
+        
+        if len(parts) != 2:
+            raise ValueError(f"Ungültiger Seitenbereich: {page_spec}")
+        
+        start_str, end_str = parts
+        
+        # Offene Bereiche
+        if not start_str:
+            start = 1
+        else:
+            start = int(start_str)
+        
+        if not end_str:
+            end = total_pages
+        else:
+            end = int(end_str)
+        
+        return start, end
+    else:
+        # Einzelne Seite
+        page = int(page_spec)
+        return page, page
+    """
+    Parse Spalten-Spezifikation wie "0,2,5" oder "0-2,5" oder "0.." in ein Set von Indizes
     
     Args:
         column_spec: String mit Spalten-Spezifikation
+        max_columns: Maximale Anzahl Spalten (für offene Bereiche)
     
     Returns:
         Set von Integer-Indizes
@@ -270,12 +311,33 @@ def parse_column_spec(column_spec):
     
     for part in parts:
         part = part.strip()
-        if '-' in part:
-            # Bereich wie "0-2"
-            start, end = part.split('-')
-            columns.update(range(int(start), int(end) + 1))
+        
+        # Unterstütze sowohl '-' als auch '..' als Trennzeichen
+        if '-' in part or '..' in part:
+            separator = '..' if '..' in part else '-'
+            range_parts = part.split(separator)
+            
+            if len(range_parts) != 2:
+                raise ValueError(f"Ungültiger Bereich: {part}")
+            
+            start_str, end_str = range_parts
+            
+            # Offene Bereiche wie "..5" oder "3.." oder ".."
+            if not start_str:
+                start = 0
+            else:
+                start = int(start_str)
+            
+            if not end_str:
+                if max_columns is None:
+                    raise ValueError(f"Offener Bereich '{part}' benötigt Kenntnis der Gesamtanzahl Spalten")
+                end = max_columns - 1
+            else:
+                end = int(end_str)
+            
+            columns.update(range(start, end + 1))
         else:
-            # Einzelne Spalte wie "5"
+            # Einzelne Spalte
             columns.add(int(part))
     
     return columns
@@ -287,10 +349,13 @@ def main():
         epilog="""
 Beispiele:
   %(prog)s input.pdf output.csv
-  %(prog)s input.pdf output.csv --table 9 --pages 87-88
-  %(prog)s input.pdf output.csv --pages 1-5 --skip-header 2
-  %(prog)s input.pdf output.csv --table 9 --skip-header 1 --drop-columns "0,3"
-  %(prog)s https://example.com/file.pdf output.csv --drop-columns "0-2,5"
+  %(prog)s input.pdf output.csv --table 9 --pages 87..88
+  %(prog)s input.pdf output.csv --pages ..10
+  %(prog)s input.pdf output.csv --pages 50..
+  %(prog)s input.pdf output.csv --drop-columns "0,3"
+  %(prog)s input.pdf output.csv --drop-columns "..2,5"
+  %(prog)s input.pdf output.csv --drop-columns "10.."
+  %(prog)s https://example.com/file.pdf output.csv -t 9 -s 1 -d "0..2,5"
         """
     )
     
@@ -302,14 +367,14 @@ Beispiele:
                        type=int, 
                        help='Tabellennummer (z.B. 9 für "Table 9")')
     parser.add_argument('--pages', '-p', 
-                       help='Seitenbereich (z.B. "87-88" oder "5")')
+                       help='Seitenbereich (z.B. "87-88", "87..88", "..10", "50..", oder "5")')
     parser.add_argument('--skip-header', '-s',
                        type=int,
                        metavar='N',
                        help='Anzahl der Header-Zeilen, die auf Folgeseiten entfernt werden sollen (Standard: automatisch)')
     parser.add_argument('--drop-columns', '-d',
                        metavar='COLS',
-                       help='Zu entfernende Spalten (z.B. "0,2,5" oder "0-2,5")')
+                       help='Zu entfernende Spalten (z.B. "0,2,5", "0-2,5", "0..2", "..5", "10..")')
     
     args = parser.parse_args()
     
@@ -344,17 +409,11 @@ Beispiele:
                 # Override mit --pages falls angegeben
                 if args.pages:
                     print(f"Hinweis: --pages überschreibt automatisch gefundene Seiten")
-                    if '-' in args.pages:
-                        start_page, end_page = map(int, args.pages.split('-'))
-                    else:
-                        start_page = end_page = int(args.pages)
+                    start_page, end_page = parse_page_range(args.pages, len(pdf.pages))
                 
             elif args.pages:
                 # Nur Seitenbereich angegeben
-                if '-' in args.pages:
-                    start_page, end_page = map(int, args.pages.split('-'))
-                else:
-                    start_page = end_page = int(args.pages)
+                start_page, end_page = parse_page_range(args.pages, len(pdf.pages))
             else:
                 # Weder Tabelle noch Seiten angegeben - verwende alle Seiten
                 start_page = 1
@@ -363,9 +422,6 @@ Beispiele:
         
         print(f"\nExtrahiere Seiten {start_page} bis {end_page}")
         
-        # Parse Spalten-Spezifikation
-        drop_cols = parse_column_spec(args.drop_columns) if args.drop_columns else None
-        
         # Extrahiere Tabelle
         success = extract_table_from_pdf(
             pdf_path=pdf_path,
@@ -373,7 +429,7 @@ Beispiele:
             end_page=end_page,
             output_csv=args.csv_path,
             skip_header_rows=args.skip_header,
-            drop_columns=drop_cols
+            drop_columns_spec=args.drop_columns
         )
         
         if success:
