@@ -7,28 +7,75 @@ Installation:
 pip install pdfplumber requests
 
 Verwendung:
-python pdf_table_extractor.py
+python pdf_table_extractor.py <pdf_pfad> <csv_pfad> [--table NUMMER] [--pages START-ENDE]
+
+Beispiele:
+  python pdf_table_extractor.py input.pdf output.csv
+  python pdf_table_extractor.py input.pdf output.csv --table 9 --pages 87-88
+  python pdf_table_extractor.py https://example.com/file.pdf output.csv --pages 1-5
 """
 
 import pdfplumber
 import requests
 import csv
+import argparse
+import sys
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
-def download_pdf(url, output_path="downloaded.pdf"):
-    """PDF von URL herunterladen"""
+def download_pdf(url):
+    """PDF von URL herunterladen und temporäre Datei zurückgeben"""
     print(f"Lade PDF herunter von: {url}")
     response = requests.get(url, stream=True)
     response.raise_for_status()
     
-    with open(output_path, 'wb') as f:
+    # Erstelle temporäre Datei
+    temp_file = NamedTemporaryFile(delete=False, suffix='.pdf')
+    
+    with open(temp_file.name, 'wb') as f:
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
     
-    print(f"PDF gespeichert als: {output_path}")
-    return output_path
+    print(f"PDF heruntergeladen")
+    return temp_file.name
 
-def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv="output.csv"):
+def find_table_pages(pdf, table_number):
+    """
+    Sucht nach der angegebenen Tabellennummer im PDF und gibt die Seitenzahlen zurück
+    
+    Returns:
+        tuple: (start_page, end_page) oder (None, None) wenn nicht gefunden
+    """
+    print(f"Suche nach Table {table_number}...")
+    
+    start_page = None
+    end_page = None
+    
+    for page_num, page in enumerate(pdf.pages):
+        text = page.extract_text()
+        if text:
+            # Suche nach "Table X" Pattern
+            import re
+            pattern = rf'\bTable\s+{table_number}\b'
+            
+            if re.search(pattern, text, re.IGNORECASE):
+                if start_page is None:
+                    start_page = page_num + 1
+                    print(f"  Table {table_number} gefunden auf Seite {start_page}")
+                end_page = page_num + 1
+            elif start_page is not None:
+                # Prüfe ob wir zur nächsten Tabelle gekommen sind
+                next_pattern = rf'\bTable\s+{int(table_number) + 1}\b'
+                if re.search(next_pattern, text, re.IGNORECASE):
+                    print(f"  Table {table_number} endet auf Seite {end_page}")
+                    break
+    
+    if start_page and not end_page:
+        end_page = start_page
+    
+    return start_page, end_page
+
+def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv):
     """
     Extrahiert Tabelle aus PDF unter Verwendung der Linien zur Zellerkennung
     
@@ -43,14 +90,16 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv="output.cs
     all_rows = []
     
     with pdfplumber.open(pdf_path) as pdf:
-        print(f"PDF hat {len(pdf.pages)} Seiten")
+        total_pages = len(pdf.pages)
+        print(f"PDF hat {total_pages} Seiten")
+        
+        # Validiere Seitenzahlen
+        if start_page < 1 or end_page > total_pages or start_page > end_page:
+            print(f"Fehler: Ungültige Seitenzahlen (1-{total_pages})")
+            return False
         
         # Iteriere über die angegebenen Seiten
         for page_num in range(start_page - 1, end_page):
-            if page_num >= len(pdf.pages):
-                print(f"Warnung: Seite {page_num + 1} existiert nicht")
-                continue
-                
             page = pdf.pages[page_num]
             print(f"\nVerarbeite Seite {page_num + 1}...")
             
@@ -127,44 +176,107 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv="output.cs
     return True
 
 def main():
-    # Konfiguration
-    PDF_URL = "https://www.st.com/resource/en/datasheet/stm32h745zg.pdf"
-    START_PAGE = 87
-    END_PAGE = 88
-    OUTPUT_CSV = "table_9.csv"
+    parser = argparse.ArgumentParser(
+        description='Extrahiert Tabellen aus PDF-Dateien basierend auf Linien',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Beispiele:
+  %(prog)s input.pdf output.csv
+  %(prog)s input.pdf output.csv --table 9 --pages 87-88
+  %(prog)s https://example.com/file.pdf output.csv --pages 1-5
+        """
+    )
+    
+    parser.add_argument('pdf_path', 
+                       help='Pfad zur PDF-Datei oder URL')
+    parser.add_argument('csv_path', 
+                       help='Pfad zur Ausgabe-CSV-Datei')
+    parser.add_argument('--table', '-t', 
+                       type=int, 
+                       help='Tabellennummer (z.B. 9 für "Table 9")')
+    parser.add_argument('--pages', '-p', 
+                       help='Seitenbereich (z.B. "87-88" oder "5")')
+    
+    args = parser.parse_args()
     
     print("=" * 60)
     print("PDF Tabellen Extraktor mit Linienerkennung")
     print("=" * 60)
     
-    # Option 1: PDF von URL herunterladen
+    # Bestimme ob PDF-Pfad eine URL ist
+    pdf_path = args.pdf_path
+    is_url = pdf_path.startswith('http://') or pdf_path.startswith('https://')
+    temp_file = None
+    
     try:
-        pdf_path = download_pdf(PDF_URL, "stm32h745zg.pdf")
-    except Exception as e:
-        print(f"Fehler beim Herunterladen: {e}")
-        print("\nAlternativ: Legen Sie die PDF-Datei manuell in dieses Verzeichnis")
-        print("und geben Sie den Dateinamen ein:")
-        pdf_path = input("PDF-Dateiname: ").strip()
-        
-        if not Path(pdf_path).exists():
+        if is_url:
+            temp_file = download_pdf(pdf_path)
+            pdf_path = temp_file
+        elif not Path(pdf_path).exists():
             print(f"Fehler: Datei '{pdf_path}' nicht gefunden!")
-            return
+            return 1
+        
+        # Öffne PDF um Seitenzahlen zu bestimmen
+        with pdfplumber.open(pdf_path) as pdf:
+            # Bestimme Seitenbereich
+            if args.table:
+                # Suche nach Tabellennummer
+                start_page, end_page = find_table_pages(pdf, args.table)
+                
+                if start_page is None:
+                    print(f"\nFehler: Table {args.table} nicht gefunden!")
+                    return 1
+                
+                # Override mit --pages falls angegeben
+                if args.pages:
+                    print(f"Hinweis: --pages überschreibt automatisch gefundene Seiten")
+                    if '-' in args.pages:
+                        start_page, end_page = map(int, args.pages.split('-'))
+                    else:
+                        start_page = end_page = int(args.pages)
+                
+            elif args.pages:
+                # Nur Seitenbereich angegeben
+                if '-' in args.pages:
+                    start_page, end_page = map(int, args.pages.split('-'))
+                else:
+                    start_page = end_page = int(args.pages)
+            else:
+                # Weder Tabelle noch Seiten angegeben - verwende alle Seiten
+                start_page = 1
+                end_page = len(pdf.pages)
+                print(f"Hinweis: Extrahiere von allen Seiten (1-{end_page})")
+        
+        print(f"\nExtrahiere Seiten {start_page} bis {end_page}")
+        
+        # Extrahiere Tabelle
+        success = extract_table_from_pdf(
+            pdf_path=pdf_path,
+            start_page=start_page,
+            end_page=end_page,
+            output_csv=args.csv_path
+        )
+        
+        if success:
+            print("\n" + "=" * 60)
+            print("✓ Extraktion abgeschlossen!")
+            print(f"✓ CSV-Datei: {args.csv_path}")
+            print("=" * 60)
+            return 0
+        else:
+            print("\n✗ Extraktion fehlgeschlagen!")
+            return 1
+            
+    except Exception as e:
+        print(f"\n✗ Fehler: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
     
-    # Extrahiere Tabelle
-    success = extract_table_from_pdf(
-        pdf_path=pdf_path,
-        start_page=START_PAGE,
-        end_page=END_PAGE,
-        output_csv=OUTPUT_CSV
-    )
-    
-    if success:
-        print("\n" + "=" * 60)
-        print("✓ Extraktion abgeschlossen!")
-        print(f"✓ CSV-Datei: {OUTPUT_CSV}")
-        print("=" * 60)
-    else:
-        print("\n✗ Extraktion fehlgeschlagen!")
+    finally:
+        # Lösche temporäre Datei falls erstellt
+        if temp_file and Path(temp_file).exists():
+            Path(temp_file).unlink()
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
