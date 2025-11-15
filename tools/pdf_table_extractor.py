@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-PDF Tabellen Extraktor mit Linienerkennung
-Verwendet pdfplumber zur präzisen Tabellenerkennung basierend auf Linien im PDF
+PDF Table Extractor with Line Detection
+Uses pdfplumber for precise table recognition based on lines in the PDF
 
 Installation:
 pip install pdfplumber requests
 
-Verwendung:
-python pdf_table_extractor.py <pdf_pfad> <csv_pfad> [--table NUMMER] [--pages START-ENDE]
+Usage:
+python pdf_table_extractor.py <pdf_path> <csv_path> [--table NUMBER] [--pages START-END]
 
-Beispiele:
+Examples:
   python pdf_table_extractor.py input.pdf output.csv
-  python pdf_table_extractor.py input.pdf output.csv --table 9 --pages 87-88
-  python pdf_table_extractor.py https://example.com/file.pdf output.csv --pages 1-5
+  python pdf_table_extractor.py input.pdf output.csv --table 9 --pages 87..88
+  python pdf_table_extractor.py https://example.com/file.pdf output.csv --pages ..10
 """
 
 import pdfplumber
@@ -24,29 +24,29 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 def download_pdf(url):
-    """PDF von URL herunterladen und temporäre Datei zurückgeben"""
-    print(f"Lade PDF herunter von: {url}")
+    """Download PDF from URL and return temporary file"""
+    print(f"Downloading PDF from: {url}")
     response = requests.get(url, stream=True)
     response.raise_for_status()
     
-    # Erstelle temporäre Datei
+    # Create temporary file
     temp_file = NamedTemporaryFile(delete=False, suffix='.pdf')
     
     with open(temp_file.name, 'wb') as f:
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
     
-    print(f"PDF heruntergeladen")
+    print(f"PDF downloaded")
     return temp_file.name
 
 def find_table_pages(pdf, table_number):
     """
-    Sucht nach der angegebenen Tabellennummer im PDF und gibt die Seitenzahlen zurück
+    Search for the specified table number in the PDF and return page numbers
     
     Returns:
-        tuple: (start_page, end_page) oder (None, None) wenn nicht gefunden
+        tuple: (start_page, end_page) or (None, None) if not found
     """
-    print(f"Suche nach Table {table_number}...")
+    print(f"Searching for Table {table_number}...")
     
     start_page = None
     end_page = None
@@ -54,20 +54,20 @@ def find_table_pages(pdf, table_number):
     for page_num, page in enumerate(pdf.pages):
         text = page.extract_text()
         if text:
-            # Suche nach "Table X" Pattern
+            # Search for "Table X" pattern
             import re
             pattern = rf'\bTable\s+{table_number}\b'
             
             if re.search(pattern, text, re.IGNORECASE):
                 if start_page is None:
                     start_page = page_num + 1
-                    print(f"  Table {table_number} gefunden auf Seite {start_page}")
+                    print(f"  Table {table_number} found on page {start_page}")
                 end_page = page_num + 1
             elif start_page is not None:
-                # Prüfe ob wir zur nächsten Tabelle gekommen sind
+                # Check if we've reached the next table
                 next_pattern = rf'\bTable\s+{int(table_number) + 1}\b'
                 if re.search(next_pattern, text, re.IGNORECASE):
-                    print(f"  Table {table_number} endet auf Seite {end_page}")
+                    print(f"  Table {table_number} ends on page {end_page}")
                     break
     
     if start_page and not end_page:
@@ -75,37 +75,125 @@ def find_table_pages(pdf, table_number):
     
     return start_page, end_page
 
-def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_header_rows=None, drop_columns_spec=None):
+def parse_page_range(page_spec, total_pages):
     """
-    Extrahiert Tabelle aus PDF unter Verwendung der Linien zur Zellerkennung
+    Parse page range like "87-88" or "..10" or "50.."
     
     Args:
-        pdf_path: Pfad zur PDF-Datei
-        start_page: Start-Seite (1-basiert)
-        end_page: End-Seite (1-basiert)
-        output_csv: Ausgabe CSV-Datei
-        skip_header_rows: Anzahl der Header-Zeilen die wiederholt werden (None für automatisch)
-        drop_columns_spec: String-Spezifikation der zu entfernenden Spalten
+        page_spec: String with page specification
+        total_pages: Total number of pages in PDF
+    
+    Returns:
+        tuple: (start_page, end_page)
     """
-    print(f"\nÖffne PDF: {pdf_path}")
+    # Support both '-' and '..' as separators
+    if '-' in page_spec or '..' in page_spec:
+        separator = '..' if '..' in page_spec else '-'
+        parts = page_spec.split(separator)
+        
+        if len(parts) != 2:
+            raise ValueError(f"Invalid page range: {page_spec}")
+        
+        start_str, end_str = parts
+        
+        # Open ranges
+        if not start_str:
+            start = 1
+        else:
+            start = int(start_str)
+        
+        if not end_str:
+            end = total_pages
+        else:
+            end = int(end_str)
+        
+        return start, end
+    else:
+        # Single page
+        page = int(page_spec)
+        return page, page
+
+def parse_column_spec(column_spec, max_columns=None):
+    """
+    Parse column specification like "0,2,5" or "0-2,5" or "0.." into a set of indices
+    
+    Args:
+        column_spec: String with column specification
+        max_columns: Maximum number of columns (for open ranges)
+    
+    Returns:
+        Set of integer indices
+    """
+    if not column_spec:
+        return set()
+    
+    columns = set()
+    parts = column_spec.split(',')
+    
+    for part in parts:
+        part = part.strip()
+        
+        # Support both '-' and '..' as separators
+        if '-' in part or '..' in part:
+            separator = '..' if '..' in part else '-'
+            range_parts = part.split(separator)
+            
+            if len(range_parts) != 2:
+                raise ValueError(f"Invalid range: {part}")
+            
+            start_str, end_str = range_parts
+            
+            # Open ranges like "..5" or "3.." or ".."
+            if not start_str:
+                start = 0
+            else:
+                start = int(start_str)
+            
+            if not end_str:
+                if max_columns is None:
+                    raise ValueError(f"Open range '{part}' requires knowledge of total number of columns")
+                end = max_columns - 1
+            else:
+                end = int(end_str)
+            
+            columns.update(range(start, end + 1))
+        else:
+            # Single column
+            columns.add(int(part))
+    
+    return columns
+
+def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_header_rows=None, drop_columns_spec=None):
+    """
+    Extract table from PDF using lines for cell recognition
+    
+    Args:
+        pdf_path: Path to PDF file
+        start_page: Start page (1-based)
+        end_page: End page (1-based)
+        output_csv: Output CSV file
+        skip_header_rows: Number of header rows that are repeated (None for automatic)
+        drop_columns_spec: String specification of columns to remove
+    """
+    print(f"\nOpening PDF: {pdf_path}")
     
     all_rows = []
     
     with pdfplumber.open(pdf_path) as pdf:
         total_pages = len(pdf.pages)
-        print(f"PDF hat {total_pages} Seiten")
+        print(f"PDF has {total_pages} pages")
         
-        # Validiere Seitenzahlen
+        # Validate page numbers
         if start_page < 1 or end_page > total_pages or start_page > end_page:
-            print(f"Fehler: Ungültige Seitenzahlen (1-{total_pages})")
+            print(f"Error: Invalid page numbers (1-{total_pages})")
             return False
         
-        # Iteriere über die angegebenen Seiten
+        # Iterate over specified pages
         for page_num in range(start_page - 1, end_page):
             page = pdf.pages[page_num]
-            print(f"\nVerarbeite Seite {page_num + 1}...")
+            print(f"\nProcessing page {page_num + 1}...")
             
-            # Strategie 1: Versuche mit table_settings für bessere Erkennung
+            # Strategy 1: Try with table_settings for better recognition
             table_settings = {
                 "vertical_strategy": "lines",
                 "horizontal_strategy": "lines",
@@ -119,66 +207,66 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
                 "intersection_tolerance": 3,
             }
             
-            # Versuche Tabellen auf der Seite zu finden
+            # Try to find tables on the page
             tables = page.extract_tables(table_settings)
             
             if tables:
-                print(f"  Gefunden: {len(tables)} Tabelle(n)")
+                print(f"  Found: {len(tables)} table(s)")
                 for idx, table in enumerate(tables):
-                    print(f"  Tabelle {idx + 1}: {len(table)} Zeilen, {len(table[0]) if table else 0} Spalten")
+                    print(f"  Table {idx + 1}: {len(table)} rows, {len(table[0]) if table else 0} columns")
                     all_rows.extend(table)
             else:
-                # Fallback: Versuche ohne Linien (text-basiert)
-                print("  Keine Tabellen mit Linien gefunden, versuche text-basierte Extraktion...")
+                # Fallback: Try without lines (text-based)
+                print("  No tables found with lines, trying text-based extraction...")
                 table_settings["vertical_strategy"] = "text"
                 table_settings["horizontal_strategy"] = "text"
                 tables = page.extract_tables(table_settings)
                 
                 if tables:
-                    print(f"  Gefunden (text-basiert): {len(tables)} Tabelle(n)")
+                    print(f"  Found (text-based): {len(tables)} table(s)")
                     for table in tables:
                         all_rows.extend(table)
                 else:
-                    print("  Keine Tabellen gefunden")
+                    print("  No tables found")
     
     if not all_rows:
-        print("\nFehler: Keine Tabellendaten extrahiert!")
+        print("\nError: No table data extracted!")
         return False
     
-    # Bereinige die Daten
+    # Clean the data
     cleaned_rows = []
     for row in all_rows:
-        if row and any(cell for cell in row if cell):  # Überspringe komplett leere Zeilen
-            # Bereinige jede Zelle
+        if row and any(cell for cell in row if cell):  # Skip completely empty rows
+            # Clean each cell
             cleaned_row = []
             for cell in row:
                 if cell is None:
                     cleaned_row.append("")
                 else:
-                    # Entferne überflüssige Whitespace und Zeilenumbrüche
+                    # Remove excess whitespace and line breaks
                     cleaned_cell = " ".join(str(cell).split())
                     cleaned_row.append(cleaned_cell)
             cleaned_rows.append(cleaned_row)
     
-    # Entferne wiederholte Header-Zeilen
-    print("\nEntferne wiederholte Header-Zeilen...")
+    # Remove repeated header rows
+    print("\nRemoving repeated header rows...")
     if len(cleaned_rows) > 1:
         num_header_rows = skip_header_rows
         
-        # Automatische Erkennung wenn nicht manuell angegeben
+        # Automatic detection if not manually specified
         if num_header_rows is None:
-            print("  Automatische Header-Erkennung...")
-            # Identifiziere potenzielle Header (erste Zeile(n))
+            print("  Automatic header detection...")
+            # Identify potential headers (first row(s))
             header_candidates = []
             
-            # Prüfe die ersten 1-5 Zeilen als mögliche Header
+            # Check first 1-5 rows as possible headers
             max_header_rows = min(5, len(cleaned_rows))
             
             for num_headers in range(1, max_header_rows + 1):
                 potential_headers = cleaned_rows[:num_headers]
                 duplicates_found = 0
                 
-                # Suche nach Wiederholungen dieser Header-Zeilen im Rest
+                # Search for repetitions of these header rows in the rest
                 for i in range(num_headers, len(cleaned_rows) - num_headers + 1):
                     if cleaned_rows[i:i+num_headers] == potential_headers:
                         duplicates_found += 1
@@ -186,50 +274,50 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
                 if duplicates_found > 0:
                     header_candidates.append((num_headers, duplicates_found))
             
-            # Wähle die Header-Konfiguration mit den meisten Duplikaten
+            # Choose header configuration with most duplicates
             if header_candidates:
                 best_header = max(header_candidates, key=lambda x: x[1])
                 num_header_rows = best_header[0]
                 num_duplicates = best_header[1]
-                print(f"  Erkannt: {num_header_rows} Header-Zeile(n), {num_duplicates} Wiederholung(en) gefunden")
+                print(f"  Detected: {num_header_rows} header row(s), {num_duplicates} repetition(s) found")
             else:
-                print("  Keine wiederholten Header gefunden")
+                print("  No repeated headers found")
                 num_header_rows = 0
         else:
-            print(f"  Verwende manuelle Angabe: {num_header_rows} Header-Zeile(n)")
+            print(f"  Using manual specification: {num_header_rows} header row(s)")
         
-        # Entferne Duplikate wenn Header gefunden
+        # Remove duplicates if headers found
         if num_header_rows > 0 and num_header_rows < len(cleaned_rows):
             header_rows = cleaned_rows[:num_header_rows]
             deduplicated_rows = [header_rows]
             
             i = num_header_rows
             while i < len(cleaned_rows):
-                # Prüfe ob die nächsten N Zeilen die Header sind
+                # Check if next N rows are the headers
                 if (i + num_header_rows <= len(cleaned_rows) and 
                     cleaned_rows[i:i+num_header_rows] == header_rows):
-                    # Überspringe diese Header-Wiederholung
-                    print(f"  Überspringe Header-Wiederholung bei Zeile {i+1}")
+                    # Skip this header repetition
+                    print(f"  Skipping header repetition at row {i+1}")
                     i += num_header_rows
                 else:
-                    # Normale Datenzeile
+                    # Normal data row
                     deduplicated_rows.append([cleaned_rows[i]])
                     i += 1
             
-            # Flache Liste erstellen
+            # Create flat list
             cleaned_rows = [row for sublist in deduplicated_rows for row in sublist]
-            print(f"  Nach Deduplizierung: {len(cleaned_rows)} Zeilen")
+            print(f"  After deduplication: {cleaned_rows} rows")
         else:
-            print("  Keine wiederholten Header gefunden")
+            print("  No repeated headers found")
     
-    # Entferne Spalten falls angegeben
+    # Remove columns if specified
     if drop_columns_spec:
         original_cols = len(cleaned_rows[0]) if cleaned_rows else 0
         
-        # Parse mit Kenntnis der Gesamtspaltenanzahl für offene Bereiche
+        # Parse with knowledge of total column count for open ranges
         drop_columns = parse_column_spec(drop_columns_spec, original_cols)
         
-        print(f"\nEntferne Spalten: {sorted(drop_columns)}")
+        print(f"\nRemoving columns: {sorted(drop_columns)}")
         
         cleaned_rows = [
             [cell for idx, cell in enumerate(row) if idx not in drop_columns]
@@ -237,117 +325,31 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
         ]
         
         new_cols = len(cleaned_rows[0]) if cleaned_rows else 0
-        print(f"  Spalten: {original_cols} → {new_cols}")
+        print(f"  Columns: {original_cols} → {new_cols}")
     
-    print(f"\nGesamt extrahiert: {len(cleaned_rows)} Zeilen")
+    print(f"\nTotal extracted: {len(cleaned_rows)} rows")
     
-    # Speichere als CSV
-    print(f"Speichere CSV: {output_csv}")
+    # Save as CSV
+    print(f"Saving CSV: {output_csv}")
     with open(output_csv, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerows(cleaned_rows)
     
-    print(f"✓ Erfolgreich gespeichert: {output_csv}")
+    print(f"✓ Successfully saved: {output_csv}")
     
-    # Zeige Vorschau
-    print("\n--- Vorschau (erste 5 Zeilen) ---")
+    # Show preview
+    print("\n--- Preview (first 5 rows) ---")
     for i, row in enumerate(cleaned_rows[:5]):
-        print(f"Zeile {i+1}: {row}")
+        print(f"Row {i+1}: {row}")
     
     return True
 
-def parse_page_range(page_spec, total_pages):
-    """
-    Parse Seitenbereich wie "87-88" oder "..10" oder "50.."
-    
-    Args:
-        page_spec: String mit Seiten-Spezifikation
-        total_pages: Gesamtanzahl Seiten im PDF
-    
-    Returns:
-        tuple: (start_page, end_page)
-    """
-    # Unterstütze sowohl '-' als auch '..' als Trennzeichen
-    if '-' in page_spec or '..' in page_spec:
-        separator = '..' if '..' in page_spec else '-'
-        parts = page_spec.split(separator)
-        
-        if len(parts) != 2:
-            raise ValueError(f"Ungültiger Seitenbereich: {page_spec}")
-        
-        start_str, end_str = parts
-        
-        # Offene Bereiche
-        if not start_str:
-            start = 1
-        else:
-            start = int(start_str)
-        
-        if not end_str:
-            end = total_pages
-        else:
-            end = int(end_str)
-        
-        return start, end
-    else:
-        # Einzelne Seite
-        page = int(page_spec)
-        return page, page
-    """
-    Parse Spalten-Spezifikation wie "0,2,5" oder "0-2,5" oder "0.." in ein Set von Indizes
-    
-    Args:
-        column_spec: String mit Spalten-Spezifikation
-        max_columns: Maximale Anzahl Spalten (für offene Bereiche)
-    
-    Returns:
-        Set von Integer-Indizes
-    """
-    if not column_spec:
-        return set()
-    
-    columns = set()
-    parts = column_spec.split(',')
-    
-    for part in parts:
-        part = part.strip()
-        
-        # Unterstütze sowohl '-' als auch '..' als Trennzeichen
-        if '-' in part or '..' in part:
-            separator = '..' if '..' in part else '-'
-            range_parts = part.split(separator)
-            
-            if len(range_parts) != 2:
-                raise ValueError(f"Ungültiger Bereich: {part}")
-            
-            start_str, end_str = range_parts
-            
-            # Offene Bereiche wie "..5" oder "3.." oder ".."
-            if not start_str:
-                start = 0
-            else:
-                start = int(start_str)
-            
-            if not end_str:
-                if max_columns is None:
-                    raise ValueError(f"Offener Bereich '{part}' benötigt Kenntnis der Gesamtanzahl Spalten")
-                end = max_columns - 1
-            else:
-                end = int(end_str)
-            
-            columns.update(range(start, end + 1))
-        else:
-            # Einzelne Spalte
-            columns.add(int(part))
-    
-    return columns
-
 def main():
     parser = argparse.ArgumentParser(
-        description='Extrahiert Tabellen aus PDF-Dateien basierend auf Linien',
+        description='Extract tables from PDF files based on lines',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Beispiele:
+Examples:
   %(prog)s input.pdf output.csv
   %(prog)s input.pdf output.csv --table 9 --pages 87..88
   %(prog)s input.pdf output.csv --pages ..10
@@ -360,29 +362,29 @@ Beispiele:
     )
     
     parser.add_argument('pdf_path', 
-                       help='Pfad zur PDF-Datei oder URL')
+                       help='Path to PDF file or URL')
     parser.add_argument('csv_path', 
-                       help='Pfad zur Ausgabe-CSV-Datei')
+                       help='Path to output CSV file')
     parser.add_argument('--table', '-t', 
                        type=int, 
-                       help='Tabellennummer (z.B. 9 für "Table 9")')
+                       help='Table number (e.g. 9 for "Table 9")')
     parser.add_argument('--pages', '-p', 
-                       help='Seitenbereich (z.B. "87-88", "87..88", "..10", "50..", oder "5")')
+                       help='Page range (e.g. "87-88", "87..88", "..10", "50..", or "5")')
     parser.add_argument('--skip-header', '-s',
                        type=int,
                        metavar='N',
-                       help='Anzahl der Header-Zeilen, die auf Folgeseiten entfernt werden sollen (Standard: automatisch)')
+                       help='Number of header rows to remove on subsequent pages (default: automatic)')
     parser.add_argument('--drop-columns', '-d',
                        metavar='COLS',
-                       help='Zu entfernende Spalten (z.B. "0,2,5", "0-2,5", "0..2", "..5", "10..")')
+                       help='Columns to remove (e.g. "0,2,5", "0-2,5", "0..2", "..5", "10..")')
     
     args = parser.parse_args()
     
     print("=" * 60)
-    print("PDF Tabellen Extraktor mit Linienerkennung")
+    print("PDF Table Extractor with Line Detection")
     print("=" * 60)
     
-    # Bestimme ob PDF-Pfad eine URL ist
+    # Determine if PDF path is a URL
     pdf_path = args.pdf_path
     is_url = pdf_path.startswith('http://') or pdf_path.startswith('https://')
     temp_file = None
@@ -392,37 +394,37 @@ Beispiele:
             temp_file = download_pdf(pdf_path)
             pdf_path = temp_file
         elif not Path(pdf_path).exists():
-            print(f"Fehler: Datei '{pdf_path}' nicht gefunden!")
+            print(f"Error: File '{pdf_path}' not found!")
             return 1
         
-        # Öffne PDF um Seitenzahlen zu bestimmen
+        # Open PDF to determine page numbers
         with pdfplumber.open(pdf_path) as pdf:
-            # Bestimme Seitenbereich
+            # Determine page range
             if args.table:
-                # Suche nach Tabellennummer
+                # Search for table number
                 start_page, end_page = find_table_pages(pdf, args.table)
                 
                 if start_page is None:
-                    print(f"\nFehler: Table {args.table} nicht gefunden!")
+                    print(f"\nError: Table {args.table} not found!")
                     return 1
                 
-                # Override mit --pages falls angegeben
+                # Override with --pages if specified
                 if args.pages:
-                    print(f"Hinweis: --pages überschreibt automatisch gefundene Seiten")
+                    print(f"Note: --pages overrides automatically found pages")
                     start_page, end_page = parse_page_range(args.pages, len(pdf.pages))
                 
             elif args.pages:
-                # Nur Seitenbereich angegeben
+                # Only page range specified
                 start_page, end_page = parse_page_range(args.pages, len(pdf.pages))
             else:
-                # Weder Tabelle noch Seiten angegeben - verwende alle Seiten
+                # Neither table nor pages specified - use all pages
                 start_page = 1
                 end_page = len(pdf.pages)
-                print(f"Hinweis: Extrahiere von allen Seiten (1-{end_page})")
+                print(f"Note: Extracting from all pages (1-{end_page})")
         
-        print(f"\nExtrahiere Seiten {start_page} bis {end_page}")
+        print(f"\nExtracting pages {start_page} to {end_page}")
         
-        # Extrahiere Tabelle
+        # Extract table
         success = extract_table_from_pdf(
             pdf_path=pdf_path,
             start_page=start_page,
@@ -434,22 +436,22 @@ Beispiele:
         
         if success:
             print("\n" + "=" * 60)
-            print("✓ Extraktion abgeschlossen!")
-            print(f"✓ CSV-Datei: {args.csv_path}")
+            print("✓ Extraction complete!")
+            print(f"✓ CSV file: {args.csv_path}")
             print("=" * 60)
             return 0
         else:
-            print("\n✗ Extraktion fehlgeschlagen!")
+            print("\n✗ Extraction failed!")
             return 1
             
     except Exception as e:
-        print(f"\n✗ Fehler: {e}")
+        print(f"\n✗ Error: {e}")
         import traceback
         traceback.print_exc()
         return 1
     
     finally:
-        # Lösche temporäre Datei falls erstellt
+        # Delete temporary file if created
         if temp_file and Path(temp_file).exists():
             Path(temp_file).unlink()
 
