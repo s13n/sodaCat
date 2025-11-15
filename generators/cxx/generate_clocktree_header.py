@@ -2,7 +2,7 @@ import sys
 import yaml
 from pathlib import Path
 
-def generate_header(yaml_path, hpp_path):
+def generate_header(yaml_path, hpp_path, namespace):
     with open(yaml_path, 'r') as f:
         data = yaml.safe_load(f)
 
@@ -31,7 +31,7 @@ def generate_header(yaml_path, hpp_path):
     def emit_field_ref(field):
         if not field:
             return "{}"
-        return f"{register_field_id(field)}"
+        return f"Rf({register_field_id(field)})"
 
     # Map signal name to generator
     signal_generators = {}
@@ -56,7 +56,8 @@ def generate_header(yaml_path, hpp_path):
         '#pragma once',
         '#include "clocktree.hpp"',
         '',
-        'namespace clocktree {',
+        f'namespace {namespace} {{',
+        '',
         'struct Indices {',
         f'    enum class Signals : {sigIndexType} {{'
     ]
@@ -86,12 +87,18 @@ def generate_header(yaml_path, hpp_path):
     hpp_lines.append("")
     hpp_lines.append("struct Clocks {")
     hpp_lines.append("    using Ix = Indices;")
-    hpp_lines.append("    using Sig = Ix::Signals;")
-    hpp_lines.append("    using Ele = Ix::Elements;")
-    hpp_lines.append("    using Fld = Ix::RegFields;")
+    hpp_lines.append("    using S = Ix::Signals;")
+    hpp_lines.append("    using E = Ix::Elements;")
+    hpp_lines.append("    using Rf = Ix::RegFields;")
+    hpp_lines.append("    using Ge = clocktree::Generator<Ix>;")
+    hpp_lines.append("    using Pl = clocktree::Pll<Ix>;")
+    hpp_lines.append("    using Ga = clocktree::Gate<Ix>;")
+    hpp_lines.append("    using Di = clocktree::Divider<Ix>;")
+    hpp_lines.append("    using Mu = clocktree::Mux<Ix>;")
+    hpp_lines.append("    using Si = clocktree::Signal<Ix>;")
     hpp_lines.append("")
     
-    hpp_lines.append(f"    static constexpr std::array<RegisterField const *, {len(field_list)+1}> register_fields = {{")
+    hpp_lines.append(f"    static constexpr std::array<clocktree::RegisterField const *, {len(field_list)+1}> register_fields = {{")
     hpp_lines.append("        {},")
     for f in field_list:
         reg = f.get("reg", "")
@@ -100,73 +107,74 @@ def generate_header(yaml_path, hpp_path):
         hpp_lines.append(f'        {{ "{reg}", "{field}", {offset} }},')
     hpp_lines.append("    };\n")
 
-    hpp_lines.append("    static constexpr auto generators = std::to_array<Generator<Indices>>({")
+    hpp_lines.append("    static constexpr std::array generators = {")
     for gen in generators:
         ctrl = gen.get("control")
         values = ctrl.get("values", []) if ctrl else []
         values_str = "{ " + ", ".join(str(v) for v in values) + " }"
         hpp_lines.append(
-            f'        {{ Sig::{signal_enum_map[gen["output"]]}, {emit_field_ref(ctrl)}, {values_str} }},  // {gen['name']}'
+            f'        Ge{{ S::{signal_enum_map[gen["output"]]}, {emit_field_ref(ctrl)}, {values_str} }},  // {gen['name']}'
         )
-    hpp_lines.append("    });\n")
+    hpp_lines.append("    };\n")
 
-    hpp_lines.append("    static constexpr auto plls = std::to_array<Pll<Indices>>({")
+    hpp_lines.append("    static constexpr std::array plls = {")
     for p in plls:
         hpp_lines.append(
-            f'        {{ Sig::{signal_enum_map[p["input"]]}, Sig::{signal_enum_map[p["output"]]}, '
+            f'        Pl{{ S::{signal_enum_map[p["input"]]}, S::{signal_enum_map[p["output"]]}, '
             f'{emit_field_ref(p.get("feedback_integer"))}, '
             f'{emit_field_ref(p.get("feedback_fraction"))}, '
             f'{emit_field_ref(p.get("post_divider"))} }},  // {p['name']}'
         )
-    hpp_lines.append("    });\n")
+    hpp_lines.append("    };\n")
 
-    hpp_lines.append("    static constexpr auto gates = std::to_array<Gate<Indices>>({")
+    hpp_lines.append("    static constexpr std::array gates = {")
     for g in gates:
         hpp_lines.append(
-            f'        {{ Sig::{signal_enum_map[g["input"]]}, Sig::{signal_enum_map[g["output"]]}, {emit_field_ref(g.get("control"))} }},  // {g['name']}'
+            f'        Ga{{ S::{signal_enum_map[g["input"]]}, S::{signal_enum_map[g["output"]]}, {emit_field_ref(g.get("control"))} }},  // {g['name']}'
         )
-    hpp_lines.append("    });\n")
+    hpp_lines.append("    };\n")
 
-    hpp_lines.append("    static constexpr auto dividers = std::to_array<Divider<Indices>>({")
+    hpp_lines.append("    static constexpr std::array dividers = {")
     for d in dividers:
         hpp_lines.append(
-            f'        {{ Sig::{signal_enum_map[d["input"]]}, Sig::{signal_enum_map[d["output"]]}, {d.get("value", 0)}, '
+            f'        Di{{ S::{signal_enum_map[d["input"]]}, S::{signal_enum_map[d["output"]]}, {d.get("value", 0)}, '
             f'{emit_field_ref(d.get("factor"))}, {emit_field_ref(d.get("denominator"))} }},  // {d['name']}'
         )
-    hpp_lines.append("    });\n")
+    hpp_lines.append("    };\n")
 
-    hpp_lines.append("    static constexpr auto muxes = std::to_array<Mux<Indices>>({")
+    hpp_lines.append("    static constexpr std::array muxes = {")
     for m in muxes:
         input_list = []
         for i in m['inputs']:
             if i in signal_enum_map:
-                input_list.append(f'Sig::{signal_enum_map[i]}')
+                input_list.append(f'S::{signal_enum_map[i]}')
             elif i in ['', None]:
-                input_list.append('Sig::_')
+                input_list.append('S::_')
             else:
                 raise KeyError(f"Unknown signal name in mux inputs: {i}")
         inputs_str = "{ " + ", ".join(input_list) + " }"
         hpp_lines.append(
-            f'        {{ Sig::{signal_enum_map[m["output"]]}, {inputs_str}, {emit_field_ref(m.get("control"))} }},  // {m['name']}'
+            f'        Mu{{ S::{signal_enum_map[m["output"]]}, {inputs_str}, {emit_field_ref(m.get("control"))} }},  // {m['name']}'
         )
-    hpp_lines.append("    });\n")
+    hpp_lines.append("    };\n")
 
-    hpp_lines.append("    static constexpr auto signals = std::to_array<Signal<Indices>>({")
+    hpp_lines.append("    static constexpr std::array signals = {")
     for s in signals:
         name = s["name"]
         gen_name, gen_type, gen_obj = signal_generators.get(name, ("_", "Source", None))
         gen_list = locals().get(gen_type, [])
         gen_ref = f"&{gen_type}[{gen_list.index(gen_obj)}]" if gen_obj else "{}"
         hpp_lines.append(
-            f'        {{ Ele::{gen_name}, {s.get("min", "0")}, {s.get("max", "0")}, {s.get("nominal", "0")} }},  // {name}'
+            f'        Si{{ E::{gen_name}, {s.get("min", "0")}, {s.get("max", "0")}, {s.get("nominal", "0")} }},  // {name}'
         )
-    hpp_lines.append("    });")
+    hpp_lines.append("    };")
     
     hpp_lines.append("};")
+    hpp_lines.append("")
     hpp_lines.append("} // namespace\n")
 
     Path(hpp_path).write_text("\n".join(hpp_lines))
 
 
 if __name__ == "__main__":
-    generate_header(sys.argv[1], sys.argv[2])
+    generate_header(sys.argv[1], sys.argv[2] + '.hpp', sys.argv[3])
