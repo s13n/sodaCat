@@ -75,7 +75,7 @@ def find_table_pages(pdf, table_number):
     
     return start_page, end_page
 
-def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv):
+def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_header_rows=None):
     """
     Extrahiert Tabelle aus PDF unter Verwendung der Linien zur Zellerkennung
     
@@ -84,6 +84,7 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv):
         start_page: Start-Seite (1-basiert)
         end_page: End-Seite (1-basiert)
         output_csv: Ausgabe CSV-Datei
+        skip_header_rows: Anzahl der Header-Zeilen die wiederholt werden (None für automatisch)
     """
     print(f"\nÖffne PDF: {pdf_path}")
     
@@ -161,34 +162,43 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv):
     # Entferne wiederholte Header-Zeilen
     print("\nEntferne wiederholte Header-Zeilen...")
     if len(cleaned_rows) > 1:
-        # Identifiziere potenzielle Header (erste Zeile(n))
-        # Wir suchen nach Zeilen, die identisch mit den ersten N Zeilen sind
-        header_candidates = []
+        num_header_rows = skip_header_rows
         
-        # Prüfe die ersten 1-5 Zeilen als mögliche Header
-        max_header_rows = min(5, len(cleaned_rows))
+        # Automatische Erkennung wenn nicht manuell angegeben
+        if num_header_rows is None:
+            print("  Automatische Header-Erkennung...")
+            # Identifiziere potenzielle Header (erste Zeile(n))
+            header_candidates = []
+            
+            # Prüfe die ersten 1-5 Zeilen als mögliche Header
+            max_header_rows = min(5, len(cleaned_rows))
+            
+            for num_headers in range(1, max_header_rows + 1):
+                potential_headers = cleaned_rows[:num_headers]
+                duplicates_found = 0
+                
+                # Suche nach Wiederholungen dieser Header-Zeilen im Rest
+                for i in range(num_headers, len(cleaned_rows) - num_headers + 1):
+                    if cleaned_rows[i:i+num_headers] == potential_headers:
+                        duplicates_found += 1
+                
+                if duplicates_found > 0:
+                    header_candidates.append((num_headers, duplicates_found))
+            
+            # Wähle die Header-Konfiguration mit den meisten Duplikaten
+            if header_candidates:
+                best_header = max(header_candidates, key=lambda x: x[1])
+                num_header_rows = best_header[0]
+                num_duplicates = best_header[1]
+                print(f"  Erkannt: {num_header_rows} Header-Zeile(n), {num_duplicates} Wiederholung(en) gefunden")
+            else:
+                print("  Keine wiederholten Header gefunden")
+                num_header_rows = 0
+        else:
+            print(f"  Verwende manuelle Angabe: {num_header_rows} Header-Zeile(n)")
         
-        for num_headers in range(1, max_header_rows + 1):
-            potential_headers = cleaned_rows[:num_headers]
-            duplicates_found = 0
-            
-            # Suche nach Wiederholungen dieser Header-Zeilen im Rest
-            for i in range(num_headers, len(cleaned_rows) - num_headers + 1):
-                if cleaned_rows[i:i+num_headers] == potential_headers:
-                    duplicates_found += 1
-            
-            if duplicates_found > 0:
-                header_candidates.append((num_headers, duplicates_found))
-        
-        # Wähle die Header-Konfiguration mit den meisten Duplikaten
-        if header_candidates:
-            best_header = max(header_candidates, key=lambda x: x[1])
-            num_header_rows = best_header[0]
-            num_duplicates = best_header[1]
-            
-            print(f"  Erkannt: {num_header_rows} Header-Zeile(n), {num_duplicates} Wiederholung(en) gefunden")
-            
-            # Entferne Duplikate
+        # Entferne Duplikate wenn Header gefunden
+        if num_header_rows > 0 and num_header_rows < len(cleaned_rows):
             header_rows = cleaned_rows[:num_header_rows]
             deduplicated_rows = [header_rows]
             
@@ -236,7 +246,8 @@ def main():
 Beispiele:
   %(prog)s input.pdf output.csv
   %(prog)s input.pdf output.csv --table 9 --pages 87-88
-  %(prog)s https://example.com/file.pdf output.csv --pages 1-5
+  %(prog)s input.pdf output.csv --pages 1-5 --skip-header 2
+  %(prog)s https://example.com/file.pdf output.csv --table 9 --skip-header 1
         """
     )
     
@@ -249,6 +260,10 @@ Beispiele:
                        help='Tabellennummer (z.B. 9 für "Table 9")')
     parser.add_argument('--pages', '-p', 
                        help='Seitenbereich (z.B. "87-88" oder "5")')
+    parser.add_argument('--skip-header', '-s',
+                       type=int,
+                       metavar='N',
+                       help='Anzahl der Header-Zeilen, die auf Folgeseiten entfernt werden sollen (Standard: automatisch)')
     
     args = parser.parse_args()
     
@@ -307,7 +322,8 @@ Beispiele:
             pdf_path=pdf_path,
             start_page=start_page,
             end_page=end_page,
-            output_csv=args.csv_path
+            output_csv=args.csv_path,
+            skip_header_rows=args.skip_header
         )
         
         if success:
