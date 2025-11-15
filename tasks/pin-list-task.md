@@ -81,3 +81,18 @@ The implicit assumption is that a pad that isn't listed here, is unavailable in
 this variant of the chip.
 
 The pins are identified with their pin number or ball grid array coordinates.
+
+## Workflow hints
+
+When a better source is not available, the pin list must be scraped from a data
+sheet. The `tools/pdf_table_extractor.py` can serve to extract the content of a
+table from files in PDF format, such as datasheets or reference manuals. It is
+aimed at tables whose fields are delimited by lines in a grid. You will usually
+have to play with the command line options until you get the best result.
+
+The result of the script is a CSV file with the content of the table, which can
+then be used for the next step of produce a YAML data structure. Usually,
+however, the CSV file needs to be be tweaked manually before it is suitable to
+generate a YAML file from. Sometimes extra spaces need to be removed, or extra
+rows or columns deleted. It is hard to do that automatically, so expect to put
+in some manual work.
