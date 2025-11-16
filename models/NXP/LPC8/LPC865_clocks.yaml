@@ -8,8 +8,9 @@ documents:
       - LPC865M201JBD64
       - LPC865M201JHI48
       - LPC865M201JHI33
+instance: SYSCON
 signals:
-  - { name: fro_oscout, min: 36000000, max: 60000000, description: "The output of the FRO oscillator" }
+  - { name: fro_oscout, nominal: 48000000, min: 36000000, max: 60000000, description: "The output of the FRO oscillator" }
   - { name: fro_div2, description: "FRO oscillator divided by 2" }
   - { name: fro }
   - { name: fro_div, description: "FRO output divided by 2 via FROOSCCTRL" }
@@ -66,7 +67,6 @@ signals:
   - { name: i3c_fclk }
   - { name: i3cslowtcclk }
   - { name: i3c_clk_slow_tc }
-  - { name: i3cslowclk }
   - { name: i3c_clk_slow }
   - { name: wkt_counter_clk }
   - { name: wkt_int_clk }
@@ -85,9 +85,14 @@ generators:
   - name: FRO
     output: fro_oscout
     control:
-      reg: FRO_CTRL_DUMMY
-      field: FREQSEL
+      state: stateFRO
+      set: |-
+        struct PWRD { void (*set_fro_freq)(unsigned); };
+        struct ROM { const PWRD *pPWRD; };
+        ROM **rom = (ROM **)0x0F001D98;
+        (*rom)->pPWRD->set_fro_freq(val/1000);
       values: [0, 36000000, 48000000, 60000000]
+      default: 48000000
   - name: CLKIN
     output: clkin
     description: Special function of PIO0_1
@@ -101,13 +106,10 @@ generators:
     description: Special function of PIO0_28
   - name: LPOSC
     output: lp_osc
-    control:
-      reg: LPOSCCTRL
-      field: FREQSEL
-      values: [600000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000, 2200000, 2400000, 2600000, 2800000, 3000000, 3200000, 3400000, 4600000]
   - name: ULPOSC
     output: lpwr_clk_vulp
     control:
+      instance: PMU
       reg: DPDCTRL
       field: ULPOSCEN
       values: [0, 10000]
@@ -124,7 +126,7 @@ muxes:
     inputs: [fro, lp_osc]
     control:
       reg: WKTCLKSEL
-      field: WKTCLKSEL
+      field: SEL
   - name: FROOSCCTRL
     output: fro
     inputs: [fro_oscout, fro_div2]
@@ -168,80 +170,76 @@ muxes:
     output: frg0clksel
     inputs: [fro, main_clk, pll_div_clk, ""]
     control:
-      reg: FRG0CLKSEL
+      reg: FRG[0].FRGCLKSEL
       field: SEL
   - name: FRG1CLKSEL
     output: frg1clksel
     inputs: [fro, main_clk, pll_div_clk, ""]
     control:
-      reg: FRG1CLKSEL
+      reg: FRG[1].FRGCLKSEL
       field: SEL
   - name: UART0CLKSEL
     output: uart0clk
     inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
     control:
-      reg: UART0CLKSEL
+      reg: FCLKSEL[0]
       field: SEL
   - name: UART1CLKSEL
     output: uart1clk
     inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
     control:
-      reg: UART1CLKSEL
+      reg: FCLKSEL[1]
       field: SEL
   - name: UART2CLKSEL
     output: uart2clk
     inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
     control:
-      reg: UART2CLKSEL
+      reg: FCLKSEL[2]
       field: SEL
   - name: SPI0CLKSEL
     output: spi0clk
     inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
     control:
-      reg: SPI0CLKSEL
+      reg: FCLKSEL2[0]
       field: SEL
   - name: SPI1CLKSEL
     output: spi1clk
     inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
     control:
-      reg: SPI1CLKSEL
+      reg: FCLKSEL2[1]
       field: SEL
   - name: I2C0CLKSEL
     output: i2c0clk
     inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
     control:
-      reg: I2C0CLKSEL
+      reg: FCLKSEL[5]
       field: SEL
   - name: I3CFCLKSEL
     output: i3cfclk
-    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
+    inputs: [fro, external_clk, null, null, null, null, null, ""]
     control:
-      reg: I3CFCLKSEL
+      reg: I3CCLKSEL
       field: SEL
   - name: I3CSLOWTCCLKSEL
     output: i3cslowtcclk
-    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
+    inputs: [i3cfclk, lp_osc, null, null, null, null, null, ""]
     control:
       reg: I3CSLOWTCCLKSEL
-      field: SEL
-  - name: I3CSLOWCLKSEL
-    output: i3cslowclk
-    inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, null, null, ""]
-    control:
-      reg: I3CSLOWCLKSEL
       field: SEL
   - name: WKT_CLKSEL
     description: This is the first in a chain of multiplexers in the WKT. See UM11607 Fig 43.
     control:
+      instance: WKT
+      reg: CTRL
       field: CLKSEL
-      reg: WKT_CTRL
     inputs: [wkt_div, lpwr_clk_vulp]
     output: wkt_int_clk
   - name: WKT_EXTCLK
     description: This is the second in a chain of multiplexers in the WKT. See UM11607 Fig 43.
     control:
+      instance: WKT
+      reg: CTRL
       field: SEL_EXTCLK
-      reg: WKT_CTRL
     inputs: [wkt_int_clk, wktclkin]
     output: wkt_counter_clk
 
@@ -296,7 +294,7 @@ dividers:
     input: main_clk
     output: ioconclkdiv0
     factor:
-      reg: IOCONFILTCLKDIV0
+      reg: IOCONCLKDIV0
       field: DIV
       value_range:
         min: 0      # Zero turns off divider
@@ -305,7 +303,7 @@ dividers:
     input: main_clk
     output: ioconclkdiv1
     factor:
-      reg: IOCONFILTCLKDIV1
+      reg: IOCONCLKDIV1
       field: DIV
       value_range:
         min: 0      # Zero turns off divider
@@ -314,7 +312,7 @@ dividers:
     input: main_clk
     output: ioconclkdiv2
     factor:
-      reg: IOCONFILTCLKDIV2
+      reg: IOCONCLKDIV2
       field: DIV
       value_range:
         min: 0      # Zero turns off divider
@@ -323,7 +321,7 @@ dividers:
     input: main_clk
     output: ioconclkdiv3
     factor:
-      reg: IOCONFILTCLKDIV3
+      reg: IOCONCLKDIV3
       field: DIV
       value_range:
         min: 0      # Zero turns off divider
@@ -332,7 +330,7 @@ dividers:
     input: main_clk
     output: ioconclkdiv4
     factor:
-      reg: IOCONFILTCLKDIV4
+      reg: IOCONCLKDIV4
       field: DIV
       value_range:
         min: 0      # Zero turns off divider
@@ -341,7 +339,7 @@ dividers:
     input: main_clk
     output: ioconclkdiv5
     factor:
-      reg: IOCONFILTCLKDIV5
+      reg: IOCONCLKDIV5
       field: DIV
       value_range:
         min: 0      # Zero turns off divider
@@ -350,7 +348,7 @@ dividers:
     input: main_clk
     output: ioconclkdiv6
     factor:
-      reg: IOCONFILTCLKDIV6
+      reg: IOCONCLKDIV6
       field: DIV
       value_range:
         min: 0      # Zero turns off divider
@@ -384,7 +382,7 @@ dividers:
         min: 0      # Zero turns off divider
         max: 255
   - name: I3CSLOWCLKDIV
-    input: i3cslowclk
+    input: lp_osc
     output: i3c_clk_slow
     factor:
       reg: I3CCLKDIV
@@ -404,14 +402,14 @@ dividers:
   - name: FRG0
     input: frg0clksel
     output: frg0clk
-    factor: { reg: FRG0MULT, field: MULT }
-    denominator: { reg: FRG0DIV, field: DIV, offset: -1 }
+    factor: { reg: "FRG[0].FRGMULT", field: MULT }
+    denominator: { reg: "FRG[0].FRGDIV", field: DIV, offset: -1 }
     value: 1
   - name: FRG1
     input: frg1clksel
     output: frg1clk
-    factor: { reg: FRG1MULT, field: MULT }
-    denominator: { reg: FRG1DIV, field: DIV, offset: -1 }
+    factor: { reg: "FRG[1].FRGMULT", field: MULT }
+    denominator: { reg: "FRG[1].FRGDIV", field: DIV, offset: -1 }
     value: 1
 
 gates:
@@ -540,7 +538,7 @@ gates:
     input: system_clk
     control:
       reg: SYSAHBCLKCTRL0
-      field: I3C
+      field: I3C0
   - name: ADC
     output: adc_sclk
     input: system_clk
