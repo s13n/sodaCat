@@ -107,13 +107,13 @@ public:
         if (size_t(elem) <= size_t(Base::Ix::last_gen))
             return get_frequency(Base::generators[size_t(elem) - 1]);
         if (size_t(elem) <= size_t(Base::Ix::last_pll))
-            return get_frequency(Base::plls[size_t(elem) - size_t(Base::Ix::last_gen)]);
+            return get_frequency(Base::plls[size_t(elem) - 1 - size_t(Base::Ix::last_gen)]);
         if (size_t(elem) <= size_t(Base::Ix::last_gate))
-            return get_frequency(Base::gates[size_t(elem) - size_t(Base::Ix::last_pll)]);
+            return get_frequency(Base::gates[size_t(elem) - 1 - size_t(Base::Ix::last_pll)]);
         if (size_t(elem) <= size_t(Base::Ix::last_div))
-            return get_frequency(Base::dividers[size_t(elem) - size_t(Base::Ix::last_gate)]);
+            return get_frequency(Base::dividers[size_t(elem) - 1 - size_t(Base::Ix::last_gate)]);
         if (size_t(elem) <= size_t(Base::Ix::last_mux))
-            return get_frequency(Base::muxes[size_t(elem) - size_t(Base::Ix::last_div)]);
+            return get_frequency(Base::muxes[size_t(elem) - 1 - size_t(Base::Ix::last_div)]);
         return 0;
     }
 
