@@ -60,6 +60,9 @@ transform.renameEntries(ftm0['interrupts'], 'name', 'FTM0', 'FTM')
 ftm0['parameters'] = [
     { 'name': 'max_channel', 'value': 5, 'bits': 3, 'min': 0, 'max': 7, 'description': 'index of last channel' },
     { 'name': 'qdec', 'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'presence of quadrature decoder' },
+    { 'name': 'dither', 'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'support for PWM output dithering' },
+    { 'name': 'fault_inputs', 'value': 4, 'bits': 3, 'min': 0, 'max': 7, 'description': 'number of fault inputs' },
+    { 'name': 'modulation', 'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'support for modulation' },
 ]
 ftm1 = svd.findNamedEntry(chip['peripherals'], 'FTM1')
 ftm1['@derivedFrom'] = 'FTM0'
@@ -68,6 +71,9 @@ transform.renameEntries(ftm1['interrupts'], 'name', 'FTM1', 'FTM')
 ftm1['parameters'] = [
     { 'name': 'max_channel', 'value': 3, 'bits': 3, 'min': 0, 'max': 7, 'description': 'index of last channel' },
     { 'name': 'qdec', 'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'presence of quadrature decoder' },
+    { 'name': 'dither', 'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'support for PWM output dithering' },
+    { 'name': 'fault_inputs', 'value': 0, 'bits': 3, 'min': 0, 'max': 7, 'description': 'number of fault inputs' },
+    { 'name': 'modulation', 'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'support for modulation' },
 ]
 
 # Tweak the GPIO
