@@ -14,7 +14,7 @@ modelSet = frozenset({
     'ADC', 'DMA', 'FLASH_CTRL', 'FTM', 'GPIO', 'I2C', 'I3C', 'INPUTMUX',
     'IOCON', 'PINT', 'PMU', 'SPI', 'SWM', 'SYSCON', 'USART'})
 instSet = frozenset({
-    'ACOMP', 'CRC', 'MRT0', 'WWDT', 'WKT',
+    'NVIC', 'ACOMP', 'CRC', 'MRT0', 'WWDT', 'WKT',
     'ADC0', 'DMA0', 'FLASH_CTRL', 'FTM0', 'FTM1', 'GPIO', 'I2C0', 'I3C0',
     'INPUTMUX', 'IOCON', 'PINT', 'PMU', 'SPI0', 'SPI1',
     'SWM0', 'SYSCON', 'USART0', 'USART1', 'USART2'})
@@ -25,6 +25,15 @@ root = svd.parse(svdpath)
 chip = svd.collateDevice(root)
 
 ### Tweak the data to fit our model and fix various problems
+
+# Tweak the NVIC
+nvic = { 'name': 'NVIC', 'model': 'NVIC', 'description': 'Nested Vectored Interrupt Controller' }
+nvic['baseAddress'] = 3758153984
+nvic['parameters'] = [
+    { 'name': 'priobits', 'value': 1 },
+    { 'name': 'interrupts', 'value': 32 }
+]
+chip['peripherals'].append(nvic)
 
 # Tweak the ACOMP
 acomp = svd.findNamedEntry(chip['peripherals'], 'ACOMP')
