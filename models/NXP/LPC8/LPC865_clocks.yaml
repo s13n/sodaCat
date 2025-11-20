@@ -15,7 +15,7 @@ signals:
   - { name: fro }
   - { name: fro_div, description: "FRO output divided by 2 via FROOSCCTRL" }
   - { name: wkt_div }
-  - { name: clkin, max: 60000000, description: "Internal clock that comes from the main CLKIN pin function." }
+  - { name: clkin, max: 25000000, description: "Internal clock that comes from the main CLKIN pin function." }
   - { name: sys_osc_clk, max: 25000000, description: "Internal clock that comes from external crystal oscillator" }
   - { name: external_clk, description: "Internal clock that comes from the crystal oscillator or the CLK_IN pin" }
   - { name: lp_osc, nominal: 1000000 }
@@ -46,8 +46,8 @@ signals:
   - { name: fclk5, description: "Functional clock for I2C0" }
   - { name: fclk9, description: "Functional clock for SPI0" }
   - { name: flashclk }
-  - { name: ftm0clk }
-  - { name: ftm1clk }
+  - { name: ftm0clk, description: "Register clock for FTM0" }
+  - { name: ftm1clk, description: "Register clock for FTM1" }
   - { name: gpio0clk }
   - { name: gpio1clk }
   - { name: gpiointclk }
@@ -68,10 +68,14 @@ signals:
   - { name: i3cslowtcclk }
   - { name: i3c_clk_slow_tc }
   - { name: i3c_clk_slow }
-  - { name: wkt_counter_clk }
-  - { name: wkt_int_clk }
+  - { name: ftm0fclk, description: "Counter clock for FTM0" }
+  - { name: ftm1fclk, description: "Counter clock for FTM1" }
+  - { name: ftm0_extclk, description: "External clock for FTM0" }
+  - { name: ftm1_extclk, description: "External clock for FTM1" }
+  - { name: wkt_counter_clk, description: "The counter clock in the WKT" }
+  - { name: wkt_int_clk, description: "The WKT internal counter clock alternative" }
   - { name: wktclk }
-  - { name: wktclkin }
+  - { name: wktclkin, max: 10000000, description: "The clock at the WKTCLKIN input" }
   - { name: wwdtclk }
   - { name: ioconclkdiv0 }
   - { name: ioconclkdiv1 }
@@ -95,14 +99,29 @@ generators:
       default: 48000000
   - name: CLKIN
     output: clkin
+    control:
+      state: stateCLKIN
     description: Special function of PIO0_1
   - name: XTALIN
     output: sys_osc_clk
     control:
+      state: stateXTAL
       reg: SYSOSCCTRL
       field: BYPASS
+  - name: FTM0_EXTCLK
+    output: ftm0_extclk
+    control:
+      state: stateFTM0ext
+    description: External clock source for FTM0
+  - name: FTM1_EXTCLK
+    output: ftm1_extclk
+    control:
+      state: stateFTM1ext
+    description: External clock source for FTM1
   - name: WKTCLKIN
     output: wktclkin
+    control:
+      state: stateWKTCLKIN
     description: Special function of PIO0_28
   - name: LPOSC
     output: lp_osc
@@ -226,6 +245,22 @@ muxes:
     control:
       reg: I3CSLOWTCCLKSEL
       field: SEL
+  - name: FTM0SC
+    description: Clock multiplexer within the FTM.
+    output: ftm0fclk
+    inputs: ["", main_clk, null, ftm0_extclk]
+    control:
+      instance: FTM0
+      reg: SC
+      field: CLKS
+  - name: FTM1SC
+    description: Clock multiplexer within the FTM.
+    output: ftm1fclk
+    inputs: ["", main_clk, null, ftm1_extclk]
+    control:
+      instance: FTM1
+      reg: SC
+      field: CLKS
   - name: WKT_CLKSEL
     description: This is the first in a chain of multiplexers in the WKT. See UM11607 Fig 43.
     control:
