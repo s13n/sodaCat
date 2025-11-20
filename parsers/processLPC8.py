@@ -9,15 +9,15 @@ from pathlib import Path
 subdir = Path("./models/NXP/LPC8")
 
 # models and instances we want to keep
-modelSet = frozenset({
+modelSet = [
     'ACOMP', 'CRC', 'MRT', 'WWDT', 'WKT',
     'ADC', 'DMA', 'FLASH_CTRL', 'FTM', 'GPIO', 'I2C', 'I3C', 'INPUTMUX',
-    'IOCON', 'PINT', 'PMU', 'SPI', 'SWM', 'SYSCON', 'USART'})
-instSet = frozenset({
-    'NVIC', 'ACOMP', 'CRC', 'MRT0', 'WWDT', 'WKT',
+    'IOCON', 'PINT', 'PMU', 'SPI', 'SWM', 'SYSCON', 'USART']
+instSet = [
+    'WWDT', 'WKT', 'NVIC', 'ACOMP', 'CRC', 'MRT0',
     'ADC0', 'DMA0', 'FLASH_CTRL', 'FTM0', 'FTM1', 'GPIO', 'I2C0', 'I3C0',
     'INPUTMUX', 'IOCON', 'PINT', 'PMU', 'SPI0', 'SPI1',
-    'SWM0', 'SYSCON', 'USART0', 'USART1', 'USART2'})
+    'SWM0', 'SYSCON', 'USART0', 'USART1', 'USART2']
 
 svdpath = "./svd/LPC865.svd"
 header = "# Created from LPC865.svd\n"
@@ -185,8 +185,9 @@ chip['buses'] = {
 # Collect interrupts going to NVIC
 interrupts = svd.collectInterrupts(chip['peripherals'], chip['interruptOffset'])
 
-# Delete unwanted instances
-chip['peripherals'] = [p for p in chip['peripherals'] if p['name'] in instSet]
+# Delete unwanted instances and sort others
+peripherals_dict = { obj['name']: obj for obj in chip['peripherals'] }
+chip['peripherals'] = [peripherals_dict[n] for n in instSet if n in peripherals_dict]
 
 models, instances = svd.collectModelsAndInstances(chip['peripherals'])
 del chip['peripherals']
@@ -201,7 +202,7 @@ svd.printInterrupts(interrupts)
 
 subdir.mkdir(parents=True, exist_ok=True)
 for name,model in models.items():
-    if name in modelSet:
+    if name in dict.fromkeys(modelSet).keys():
         svd.dumpModel(model, subdir/name, header)
         print('Model dumped: %s' % name)
 
