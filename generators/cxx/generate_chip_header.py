@@ -34,15 +34,15 @@ EXPORT constexpr struct $model::Integration i_$name = {$params$ints$init};
         
     def createIntegration(self, instances):
         """ create list of integration structs """
-        types = set()
+        types = {}
         decl = ''
         for k, i in instances.items():            
-            types.add(i['model'])
+            types[i['model']] = None
             params = self.createParameters(i)
             ints = self.createInterrupts(i)
             init = '\n\t.registers = %#Xu\n' % i['baseAddress']
             decl += self.instanceDeclTemplate.substitute(i, name=k, params=params, ints=ints, init=init)
-        includes = [self.instanceInclTemplate.substitute(model=t) for t in sorted(types)]
+        includes = [self.instanceInclTemplate.substitute(model=t) for t in types]
         return decl, ''.join(includes)
         
     def createHeader(self, chip, namespace, name, prefix, postfix):
