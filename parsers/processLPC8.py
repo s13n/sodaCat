@@ -30,8 +30,8 @@ chip = svd.collateDevice(root)
 nvic = { 'name': 'NVIC', 'model': 'NVIC', 'description': 'Nested Vectored Interrupt Controller' }
 nvic['baseAddress'] = 3758153984
 nvic['parameters'] = [
-    { 'name': 'priobits', 'value': 1 },
-    { 'name': 'interrupts', 'value': 32 }
+    { 'name': 'interrupts', 'value': 32 },
+    { 'name': 'priobits', 'value': 1 }
 ]
 chip['peripherals'].append(nvic)
 
