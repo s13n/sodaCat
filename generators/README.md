@@ -12,7 +12,9 @@ be discussed here. The requirements can be summarized as follows:
 - There should be a direct relationship between the names in the YAML file and
   the identifiers defined in the header, so that the relationship between the
   code and the chip data sheet or reference manual is obvious. Ideally, the
-  names should be the same.
+  names should be the same. Sometimes, however, names are encountered that can't
+  be used as identifiers in a programming language, and the generator needs to
+  make an intelligent choice.
 - The names should not be unnecessarily verbose, yet the risk of name clashes or
   ambiguities should be as low as possible.
 - The definitions in the header should be easy to use, and hard to accidentally
@@ -99,3 +101,11 @@ most convenient declaration style. Otherwise the `volatile` would have to be
 applied selectively to individual register declarations, which is much more
 verbose. Furthermore, by appplying the `volatile` to the pointer, it is easy to
 choose non-volatile accesses by merely using a different pointer type.
+
+## Clock tree header
+
+Microcontrollers have increasingly complex clock distribution infrastructure,
+which includes multiple clock sources, and various gates, dividers, multiplexers
+etc. to selectively feed clocks to function blocks. This structure can be
+described by a separate YAML file, and from this a header can be generated,
+which can trace the path of a clock signal to determine its frequency.

@@ -1,6 +1,6 @@
 # sodaCat
 
-SodaCat maintains a database of chip information for microcontrollers,
+sodaCat maintains a database of chip information for microcontrollers,
 systems-on-chip, and similar hardware. The database is mainly aimed at
 supporting automatic code generation, for example generating C or C++ header
 files for supporting driver development. It is a work in progress, not yet
@@ -35,7 +35,7 @@ into YAML files.
 
 The second step involves running a generator to convert the models into source
 files for your preferred programming language. A generator for C++ is provided
-in the `generators` directory, further generators might get added over time. If
+in the `generators` directory. Further generators might get added over time. If
 you are not happy with the style of the code the generator produces, you are
 free to write your own. Note that if only the formatting needs to be changed,
 there are separate tools for that, for example `clang-format` for C++.
@@ -44,8 +44,9 @@ The assumption is that you integrate the generation step into your build system,
 for example as CMake targets if that is what you use. This allows you to
 automatically take advantage of updated models or generators. The build system
 might fetch the relevant model files from the sodaCat repository and store the
-generated source files among the build artefacts. See also
-[this description](generators/README.md).
+generated source files among the build artefacts. See also [this
+description](generators/README.md). An example of a project that does this is
+[here](https://github.com/s13n/AES42HAT).
 
 If you need to write your own parser, you can follow the respective task
 descriptions in the `tasks` directory. Those are intended to be used with AI
@@ -153,7 +154,7 @@ here.
 
 Suitable data files with all features present can usually be generated from the
 most feature rich, and/or most recent chips within a series. As an alternative,
-information from several chips may habe to be combined. You will need to verify,
+information from several chips may have to be combined. You will need to verify,
 however, if the register maps really match.
 
 You will need to identify what parameters there are, which will distinguish the
