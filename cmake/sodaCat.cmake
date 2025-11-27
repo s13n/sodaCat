@@ -91,6 +91,6 @@ macro(generate_header target generator namespace model outfile)
         COMMENT "Generating ${outfile} in namespace ${namespace}"
     )
     target_sources(${target} PUBLIC
-        ${model}.hpp
+        ${outfile}
     )
 endmacro()
