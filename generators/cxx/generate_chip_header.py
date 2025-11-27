@@ -83,4 +83,4 @@ postfixTemplate = Template("""
 """)
 
 header = fmt.createHeader(chip, sys.argv[3], os.path.basename(sys.argv[2]), prefixTemplate, postfixTemplate)
-print(header, file=open(sys.argv[2] + '.hpp', mode = 'w'))
+print(header, file=open(sys.argv[4], mode = 'w'))

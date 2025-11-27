@@ -216,4 +216,4 @@ postfixTemplate = Template("""} // namespace $ns
 #undef EXPORT
 """)
 
-print(fmt.formatPeripheral(per, prefixTemplate.substitute(ns=sys.argv[3], mod=os.path.basename(sys.argv[2])), postfixTemplate.substitute(ns=sys.argv[3])), file=open(sys.argv[2] + '.hpp', mode = 'w'))
+print(fmt.formatPeripheral(per, prefixTemplate.substitute(ns=sys.argv[3], mod=os.path.basename(sys.argv[2])), postfixTemplate.substitute(ns=sys.argv[3])), file=open(sys.argv[4], mode = 'w'))
