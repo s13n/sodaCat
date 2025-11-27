@@ -39,7 +39,7 @@ function(download_models overwrite)
         endif()
 
         # Construct full URL
-        string(CONCAT url "${SODACAT_URL_BASE}" "${relpath}")
+        string(CONCAT url "${SODACAT_URL_BASE}" "/" "${relpath}")
 
         # Extract filename (flattened target folder)
         get_filename_component(fname "${relpath}" NAME)
