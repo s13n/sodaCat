@@ -264,7 +264,7 @@ def generate_header(yaml_path, hpp_path, namespace):
     header = [
         '#pragma once',
         '#include "clocktree.hpp"',
-        '#include "chip.hpp"',
+        f'#include "{namespace}.hpp"',
         '',
         f'namespace {namespace} {{',
         '',
