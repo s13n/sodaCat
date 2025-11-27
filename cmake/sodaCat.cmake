@@ -3,8 +3,12 @@
 # Cache variables for the user to tweak when needed.
 set(SODACAT_LOCAL_DIR "${CMAKE_SOURCE_DIR}/models" CACHE PATH "Local directory for sodaCat models")
 set(SODACAT_MANIFEST "${CMAKE_SOURCE_DIR}/manifest.txt" CACHE PATH "Path of sodaCat manifest file")
-set(SODACAT_COMMIT "main" CACHE STRING "sodaCat commit/branch to fetch from")
-set(SODACAT_URL_BASE "https://raw.githubusercontent.com/s13n/sodaCat/${SODACAT_COMMIT}")
+
+if(SODACAT_URL_BASE)
+    message(VERBOSE "Using sodaCat repository in ${SODACAT_URL_BASE}")
+else()
+    message(SEND_ERROR "Must define variable SODACAT_URL_BASE")
+endif()
 
 # Function to download files listed in the manifest file
 # Parameters:
