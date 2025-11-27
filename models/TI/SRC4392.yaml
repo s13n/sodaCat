@@ -1,0 +1,1958 @@
+name: SRC4392
+description: Two-Channel, Asynchronous Sample Rate Converter with Integrated Digital Audio Interface Receiver and Transmitter
+headerStructName: SRC4392
+size: 8
+registers:
+  - name: PD_RES
+    addressOffset: 0x01
+    description: Controls power-down state of functional blocks and triggers software reset.
+    fields:
+      - bitOffset: 7
+        name: RESET
+        default: 0
+        description: Software reset. Equivalent to asserting the external RST pin.
+        enumeratedValues:
+          - name: Normal
+            value: 0
+            description: Normal operation
+          - name: Reset
+            value: 1
+            description: Reset all registers and buffers to default
+
+      - bitOffset: 5
+        name: PDALL
+        default: 0
+        description: Power down all functional blocks except host interface and control/status registers.
+        enumeratedValues:
+          - name: PowerDown
+            value: 0
+            description: All blocks powered down
+          - name: Enabled
+            value: 1
+            description: All blocks enabled
+
+      - bitOffset: 4
+        name: PDPA
+        default: 0
+        description: Power down audio serial Port A.
+        enumeratedValues:
+          - name: PowerDown
+            value: 0
+            description: Port A powered down
+          - name: Enabled
+            value: 1
+            description: Port A enabled
+
+      - bitOffset: 3
+        name: PDPB
+        default: 0
+        description: Power down audio serial Port B.
+        enumeratedValues:
+          - name: PowerDown
+            value: 0
+            description: Port B powered down
+          - name: Enabled
+            value: 1
+            description: Port B enabled
+
+      - bitOffset: 2
+        name: PDTX
+        default: 0
+        description: Power down Digital Interface Transmitter (DIT).
+        enumeratedValues:
+          - name: PowerDown
+            value: 0
+            description: Transmitter powered down
+          - name: Enabled
+            value: 1
+            description: Transmitter enabled
+
+      - bitOffset: 1
+        name: PDRX
+        default: 0
+        description: Power down Digital Interface Receiver (DIR).
+        enumeratedValues:
+          - name: PowerDown
+            value: 0
+            description: Receiver powered down
+          - name: Enabled
+            value: 1
+            description: Receiver enabled
+
+      - bitOffset: 0
+        name: PDSRC
+        default: 0
+        description: Power down Sample Rate Converter (SRC).
+        enumeratedValues:
+          - name: PowerDown
+            value: 0
+            description: SRC powered down
+          - name: Enabled
+            value: 1
+            description: SRC enabled
+            
+  - name: INTSTAT
+    addressOffset: 0x02
+    description: Indicates active interrupt status for SRC, DIR, and DIT blocks. Read-only.
+    fields:
+      - bitOffset: 2
+        name: TX
+        default: 0
+        description: Transmitter interrupt status. Set when an interrupt from the DIT block is active.
+        enumeratedValues:
+          - name: Inactive
+            value: 0
+            description: No interrupt from the DIT block
+          - name: Active
+            value: 1
+            description: Interrupt from the DIT block is active
+
+      - bitOffset: 1
+        name: RX
+        default: 0
+        description: Receiver interrupt status. Set when an interrupt from the DIR block is active.
+        enumeratedValues:
+          - name: Inactive
+            value: 0
+            description: No interrupt from the DIR block
+          - name: Active
+            value: 1
+            description: Interrupt from the DIR block is active
+
+      - bitOffset: 0
+        name: SRC
+        default: 0
+        description: SRC interrupt status. Set when an interrupt from the SRC block is active.
+        enumeratedValues:
+          - name: Inactive
+            value: 0
+            description: No interrupt from the SRC block
+          - name: Active
+            value: 1
+            description: Interrupt from the SRC block is active
+
+  - name: PACTL1
+    addressOffset: 0x03
+    description: Configures Port A audio format, clock mode, output source, and mute control.
+    fields:
+      - bitOffset: 6
+        name: AMUTE
+        default: 0
+        description: Mutes Port A output audio data.
+        enumeratedValues:
+          - name: Disabled
+            value: 0
+            description: SDOUTA is driven by the selected output source
+          - name: Enabled
+            value: 1
+            description: SDOUTA is forced low
+
+      - bitOffset: 4
+        bitWidth: 2
+        name: AOUTS
+        default: 0
+        description: Selects the output data source for Port A.
+        enumeratedValues:
+          - name: PortAInput
+            value: 0
+            description: Loopback from Port A input
+          - name: PortBInput
+            value: 1
+            description: Data from Port B input
+          - name: DIR
+            value: 2
+            description: Data from Digital Interface Receiver
+          - name: SRC
+            value: 3
+            description: Data from Sample Rate Converter
+
+      - bitOffset: 3
+        name: AM_S
+        default: 0
+        description: Selects Port A clock mode.
+        enumeratedValues:
+          - name: Slave
+            value: 0
+            description: LRCK and BCK are inputs from external source
+          - name: Master
+            value: 1
+            description: LRCK and BCK are outputs derived from master clock
+
+      - bitOffset: 0
+        bitWidth: 3
+        name: AFMT
+        default: 0
+        description: Selects Port A audio data format.
+        enumeratedValues:
+          - name: LeftJustified24
+            value: 0
+            description: 24-bit Left-Justified format
+          - name: I2S24
+            value: 1
+            description: 24-bit Philips I2S format
+          - name: RightJustified16
+            value: 4
+            description: 16-bit Right-Justified format
+          - name: RightJustified18
+            value: 5
+            description: 18-bit Right-Justified format
+          - name: RightJustified20
+            value: 6
+            description: 20-bit Right-Justified format
+          - name: RightJustified24
+            value: 7
+            description: 24-bit Right-Justified format
+
+  - name: PACTL2
+    addressOffset: 0x04
+    description: Configures Port A master clock source and divider when operating in master mode.
+    fields:
+      - bitOffset: 2
+        bitWidth: 2
+        name: ACLK
+        default: 0
+        description: Selects the master clock source for Port A in master mode.
+        enumeratedValues:
+          - name: MCLK
+            value: 0
+            description: Use MCLK input as master clock
+          - name: RXCKI
+            value: 1
+            description: Use DIR reference clock input RXCKI
+          - name: RXCKO
+            value: 2
+            description: Use DIR recovered clock output RXCKO
+
+      - bitOffset: 0
+        bitWidth: 2
+        name: ADIV
+        default: 0
+        description: Selects the divider for generating LRCKA from the master clock in master mode.
+        enumeratedValues:
+          - name: Divide128
+            value: 0
+            description: Divide master clock by 128
+          - name: Divide256
+            value: 1
+            description: Divide master clock by 256
+          - name: Divide384
+            value: 2
+            description: Divide master clock by 384
+          - name: Divide512
+            value: 3
+            description: Divide master clock by 512
+
+  - name: PBCTL1
+    addressOffset: 0x05
+    description: Configures Port B audio format, clock mode, output source, and mute control.
+    fields:
+      - bitOffset: 6
+        name: BMUTE
+        default: 0
+        description: Mutes Port B output audio data.
+        enumeratedValues:
+          - name: Disabled
+            value: 0
+            description: SDOUTB is driven by the selected output source
+          - name: Enabled
+            value: 1
+            description: SDOUTB is forced low
+
+      - bitOffset: 4
+        bitWidth: 2
+        name: BOUTS
+        default: 0
+        description: Selects the output data source for Port B.
+        enumeratedValues:
+          - name: PortBInput
+            value: 0
+            description: Loopback from Port B input
+          - name: PortAInput
+            value: 1
+            description: Data from Port A input
+          - name: DIR
+            value: 2
+            description: Data from Digital Interface Receiver
+          - name: SRC
+            value: 3
+            description: Data from Sample Rate Converter
+
+      - bitOffset: 3
+        name: BM_S
+        default: 0
+        description: Selects Port B clock mode.
+        enumeratedValues:
+          - name: Slave
+            value: 0
+            description: LRCK and BCK are inputs from external source
+          - name: Master
+            value: 1
+            description: LRCK and BCK are outputs derived from master clock
+
+      - bitOffset: 0
+        bitWidth: 3
+        name: BFMT
+        default: 0
+        description: Selects Port B audio data format.
+        enumeratedValues:
+          - name: LeftJustified24
+            value: 0
+            description: 24-bit Left-Justified format
+          - name: I2S24
+            value: 1
+            description: 24-bit Philips I2S format
+          - name: RightJustified16
+            value: 4
+            description: 16-bit Right-Justified format
+          - name: RightJustified18
+            value: 5
+            description: 18-bit Right-Justified format
+          - name: RightJustified20
+            value: 6
+            description: 20-bit Right-Justified format
+          - name: RightJustified24
+            value: 7
+            description: 24-bit Right-Justified format
+
+  - name: PBCTL2
+    addressOffset: 0x06
+    description: Configures Port B master clock source and divider when operating in master mode.
+    fields:
+      - bitOffset: 2
+        bitWidth: 2
+        name: BCLK
+        default: 0
+        description: Selects the master clock source for Port B in master mode.
+        enumeratedValues:
+          - name: MCLK
+            value: 0
+            description: Use MCLK input as master clock
+          - name: RXCKI
+            value: 1
+            description: Use DIR reference clock input RXCKI
+          - name: RXCKO
+            value: 2
+            description: Use DIR recovered clock output RXCKO
+
+      - bitOffset: 0
+        bitWidth: 2
+        name: BDIV
+        default: 0
+        description: Selects the divider for generating LRCKB from the master clock in master mode.
+        enumeratedValues:
+          - name: Divide128
+            value: 0
+            description: Divide master clock by 128
+          - name: Divide256
+            value: 1
+            description: Divide master clock by 256
+          - name: Divide384
+            value: 2
+            description: Divide master clock by 384
+          - name: Divide512
+            value: 3
+            description: Divide master clock by 512
+
+  - name: TXCTL1
+    addressOffset: 0x07
+    description: Configures transmitter clock source, divider, input source, and block start behavior.
+    fields:
+      - bitOffset: 7
+        name: TXCLK
+        default: 0
+        description: Selects transmitter master clock source.
+        enumeratedValues:
+          - name: MCLK
+            value: 0
+            description: Use MCLK input
+          - name: RXCKO
+            value: 1
+            description: Use DIR recovered clock output
+
+      - bitOffset: 5
+        bitWidth: 2
+        name: TXDIV
+        default: 0
+        description: Selects transmitter clock divider.
+        enumeratedValues:
+          - name: Divide128
+            value: 0
+            description: Divide master clock by 128
+          - name: Divide256
+            value: 1
+            description: Divide master clock by 256
+          - name: Divide384
+            value: 2
+            description: Divide master clock by 384
+          - name: Divide512
+            value: 3
+            description: Divide master clock by 512
+
+      - bitOffset: 3
+        bitWidth: 2
+        name: TXIS
+        default: 0
+        description: Selects transmitter input data source.
+        enumeratedValues:
+          - name: PortA
+            value: 0
+            description: Data from Port A
+          - name: PortB
+            value: 1
+            description: Data from Port B
+          - name: DIR
+            value: 2
+            description: Data from Digital Interface Receiver
+          - name: SRC
+            value: 3
+            description: Data from Sample Rate Converter
+
+      - bitOffset: 2
+        name: BLSM
+        default: 0
+        description: Configures BLS pin as input or output.
+        enumeratedValues:
+          - name: Input
+            value: 0
+            description: BLS pin is input
+          - name: Output
+            value: 1
+            description: BLS pin is output
+
+      - bitOffset: 1
+        name: VALID
+        default: 0
+        description: Sets transmitted validity bit.
+        enumeratedValues:
+          - name: Valid
+            value: 0
+            description: Audio data is suitable for conversion
+          - name: Invalid
+            value: 1
+            description: Audio data is not suitable for conversion
+
+      - bitOffset: 0
+        name: BSSL
+        default: 0
+        description: Selects TSLIP interrupt trigger source.
+        enumeratedValues:
+          - name: DataSlip
+            value: 0
+            description: Trigger on data slip condition
+          - name: BlockStart
+            value: 1
+            description: Trigger on block start condition
+
+  - name: TXCTL2
+    addressOffset: 0x08
+    description: Configures transmitter output routing, mute, and buffer transfer behavior.
+    fields:
+      - bitOffset: 7
+        bitWidth: 2
+        name: BYPMUX
+        default: 0
+        description: Selects bypass multiplexer source.
+        enumeratedValues:
+          - name: RX1
+            value: 0
+            description: Line receiver 1
+          - name: RX2
+            value: 1
+            description: Line receiver 2
+          - name: RX3
+            value: 2
+            description: Line receiver 3
+          - name: RX4
+            value: 3
+            description: Line receiver 4
+
+      - bitOffset: 5
+        name: AESMUX
+        default: 0
+        description: Selects AESOUT buffer input source.
+        enumeratedValues:
+          - name: Encoder
+            value: 0
+            description: AES3 encoder output
+          - name: Bypass
+            value: 1
+            description: Bypass multiplexer output
+
+      - bitOffset: 4
+        name: LDMUX
+        default: 0
+        description: Selects line driver input source.
+        enumeratedValues:
+          - name: Encoder
+            value: 0
+            description: AES3 encoder output
+          - name: Bypass
+            value: 1
+            description: Bypass multiplexer output
+
+      - bitOffset: 3
+        name: TXBTD
+        default: 0
+        description: Enables or disables buffer transfer from UA to TA.
+        enumeratedValues:
+          - name: Enabled
+            value: 0
+            description: Transfers are enabled
+          - name: Disabled
+            value: 1
+            description: Transfers are disabled
+
+      - bitOffset: 2
+        name: AESOFF
+        default: 0
+        description: Enables or disables AESOUT output.
+        enumeratedValues:
+          - name: Enabled
+            value: 0
+            description: AESOUT functions normally
+          - name: Disabled
+            value: 1
+            description: AESOUT is forced low
+
+      - bitOffset: 1
+        name: TXMUTE
+        default: 0
+        description: Mutes transmitter audio data.
+        enumeratedValues:
+          - name: Disabled
+            value: 0
+            description: Audio data transmitted normally
+          - name: Enabled
+            value: 1
+            description: Audio and auxiliary data set to zero
+
+      - bitOffset: 0
+        name: TXOFF
+        default: 0
+        description: Enables or disables line driver outputs.
+        enumeratedValues:
+          - name: Enabled
+            value: 0
+            description: Line driver outputs function normally
+          - name: Disabled
+            value: 1
+            description: Line driver outputs are forced low
+
+  - name: TXCTL3
+    addressOffset: 0x09
+    description: Selects transmitter channel status and user data source, and validity bit source.
+    fields:
+      - bitOffset: 2
+        name: VALSEL
+        default: 0
+        description: Selects source of transmitted validity bit.
+        enumeratedValues:
+          - name: FromRegister
+            value: 0
+            description: Use VALID bit from register 0x07
+          - name: FromDIR
+            value: 1
+            description: Use V bit from DIR block
+
+      - bitOffset: 0
+        bitWidth: 2
+        name: TXCUS
+        default: 0
+        description: Selects source of transmitter channel status and user data.
+        enumeratedValues:
+          - name: None
+            value: 0
+            description: No update to DIT UA buffers
+          - name: Host
+            value: 1
+            description: Update via SPI or I2C host interface
+          - name: DIR
+            value: 2
+            description: Update via DIR RA buffers
+          - name: Mixed
+            value: 3
+            description: First 10 bytes via host, remainder via DIR
+
+  - name: SRCDITSTAT
+    addressOffset: 0x0A
+    description: Indicates SRC and DIT status flags.
+    fields:
+      - bitOffset: 6
+        name: RATIO
+        default: 0
+        description: Indicates input sampling rate is higher than output rate.
+        enumeratedValues:
+          - name: EqualOrLower
+            value: 0
+            description: Input rate ≤ output rate
+          - name: Higher
+            value: 1
+            description: Input rate > output rate
+
+      - bitOffset: 5
+        name: READY
+        default: 0
+        description: Indicates SRC rate estimator has completed fast mode.
+        enumeratedValues:
+          - name: NotReady
+            value: 0
+            description: Estimator still in fast mode
+          - name: Ready
+            value: 1
+            description: Estimator completed fast mode
+
+      - bitOffset: 1
+        name: TSLIP
+        default: 0
+        description: Indicates transmitter data slip or block start condition.
+        enumeratedValues:
+          - name: NoSlip
+            value: 0
+            description: No slip or block start
+          - name: SlipDetected
+            value: 1
+            description: Slip or block start occurred
+
+      - bitOffset: 0
+        name: TBTI
+        default: 0
+        description: Indicates UA to TA buffer transfer completed.
+        enumeratedValues:
+          - name: Incomplete
+            value: 0
+            description: Transfer not completed
+          - name: Complete
+            value: 1
+            description: Transfer completed
+
+  - name: SRCDITMASK
+    addressOffset: 0x0B
+    description: Enables or disables interrupts for SRC and DIT status flags.
+    fields:
+      - name: MRATIO
+        bitOffset: 6
+        bitWidth: 1
+        default: 0
+        description: Enables interrupt when SRC input rate > output rate.
+        enumeratedValues:
+          - { name: Disabled, value: 0, description: "Interrupt masked" }
+          - { name: Enabled, value: 1, description: "Interrupt enabled" }
+
+      - name: MREADY
+        bitOffset: 5
+        bitWidth: 1
+        default: 0
+        description: Enables interrupt when SRC rate estimator is ready.
+        enumeratedValues:
+          - { name: Disabled, value: 0, description: "Interrupt masked" }
+          - { name: Enabled, value: 1, description: "Interrupt enabled" }
+
+      - name: MTSLIP
+        bitOffset: 2
+        bitWidth: 1
+        default: 0
+        description: Enables interrupt on transmitter data slip or block start.
+        enumeratedValues:
+          - { name: Disabled, value: 0, description: "Interrupt masked" }
+          - { name: Enabled, value: 1, description: "Interrupt enabled" }
+
+      - name: MTBTI
+        bitOffset: 1
+        bitWidth: 1
+        default: 0
+        description: Enables interrupt when buffer transfer completes.
+        enumeratedValues:
+          - { name: Disabled, value: 0, description: "Interrupt masked" }
+          - { name: Enabled, value: 1, description: "Interrupt enabled" }
+
+  - name: SRCDITMODE
+    addressOffset: 0x0C
+    description: Configures interrupt trigger modes for SRC and DIT status flags.
+    fields:
+      - name: RATIOM
+        bitOffset: 6
+        bitWidth: 2
+        default: 0
+        description: SRC Ratio Interrupt Mode
+        enumeratedValues:
+        - name: RisingEdge
+          value: 0
+          description: Interrupt active on rising edge
+        - name: FallingEdge
+          value: 1
+          description: Interrupt active on falling edge
+        - name: Level
+          value: 2
+          description: Interrupt active while level is high
+      - name: READYM
+        bitOffset: 4
+        bitWidth: 2
+        default: 0
+        description: SRC Ready Interrupt Mode
+        enumeratedValues:
+        - name: RisingEdge
+          value: 0
+          description: Interrupt active on rising edge
+        - name: FallingEdge
+          value: 1
+          description: Interrupt active on falling edge
+        - name: Level
+          value: 2
+          description: Interrupt active while level is high
+      - name: TSLIPM
+        bitOffset: 2
+        bitWidth: 2
+        default: 0
+        description: Transmitter Data Slip Interrupt Mode
+        enumeratedValues:
+        - name: RisingEdge
+          value: 0
+          description: Interrupt active on rising edge
+        - name: FallingEdge
+          value: 1
+          description: Interrupt active on falling edge
+        - name: Level
+          value: 2
+          description: Interrupt active while level is high
+      - name: TBTIM
+        bitOffset: 0
+        bitWidth: 2
+        default: 0
+        description: Transmitter Buffer Transfer Interrupt Mode
+        enumeratedValues:
+        - name: RisingEdge
+          value: 0
+          description: Interrupt active on rising edge
+        - name: FallingEdge
+          value: 1
+          description: Interrupt active on falling edge
+        - name: Level
+          value: 2
+          description: Interrupt active while level is high
+
+  - name: RXCTL1
+    addressOffset: 0x0D
+    description: Selects DIR input source and reference clock, and enables/disables buffer transfer.
+    fields:
+      - bitOffset: 2
+        name: RXCLK
+        default: 0
+        description: Selects DIR reference clock source.
+        enumeratedValues:
+          - name: RXCKI
+            value: 0
+            description: Use RXCKI input
+          - name: MCLK
+            value: 1
+            description: Use MCLK input
+
+      - bitOffset: 1
+        bitWidth: 2
+        name: RXMUX
+        default: 0
+        description: Selects DIR input line receiver.
+        enumeratedValues:
+          - name: RX1
+            value: 0
+            description: Use RX1 input
+          - name: RX2
+            value: 1
+            description: Use RX2 input
+          - name: RX3
+            value: 2
+            description: Use RX3 input
+          - name: RX4
+            value: 3
+            description: Use RX4 input
+
+      - bitOffset: 4
+        name: RXBTD
+        default: 0
+        description: Enables or disables RA to UA buffer transfer.
+        enumeratedValues:
+          - name: Enabled
+            value: 0
+            description: Transfer enabled
+          - name: Disabled
+            value: 1
+            description: Transfer disabled
+
+  - name: RXCTL2
+    addressOffset: 0x0E
+    description: Configures RXCKO output enable, divider, and mute behavior on loss of lock.
+    fields:
+      - bitOffset: 0
+        name: RXCKOE
+        default: 0
+        description: Enables or disables RXCKO output.
+        enumeratedValues:
+          - name: Disabled
+            value: 0
+            description: RXCKO is high-impedance
+          - name: Enabled
+            value: 1
+            description: RXCKO outputs recovered clock
+
+      - bitOffset: 1
+        bitWidth: 2
+        name: RXCKOD
+        default: 0
+        description: Selects RXCKO output clock divider.
+        enumeratedValues:
+          - name: Passthrough
+            value: 0
+            description: No division
+          - name: DivideBy2
+            value: 1
+            description: Divide PLL2 output by 2
+          - name: DivideBy4
+            value: 2
+            description: Divide PLL2 output by 4
+          - name: DivideBy8
+            value: 3
+            description: Divide PLL2 output by 8
+
+      - bitOffset: 3
+        name: RXAMLL
+        default: 0
+        description: Enables mute on loss of lock.
+        enumeratedValues:
+          - name: Disabled
+            value: 0
+            description: No mute on loss of lock
+          - name: Enabled
+            value: 1
+            description: Audio output forced low on loss of lock
+
+      - bitOffset: 4
+        name: LOL
+        default: 0
+        description: Configures PLL2 behavior on loss of lock.
+        enumeratedValues:
+          - name: StopClock
+            value: 0
+            description: PLL2 output clock is stopped
+          - name: FreeRun
+            value: 1
+            description: PLL2 output clock free runs
+            
+  - name: PLL1CFG1
+    addressOffset: 0x0F
+    description: Configures PLL1 multiplier and divider for DIR reference clock.
+    fields:
+      - bitOffset: 4
+        bitWidth: 4
+        default: null
+        description: PLL1 pre-divider value (P). Must satisfy DIR PLL setup conditions.
+        name: P
+      - bitOffset: 0
+        bitWidth: 4
+        default: null
+        description: PLL1 multiplier integer part (J[5:2] in this register).
+        name: J5_2
+
+  - name: PLL1CFG2
+    addressOffset: 0x10
+    description: Configures PLL1 fractional divider and integer part of J value.
+    fields:
+      - bitOffset: 6
+        bitWidth: 2
+        default: 0
+        description: Integer part of PLL1 multiplier J value (bits 0-1).
+        enumeratedValues: []
+        name: J1_0
+      - bitOffset: 0
+        bitWidth: 6
+        default: 0
+        description: Fractional part of PLL1 multiplier D value (bits 8-13).
+        enumeratedValues: []
+        name: D13_8
+
+  - name: PLL1CFG3
+    addressOffset: 0x11
+    description: Contains bits D7 through D0 for configuring the fractional part of the PLL1 multiplier.
+    fields:
+      - name: D
+        bitOffset: 0
+        bitWidth: 8
+        default: 0
+        description: Fractional part of the PLL1 multiplier (bits D7 to D0).
+        enumeratedValues: []
+
+  - name: NONPCM
+    addressOffset: 0x12
+    description: Indicates detection of DTS CD/LD and IEC61937 non-PCM audio formats.
+    fields:
+      - name: DTS_CDLD
+        bitOffset: 1
+        bitWidth: 1
+        default: 0
+        description: Indicates detection of DTS encoded CD or Laserdisc playback.
+        enumeratedValues:
+        - name: NotDetected
+          value: 0
+          description: CD/LD is not DTS encoded
+        - name: Detected
+          value: 1
+          description: DTS CD/LD playback detected
+      - name: IEC61937
+        bitOffset: 0
+        bitWidth: 1
+        default: 0
+        description: Indicates detection of IEC61937 data-reduced audio format.
+        enumeratedValues:
+        - name: NotDetected
+          value: 0
+          description: Data is not IEC61937 format
+        - name: Detected
+          value: 1
+          description: IEC61937 format detected
+
+  - name: RXSTAT1
+    addressOffset: 0x13
+    description: Indicates the maximum available RXCKO clock rate based on DIR detection
+      circuitry.
+    fields:
+      - bitOffset: 0
+        bitWidth: 2
+        default: 0
+        description: Maximum available recovered clock rate based on AES3 frame rate.
+        enumeratedValues:
+        - description: Clock rate not determined
+          name: Undefined
+          value: 0
+        - description: Maximum RXCKO rate is 128 times the sampling frequency
+          name: FS128
+          value: 1
+        - description: Maximum RXCKO rate is 256 times the sampling frequency
+          name: FS256
+          value: 2
+        - description: Maximum RXCKO rate is 512 times the sampling frequency
+          name: FS512
+          value: 3
+        name: RXCKR
+
+  - name: RXSTAT2
+    addressOffset: 0x14
+    description: Indicates status flags for channel status, parity, validity, bipolar
+      errors, Q-channel changes, unlock, CRC, and buffer transfer.
+    fields:
+      - bitOffset: 7
+        bitWidth: 1
+        default: 0
+        description: Channel Status CRC Error
+        enumeratedValues:
+        - description: No CRC error detected
+          name: NoError
+          value: 0
+        - description: CRC error detected
+          name: Error
+          value: 1
+        name: CSCRC
+      - bitOffset: 6
+        bitWidth: 1
+        default: 0
+        description: Parity Error
+        enumeratedValues:
+        - description: No parity error detected
+          name: NoError
+          value: 0
+        - description: Parity error detected
+          name: Error
+          value: 1
+        name: PARITY
+      - bitOffset: 5
+        bitWidth: 1
+        default: 0
+        description: Validity Bit
+        enumeratedValues:
+        - description: Audio data is valid
+          name: Valid
+          value: 0
+        - description: Audio data is not valid
+          name: Invalid
+          value: 1
+        name: VBIT
+      - bitOffset: 4
+        bitWidth: 1
+        default: 0
+        description: Bipolar Encoding Error
+        enumeratedValues:
+        - description: No bipolar encoding error
+          name: NoError
+          value: 0
+        - description: Bipolar encoding error detected
+          name: Error
+          value: 1
+        name: BPERR
+      - bitOffset: 3
+        bitWidth: 1
+        default: 0
+        description: Q-Channel Sub-Code Data Change
+        enumeratedValues:
+        - description: No change in Q-channel data
+          name: NoChange
+          value: 0
+        - description: Q-channel data has changed
+          name: Changed
+          value: 1
+        name: QCHG
+      - bitOffset: 2
+        bitWidth: 1
+        default: 0
+        description: DIR Unlock Error
+        enumeratedValues:
+        - description: DIR AES3 decoder and PLL2 are locked
+          name: Locked
+          value: 0
+        - description: DIR AES3 decoder and PLL2 are unlocked
+          name: Unlocked
+          value: 1
+        name: UNLOCK
+      - bitOffset: 1
+        bitWidth: 1
+        default: 0
+        description: Q-Channel CRC Error
+        enumeratedValues:
+        - description: No CRC error detected
+          name: NoError
+          value: 0
+        - description: CRC error detected in Q-channel data
+          name: Error
+          value: 1
+        name: QCRC
+      - bitOffset: 0
+        bitWidth: 1
+        default: 0
+        description: Receiver Buffer Transfer Interrupt
+        enumeratedValues:
+        - description: Transfer not completed
+          name: Incomplete
+          value: 0
+        - description: Transfer completed
+          name: Complete
+          value: 1
+        name: RBTI
+
+  - name: RXSTAT3
+    addressOffset: 0x15
+    description: Receiver Status Register 3
+    fields:
+      - name: OSLIP
+        bitOffset: 0
+        bitWidth: 1
+        description: >
+          Receiver Output Data Slip Error Status.
+          Set to 1 when a DIR output data slip or repeat error is detected.
+          Applies when DIR output is used as the source for Port A or B in slave mode.
+        enumeratedValues:
+          - name: NO_ERROR
+            value: 0
+            description: No error
+          - name: SLIP_DETECTED
+            value: 1
+
+  - name: RXMASK1
+    addressOffset: 0x16
+    description: Receiver Interrupt Mask Register 1
+    fields:
+      - name: MCSCRC
+        bitOffset: 7
+        bitWidth: 1
+        description: Channel Status CRC Error Interrupt Mask
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+            description: Interrupt is enabled
+
+      - name: MPARITY
+        bitOffset: 6
+        bitWidth: 1
+        description: Parity Error Interrupt Mask
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+            description: Interrupt is enabled
+
+      - name: MVBIT
+        bitOffset: 5
+        bitWidth: 1
+        description: Validity Error Interrupt Mask
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+            description: Interrupt is enabled
+
+      - name: MBPERR
+        bitOffset: 4
+        bitWidth: 1
+        description: Bipolar Encoding Error Interrupt Mask
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+            description: Interrupt is enabled
+
+      - name: MQCHG
+        bitOffset: 3
+        bitWidth: 1
+        description: Q-Channel Sub-Code Data Change Interrupt Mask
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+            description: Interrupt is enabled
+
+      - name: MUNLOCK
+        bitOffset: 2
+        bitWidth: 1
+        description: DIR Unlock Error Interrupt Mask
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+            description: Interrupt is enabled
+
+      - name: MQCRC
+        bitOffset: 1
+        bitWidth: 1
+        description: Q-Channel Sub-Code CRC Error Interrupt Mask
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+            description: Interrupt is enabled
+
+      - name: MRBTI
+        bitOffset: 0
+        bitWidth: 1
+        description: Receiver Buffer Transfer Interrupt Mask
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+            description: Interrupt is enabled
+
+  - name: RXMASK2
+    addressOffset: 0x17
+    description: Receiver Interrupt Mask Register 2
+    fields:
+      - name: MOSLIP
+        bitOffset: 0
+        bitWidth: 1
+        description: >
+          Receiver Output Data Slip Error Interrupt Mask.
+          Applies when DIR output is used as the source for Port A or B in slave mode.
+        enumeratedValues:
+          - name: MASKED
+            value: 0
+            description: Interrupt is masked (default)
+          - name: ENABLED
+            value: 1
+
+  - name: RXMODE1
+    addressOffset: 0x18
+    description: Receiver Interrupt Mode Register 1
+    fields:
+      - name: QCHGM
+        bitOffset: 6
+        bitWidth: 2
+        description: Q-Channel Sub-Code Data Change Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+      - name: UNLOCKM
+        bitOffset: 4
+        bitWidth: 2
+        description: DIR Unlock Error Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+      - name: QCRCM
+        bitOffset: 2
+        bitWidth: 2
+        description: Q-Channel Sub-Code CRC Error Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+      - name: RBTIM
+        bitOffset: 0
+        bitWidth: 2
+        description: Receive Buffer Transfer Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+          
+  - name: RXMODE2
+    addressOffset: 0x19
+    description: Receiver Interrupt Mode Register 2
+    fields:
+      - name: CSCRCM
+        bitOffset: 6
+        bitWidth: 2
+        description: Channel Status CRC Error Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+      - name: PARITYM
+        bitOffset: 4
+        bitWidth: 2
+        description: Parity Error Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+      - name: VBITM
+        bitOffset: 2
+        bitWidth: 2
+        description: Validity Error Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+      - name: BPERRM
+        bitOffset: 0
+        bitWidth: 2
+        description: Bipolar Encoding Error Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+  - name: RXMODE3
+    addressOffset: 0x1A
+    description: Receiver Interrupt Mode Register 3
+    fields:
+      - name: OSLIPM
+        bitOffset: 0
+        bitWidth: 2
+        description: Receiver Output Data Slip Error Interrupt Mode
+        enumeratedValues:
+          - name: RISING_EDGE
+            value: 0
+            description: Interrupt on rising edge (default)
+          - name: FALLING_EDGE
+            value: 1
+            description: Interrupt on falling edge
+          - name: LEVEL
+            value: 2
+            description: Interrupt on level active
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+  - name: GPO1CFG
+    addressOffset: 0x1B
+    description: General-Purpose Output 1 (GPO1) Control Register
+    fields:
+      - name: GPO1_FUNCTION
+        bitOffset: 0
+        bitWidth: 4
+        description: >
+          Selects the function or output state of the GPO1 pin.
+          GPO1 can be forced low/high or configured to output various internal status signals.
+        enumeratedValues:
+          - name: FORCED_LOW
+            value: 0x0
+            description: GPO1 is forced low (default)
+          - name: FORCED_HIGH
+            value: 0x1
+            description: GPO1 is forced high
+          - name: SRC_INTERRUPT
+            value: 0x2
+            description: SRC interrupt flag (active low)
+          - name: DIT_INTERRUPT
+            value: 0x3
+            description: DIT interrupt flag (active low)
+          - name: DIR_INTERRUPT
+            value: 0x4
+            description: DIR interrupt flag (active low)
+          - name: DIR_EMPHASIS
+            value: 0x5
+            description: DIR 50/15μs emphasis flag (active low)
+          - name: DIR_NON_AUDIO
+            value: 0x6
+            description: DIR non-audio data flag (active high)
+          - name: DIR_NON_VALID
+            value: 0x7
+            description: DIR non-valid data flag (active high)
+          - name: DIR_CHANNEL_STATUS
+            value: 0x8
+            description: DIR channel status data serial output
+          - name: DIR_USER_DATA
+            value: 0x9
+            description: DIR user data serial output
+          - name: DIR_BLOCK_START
+            value: 0xA
+            description: DIR block start clock output
+          - name: DIR_COPY
+            value: 0xB
+            description: DIR COPY bit output (0 = copyright asserted, 1 = not asserted)
+          - name: DIR_L_BIT
+            value: 0xC
+            description: DIR L (origination) bit output (0 = 1st gen or higher, 1 = original)
+          - name: DIR_PARITY_ERROR
+            value: 0xD
+            description: DIR parity error flag (active high)
+          - name: DIR_SYNC_CLOCK
+            value: 0xE
+            description: DIR internal sync clock output
+          - name: DIT_SYNC_CLOCK
+            value: 0xF
+            description: DIT internal sync clock output
+
+  - name: GPO2CTL
+    addressOffset: 0x1C
+    description: General-Purpose Output 2 (GPO2) Control Register
+    fields:
+      - name: GPO2_FUNCTION
+        bitOffset: 0
+        bitWidth: 4
+        description: >
+          Selects the function or output state of the GPO2 pin.
+          GPO2 can be forced low/high or configured to output various internal status signals.
+        enumeratedValues:
+          - name: FORCED_LOW
+            value: 0x0
+            description: GPO2 is forced low (default)
+          - name: FORCED_HIGH
+            value: 0x1
+            description: GPO2 is forced high
+          - name: SRC_INTERRUPT
+            value: 0x2
+            description: SRC interrupt flag (active low)
+          - name: DIT_INTERRUPT
+            value: 0x3
+            description: DIT interrupt flag (active low)
+          - name: DIR_INTERRUPT
+            value: 0x4
+            description: DIR interrupt flag (active low)
+          - name: DIR_EMPHASIS
+            value: 0x5
+            description: DIR 50/15μs emphasis flag (active low)
+          - name: DIR_NON_AUDIO
+            value: 0x6
+            description: DIR non-audio data flag (active high)
+          - name: DIR_NON_VALID
+            value: 0x7
+            description: DIR non-valid data flag (active high)
+          - name: DIR_CHANNEL_STATUS
+            value: 0x8
+            description: DIR channel status data serial output
+          - name: DIR_USER_DATA
+            value: 0x9
+            description: DIR user data serial output
+          - name: DIR_BLOCK_START
+            value: 0xA
+            description: DIR block start clock output
+          - name: DIR_COPY
+            value: 0xB
+            description: DIR COPY bit output (0 = copyright asserted, 1 = not asserted)
+          - name: DIR_L_BIT
+            value: 0xC
+            description: DIR L (origination) bit output (0 = 1st gen or higher, 1 = original)
+          - name: DIR_PARITY_ERROR
+            value: 0xD
+            description: DIR parity error flag (active high)
+          - name: DIR_SYNC_CLOCK
+            value: 0xE
+            description: DIR internal sync clock output
+          - name: DIT_SYNC_CLOCK
+            value: 0xF
+            description: DIT internal sync clock output
+
+  - name: GPO3CTL
+    addressOffset: 0x1D
+    description: General-Purpose Output 3 (GPO3) Control Register
+    fields:
+      - name: GPO3_FUNCTION
+        bitOffset: 0
+        bitWidth: 4
+        description: >
+          Selects the function or output state of the GPO3 pin.
+          GPO3 can be forced low/high or configured to output various internal status signals.
+        enumeratedValues:
+          - name: FORCED_LOW
+            value: 0x0
+            description: GPO3 is forced low (default)
+          - name: FORCED_HIGH
+            value: 0x1
+            description: GPO3 is forced high
+          - name: SRC_INTERRUPT
+            value: 0x2
+            description: SRC interrupt flag (active low)
+          - name: DIT_INTERRUPT
+            value: 0x3
+            description: DIT interrupt flag (active low)
+          - name: DIR_INTERRUPT
+            value: 0x4
+            description: DIR interrupt flag (active low)
+          - name: DIR_EMPHASIS
+            value: 0x5
+            description: DIR 50/15μs emphasis flag (active low)
+          - name: DIR_NON_AUDIO
+            value: 0x6
+            description: DIR non-audio data flag (active high)
+          - name: DIR_NON_VALID
+            value: 0x7
+            description: DIR non-valid data flag (active high)
+          - name: DIR_CHANNEL_STATUS
+            value: 0x8
+            description: DIR channel status data serial output
+          - name: DIR_USER_DATA
+            value: 0x9
+            description: DIR user data serial output
+          - name: DIR_BLOCK_START
+            value: 0xA
+            description: DIR block start clock output
+          - name: DIR_COPY
+            value: 0xB
+            description: DIR COPY bit output (0 = copyright asserted, 1 = not asserted)
+          - name: DIR_L_BIT
+            value: 0xC
+            description: DIR L (origination) bit output (0 = 1st gen or higher, 1 = original)
+          - name: DIR_PARITY_ERROR
+            value: 0xD
+            description: DIR parity error flag (active high)
+          - name: DIR_SYNC_CLOCK
+            value: 0xE
+            description: DIR internal sync clock output
+          - name: DIT_SYNC_CLOCK
+            value: 0xF
+            description: DIT internal sync clock output
+
+  - name: GPO4CFG
+    addressOffset: 0x1E
+    description: General-Purpose Output 4 (GPO4) Control Register
+    fields:
+      - name: GPO4_FUNCTION
+        bitOffset: 0
+        bitWidth: 4
+        description: >
+          Selects the function or output state of the GPO4 pin.
+          GPO4 can be forced low/high or configured to output various internal status signals.
+        enumeratedValues:
+          - name: FORCED_LOW
+            value: 0x0
+            description: GPO4 is forced low (default)
+          - name: FORCED_HIGH
+            value: 0x1
+            description: GPO4 is forced high
+          - name: SRC_INTERRUPT
+            value: 0x2
+            description: SRC interrupt flag (active low)
+          - name: DIT_INTERRUPT
+            value: 0x3
+            description: DIT interrupt flag (active low)
+          - name: DIR_INTERRUPT
+            value: 0x4
+            description: DIR interrupt flag (active low)
+          - name: DIR_EMPHASIS
+            value: 0x5
+            description: DIR 50/15μs emphasis flag (active low)
+          - name: DIR_NON_AUDIO
+            value: 0x6
+            description: DIR non-audio data flag (active high)
+          - name: DIR_NON_VALID
+            value: 0x7
+            description: DIR non-valid data flag (active high)
+          - name: DIR_CHANNEL_STATUS
+            value: 0x8
+            description: DIR channel status data serial output
+          - name: DIR_USER_DATA
+            value: 0x9
+            description: DIR user data serial output
+          - name: DIR_BLOCK_START
+            value: 0xA
+            description: DIR block start clock output
+          - name: DIR_COPY
+            value: 0xB
+            description: DIR COPY bit output (0 = copyright asserted, 1 = not asserted)
+          - name: DIR_L_BIT
+            value: 0xC
+            description: DIR L (origination) bit output (0 = 1st gen or higher, 1 = original)
+          - name: DIR_PARITY_ERROR
+            value: 0xD
+            description: DIR parity error flag (active high)
+          - name: DIR_SYNC_CLOCK
+            value: 0xE
+            description: DIR internal sync clock output
+          - name: DIT_SYNC_CLOCK
+            value: 0xF
+            description: DIT internal sync clock output
+
+  - name: QSUB1
+    addressOffset: 0x1F
+    description: Q-Channel Sub-Code Data Register 1 (Control and Address)
+    fields:
+      - name: Q0_7
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bits 0..7
+
+  - name: QSUB2
+    addressOffset: 0x20
+    description: Q-Channel Sub-Code Data Register 2 (Track Number)
+    fields:
+      - name: Q8_15
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bits 8..15
+
+  - name: QSUB3
+    addressOffset: 0x21
+    description: Q-Channel Sub-Code Data Register 3 (Index)
+    fields:
+      - name: Q16_23
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bits 16..23
+
+  - name: QSUB4
+    addressOffset: 0x22
+    description: Q-Channel Sub-Code Data Register 4 (Minutes)
+    fields:
+      - name: Q24_31
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bit 24..31
+
+  - name: QSUB5
+    addressOffset: 0x23
+    description: Q-Channel Sub-Code Data Register 5 (Seconds)
+    fields:
+      - name: Q32_39
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bit 32
+
+  - name: QSUB6
+    addressOffset: 0x24
+    description: Q-Channel Sub-Code Data Register 6 (Frame)
+    fields:
+      - name: Q40_47
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bit 40..47
+
+  - name: QSUB7
+    addressOffset: 0x25
+    description: Q-Channel Sub-Code Data Register 7 (Zero field)
+    fields:
+      - name: Q48_55
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bit 48..55
+
+  - name: QSUB8
+    addressOffset: 0x26
+    description: Q-Channel Sub-Code Data Register 8 (AMIN – Absolute Minute)
+    fields:
+      - name: Q56_63
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bit 56..63
+
+  - name: QSUB9
+    addressOffset: 0x27
+    description: Q-Channel Sub-Code Data Register 9 (ASEC – Absolute Second)
+    fields:
+      - name: Q64_71
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bit 64..71
+
+  - name: QSUB10
+    addressOffset: 0x28
+    description: Q-Channel Sub-Code Data Register 10 (AFRAME – Absolute Frame)
+    fields:
+      - name: Q72_79
+        bitOffset: 0
+        bitWidth: 8
+        description: Q-channel sub-code bit 72..79
+
+  - name: PREPCHI
+    addressOffset: 0x29
+    description: >
+      Burst Preamble PC High-Byte Status Register.
+      Contains bits 15:8 of the IEC61937 PC preamble, which indicates the type of non-PCM data (e.g., Dolby AC-3, DTS).
+    fields:
+      - name: PC15_8
+        bitOffset: 0
+        bitWidth: 8
+        description: Preamble bit 15..8
+
+  - name: PREPCLO
+    addressOffset: 0x2A
+    description: >
+      Burst Preamble PC Low-Byte Status Register.
+      Contains bits 7:0 of the IEC61937 PC preamble, which identifies the type of non-PCM audio data (e.g., Dolby AC-3, DTS, MPEG).
+    fields:
+      - name: PC7_0
+        bitOffset: 0
+        bitWidth: 8
+        description: Preamble bit 7..0
+
+  - name: PREPDHI
+    addressOffset: 0x2B
+    description: >
+      Burst Preamble PD High-Byte Status Register.
+      Contains bits 15:8 of the IEC61937 PD preamble, which indicates the burst length (in bits) of the non-PCM audio data payload.
+    fields:
+      - name: PD15_8
+        bitOffset: 0
+        bitWidth: 8
+        description: Preamble bit 15..8
+
+  - name: PREPDLO
+    addressOffset: 0x2C
+    description: >
+      Burst Preamble PD Low-Byte Status Register.
+      Contains bits 7:0 of the IEC61937 PD preamble, which indicates the burst length (in bits) of the non-PCM audio data payload.
+    fields:
+      - name: PD7_0
+        bitOffset: 0
+        bitWidth: 8
+        description: Preamble bit 7..0
+
+  - name: SRCCTL1
+    addressOffset: 0x2D
+    description: SRC Control Register 1 – Controls input source, reference clock, mute, and attenuation tracking for the SRC block.
+    fields:
+      - name: TRACK
+        bitOffset: 6
+        bitWidth: 1
+        description: Enables or disables attenuation tracking between left and right channels.
+        enumeratedValues:
+          - name: DISABLED
+            value: 0
+            description: Left and Right channels have independent attenuation (default)
+          - name: ENABLED
+            value: 1
+            description: Right channel tracks Left channel attenuation
+      - name: MUTE
+        bitOffset: 4
+        bitWidth: 1
+        description: Enables or disables the SRC output soft mute function.
+        enumeratedValues:
+          - name: DISABLED
+            value: 0
+            description: Mute disabled (default)
+          - name: ENABLED
+            value: 1
+            description: Mute enabled; output data set to all zeros
+      - name: SRCCLK
+        bitOffset: 2
+        bitWidth: 2
+        description: Selects the reference clock source for the SRC.
+        enumeratedValues:
+          - name: MCLK
+            value: 0
+            description: Master Clock input (default)
+          - name: RXCKI
+            value: 1
+            description: DIR Reference Clock input
+          - name: RXCKO
+            value: 2
+            description: DIR Recovered Clock output
+          - name: RESERVED
+            value: 3
+            description: Reserved
+      - name: SRCIS
+        bitOffset: 0
+        bitWidth: 2
+        description: Selects the input data source for the SRC.
+        enumeratedValues:
+          - name: PORT_A
+            value: 0
+            description: Port A (default)
+          - name: PORT_B
+            value: 1
+            description: Port B
+          - name: DIR
+            value: 2
+            description: Digital Interface Receiver (DIR)
+          - name: RESERVED
+            value: 3
+            description: Reserved
+
+  - name: SRCCTL2
+    addressOffset: 0x2E
+    description: >
+      SRC Control Register 2 – Configures de-emphasis filtering, decimation mode,
+      and interpolation group delay for the SRC block.
+    fields:
+      - name: AUTODEM
+        bitOffset: 5
+        bitWidth: 1
+        description: >
+          Enables automatic de-emphasis based on channel status bits from DIR.
+        enumeratedValues:
+          - name: DISABLED
+            value: 0
+            description: Manual de-emphasis control via DEM bits (default)
+          - name: ENABLED
+            value: 1
+            description: Automatically enables de-emphasis for 50/15μs at 32/44.1/48 kHz
+      - name: DEM
+        bitOffset: 3
+        bitWidth: 2
+        description: >
+          Manual configuration of digital de-emphasis filter for 50/15μs pre-emphasized audio.
+        enumeratedValues:
+          - name: DISABLED
+            value: 0
+            description: De-emphasis disabled (default)
+          - name: FS_48KHZ
+            value: 1
+            description: De-emphasis enabled for 48 kHz input
+          - name: FS_44_1KHZ
+            value: 2
+            description: De-emphasis enabled for 44.1 kHz input
+          - name: FS_32KHZ
+            value: 3
+            description: De-emphasis enabled for 32 kHz input
+      - name: DDN
+        bitOffset: 2
+        bitWidth: 1
+        description: >
+          Decimation mode selection. Enables either the decimation filter or direct down-sampling.
+        enumeratedValues:
+          - name: DECIMATION_FILTER
+            value: 0
+            description: Use decimation filter (default)
+          - name: DIRECT_DOWN_SAMPLING
+            value: 1
+            description: Use direct down-sampling (no filtering)
+      - name: IGRP
+        bitOffset: 0
+        bitWidth: 2
+        description: >
+          Interpolation filter group delay. Selects the number of samples pre-buffered
+          before the re-sampler function.
+        enumeratedValues:
+          - name: SAMPLES_64
+            value: 0
+            description: 64 samples pre-buffered (default)
+          - name: SAMPLES_32
+            value: 1
+            description: 32 samples pre-buffered
+          - name: SAMPLES_16
+            value: 2
+            description: 16 samples pre-buffered
+          - name: SAMPLES_8
+            value: 3
+            description: 8 samples pre-buffered
+
+  - name: SRCCTL3
+    addressOffset: 0x2F
+    description: >
+      SRC Control Register 3 – Selects the output word length for the SRC block.
+      Word length reduction is performed using triangular PDF dithering.
+    fields:
+      - name: OWL
+        bitOffset: 6
+        bitWidth: 2
+        description: Selects the output word length of the SRC.
+        enumeratedValues:
+          - name: BITS_24
+            value: 0
+            description: 24-bit output word length (default)
+          - name: BITS_20
+            value: 1
+            description: 20-bit output word length
+          - name: BITS_18
+            value: 2
+            description: 18-bit output word length
+          - name: BITS_16
+            value: 3
+            description: 16-bit output word length
+
+  - name: SRCCTL4
+    addressOffset: 0x30
+    description: >
+      SRC Control Register 4 – Sets digital output attenuation for the Left channel.
+      If attenuation tracking is enabled (TRACK = 1 in Register 2D), this value also applies to the Right channel.
+    fields:
+      - name: AL
+        bitOffset: 0
+        bitWidth: 8
+        description: >
+          Digital attenuation level for the Left channel.
+          Output attenuation (in dB) is calculated as: -0.5 × value.
+          Range: 0 dB to -127.5 dB in 0.5 dB steps.
+
+  - name: SRCCTL5
+    addressOffset: 0x31
+    description: >
+      SRC Control Register 5 – Sets digital output attenuation for the Right channel.
+      Used only when attenuation tracking is disabled (TRACK = 0 in Register 2D).
+    fields:
+      - name: AR
+        bitOffset: 0
+        bitWidth: 8
+        description: >
+          Digital attenuation level for the Right channel.
+          Output attenuation (in dB) is calculated as: -0.5 × value.
+          Range: 0 dB to -127.5 dB in 0.5 dB steps.
+
+  - name: SRCRATIO1
+    addressOffset: 0x32
+    description: 'SRC Ratio Readback Register 1'
+    fields:
+      - name: SRI
+        bitOffset: 3
+        bitWidth: 5
+        description: 'Integer Part of the Input-to-Output Sampling Ratio'
+      - name: SRF10_8
+        bitOffset: 0
+        bitWidth: 3
+        description: 'Fractional Part (Bits 10:8) of the Input-to-Output Sampling Ratio'
+
+  - name: SRCRATIO2
+    addressOffset: 0x33
+    description: 'SRC Ratio Readback Register 2'
+    fields:
+      - name: SRF7_0
+        bitOffset: 0
+        bitWidth: 8
+        description: 'Fractional Part (Bits 7:0) of the Input-to-Output Sampling Ratio'
+
+  - name: PAGESEL
+    addressOffset: 0x7F
+    default: 0
+    description: Page Selection
+    fields:
+      - name: PAGE
+        bitOffset: 0
+        bitWidth: 2
+        description: Selects one of three register pages.
+        enumeratedValues:
+          - name: PAGE0
+            value: 0
+            description: Control and Status Registers
+          - name: PAGE1
+            value: 1
+            description: DIR Channel Status and User Data Buffers
+          - name: PAGE2
+            value: 2
+            description: DIT Channel Status and User Data Buffers
+
+parameters:
+  - name: addr
+    bits: 2
+    min: 0
+    max: 3
+    description: Chip addressing (on I2C 0x70..0x73; on SPI 4 select lines)
+  - name: cpm
+    bits: 1
+    min: 0
+    max: 1
+    description: Control port mode (0 = SPI, 1 = I2C)
+  - name: src_present
+    bits: 1
+    min: 0
+    max: 1
+    description: Set if the SRC block is present in the device (SRC4392 or SRC4382)
