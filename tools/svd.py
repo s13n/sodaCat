@@ -170,11 +170,11 @@ def collectInterrupts(peripherals:list, offset:int):
         interrupt sources are ored into one interrupt vector. """
     ints = {}
     for p in peripherals:
-        for int in p.get('interrupts', []):
-            v = int['value'] + offset
+        for intr in p.get('interrupts', []):
+            v = intr['value'] + offset
             if not v in ints:
                 ints[v] = []
-            ints[v].append(p['name'] + "." + int['name'])
+            ints[v].append(p['name'] + "." + intr['name'])
     return dict(sorted(ints.items()))
 
 def collectModelsAndInstances(peripherals:list):
