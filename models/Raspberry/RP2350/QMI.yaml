@@ -1,0 +1,1425 @@
+# Created from RP2350.svd (Rev 0.1)
+
+name: QMI
+description: "QSPI Memory Interface.\n\n            Provides a memory-mapped interface
+  to up to two SPI/DSPI/QSPI flash or PSRAM devices. Also provides a serial interface
+  for programming and configuration of the external device."
+registers:
+  - name: DIRECT_CSR
+    addressOffset: 0
+    description: "Control and status for direct serial mode\n\n                  \
+      \  Direct serial mode allows the processor to send and receive raw serial frames,
+      for programming, configuration and control of the external memory devices. Only
+      SPI mode 0 (CPOL=0 CPHA=0) is supported."
+    resetValue: 25165824
+    fields:
+      - name: EN
+        description: "Enable direct mode.\n\n                            In direct
+          mode, software controls the chip select lines, and can perform direct SPI
+          transfers by pushing data to the DIRECT_TX FIFO, and popping the same amount
+          of data from the DIRECT_RX FIFO.\n\n                            Memory-mapped
+          accesses will generate bus errors when direct serial mode is enabled."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: BUSY
+        description: "Direct mode busy flag. If 1, data is currently being shifted
+          in/out (or would be if the interface were not stalled on the RX FIFO), and
+          the chip select must not yet be deasserted.\n\n                        \
+          \    The busy flag will also be set to 1 if a memory-mapped transfer is
+          still in progress when direct mode is enabled. Direct mode blocks new memory-mapped
+          transfers, but can't halt a transfer that is already in progress. If there
+          is a chance that memory-mapped transfers may be in progress, the busy flag
+          should be polled for 0 before asserting the chip select.\n\n           \
+          \                 (In practice you will usually discover this timing condition
+          through other means, because any subsequent memory-mapped transfers when
+          direct mode is enabled will return bus errors, which are difficult to ignore.)"
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+      - name: ASSERT_CS0N
+        description: "When 1, assert (i.e. drive low) the CS0n chip select line.\n\
+          \n                            Note that this applies even when DIRECT_CSR_EN
+          is 0."
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: ASSERT_CS1N
+        description: "When 1, assert (i.e. drive low) the CS1n chip select line.\n\
+          \n                            Note that this applies even when DIRECT_CSR_EN
+          is 0."
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: AUTO_CS0N
+        description: When 1, automatically assert the CS0n chip select line 
+          whenever the BUSY flag is set.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: AUTO_CS1N
+        description: When 1, automatically assert the CS1n chip select line 
+          whenever the BUSY flag is set.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+      - name: TXFULL
+        description: When 1, the DIRECT_TX FIFO is currently full. If the 
+          processor tries to write more data, that data will be ignored.
+        access: read-only
+        bitOffset: 10
+        bitWidth: 1
+      - name: TXEMPTY
+        description: When 1, the DIRECT_TX FIFO is currently empty. Unless the 
+          processor pushes more data, transmission will stop and BUSY will go 
+          low once the current 8-bit serial frame completes.
+        access: read-only
+        bitOffset: 11
+        bitWidth: 1
+      - name: TXLEVEL
+        description: Current level of DIRECT_TX FIFO
+        access: read-only
+        bitOffset: 12
+        bitWidth: 3
+      - name: RXEMPTY
+        description: When 1, the DIRECT_RX FIFO is currently empty. If the 
+          processor attempts to read more data, the FIFO state is not affected, 
+          but the value returned to the processor is undefined.
+        access: read-only
+        bitOffset: 16
+        bitWidth: 1
+      - name: RXFULL
+        description: When 1, the DIRECT_RX FIFO is currently full. The serial 
+          interface will be stalled until data is popped; the interface will not
+          begin a new serial frame when the DIRECT_TX FIFO is empty or the 
+          DIRECT_RX FIFO is full.
+        access: read-only
+        bitOffset: 17
+        bitWidth: 1
+      - name: RXLEVEL
+        description: Current level of DIRECT_RX FIFO
+        access: read-only
+        bitOffset: 18
+        bitWidth: 3
+      - name: CLKDIV
+        description: "Clock divisor for direct serial mode. Divisors of 1..255 are
+          encoded directly, and the maximum divisor of 256 is encoded by a value of
+          CLKDIV=0.\n\n                            The clock divisor can be changed
+          on-the-fly by software, without halting or otherwise coordinating with the
+          serial interface. The serial interface will sample the latest clock divisor
+          each time it begins the transmission of a new byte."
+        access: read-write
+        bitOffset: 22
+        bitWidth: 8
+      - name: RXDELAY
+        description: Delay the read data sample timing, in units of one half of 
+          a system clock cycle. (Not necessarily half of an SCK cycle.)
+        access: read-write
+        bitOffset: 30
+        bitWidth: 2
+  - name: DIRECT_TX
+    addressOffset: 4
+    description: Transmit FIFO for direct mode
+    resetValue: 0
+    fields:
+      - name: DATA
+        description: "Data pushed here will be clocked out falling edges of SCK (or
+          before the very first rising edge of SCK, if this is the first pulse). For
+          each byte clocked out, the interface will simultaneously sample one byte,
+          on rising edges of SCK, and push this to the DIRECT_RX FIFO.\n\n       \
+          \                     For 16-bit data, the least-significant byte is transmitted
+          first."
+        access: write-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: IWIDTH
+        description: Configure whether this FIFO record is transferred with 
+          single/dual/quad interface width (0/1/2). Different widths can be 
+          mixed freely.
+        access: write-only
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 16
+        bitWidth: 2
+      - name: DWIDTH
+        description: Data width. If 0, hardware will transmit the 8 LSBs of the 
+          DIRECT_TX DATA field, and return an 8-bit value in the 8 LSBs of 
+          DIRECT_RX. If 1, the full 16-bit width is used. 8-bit and 16-bit 
+          transfers can be mixed freely.
+        access: write-only
+        bitOffset: 18
+        bitWidth: 1
+      - name: OE
+        description: "Output enable (active-high). For single width (SPI), this field
+          is ignored, and SD0 is always set to output, with SD1 always set to input.\n\
+          \n                            For dual and quad width (DSPI/QSPI), this
+          sets whether the relevant SDx pads are set to output whilst transferring
+          this FIFO record. In this case the command/address should have OE set, and
+          the data transfer should have OE set or clear depending on the direction
+          of the transfer."
+        access: write-only
+        bitOffset: 19
+        bitWidth: 1
+      - name: NOPUSH
+        description: "Inhibit the RX FIFO push that would correspond to this TX FIFO
+          entry.\n\n                            Useful to avoid garbage appearing
+          in the RX FIFO when pushing the command at the beginning of a SPI transfer."
+        access: write-only
+        bitOffset: 20
+        bitWidth: 1
+  - name: DIRECT_RX
+    addressOffset: 8
+    description: Receive FIFO for direct mode
+    resetValue: 0
+    fields:
+      - name: DIRECT_RX
+        description: "With each byte clocked out on the serial interface, one byte
+          will simultaneously be clocked in, and will appear in this FIFO. The serial
+          interface will stall when this FIFO is full, to avoid dropping data.\n\n\
+          \                            When 16-bit data is pushed into the TX FIFO,
+          the corresponding RX FIFO push will also contain 16 bits of data. The least-significant
+          byte is the first one received."
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 16
+  - name: M0_TIMING
+    addressOffset: 12
+    description: Timing configuration register for memory address window 0.
+    resetValue: 1073741828
+    fields:
+      - name: CLKDIV
+        description: "Clock divisor. Odd and even divisors are supported. Defines
+          the SCK clock period in units of 1 system clock cycle. Divisors 1..255 are
+          encoded directly, and a divisor of 256 is encoded with a value of CLKDIV=0.\n\
+          \n                            The clock divisor can be changed on-the-fly,
+          even when the QMI is currently accessing memory in this address window.
+          All other parameters must only be changed when the QMI is idle.\n\n    \
+          \                        If software is increasing CLKDIV in anticipation
+          of an increase in the system clock frequency, a dummy access to either memory
+          window (and appropriate processor barriers/fences) must be inserted after
+          the Mx_TIMING write to ensure the SCK divisor change is in effect _before_
+          the system clock is changed."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+      - name: RXDELAY
+        description: "Delay the read data sample timing, in units of one half of a
+          system clock cycle. (Not necessarily half of an SCK cycle.) An RXDELAY of
+          0 means the sample is captured at the SDI input registers simultaneously
+          with the rising edge of SCK launched from the SCK output register.\n\n \
+          \                           At higher SCK frequencies, RXDELAY may need
+          to be increased to account for the round trip delay of the pads, and the
+          clock-to-Q delay of the QSPI memory device."
+        access: read-write
+        bitOffset: 8
+        bitWidth: 3
+      - name: MIN_DESELECT
+        description: "After this window's chip select is deasserted, it remains deasserted
+          for half an SCK cycle (rounded up to an integer number of system clock cycles),
+          plus MIN_DESELECT additional system clock cycles, before the QMI reasserts
+          either chip select pin.\n\n                            Nonzero values may
+          be required for PSRAM devices which enforce a longer minimum CS deselect
+          time, so that they can perform internal DRAM refresh cycles whilst deselected."
+        access: read-write
+        bitOffset: 12
+        bitWidth: 5
+      - name: MAX_SELECT
+        description: "Enforce a maximum assertion duration for this window's chip
+          select, in units of 64 system clock cycles. If 0, the QMI is permitted to
+          keep the chip select asserted indefinitely when servicing sequential memory
+          accesses (see COOLDOWN).\n\n                            This feature is
+          required to meet timing constraints of PSRAM devices, which specify a maximum
+          chip select assertion so they can perform DRAM refresh cycles. See also
+          MIN_DESELECT, which can enforce a minimum deselect time.\n\n           \
+          \                 If a memory access is in progress at the time MAX_SELECT
+          is reached, the QMI will wait for the access to complete before deasserting
+          the chip select. This additional time must be accounted for to calculate
+          a safe MAX_SELECT value. In the worst case, this may be a fully-formed serial
+          transfer, including command prefix and address, with a data payload as large
+          as one cache line."
+        access: read-write
+        bitOffset: 17
+        bitWidth: 6
+      - name: SELECT_HOLD
+        description: "Add up to three additional system clock cycles of active hold
+          between the last falling edge of SCK and the deassertion of this window's
+          chip select.\n\n                            The default hold time is one
+          system clock cycle. Note that flash datasheets usually give chip select
+          active hold time from the last *rising* edge of SCK, and so even zero hold
+          from the last falling edge would be safe.\n\n                          \
+          \  Note that this is a minimum hold time guaranteed by the QMI: the actual
+          chip select active hold may be slightly longer for read transfers with low
+          clock divisors and/or high sample delays. Specifically, if the point two
+          cycles after the last RX data sample is later than the last SCK falling
+          edge, then the hold time is measured from *this* point.\n\n            \
+          \                Note also that, in case the final SCK pulse is masked to
+          save energy (true for non-DTR reads when COOLDOWN is disabled or PAGE_BREAK
+          is reached), all of QMI's timing logic behaves as though the clock pulse
+          were still present. The SELECT_HOLD time is applied from the point where
+          the last SCK falling edge would be if the clock pulse were not masked."
+        access: read-write
+        bitOffset: 23
+        bitWidth: 2
+      - name: SELECT_SETUP
+        description: "Add up to one additional system clock cycle of setup between
+          chip select assertion and the first rising edge of SCK.\n\n            \
+          \                The default setup time is one half SCK period, which is
+          usually sufficient except for very high SCK frequencies with some flash
+          devices."
+        access: read-write
+        bitOffset: 25
+        bitWidth: 1
+      - name: PAGEBREAK
+        description: "When page break is enabled, chip select will automatically deassert
+          when crossing certain power-of-2-aligned address boundaries. The next access
+          will always begin a new read/write SPI burst, even if the address of the
+          next access follows in sequence with the last access before the page boundary.\n\
+          \n                            Some flash and PSRAM devices forbid crossing
+          page boundaries with a single read/write transfer, or restrict the operating
+          frequency for transfers that do cross page a boundary. This option allows
+          the QMI to safely support those devices.\n\n                           \
+          \ This field has no effect when COOLDOWN is disabled."
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No page boundary is enforced
+          - name: '256'
+            value: 1
+            description: Break bursts crossing a 256-byte page boundary
+          - name: '1024'
+            value: 2
+            description: Break bursts crossing a 1024-byte quad-page boundary
+          - name: '4096'
+            value: 3
+            description: Break bursts crossing a 4096-byte sector boundary
+        bitOffset: 28
+        bitWidth: 2
+      - name: COOLDOWN
+        description: "Chip select cooldown period. When a memory transfer finishes,
+          the chip select remains asserted for 64 x COOLDOWN system clock cycles,
+          plus half an SCK clock period (rounded up for odd SCK divisors). After this
+          cooldown expires, the chip select is always deasserted to save power.\n\n\
+          \                            If the next memory access arrives within the
+          cooldown period, the QMI may be able to append more SCK cycles to the currently
+          ongoing SPI transfer, rather than starting a new transfer. This reduces
+          access latency and increases bus throughput.\n\n                       \
+          \     Specifically, the next access must be in the same direction (read/write),
+          access the same memory window (chip select 0/1), and follow sequentially
+          the address of the last transfer. If any of these are false, the new access
+          will first deassert the chip select, then begin a new transfer.\n\n    \
+          \                        If COOLDOWN is 0, the address alignment configured
+          by PAGEBREAK has been reached, or the total chip select assertion limit
+          MAX_SELECT has been reached, the cooldown period is skipped, and the chip
+          select will always be deasserted one half SCK period after the transfer
+          finishes."
+        access: read-write
+        bitOffset: 30
+        bitWidth: 2
+  - name: M0_RFMT
+    addressOffset: 16
+    description: "Read transfer format configuration for memory address window 0.\n\
+      \n                    Configure the bus width of each transfer phase individually,
+      and configure the length or presence of the command prefix, command suffix and
+      dummy/turnaround transfer phases. Only 24-bit addresses are supported.\n\n \
+      \                   The reset value of the M0_RFMT register is configured to
+      support a basic 03h serial read transfer with no additional configuration."
+    resetValue: 4096
+    fields:
+      - name: PREFIX_WIDTH
+        description: The transfer width used for the command prefix, if any
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 0
+        bitWidth: 2
+      - name: ADDR_WIDTH
+        description: The transfer width used for the address. The address phase 
+          always transfers 24 bits in total.
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 2
+        bitWidth: 2
+      - name: SUFFIX_WIDTH
+        description: The width used for the post-address command suffix, if any
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 4
+        bitWidth: 2
+      - name: DUMMY_WIDTH
+        description: "The width used for the dummy phase, if any.\n\n            \
+          \                If width is single, SD0/MOSI is held asserted low during
+          the dummy phase, and SD1...SD3 are tristated. If width is dual/quad, all
+          IOs are tristated during the dummy phase."
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 6
+        bitWidth: 2
+      - name: DATA_WIDTH
+        description: The width used for the data transfer
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 8
+        bitWidth: 2
+      - name: PREFIX_LEN
+        description: Length of command prefix, in units of 8 bits. (i.e. 2 
+          cycles for quad width, 4 for dual, 8 for single)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No prefix
+          - name: '8'
+            value: 1
+            description: 8-bit prefix
+        bitOffset: 12
+        bitWidth: 1
+      - name: SUFFIX_LEN
+        description: "Length of post-address command suffix, in units of 4 bits. (i.e.
+          1 cycle for quad width, 2 for dual, 4 for single)\n\n                  \
+          \          Only values of 0 and 8 bits are supported."
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No suffix
+          - name: '8'
+            value: 2
+            description: 8-bit suffix
+        bitOffset: 14
+        bitWidth: 2
+      - name: DUMMY_LEN
+        description: Length of dummy phase between command suffix and data 
+          phase, in units of 4 bits. (i.e. 1 cycle for quad width, 2 for dual, 4
+          for single)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No dummy phase
+          - name: '4'
+            value: 1
+            description: 4 dummy bits
+          - name: '8'
+            value: 2
+            description: 8 dummy bits
+          - name: '12'
+            value: 3
+            description: 12 dummy bits
+          - name: '16'
+            value: 4
+            description: 16 dummy bits
+          - name: '20'
+            value: 5
+            description: 20 dummy bits
+          - name: '24'
+            value: 6
+            description: 24 dummy bits
+          - name: '28'
+            value: 7
+            description: 28 dummy bits
+        bitOffset: 16
+        bitWidth: 3
+      - name: DTR
+        description: "Enable double transfer rate (DTR) for read commands: address,
+          suffix and read data phases are active on both edges of SCK. SDO data is
+          launched centre-aligned on each SCK edge, and SDI data is captured on the
+          SCK edge that follows its launch.\n\n                            DTR is
+          implemented by halving the clock rate; SCK has a period of 2 x CLK_DIV throughout
+          the transfer. The prefix and dummy phases are still single transfer rate.\n\
+          \n                            If the suffix is quad-width, it must be 0
+          or 8 bits in length, to ensure an even number of SCK edges."
+        access: read-write
+        bitOffset: 28
+        bitWidth: 1
+  - name: M0_RCMD
+    addressOffset: 20
+    description: "Command constants used for reads from memory address window 0.\n\
+      \n                    The reset value of the M0_RCMD register is configured
+      to support a basic 03h serial read transfer with no additional configuration."
+    resetValue: 40963
+    fields:
+      - name: PREFIX
+        description: The command prefix bits to prepend on each new transfer, if
+          Mx_RFMT_PREFIX_LEN is nonzero.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+      - name: SUFFIX
+        description: The command suffix bits following the address, if 
+          Mx_RFMT_SUFFIX_LEN is nonzero.
+        access: read-write
+        bitOffset: 8
+        bitWidth: 8
+  - name: M0_WFMT
+    addressOffset: 24
+    description: "Write transfer format configuration for memory address window 0.\n\
+      \n                    Configure the bus width of each transfer phase individually,
+      and configure the length or presence of the command prefix, command suffix and
+      dummy/turnaround transfer phases. Only 24-bit addresses are supported.\n\n \
+      \                   The reset value of the M0_WFMT register is configured to
+      support a basic 02h serial write transfer. However, writes to this window must
+      first be enabled via the XIP_CTRL_WRITABLE_M0 bit, as XIP memory is read-only
+      by default."
+    resetValue: 4096
+    fields:
+      - name: PREFIX_WIDTH
+        description: The transfer width used for the command prefix, if any
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 0
+        bitWidth: 2
+      - name: ADDR_WIDTH
+        description: The transfer width used for the address. The address phase 
+          always transfers 24 bits in total.
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 2
+        bitWidth: 2
+      - name: SUFFIX_WIDTH
+        description: The width used for the post-address command suffix, if any
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 4
+        bitWidth: 2
+      - name: DUMMY_WIDTH
+        description: "The width used for the dummy phase, if any.\n\n            \
+          \                If width is single, SD0/MOSI is held asserted low during
+          the dummy phase, and SD1...SD3 are tristated. If width is dual/quad, all
+          IOs are tristated during the dummy phase."
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 6
+        bitWidth: 2
+      - name: DATA_WIDTH
+        description: The width used for the data transfer
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 8
+        bitWidth: 2
+      - name: PREFIX_LEN
+        description: Length of command prefix, in units of 8 bits. (i.e. 2 
+          cycles for quad width, 4 for dual, 8 for single)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No prefix
+          - name: '8'
+            value: 1
+            description: 8-bit prefix
+        bitOffset: 12
+        bitWidth: 1
+      - name: SUFFIX_LEN
+        description: "Length of post-address command suffix, in units of 4 bits. (i.e.
+          1 cycle for quad width, 2 for dual, 4 for single)\n\n                  \
+          \          Only values of 0 and 8 bits are supported."
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No suffix
+          - name: '8'
+            value: 2
+            description: 8-bit suffix
+        bitOffset: 14
+        bitWidth: 2
+      - name: DUMMY_LEN
+        description: Length of dummy phase between command suffix and data 
+          phase, in units of 4 bits. (i.e. 1 cycle for quad width, 2 for dual, 4
+          for single)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No dummy phase
+          - name: '4'
+            value: 1
+            description: 4 dummy bits
+          - name: '8'
+            value: 2
+            description: 8 dummy bits
+          - name: '12'
+            value: 3
+            description: 12 dummy bits
+          - name: '16'
+            value: 4
+            description: 16 dummy bits
+          - name: '20'
+            value: 5
+            description: 20 dummy bits
+          - name: '24'
+            value: 6
+            description: 24 dummy bits
+          - name: '28'
+            value: 7
+            description: 28 dummy bits
+        bitOffset: 16
+        bitWidth: 3
+      - name: DTR
+        description: "Enable double transfer rate (DTR) for write commands: address,
+          suffix and write data phases are active on both edges of SCK. SDO data is
+          launched centre-aligned on each SCK edge, and SDI data is captured on the
+          SCK edge that follows its launch.\n\n                            DTR is
+          implemented by halving the clock rate; SCK has a period of 2 x CLK_DIV throughout
+          the transfer. The prefix and dummy phases are still single transfer rate.\n\
+          \n                            If the suffix is quad-width, it must be 0
+          or 8 bits in length, to ensure an even number of SCK edges."
+        access: read-write
+        bitOffset: 28
+        bitWidth: 1
+  - name: M0_WCMD
+    addressOffset: 28
+    description: "Command constants used for writes to memory address window 0.\n\n\
+      \                    The reset value of the M0_WCMD register is configured to
+      support a basic 02h serial write transfer with no additional configuration."
+    resetValue: 40962
+    fields:
+      - name: PREFIX
+        description: The command prefix bits to prepend on each new transfer, if
+          Mx_WFMT_PREFIX_LEN is nonzero.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+      - name: SUFFIX
+        description: The command suffix bits following the address, if 
+          Mx_WFMT_SUFFIX_LEN is nonzero.
+        access: read-write
+        bitOffset: 8
+        bitWidth: 8
+  - name: M1_TIMING
+    addressOffset: 32
+    description: Timing configuration register for memory address window 1.
+    resetValue: 1073741828
+    fields:
+      - name: CLKDIV
+        description: "Clock divisor. Odd and even divisors are supported. Defines
+          the SCK clock period in units of 1 system clock cycle. Divisors 1..255 are
+          encoded directly, and a divisor of 256 is encoded with a value of CLKDIV=0.\n\
+          \n                            The clock divisor can be changed on-the-fly,
+          even when the QMI is currently accessing memory in this address window.
+          All other parameters must only be changed when the QMI is idle.\n\n    \
+          \                        If software is increasing CLKDIV in anticipation
+          of an increase in the system clock frequency, a dummy access to either memory
+          window (and appropriate processor barriers/fences) must be inserted after
+          the Mx_TIMING write to ensure the SCK divisor change is in effect _before_
+          the system clock is changed."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+      - name: RXDELAY
+        description: "Delay the read data sample timing, in units of one half of a
+          system clock cycle. (Not necessarily half of an SCK cycle.) An RXDELAY of
+          0 means the sample is captured at the SDI input registers simultaneously
+          with the rising edge of SCK launched from the SCK output register.\n\n \
+          \                           At higher SCK frequencies, RXDELAY may need
+          to be increased to account for the round trip delay of the pads, and the
+          clock-to-Q delay of the QSPI memory device."
+        access: read-write
+        bitOffset: 8
+        bitWidth: 3
+      - name: MIN_DESELECT
+        description: "After this window's chip select is deasserted, it remains deasserted
+          for half an SCK cycle (rounded up to an integer number of system clock cycles),
+          plus MIN_DESELECT additional system clock cycles, before the QMI reasserts
+          either chip select pin.\n\n                            Nonzero values may
+          be required for PSRAM devices which enforce a longer minimum CS deselect
+          time, so that they can perform internal DRAM refresh cycles whilst deselected."
+        access: read-write
+        bitOffset: 12
+        bitWidth: 5
+      - name: MAX_SELECT
+        description: "Enforce a maximum assertion duration for this window's chip
+          select, in units of 64 system clock cycles. If 0, the QMI is permitted to
+          keep the chip select asserted indefinitely when servicing sequential memory
+          accesses (see COOLDOWN).\n\n                            This feature is
+          required to meet timing constraints of PSRAM devices, which specify a maximum
+          chip select assertion so they can perform DRAM refresh cycles. See also
+          MIN_DESELECT, which can enforce a minimum deselect time.\n\n           \
+          \                 If a memory access is in progress at the time MAX_SELECT
+          is reached, the QMI will wait for the access to complete before deasserting
+          the chip select. This additional time must be accounted for to calculate
+          a safe MAX_SELECT value. In the worst case, this may be a fully-formed serial
+          transfer, including command prefix and address, with a data payload as large
+          as one cache line."
+        access: read-write
+        bitOffset: 17
+        bitWidth: 6
+      - name: SELECT_HOLD
+        description: "Add up to three additional system clock cycles of active hold
+          between the last falling edge of SCK and the deassertion of this window's
+          chip select.\n\n                            The default hold time is one
+          system clock cycle. Note that flash datasheets usually give chip select
+          active hold time from the last *rising* edge of SCK, and so even zero hold
+          from the last falling edge would be safe.\n\n                          \
+          \  Note that this is a minimum hold time guaranteed by the QMI: the actual
+          chip select active hold may be slightly longer for read transfers with low
+          clock divisors and/or high sample delays. Specifically, if the point two
+          cycles after the last RX data sample is later than the last SCK falling
+          edge, then the hold time is measured from *this* point.\n\n            \
+          \                Note also that, in case the final SCK pulse is masked to
+          save energy (true for non-DTR reads when COOLDOWN is disabled or PAGE_BREAK
+          is reached), all of QMI's timing logic behaves as though the clock pulse
+          were still present. The SELECT_HOLD time is applied from the point where
+          the last SCK falling edge would be if the clock pulse were not masked."
+        access: read-write
+        bitOffset: 23
+        bitWidth: 2
+      - name: SELECT_SETUP
+        description: "Add up to one additional system clock cycle of setup between
+          chip select assertion and the first rising edge of SCK.\n\n            \
+          \                The default setup time is one half SCK period, which is
+          usually sufficient except for very high SCK frequencies with some flash
+          devices."
+        access: read-write
+        bitOffset: 25
+        bitWidth: 1
+      - name: PAGEBREAK
+        description: "When page break is enabled, chip select will automatically deassert
+          when crossing certain power-of-2-aligned address boundaries. The next access
+          will always begin a new read/write SPI burst, even if the address of the
+          next access follows in sequence with the last access before the page boundary.\n\
+          \n                            Some flash and PSRAM devices forbid crossing
+          page boundaries with a single read/write transfer, or restrict the operating
+          frequency for transfers that do cross page a boundary. This option allows
+          the QMI to safely support those devices.\n\n                           \
+          \ This field has no effect when COOLDOWN is disabled."
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No page boundary is enforced
+          - name: '256'
+            value: 1
+            description: Break bursts crossing a 256-byte page boundary
+          - name: '1024'
+            value: 2
+            description: Break bursts crossing a 1024-byte quad-page boundary
+          - name: '4096'
+            value: 3
+            description: Break bursts crossing a 4096-byte sector boundary
+        bitOffset: 28
+        bitWidth: 2
+      - name: COOLDOWN
+        description: "Chip select cooldown period. When a memory transfer finishes,
+          the chip select remains asserted for 64 x COOLDOWN system clock cycles,
+          plus half an SCK clock period (rounded up for odd SCK divisors). After this
+          cooldown expires, the chip select is always deasserted to save power.\n\n\
+          \                            If the next memory access arrives within the
+          cooldown period, the QMI may be able to append more SCK cycles to the currently
+          ongoing SPI transfer, rather than starting a new transfer. This reduces
+          access latency and increases bus throughput.\n\n                       \
+          \     Specifically, the next access must be in the same direction (read/write),
+          access the same memory window (chip select 0/1), and follow sequentially
+          the address of the last transfer. If any of these are false, the new access
+          will first deassert the chip select, then begin a new transfer.\n\n    \
+          \                        If COOLDOWN is 0, the address alignment configured
+          by PAGEBREAK has been reached, or the total chip select assertion limit
+          MAX_SELECT has been reached, the cooldown period is skipped, and the chip
+          select will always be deasserted one half SCK period after the transfer
+          finishes."
+        access: read-write
+        bitOffset: 30
+        bitWidth: 2
+  - name: M1_RFMT
+    addressOffset: 36
+    description: "Read transfer format configuration for memory address window 1.\n\
+      \n                    Configure the bus width of each transfer phase individually,
+      and configure the length or presence of the command prefix, command suffix and
+      dummy/turnaround transfer phases. Only 24-bit addresses are supported.\n\n \
+      \                   The reset value of the M1_RFMT register is configured to
+      support a basic 03h serial read transfer with no additional configuration."
+    resetValue: 4096
+    fields:
+      - name: PREFIX_WIDTH
+        description: The transfer width used for the command prefix, if any
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 0
+        bitWidth: 2
+      - name: ADDR_WIDTH
+        description: The transfer width used for the address. The address phase 
+          always transfers 24 bits in total.
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 2
+        bitWidth: 2
+      - name: SUFFIX_WIDTH
+        description: The width used for the post-address command suffix, if any
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 4
+        bitWidth: 2
+      - name: DUMMY_WIDTH
+        description: "The width used for the dummy phase, if any.\n\n            \
+          \                If width is single, SD0/MOSI is held asserted low during
+          the dummy phase, and SD1...SD3 are tristated. If width is dual/quad, all
+          IOs are tristated during the dummy phase."
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 6
+        bitWidth: 2
+      - name: DATA_WIDTH
+        description: The width used for the data transfer
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 8
+        bitWidth: 2
+      - name: PREFIX_LEN
+        description: Length of command prefix, in units of 8 bits. (i.e. 2 
+          cycles for quad width, 4 for dual, 8 for single)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No prefix
+          - name: '8'
+            value: 1
+            description: 8-bit prefix
+        bitOffset: 12
+        bitWidth: 1
+      - name: SUFFIX_LEN
+        description: "Length of post-address command suffix, in units of 4 bits. (i.e.
+          1 cycle for quad width, 2 for dual, 4 for single)\n\n                  \
+          \          Only values of 0 and 8 bits are supported."
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No suffix
+          - name: '8'
+            value: 2
+            description: 8-bit suffix
+        bitOffset: 14
+        bitWidth: 2
+      - name: DUMMY_LEN
+        description: Length of dummy phase between command suffix and data 
+          phase, in units of 4 bits. (i.e. 1 cycle for quad width, 2 for dual, 4
+          for single)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No dummy phase
+          - name: '4'
+            value: 1
+            description: 4 dummy bits
+          - name: '8'
+            value: 2
+            description: 8 dummy bits
+          - name: '12'
+            value: 3
+            description: 12 dummy bits
+          - name: '16'
+            value: 4
+            description: 16 dummy bits
+          - name: '20'
+            value: 5
+            description: 20 dummy bits
+          - name: '24'
+            value: 6
+            description: 24 dummy bits
+          - name: '28'
+            value: 7
+            description: 28 dummy bits
+        bitOffset: 16
+        bitWidth: 3
+      - name: DTR
+        description: "Enable double transfer rate (DTR) for read commands: address,
+          suffix and read data phases are active on both edges of SCK. SDO data is
+          launched centre-aligned on each SCK edge, and SDI data is captured on the
+          SCK edge that follows its launch.\n\n                            DTR is
+          implemented by halving the clock rate; SCK has a period of 2 x CLK_DIV throughout
+          the transfer. The prefix and dummy phases are still single transfer rate.\n\
+          \n                            If the suffix is quad-width, it must be 0
+          or 8 bits in length, to ensure an even number of SCK edges."
+        access: read-write
+        bitOffset: 28
+        bitWidth: 1
+  - name: M1_RCMD
+    addressOffset: 40
+    description: "Command constants used for reads from memory address window 1.\n\
+      \n                    The reset value of the M1_RCMD register is configured
+      to support a basic 03h serial read transfer with no additional configuration."
+    resetValue: 40963
+    fields:
+      - name: PREFIX
+        description: The command prefix bits to prepend on each new transfer, if
+          Mx_RFMT_PREFIX_LEN is nonzero.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+      - name: SUFFIX
+        description: The command suffix bits following the address, if 
+          Mx_RFMT_SUFFIX_LEN is nonzero.
+        access: read-write
+        bitOffset: 8
+        bitWidth: 8
+  - name: M1_WFMT
+    addressOffset: 44
+    description: "Write transfer format configuration for memory address window 1.\n\
+      \n                    Configure the bus width of each transfer phase individually,
+      and configure the length or presence of the command prefix, command suffix and
+      dummy/turnaround transfer phases. Only 24-bit addresses are supported.\n\n \
+      \                   The reset value of the M1_WFMT register is configured to
+      support a basic 02h serial write transfer. However, writes to this window must
+      first be enabled via the XIP_CTRL_WRITABLE_M1 bit, as XIP memory is read-only
+      by default."
+    resetValue: 4096
+    fields:
+      - name: PREFIX_WIDTH
+        description: The transfer width used for the command prefix, if any
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 0
+        bitWidth: 2
+      - name: ADDR_WIDTH
+        description: The transfer width used for the address. The address phase 
+          always transfers 24 bits in total.
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 2
+        bitWidth: 2
+      - name: SUFFIX_WIDTH
+        description: The width used for the post-address command suffix, if any
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 4
+        bitWidth: 2
+      - name: DUMMY_WIDTH
+        description: "The width used for the dummy phase, if any.\n\n            \
+          \                If width is single, SD0/MOSI is held asserted low during
+          the dummy phase, and SD1...SD3 are tristated. If width is dual/quad, all
+          IOs are tristated during the dummy phase."
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 6
+        bitWidth: 2
+      - name: DATA_WIDTH
+        description: The width used for the data transfer
+        access: read-write
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 8
+        bitWidth: 2
+      - name: PREFIX_LEN
+        description: Length of command prefix, in units of 8 bits. (i.e. 2 
+          cycles for quad width, 4 for dual, 8 for single)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No prefix
+          - name: '8'
+            value: 1
+            description: 8-bit prefix
+        bitOffset: 12
+        bitWidth: 1
+      - name: SUFFIX_LEN
+        description: "Length of post-address command suffix, in units of 4 bits. (i.e.
+          1 cycle for quad width, 2 for dual, 4 for single)\n\n                  \
+          \          Only values of 0 and 8 bits are supported."
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No suffix
+          - name: '8'
+            value: 2
+            description: 8-bit suffix
+        bitOffset: 14
+        bitWidth: 2
+      - name: DUMMY_LEN
+        description: Length of dummy phase between command suffix and data 
+          phase, in units of 4 bits. (i.e. 1 cycle for quad width, 2 for dual, 4
+          for single)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No dummy phase
+          - name: '4'
+            value: 1
+            description: 4 dummy bits
+          - name: '8'
+            value: 2
+            description: 8 dummy bits
+          - name: '12'
+            value: 3
+            description: 12 dummy bits
+          - name: '16'
+            value: 4
+            description: 16 dummy bits
+          - name: '20'
+            value: 5
+            description: 20 dummy bits
+          - name: '24'
+            value: 6
+            description: 24 dummy bits
+          - name: '28'
+            value: 7
+            description: 28 dummy bits
+        bitOffset: 16
+        bitWidth: 3
+      - name: DTR
+        description: "Enable double transfer rate (DTR) for write commands: address,
+          suffix and write data phases are active on both edges of SCK. SDO data is
+          launched centre-aligned on each SCK edge, and SDI data is captured on the
+          SCK edge that follows its launch.\n\n                            DTR is
+          implemented by halving the clock rate; SCK has a period of 2 x CLK_DIV throughout
+          the transfer. The prefix and dummy phases are still single transfer rate.\n\
+          \n                            If the suffix is quad-width, it must be 0
+          or 8 bits in length, to ensure an even number of SCK edges."
+        access: read-write
+        bitOffset: 28
+        bitWidth: 1
+  - name: M1_WCMD
+    addressOffset: 48
+    description: "Command constants used for writes to memory address window 1.\n\n\
+      \                    The reset value of the M1_WCMD register is configured to
+      support a basic 02h serial write transfer with no additional configuration."
+    resetValue: 40962
+    fields:
+      - name: PREFIX
+        description: The command prefix bits to prepend on each new transfer, if
+          Mx_WFMT_PREFIX_LEN is nonzero.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+      - name: SUFFIX
+        description: The command suffix bits following the address, if 
+          Mx_WFMT_SUFFIX_LEN is nonzero.
+        access: read-write
+        bitOffset: 8
+        bitWidth: 8
+  - name: ATRANS0
+    addressOffset: 52
+    description: "Configure address translation for XIP virtual addresses 0x000000
+      through 0x3fffff (a 4 MiB window starting at +0 MiB).\n\n                  \
+      \  Address translation allows a program image to be executed in place at multiple
+      physical flash addresses (for example, a double-buffered flash image for over-the-air
+      updates), without the overhead of position-independent code.\n\n           \
+      \         At reset, the address translation registers are initialised to an
+      identity mapping, so that they can be ignored if address translation is not
+      required.\n\n                    Note that the XIP cache is fully virtually
+      addressed, so a cache flush is required after changing the address translation."
+    resetValue: 67108864
+    fields:
+      - name: BASE
+        description: "Physical address base for this virtual address range, in units
+          of 4 kiB (one flash sector).\n\n                            Taking a 24-bit
+          virtual address, firstly bits 23:22 (the two MSBs) are masked to zero, and
+          then BASE is added to bits 23:12 (the upper 12 bits) to form the physical
+          address. Translation wraps on a 16 MiB boundary."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 12
+      - name: SIZE
+        description: "Translation aperture size for this virtual address range, in
+          units of 4 kiB (one flash sector).\n\n                            Bits 21:12
+          of the virtual address are compared to SIZE. Offsets greater than SIZE return
+          a bus error, and do not cause a QSPI access."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 11
+  - name: ATRANS1
+    addressOffset: 56
+    description: "Configure address translation for XIP virtual addresses 0x400000
+      through 0x7fffff (a 4 MiB window starting at +4 MiB).\n\n                  \
+      \  Address translation allows a program image to be executed in place at multiple
+      physical flash addresses (for example, a double-buffered flash image for over-the-air
+      updates), without the overhead of position-independent code.\n\n           \
+      \         At reset, the address translation registers are initialised to an
+      identity mapping, so that they can be ignored if address translation is not
+      required.\n\n                    Note that the XIP cache is fully virtually
+      addressed, so a cache flush is required after changing the address translation."
+    resetValue: 67109888
+    fields:
+      - name: BASE
+        description: "Physical address base for this virtual address range, in units
+          of 4 kiB (one flash sector).\n\n                            Taking a 24-bit
+          virtual address, firstly bits 23:22 (the two MSBs) are masked to zero, and
+          then BASE is added to bits 23:12 (the upper 12 bits) to form the physical
+          address. Translation wraps on a 16 MiB boundary."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 12
+      - name: SIZE
+        description: "Translation aperture size for this virtual address range, in
+          units of 4 kiB (one flash sector).\n\n                            Bits 21:12
+          of the virtual address are compared to SIZE. Offsets greater than SIZE return
+          a bus error, and do not cause a QSPI access."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 11
+  - name: ATRANS2
+    addressOffset: 60
+    description: "Configure address translation for XIP virtual addresses 0x800000
+      through 0xbfffff (a 4 MiB window starting at +8 MiB).\n\n                  \
+      \  Address translation allows a program image to be executed in place at multiple
+      physical flash addresses (for example, a double-buffered flash image for over-the-air
+      updates), without the overhead of position-independent code.\n\n           \
+      \         At reset, the address translation registers are initialised to an
+      identity mapping, so that they can be ignored if address translation is not
+      required.\n\n                    Note that the XIP cache is fully virtually
+      addressed, so a cache flush is required after changing the address translation."
+    resetValue: 67110912
+    fields:
+      - name: BASE
+        description: "Physical address base for this virtual address range, in units
+          of 4 kiB (one flash sector).\n\n                            Taking a 24-bit
+          virtual address, firstly bits 23:22 (the two MSBs) are masked to zero, and
+          then BASE is added to bits 23:12 (the upper 12 bits) to form the physical
+          address. Translation wraps on a 16 MiB boundary."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 12
+      - name: SIZE
+        description: "Translation aperture size for this virtual address range, in
+          units of 4 kiB (one flash sector).\n\n                            Bits 21:12
+          of the virtual address are compared to SIZE. Offsets greater than SIZE return
+          a bus error, and do not cause a QSPI access."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 11
+  - name: ATRANS3
+    addressOffset: 64
+    description: "Configure address translation for XIP virtual addresses 0xc00000
+      through 0xffffff (a 4 MiB window starting at +12 MiB).\n\n                 \
+      \   Address translation allows a program image to be executed in place at multiple
+      physical flash addresses (for example, a double-buffered flash image for over-the-air
+      updates), without the overhead of position-independent code.\n\n           \
+      \         At reset, the address translation registers are initialised to an
+      identity mapping, so that they can be ignored if address translation is not
+      required.\n\n                    Note that the XIP cache is fully virtually
+      addressed, so a cache flush is required after changing the address translation."
+    resetValue: 67111936
+    fields:
+      - name: BASE
+        description: "Physical address base for this virtual address range, in units
+          of 4 kiB (one flash sector).\n\n                            Taking a 24-bit
+          virtual address, firstly bits 23:22 (the two MSBs) are masked to zero, and
+          then BASE is added to bits 23:12 (the upper 12 bits) to form the physical
+          address. Translation wraps on a 16 MiB boundary."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 12
+      - name: SIZE
+        description: "Translation aperture size for this virtual address range, in
+          units of 4 kiB (one flash sector).\n\n                            Bits 21:12
+          of the virtual address are compared to SIZE. Offsets greater than SIZE return
+          a bus error, and do not cause a QSPI access."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 11
+  - name: ATRANS4
+    addressOffset: 68
+    description: "Configure address translation for XIP virtual addresses 0x1000000
+      through 0x13fffff (a 4 MiB window starting at +16 MiB).\n\n                \
+      \    Address translation allows a program image to be executed in place at multiple
+      physical flash addresses (for example, a double-buffered flash image for over-the-air
+      updates), without the overhead of position-independent code.\n\n           \
+      \         At reset, the address translation registers are initialised to an
+      identity mapping, so that they can be ignored if address translation is not
+      required.\n\n                    Note that the XIP cache is fully virtually
+      addressed, so a cache flush is required after changing the address translation."
+    resetValue: 67108864
+    fields:
+      - name: BASE
+        description: "Physical address base for this virtual address range, in units
+          of 4 kiB (one flash sector).\n\n                            Taking a 24-bit
+          virtual address, firstly bits 23:22 (the two MSBs) are masked to zero, and
+          then BASE is added to bits 23:12 (the upper 12 bits) to form the physical
+          address. Translation wraps on a 16 MiB boundary."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 12
+      - name: SIZE
+        description: "Translation aperture size for this virtual address range, in
+          units of 4 kiB (one flash sector).\n\n                            Bits 21:12
+          of the virtual address are compared to SIZE. Offsets greater than SIZE return
+          a bus error, and do not cause a QSPI access."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 11
+  - name: ATRANS5
+    addressOffset: 72
+    description: "Configure address translation for XIP virtual addresses 0x1400000
+      through 0x17fffff (a 4 MiB window starting at +20 MiB).\n\n                \
+      \    Address translation allows a program image to be executed in place at multiple
+      physical flash addresses (for example, a double-buffered flash image for over-the-air
+      updates), without the overhead of position-independent code.\n\n           \
+      \         At reset, the address translation registers are initialised to an
+      identity mapping, so that they can be ignored if address translation is not
+      required.\n\n                    Note that the XIP cache is fully virtually
+      addressed, so a cache flush is required after changing the address translation."
+    resetValue: 67109888
+    fields:
+      - name: BASE
+        description: "Physical address base for this virtual address range, in units
+          of 4 kiB (one flash sector).\n\n                            Taking a 24-bit
+          virtual address, firstly bits 23:22 (the two MSBs) are masked to zero, and
+          then BASE is added to bits 23:12 (the upper 12 bits) to form the physical
+          address. Translation wraps on a 16 MiB boundary."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 12
+      - name: SIZE
+        description: "Translation aperture size for this virtual address range, in
+          units of 4 kiB (one flash sector).\n\n                            Bits 21:12
+          of the virtual address are compared to SIZE. Offsets greater than SIZE return
+          a bus error, and do not cause a QSPI access."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 11
+  - name: ATRANS6
+    addressOffset: 76
+    description: "Configure address translation for XIP virtual addresses 0x1800000
+      through 0x1bfffff (a 4 MiB window starting at +24 MiB).\n\n                \
+      \    Address translation allows a program image to be executed in place at multiple
+      physical flash addresses (for example, a double-buffered flash image for over-the-air
+      updates), without the overhead of position-independent code.\n\n           \
+      \         At reset, the address translation registers are initialised to an
+      identity mapping, so that they can be ignored if address translation is not
+      required.\n\n                    Note that the XIP cache is fully virtually
+      addressed, so a cache flush is required after changing the address translation."
+    resetValue: 67110912
+    fields:
+      - name: BASE
+        description: "Physical address base for this virtual address range, in units
+          of 4 kiB (one flash sector).\n\n                            Taking a 24-bit
+          virtual address, firstly bits 23:22 (the two MSBs) are masked to zero, and
+          then BASE is added to bits 23:12 (the upper 12 bits) to form the physical
+          address. Translation wraps on a 16 MiB boundary."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 12
+      - name: SIZE
+        description: "Translation aperture size for this virtual address range, in
+          units of 4 kiB (one flash sector).\n\n                            Bits 21:12
+          of the virtual address are compared to SIZE. Offsets greater than SIZE return
+          a bus error, and do not cause a QSPI access."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 11
+  - name: ATRANS7
+    addressOffset: 80
+    description: "Configure address translation for XIP virtual addresses 0x1c00000
+      through 0x1ffffff (a 4 MiB window starting at +28 MiB).\n\n                \
+      \    Address translation allows a program image to be executed in place at multiple
+      physical flash addresses (for example, a double-buffered flash image for over-the-air
+      updates), without the overhead of position-independent code.\n\n           \
+      \         At reset, the address translation registers are initialised to an
+      identity mapping, so that they can be ignored if address translation is not
+      required.\n\n                    Note that the XIP cache is fully virtually
+      addressed, so a cache flush is required after changing the address translation."
+    resetValue: 67111936
+    fields:
+      - name: BASE
+        description: "Physical address base for this virtual address range, in units
+          of 4 kiB (one flash sector).\n\n                            Taking a 24-bit
+          virtual address, firstly bits 23:22 (the two MSBs) are masked to zero, and
+          then BASE is added to bits 23:12 (the upper 12 bits) to form the physical
+          address. Translation wraps on a 16 MiB boundary."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 12
+      - name: SIZE
+        description: "Translation aperture size for this virtual address range, in
+          units of 4 kiB (one flash sector).\n\n                            Bits 21:12
+          of the virtual address are compared to SIZE. Offsets greater than SIZE return
+          a bus error, and do not cause a QSPI access."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 11
+addressBlocks:
+  - offset: 0
+    size: 84
+    usage: registers

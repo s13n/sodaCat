@@ -1,0 +1,1609 @@
+# Created from RP2350.svd (Rev 0.1)
+
+name: POWMAN
+description: Controls vreg, bor, lposc, chip resets & xosc startup, powman and 
+  provides scratch register for general use and for bootcode use
+registers:
+  - name: BADPASSWD
+    addressOffset: 0
+    description: Indicates a bad password has been used
+    resetValue: 0
+    fields:
+      - name: BADPASSWD
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 0
+        bitWidth: 1
+  - name: VREG_CTRL
+    addressOffset: 4
+    description: Voltage Regulator Control
+    resetValue: 32848
+    fields:
+      - name: HT_TH
+        description: "high temperature protection threshold \n                   \
+          \         regulator power transistors are disabled when junction temperature
+          exceeds threshold \n                            000 - 100C \n          \
+          \                  001 - 105C \n                            010 - 110C \n\
+          \                            011 - 115C \n                            100
+          - 120C \n                            101 - 125C \n                     \
+          \       110 - 135C \n                            111 - 150C"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 3
+      - name: DISABLE_VOLTAGE_LIMIT
+        description: 0=not disabled, 1=enabled
+        access: read-write
+        bitOffset: 8
+        bitWidth: 1
+      - name: ISOLATE
+        description: "isolates the VREG control interface \n                     \
+          \       0 - not isolated (default) \n                            1 - isolated"
+        access: read-write
+        bitOffset: 12
+        bitWidth: 1
+      - name: UNLOCK
+        description: "unlocks the VREG control interface after power up \n       \
+          \                     0 - Locked (default) \n                          \
+          \  1 - Unlocked \n                            It cannot be relocked when
+          it is unlocked."
+        access: read-write
+        bitOffset: 13
+        bitWidth: 1
+      - name: RST_N
+        description: "returns the regulator to its startup settings \n           \
+          \                 0 - reset \n                            1 - not reset
+          (default)"
+        access: read-write
+        bitOffset: 15
+        bitWidth: 1
+  - name: VREG_STS
+    addressOffset: 8
+    description: Voltage Regulator Status
+    resetValue: 0
+    fields:
+      - name: STARTUP
+        description: "startup status \n                            0=startup complete,
+          1=starting up"
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: VOUT_OK
+        description: "output regulation status \n                            0=not
+          in regulation, 1=in regulation"
+        access: read-only
+        bitOffset: 4
+        bitWidth: 1
+  - name: VREG
+    addressOffset: 12
+    description: Voltage Regulator Settings
+    resetValue: 176
+    fields:
+      - name: HIZ
+        description: "high impedance mode select \n                            0=not
+          in high impedance mode, 1=in high impedance mode"
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: VSEL
+        description: "output voltage select \n                            the regulator
+          output voltage is limited to 1.3V unless the voltage limit \n          \
+          \                  is disabled using the disable_voltage_limit field in
+          the vreg_ctrl register \n                            00000 - 0.55V \n  \
+          \                          00001 - 0.60V \n                            00010
+          - 0.65V \n                            00011 - 0.70V \n                 \
+          \           00100 - 0.75V \n                            00101 - 0.80V \n\
+          \                            00110 - 0.85V \n                          \
+          \  00111 - 0.90V \n                            01000 - 0.95V \n        \
+          \                    01001 - 1.00V \n                            01010 -
+          1.05V \n                            01011 - 1.10V (default) \n         \
+          \                   01100 - 1.15V \n                            01101 -
+          1.20V \n                            01110 - 1.25V \n                   \
+          \         01111 - 1.30V \n                            10000 - 1.35V \n \
+          \                           10001 - 1.40V \n                           \
+          \ 10010 - 1.50V \n                            10011 - 1.60V \n         \
+          \                   10100 - 1.65V \n                            10101 -
+          1.70V \n                            10110 - 1.80V \n                   \
+          \         10111 - 1.90V \n                            11000 - 2.00V \n \
+          \                           11001 - 2.35V \n                           \
+          \ 11010 - 2.50V \n                            11011 - 2.65V \n         \
+          \                   11100 - 2.80V \n                            11101 -
+          3.00V \n                            11110 - 3.15V \n                   \
+          \         11111 - 3.30V"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 5
+      - name: UPDATE_IN_PROGRESS
+        description: "regulator state is being updated \n                        \
+          \    writes to the vreg register will be ignored when this field is set"
+        access: read-only
+        bitOffset: 15
+        bitWidth: 1
+  - name: VREG_LP_ENTRY
+    addressOffset: 16
+    description: Voltage Regulator Low Power Entry Settings
+    resetValue: 180
+    fields:
+      - name: HIZ
+        description: "high impedance mode select \n                            0=not
+          in high impedance mode, 1=in high impedance mode"
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: MODE
+        description: "selects either normal (switching) mode or low power (linear)
+          mode \n                            low power mode can only be selected for
+          output voltages up to 1.3V \n                            0 = normal mode
+          (switching) \n                            1 = low power mode (linear)"
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: VSEL
+        description: "output voltage select \n                            the regulator
+          output voltage is limited to 1.3V unless the voltage limit \n          \
+          \                  is disabled using the disable_voltage_limit field in
+          the vreg_ctrl register \n                            00000 - 0.55V \n  \
+          \                          00001 - 0.60V \n                            00010
+          - 0.65V \n                            00011 - 0.70V \n                 \
+          \           00100 - 0.75V \n                            00101 - 0.80V \n\
+          \                            00110 - 0.85V \n                          \
+          \  00111 - 0.90V \n                            01000 - 0.95V \n        \
+          \                    01001 - 1.00V \n                            01010 -
+          1.05V \n                            01011 - 1.10V (default) \n         \
+          \                   01100 - 1.15V \n                            01101 -
+          1.20V \n                            01110 - 1.25V \n                   \
+          \         01111 - 1.30V \n                            10000 - 1.35V \n \
+          \                           10001 - 1.40V \n                           \
+          \ 10010 - 1.50V \n                            10011 - 1.60V \n         \
+          \                   10100 - 1.65V \n                            10101 -
+          1.70V \n                            10110 - 1.80V \n                   \
+          \         10111 - 1.90V \n                            11000 - 2.00V \n \
+          \                           11001 - 2.35V \n                           \
+          \ 11010 - 2.50V \n                            11011 - 2.65V \n         \
+          \                   11100 - 2.80V \n                            11101 -
+          3.00V \n                            11110 - 3.15V \n                   \
+          \         11111 - 3.30V"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 5
+  - name: VREG_LP_EXIT
+    addressOffset: 20
+    description: Voltage Regulator Low Power Exit Settings
+    resetValue: 176
+    fields:
+      - name: HIZ
+        description: "high impedance mode select \n                            0=not
+          in high impedance mode, 1=in high impedance mode"
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: MODE
+        description: "selects either normal (switching) mode or low power (linear)
+          mode \n                            low power mode can only be selected for
+          output voltages up to 1.3V \n                            0 = normal mode
+          (switching) \n                            1 = low power mode (linear)"
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: VSEL
+        description: "output voltage select \n                            the regulator
+          output voltage is limited to 1.3V unless the voltage limit \n          \
+          \                  is disabled using the disable_voltage_limit field in
+          the vreg_ctrl register \n                            00000 - 0.55V \n  \
+          \                          00001 - 0.60V \n                            00010
+          - 0.65V \n                            00011 - 0.70V \n                 \
+          \           00100 - 0.75V \n                            00101 - 0.80V \n\
+          \                            00110 - 0.85V \n                          \
+          \  00111 - 0.90V \n                            01000 - 0.95V \n        \
+          \                    01001 - 1.00V \n                            01010 -
+          1.05V \n                            01011 - 1.10V (default) \n         \
+          \                   01100 - 1.15V \n                            01101 -
+          1.20V \n                            01110 - 1.25V \n                   \
+          \         01111 - 1.30V \n                            10000 - 1.35V \n \
+          \                           10001 - 1.40V \n                           \
+          \ 10010 - 1.50V \n                            10011 - 1.60V \n         \
+          \                   10100 - 1.65V \n                            10101 -
+          1.70V \n                            10110 - 1.80V \n                   \
+          \         10111 - 1.90V \n                            11000 - 2.00V \n \
+          \                           11001 - 2.35V \n                           \
+          \ 11010 - 2.50V \n                            11011 - 2.65V \n         \
+          \                   11100 - 2.80V \n                            11101 -
+          3.00V \n                            11110 - 3.15V \n                   \
+          \         11111 - 3.30V"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 5
+  - name: BOD_CTRL
+    addressOffset: 24
+    description: Brown-out Detection Control
+    resetValue: 0
+    fields:
+      - name: ISOLATE
+        description: "isolates the brown-out detection control interface \n      \
+          \                      0 - not isolated (default) \n                   \
+          \         1 - isolated"
+        access: read-write
+        bitOffset: 12
+        bitWidth: 1
+  - name: BOD
+    addressOffset: 28
+    description: Brown-out Detection Settings
+    resetValue: 177
+    fields:
+      - name: EN
+        description: "enable brown-out detection \n                            0=not
+          enabled, 1=enabled"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: VSEL
+        description: "threshold select \n                            00000 - 0.473V\
+          \ \n                            00001 - 0.516V \n                      \
+          \      00010 - 0.559V \n                            00011 - 0.602V \n  \
+          \                          00100 - 0.645VS \n                          \
+          \  00101 - 0.688V \n                            00110 - 0.731V \n      \
+          \                      00111 - 0.774V \n                            01000
+          - 0.817V \n                            01001 - 0.860V (default) \n     \
+          \                       01010 - 0.903V \n                            01011
+          - 0.946V \n                            01100 - 0.989V \n               \
+          \             01101 - 1.032V \n                            01110 - 1.075V\
+          \ \n                            01111 - 1.118V \n                      \
+          \      10000 - 1.161 \n                            10001 - 1.204V"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 5
+  - name: BOD_LP_ENTRY
+    addressOffset: 32
+    description: Brown-out Detection Low Power Entry Settings
+    resetValue: 176
+    fields:
+      - name: EN
+        description: "enable brown-out detection \n                            0=not
+          enabled, 1=enabled"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: VSEL
+        description: "threshold select \n                            00000 - 0.473V\
+          \ \n                            00001 - 0.516V \n                      \
+          \      00010 - 0.559V \n                            00011 - 0.602V \n  \
+          \                          00100 - 0.645VS \n                          \
+          \  00101 - 0.688V \n                            00110 - 0.731V \n      \
+          \                      00111 - 0.774V \n                            01000
+          - 0.817V \n                            01001 - 0.860V (default) \n     \
+          \                       01010 - 0.903V \n                            01011
+          - 0.946V \n                            01100 - 0.989V \n               \
+          \             01101 - 1.032V \n                            01110 - 1.075V\
+          \ \n                            01111 - 1.118V \n                      \
+          \      10000 - 1.161 \n                            10001 - 1.204V"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 5
+  - name: BOD_LP_EXIT
+    addressOffset: 36
+    description: Brown-out Detection Low Power Exit Settings
+    resetValue: 177
+    fields:
+      - name: EN
+        description: "enable brown-out detection \n                            0=not
+          enabled, 1=enabled"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: VSEL
+        description: "threshold select \n                            00000 - 0.473V\
+          \ \n                            00001 - 0.516V \n                      \
+          \      00010 - 0.559V \n                            00011 - 0.602V \n  \
+          \                          00100 - 0.645VS \n                          \
+          \  00101 - 0.688V \n                            00110 - 0.731V \n      \
+          \                      00111 - 0.774V \n                            01000
+          - 0.817V \n                            01001 - 0.860V (default) \n     \
+          \                       01010 - 0.903V \n                            01011
+          - 0.946V \n                            01100 - 0.989V \n               \
+          \             01101 - 1.032V \n                            01110 - 1.075V\
+          \ \n                            01111 - 1.118V \n                      \
+          \      10000 - 1.161 \n                            10001 - 1.204V"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 5
+  - name: LPOSC
+    addressOffset: 40
+    description: Low power oscillator control register.
+    resetValue: 515
+    fields:
+      - name: MODE
+        description: This feature has been removed
+        access: read-write
+        bitOffset: 0
+        bitWidth: 2
+      - name: TRIM
+        description: Frequency trim - the trim step is typically 1% of the reset
+          frequency, but can be up to 3%
+        access: read-write
+        bitOffset: 4
+        bitWidth: 6
+  - name: CHIP_RESET
+    addressOffset: 44
+    description: Chip reset control and status
+    resetValue: 0
+    fields:
+      - name: DOUBLE_TAP
+        description: This flag is set by double-tapping RUN. It tells bootcode 
+          to go into the bootloader.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESCUE_FLAG
+        description: "This is set by a rescue reset from the RP-AP. \n           \
+          \                 Its purpose is to halt before the bootrom before booting
+          from flash in order to recover from a boot lock-up. \n                 \
+          \           The debugger can then attach once the bootrom has been halted
+          and flash some working code that does not lock up."
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 4
+        bitWidth: 1
+      - name: HAD_POR
+        description: "Last reset was from the power-on reset \n                  \
+          \          This resets: \n                            double_tap flag  \
+          \  yes \n                            DP                 yes \n         \
+          \                   RPAP               yes \n                          \
+          \  rescue_flag        yes \n                            timer          \
+          \    yes \n                            powman             yes \n       \
+          \                     swcore             yes \n                        \
+          \    psm                yes \n                            then starts the
+          power sequencer"
+        access: read-only
+        bitOffset: 16
+        bitWidth: 1
+      - name: HAD_BOR
+        description: "Last reset was from the brown-out detection block \n       \
+          \                     This resets: \n                            double_tap
+          flag    yes \n                            DP                 yes \n    \
+          \                        RPAP               yes \n                     \
+          \       rescue_flag        yes \n                            timer     \
+          \         yes \n                            powman             yes \n  \
+          \                          swcore             yes \n                   \
+          \         psm                yes \n                            then starts
+          the power sequencer"
+        access: read-only
+        bitOffset: 17
+        bitWidth: 1
+      - name: HAD_RUN_LOW
+        description: "Last reset was from the RUN pin \n                         \
+          \   This resets: \n                            double_tap flag    no \n\
+          \                            DP                 yes \n                 \
+          \           RPAP               yes \n                            rescue_flag\
+          \        yes \n                            timer              yes \n   \
+          \                         powman             yes \n                    \
+          \        swcore             yes \n                            psm      \
+          \          yes \n                            then starts the power sequencer"
+        access: read-only
+        bitOffset: 18
+        bitWidth: 1
+      - name: HAD_DP_RESET_REQ
+        description: "Last reset was an reset request from the arm debugger \n   \
+          \                         This resets: \n                            double_tap
+          flag    no \n                            DP                 no \n      \
+          \                      RPAP               no \n                        \
+          \    rescue_flag        yes \n                            timer        \
+          \      yes \n                            powman             yes \n     \
+          \                       swcore             yes \n                      \
+          \      psm                yes \n                            then starts
+          the power sequencer"
+        access: read-only
+        bitOffset: 19
+        bitWidth: 1
+      - name: HAD_RESCUE
+        description: "Last reset was a rescue reset from the debugger \n         \
+          \                   This resets: \n                            double_tap
+          flag    no \n                            DP                 no \n      \
+          \                      RPAP               no \n                        \
+          \    rescue_flag        no, it sets this flag \n                       \
+          \     timer              yes \n                            powman      \
+          \       yes \n                            swcore             yes \n    \
+          \                        psm                yes \n                     \
+          \       then starts the power sequencer"
+        access: read-only
+        bitOffset: 21
+        bitWidth: 1
+      - name: HAD_WATCHDOG_RESET_POWMAN_ASYNC
+        description: "Last reset was a watchdog timeout which was configured to reset
+          the power manager asynchronously \n                            This resets:\
+          \ \n                            double_tap flag    no \n               \
+          \             DP                 no \n                            RPAP \
+          \              no \n                            rescue_flag        no \n\
+          \                            timer              yes \n                 \
+          \           powman             yes \n                            swcore\
+          \             yes \n                            psm                yes \n\
+          \                            then starts the power sequencer"
+        access: read-only
+        bitOffset: 22
+        bitWidth: 1
+      - name: HAD_WATCHDOG_RESET_POWMAN
+        description: "Last reset was a watchdog timeout which was configured to reset
+          the power manager \n                            This resets: \n        \
+          \                    double_tap flag    no \n                          \
+          \  DP                 no \n                            RPAP            \
+          \   no \n                            rescue_flag        no \n          \
+          \                  timer              yes \n                           \
+          \ powman             yes \n                            swcore          \
+          \   yes \n                            psm                yes \n        \
+          \                    then starts the power sequencer"
+        access: read-only
+        bitOffset: 23
+        bitWidth: 1
+      - name: HAD_WATCHDOG_RESET_SWCORE
+        description: "Last reset was a watchdog timeout which was configured to reset
+          the switched-core \n                            This resets: \n        \
+          \                    double_tap flag    no \n                          \
+          \  DP                 no \n                            RPAP            \
+          \   no \n                            rescue_flag        no \n          \
+          \                  timer              no \n                            powman\
+          \             no \n                            swcore             yes \n\
+          \                            psm                yes \n                 \
+          \           then starts the power sequencer"
+        access: read-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: HAD_SWCORE_PD
+        description: "Last reset was a switched core powerdown \n                \
+          \            This resets: \n                            double_tap flag\
+          \    no \n                            DP                 no \n         \
+          \                   RPAP               no \n                           \
+          \ rescue_flag        no \n                            timer            \
+          \  no \n                            powman             no \n           \
+          \                 swcore             yes \n                            psm\
+          \                yes \n                            then starts the power
+          sequencer"
+        access: read-only
+        bitOffset: 25
+        bitWidth: 1
+      - name: HAD_GLITCH_DETECT
+        description: "Last reset was due to a power supply glitch \n             \
+          \               This resets: \n                            double_tap flag\
+          \    no \n                            DP                 no \n         \
+          \                   RPAP               no \n                           \
+          \ rescue_flag        no \n                            timer            \
+          \  no \n                            powman             no \n           \
+          \                 swcore             no \n                            psm\
+          \                yes \n                            and does not change the
+          power state"
+        access: read-only
+        bitOffset: 26
+        bitWidth: 1
+      - name: HAD_HZD_SYS_RESET_REQ
+        description: "Last reset was a system reset from the hazard debugger \n  \
+          \                          This resets: \n                            double_tap
+          flag    no \n                            DP                 no \n      \
+          \                      RPAP               no \n                        \
+          \    rescue_flag        no \n                            timer         \
+          \     no \n                            powman             no \n        \
+          \                    swcore             no \n                          \
+          \  psm                yes \n                            and does not change
+          the power state"
+        access: read-only
+        bitOffset: 27
+        bitWidth: 1
+      - name: HAD_WATCHDOG_RESET_RSM
+        description: "Last reset was a watchdog timeout which was configured to reset
+          the power-on state machine \n                            This resets: \n\
+          \                            double_tap flag    no \n                  \
+          \          DP                 no \n                            RPAP    \
+          \           no \n                            rescue_flag        no \n  \
+          \                          timer              no \n                    \
+          \        powman             no \n                            swcore    \
+          \         no \n                            psm                yes \n   \
+          \                         and does not change the power state"
+        access: read-only
+        bitOffset: 28
+        bitWidth: 1
+  - name: WDSEL
+    addressOffset: 48
+    description: "Allows a watchdog reset to reset the internal state of powman in
+      addition to the power-on state machine (PSM). \n                    Note that
+      powman ignores watchdog resets that do not select at least the CLOCKS stage
+      or earlier stages in the PSM. If using these bits, it's recommended to set PSM_WDSEL
+      to all-ones in addition to the desired bits in this register. Failing to select
+      CLOCKS or earlier will result in the POWMAN_WDSEL register having no effect."
+    resetValue: 0
+    fields:
+      - name: RESET_POWMAN_ASYNC
+        description: "If set to 1, a watchdog reset will restore powman defaults,
+          reset the timer, \n                            reset the switched core domain
+          and run the full power-on state machine (PSM) sequence \n              \
+          \              This does not rely on clk_ref running"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESET_POWMAN
+        description: "If set to 1, a watchdog reset will restore powman defaults,
+          reset the timer, reset the switched core power domain \n               \
+          \             and run the full power-on state machine (PSM) sequence \n\
+          \                            This relies on clk_ref running. Use reset_powman_async
+          if that may not be true"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: RESET_SWCORE
+        description: "If set to 1, a watchdog reset will reset the switched core power
+          domain and run the full power-on state machine (PSM) sequence \n       \
+          \                     From a user perspective it is the same as setting
+          RSM_WDSEL_PROC_COLD \n                            From a hardware debug
+          perspective it has the same effect as a power-on reset for the switched
+          core power domain"
+        access: read-write
+        bitOffset: 8
+        bitWidth: 1
+      - name: RESET_RSM
+        description: "If set to 1, a watchdog reset will run the full power-on state
+          machine (PSM) sequence \n                            From a user perspective
+          it is the same as setting RSM_WDSEL_PROC_COLD \n                       \
+          \     From a hardware debug perspective it has the same effect as a reset
+          from a glitch detector"
+        access: read-write
+        bitOffset: 12
+        bitWidth: 1
+  - name: SEQ_CFG
+    addressOffset: 52
+    description: "For configuration of the power sequencer \n                    Writes
+      are ignored while POWMAN_STATE_CHANGING=1"
+    resetValue: 1053168
+    fields:
+      - name: HW_PWRUP_SRAM1
+        description: "Specifies the power state of SRAM1 when powering up swcore from
+          a low power state (P1.xxx) to a high power state (P0.0xx). \n          \
+          \                  0=power-up \n                            1=no change"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: HW_PWRUP_SRAM0
+        description: "Specifies the power state of SRAM0 when powering up swcore from
+          a low power state (P1.xxx) to a high power state (P0.0xx). \n          \
+          \                  0=power-up \n                            1=no change"
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: USE_VREG_LP
+        description: "Set to 0 to prevent automatic switching to vreg low power mode
+          when switched-core is powered down \n                            This setting
+          takes effect when the swcore is next powered down"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: USE_VREG_HP
+        description: "Set to 0 to prevent automatic switching to vreg high power mode
+          when switched-core is powered up \n                            This setting
+          takes effect when the swcore is next powered up"
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: USE_BOD_LP
+        description: "Set to 0 to prevent automatic switching to bod low power mode
+          when switched-core is powered down \n                            This setting
+          takes effect when the swcore is next powered down"
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: USE_BOD_HP
+        description: "Set to 0 to prevent automatic switching to bod high power mode
+          when switched-core is powered up \n                            This setting
+          takes effect when the swcore is next powered up"
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+      - name: RUN_LPOSC_IN_LP
+        description: "Set to 0 to stop the low power osc when the switched-core is
+          powered down, which is unwise if using it to clock the timer \n        \
+          \                    This setting takes effect when the swcore is next powered
+          down"
+        access: read-write
+        bitOffset: 8
+        bitWidth: 1
+      - name: USE_FAST_POWCK
+        description: "selects the reference clock (clk_ref) as the source of the POWMAN
+          clock when switched-core is powered. The POWMAN clock always switches to
+          the slow clock (lposc) when switched-core is powered down because the fast
+          clock stops running. \n                            0 always run the POWMAN
+          clock from the slow clock (lposc) \n                            1 run the
+          POWMAN clock from the fast clock when available \n                     \
+          \       This setting takes effect when a power up sequence is next run"
+        access: read-write
+        bitOffset: 12
+        bitWidth: 1
+      - name: USING_VREG_LP
+        description: "Indicates the voltage regulator (VREG) mode \n             \
+          \               0 = VREG high power mode which is the default \n       \
+          \                     1 = VREG low power mode"
+        access: read-only
+        bitOffset: 16
+        bitWidth: 1
+      - name: USING_BOD_LP
+        description: "Indicates the brown-out detector (BOD) mode \n             \
+          \               0 = BOD high power mode which is the default \n        \
+          \                    1 = BOD low power mode"
+        access: read-only
+        bitOffset: 17
+        bitWidth: 1
+      - name: USING_FAST_POWCK
+        description: "0 indicates the POWMAN clock is running from the low power oscillator
+          (32kHz) \n                            1 indicates the POWMAN clock is running
+          from the reference clock (2-50MHz)"
+        access: read-only
+        bitOffset: 20
+        bitWidth: 1
+  - name: STATE
+    addressOffset: 56
+    description: "This register controls the power state of the 4 power domains. \n\
+      \                    The current power state is indicated in POWMAN_STATE_CURRENT
+      which is read-only. \n                    To change the state, write to POWMAN_STATE_REQ.\
+      \ \n                    The coding of POWMAN_STATE_CURRENT & POWMAN_STATE_REQ
+      corresponds to the power states \n                    defined in the datasheet:\
+      \ \n                    bit 3 = SWCORE \n                    bit 2 = XIP cache\
+      \ \n                    bit 1 = SRAM0 \n                    bit 0 = SRAM1 \n\
+      \                    0 = powered up \n                    1 = powered down \n\
+      \                    When POWMAN_STATE_REQ is written, the POWMAN_STATE_WAITING
+      flag is set while the Power Manager determines what is required. If an invalid
+      transition is requested the Power Manager will still register the request in
+      POWMAN_STATE_REQ but will also set the POWMAN_BAD_REQ flag. It will then implement
+      the power-up requests and ignore the power down requests. To do nothing would
+      risk entering an unrecoverable lock-up state. Invalid requests are: any combination
+      of power up and power down requests any request that results in swcore being
+      powered and xip unpowered If the request is to power down the switched-core
+      domain then POWMAN_STATE_WAITING stays active until the processors halt. During
+      this time the POWMAN_STATE_REQ field can be re-written to change or cancel the
+      request. When the power state transition begins the POWMAN_STATE_WAITING_flag
+      is cleared, the POWMAN_STATE_CHANGING flag is set and POWMAN register writes
+      are ignored until the transition completes."
+    resetValue: 15
+    fields:
+      - name: CURRENT
+        description: Indicates the current power state
+        access: read-only
+        bitOffset: 0
+        bitWidth: 4
+      - name: REQ
+        description: This is written by software or hardware to request a new 
+          power state
+        access: read-write
+        bitOffset: 4
+        bitWidth: 4
+      - name: REQ_IGNORED
+        description: Indicates that a software state change request was ignored 
+          because it clashed with an ongoing hardware or debugger request
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 8
+        bitWidth: 1
+      - name: PWRUP_WHILE_WAITING
+        description: Indicates that a power state change request was ignored 
+          because of a pending power state change request
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 9
+        bitWidth: 1
+      - name: BAD_SW_REQ
+        description: Invalid software initiated state request ignored
+        access: read-only
+        bitOffset: 10
+        bitWidth: 1
+      - name: BAD_HW_REQ
+        description: Invalid hardware initiated state request, power up requests
+          actioned, power down requests ignored
+        access: read-only
+        bitOffset: 11
+        bitWidth: 1
+      - name: WAITING
+        description: Indicates the power manager has received a state change 
+          request and is waiting for other actions to complete before executing 
+          it
+        access: read-only
+        bitOffset: 12
+        bitWidth: 1
+      - name: CHANGING
+        description: Indicates a power state change is in progress
+        access: read-only
+        bitOffset: 13
+        bitWidth: 1
+  - name: POW_FASTDIV
+    addressOffset: 60
+    resetValue: 64
+    fields:
+      - name: POW_FASTDIV
+        description: "divides the POWMAN clock to provide a tick for the delay module
+          and state machines \n                            when clk_pow is running
+          from the slow clock it is not divided \n                            when
+          clk_pow is running from the fast clock it is divided by tick_div"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 11
+  - name: POW_DELAY
+    addressOffset: 64
+    description: power state machine delays
+    resetValue: 8209
+    fields:
+      - name: SWCORE_STEP
+        description: "timing between the swcore power state machine steps \n     \
+          \                       measured in units of the lposc period, 0 gives a
+          delay of 1 unit"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 4
+      - name: XIP_STEP
+        description: "timing between the xip power state machine steps \n        \
+          \                    measured in units of the lposc period, 0 gives a delay
+          of 1 unit"
+        access: read-write
+        bitOffset: 4
+        bitWidth: 4
+      - name: SRAM_STEP
+        description: "timing between the sram0 and sram1 power state machine steps\
+          \ \n                            measured in units of the powman tick period
+          (>=1us), 0 gives a delay of 1 unit"
+        access: read-write
+        bitOffset: 8
+        bitWidth: 8
+  - name: EXT_CTRL0
+    addressOffset: 68
+    description: Configures a gpio as a power mode aware control output
+    resetValue: 63
+    fields:
+      - name: GPIO_SELECT
+        description: "selects from gpio 0->30 \n                            set to
+          31 to disable this feature"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 6
+      - name: INIT
+        access: read-write
+        bitOffset: 8
+        bitWidth: 1
+      - name: INIT_STATE
+        access: read-write
+        bitOffset: 12
+        bitWidth: 1
+      - name: LP_ENTRY_STATE
+        description: output level when entering the low power state
+        access: read-write
+        bitOffset: 13
+        bitWidth: 1
+      - name: LP_EXIT_STATE
+        description: output level when exiting the low power state
+        access: read-write
+        bitOffset: 14
+        bitWidth: 1
+  - name: EXT_CTRL1
+    addressOffset: 72
+    description: Configures a gpio as a power mode aware control output
+    resetValue: 63
+    fields:
+      - name: GPIO_SELECT
+        description: "selects from gpio 0->30 \n                            set to
+          31 to disable this feature"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 6
+      - name: INIT
+        access: read-write
+        bitOffset: 8
+        bitWidth: 1
+      - name: INIT_STATE
+        access: read-write
+        bitOffset: 12
+        bitWidth: 1
+      - name: LP_ENTRY_STATE
+        description: output level when entering the low power state
+        access: read-write
+        bitOffset: 13
+        bitWidth: 1
+      - name: LP_EXIT_STATE
+        description: output level when exiting the low power state
+        access: read-write
+        bitOffset: 14
+        bitWidth: 1
+  - name: EXT_TIME_REF
+    addressOffset: 76
+    description: Select a GPIO to use as a time reference, the source can be 
+      used to drive the low power clock at 32kHz, or to provide a 1ms tick to 
+      the timer, or provide a 1Hz tick to the timer. The tick selection is 
+      controlled by the POWMAN_TIMER register.
+    resetValue: 0
+    fields:
+      - name: SOURCE_SEL
+        description: "0 ->  gpio12 \n                            1 ->  gpio20 \n \
+          \                           2 ->  gpio14 \n                            3
+          ->  gpio22"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 2
+      - name: DRIVE_LPCK
+        description: Use the selected GPIO to drive the 32kHz low power clock, 
+          in place of LPOSC. This field must only be written when 
+          POWMAN_TIMER_RUN=0
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+  - name: LPOSC_FREQ_KHZ_INT
+    addressOffset: 80
+    description: Informs the AON Timer of the integer component of the clock 
+      frequency when running off the LPOSC.
+    resetValue: 32
+    fields:
+      - name: LPOSC_FREQ_KHZ_INT
+        description: Integer component of the LPOSC or GPIO clock source 
+          frequency in kHz. Default = 32 This field must only be written when 
+          POWMAN_TIMER_RUN=0 or POWMAN_TIMER_USING_XOSC=1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 6
+  - name: LPOSC_FREQ_KHZ_FRAC
+    addressOffset: 84
+    description: Informs the AON Timer of the fractional component of the clock 
+      frequency when running off the LPOSC.
+    resetValue: 50332
+    fields:
+      - name: LPOSC_FREQ_KHZ_FRAC
+        description: Fractional component of the LPOSC or GPIO clock source 
+          frequency in kHz. Default = 0.768 This field must only be written when
+          POWMAN_TIMER_RUN=0 or POWMAN_TIMER_USING_XOSC=1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: XOSC_FREQ_KHZ_INT
+    addressOffset: 88
+    description: Informs the AON Timer of the integer component of the clock 
+      frequency when running off the XOSC.
+    resetValue: 12000
+    fields:
+      - name: XOSC_FREQ_KHZ_INT
+        description: Integer component of the XOSC frequency in kHz. Default = 
+          12000 Must be >1 This field must only be written when 
+          POWMAN_TIMER_RUN=0 or POWMAN_TIMER_USING_XOSC=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: XOSC_FREQ_KHZ_FRAC
+    addressOffset: 92
+    description: Informs the AON Timer of the fractional component of the clock 
+      frequency when running off the XOSC.
+    resetValue: 0
+    fields:
+      - name: XOSC_FREQ_KHZ_FRAC
+        description: Fractional component of the XOSC frequency in kHz. This 
+          field must only be written when POWMAN_TIMER_RUN=0 or 
+          POWMAN_TIMER_USING_XOSC=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: SET_TIME_63TO48
+    addressOffset: 96
+    resetValue: 0
+    fields:
+      - name: SET_TIME_63TO48
+        description: For setting the time, do not use for reading the time, use 
+          POWMAN_READ_TIME_UPPER and POWMAN_READ_TIME_LOWER. This field must 
+          only be written when POWMAN_TIMER_RUN=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: SET_TIME_47TO32
+    addressOffset: 100
+    resetValue: 0
+    fields:
+      - name: SET_TIME_47TO32
+        description: For setting the time, do not use for reading the time, use 
+          POWMAN_READ_TIME_UPPER and POWMAN_READ_TIME_LOWER. This field must 
+          only be written when POWMAN_TIMER_RUN=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: SET_TIME_31TO16
+    addressOffset: 104
+    resetValue: 0
+    fields:
+      - name: SET_TIME_31TO16
+        description: For setting the time, do not use for reading the time, use 
+          POWMAN_READ_TIME_UPPER and POWMAN_READ_TIME_LOWER. This field must 
+          only be written when POWMAN_TIMER_RUN=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: SET_TIME_15TO0
+    addressOffset: 108
+    resetValue: 0
+    fields:
+      - name: SET_TIME_15TO0
+        description: For setting the time, do not use for reading the time, use 
+          POWMAN_READ_TIME_UPPER and POWMAN_READ_TIME_LOWER. This field must 
+          only be written when POWMAN_TIMER_RUN=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: READ_TIME_UPPER
+    addressOffset: 112
+    resetValue: 0
+    fields:
+      - name: READ_TIME_UPPER
+        description: For reading bits 63:32 of the timer. When reading all 64 
+          bits it is possible for the LOWER count to rollover during the read. 
+          It is recommended to read UPPER, then LOWER, then re-read UPPER and, 
+          if it has changed, re-read LOWER.
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: READ_TIME_LOWER
+    addressOffset: 116
+    resetValue: 0
+    fields:
+      - name: READ_TIME_LOWER
+        description: For reading bits 31:0 of the timer.
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: ALARM_TIME_63TO48
+    addressOffset: 120
+    resetValue: 0
+    fields:
+      - name: ALARM_TIME_63TO48
+        description: This field must only be written when POWMAN_ALARM_ENAB=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: ALARM_TIME_47TO32
+    addressOffset: 124
+    resetValue: 0
+    fields:
+      - name: ALARM_TIME_47TO32
+        description: This field must only be written when POWMAN_ALARM_ENAB=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: ALARM_TIME_31TO16
+    addressOffset: 128
+    resetValue: 0
+    fields:
+      - name: ALARM_TIME_31TO16
+        description: This field must only be written when POWMAN_ALARM_ENAB=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: ALARM_TIME_15TO0
+    addressOffset: 132
+    resetValue: 0
+    fields:
+      - name: ALARM_TIME_15TO0
+        description: This field must only be written when POWMAN_ALARM_ENAB=0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: TIMER
+    addressOffset: 136
+    resetValue: 0
+    fields:
+      - name: NONSEC_WRITE
+        description: Control whether Non-secure software can write to the timer 
+          registers. All other registers are hardwired to be inaccessible to 
+          Non-secure.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: RUN
+        description: "Timer enable. Setting this bit causes the timer to begin counting
+          up from its current value. Clearing this bit stops the timer from counting.\n\
+          \n                            Before enabling the timer, set the POWMAN_LPOSC_FREQ*
+          and POWMAN_XOSC_FREQ* registers to configure the count rate, and initialise
+          the current time by writing to SET_TIME_63TO48 through SET_TIME_15TO0. You
+          must not write to the SET_TIME_x registers when the timer is running.\n\n\
+          \                            Once configured, start the timer by setting
+          POWMAN_TIMER_RUN=1. This will start the timer running from the LPOSC. When
+          the XOSC is available switch the reference clock to XOSC then select it
+          as the timer clock by setting POWMAN_TIMER_USE_XOSC=1"
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: CLEAR
+        description: Clears the timer, does not disable the timer and does not 
+          affect the alarm. This control can be written at any time.
+        access: write-only
+        bitOffset: 2
+        bitWidth: 1
+      - name: ALARM_ENAB
+        description: Enables the alarm. The alarm must be disabled while writing
+          the alarm time.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: PWRUP_ON_ALARM
+        description: Alarm wakes the chip from low power mode
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: ALARM
+        description: Alarm has fired. Write to 1 to clear the alarm.
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 6
+        bitWidth: 1
+      - name: USE_LPOSC
+        description: Switch to lposc as the source of the 1kHz timer tick
+        access: write-only
+        bitOffset: 8
+        bitWidth: 1
+      - name: USE_XOSC
+        description: switch to xosc as the source of the 1kHz timer tick
+        access: write-only
+        bitOffset: 9
+        bitWidth: 1
+      - name: USE_GPIO_1KHZ
+        description: switch to gpio as the source of the 1kHz timer tick
+        access: write-only
+        bitOffset: 10
+        bitWidth: 1
+      - name: USE_GPIO_1HZ
+        description: Selects the gpio source as the reference for the sec 
+          counter. The msec counter will continue to use the lposc or xosc 
+          reference.
+        access: read-write
+        bitOffset: 13
+        bitWidth: 1
+      - name: USING_XOSC
+        description: Timer is running from xosc
+        access: read-only
+        bitOffset: 16
+        bitWidth: 1
+      - name: USING_LPOSC
+        description: Timer is running from lposc
+        access: read-only
+        bitOffset: 17
+        bitWidth: 1
+      - name: USING_GPIO_1KHZ
+        description: Timer is running from a 1khz gpio source
+        access: read-only
+        bitOffset: 18
+        bitWidth: 1
+      - name: USING_GPIO_1HZ
+        description: Timer is synchronised to a 1hz gpio source
+        access: read-only
+        bitOffset: 19
+        bitWidth: 1
+  - name: PWRUP0
+    addressOffset: 140
+    description: "4 GPIO powerup events can be configured to wake the chip up from
+      a low power state. \n                    The pwrups are level/edge sensitive
+      and can be set to trigger on a high/rising or low/falling event \n         \
+      \           The number of gpios available depends on the package option. An
+      invalid selection will be ignored \n                    source = 0 selects gpio0\
+      \ \n                    . \n                    . \n                    source
+      = 47 selects gpio47 \n                    source = 48 selects qspi_ss \n   \
+      \                 source = 49 selects qspi_sd0 \n                    source
+      = 50 selects qspi_sd1 \n                    source = 51 selects qspi_sd2 \n\
+      \                    source = 52 selects qspi_sd3 \n                    source
+      = 53 selects qspi_sclk \n                    level  = 0 triggers the pwrup when
+      the source is low \n                    level  = 1 triggers the pwrup when the
+      source is high"
+    resetValue: 63
+    fields:
+      - name: SOURCE
+        access: read-write
+        bitOffset: 0
+        bitWidth: 6
+      - name: ENABLE
+        description: "Set to 1 to enable the wakeup source. Set to 0 to disable the
+          wakeup source and clear a pending wakeup event. \n                     \
+          \       If using edge detect a latched edge needs to be cleared by writing
+          1 to the status register also."
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DIRECTION
+        access: read-write
+        enumeratedValues:
+          - name: low_falling
+            value: 0
+          - name: high_rising
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: MODE
+        description: Edge or level detect. Edge will detect a 0 to 1 transition 
+          (or 1 to 0 transition). Level will detect a 1 or 0. Both types of 
+          event get latched into the current_pwrup_req register.
+        access: read-write
+        enumeratedValues:
+          - name: level
+            value: 0
+          - name: edge
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: STATUS
+        description: Status of gpio wakeup. Write to 1 to clear a latched edge 
+          detect.
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 9
+        bitWidth: 1
+      - name: RAW_STATUS
+        description: Value of selected gpio pin (only if enable == 1)
+        access: read-only
+        bitOffset: 10
+        bitWidth: 1
+  - name: PWRUP1
+    addressOffset: 144
+    description: "4 GPIO powerup events can be configured to wake the chip up from
+      a low power state. \n                    The pwrups are level/edge sensitive
+      and can be set to trigger on a high/rising or low/falling event \n         \
+      \           The number of gpios available depends on the package option. An
+      invalid selection will be ignored \n                    source = 0 selects gpio0\
+      \ \n                    . \n                    . \n                    source
+      = 47 selects gpio47 \n                    source = 48 selects qspi_ss \n   \
+      \                 source = 49 selects qspi_sd0 \n                    source
+      = 50 selects qspi_sd1 \n                    source = 51 selects qspi_sd2 \n\
+      \                    source = 52 selects qspi_sd3 \n                    source
+      = 53 selects qspi_sclk \n                    level  = 0 triggers the pwrup when
+      the source is low \n                    level  = 1 triggers the pwrup when the
+      source is high"
+    resetValue: 63
+    fields:
+      - name: SOURCE
+        access: read-write
+        bitOffset: 0
+        bitWidth: 6
+      - name: ENABLE
+        description: "Set to 1 to enable the wakeup source. Set to 0 to disable the
+          wakeup source and clear a pending wakeup event. \n                     \
+          \       If using edge detect a latched edge needs to be cleared by writing
+          1 to the status register also."
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DIRECTION
+        access: read-write
+        enumeratedValues:
+          - name: low_falling
+            value: 0
+          - name: high_rising
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: MODE
+        description: Edge or level detect. Edge will detect a 0 to 1 transition 
+          (or 1 to 0 transition). Level will detect a 1 or 0. Both types of 
+          event get latched into the current_pwrup_req register.
+        access: read-write
+        enumeratedValues:
+          - name: level
+            value: 0
+          - name: edge
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: STATUS
+        description: Status of gpio wakeup. Write to 1 to clear a latched edge 
+          detect.
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 9
+        bitWidth: 1
+      - name: RAW_STATUS
+        description: Value of selected gpio pin (only if enable == 1)
+        access: read-only
+        bitOffset: 10
+        bitWidth: 1
+  - name: PWRUP2
+    addressOffset: 148
+    description: "4 GPIO powerup events can be configured to wake the chip up from
+      a low power state. \n                    The pwrups are level/edge sensitive
+      and can be set to trigger on a high/rising or low/falling event \n         \
+      \           The number of gpios available depends on the package option. An
+      invalid selection will be ignored \n                    source = 0 selects gpio0\
+      \ \n                    . \n                    . \n                    source
+      = 47 selects gpio47 \n                    source = 48 selects qspi_ss \n   \
+      \                 source = 49 selects qspi_sd0 \n                    source
+      = 50 selects qspi_sd1 \n                    source = 51 selects qspi_sd2 \n\
+      \                    source = 52 selects qspi_sd3 \n                    source
+      = 53 selects qspi_sclk \n                    level  = 0 triggers the pwrup when
+      the source is low \n                    level  = 1 triggers the pwrup when the
+      source is high"
+    resetValue: 63
+    fields:
+      - name: SOURCE
+        access: read-write
+        bitOffset: 0
+        bitWidth: 6
+      - name: ENABLE
+        description: "Set to 1 to enable the wakeup source. Set to 0 to disable the
+          wakeup source and clear a pending wakeup event. \n                     \
+          \       If using edge detect a latched edge needs to be cleared by writing
+          1 to the status register also."
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DIRECTION
+        access: read-write
+        enumeratedValues:
+          - name: low_falling
+            value: 0
+          - name: high_rising
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: MODE
+        description: Edge or level detect. Edge will detect a 0 to 1 transition 
+          (or 1 to 0 transition). Level will detect a 1 or 0. Both types of 
+          event get latched into the current_pwrup_req register.
+        access: read-write
+        enumeratedValues:
+          - name: level
+            value: 0
+          - name: edge
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: STATUS
+        description: Status of gpio wakeup. Write to 1 to clear a latched edge 
+          detect.
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 9
+        bitWidth: 1
+      - name: RAW_STATUS
+        description: Value of selected gpio pin (only if enable == 1)
+        access: read-only
+        bitOffset: 10
+        bitWidth: 1
+  - name: PWRUP3
+    addressOffset: 152
+    description: "4 GPIO powerup events can be configured to wake the chip up from
+      a low power state. \n                    The pwrups are level/edge sensitive
+      and can be set to trigger on a high/rising or low/falling event \n         \
+      \           The number of gpios available depends on the package option. An
+      invalid selection will be ignored \n                    source = 0 selects gpio0\
+      \ \n                    . \n                    . \n                    source
+      = 47 selects gpio47 \n                    source = 48 selects qspi_ss \n   \
+      \                 source = 49 selects qspi_sd0 \n                    source
+      = 50 selects qspi_sd1 \n                    source = 51 selects qspi_sd2 \n\
+      \                    source = 52 selects qspi_sd3 \n                    source
+      = 53 selects qspi_sclk \n                    level  = 0 triggers the pwrup when
+      the source is low \n                    level  = 1 triggers the pwrup when the
+      source is high"
+    resetValue: 63
+    fields:
+      - name: SOURCE
+        access: read-write
+        bitOffset: 0
+        bitWidth: 6
+      - name: ENABLE
+        description: "Set to 1 to enable the wakeup source. Set to 0 to disable the
+          wakeup source and clear a pending wakeup event. \n                     \
+          \       If using edge detect a latched edge needs to be cleared by writing
+          1 to the status register also."
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DIRECTION
+        access: read-write
+        enumeratedValues:
+          - name: low_falling
+            value: 0
+          - name: high_rising
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: MODE
+        description: Edge or level detect. Edge will detect a 0 to 1 transition 
+          (or 1 to 0 transition). Level will detect a 1 or 0. Both types of 
+          event get latched into the current_pwrup_req register.
+        access: read-write
+        enumeratedValues:
+          - name: level
+            value: 0
+          - name: edge
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: STATUS
+        description: Status of gpio wakeup. Write to 1 to clear a latched edge 
+          detect.
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 9
+        bitWidth: 1
+      - name: RAW_STATUS
+        description: Value of selected gpio pin (only if enable == 1)
+        access: read-only
+        bitOffset: 10
+        bitWidth: 1
+  - name: CURRENT_PWRUP_REQ
+    addressOffset: 156
+    description: "Indicates current powerup request state \n                    pwrup
+      events can be cleared by removing the enable from the pwrup register. The alarm
+      pwrup req can be cleared by clearing timer.alarm_enab \n                   \
+      \ 0 = chip reset, for the source of the last reset see POWMAN_CHIP_RESET \n\
+      \                    1 = pwrup0 \n                    2 = pwrup1 \n        \
+      \            3 = pwrup2 \n                    4 = pwrup3 \n                \
+      \    5 = coresight_pwrup \n                    6 = alarm_pwrup"
+    resetValue: 0
+    fields:
+      - name: CURRENT_PWRUP_REQ
+        access: read-only
+        bitOffset: 0
+        bitWidth: 7
+  - name: LAST_SWCORE_PWRUP
+    addressOffset: 160
+    description: "Indicates which pwrup source triggered the last switched-core power
+      up \n                    0 = chip reset, for the source of the last reset see
+      POWMAN_CHIP_RESET \n                    1 = pwrup0 \n                    2 =
+      pwrup1 \n                    3 = pwrup2 \n                    4 = pwrup3 \n\
+      \                    5 = coresight_pwrup \n                    6 = alarm_pwrup"
+    resetValue: 0
+    fields:
+      - name: LAST_SWCORE_PWRUP
+        access: read-only
+        bitOffset: 0
+        bitWidth: 7
+  - name: DBG_PWRCFG
+    addressOffset: 164
+    resetValue: 0
+    fields:
+      - name: IGNORE
+        description: Ignore pwrup req from debugger. If pwrup req is asserted 
+          then this will prevent power down and set powerdown blocked. Set 
+          ignore to stop paying attention to pwrup_req
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+  - name: BOOTDIS
+    addressOffset: 168
+    description: "Tell the bootrom to ignore the BOOT0..3 registers following the
+      next RSM reset (e.g. the next core power down/up).\n\n                    If
+      an early boot stage has soft-locked some OTP pages in order to protect their
+      contents from later stages, there is a risk that Secure code running at a later
+      stage can unlock the pages by powering the core up and down.\n\n           \
+      \         This register can be used to ensure that the bootloader runs as normal
+      on the next power up, preventing Secure code at a later stage from accessing
+      OTP in its unlocked state.\n\n                    Should be used in conjunction
+      with the OTP BOOTDIS register."
+    resetValue: 0
+    fields:
+      - name: NOW
+        description: "When powman resets the RSM, the current value of BOOTDIS_NEXT
+          is OR'd into BOOTDIS_NOW, and BOOTDIS_NEXT is cleared.\n\n             \
+          \               The bootrom checks this flag before reading the BOOT0..3
+          registers. If it is set, the bootrom clears it, and ignores the BOOT registers.
+          This prevents Secure software from diverting the boot path before a bootloader
+          has had the chance to soft lock OTP pages containing sensitive data."
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 0
+        bitWidth: 1
+      - name: NEXT
+        description: "This flag always ORs writes into its current contents. It can
+          be set but not cleared by software.\n\n                            The BOOTDIS_NEXT
+          bit is OR'd into the BOOTDIS_NOW bit when the core is powered down. Simultaneously,
+          the BOOTDIS_NEXT bit is cleared. Setting this bit means that the BOOT0..3
+          registers will be ignored following the next reset of the RSM by powman.\n\
+          \n                            This flag should be set by an early boot stage
+          that has soft-locked OTP pages, to prevent later stages from unlocking it
+          by power cycling."
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+  - name: DBGCONFIG
+    addressOffset: 172
+    resetValue: 0
+    fields:
+      - name: DP_INSTID
+        description: "Configure DP instance ID for SWD multidrop selection. \n   \
+          \                         Recommend that this is NOT changed until you require
+          debug access in multi-chip environment"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 4
+  - name: SCRATCH0
+    addressOffset: 176
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: SCRATCH0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: SCRATCH1
+    addressOffset: 180
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: SCRATCH1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: SCRATCH2
+    addressOffset: 184
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: SCRATCH2
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: SCRATCH3
+    addressOffset: 188
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: SCRATCH3
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: SCRATCH4
+    addressOffset: 192
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: SCRATCH4
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: SCRATCH5
+    addressOffset: 196
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: SCRATCH5
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: SCRATCH6
+    addressOffset: 200
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: SCRATCH6
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: SCRATCH7
+    addressOffset: 204
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: SCRATCH7
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: BOOT0
+    addressOffset: 208
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: BOOT0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: BOOT1
+    addressOffset: 212
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: BOOT1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: BOOT2
+    addressOffset: 216
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: BOOT2
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: BOOT3
+    addressOffset: 220
+    description: Scratch register. Information persists in low power mode
+    resetValue: 0
+    fields:
+      - name: BOOT3
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTR
+    addressOffset: 224
+    description: Raw Interrupts
+    resetValue: 0
+    fields:
+      - name: VREG_OUTPUT_LOW
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 0
+        bitWidth: 1
+      - name: TIMER
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+      - name: STATE_REQ_IGNORED
+        description: Source is state.req_ignored
+        access: read-only
+        bitOffset: 2
+        bitWidth: 1
+      - name: PWRUP_WHILE_WAITING
+        description: Source is state.pwrup_while_waiting
+        access: read-only
+        bitOffset: 3
+        bitWidth: 1
+  - name: INTE
+    addressOffset: 228
+    description: Interrupt Enable
+    resetValue: 0
+    fields:
+      - name: VREG_OUTPUT_LOW
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: TIMER
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: STATE_REQ_IGNORED
+        description: Source is state.req_ignored
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: PWRUP_WHILE_WAITING
+        description: Source is state.pwrup_while_waiting
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+  - name: INTF
+    addressOffset: 232
+    description: Interrupt Force
+    resetValue: 0
+    fields:
+      - name: VREG_OUTPUT_LOW
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: TIMER
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: STATE_REQ_IGNORED
+        description: Source is state.req_ignored
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: PWRUP_WHILE_WAITING
+        description: Source is state.pwrup_while_waiting
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+  - name: INTS
+    addressOffset: 236
+    description: Interrupt status after masking & forcing
+    resetValue: 0
+    fields:
+      - name: VREG_OUTPUT_LOW
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: TIMER
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+      - name: STATE_REQ_IGNORED
+        description: Source is state.req_ignored
+        access: read-only
+        bitOffset: 2
+        bitWidth: 1
+      - name: PWRUP_WHILE_WAITING
+        description: Source is state.pwrup_while_waiting
+        access: read-only
+        bitOffset: 3
+        bitWidth: 1
+interrupts:
+  - name: POWMAN_IRQ_POW
+  - name: POWMAN_IRQ_TIMER
+addressBlocks:
+  - offset: 0
+    size: 240
+    usage: registers

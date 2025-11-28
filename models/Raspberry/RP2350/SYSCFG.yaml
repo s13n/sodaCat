@@ -1,0 +1,177 @@
+# Created from RP2350.svd (Rev 0.1)
+
+name: SYSCFG
+description: Register block for various chip control signals
+registers:
+  - name: PROC_CONFIG
+    addressOffset: 0
+    description: Configuration for processors
+    resetValue: 0
+    fields:
+      - name: PROC0_HALTED
+        description: Indication that proc0 has halted
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: PROC1_HALTED
+        description: Indication that proc1 has halted
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+  - name: PROC_IN_SYNC_BYPASS
+    addressOffset: 4
+    description: "For each bit, if 1, bypass the input synchronizer between that GPIO\
+      \ \n                    and the GPIO input register in the SIO. The input synchronizers
+      should \n                    generally be unbypassed, to avoid injecting metastabilities
+      into processors. \n                    If you're feeling brave, you can bypass
+      to save two cycles of input \n                    latency. This register applies
+      to GPIO 0...31."
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: PROC_IN_SYNC_BYPASS_HI
+    addressOffset: 8
+    description: "For each bit, if 1, bypass the input synchronizer between that GPIO\
+      \ \n                    and the GPIO input register in the SIO. The input synchronizers
+      should \n                    generally be unbypassed, to avoid injecting metastabilities
+      into processors. \n                    If you're feeling brave, you can bypass
+      to save two cycles of input \n                    latency. This register applies
+      to GPIO 32...47. USB GPIO 56..57 QSPI GPIO 58..63"
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        access: read-write
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        access: read-write
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        access: read-write
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        access: read-write
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        access: read-write
+        bitOffset: 28
+        bitWidth: 4
+  - name: DBGFORCE
+    addressOffset: 12
+    description: Directly control the chip SWD debug port
+    resetValue: 6
+    fields:
+      - name: SWDO
+        description: Observe the value of SWDIO output.
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: SWDI
+        description: Directly drive SWDIO input, if ATTACH is set
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SWCLK
+        description: Directly drive SWCLK, if ATTACH is set
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: ATTACH
+        description: Attach chip debug port to syscfg controls, and disconnect 
+          it from external SWD pads.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+  - name: MEMPOWERDOWN
+    addressOffset: 16
+    description: "Control PD pins to memories. \n                    Set high to put
+      memories to a low power state. In this state the memories will retain contents
+      but not be accessible \n                    Use with caution"
+    resetValue: 0
+    fields:
+      - name: SRAM0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: SRAM1
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SRAM2
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SRAM3
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: SRAM4
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: SRAM5
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: SRAM6
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: SRAM7
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+      - name: SRAM8
+        access: read-write
+        bitOffset: 8
+        bitWidth: 1
+      - name: SRAM9
+        access: read-write
+        bitOffset: 9
+        bitWidth: 1
+      - name: USB
+        access: read-write
+        bitOffset: 10
+        bitWidth: 1
+      - name: ROM
+        access: read-write
+        bitOffset: 11
+        bitWidth: 1
+      - name: BOOTRAM
+        access: read-write
+        bitOffset: 12
+        bitWidth: 1
+  - name: AUXCTRL
+    addressOffset: 20
+    description: Auxiliary system control register
+    resetValue: 0
+    fields:
+      - name: AUXCTRL
+        description: "* Bits 7:3: Reserved\n                            * Bit 2: Set
+          to mask OTP power analogue power supply detection from resetting OTP controller
+          and PSM\n\n                            * Bit 1: When clear, the LPOSC output
+          is XORed into the TRNG ROSC output as an additional, uncorrelated entropy
+          source. When set, this behaviour is disabled.\n\n                      \
+          \      * Bit 0: Force POWMAN clock to switch to LPOSC, by asserting its
+          WDRESET input. This must be set before initiating a watchdog reset of the
+          RSM from a stage that includes CLOCKS, if POWMAN is running from clk_ref
+          at the point that the watchdog reset takes place. Otherwise, the short pulse
+          generated on clk_ref by the reset of the CLOCKS block may affect POWMAN
+          register state."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+addressBlocks:
+  - offset: 0
+    size: 24
+    usage: registers

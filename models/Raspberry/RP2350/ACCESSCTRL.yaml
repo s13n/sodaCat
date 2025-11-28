@@ -1,0 +1,3295 @@
+# Created from RP2350.svd (Rev 0.1)
+
+name: ACCESSCTRL
+description: Hardware access control registers
+registers:
+  - name: LOCK
+    addressOffset: 0
+    description: "Once a LOCK bit is written to 1, ACCESSCTRL silently ignores writes
+      from that master. LOCK is writable only by a Secure, Privileged processor or
+      debugger.\n\n                    LOCK bits are only writable when their value
+      is zero. Once set, they can never be cleared, except by a full reset of ACCESSCTRL\n\
+      \n                    Setting the LOCK bit does not affect whether an access
+      raises a bus error. Unprivileged writes, or writes from the DMA, will continue
+      to raise bus errors. All other accesses will continue not to."
+    resetValue: 4
+    fields:
+      - name: CORE0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: CORE1
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: DMA
+        access: read-only
+        bitOffset: 2
+        bitWidth: 1
+      - name: DEBUG
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+  - name: FORCE_CORE_NS
+    addressOffset: 4
+    description: "Force core 1's bus accesses to always be Non-secure, no matter the
+      core's internal state.\n\n                    Useful for schemes where one core
+      is designated as the Non-secure core, since some peripherals may filter individual
+      registers internally based on security state but not on master ID."
+    resetValue: 0
+    fields:
+      - name: CORE1
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+  - name: CFGRESET
+    addressOffset: 8
+    description: "Write 1 to reset all ACCESSCTRL configuration, except for the LOCK
+      and FORCE_CORE_NS registers.\n\n                    This bit is used in the
+      RP2350 bootrom to quickly restore ACCESSCTRL to a known state during the boot
+      path.\n\n                    Note that, like all registers in ACCESSCTRL, this
+      register is not writable when the writer's corresponding LOCK bit is set, therefore
+      a master which has been locked out of ACCESSCTRL can not use the CFGRESET register
+      to disturb its contents."
+    resetValue: 0
+    fields:
+      - name: CFGRESET
+        access: write-only
+        bitOffset: 0
+        bitWidth: 1
+  - name: GPIO_NSMASK0
+    addressOffset: 12
+    description: "Control whether GPIO0...31 are accessible to Non-secure code. Writable
+      only by a Secure, Privileged processor or debugger.\n\n                    0
+      -> Secure access only\n\n                    1 -> Secure + Non-secure access"
+    resetValue: 0
+    fields:
+      - name: GPIO_NSMASK0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_NSMASK1
+    addressOffset: 16
+    description: Control whether GPIO32..47 are accessible to Non-secure code, 
+      and whether QSPI and USB bitbang are accessible through the Non-secure 
+      SIO. Writable only by a Secure, Privileged processor or debugger.
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        access: read-write
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        access: read-write
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        access: read-write
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        access: read-write
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        access: read-write
+        bitOffset: 28
+        bitWidth: 4
+  - name: ROM
+    addressOffset: 20
+    description: "Control whether debugger, DMA, core 0 and core 1 can access ROM,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, ROM can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, ROM can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, ROM can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, ROM can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, ROM can be accessed by core 0, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, ROM can be accessed by core 1, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, ROM can be accessed by the DMA, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, ROM can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: XIP_MAIN
+    addressOffset: 24
+    description: "Control whether debugger, DMA, core 0 and core 1 can access XIP_MAIN,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, XIP_MAIN can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, XIP_MAIN can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, XIP_MAIN can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, XIP_MAIN can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, XIP_MAIN can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, XIP_MAIN can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, XIP_MAIN can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, XIP_MAIN can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM0
+    addressOffset: 28
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM0 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM0 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM0 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM0 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM0 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM1
+    addressOffset: 32
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM1,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM1 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM1 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM1 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM1 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM1 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM1 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM1 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM1 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM2
+    addressOffset: 36
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM2,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM2 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM2 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM2 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM2 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM2 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM2 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM2 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM2 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM3
+    addressOffset: 40
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM3,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM3 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM3 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM3 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM3 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM3 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM3 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM3 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM3 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM4
+    addressOffset: 44
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM4,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM4 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM4 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM4 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM4 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM4 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM4 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM4 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM4 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM5
+    addressOffset: 48
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM5,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM5 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM5 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM5 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM5 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM5 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM5 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM5 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM5 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM6
+    addressOffset: 52
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM6,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM6 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM6 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM6 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM6 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM6 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM6 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM6 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM6 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM7
+    addressOffset: 56
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM7,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM7 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM7 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM7 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM7 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM7 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM7 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM7 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM7 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM8
+    addressOffset: 60
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM8,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM8 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM8 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM8 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM8 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM8 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM8 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM8 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM8 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SRAM9
+    addressOffset: 64
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SRAM9,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SRAM9 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SRAM9 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SRAM9 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SRAM9 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SRAM9 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SRAM9 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SRAM9 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SRAM9 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: DMA
+    addressOffset: 68
+    description: "Control whether debugger, DMA, core 0 and core 1 can access DMA,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, DMA can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, DMA can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, DMA can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, DMA can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, DMA can be accessed by core 0, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, DMA can be accessed by core 1, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, DMA can be accessed by the DMA, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, DMA can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: USBCTRL
+    addressOffset: 72
+    description: "Control whether debugger, DMA, core 0 and core 1 can access USBCTRL,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, USBCTRL can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, USBCTRL can be accessed from a Non-secure, Privileged
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, USBCTRL can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, USBCTRL can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, USBCTRL can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, USBCTRL can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, USBCTRL can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, USBCTRL can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: PIO0
+    addressOffset: 76
+    description: "Control whether debugger, DMA, core 0 and core 1 can access PIO0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, PIO0 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, PIO0 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, PIO0 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, PIO0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, PIO0 can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, PIO0 can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, PIO0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, PIO0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: PIO1
+    addressOffset: 80
+    description: "Control whether debugger, DMA, core 0 and core 1 can access PIO1,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, PIO1 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, PIO1 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, PIO1 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, PIO1 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, PIO1 can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, PIO1 can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, PIO1 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, PIO1 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: PIO2
+    addressOffset: 84
+    description: "Control whether debugger, DMA, core 0 and core 1 can access PIO2,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, PIO2 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, PIO2 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, PIO2 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, PIO2 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, PIO2 can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, PIO2 can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, PIO2 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, PIO2 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: CORESIGHT_TRACE
+    addressOffset: 88
+    description: "Control whether debugger, DMA, core 0 and core 1 can access CORESIGHT_TRACE,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, CORESIGHT_TRACE can be accessed from
+          a Non-secure, Unprivileged context.\n\n                            This
+          bit is writable from a Non-secure, Privileged context, if and only if the
+          NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, CORESIGHT_TRACE can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, CORESIGHT_TRACE can be accessed 
+          from a Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, CORESIGHT_TRACE can be accessed from a Secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, CORESIGHT_TRACE can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, CORESIGHT_TRACE can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, CORESIGHT_TRACE can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, CORESIGHT_TRACE can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: CORESIGHT_PERIPH
+    addressOffset: 92
+    description: "Control whether debugger, DMA, core 0 and core 1 can access CORESIGHT_PERIPH,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, CORESIGHT_PERIPH can be accessed
+          from a Non-secure, Unprivileged context.\n\n                           \
+          \ This bit is writable from a Non-secure, Privileged context, if and only
+          if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, CORESIGHT_PERIPH can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, CORESIGHT_PERIPH can be accessed 
+          from a Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, CORESIGHT_PERIPH can be accessed from a Secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, CORESIGHT_PERIPH can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, CORESIGHT_PERIPH can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, CORESIGHT_PERIPH can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, CORESIGHT_PERIPH can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SYSINFO
+    addressOffset: 96
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SYSINFO,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to fully open access.\n\n                    This register is writable
+      only from a Secure, Privileged processor or debugger, with the exception of
+      the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit is
+      set."
+    resetValue: 255
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SYSINFO can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SYSINFO can be accessed from a Non-secure, Privileged
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SYSINFO can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SYSINFO can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SYSINFO can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SYSINFO can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SYSINFO can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SYSINFO can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: RESETS
+    addressOffset: 100
+    description: "Control whether debugger, DMA, core 0 and core 1 can access RESETS,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, RESETS can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, RESETS can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, RESETS can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, RESETS can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, RESETS can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, RESETS can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, RESETS can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, RESETS can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: IO_BANK0
+    addressOffset: 104
+    description: "Control whether debugger, DMA, core 0 and core 1 can access IO_BANK0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, IO_BANK0 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, IO_BANK0 can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, IO_BANK0 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, IO_BANK0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, IO_BANK0 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, IO_BANK0 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, IO_BANK0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, IO_BANK0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: IO_BANK1
+    addressOffset: 108
+    description: "Control whether debugger, DMA, core 0 and core 1 can access IO_BANK1,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, IO_BANK1 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, IO_BANK1 can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, IO_BANK1 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, IO_BANK1 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, IO_BANK1 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, IO_BANK1 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, IO_BANK1 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, IO_BANK1 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: PADS_BANK0
+    addressOffset: 112
+    description: "Control whether debugger, DMA, core 0 and core 1 can access PADS_BANK0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, PADS_BANK0 can be accessed from a
+          Non-secure, Unprivileged context.\n\n                            This bit
+          is writable from a Non-secure, Privileged context, if and only if the NSP
+          bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, PADS_BANK0 can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, PADS_BANK0 can be accessed from a
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, PADS_BANK0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, PADS_BANK0 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, PADS_BANK0 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, PADS_BANK0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, PADS_BANK0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: PADS_QSPI
+    addressOffset: 116
+    description: "Control whether debugger, DMA, core 0 and core 1 can access PADS_QSPI,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, PADS_QSPI can be accessed from a
+          Non-secure, Unprivileged context.\n\n                            This bit
+          is writable from a Non-secure, Privileged context, if and only if the NSP
+          bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, PADS_QSPI can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, PADS_QSPI can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, PADS_QSPI can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, PADS_QSPI can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, PADS_QSPI can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, PADS_QSPI can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, PADS_QSPI can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: BUSCTRL
+    addressOffset: 120
+    description: "Control whether debugger, DMA, core 0 and core 1 can access BUSCTRL,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, BUSCTRL can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, BUSCTRL can be accessed from a Non-secure, Privileged
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, BUSCTRL can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, BUSCTRL can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, BUSCTRL can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, BUSCTRL can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, BUSCTRL can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, BUSCTRL can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: ADC0
+    addressOffset: 124
+    description: "Control whether debugger, DMA, core 0 and core 1 can access ADC0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, ADC0 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, ADC0 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, ADC0 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, ADC0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, ADC0 can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, ADC0 can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, ADC0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, ADC0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: HSTX
+    addressOffset: 128
+    description: "Control whether debugger, DMA, core 0 and core 1 can access HSTX,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, HSTX can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, HSTX can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, HSTX can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, HSTX can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, HSTX can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, HSTX can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, HSTX can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, HSTX can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: I2C0
+    addressOffset: 132
+    description: "Control whether debugger, DMA, core 0 and core 1 can access I2C0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, I2C0 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, I2C0 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, I2C0 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, I2C0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, I2C0 can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, I2C0 can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, I2C0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, I2C0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: I2C1
+    addressOffset: 136
+    description: "Control whether debugger, DMA, core 0 and core 1 can access I2C1,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, I2C1 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, I2C1 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, I2C1 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, I2C1 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, I2C1 can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, I2C1 can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, I2C1 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, I2C1 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: PWM
+    addressOffset: 140
+    description: "Control whether debugger, DMA, core 0 and core 1 can access PWM,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, PWM can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, PWM can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, PWM can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, PWM can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, PWM can be accessed by core 0, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, PWM can be accessed by core 1, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, PWM can be accessed by the DMA, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, PWM can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SPI0
+    addressOffset: 144
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SPI0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SPI0 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SPI0 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SPI0 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SPI0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SPI0 can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SPI0 can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SPI0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SPI0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SPI1
+    addressOffset: 148
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SPI1,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SPI1 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SPI1 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SPI1 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SPI1 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SPI1 can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SPI1 can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SPI1 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SPI1 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: TIMER0
+    addressOffset: 152
+    description: "Control whether debugger, DMA, core 0 and core 1 can access TIMER0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, TIMER0 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, TIMER0 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, TIMER0 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, TIMER0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, TIMER0 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, TIMER0 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, TIMER0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, TIMER0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: TIMER1
+    addressOffset: 156
+    description: "Control whether debugger, DMA, core 0 and core 1 can access TIMER1,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, TIMER1 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, TIMER1 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, TIMER1 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, TIMER1 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, TIMER1 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, TIMER1 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, TIMER1 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, TIMER1 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: UART0
+    addressOffset: 160
+    description: "Control whether debugger, DMA, core 0 and core 1 can access UART0,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, UART0 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, UART0 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, UART0 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, UART0 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, UART0 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, UART0 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, UART0 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, UART0 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: UART1
+    addressOffset: 164
+    description: "Control whether debugger, DMA, core 0 and core 1 can access UART1,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, UART1 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, UART1 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, UART1 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, UART1 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, UART1 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, UART1 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, UART1 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, UART1 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: OTP
+    addressOffset: 168
+    description: "Control whether debugger, DMA, core 0 and core 1 can access OTP,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, OTP can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, OTP can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, OTP can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, OTP can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, OTP can be accessed by core 0, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, OTP can be accessed by core 1, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, OTP can be accessed by the DMA, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, OTP can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: TBMAN
+    addressOffset: 172
+    description: "Control whether debugger, DMA, core 0 and core 1 can access TBMAN,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure access from any master.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 252
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, TBMAN can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, TBMAN can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, TBMAN can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, TBMAN can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, TBMAN can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, TBMAN can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, TBMAN can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, TBMAN can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: POWMAN
+    addressOffset: 176
+    description: "Control whether debugger, DMA, core 0 and core 1 can access POWMAN,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, POWMAN can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, POWMAN can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, POWMAN can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, POWMAN can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, POWMAN can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, POWMAN can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, POWMAN can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, POWMAN can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: TRNG
+    addressOffset: 180
+    description: "Control whether debugger, DMA, core 0 and core 1 can access TRNG,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, TRNG can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, TRNG can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, TRNG can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, TRNG can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, TRNG can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, TRNG can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, TRNG can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, TRNG can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SHA256
+    addressOffset: 184
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SHA256,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged access only.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 248
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SHA256 can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SHA256 can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SHA256 can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SHA256 can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SHA256 can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SHA256 can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SHA256 can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SHA256 can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: SYSCFG
+    addressOffset: 188
+    description: "Control whether debugger, DMA, core 0 and core 1 can access SYSCFG,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, SYSCFG can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, SYSCFG can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, SYSCFG can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, SYSCFG can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, SYSCFG can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, SYSCFG can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, SYSCFG can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, SYSCFG can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: CLOCKS
+    addressOffset: 192
+    description: "Control whether debugger, DMA, core 0 and core 1 can access CLOCKS,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, CLOCKS can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, CLOCKS can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, CLOCKS can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, CLOCKS can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, CLOCKS can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, CLOCKS can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, CLOCKS can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, CLOCKS can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: XOSC
+    addressOffset: 196
+    description: "Control whether debugger, DMA, core 0 and core 1 can access XOSC,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, XOSC can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, XOSC can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, XOSC can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, XOSC can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, XOSC can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, XOSC can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, XOSC can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, XOSC can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: ROSC
+    addressOffset: 200
+    description: "Control whether debugger, DMA, core 0 and core 1 can access ROSC,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, ROSC can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, ROSC can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, ROSC can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, ROSC can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, ROSC can be accessed by core 0, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, ROSC can be accessed by core 1, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, ROSC can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, ROSC can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: PLL_SYS
+    addressOffset: 204
+    description: "Control whether debugger, DMA, core 0 and core 1 can access PLL_SYS,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, PLL_SYS can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, PLL_SYS can be accessed from a Non-secure, Privileged
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, PLL_SYS can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, PLL_SYS can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, PLL_SYS can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, PLL_SYS can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, PLL_SYS can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, PLL_SYS can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: PLL_USB
+    addressOffset: 208
+    description: "Control whether debugger, DMA, core 0 and core 1 can access PLL_USB,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, PLL_USB can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, PLL_USB can be accessed from a Non-secure, Privileged
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, PLL_USB can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, PLL_USB can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, PLL_USB can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, PLL_USB can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, PLL_USB can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, PLL_USB can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: TICKS
+    addressOffset: 212
+    description: "Control whether debugger, DMA, core 0 and core 1 can access TICKS,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, TICKS can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, TICKS can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, TICKS can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, TICKS can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, TICKS can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, TICKS can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, TICKS can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, TICKS can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: WATCHDOG
+    addressOffset: 216
+    description: "Control whether debugger, DMA, core 0 and core 1 can access WATCHDOG,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, WATCHDOG can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, WATCHDOG can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, WATCHDOG can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, WATCHDOG can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, WATCHDOG can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, WATCHDOG can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, WATCHDOG can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, WATCHDOG can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: RSM
+    addressOffset: 220
+    description: "Control whether debugger, DMA, core 0 and core 1 can access RSM,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, RSM can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, RSM can be accessed from a Non-secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, RSM can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, RSM can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, RSM can be accessed by core 0, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, RSM can be accessed by core 1, at security/privilege 
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, RSM can be accessed by the DMA, at security/privilege
+          levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, RSM can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: XIP_CTRL
+    addressOffset: 224
+    description: "Control whether debugger, DMA, core 0 and core 1 can access XIP_CTRL,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, XIP_CTRL can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, XIP_CTRL can be accessed from a Non-secure, 
+          Privileged context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, XIP_CTRL can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, XIP_CTRL can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, XIP_CTRL can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, XIP_CTRL can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, XIP_CTRL can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, XIP_CTRL can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: XIP_QMI
+    addressOffset: 228
+    description: "Control whether debugger, DMA, core 0 and core 1 can access XIP_QMI,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged processor or debug access only.\n\n      \
+      \              This register is writable only from a Secure, Privileged processor
+      or debugger, with the exception of the NSU bit, which becomes Non-secure-Privileged-writable
+      when the NSP bit is set."
+    resetValue: 184
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, XIP_QMI can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, XIP_QMI can be accessed from a Non-secure, Privileged
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, XIP_QMI can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, XIP_QMI can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, XIP_QMI can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, XIP_QMI can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, XIP_QMI can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, XIP_QMI can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+  - name: XIP_AUX
+    addressOffset: 232
+    description: "Control whether debugger, DMA, core 0 and core 1 can access XIP_AUX,
+      and at what security/privilege levels they can do so.\n\n                  \
+      \  Defaults to Secure, Privileged access only.\n\n                    This register
+      is writable only from a Secure, Privileged processor or debugger, with the exception
+      of the NSU bit, which becomes Non-secure-Privileged-writable when the NSP bit
+      is set."
+    resetValue: 248
+    fields:
+      - name: NSU
+        description: "If 1, and NSP is also set, XIP_AUX can be accessed from a Non-secure,
+          Unprivileged context.\n\n                            This bit is writable
+          from a Non-secure, Privileged context, if and only if the NSP bit is set."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: NSP
+        description: If 1, XIP_AUX can be accessed from a Non-secure, Privileged
+          context.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: SU
+        description: If 1, and SP is also set, XIP_AUX can be accessed from a 
+          Secure, Unprivileged context.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: SP
+        description: If 1, XIP_AUX can be accessed from a Secure, Privileged 
+          context.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: CORE0
+        description: If 1, XIP_AUX can be accessed by core 0, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: CORE1
+        description: If 1, XIP_AUX can be accessed by core 1, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+      - name: DMA
+        description: If 1, XIP_AUX can be accessed by the DMA, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: DBG
+        description: If 1, XIP_AUX can be accessed by the debugger, at 
+          security/privilege levels permitted by SP/NSP/SU/NSU in this register.
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+addressBlocks:
+  - offset: 0
+    size: 236
+    usage: registers

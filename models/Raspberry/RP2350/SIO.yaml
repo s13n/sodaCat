@@ -1,0 +1,1978 @@
+# Created from RP2350.svd (Rev 0.1)
+
+name: SIO
+description: "Single-cycle IO block \n            Provides core-local and inter-core
+  hardware for the two processors, with single-cycle access."
+registers:
+  - name: CPUID
+    addressOffset: 0
+    description: Processor core identifier
+    resetMask: 0
+    fields:
+      - name: CPUID
+        description: Value is 0 when read from processor core 0, and 1 when read
+          from processor core 1.
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_IN
+    addressOffset: 4
+    description: "Input value for GPIO0...31.\n\n                    In the Non-secure
+      SIO, Secure-only GPIOs (as per ACCESSCTRL) appear as zero."
+    resetValue: 0
+    fields:
+      - name: GPIO_IN
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_IN
+    addressOffset: 8
+    description: "Input value on GPIO32...47, QSPI IOs and USB pins\n\n          \
+      \          In the Non-secure SIO, Secure-only GPIOs (as per ACCESSCTRL) appear
+      as zero."
+    resetValue: 0
+    fields:
+      - name: GPIO
+        description: Input value on GPIO32...47
+        access: read-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        description: Input value on USB D+ pin
+        access: read-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        description: Input value on USB D- pin
+        access: read-only
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        description: Input value on QSPI SCK pin
+        access: read-only
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        description: Input value on QSPI CSn pin
+        access: read-only
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        description: Input value on QSPI SD0 (MOSI), SD1 (MISO), SD2 and SD3 
+          pins
+        access: read-only
+        bitOffset: 28
+        bitWidth: 4
+  - name: GPIO_OUT
+    addressOffset: 16
+    description: GPIO0...31 output value
+    resetValue: 0
+    fields:
+      - name: GPIO_OUT
+        description: "Set output level (1/0 -> high/low) for GPIO0...31. Reading back
+          gives the last value written, NOT the input value from the pins.\n\n   \
+          \                         If core 0 and core 1 both write to GPIO_OUT simultaneously
+          (or to a SET/CLR/XOR alias), the result is as though the write from core
+          0 took place first, and the write from core 1 was then applied to that intermediate
+          result.\n\n                            In the Non-secure SIO, Secure-only
+          GPIOs (as per ACCESSCTRL) ignore writes, and their output status reads back
+          as zero. This is also true for SET/CLR/XOR aliases of this register."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_OUT
+    addressOffset: 20
+    description: "Output value for GPIO32...47, QSPI IOs and USB pins.\n\n       \
+      \             Write to set output level (1/0 -> high/low). Reading back gives
+      the last value written, NOT the input value from the pins. If core 0 and core
+      1 both write to GPIO_HI_OUT simultaneously (or to a SET/CLR/XOR alias), the
+      result is as though the write from core 0 took place first, and the write from
+      core 1 was then applied to that intermediate result.\n\n                   \
+      \ In the Non-secure SIO, Secure-only GPIOs (as per ACCESSCTRL) ignore writes,
+      and their output status reads back as zero. This is also true for SET/CLR/XOR
+      aliases of this register."
+    resetValue: 0
+    fields:
+      - name: GPIO
+        description: Output value for GPIO32...47
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        description: Output value for USB D+ pin
+        access: read-write
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        description: Output value for USB D- pin
+        access: read-write
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        description: Output value for QSPI SCK pin
+        access: read-write
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        description: Output value for QSPI CSn pin
+        access: read-write
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        description: Output value for QSPI SD0 (MOSI), SD1 (MISO), SD2 and SD3 
+          pins
+        access: read-write
+        bitOffset: 28
+        bitWidth: 4
+  - name: GPIO_OUT_SET
+    addressOffset: 24
+    description: GPIO0...31 output value set
+    resetValue: 0
+    fields:
+      - name: GPIO_OUT_SET
+        description: Perform an atomic bit-set on GPIO_OUT, i.e. `GPIO_OUT |= 
+          wdata`
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_OUT_SET
+    addressOffset: 28
+    description: "Output value set for GPIO32..47, QSPI IOs and USB pins. \n     \
+      \               Perform an atomic bit-set on GPIO_HI_OUT, i.e. `GPIO_HI_OUT
+      |= wdata`"
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: write-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        access: write-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        access: write-only
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        access: write-only
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        access: write-only
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        access: write-only
+        bitOffset: 28
+        bitWidth: 4
+  - name: GPIO_OUT_CLR
+    addressOffset: 32
+    description: GPIO0...31 output value clear
+    resetValue: 0
+    fields:
+      - name: GPIO_OUT_CLR
+        description: Perform an atomic bit-clear on GPIO_OUT, i.e. `GPIO_OUT &= 
+          ~wdata`
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_OUT_CLR
+    addressOffset: 36
+    description: "Output value clear for GPIO32..47, QSPI IOs and USB pins. \n   \
+      \                 Perform an atomic bit-clear on GPIO_HI_OUT, i.e. `GPIO_HI_OUT
+      &= ~wdata`"
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: write-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        access: write-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        access: write-only
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        access: write-only
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        access: write-only
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        access: write-only
+        bitOffset: 28
+        bitWidth: 4
+  - name: GPIO_OUT_XOR
+    addressOffset: 40
+    description: GPIO0...31 output value XOR
+    resetValue: 0
+    fields:
+      - name: GPIO_OUT_XOR
+        description: Perform an atomic bitwise XOR on GPIO_OUT, i.e. `GPIO_OUT 
+          ^= wdata`
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_OUT_XOR
+    addressOffset: 44
+    description: "Output value XOR for GPIO32..47, QSPI IOs and USB pins. \n     \
+      \               Perform an atomic bitwise XOR on GPIO_HI_OUT, i.e. `GPIO_HI_OUT
+      ^= wdata`"
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: write-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        access: write-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        access: write-only
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        access: write-only
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        access: write-only
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        access: write-only
+        bitOffset: 28
+        bitWidth: 4
+  - name: GPIO_OE
+    addressOffset: 48
+    description: GPIO0...31 output enable
+    resetValue: 0
+    fields:
+      - name: GPIO_OE
+        description: "Set output enable (1/0 -> output/input) for GPIO0...31. Reading
+          back gives the last value written.\n\n                            If core
+          0 and core 1 both write to GPIO_OE simultaneously (or to a SET/CLR/XOR alias),
+          the result is as though the write from core 0 took place first, and the
+          write from core 1 was then applied to that intermediate result.\n\n    \
+          \                        In the Non-secure SIO, Secure-only GPIOs (as per
+          ACCESSCTRL) ignore writes, and their output status reads back as zero. This
+          is also true for SET/CLR/XOR aliases of this register."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_OE
+    addressOffset: 52
+    description: "Output enable value for GPIO32...47, QSPI IOs and USB pins.\n\n\
+      \                    Write output enable (1/0 -> output/input). Reading back
+      gives the last value written. If core 0 and core 1 both write to GPIO_HI_OE
+      simultaneously (or to a SET/CLR/XOR alias), the result is as though the write
+      from core 0 took place first, and the write from core 1 was then applied to
+      that intermediate result.\n\n                    In the Non-secure SIO, Secure-only
+      GPIOs (as per ACCESSCTRL) ignore writes, and their output status reads back
+      as zero. This is also true for SET/CLR/XOR aliases of this register."
+    resetValue: 0
+    fields:
+      - name: GPIO
+        description: Output enable value for GPIO32...47
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        description: Output enable value for USB D+ pin
+        access: read-write
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        description: Output enable value for USB D- pin
+        access: read-write
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        description: Output enable value for QSPI SCK pin
+        access: read-write
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        description: Output enable value for QSPI CSn pin
+        access: read-write
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        description: Output enable value for QSPI SD0 (MOSI), SD1 (MISO), SD2 
+          and SD3 pins
+        access: read-write
+        bitOffset: 28
+        bitWidth: 4
+  - name: GPIO_OE_SET
+    addressOffset: 56
+    description: GPIO0...31 output enable set
+    resetValue: 0
+    fields:
+      - name: GPIO_OE_SET
+        description: Perform an atomic bit-set on GPIO_OE, i.e. `GPIO_OE |= 
+          wdata`
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_OE_SET
+    addressOffset: 60
+    description: "Output enable set for GPIO32...47, QSPI IOs and USB pins. \n   \
+      \                 Perform an atomic bit-set on GPIO_HI_OE, i.e. `GPIO_HI_OE
+      |= wdata`"
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: write-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        access: write-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        access: write-only
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        access: write-only
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        access: write-only
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        access: write-only
+        bitOffset: 28
+        bitWidth: 4
+  - name: GPIO_OE_CLR
+    addressOffset: 64
+    description: GPIO0...31 output enable clear
+    resetValue: 0
+    fields:
+      - name: GPIO_OE_CLR
+        description: Perform an atomic bit-clear on GPIO_OE, i.e. `GPIO_OE &= 
+          ~wdata`
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_OE_CLR
+    addressOffset: 68
+    description: "Output enable clear for GPIO32...47, QSPI IOs and USB pins. \n \
+      \                   Perform an atomic bit-clear on GPIO_HI_OE, i.e. `GPIO_HI_OE
+      &= ~wdata`"
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: write-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        access: write-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        access: write-only
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        access: write-only
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        access: write-only
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        access: write-only
+        bitOffset: 28
+        bitWidth: 4
+  - name: GPIO_OE_XOR
+    addressOffset: 72
+    description: GPIO0...31 output enable XOR
+    resetValue: 0
+    fields:
+      - name: GPIO_OE_XOR
+        description: Perform an atomic bitwise XOR on GPIO_OE, i.e. `GPIO_OE ^= 
+          wdata`
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: GPIO_HI_OE_XOR
+    addressOffset: 76
+    description: "Output enable XOR for GPIO32...47, QSPI IOs and USB pins. \n   \
+      \                 Perform an atomic bitwise XOR on GPIO_HI_OE, i.e. `GPIO_HI_OE
+      ^= wdata`"
+    resetValue: 0
+    fields:
+      - name: GPIO
+        access: write-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: USB_DP
+        access: write-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: USB_DM
+        access: write-only
+        bitOffset: 25
+        bitWidth: 1
+      - name: QSPI_SCK
+        access: write-only
+        bitOffset: 26
+        bitWidth: 1
+      - name: QSPI_CSN
+        access: write-only
+        bitOffset: 27
+        bitWidth: 1
+      - name: QSPI_SD
+        access: write-only
+        bitOffset: 28
+        bitWidth: 4
+  - name: FIFO_ST
+    addressOffset: 80
+    description: "Status register for inter-core FIFOs (mailboxes). \n           \
+      \         There is one FIFO in the core 0 -> core 1 direction, and one core
+      1 -> core 0. Both are 32 bits wide and 8 words deep. \n                    Core
+      0 can see the read side of the 1->0 FIFO (RX), and the write side of 0->1 FIFO
+      (TX). \n                    Core 1 can see the read side of the 0->1 FIFO (RX),
+      and the write side of 1->0 FIFO (TX). \n                    The SIO IRQ for
+      each core is the logical OR of the VLD, WOF and ROE fields of its FIFO_ST register."
+    resetValue: 2
+    fields:
+      - name: VLD
+        description: Value is 1 if this core's RX FIFO is not empty (i.e. if 
+          FIFO_RD is valid)
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: RDY
+        description: Value is 1 if this core's TX FIFO is not full (i.e. if 
+          FIFO_WR is ready for more data)
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+      - name: WOF
+        description: Sticky flag indicating the TX FIFO was written when full. 
+          This write was ignored by the FIFO.
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 2
+        bitWidth: 1
+      - name: ROE
+        description: Sticky flag indicating the RX FIFO was read when empty. 
+          This read was ignored by the FIFO.
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 3
+        bitWidth: 1
+  - name: FIFO_WR
+    addressOffset: 84
+    description: Write access to this core's TX FIFO
+    resetValue: 0
+    fields:
+      - name: FIFO_WR
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: FIFO_RD
+    addressOffset: 88
+    description: Read access to this core's RX FIFO
+    resetMask: 0
+    fields:
+      - name: FIFO_RD
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK_ST
+    addressOffset: 92
+    description: "Spinlock state \n                    A bitmap containing the state
+      of all 32 spinlocks (1=locked). \n                    Mainly intended for debugging."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK_ST
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_ACCUM0
+    addressOffset: 128
+    description: Read/write access to accumulator 0
+    resetValue: 0
+    fields:
+      - name: INTERP0_ACCUM0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_ACCUM1
+    addressOffset: 132
+    description: Read/write access to accumulator 1
+    resetValue: 0
+    fields:
+      - name: INTERP0_ACCUM1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_BASE0
+    addressOffset: 136
+    description: Read/write access to BASE0 register.
+    resetValue: 0
+    fields:
+      - name: INTERP0_BASE0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_BASE1
+    addressOffset: 140
+    description: Read/write access to BASE1 register.
+    resetValue: 0
+    fields:
+      - name: INTERP0_BASE1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_BASE2
+    addressOffset: 144
+    description: Read/write access to BASE2 register.
+    resetValue: 0
+    fields:
+      - name: INTERP0_BASE2
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_POP_LANE0
+    addressOffset: 148
+    description: Read LANE0 result, and simultaneously write lane results to 
+      both accumulators (POP).
+    resetValue: 0
+    fields:
+      - name: INTERP0_POP_LANE0
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_POP_LANE1
+    addressOffset: 152
+    description: Read LANE1 result, and simultaneously write lane results to 
+      both accumulators (POP).
+    resetValue: 0
+    fields:
+      - name: INTERP0_POP_LANE1
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_POP_FULL
+    addressOffset: 156
+    description: Read FULL result, and simultaneously write lane results to both
+      accumulators (POP).
+    resetValue: 0
+    fields:
+      - name: INTERP0_POP_FULL
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_PEEK_LANE0
+    addressOffset: 160
+    description: Read LANE0 result, without altering any internal state (PEEK).
+    resetValue: 0
+    fields:
+      - name: INTERP0_PEEK_LANE0
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_PEEK_LANE1
+    addressOffset: 164
+    description: Read LANE1 result, without altering any internal state (PEEK).
+    resetValue: 0
+    fields:
+      - name: INTERP0_PEEK_LANE1
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_PEEK_FULL
+    addressOffset: 168
+    description: Read FULL result, without altering any internal state (PEEK).
+    resetValue: 0
+    fields:
+      - name: INTERP0_PEEK_FULL
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP0_CTRL_LANE0
+    addressOffset: 172
+    description: Control register for lane 0
+    resetValue: 0
+    fields:
+      - name: SHIFT
+        description: Right-rotate applied to accumulator before masking. By 
+          appropriately configuring the masks, left and right shifts can be 
+          synthesised.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: MASK_LSB
+        description: The least-significant bit allowed to pass by the mask 
+          (inclusive)
+        access: read-write
+        bitOffset: 5
+        bitWidth: 5
+      - name: MASK_MSB
+        description: "The most-significant bit allowed to pass by the mask (inclusive)\
+          \ \n                            Setting MSB < LSB may cause chip to turn
+          inside-out"
+        access: read-write
+        bitOffset: 10
+        bitWidth: 5
+      - name: SIGNED
+        description: "If SIGNED is set, the shifted and masked accumulator value is
+          sign-extended to 32 bits \n                            before adding to
+          BASE0, and LANE0 PEEK/POP appear extended to 32 bits when read by processor."
+        access: read-write
+        bitOffset: 15
+        bitWidth: 1
+      - name: CROSS_INPUT
+        description: "If 1, feed the opposite lane's accumulator into this lane's
+          shift + mask hardware. \n                            Takes effect even if
+          ADD_RAW is set (the CROSS_INPUT mux is before the shift+mask bypass)"
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CROSS_RESULT
+        description: If 1, feed the opposite lane's result into this lane's 
+          accumulator on POP.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+      - name: ADD_RAW
+        description: If 1, mask + shift is bypassed for LANE0 result. This does 
+          not affect FULL result.
+        access: read-write
+        bitOffset: 18
+        bitWidth: 1
+      - name: FORCE_MSB
+        description: "ORed into bits 29:28 of the lane result presented to the processor
+          on the bus. \n                            No effect on the internal 32-bit
+          datapath. Handy for using a lane to generate sequence \n               \
+          \             of pointers into flash or SRAM."
+        access: read-write
+        bitOffset: 19
+        bitWidth: 2
+      - name: BLEND
+        description: "Only present on INTERP0 on each core. If BLEND mode is enabled:\
+          \ \n                            - LANE1 result is a linear interpolation
+          between BASE0 and BASE1, controlled \n                            by the
+          8 LSBs of lane 1 shift and mask value (a fractional number between \n  \
+          \                          0 and 255/256ths) \n                        \
+          \    - LANE0 result does not have BASE0 added (yields only the 8 LSBs of
+          lane 1 shift+mask value) \n                            - FULL result does
+          not have lane 1 shift+mask value added (BASE2 + lane 0 shift+mask) \n  \
+          \                          LANE1 SIGNED flag controls whether the interpolation
+          is signed or unsigned."
+        access: read-write
+        bitOffset: 21
+        bitWidth: 1
+      - name: OVERF0
+        description: Indicates if any masked-off MSBs in ACCUM0 are set.
+        access: read-only
+        bitOffset: 23
+        bitWidth: 1
+      - name: OVERF1
+        description: Indicates if any masked-off MSBs in ACCUM1 are set.
+        access: read-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: OVERF
+        description: Set if either OVERF0 or OVERF1 is set.
+        access: read-only
+        bitOffset: 25
+        bitWidth: 1
+  - name: INTERP0_CTRL_LANE1
+    addressOffset: 176
+    description: Control register for lane 1
+    resetValue: 0
+    fields:
+      - name: SHIFT
+        description: Right-rotate applied to accumulator before masking. By 
+          appropriately configuring the masks, left and right shifts can be 
+          synthesised.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: MASK_LSB
+        description: The least-significant bit allowed to pass by the mask 
+          (inclusive)
+        access: read-write
+        bitOffset: 5
+        bitWidth: 5
+      - name: MASK_MSB
+        description: "The most-significant bit allowed to pass by the mask (inclusive)\
+          \ \n                            Setting MSB < LSB may cause chip to turn
+          inside-out"
+        access: read-write
+        bitOffset: 10
+        bitWidth: 5
+      - name: SIGNED
+        description: "If SIGNED is set, the shifted and masked accumulator value is
+          sign-extended to 32 bits \n                            before adding to
+          BASE1, and LANE1 PEEK/POP appear extended to 32 bits when read by processor."
+        access: read-write
+        bitOffset: 15
+        bitWidth: 1
+      - name: CROSS_INPUT
+        description: "If 1, feed the opposite lane's accumulator into this lane's
+          shift + mask hardware. \n                            Takes effect even if
+          ADD_RAW is set (the CROSS_INPUT mux is before the shift+mask bypass)"
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CROSS_RESULT
+        description: If 1, feed the opposite lane's result into this lane's 
+          accumulator on POP.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+      - name: ADD_RAW
+        description: If 1, mask + shift is bypassed for LANE1 result. This does 
+          not affect FULL result.
+        access: read-write
+        bitOffset: 18
+        bitWidth: 1
+      - name: FORCE_MSB
+        description: "ORed into bits 29:28 of the lane result presented to the processor
+          on the bus. \n                            No effect on the internal 32-bit
+          datapath. Handy for using a lane to generate sequence \n               \
+          \             of pointers into flash or SRAM."
+        access: read-write
+        bitOffset: 19
+        bitWidth: 2
+  - name: INTERP0_ACCUM0_ADD
+    addressOffset: 180
+    description: "Values written here are atomically added to ACCUM0 \n          \
+      \          Reading yields lane 0's raw shift and mask value (BASE0 not added)."
+    resetValue: 0
+    fields:
+      - name: INTERP0_ACCUM0_ADD
+        access: read-write
+        bitOffset: 0
+        bitWidth: 24
+  - name: INTERP0_ACCUM1_ADD
+    addressOffset: 184
+    description: "Values written here are atomically added to ACCUM1 \n          \
+      \          Reading yields lane 1's raw shift and mask value (BASE1 not added)."
+    resetValue: 0
+    fields:
+      - name: INTERP0_ACCUM1_ADD
+        access: read-write
+        bitOffset: 0
+        bitWidth: 24
+  - name: INTERP0_BASE_1AND0
+    addressOffset: 188
+    description: "On write, the lower 16 bits go to BASE0, upper bits to BASE1 simultaneously.\
+      \ \n                    Each half is sign-extended to 32 bits if that lane's
+      SIGNED flag is set."
+    resetValue: 0
+    fields:
+      - name: INTERP0_BASE_1AND0
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_ACCUM0
+    addressOffset: 192
+    description: Read/write access to accumulator 0
+    resetValue: 0
+    fields:
+      - name: INTERP1_ACCUM0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_ACCUM1
+    addressOffset: 196
+    description: Read/write access to accumulator 1
+    resetValue: 0
+    fields:
+      - name: INTERP1_ACCUM1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_BASE0
+    addressOffset: 200
+    description: Read/write access to BASE0 register.
+    resetValue: 0
+    fields:
+      - name: INTERP1_BASE0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_BASE1
+    addressOffset: 204
+    description: Read/write access to BASE1 register.
+    resetValue: 0
+    fields:
+      - name: INTERP1_BASE1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_BASE2
+    addressOffset: 208
+    description: Read/write access to BASE2 register.
+    resetValue: 0
+    fields:
+      - name: INTERP1_BASE2
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_POP_LANE0
+    addressOffset: 212
+    description: Read LANE0 result, and simultaneously write lane results to 
+      both accumulators (POP).
+    resetValue: 0
+    fields:
+      - name: INTERP1_POP_LANE0
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_POP_LANE1
+    addressOffset: 216
+    description: Read LANE1 result, and simultaneously write lane results to 
+      both accumulators (POP).
+    resetValue: 0
+    fields:
+      - name: INTERP1_POP_LANE1
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_POP_FULL
+    addressOffset: 220
+    description: Read FULL result, and simultaneously write lane results to both
+      accumulators (POP).
+    resetValue: 0
+    fields:
+      - name: INTERP1_POP_FULL
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_PEEK_LANE0
+    addressOffset: 224
+    description: Read LANE0 result, without altering any internal state (PEEK).
+    resetValue: 0
+    fields:
+      - name: INTERP1_PEEK_LANE0
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_PEEK_LANE1
+    addressOffset: 228
+    description: Read LANE1 result, without altering any internal state (PEEK).
+    resetValue: 0
+    fields:
+      - name: INTERP1_PEEK_LANE1
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_PEEK_FULL
+    addressOffset: 232
+    description: Read FULL result, without altering any internal state (PEEK).
+    resetValue: 0
+    fields:
+      - name: INTERP1_PEEK_FULL
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTERP1_CTRL_LANE0
+    addressOffset: 236
+    description: Control register for lane 0
+    resetValue: 0
+    fields:
+      - name: SHIFT
+        description: Right-rotate applied to accumulator before masking. By 
+          appropriately configuring the masks, left and right shifts can be 
+          synthesised.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: MASK_LSB
+        description: The least-significant bit allowed to pass by the mask 
+          (inclusive)
+        access: read-write
+        bitOffset: 5
+        bitWidth: 5
+      - name: MASK_MSB
+        description: "The most-significant bit allowed to pass by the mask (inclusive)\
+          \ \n                            Setting MSB < LSB may cause chip to turn
+          inside-out"
+        access: read-write
+        bitOffset: 10
+        bitWidth: 5
+      - name: SIGNED
+        description: "If SIGNED is set, the shifted and masked accumulator value is
+          sign-extended to 32 bits \n                            before adding to
+          BASE0, and LANE0 PEEK/POP appear extended to 32 bits when read by processor."
+        access: read-write
+        bitOffset: 15
+        bitWidth: 1
+      - name: CROSS_INPUT
+        description: "If 1, feed the opposite lane's accumulator into this lane's
+          shift + mask hardware. \n                            Takes effect even if
+          ADD_RAW is set (the CROSS_INPUT mux is before the shift+mask bypass)"
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CROSS_RESULT
+        description: If 1, feed the opposite lane's result into this lane's 
+          accumulator on POP.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+      - name: ADD_RAW
+        description: If 1, mask + shift is bypassed for LANE0 result. This does 
+          not affect FULL result.
+        access: read-write
+        bitOffset: 18
+        bitWidth: 1
+      - name: FORCE_MSB
+        description: "ORed into bits 29:28 of the lane result presented to the processor
+          on the bus. \n                            No effect on the internal 32-bit
+          datapath. Handy for using a lane to generate sequence \n               \
+          \             of pointers into flash or SRAM."
+        access: read-write
+        bitOffset: 19
+        bitWidth: 2
+      - name: CLAMP
+        description: "Only present on INTERP1 on each core. If CLAMP mode is enabled:\
+          \ \n                            - LANE0 result is shifted and masked ACCUM0,
+          clamped by a lower bound of \n                            BASE0 and an upper
+          bound of BASE1. \n                            - Signedness of these comparisons
+          is determined by LANE0_CTRL_SIGNED"
+        access: read-write
+        bitOffset: 22
+        bitWidth: 1
+      - name: OVERF0
+        description: Indicates if any masked-off MSBs in ACCUM0 are set.
+        access: read-only
+        bitOffset: 23
+        bitWidth: 1
+      - name: OVERF1
+        description: Indicates if any masked-off MSBs in ACCUM1 are set.
+        access: read-only
+        bitOffset: 24
+        bitWidth: 1
+      - name: OVERF
+        description: Set if either OVERF0 or OVERF1 is set.
+        access: read-only
+        bitOffset: 25
+        bitWidth: 1
+  - name: INTERP1_CTRL_LANE1
+    addressOffset: 240
+    description: Control register for lane 1
+    resetValue: 0
+    fields:
+      - name: SHIFT
+        description: Right-rotate applied to accumulator before masking. By 
+          appropriately configuring the masks, left and right shifts can be 
+          synthesised.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: MASK_LSB
+        description: The least-significant bit allowed to pass by the mask 
+          (inclusive)
+        access: read-write
+        bitOffset: 5
+        bitWidth: 5
+      - name: MASK_MSB
+        description: "The most-significant bit allowed to pass by the mask (inclusive)\
+          \ \n                            Setting MSB < LSB may cause chip to turn
+          inside-out"
+        access: read-write
+        bitOffset: 10
+        bitWidth: 5
+      - name: SIGNED
+        description: "If SIGNED is set, the shifted and masked accumulator value is
+          sign-extended to 32 bits \n                            before adding to
+          BASE1, and LANE1 PEEK/POP appear extended to 32 bits when read by processor."
+        access: read-write
+        bitOffset: 15
+        bitWidth: 1
+      - name: CROSS_INPUT
+        description: "If 1, feed the opposite lane's accumulator into this lane's
+          shift + mask hardware. \n                            Takes effect even if
+          ADD_RAW is set (the CROSS_INPUT mux is before the shift+mask bypass)"
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CROSS_RESULT
+        description: If 1, feed the opposite lane's result into this lane's 
+          accumulator on POP.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+      - name: ADD_RAW
+        description: If 1, mask + shift is bypassed for LANE1 result. This does 
+          not affect FULL result.
+        access: read-write
+        bitOffset: 18
+        bitWidth: 1
+      - name: FORCE_MSB
+        description: "ORed into bits 29:28 of the lane result presented to the processor
+          on the bus. \n                            No effect on the internal 32-bit
+          datapath. Handy for using a lane to generate sequence \n               \
+          \             of pointers into flash or SRAM."
+        access: read-write
+        bitOffset: 19
+        bitWidth: 2
+  - name: INTERP1_ACCUM0_ADD
+    addressOffset: 244
+    description: "Values written here are atomically added to ACCUM0 \n          \
+      \          Reading yields lane 0's raw shift and mask value (BASE0 not added)."
+    resetValue: 0
+    fields:
+      - name: INTERP1_ACCUM0_ADD
+        access: read-write
+        bitOffset: 0
+        bitWidth: 24
+  - name: INTERP1_ACCUM1_ADD
+    addressOffset: 248
+    description: "Values written here are atomically added to ACCUM1 \n          \
+      \          Reading yields lane 1's raw shift and mask value (BASE1 not added)."
+    resetValue: 0
+    fields:
+      - name: INTERP1_ACCUM1_ADD
+        access: read-write
+        bitOffset: 0
+        bitWidth: 24
+  - name: INTERP1_BASE_1AND0
+    addressOffset: 252
+    description: "On write, the lower 16 bits go to BASE0, upper bits to BASE1 simultaneously.\
+      \ \n                    Each half is sign-extended to 32 bits if that lane's
+      SIGNED flag is set."
+    resetValue: 0
+    fields:
+      - name: INTERP1_BASE_1AND0
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK0
+    addressOffset: 256
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK0
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK1
+    addressOffset: 260
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK1
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK2
+    addressOffset: 264
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK2
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK3
+    addressOffset: 268
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK3
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK4
+    addressOffset: 272
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK4
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK5
+    addressOffset: 276
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK5
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK6
+    addressOffset: 280
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK6
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK7
+    addressOffset: 284
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK7
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK8
+    addressOffset: 288
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK8
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK9
+    addressOffset: 292
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK9
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK10
+    addressOffset: 296
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK10
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK11
+    addressOffset: 300
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK11
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK12
+    addressOffset: 304
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK12
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK13
+    addressOffset: 308
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK13
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK14
+    addressOffset: 312
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK14
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK15
+    addressOffset: 316
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK15
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK16
+    addressOffset: 320
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK16
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK17
+    addressOffset: 324
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK17
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK18
+    addressOffset: 328
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK18
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK19
+    addressOffset: 332
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK19
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK20
+    addressOffset: 336
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK20
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK21
+    addressOffset: 340
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK21
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK22
+    addressOffset: 344
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK22
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK23
+    addressOffset: 348
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK23
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK24
+    addressOffset: 352
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK24
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK25
+    addressOffset: 356
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK25
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK26
+    addressOffset: 360
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK26
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK27
+    addressOffset: 364
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK27
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK28
+    addressOffset: 368
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK28
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK29
+    addressOffset: 372
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK29
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK30
+    addressOffset: 376
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK30
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: SPINLOCK31
+    addressOffset: 380
+    description: "Reading from a spinlock address will: \n                    - Return
+      0 if lock is already locked \n                    - Otherwise return nonzero,
+      and simultaneously claim the lock\n\n                    Writing (any value)
+      releases the lock. \n                    If core 0 and core 1 attempt to claim
+      the same lock simultaneously, core 0 wins. \n                    The value returned
+      on success is 0x1 << lock number."
+    resetValue: 0
+    fields:
+      - name: SPINLOCK31
+        access: read-write
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: DOORBELL_OUT_SET
+    addressOffset: 384
+    description: "Trigger a doorbell interrupt on the opposite core.\n\n         \
+      \           Write 1 to a bit to set the corresponding bit in DOORBELL_IN on
+      the opposite core. This raises the opposite core's doorbell interrupt.\n\n \
+      \                   Read to get the status of the doorbells currently asserted
+      on the opposite core. This is equivalent to that core reading its own DOORBELL_IN
+      status."
+    resetValue: 0
+    fields:
+      - name: DOORBELL_OUT_SET
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+  - name: DOORBELL_OUT_CLR
+    addressOffset: 388
+    description: "Clear doorbells which have been posted to the opposite core. This
+      register is intended for debugging and initialisation purposes.\n\n        \
+      \            Writing 1 to a bit in DOORBELL_OUT_CLR clears the corresponding
+      bit in DOORBELL_IN on the opposite core. Clearing all bits will cause that core's
+      doorbell interrupt to deassert. Since the usual order of events is for software
+      to send events using DOORBELL_OUT_SET, and acknowledge incoming events by writing
+      to DOORBELL_IN_CLR, this register should be used with caution to avoid race
+      conditions.\n\n                    Reading returns the status of the doorbells
+      currently asserted on the other core, i.e. is equivalent to that core reading
+      its own DOORBELL_IN status."
+    resetValue: 0
+    fields:
+      - name: DOORBELL_OUT_CLR
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 0
+        bitWidth: 8
+  - name: DOORBELL_IN_SET
+    addressOffset: 392
+    description: Write 1s to trigger doorbell interrupts on this core. Read to 
+      get status of doorbells currently asserted on this core.
+    resetValue: 0
+    fields:
+      - name: DOORBELL_IN_SET
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+  - name: DOORBELL_IN_CLR
+    addressOffset: 396
+    description: "Check and acknowledge doorbells posted to this core. This core's
+      doorbell interrupt is asserted when any bit in this register is 1.\n\n     \
+      \               Write 1 to each bit to clear that bit. The doorbell interrupt
+      deasserts once all bits are cleared. Read to get status of doorbells currently
+      asserted on this core."
+    resetValue: 0
+    fields:
+      - name: DOORBELL_IN_CLR
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 0
+        bitWidth: 8
+  - name: PERI_NONSEC
+    addressOffset: 400
+    description: "Detach certain core-local peripherals from Secure SIO, and attach
+      them to Non-secure SIO, so that Non-secure software can use them. Attempting
+      to access one of these peripherals from the Secure SIO when it is attached to
+      the Non-secure SIO, or vice versa, will generate a bus error.\n\n          \
+      \          This register is per-core, and is only present on the Secure SIO.\n\
+      \n                    Most SIO hardware is duplicated across the Secure and
+      Non-secure SIO, so is not listed in this register."
+    resetValue: 0
+    fields:
+      - name: INTERP0
+        description: If 1, detach interpolator 0 (of this core) from the Secure 
+          SIO, and attach to the Non-secure SIO.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: INTERP1
+        description: If 1, detach interpolator 1 (of this core) from the Secure 
+          SIO, and attach to the Non-secure SIO.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: TMDS
+        description: IF 1, detach TMDS encoder (of this core) from the Secure 
+          SIO, and attach to the Non-secure SIO.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+  - name: RISCV_SOFTIRQ
+    addressOffset: 416
+    description: "Control the assertion of the standard software interrupt (MIP.MSIP)
+      on the RISC-V cores.\n\n                    Unlike the RISC-V timer, this interrupt
+      is not routed to a normal system-level interrupt line, so can not be used by
+      the Arm cores.\n\n                    It is safe for both cores to write to
+      this register on the same cycle. The set/clear effect is accumulated across
+      both cores, and then applied. If a flag is both set and cleared on the same
+      cycle, only the set takes effect."
+    resetValue: 0
+    fields:
+      - name: CORE0_SET
+        description: Write 1 to atomically set the core 0 software interrupt 
+          flag. Read to get the status of this flag.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: CORE1_SET
+        description: Write 1 to atomically set the core 1 software interrupt 
+          flag. Read to get the status of this flag.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: CORE0_CLR
+        description: Write 1 to atomically clear the core 0 software interrupt 
+          flag. Read to get the status of this flag.
+        access: read-write
+        bitOffset: 8
+        bitWidth: 1
+      - name: CORE1_CLR
+        description: Write 1 to atomically clear the core 1 software interrupt 
+          flag. Read to get the status of this flag.
+        access: read-write
+        bitOffset: 9
+        bitWidth: 1
+  - name: MTIME_CTRL
+    addressOffset: 420
+    description: "Control register for the RISC-V 64-bit Machine-mode timer. This
+      timer is only present in the Secure SIO, so is only accessible to an Arm core
+      in Secure mode or a RISC-V core in Machine mode.\n\n                    Note
+      whilst this timer follows the RISC-V privileged specification, it is equally
+      usable by the Arm cores. The interrupts are routed to normal system-level interrupt
+      lines as well as to the MIP.MTIP inputs on the RISC-V cores."
+    resetValue: 13
+    fields:
+      - name: EN
+        description: Timer enable bit. When 0, the timer will not increment 
+          automatically.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: FULLSPEED
+        description: If 1, increment the timer every cycle (i.e. run directly 
+          from the system clock), rather than incrementing on the system-level 
+          timer tick input.
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: DBGPAUSE_CORE0
+        description: If 1, the timer pauses when core 0 is in the debug halt 
+          state.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: DBGPAUSE_CORE1
+        description: If 1, the timer pauses when core 1 is in the debug halt 
+          state.
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+  - name: MTIME
+    addressOffset: 432
+    description: Read/write access to the high half of RISC-V Machine-mode 
+      timer. This register is shared between both cores. If both cores write on 
+      the same cycle, core 1 takes precedence.
+    resetValue: 0
+    fields:
+      - name: MTIME
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: MTIMEH
+    addressOffset: 436
+    description: Read/write access to the high half of RISC-V Machine-mode 
+      timer. This register is shared between both cores. If both cores write on 
+      the same cycle, core 1 takes precedence.
+    resetValue: 0
+    fields:
+      - name: MTIMEH
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: MTIMECMP
+    addressOffset: 440
+    description: "Low half of RISC-V Machine-mode timer comparator. This register
+      is core-local, i.e., each core gets a copy of this register, with the comparison
+      result routed to its own interrupt line.\n\n                    The timer interrupt
+      is asserted whenever MTIME is greater than or equal to MTIMECMP. This comparison
+      is unsigned, and performed on the full 64-bit values."
+    resetValue: 4294967295
+    fields:
+      - name: MTIMECMP
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: MTIMECMPH
+    addressOffset: 444
+    description: "High half of RISC-V Machine-mode timer comparator. This register
+      is core-local.\n\n                    The timer interrupt is asserted whenever
+      MTIME is greater than or equal to MTIMECMP. This comparison is unsigned, and
+      performed on the full 64-bit values."
+    resetValue: 4294967295
+    fields:
+      - name: MTIMECMPH
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_CTRL
+    addressOffset: 448
+    description: Control register for TMDS encoder.
+    resetValue: 0
+    fields:
+      - name: L0_ROT
+        description: "Right-rotate the 16 LSBs of the colour accumulator by 0-15 bits,
+          in order to get the MSB of the lane 0 (blue) colour data aligned with the
+          MSB of the 8-bit encoder input.\n\n                            For example,
+          for RGB565 (red most significant), blue is bits 4:0, so should be right-rotated
+          by 13 to align with bits 7:3 of the encoder input."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 4
+      - name: L1_ROT
+        description: "Right-rotate the 16 LSBs of the colour accumulator by 0-15 bits,
+          in order to get the MSB of the lane 1 (green) colour data aligned with the
+          MSB of the 8-bit encoder input.\n\n                            For example,
+          for RGB565, green is bits 10:5, so should be right-rotated by 3 bits to
+          align with bits 7:2 of the encoder input."
+        access: read-write
+        bitOffset: 4
+        bitWidth: 4
+      - name: L2_ROT
+        description: "Right-rotate the 16 LSBs of the colour accumulator by 0-15 bits,
+          in order to get the MSB of the lane 2 (red) colour data aligned with the
+          MSB of the 8-bit encoder input.\n\n                            For example,
+          for RGB565 (red most significant), red is bits 15:11, so should be right-rotated
+          by 8 bits to align with bits 7:3 of the encoder input."
+        access: read-write
+        bitOffset: 8
+        bitWidth: 4
+      - name: L0_NBITS
+        description: Number of valid colour MSBs for lane 0 (1-8 bits, encoded 
+          as 0 through 7). Remaining LSBs are masked to 0 after the rotate.
+        access: read-write
+        bitOffset: 12
+        bitWidth: 3
+      - name: L1_NBITS
+        description: Number of valid colour MSBs for lane 1 (1-8 bits, encoded 
+          as 0 through 7). Remaining LSBs are masked to 0 after the rotate.
+        access: read-write
+        bitOffset: 15
+        bitWidth: 3
+      - name: L2_NBITS
+        description: Number of valid colour MSBs for lane 2 (1-8 bits, encoded 
+          as 0 through 7). Remaining LSBs are masked to 0 after the rotate.
+        access: read-write
+        bitOffset: 18
+        bitWidth: 3
+      - name: INTERLEAVE
+        description: "Enable lane interleaving for reads of PEEK_SINGLE/POP_SINGLE.\n\
+          \n                            When interleaving is disabled, each of the
+          3 symbols appears as a contiguous 10-bit field, with lane 0 being the least-significant
+          and starting at bit 0 of the register.\n\n                            When
+          interleaving is enabled, the symbols are packed into 5 chunks of 3 lanes
+          times 2 bits (30 bits total). Each chunk contains two bits of a TMDS symbol
+          per lane, with lane 0 being the least significant."
+        access: read-write
+        bitOffset: 23
+        bitWidth: 1
+      - name: PIX_SHIFT
+        description: "Shift applied to the colour data register with each read of
+          a POP alias register.\n\n                            Reading from the POP_SINGLE
+          register, or reading from the POP_DOUBLE register with PIX2_NOSHIFT set
+          (for pixel doubling), shifts by the indicated amount.\n\n              \
+          \              Reading from a POP_DOUBLE register when PIX2_NOSHIFT is clear
+          will shift by double the indicated amount. (Shift by 32 means no shift.)"
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            value: 0
+            description: Do not shift the colour data register.
+          - name: '1'
+            value: 1
+            description: Shift the colour data register by 1 bit
+          - name: '2'
+            value: 2
+            description: Shift the colour data register by 2 bits
+          - name: '4'
+            value: 3
+            description: Shift the colour data register by 4 bits
+          - name: '8'
+            value: 4
+            description: Shift the colour data register by 8 bits
+          - name: '16'
+            value: 5
+            description: Shift the colour data register by 16 bits
+        bitOffset: 24
+        bitWidth: 3
+      - name: PIX2_NOSHIFT
+        description: "When encoding two pixels's worth of symbols in one cycle (a
+          read of a PEEK/POP_DOUBLE register), the second encoder sees a shifted version
+          of the colour data register.\n\n                            This control
+          disables that shift, so that both encoder layers see the same pixel data.
+          This is used for pixel doubling."
+        access: read-write
+        bitOffset: 27
+        bitWidth: 1
+      - name: CLEAR_BALANCE
+        description: Clear the running DC balance state of the TMDS encoders. 
+          This bit should be written once at the beginning of each scanline.
+        access: write-only
+        bitOffset: 28
+        bitWidth: 1
+  - name: TMDS_WDATA
+    addressOffset: 452
+    description: Write-only access to the TMDS colour data register.
+    resetValue: 0
+    fields:
+      - name: TMDS_WDATA
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_PEEK_SINGLE
+    addressOffset: 456
+    description: "Get the encoding of one pixel's worth of colour data, packed into
+      a 32-bit value (3x10-bit symbols).\n\n                    The PEEK alias does
+      not shift the colour register when read, but still advances the running DC balance
+      state of each encoder. This is useful for pixel doubling."
+    resetValue: 0
+    fields:
+      - name: TMDS_PEEK_SINGLE
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_POP_SINGLE
+    addressOffset: 460
+    description: "Get the encoding of one pixel's worth of colour data, packed into
+      a 32-bit value. The packing is 5 chunks of 3 lanes times 2 bits (30 bits total).
+      Each chunk contains two bits of a TMDS symbol per lane. This format is intended
+      for shifting out with the HSTX peripheral on RP2350.\n\n                   \
+      \ The POP alias shifts the colour register when read, as well as advancing the
+      running DC balance state of each encoder."
+    resetValue: 0
+    fields:
+      - name: TMDS_POP_SINGLE
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_PEEK_DOUBLE_L0
+    addressOffset: 464
+    description: "Get lane 0 of the encoding of two pixels' worth of colour data.
+      Two 10-bit TMDS symbols are packed at the bottom of a 32-bit word.\n\n     \
+      \               The PEEK alias does not shift the colour register when read,
+      but still advances the lane 0 DC balance state. This is useful if all 3 lanes'
+      worth of encode are to be read at once, rather than processing the entire scanline
+      for one lane before moving to the next lane."
+    resetValue: 0
+    fields:
+      - name: TMDS_PEEK_DOUBLE_L0
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_POP_DOUBLE_L0
+    addressOffset: 468
+    description: "Get lane 0 of the encoding of two pixels' worth of colour data.
+      Two 10-bit TMDS symbols are packed at the bottom of a 32-bit word.\n\n     \
+      \               The POP alias shifts the colour register when read, according
+      to the values of PIX_SHIFT and PIX2_NOSHIFT."
+    resetValue: 0
+    fields:
+      - name: TMDS_POP_DOUBLE_L0
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_PEEK_DOUBLE_L1
+    addressOffset: 472
+    description: "Get lane 1 of the encoding of two pixels' worth of colour data.
+      Two 10-bit TMDS symbols are packed at the bottom of a 32-bit word.\n\n     \
+      \               The PEEK alias does not shift the colour register when read,
+      but still advances the lane 1 DC balance state. This is useful if all 3 lanes'
+      worth of encode are to be read at once, rather than processing the entire scanline
+      for one lane before moving to the next lane."
+    resetValue: 0
+    fields:
+      - name: TMDS_PEEK_DOUBLE_L1
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_POP_DOUBLE_L1
+    addressOffset: 476
+    description: "Get lane 1 of the encoding of two pixels' worth of colour data.
+      Two 10-bit TMDS symbols are packed at the bottom of a 32-bit word.\n\n     \
+      \               The POP alias shifts the colour register when read, according
+      to the values of PIX_SHIFT and PIX2_NOSHIFT."
+    resetValue: 0
+    fields:
+      - name: TMDS_POP_DOUBLE_L1
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_PEEK_DOUBLE_L2
+    addressOffset: 480
+    description: "Get lane 2 of the encoding of two pixels' worth of colour data.
+      Two 10-bit TMDS symbols are packed at the bottom of a 32-bit word.\n\n     \
+      \               The PEEK alias does not shift the colour register when read,
+      but still advances the lane 2 DC balance state. This is useful if all 3 lanes'
+      worth of encode are to be read at once, rather than processing the entire scanline
+      for one lane before moving to the next lane."
+    resetValue: 0
+    fields:
+      - name: TMDS_PEEK_DOUBLE_L2
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: TMDS_POP_DOUBLE_L2
+    addressOffset: 484
+    description: "Get lane 2 of the encoding of two pixels' worth of colour data.
+      Two 10-bit TMDS symbols are packed at the bottom of a 32-bit word.\n\n     \
+      \               The POP alias shifts the colour register when read, according
+      to the values of PIX_SHIFT and PIX2_NOSHIFT."
+    resetValue: 0
+    fields:
+      - name: TMDS_POP_DOUBLE_L2
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+interrupts:
+  - name: SIO_IRQ_FIFO
+  - name: SIO_IRQ_BELL
+  - name: SIO_IRQ_FIFO_NS
+  - name: SIO_IRQ_BELL_NS
+  - name: SIO_IRQ_MTIMECMP
+addressBlocks:
+  - offset: 0
+    size: 488
+    usage: registers

@@ -1,0 +1,415 @@
+# Created from RP2350.svd (Rev 0.1)
+
+name: HSTX_CTRL
+description: Control interface to HSTX. For FIFO write access and status, see 
+  the HSTX_FIFO register block.
+registers:
+  - name: CSR
+    addressOffset: 0
+    resetValue: 268764672
+    fields:
+      - name: EN
+        description: "When EN is 1, the HSTX will shift out data as it appears in
+          the FIFO. As long as there is data, the HSTX shift register will shift once
+          per clock cycle, and the frequency of popping from the FIFO is determined
+          by the ratio of SHIFT and SHIFT_THRESH.\n\n                            When
+          EN is 0, the FIFO is not popped. The shift counter and clock generator are
+          also reset to their initial state for as long as EN is low. Note the initial
+          phase of the clock generator can be configured by the CLKPHASE field.\n\n\
+          \                            Once the HSTX is enabled again, and data is
+          pushed to the FIFO, the generated clock's first rising edge will be one
+          half-period after the first data is launched."
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: EXPAND_EN
+        description: "Enable the command expander. When 0, raw FIFO data is passed
+          directly to the output shift register. When 1, the command expander can
+          perform simple operations such as run length decoding on data between the
+          FIFO and the shift register.\n\n                            Do not change
+          CXPD_EN whilst EN is set. It's safe to set CXPD_EN simultaneously with setting
+          EN."
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: COUPLED_MODE
+        description: "Enable the PIO-to-HSTX 1:1 connection. The HSTX must be clocked
+          *directly* from the system clock (not just from some other clock source
+          of the same frequency) for this synchronous interface to function correctly.\n\
+          \n                            When COUPLED_MODE is set, BITx_SEL_P and SEL_N
+          indices 24 through 31 will select bits from the 8-bit PIO-to-HSTX path,
+          rather than shifter bits. Indices of 0 through 23 will still index the shift
+          register as normal.\n\n                            The PIO outputs connected
+          to the PIO-to-HSTX bus are those same outputs that would appear on the HSTX-capable
+          pins if those pins' FUNCSELs were set to PIO instead of HSTX.\n\n      \
+          \                      For example, if HSTX is on GPIOs 12 through 19, then
+          PIO outputs 12 through 19 are connected to the HSTX when coupled mode is
+          engaged."
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: COUPLED_SEL
+        description: Select which PIO to use for coupled mode operation.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 2
+      - name: SHIFT
+        description: "How many bits to right-rotate the shift register by each cycle.\n\
+          \n                            The use of a rotate rather than a shift allows
+          left shifts to be emulated, by subtracting the left-shift amount from 32.
+          It also allows data to be repeated, when the product of SHIFT and N_SHIFTS
+          is greater than 32."
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: N_SHIFTS
+        description: "Number of times to shift the shift register before refilling
+          it from the FIFO. (A count of how many times it has been shifted, *not*
+          the total shift distance.)\n\n                            A register value
+          of 0 means shift 32 times."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 5
+      - name: CLKPHASE
+        description: "Set the initial phase of the generated clock.\n\n          \
+          \                  A CLKPHASE of 0 means the clock is initially low, and
+          the first rising edge occurs after one half period of the generated clock
+          (i.e. CLKDIV/2 cycles of clk_hstx). Incrementing CLKPHASE by 1 will advance
+          the initial clock phase by one half clk_hstx period. For example, if CLKDIV=2
+          and CLKPHASE=1:\n\n                            * The clock will be initially
+          low\n\n                            * The first rising edge will be 0.5 clk_hstx
+          cycles after asserting first data\n\n                            * The first
+          falling edge will be 1.5 clk_hstx cycles after asserting first data\n\n\
+          \                            This configuration would be suitable for serialising
+          at a bit rate of clk_hstx with a centre-aligned DDR clock.\n\n         \
+          \                   When the HSTX is halted by clearing CSR_EN, the clock
+          generator will return to its initial phase as configured by the CLKPHASE
+          field.\n\n                            Note CLKPHASE must be strictly less
+          than double the value of CLKDIV (one full period), else its operation is
+          undefined."
+        access: read-write
+        bitOffset: 24
+        bitWidth: 4
+      - name: CLKDIV
+        description: "Clock period of the generated clock, measured in HSTX clock
+          cycles. Can be odd or even. The generated clock advances only on cycles
+          where the shift register shifts.\n\n                            For example,
+          a clkdiv of 5 would generate a complete output clock period for every 5
+          HSTX clocks (or every 10 half-clocks).\n\n                            A
+          CLKDIV value of 0 is mapped to a period of 16 HSTX clock cycles."
+        access: read-write
+        bitOffset: 28
+        bitWidth: 4
+  - name: BIT0
+    addressOffset: 4
+    description: Data control register for output bit 0
+    resetValue: 0
+    fields:
+      - name: SEL_P
+        description: Shift register data bit select for the first half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: SEL_N
+        description: Shift register data bit select for the second half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: INV
+        description: Invert this data output (logical NOT)
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CLK
+        description: Connect this output to the generated clock, rather than the
+          data shift register. SEL_P and SEL_N are ignored if this bit is set, 
+          but INV can still be set to generate an antiphase clock.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+  - name: BIT1
+    addressOffset: 8
+    description: Data control register for output bit 1
+    resetValue: 0
+    fields:
+      - name: SEL_P
+        description: Shift register data bit select for the first half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: SEL_N
+        description: Shift register data bit select for the second half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: INV
+        description: Invert this data output (logical NOT)
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CLK
+        description: Connect this output to the generated clock, rather than the
+          data shift register. SEL_P and SEL_N are ignored if this bit is set, 
+          but INV can still be set to generate an antiphase clock.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+  - name: BIT2
+    addressOffset: 12
+    description: Data control register for output bit 2
+    resetValue: 0
+    fields:
+      - name: SEL_P
+        description: Shift register data bit select for the first half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: SEL_N
+        description: Shift register data bit select for the second half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: INV
+        description: Invert this data output (logical NOT)
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CLK
+        description: Connect this output to the generated clock, rather than the
+          data shift register. SEL_P and SEL_N are ignored if this bit is set, 
+          but INV can still be set to generate an antiphase clock.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+  - name: BIT3
+    addressOffset: 16
+    description: Data control register for output bit 3
+    resetValue: 0
+    fields:
+      - name: SEL_P
+        description: Shift register data bit select for the first half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: SEL_N
+        description: Shift register data bit select for the second half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: INV
+        description: Invert this data output (logical NOT)
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CLK
+        description: Connect this output to the generated clock, rather than the
+          data shift register. SEL_P and SEL_N are ignored if this bit is set, 
+          but INV can still be set to generate an antiphase clock.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+  - name: BIT4
+    addressOffset: 20
+    description: Data control register for output bit 4
+    resetValue: 0
+    fields:
+      - name: SEL_P
+        description: Shift register data bit select for the first half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: SEL_N
+        description: Shift register data bit select for the second half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: INV
+        description: Invert this data output (logical NOT)
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CLK
+        description: Connect this output to the generated clock, rather than the
+          data shift register. SEL_P and SEL_N are ignored if this bit is set, 
+          but INV can still be set to generate an antiphase clock.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+  - name: BIT5
+    addressOffset: 24
+    description: Data control register for output bit 5
+    resetValue: 0
+    fields:
+      - name: SEL_P
+        description: Shift register data bit select for the first half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: SEL_N
+        description: Shift register data bit select for the second half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: INV
+        description: Invert this data output (logical NOT)
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CLK
+        description: Connect this output to the generated clock, rather than the
+          data shift register. SEL_P and SEL_N are ignored if this bit is set, 
+          but INV can still be set to generate an antiphase clock.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+  - name: BIT6
+    addressOffset: 28
+    description: Data control register for output bit 6
+    resetValue: 0
+    fields:
+      - name: SEL_P
+        description: Shift register data bit select for the first half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: SEL_N
+        description: Shift register data bit select for the second half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: INV
+        description: Invert this data output (logical NOT)
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CLK
+        description: Connect this output to the generated clock, rather than the
+          data shift register. SEL_P and SEL_N are ignored if this bit is set, 
+          but INV can still be set to generate an antiphase clock.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+  - name: BIT7
+    addressOffset: 32
+    description: Data control register for output bit 7
+    resetValue: 0
+    fields:
+      - name: SEL_P
+        description: Shift register data bit select for the first half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: SEL_N
+        description: Shift register data bit select for the second half of the 
+          HSTX clock cycle
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: INV
+        description: Invert this data output (logical NOT)
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: CLK
+        description: Connect this output to the generated clock, rather than the
+          data shift register. SEL_P and SEL_N are ignored if this bit is set, 
+          but INV can still be set to generate an antiphase clock.
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+  - name: EXPAND_SHIFT
+    addressOffset: 36
+    description: Configure the optional shifter inside the command expander
+    resetValue: 16777472
+    fields:
+      - name: RAW_SHIFT
+        description: How many bits to right-rotate the shift register by each 
+          time data is pushed to the output shifter, when the current command is
+          a raw data command.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: RAW_N_SHIFTS
+        description: Number of times to consume from the shift register before 
+          refilling it from the FIFO, when the current command is a raw data 
+          command. A register value of 0 means shift 32 times.
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: ENC_SHIFT
+        description: How many bits to right-rotate the shift register by each 
+          time data is pushed to the output shifter, when the current command is
+          an encoded data command (e.g. TMDS).
+        access: read-write
+        bitOffset: 16
+        bitWidth: 5
+      - name: ENC_N_SHIFTS
+        description: Number of times to consume from the shift register before 
+          refilling it from the FIFO, when the current command is an encoded 
+          data command (e.g. TMDS). A register value of 0 means shift 32 times.
+        access: read-write
+        bitOffset: 24
+        bitWidth: 5
+  - name: EXPAND_TMDS
+    addressOffset: 40
+    description: Configure the optional TMDS encoder inside the command expander
+    resetValue: 0
+    fields:
+      - name: L0_ROT
+        description: Right-rotate applied to the current shifter data before the
+          lane 0 TMDS encoder.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 5
+      - name: L0_NBITS
+        description: Number of valid data bits for the lane 0 TMDS encoder, 
+          starting from bit 7 of the rotated data. Field values of 0 -> 7 encode
+          counts of 1 -> 8 bits.
+        access: read-write
+        bitOffset: 5
+        bitWidth: 3
+      - name: L1_ROT
+        description: Right-rotate applied to the current shifter data before the
+          lane 1 TMDS encoder.
+        access: read-write
+        bitOffset: 8
+        bitWidth: 5
+      - name: L1_NBITS
+        description: Number of valid data bits for the lane 1 TMDS encoder, 
+          starting from bit 7 of the rotated data. Field values of 0 -> 7 encode
+          counts of 1 -> 8 bits.
+        access: read-write
+        bitOffset: 13
+        bitWidth: 3
+      - name: L2_ROT
+        description: Right-rotate applied to the current shifter data before the
+          lane 2 TMDS encoder.
+        access: read-write
+        bitOffset: 16
+        bitWidth: 5
+      - name: L2_NBITS
+        description: Number of valid data bits for the lane 2 TMDS encoder, 
+          starting from bit 7 of the rotated data. Field values of 0 -> 7 encode
+          counts of 1 -> 8 bits.
+        access: read-write
+        bitOffset: 21
+        bitWidth: 3
+addressBlocks:
+  - offset: 0
+    size: 44
+    usage: registers

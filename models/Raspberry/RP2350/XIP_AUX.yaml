@@ -1,0 +1,96 @@
+# Created from RP2350.svd (Rev 0.1)
+
+name: XIP_AUX
+description: Auxiliary DMA access to XIP FIFOs, via fast AHB bus access
+registers:
+  - name: STREAM
+    addressOffset: 0
+    description: Read the XIP stream FIFO (fast bus access to 
+      XIP_CTRL_STREAM_FIFO)
+    resetValue: 0
+    fields:
+      - name: STREAM
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: QMI_DIRECT_TX
+    addressOffset: 4
+    description: Write to the QMI direct-mode TX FIFO (fast bus access to 
+      QMI_DIRECT_TX)
+    resetValue: 0
+    fields:
+      - name: DATA
+        description: "Data pushed here will be clocked out falling edges of SCK (or
+          before the very first rising edge of SCK, if this is the first pulse). For
+          each byte clocked out, the interface will simultaneously sample one byte,
+          on rising edges of SCK, and push this to the DIRECT_RX FIFO.\n\n       \
+          \                     For 16-bit data, the least-significant byte is transmitted
+          first."
+        access: write-only
+        bitOffset: 0
+        bitWidth: 16
+      - name: IWIDTH
+        description: Configure whether this FIFO record is transferred with 
+          single/dual/quad interface width (0/1/2). Different widths can be 
+          mixed freely.
+        access: write-only
+        enumeratedValues:
+          - name: S
+            value: 0
+            description: Single width
+          - name: D
+            value: 1
+            description: Dual width
+          - name: Q
+            value: 2
+            description: Quad width
+        bitOffset: 16
+        bitWidth: 2
+      - name: DWIDTH
+        description: Data width. If 0, hardware will transmit the 8 LSBs of the 
+          DIRECT_TX DATA field, and return an 8-bit value in the 8 LSBs of 
+          DIRECT_RX. If 1, the full 16-bit width is used. 8-bit and 16-bit 
+          transfers can be mixed freely.
+        access: write-only
+        bitOffset: 18
+        bitWidth: 1
+      - name: OE
+        description: "Output enable (active-high). For single width (SPI), this field
+          is ignored, and SD0 is always set to output, with SD1 always set to input.\n\
+          \n                            For dual and quad width (DSPI/QSPI), this
+          sets whether the relevant SDx pads are set to output whilst transferring
+          this FIFO record. In this case the command/address should have OE set, and
+          the data transfer should have OE set or clear depending on the direction
+          of the transfer."
+        access: write-only
+        bitOffset: 19
+        bitWidth: 1
+      - name: NOPUSH
+        description: "Inhibit the RX FIFO push that would correspond to this TX FIFO
+          entry.\n\n                            Useful to avoid garbage appearing
+          in the RX FIFO when pushing the command at the beginning of a SPI transfer."
+        access: write-only
+        bitOffset: 20
+        bitWidth: 1
+  - name: QMI_DIRECT_RX
+    addressOffset: 8
+    description: Read from the QMI direct-mode RX FIFO (fast bus access to 
+      QMI_DIRECT_RX)
+    resetValue: 0
+    fields:
+      - name: QMI_DIRECT_RX
+        description: "With each byte clocked out on the serial interface, one byte
+          will simultaneously be clocked in, and will appear in this FIFO. The serial
+          interface will stall when this FIFO is full, to avoid dropping data.\n\n\
+          \                            When 16-bit data is pushed into the TX FIFO,
+          the corresponding RX FIFO push will also contain 16 bits of data. The least-significant
+          byte is the first one received."
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 16
+addressBlocks:
+  - offset: 0
+    size: 12
+    usage: registers

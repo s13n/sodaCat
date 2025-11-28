@@ -1,0 +1,170 @@
+# Created from RP2350.svd (Rev 0.1)
+
+name: GLITCH_DETECTOR
+description: Glitch detector controls
+registers:
+  - name: ARM
+    addressOffset: 0
+    description: "Forcibly arm the glitch detectors, if they are not already armed
+      by OTP. When armed, any individual detector trigger will cause a restart of
+      the switched core power domain's power-on reset state machine.\n\n         \
+      \           Glitch detector triggers are recorded accumulatively in TRIG_STATUS.
+      If the system is reset by a glitch detector trigger, this is recorded in POWMAN_CHIP_RESET.\n\
+      \n                    This register is Secure read/write only."
+    resetValue: 23469
+    fields:
+      - name: ARM
+        access: read-write
+        enumeratedValues:
+          - name: no
+            value: 23469
+            description: Do not force the glitch detectors to be armed
+          - name: yes
+            value: 0
+            description: Force the glitch detectors to be armed. (Any value 
+              other than ARM_NO counts as YES)
+        bitOffset: 0
+        bitWidth: 16
+  - name: DISARM
+    addressOffset: 4
+    resetValue: 0
+    fields:
+      - name: DISARM
+        description: "Forcibly disarm the glitch detectors, if they are armed by OTP.
+          Ignored if ARM is YES.\n\n                            This register is Secure
+          read/write only."
+        access: read-write
+        enumeratedValues:
+          - name: no
+            value: 0
+            description: Do not disarm the glitch detectors. (Any value other 
+              than DISARM_YES counts as NO)
+          - name: yes
+            value: 56495
+            description: Disarm the glitch detectors
+        bitOffset: 0
+        bitWidth: 16
+  - name: SENSITIVITY
+    addressOffset: 8
+    description: "Adjust the sensitivity of glitch detectors to values other than
+      their OTP-provided defaults.\n\n                    This register is Secure
+      read/write only."
+    resetValue: 0
+    fields:
+      - name: DET0
+        description: Set sensitivity for detector 0. Higher values are more 
+          sensitive.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 2
+      - name: DET1
+        description: Set sensitivity for detector 1. Higher values are more 
+          sensitive.
+        access: read-write
+        bitOffset: 2
+        bitWidth: 2
+      - name: DET2
+        description: Set sensitivity for detector 2. Higher values are more 
+          sensitive.
+        access: read-write
+        bitOffset: 4
+        bitWidth: 2
+      - name: DET3
+        description: Set sensitivity for detector 3. Higher values are more 
+          sensitive.
+        access: read-write
+        bitOffset: 6
+        bitWidth: 2
+      - name: DET0_INV
+        description: Must be the inverse of DET0, else the default value is 
+          used.
+        access: read-write
+        bitOffset: 8
+        bitWidth: 2
+      - name: DET1_INV
+        description: Must be the inverse of DET1, else the default value is 
+          used.
+        access: read-write
+        bitOffset: 10
+        bitWidth: 2
+      - name: DET2_INV
+        description: Must be the inverse of DET2, else the default value is 
+          used.
+        access: read-write
+        bitOffset: 12
+        bitWidth: 2
+      - name: DET3_INV
+        description: Must be the inverse of DET3, else the default value is 
+          used.
+        access: read-write
+        bitOffset: 14
+        bitWidth: 2
+      - name: DEFAULT
+        access: read-write
+        enumeratedValues:
+          - name: yes
+            value: 0
+            description: Use the default sensitivity configured in OTP for all 
+              detectors. (Any value other than DEFAULT_NO counts as YES)
+          - name: no
+            value: 222
+            description: Do not use the default sensitivity configured in OTP. 
+              Instead use the value from this register.
+        bitOffset: 24
+        bitWidth: 8
+  - name: LOCK
+    addressOffset: 12
+    resetValue: 0
+    fields:
+      - name: LOCK
+        description: Write any nonzero value to disable writes to ARM, DISARM, 
+          SENSITIVITY and LOCK. This register is Secure read/write only.
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+  - name: TRIG_STATUS
+    addressOffset: 16
+    description: "Set when a detector output triggers. Write-1-clear.\n\n        \
+      \            (May immediately return high if the detector remains in a failed
+      state. Detectors can only be cleared by a full reset of the switched core power
+      domain.)\n\n                    This register is Secure read/write only."
+    resetValue: 0
+    fields:
+      - name: DET0
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 0
+        bitWidth: 1
+      - name: DET1
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 1
+        bitWidth: 1
+      - name: DET2
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 2
+        bitWidth: 1
+      - name: DET3
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 3
+        bitWidth: 1
+  - name: TRIG_FORCE
+    addressOffset: 20
+    description: "Simulate the firing of one or more detectors. Writing ones to this
+      register will set the matching bits in STATUS_TRIG.\n\n                    If
+      the glitch detectors are currently armed, writing ones will also immediately
+      reset the switched core power domain, and set the reset reason latches in POWMAN_CHIP_RESET
+      to indicate a glitch detector resets.\n\n                    This register is
+      Secure read/write only."
+    resetValue: 0
+    fields:
+      - name: TRIG_FORCE
+        access: write-only
+        bitOffset: 0
+        bitWidth: 4
+addressBlocks:
+  - offset: 0
+    size: 24
+    usage: registers
