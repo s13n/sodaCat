@@ -1,0 +1,255 @@
+# Created from RP2040.svd (Rev 0)
+
+name: TIMER
+description: "Controls time and alarms \n            time is a 64 bit value indicating
+  the time in usec since power-on \n            timeh is the top 32 bits of time &
+  timel is the bottom 32 bits \n            to change time write to timelw before
+  timehw \n            to read time read from timelr before timehr \n            An
+  alarm is set by setting alarm_enable and writing to the corresponding alarm register\
+  \ \n            When an alarm is pending, the corresponding alarm_running signal
+  will be high \n            An alarm can be cancelled before it has finished by clearing
+  the alarm_enable \n            When an alarm fires, the corresponding alarm_irq
+  is set and alarm_running is cleared \n            To clear the interrupt write a
+  1 to the corresponding alarm_irq"
+registers:
+  - name: TIMEHW
+    addressOffset: 0
+    description: "Write to bits 63:32 of time \n                    always write timelw
+      before timehw"
+    resetValue: 0
+    fields:
+      - name: TIMEHW
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: TIMELW
+    addressOffset: 4
+    description: "Write to bits 31:0 of time \n                    writes do not get
+      copied to time until timehw is written"
+    resetValue: 0
+    fields:
+      - name: TIMELW
+        access: write-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: TIMEHR
+    addressOffset: 8
+    description: "Read from bits 63:32 of time \n                    always read timelr
+      before timehr"
+    resetValue: 0
+    fields:
+      - name: TIMEHR
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: TIMELR
+    addressOffset: 12
+    description: Read from bits 31:0 of time
+    resetValue: 0
+    fields:
+      - name: TIMELR
+        access: read-only
+        readAction: modify
+        bitOffset: 0
+        bitWidth: 32
+  - name: ALARM0
+    addressOffset: 16
+    description: "Arm alarm 0, and configure the time it will fire. \n           \
+      \         Once armed, the alarm fires when TIMER_ALARM0 == TIMELR. \n      \
+      \              The alarm will disarm itself once it fires, and can \n      \
+      \              be disarmed early using the ARMED status register."
+    resetValue: 0
+    fields:
+      - name: ALARM0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: ALARM1
+    addressOffset: 20
+    description: "Arm alarm 1, and configure the time it will fire. \n           \
+      \         Once armed, the alarm fires when TIMER_ALARM1 == TIMELR. \n      \
+      \              The alarm will disarm itself once it fires, and can \n      \
+      \              be disarmed early using the ARMED status register."
+    resetValue: 0
+    fields:
+      - name: ALARM1
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: ALARM2
+    addressOffset: 24
+    description: "Arm alarm 2, and configure the time it will fire. \n           \
+      \         Once armed, the alarm fires when TIMER_ALARM2 == TIMELR. \n      \
+      \              The alarm will disarm itself once it fires, and can \n      \
+      \              be disarmed early using the ARMED status register."
+    resetValue: 0
+    fields:
+      - name: ALARM2
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: ALARM3
+    addressOffset: 28
+    description: "Arm alarm 3, and configure the time it will fire. \n           \
+      \         Once armed, the alarm fires when TIMER_ALARM3 == TIMELR. \n      \
+      \              The alarm will disarm itself once it fires, and can \n      \
+      \              be disarmed early using the ARMED status register."
+    resetValue: 0
+    fields:
+      - name: ALARM3
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: ARMED
+    addressOffset: 32
+    description: "Indicates the armed/disarmed status of each alarm. \n          \
+      \          A write to the corresponding ALARMx register arms the alarm. \n \
+      \                   Alarms automatically disarm upon firing, but writing ones
+      here \n                    will disarm immediately without waiting to fire."
+    resetValue: 0
+    fields:
+      - name: ARMED
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 0
+        bitWidth: 4
+  - name: TIMERAWH
+    addressOffset: 36
+    description: Raw read from bits 63:32 of time (no side effects)
+    resetValue: 0
+    fields:
+      - name: TIMERAWH
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: TIMERAWL
+    addressOffset: 40
+    description: Raw read from bits 31:0 of time (no side effects)
+    resetValue: 0
+    fields:
+      - name: TIMERAWL
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: DBGPAUSE
+    addressOffset: 44
+    description: Set bits high to enable pause when the corresponding debug 
+      ports are active
+    resetValue: 7
+    fields:
+      - name: DBG0
+        description: Pause when processor 0 is in debug mode
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: DBG1
+        description: Pause when processor 1 is in debug mode
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+  - name: PAUSE
+    addressOffset: 48
+    description: Set high to pause the timer
+    resetValue: 0
+    fields:
+      - name: PAUSE
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+  - name: INTR
+    addressOffset: 52
+    description: Raw Interrupts
+    resetValue: 0
+    fields:
+      - name: ALARM_0
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 0
+        bitWidth: 1
+      - name: ALARM_1
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 1
+        bitWidth: 1
+      - name: ALARM_2
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 2
+        bitWidth: 1
+      - name: ALARM_3
+        access: read-write
+        modifiedWriteValues: oneToClear
+        bitOffset: 3
+        bitWidth: 1
+  - name: INTE
+    addressOffset: 56
+    description: Interrupt Enable
+    resetValue: 0
+    fields:
+      - name: ALARM_0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: ALARM_1
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: ALARM_2
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: ALARM_3
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+  - name: INTF
+    addressOffset: 60
+    description: Interrupt Force
+    resetValue: 0
+    fields:
+      - name: ALARM_0
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: ALARM_1
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: ALARM_2
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: ALARM_3
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+  - name: INTS
+    addressOffset: 64
+    description: Interrupt status after masking & forcing
+    resetValue: 0
+    fields:
+      - name: ALARM_0
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: ALARM_1
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+      - name: ALARM_2
+        access: read-only
+        bitOffset: 2
+        bitWidth: 1
+      - name: ALARM_3
+        access: read-only
+        bitOffset: 3
+        bitWidth: 1
+interrupts:
+  - name: TIMER_IRQ_0
+  - name: TIMER_IRQ_1
+  - name: TIMER_IRQ_2
+  - name: TIMER_IRQ_3
+addressBlocks:
+  - offset: 0
+    size: 68
+    usage: registers

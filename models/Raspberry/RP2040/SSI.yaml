@@ -1,0 +1,587 @@
+# Created from RP2040.svd (Rev 0)
+
+name: SSI
+description: "DW_apb_ssi has the following features: \n            * APB interface
+  – Allows for easy integration into a DesignWare Synthesizable Components for AMBA
+  2 implementation. \n            * APB3 and APB4 protocol support. \n           \
+  \ * Scalable APB data bus width – Supports APB data bus widths of 8, 16, and 32
+  bits. \n            * Serial-master or serial-slave operation – Enables serial communication
+  with serial-master or serial-slave peripheral devices. \n            * Programmable
+  Dual/Quad/Octal SPI support in Master Mode. \n            * Dual Data Rate (DDR)
+  and Read Data Strobe (RDS) Support - Enables the DW_apb_ssi master to perform operations
+  with the device in DDR and RDS modes when working in Dual/Quad/Octal mode of operation.\
+  \ \n            * Data Mask Support - Enables the DW_apb_ssi to selectively update
+  the bytes in the device. This feature is applicable only in enhanced SPI modes.\
+  \ \n            * eXecute-In-Place (XIP) support - Enables the DW_apb_ssi master
+  to behave as a memory mapped I/O and fetches the data from the device based on the
+  APB read request. This feature is applicable only in enhanced SPI modes. \n    \
+  \        * DMA Controller Interface – Enables the DW_apb_ssi to interface to a DMA
+  controller over the bus using a handshaking interface for transfer requests. \n\
+  \            * Independent masking of interrupts – Master collision, transmit FIFO
+  overflow, transmit FIFO empty, receive FIFO full, receive FIFO underflow, and receive
+  FIFO overflow interrupts can all be masked independently. \n            * Multi-master
+  contention detection – Informs the processor of multiple serial-master accesses
+  on the serial bus. \n            * Bypass of meta-stability flip-flops for synchronous
+  clocks – When the APB clock (pclk) and the DW_apb_ssi serial clock (ssi_clk) are
+  synchronous, meta-stable flip-flops are not used when transferring control signals
+  across these clock domains. \n            * Programmable delay on the sample time
+  of the received serial data bit (rxd); enables programmable control of routing delays
+  resulting in higher serial data-bit rates. \n            * Programmable features:\
+  \ \n            - Serial interface operation – Choice of Motorola SPI, Texas Instruments
+  Synchronous Serial Protocol or National Semiconductor Microwire. \n            -
+  Clock bit-rate – Dynamic control of the serial bit rate of the data transfer; used
+  in only serial-master mode of operation. \n            - Data Item size (4 to 32
+  bits) – Item size of each data transfer under the control of the programmer. \n\
+  \            * Configured features: \n            - FIFO depth – 16 words deep.
+  The FIFO width is fixed at 32 bits. \n            - 1 slave select output. \n  \
+  \          - Hardware slave-select – Dedicated hardware slave-select line. \n  \
+  \          - Combined interrupt line - one combined interrupt line from the DW_apb_ssi
+  to the interrupt controller. \n            - Interrupt polarity – active high interrupt
+  lines. \n            - Serial clock polarity – low serial-clock polarity directly
+  after reset. \n            - Serial clock phase – capture on first edge of serial-clock
+  directly after reset."
+registers:
+  - name: CTRLR0
+    addressOffset: 0
+    description: Control register 0
+    resetValue: 0
+    fields:
+      - name: DFS
+        description: Data frame size
+        access: read-write
+        bitOffset: 0
+        bitWidth: 4
+      - name: FRF
+        description: Frame format
+        access: read-write
+        bitOffset: 4
+        bitWidth: 2
+      - name: SCPH
+        description: Serial clock phase
+        access: read-write
+        bitOffset: 6
+        bitWidth: 1
+      - name: SCPOL
+        description: Serial clock polarity
+        access: read-write
+        bitOffset: 7
+        bitWidth: 1
+      - name: TMOD
+        description: Transfer mode
+        access: read-write
+        enumeratedValues:
+          - name: TX_AND_RX
+            value: 0
+            description: Both transmit and receive
+          - name: TX_ONLY
+            value: 1
+            description: Transmit only (not for FRF == 0, standard SPI mode)
+          - name: RX_ONLY
+            value: 2
+            description: Receive only (not for FRF == 0, standard SPI mode)
+          - name: EEPROM_READ
+            value: 3
+            description: EEPROM read mode (TX then RX; RX starts after control 
+              data TX'd)
+        bitOffset: 8
+        bitWidth: 2
+      - name: SLV_OE
+        description: Slave output enable
+        access: read-write
+        bitOffset: 10
+        bitWidth: 1
+      - name: SRL
+        description: Shift register loop (test mode)
+        access: read-write
+        bitOffset: 11
+        bitWidth: 1
+      - name: CFS
+        description: "Control frame size \n                            Value of n
+          -> n+1 clocks per frame."
+        access: read-write
+        bitOffset: 12
+        bitWidth: 4
+      - name: DFS_32
+        description: "Data frame size in 32b transfer mode \n                    \
+          \        Value of n -> n+1 clocks per frame."
+        access: read-write
+        bitOffset: 16
+        bitWidth: 5
+      - name: SPI_FRF
+        description: SPI frame format
+        access: read-write
+        enumeratedValues:
+          - name: STD
+            value: 0
+            description: Standard 1-bit SPI frame format; 1 bit per SCK, 
+              full-duplex
+          - name: DUAL
+            value: 1
+            description: Dual-SPI frame format; two bits per SCK, half-duplex
+          - name: QUAD
+            value: 2
+            description: Quad-SPI frame format; four bits per SCK, half-duplex
+        bitOffset: 21
+        bitWidth: 2
+      - name: SSTE
+        description: Slave select toggle enable
+        access: read-write
+        bitOffset: 24
+        bitWidth: 1
+  - name: CTRLR1
+    addressOffset: 4
+    description: Master Control register 1
+    resetValue: 0
+    fields:
+      - name: NDF
+        description: Number of data frames
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: SSIENR
+    addressOffset: 8
+    description: SSI Enable
+    resetValue: 0
+    fields:
+      - name: SSI_EN
+        description: SSI enable
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+  - name: MWCR
+    addressOffset: 12
+    description: Microwire Control
+    resetValue: 0
+    fields:
+      - name: MWMOD
+        description: Microwire transfer mode
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: MDD
+        description: Microwire control
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: MHS
+        description: Microwire handshaking
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+  - name: SER
+    addressOffset: 16
+    description: Slave enable
+    resetValue: 0
+    fields:
+      - name: SER
+        description: "For each bit: \n                            0 -> slave not selected\
+          \ \n                            1 -> slave selected"
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+  - name: BAUDR
+    addressOffset: 20
+    description: Baud rate
+    resetValue: 0
+    fields:
+      - name: SCKDV
+        description: SSI clock divider
+        access: read-write
+        bitOffset: 0
+        bitWidth: 16
+  - name: TXFTLR
+    addressOffset: 24
+    description: TX FIFO threshold level
+    resetValue: 0
+    fields:
+      - name: TFT
+        description: Transmit FIFO threshold
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+  - name: RXFTLR
+    addressOffset: 28
+    description: RX FIFO threshold level
+    resetValue: 0
+    fields:
+      - name: RFT
+        description: Receive FIFO threshold
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+  - name: TXFLR
+    addressOffset: 32
+    description: TX FIFO level
+    resetValue: 0
+    fields:
+      - name: TFTFL
+        description: Transmit FIFO level
+        access: read-only
+        bitOffset: 0
+        bitWidth: 8
+  - name: RXFLR
+    addressOffset: 36
+    description: RX FIFO level
+    resetValue: 0
+    fields:
+      - name: RXTFL
+        description: Receive FIFO level
+        access: read-only
+        bitOffset: 0
+        bitWidth: 8
+  - name: SR
+    addressOffset: 40
+    description: Status register
+    resetValue: 0
+    fields:
+      - name: BUSY
+        description: SSI busy flag
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: TFNF
+        description: Transmit FIFO not full
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+      - name: TFE
+        description: Transmit FIFO empty
+        access: read-only
+        bitOffset: 2
+        bitWidth: 1
+      - name: RFNE
+        description: Receive FIFO not empty
+        access: read-only
+        bitOffset: 3
+        bitWidth: 1
+      - name: RFF
+        description: Receive FIFO full
+        access: read-only
+        bitOffset: 4
+        bitWidth: 1
+      - name: TXE
+        description: Transmission error
+        access: read-only
+        bitOffset: 5
+        bitWidth: 1
+      - name: DCOL
+        description: Data collision error
+        access: read-only
+        bitOffset: 6
+        bitWidth: 1
+  - name: IMR
+    addressOffset: 44
+    description: Interrupt mask
+    resetValue: 0
+    fields:
+      - name: TXEIM
+        description: Transmit FIFO empty interrupt mask
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: TXOIM
+        description: Transmit FIFO overflow interrupt mask
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+      - name: RXUIM
+        description: Receive FIFO underflow interrupt mask
+        access: read-write
+        bitOffset: 2
+        bitWidth: 1
+      - name: RXOIM
+        description: Receive FIFO overflow interrupt mask
+        access: read-write
+        bitOffset: 3
+        bitWidth: 1
+      - name: RXFIM
+        description: Receive FIFO full interrupt mask
+        access: read-write
+        bitOffset: 4
+        bitWidth: 1
+      - name: MSTIM
+        description: Multi-master contention interrupt mask
+        access: read-write
+        bitOffset: 5
+        bitWidth: 1
+  - name: ISR
+    addressOffset: 48
+    description: Interrupt status
+    resetValue: 0
+    fields:
+      - name: TXEIS
+        description: Transmit FIFO empty interrupt status
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: TXOIS
+        description: Transmit FIFO overflow interrupt status
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+      - name: RXUIS
+        description: Receive FIFO underflow interrupt status
+        access: read-only
+        bitOffset: 2
+        bitWidth: 1
+      - name: RXOIS
+        description: Receive FIFO overflow interrupt status
+        access: read-only
+        bitOffset: 3
+        bitWidth: 1
+      - name: RXFIS
+        description: Receive FIFO full interrupt status
+        access: read-only
+        bitOffset: 4
+        bitWidth: 1
+      - name: MSTIS
+        description: Multi-master contention interrupt status
+        access: read-only
+        bitOffset: 5
+        bitWidth: 1
+  - name: RISR
+    addressOffset: 52
+    description: Raw interrupt status
+    resetValue: 0
+    fields:
+      - name: TXEIR
+        description: Transmit FIFO empty raw interrupt status
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+      - name: TXOIR
+        description: Transmit FIFO overflow raw interrupt status
+        access: read-only
+        bitOffset: 1
+        bitWidth: 1
+      - name: RXUIR
+        description: Receive FIFO underflow raw interrupt status
+        access: read-only
+        bitOffset: 2
+        bitWidth: 1
+      - name: RXOIR
+        description: Receive FIFO overflow raw interrupt status
+        access: read-only
+        bitOffset: 3
+        bitWidth: 1
+      - name: RXFIR
+        description: Receive FIFO full raw interrupt status
+        access: read-only
+        bitOffset: 4
+        bitWidth: 1
+      - name: MSTIR
+        description: Multi-master contention raw interrupt status
+        access: read-only
+        bitOffset: 5
+        bitWidth: 1
+  - name: TXOICR
+    addressOffset: 56
+    description: TX FIFO overflow interrupt clear
+    resetValue: 0
+    fields:
+      - name: TXOICR
+        description: Clear-on-read transmit FIFO overflow interrupt
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+  - name: RXOICR
+    addressOffset: 60
+    description: RX FIFO overflow interrupt clear
+    resetValue: 0
+    fields:
+      - name: RXOICR
+        description: Clear-on-read receive FIFO overflow interrupt
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+  - name: RXUICR
+    addressOffset: 64
+    description: RX FIFO underflow interrupt clear
+    resetValue: 0
+    fields:
+      - name: RXUICR
+        description: Clear-on-read receive FIFO underflow interrupt
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+  - name: MSTICR
+    addressOffset: 68
+    description: Multi-master interrupt clear
+    resetValue: 0
+    fields:
+      - name: MSTICR
+        description: Clear-on-read multi-master contention interrupt
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+  - name: ICR
+    addressOffset: 72
+    description: Interrupt clear
+    resetValue: 0
+    fields:
+      - name: ICR
+        description: Clear-on-read all active interrupts
+        access: read-only
+        bitOffset: 0
+        bitWidth: 1
+  - name: DMACR
+    addressOffset: 76
+    description: DMA control
+    resetValue: 0
+    fields:
+      - name: RDMAE
+        description: Receive DMA enable
+        access: read-write
+        bitOffset: 0
+        bitWidth: 1
+      - name: TDMAE
+        description: Transmit DMA enable
+        access: read-write
+        bitOffset: 1
+        bitWidth: 1
+  - name: DMATDLR
+    addressOffset: 80
+    description: DMA TX data level
+    resetValue: 0
+    fields:
+      - name: DMATDL
+        description: Transmit data watermark level
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+  - name: DMARDLR
+    addressOffset: 84
+    description: DMA RX data level
+    resetValue: 0
+    fields:
+      - name: DMARDL
+        description: Receive data watermark level (DMARDLR+1)
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+  - name: IDR
+    addressOffset: 88
+    description: Identification register
+    resetValue: 1364414537
+    fields:
+      - name: IDCODE
+        description: Peripheral dentification code
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: SSI_VERSION_ID
+    addressOffset: 92
+    description: Version ID
+    resetValue: 875573546
+    fields:
+      - name: SSI_COMP_VERSION
+        description: SNPS component version (format X.YY)
+        access: read-only
+        bitOffset: 0
+        bitWidth: 32
+  - name: DR0
+    addressOffset: 96
+    description: Data Register 0 (of 36)
+    resetValue: 0
+    fields:
+      - name: DR
+        description: First data register of 36
+        access: read-write
+        bitOffset: 0
+        bitWidth: 32
+  - name: RX_SAMPLE_DLY
+    addressOffset: 240
+    description: RX sample delay
+    resetValue: 0
+    fields:
+      - name: RSD
+        description: RXD sample delay (in SCLK cycles)
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+  - name: SPI_CTRLR0
+    addressOffset: 244
+    description: SPI control
+    resetValue: 50331648
+    fields:
+      - name: TRANS_TYPE
+        description: Address and instruction transfer format
+        access: read-write
+        enumeratedValues:
+          - name: 1C1A
+            value: 0
+            description: Command and address both in standard SPI frame format
+          - name: 1C2A
+            value: 1
+            description: Command in standard SPI format, address in format 
+              specified by FRF
+          - name: 2C2A
+            value: 2
+            description: Command and address both in format specified by FRF 
+              (e.g. Dual-SPI)
+        bitOffset: 0
+        bitWidth: 2
+      - name: ADDR_L
+        description: Address length (0b-60b in 4b increments)
+        access: read-write
+        bitOffset: 2
+        bitWidth: 4
+      - name: INST_L
+        description: Instruction length (0/4/8/16b)
+        access: read-write
+        enumeratedValues:
+          - name: NONE
+            value: 0
+            description: No instruction
+          - name: 4B
+            value: 1
+            description: 4-bit instruction
+          - name: 8B
+            value: 2
+            description: 8-bit instruction
+          - name: 16B
+            value: 3
+            description: 16-bit instruction
+        bitOffset: 8
+        bitWidth: 2
+      - name: WAIT_CYCLES
+        description: Wait cycles between control frame transmit and data 
+          reception (in SCLK cycles)
+        access: read-write
+        bitOffset: 11
+        bitWidth: 5
+      - name: SPI_DDR_EN
+        description: SPI DDR transfer enable
+        access: read-write
+        bitOffset: 16
+        bitWidth: 1
+      - name: INST_DDR_EN
+        description: Instruction DDR transfer enable
+        access: read-write
+        bitOffset: 17
+        bitWidth: 1
+      - name: SPI_RXDS_EN
+        description: Read data strobe enable
+        access: read-write
+        bitOffset: 18
+        bitWidth: 1
+      - name: XIP_CMD
+        description: SPI Command to send in XIP mode (INST_L = 8-bit) or to 
+          append to Address (INST_L = 0-bit)
+        access: read-write
+        bitOffset: 24
+        bitWidth: 8
+  - name: TXD_DRIVE_EDGE
+    addressOffset: 248
+    description: TX drive edge
+    resetValue: 0
+    fields:
+      - name: TDE
+        description: TXD drive edge
+        access: read-write
+        bitOffset: 0
+        bitWidth: 8
+addressBlocks:
+  - offset: 0
+    size: 252
+    usage: registers
