@@ -11,7 +11,7 @@ subdir = Path("./models/NXP/LPC8")
 # models and instances we want to keep
 modelSet = [
     'ACOMP', 'CRC', 'MRT', 'WWDT', 'WKT',
-    'ADC', 'DMA', 'FLASH_CTRL', 'FTM', 'GPIO', 'I2C', 'I3C', 'INPUTMUX',
+    'ADC', 'FLASH_CTRL', 'FTM', 'GPIO', 'I2C', 'I3C', 'INPUTMUX',
     'IOCON', 'PINT', 'PMU', 'SPI', 'SWM', 'SYSCON', 'USART']
 instSet = [
     'WWDT', 'WKT', 'NVIC', 'ACOMP', 'CRC', 'MRT0',
@@ -48,7 +48,7 @@ transform.renameEntries(adc0['interrupts'], 'name', r'ADC0_([A-Z_0-9]+)', r'\1')
 
 # Tweak the DMA
 dma0 = svd.findNamedEntry(chip['peripherals'], 'DMA0')
-dma0['headerStructName'] = 'DMA'
+dma0['headerStructName'] = 'SmartDMA'
 dma0['clocks'] = [ { 'name': 'clk' } ]
 transform.renameEntries(dma0['interrupts'], 'name', 'DMA0', 'DMA')
 dma0['parameters'] = [

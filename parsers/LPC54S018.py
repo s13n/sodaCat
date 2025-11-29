@@ -12,7 +12,7 @@ subdir = Path("./models/NXP/LPC54")
 modelSet = [
     'SYSCON', 'IOCON', 'GINT0', 'PINT', 'INPUTMUX', 'CTIMER',
     'WWDT', 'MRT', 'UTICK0', 'OTPC', 'RTC', 'RIT', 'SMARTCARD0', 'PUF', 'ASYNC_SYSCON',
-    'SPIFI0', 'EMC', 'DMA', 'LCD', 'USB0', 'SCT', 'FLEXCOMM0', 'I2C', 'SPI', 'USART'
+    'SPIFI0', 'EMC', 'SmartDMA', 'LCD', 'USB0', 'SCT', 'FLEXCOMM0', 'I2C', 'SPI', 'USART'
     'GPIO', 'DMIC0', 'ENET', 'USBHSD', 'CRC_ENGINE', 'I2S0', 'SDIF', 'CAN',
     'ADC', 'AES0', 'USBFSH', 'USBHSH', 'SHA0', 'ITM', 'SystemControl', 'SysTick', 'ETM']
 instSet = [
@@ -64,19 +64,14 @@ ctimer4 = svd.findNamedEntry(chip['peripherals'], 'CTIMER4')
 
 # Tweak the DMA
 dma0 = svd.findNamedEntry(chip['peripherals'], 'DMA0')
-dma0['headerStructName'] = 'DMA'
+dma0['headerStructName'] = 'SmartDMA'
 dma0['clocks'] = [ { 'name': 'clk' } ]
 transform.renameEntries(dma0['interrupts'], 'name', 'DMA0', 'DMA')
 dma0['parameters'] = [
-    { 'name': 'max_channel', 'value': 15, 'bits': 5, 'min': 0, 'max': 31, 'description': 'index of last channel' },
+    { 'name': 'max_channel', 'value': 31, 'bits': 5, 'min': 0, 'max': 31, 'description': 'index of last channel' },
 ]
 def dmaChanParams(name, num):
     return { 'name': name, 'value': num, 'bits': 5, 'min': 0, 'max': 31, 'description': 'DMA receive channel' }
-
-# Tweak the I2S
-i2s0 = svd.findNamedEntry(chip['peripherals'], 'I2S0')
-i2s0['headerStructName'] = 'I2S'
-i2s1 = svd.findNamedEntry(chip['peripherals'], 'I2S1')
 
 # Tweak the GPIO
 gpio = svd.findNamedEntry(chip['peripherals'], 'GPIO')
@@ -91,6 +86,11 @@ i2c0['parameters'] = [
     dmaChanParams('rx_req', 10),
     dmaChanParams('tx_req', 11),
 ]
+
+# Tweak the I2S
+i2s0 = svd.findNamedEntry(chip['peripherals'], 'I2S0')
+i2s0['headerStructName'] = 'I2S'
+i2s1 = svd.findNamedEntry(chip['peripherals'], 'I2S1')
 
 # Tweak the IOCON
 iocon = svd.findNamedEntry(chip['peripherals'], 'IOCON')
