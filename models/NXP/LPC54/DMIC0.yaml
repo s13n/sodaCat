@@ -1,0 +1,484 @@
+# Created from LPC54S018.svd
+
+name: DMIC0
+description: LPC5411x DMIC Subsystem (DMIC))
+groupName: DMIC
+registers:
+  - dim: 2
+    dimIncrement: 256
+    name: CHANNEL[%s]
+    description: no description available
+    addressOffset: 0
+    registers:
+      - name: OSR
+        description: Oversample Rate register 0
+        addressOffset: 0
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 255
+        fields:
+          - name: OSR
+            description: Selects the oversample rate for the related input 
+              channel.
+            bitOffset: 0
+            bitWidth: 8
+            access: read-write
+      - name: DIVHFCLK
+        description: DMIC Clock Register 0
+        addressOffset: 4
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 15
+        fields:
+          - name: PDMDIV
+            description: PDM clock divider value. 0 = divide by 1 1 = divide by 
+              2 2 = divide by 3 3 = divide by 4 4 = divide by 6 5 = divide by 8 
+              6 = divide by 12 7 = divide by 16 8 = divide by 24 9 = divide by 
+              32 10 = divide by 48 11 = divide by 64 12 = divide by 96 13 = 
+              divide by 128 others = reserved.
+            bitOffset: 0
+            bitWidth: 4
+            access: read-write
+      - name: PREAC2FSCOEF
+        description: Pre-Emphasis Filter Coefficient for 2 FS register
+        addressOffset: 8
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 3
+        fields:
+          - name: COMP
+            description: Pre-emphasis filer coefficient for 2 FS mode. 0 = 
+              Compensation = 0 1 = Compensation = 16 2 = Compensation = 15 3 = 
+              Compensation = 13
+            bitOffset: 0
+            bitWidth: 2
+            access: read-write
+      - name: PREAC4FSCOEF
+        description: Pre-Emphasis Filter Coefficient for 4 FS register
+        addressOffset: 12
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 3
+        fields:
+          - name: COMP
+            description: Pre-emphasis filer coefficient for 4 FS mode. 0 = 
+              Compensation = 0 1 = Compensation = 16 2 = Compensation = 15 3 = 
+              Compensation = 13
+            bitOffset: 0
+            bitWidth: 2
+            access: read-write
+      - name: GAINSHIFT
+        description: Decimator Gain Shift register
+        addressOffset: 16
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 63
+        fields:
+          - name: GAIN
+            description: Gain control, as a positive or negative (two's 
+              complement) number of bits to shift.
+            bitOffset: 0
+            bitWidth: 6
+            access: read-write
+      - name: FIFO_CTRL
+        description: FIFO Control register 0
+        addressOffset: 128
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 2031631
+        fields:
+          - name: ENABLE
+            description: FIFO enable.
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLED
+                description: FIFO is not enabled. Enabling a DMIC channel with 
+                  the FIFO disabled could be useful while data is being streamed
+                  to the I2S, or in order to avoid a filter settling delay when 
+                  a channel is re-enabled after a period when the data was not 
+                  needed.
+                value: 0
+              - name: ENABLED
+                description: FIFO is enabled. The FIFO must be enabled in order 
+                  for the CPU or DMA to read data from the DMIC via the FIFODATA
+                  register.
+                value: 1
+          - name: RESETN
+            description: FIFO reset.
+            bitOffset: 1
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: RESET
+                description: Reset the FIFO.
+                value: 0
+              - name: NORMAL
+                description: Normal operation
+                value: 1
+          - name: INTEN
+            description: Interrupt enable.
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLED
+                description: FIFO level interrupts are not enabled.
+                value: 0
+              - name: ENABLED
+                description: FIFO level interrupts are enabled.
+                value: 1
+          - name: DMAEN
+            description: DMA enable
+            bitOffset: 3
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLED
+                description: DMA requests are not enabled.
+                value: 0
+              - name: ENABLED
+                description: DMA requests based on FIFO level are enabled.
+                value: 1
+          - name: TRIGLVL
+            description: FIFO trigger level. Selects the data trigger level for 
+              interrupt or DMA operation. If enabled to do so, the FIFO level 
+              can wake up the device just enough to perform DMA, then return to 
+              the reduced power mode See Section 4.5.66 'Hardware Wake-up 
+              control register'. 0 = trigger when the FIFO has received one 
+              entry (is no longer empty). 1 = trigger when the FIFO has received
+              two entries. 15 = trigger when the FIFO has received 16 entries 
+              (has become full).
+            bitOffset: 16
+            bitWidth: 5
+            access: read-write
+      - name: FIFO_STATUS
+        description: FIFO Status register 0
+        addressOffset: 132
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 7
+        fields:
+          - name: INT
+            description: 'Interrupt flag. Asserted when FIFO data reaches the level
+              specified in the FIFOCTRL register. Writing a one to this bit clears
+              the flag. Remark: note that the bus clock to the DMIC subsystem must
+              be running in order for an interrupt to occur.'
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+          - name: OVERRUN
+            description: Overrun flag. Indicates that a FIFO overflow has 
+              occurred at some point. Writing a one to this bit clears the flag.
+              This flag does not cause an interrupt.
+            bitOffset: 1
+            bitWidth: 1
+            access: read-write
+          - name: UNDERRUN
+            description: Underrun flag. Indicates that a FIFO underflow has 
+              occurred at some point. Writing a one to this bit clears the flag.
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+      - name: FIFO_DATA
+        description: FIFO Data Register 0
+        addressOffset: 136
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 16777215
+        fields:
+          - name: DATA
+            description: Data from the top of the input filter FIFO.
+            bitOffset: 0
+            bitWidth: 24
+            access: read-write
+      - name: PHY_CTRL
+        description: PDM Source Configuration register 0
+        addressOffset: 140
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 3
+        fields:
+          - name: PHY_FALL
+            description: Capture PDM_DATA
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: RISING_EDGE
+                description: Capture PDM_DATA on the rising edge of PDM_CLK.
+                value: 0
+              - name: FALLING_EDGE
+                description: Capture PDM_DATA on the falling edge of PDM_CLK.
+                value: 1
+          - name: PHY_HALF
+            description: Half rate sampling
+            bitOffset: 1
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: STANDARD
+                description: Standard half rate sampling. The clock to the DMIC 
+                  is sent at the same rate as the decimator is providing.
+                value: 0
+              - name: HALF_RATE
+                description: Use half rate sampling. The clock to the DMIC is 
+                  sent at half the rate as the decimator is providing.
+                value: 1
+      - name: DC_CTRL
+        description: DC Control register 0
+        addressOffset: 144
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 499
+        fields:
+          - name: DCPOLE
+            description: DC block filter
+            bitOffset: 0
+            bitWidth: 2
+            access: read-write
+            enumeratedValues:
+              - name: FLAT_RESPONSE
+                description: Flat response, no filter.
+                value: 0
+              - name: HZ_155
+                description: 155 Hz.
+                value: 1
+              - name: HZ_78
+                description: 78 Hz.
+                value: 2
+              - name: HZ_39
+                description: 39 Hz
+                value: 3
+          - name: DCGAIN
+            description: Fine gain adjustment in the form of a number of bits to
+              downshift.
+            bitOffset: 4
+            bitWidth: 4
+            access: read-write
+          - name: SATURATEAT16BIT
+            description: Selects 16-bit saturation.
+            bitOffset: 8
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DO_NOT_SATURATE
+                description: Results roll over if out range and do not saturate.
+                value: 0
+              - name: SATURATE
+                description: If the result overflows, it saturates at 0xFFFF for
+                  positive overflow and 0x8000 for negative overflow.
+                value: 1
+  - name: CHANEN
+    description: Channel Enable register
+    addressOffset: 3840
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: EN_CH0
+        description: Enable channel 0. When 1, PDM channel 0 is enabled.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: EN_CH1
+        description: Enable channel 1. When 1, PDM channel 1 is enabled.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: IOCFG
+    description: I/O Configuration register
+    addressOffset: 3852
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 7
+    fields:
+      - name: CLK_BYPASS0
+        description: Bypass CLK0. When 1, PDM_DATA1 becomes the clock for PDM 
+          channel 0. This provides for the possibility of an external codec 
+          taking over the PDM bus.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CLK_BYPASS1
+        description: Bypass CLK1. When 1, PDM_DATA1 becomes the clock for PDM 
+          channel 1. This provides for the possibility of an external codec 
+          taking over the PDM bus.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: STEREO_DATA0
+        description: Stereo PDM select. When 1, PDM_DATA0 is routed to both PDM 
+          channels in a configuration that supports a single stereo digital 
+          microphone.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+  - name: USE2FS
+    description: Use 2FS register
+    addressOffset: 3856
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: USE2FS
+        description: Use 2FS register
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: USE_1FS
+            description: Use 1FS output for PCM data.
+            value: 0
+          - name: USE_2FS
+            description: Use 2FS output for PCM data.
+            value: 1
+  - name: HWVADGAIN
+    description: HWVAD input gain register
+    addressOffset: 3968
+    size: 32
+    access: read-write
+    resetValue: 5
+    resetMask: 15
+    fields:
+      - name: INPUTGAIN
+        description: Shift value for input bits 0x00 -10 bits 0x01 -8 bits 0x02 
+          -6 bits 0x03 -4 bits 0x04 -2 bits 0x05 0 bits (default) 0x06 +2 bits 
+          0x07 +4 bits 0x08 +6 bits 0x09 +8 bits 0x0A +10 bits 0x0B +12 bits 
+          0x0C +14 bits 0x0D to 0x0F Reserved.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+  - name: HWVADHPFS
+    description: HWVAD filter control register
+    addressOffset: 3972
+    size: 32
+    access: read-write
+    resetValue: 1
+    resetMask: 3
+    fields:
+      - name: HPFS
+        description: High pass filter
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: BYPASS
+            description: First filter by-pass.
+            value: 0
+          - name: HIGH_PASS_1750HZ
+            description: High pass filter with -3dB cut-off at 1750Hz.
+            value: 1
+          - name: HIGH_PASS_215HZ
+            description: High pass filter with -3dB cut-off at 215Hz.
+            value: 2
+  - name: HWVADST10
+    description: HWVAD control register
+    addressOffset: 3976
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: ST10
+        description: Stage 0
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal operation, waiting for HWVAD trigger event 
+              (stage 0).
+            value: 0
+          - name: RESET
+            description: Reset internal interrupt flag by writing a '1' pulse.
+            value: 1
+  - name: HWVADRSTT
+    description: HWVAD filter reset register
+    addressOffset: 3980
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: RSTT
+        description: Writing a 1 resets all filter values
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: HWVADTHGN
+    description: HWVAD noise estimator gain register
+    addressOffset: 3984
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 15
+    fields:
+      - name: THGN
+        description: Gain value for the noise estimator. Values 0 to 14. 0 
+          corresponds to a gain of 1.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+  - name: HWVADTHGS
+    description: HWVAD signal estimator gain register
+    addressOffset: 3988
+    size: 32
+    access: read-write
+    resetValue: 4
+    resetMask: 15
+    fields:
+      - name: THGS
+        description: Gain value for the signal estimator. Values 0 to 14. 0 
+          corresponds to a gain of 1.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+  - name: HWVADLOWZ
+    description: HWVAD noise envelope estimator register
+    addressOffset: 3992
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: LOWZ
+        description: Noise envelope estimator value.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: ID
+    description: Module Identification register
+    addressOffset: 4092
+    size: 32
+    access: read-only
+    resetValue: 2
+    resetMask: 4294967295
+    fields:
+      - name: ID
+        description: Indicates module ID and the number of channels in this DMIC
+          interface.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+interrupts:
+  - name: DMIC0
+  - name: HWVAD0
+addressBlocks:
+  - offset: 0
+    size: 4096
+    usage: registers

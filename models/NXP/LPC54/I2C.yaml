@@ -1,0 +1,1229 @@
+# Created from LPC54S018.svd
+
+name: I2C
+description: LPC5411x I2C-bus interfaces
+alternatePeripheral: FLEXCOMM0
+groupName: I2C
+headerStructName: I2C
+registers:
+  - name: CFG
+    description: Configuration for shared functions.
+    addressOffset: 2048
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: MSTEN
+        description: Master Enable. When disabled, configurations settings for 
+          the Master function are not changed, but the Master function is 
+          internally reset.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The I2C Master function is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The I2C Master function is enabled.
+            value: 1
+      - name: SLVEN
+        description: Slave Enable. When disabled, configurations settings for 
+          the Slave function are not changed, but the Slave function is 
+          internally reset.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The I2C slave function is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The I2C slave function is enabled.
+            value: 1
+      - name: MONEN
+        description: Monitor Enable. When disabled, configurations settings for 
+          the Monitor function are not changed, but the Monitor function is 
+          internally reset.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The I2C Monitor function is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The I2C Monitor function is enabled.
+            value: 1
+      - name: TIMEOUTEN
+        description: I2C bus Time-out Enable. When disabled, the time-out 
+          function is internally reset.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Time-out function is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Time-out function is enabled. Both types of 
+              time-out flags will be generated and will cause interrupts if they
+              are enabled. Typically, only one time-out will be used in a 
+              system.
+            value: 1
+      - name: MONCLKSTR
+        description: Monitor function Clock Stretching.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The Monitor function will not perform clock 
+              stretching. Software or DMA may not always be able to read data 
+              provided by the Monitor function before it is overwritten. This 
+              mode may be used when non-invasive monitoring is critical.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The Monitor function will perform clock 
+              stretching in order to ensure that software or DMA can read all 
+              incoming data supplied by the Monitor function.
+            value: 1
+      - name: HSCAPABLE
+        description: 'High-speed mode Capable enable. Since High Speed mode alters
+          the way I2C pins drive and filter, as well as the timing for certain I2C
+          signalling, enabling High-speed mode applies to all functions: Master, Slave,
+          and Monitor.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: FAST_MODE_PLUS
+            description: Fast-mode plus. The I 2C interface will support 
+              Standard-mode, Fast-mode, and Fast-mode Plus, to the extent that 
+              the pin electronics support these modes. Any changes that need to 
+              be made to the pin controls, such as changing the drive strength 
+              or filtering, must be made by software via the IOCON register 
+              associated with each I2C pin,
+            value: 0
+          - name: HIGH_SPEED
+            description: High-speed. In addition to Standard-mode, Fast-mode, 
+              and Fast-mode Plus, the I 2C interface will support High-speed 
+              mode to the extent that the pin electronics support these modes. 
+              See Section 25.7.2.2 for more information.
+            value: 1
+  - name: STAT
+    description: Status register for Master, Slave, and Monitor functions.
+    addressOffset: 2052
+    size: 32
+    access: read-write
+    resetValue: 2049
+    resetMask: 51380063
+    fields:
+      - name: MSTPENDING
+        description: Master Pending. Indicates that the Master is waiting to 
+          continue communication on the I2C-bus (pending) or is idle. When the 
+          master is pending, the MSTSTATE bits indicate what type of software 
+          service if any the master expects. This flag will cause an interrupt 
+          when set if, enabled via the INTENSET register. The MSTPENDING flag is
+          not set when the DMA is handling an event (if the MSTDMA bit in the 
+          MSTCTL register is set). If the master is in the idle state, and no 
+          communication is needed, mask this interrupt.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: IN_PROGRESS
+            description: In progress. Communication is in progress and the 
+              Master function is busy and cannot currently accept a command.
+            value: 0
+          - name: PENDING
+            description: Pending. The Master function needs software service or 
+              is in the idle state. If the master is not in the idle state, it 
+              is waiting to receive or transmit data or the NACK bit.
+            value: 1
+      - name: MSTSTATE
+        description: Master State code. The master state code reflects the 
+          master state when the MSTPENDING bit is set, that is the master is 
+          pending or in the idle state. Each value of this field indicates a 
+          specific required service for the Master function. All other values 
+          are reserved. See Table 400 for details of state values and 
+          appropriate responses.
+        bitOffset: 1
+        bitWidth: 3
+        access: read-only
+        enumeratedValues:
+          - name: IDLE
+            description: Idle. The Master function is available to be used for a
+              new transaction.
+            value: 0
+          - name: RECEIVE_READY
+            description: Receive ready. Received data available (Master Receiver
+              mode). Address plus Read was previously sent and Acknowledged by 
+              slave.
+            value: 1
+          - name: TRANSMIT_READY
+            description: Transmit ready. Data can be transmitted (Master 
+              Transmitter mode). Address plus Write was previously sent and 
+              Acknowledged by slave.
+            value: 2
+          - name: NACK_ADDRESS
+            description: NACK Address. Slave NACKed address.
+            value: 3
+          - name: NACK_DATA
+            description: NACK Data. Slave NACKed transmitted data.
+            value: 4
+      - name: MSTARBLOSS
+        description: Master Arbitration Loss flag. This flag can be cleared by 
+          software writing a 1 to this bit. It is also cleared automatically a 1
+          is written to MSTCONTINUE.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_LOSS
+            description: No Arbitration Loss has occurred.
+            value: 0
+          - name: ARBITRATION_LOSS
+            description: Arbitration loss. The Master function has experienced 
+              an Arbitration Loss. At this point, the Master function has 
+              already stopped driving the bus and gone to an idle state. 
+              Software can respond by doing nothing, or by sending a Start in 
+              order to attempt to gain control of the bus when it next becomes 
+              idle.
+            value: 1
+      - name: MSTSTSTPERR
+        description: Master Start/Stop Error flag. This flag can be cleared by 
+          software writing a 1 to this bit. It is also cleared automatically a 1
+          is written to MSTCONTINUE.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_ERROR
+            description: No Start/Stop Error has occurred.
+            value: 0
+          - name: ERROR
+            description: The Master function has experienced a Start/Stop Error.
+              A Start or Stop was detected at a time when it is not allowed by 
+              the I2C specification. The Master interface has stopped driving 
+              the bus and gone to an idle state, no action is required. A 
+              request for a Start could be made, or software could attempt to 
+              insure that the bus has not stalled.
+            value: 1
+      - name: SLVPENDING
+        description: Slave Pending. Indicates that the Slave function is waiting
+          to continue communication on the I2C-bus and needs software service. 
+          This flag will cause an interrupt when set if enabled via INTENSET. 
+          The SLVPENDING flag is not set when the DMA is handling an event (if 
+          the SLVDMA bit in the SLVCTL register is set). The SLVPENDING flag is 
+          read-only and is automatically cleared when a 1 is written to the 
+          SLVCONTINUE bit in the SLVCTL register. The point in time when 
+          SlvPending is set depends on whether the I2C interface is in HSCAPABLE
+          mode. See Section 25.7.2.2.2. When the I2C interface is configured to 
+          be HSCAPABLE, HS master codes are detected automatically. Due to the 
+          requirements of the HS I2C specification, slave addresses must also be
+          detected automatically, since the address must be acknowledged before 
+          the clock can be stretched.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: IN_PROGRESS
+            description: In progress. The Slave function does not currently need
+              service.
+            value: 0
+          - name: PENDING
+            description: Pending. The Slave function needs service. Information 
+              on what is needed can be found in the adjacent SLVSTATE field.
+            value: 1
+      - name: SLVSTATE
+        description: Slave State code. Each value of this field indicates a 
+          specific required service for the Slave function. All other values are
+          reserved. See Table 401 for state values and actions. note that the 
+          occurrence of some states and how they are handled are affected by DMA
+          mode and Automatic Operation modes.
+        bitOffset: 9
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: SLAVE_ADDRESS
+            description: Slave address. Address plus R/W received. At least one 
+              of the four slave addresses has been matched by hardware.
+            value: 0
+          - name: SLAVE_RECEIVE
+            description: Slave receive. Received data is available (Slave 
+              Receiver mode).
+            value: 1
+          - name: SLAVE_TRANSMIT
+            description: Slave transmit. Data can be transmitted (Slave 
+              Transmitter mode).
+            value: 2
+      - name: SLVNOTSTR
+        description: Slave Not Stretching. Indicates when the slave function is 
+          stretching the I2C clock. This is needed in order to gracefully invoke
+          Deep Sleep or Power-down modes during slave operation. This read-only 
+          flag reflects the slave function status in real time.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: STRETCHING
+            description: Stretching. The slave function is currently stretching 
+              the I2C bus clock. Deep-Sleep or Power-down mode cannot be entered
+              at this time.
+            value: 0
+          - name: NOT_STRETCHING
+            description: Not stretching. The slave function is not currently 
+              stretching the I 2C bus clock. Deep-sleep or Power-down mode could
+              be entered at this time.
+            value: 1
+      - name: SLVIDX
+        description: Slave address match Index. This field is valid when the I2C
+          slave function has been selected by receiving an address that matches 
+          one of the slave addresses defined by any enabled slave address 
+          registers, and provides an identification of the address that was 
+          matched. It is possible that more than one address could be matched, 
+          but only one match can be reported here.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: ADDRESS0
+            description: Address 0. Slave address 0 was matched.
+            value: 0
+          - name: ADDRESS1
+            description: Address 1. Slave address 1 was matched.
+            value: 1
+          - name: ADDRESS2
+            description: Address 2. Slave address 2 was matched.
+            value: 2
+          - name: ADDRESS3
+            description: Address 3. Slave address 3 was matched.
+            value: 3
+      - name: SLVSEL
+        description: Slave selected flag. SLVSEL is set after an address match 
+          when software tells the Slave function to acknowledge the address, or 
+          when the address has been automatically acknowledged. It is cleared 
+          when another address cycle presents an address that does not match an 
+          enabled address on the Slave function, when slave software decides to 
+          NACK a matched address, when there is a Stop detected on the bus, when
+          the master NACKs slave data, and in some combinations of Automatic 
+          Operation. SLVSEL is not cleared if software NACKs data.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: NOT_SELECTED
+            description: Not selected. The Slave function is not currently 
+              selected.
+            value: 0
+          - name: SELECTED
+            description: Selected. The Slave function is currently selected.
+            value: 1
+      - name: SLVDESEL
+        description: Slave Deselected flag. This flag will cause an interrupt 
+          when set if enabled via INTENSET. This flag can be cleared by writing 
+          a 1 to this bit.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NOT_DESELECTED
+            description: Not deselected. The Slave function has not become 
+              deselected. This does not mean that it is currently selected. That
+              information can be found in the SLVSEL flag.
+            value: 0
+          - name: DESELECTED
+            description: Deselected. The Slave function has become deselected. 
+              This is specifically caused by the SLVSEL flag changing from 1 to 
+              0. See the description of SLVSEL for details on when that event 
+              occurs.
+            value: 1
+      - name: MONRDY
+        description: Monitor Ready. This flag is cleared when the MONRXDAT 
+          register is read.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: NO_DATA
+            description: No data. The Monitor function does not currently have 
+              data available.
+            value: 0
+          - name: DATA_WAITING
+            description: Data waiting. The Monitor function has data waiting to 
+              be read.
+            value: 1
+      - name: MONOV
+        description: Monitor Overflow flag.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_OVERRUN
+            description: No overrun. Monitor data has not overrun.
+            value: 0
+          - name: OVERRUN
+            description: Overrun. A Monitor data overrun has occurred. This can 
+              only happen when Monitor clock stretching not enabled via the 
+              MONCLKSTR bit in the CFG register. Writing 1 to this bit clears 
+              the flag.
+            value: 1
+      - name: MONACTIVE
+        description: 'Monitor Active flag. Indicates when the Monitor function considers
+          the I 2C bus to be active. Active is defined here as when some Master is
+          on the bus: a bus Start has occurred more recently than a bus Stop.'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: INACTIVE
+            description: Inactive. The Monitor function considers the I2C bus to
+              be inactive.
+            value: 0
+          - name: ACTIVE
+            description: Active. The Monitor function considers the I2C bus to 
+              be active.
+            value: 1
+      - name: MONIDLE
+        description: Monitor Idle flag. This flag is set when the Monitor 
+          function sees the I2C bus change from active to inactive. This can be 
+          used by software to decide when to process data accumulated by the 
+          Monitor function. This flag will cause an interrupt when set if 
+          enabled via the INTENSET register. The flag can be cleared by writing 
+          a 1 to this bit.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NOT_IDLE
+            description: Not idle. The I2C bus is not idle, or this flag has 
+              been cleared by software.
+            value: 0
+          - name: IDLE
+            description: Idle. The I2C bus has gone idle at least once since the
+              last time this flag was cleared by software.
+            value: 1
+      - name: EVENTTIMEOUT
+        description: Event Time-out Interrupt flag. Indicates when the time 
+          between events has been longer than the time specified by the TIMEOUT 
+          register. Events include Start, Stop, and clock edges. The flag is 
+          cleared by writing a 1 to this bit. No time-out is created when the 
+          I2C-bus is idle.
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_TIMEOUT
+            description: No time-out. I2C bus events have not caused a time-out.
+            value: 0
+          - name: EVEN_TIMEOUT
+            description: Event time-out. The time between I2C bus events has 
+              been longer than the time specified by the TIMEOUT register.
+            value: 1
+      - name: SCLTIMEOUT
+        description: SCL Time-out Interrupt flag. Indicates when SCL has 
+          remained low longer than the time specific by the TIMEOUT register. 
+          The flag is cleared by writing a 1 to this bit.
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_TIMEOUT
+            description: No time-out. SCL low time has not caused a time-out.
+            value: 0
+          - name: TIMEOUT
+            description: Time-out. SCL low time has caused a time-out.
+            value: 1
+  - name: INTENSET
+    description: Interrupt Enable Set and read register.
+    addressOffset: 2056
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 51087697
+    fields:
+      - name: MSTPENDINGEN
+        description: Master Pending interrupt Enable.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The MstPending interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The MstPending interrupt is enabled.
+            value: 1
+      - name: MSTARBLOSSEN
+        description: Master Arbitration Loss interrupt Enable.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The MstArbLoss interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The MstArbLoss interrupt is enabled.
+            value: 1
+      - name: MSTSTSTPERREN
+        description: Master Start/Stop Error interrupt Enable.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The MstStStpErr interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The MstStStpErr interrupt is enabled.
+            value: 1
+      - name: SLVPENDINGEN
+        description: Slave Pending interrupt Enable.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The SlvPending interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The SlvPending interrupt is enabled.
+            value: 1
+      - name: SLVNOTSTREN
+        description: Slave Not Stretching interrupt Enable.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The SlvNotStr interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The SlvNotStr interrupt is enabled.
+            value: 1
+      - name: SLVDESELEN
+        description: Slave Deselect interrupt Enable.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The SlvDeSel interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The SlvDeSel interrupt is enabled.
+            value: 1
+      - name: MONRDYEN
+        description: Monitor data Ready interrupt Enable.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The MonRdy interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The MonRdy interrupt is enabled.
+            value: 1
+      - name: MONOVEN
+        description: Monitor Overrun interrupt Enable.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The MonOv interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The MonOv interrupt is enabled.
+            value: 1
+      - name: MONIDLEEN
+        description: Monitor Idle interrupt Enable.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The MonIdle interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The MonIdle interrupt is enabled.
+            value: 1
+      - name: EVENTTIMEOUTEN
+        description: Event time-out interrupt Enable.
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The Event time-out interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The Event time-out interrupt is enabled.
+            value: 1
+      - name: SCLTIMEOUTEN
+        description: SCL time-out interrupt Enable.
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. The SCL time-out interrupt is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. The SCL time-out interrupt is enabled.
+            value: 1
+  - name: INTENCLR
+    description: Interrupt Enable Clear register.
+    addressOffset: 2060
+    size: 32
+    access: write-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: MSTPENDINGCLR
+        description: Master Pending interrupt clear. Writing 1 to this bit 
+          clears the corresponding bit in the INTENSET register if implemented.
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: MSTARBLOSSCLR
+        description: Master Arbitration Loss interrupt clear.
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: MSTSTSTPERRCLR
+        description: Master Start/Stop Error interrupt clear.
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: SLVPENDINGCLR
+        description: Slave Pending interrupt clear.
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: SLVNOTSTRCLR
+        description: Slave Not Stretching interrupt clear.
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: SLVDESELCLR
+        description: Slave Deselect interrupt clear.
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: MONRDYCLR
+        description: Monitor data Ready interrupt clear.
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: MONOVCLR
+        description: Monitor Overrun interrupt clear.
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: MONIDLECLR
+        description: Monitor Idle interrupt clear.
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: EVENTTIMEOUTCLR
+        description: Event time-out interrupt clear.
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: SCLTIMEOUTCLR
+        description: SCL time-out interrupt clear.
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+  - name: TIMEOUT
+    description: Time-out value register.
+    addressOffset: 2064
+    size: 32
+    access: read-write
+    resetValue: 65535
+    resetMask: 65535
+    fields:
+      - name: TOMIN
+        description: Time-out time value, bottom four bits. These are hard-wired
+          to 0xF. This gives a minimum time-out of 16 I2C function clocks and 
+          also a time-out resolution of 16 I2C function clocks.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: TO
+        description: Time-out time value. Specifies the time-out interval value 
+          in increments of 16 I 2C function clocks, as defined by the CLKDIV 
+          register. To change this value while I2C is in operation, disable all 
+          time-outs, write a new value to TIMEOUT, then re-enable time-outs. 
+          0x000 = A time-out will occur after 16 counts of the I2C function 
+          clock. 0x001 = A time-out will occur after 32 counts of the I2C 
+          function clock. 0xFFF = A time-out will occur after 65,536 counts of 
+          the I2C function clock.
+        bitOffset: 4
+        bitWidth: 12
+        access: read-write
+  - name: CLKDIV
+    description: Clock pre-divider for the entire I2C interface. This determines
+      what time increments are used for the MSTTIME register, and controls some 
+      timing of the Slave function.
+    addressOffset: 2068
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: DIVVAL
+        description: This field controls how the Flexcomm clock (FCLK) is used 
+          by the I2C functions that need an internal clock in order to operate. 
+          0x0000 = FCLK is used directly by the I2C. 0x0001 = FCLK is divided by
+          2 before use. 0x0002 = FCLK is divided by 3 before use. 0xFFFF = FCLK 
+          is divided by 65,536 before use.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: INTSTAT
+    description: Interrupt Status register for Master, Slave, and Monitor 
+      functions.
+    addressOffset: 2072
+    size: 32
+    access: read-only
+    resetValue: 2049
+    resetMask: 51087697
+    fields:
+      - name: MSTPENDING
+        description: Master Pending.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: MSTARBLOSS
+        description: Master Arbitration Loss flag.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: MSTSTSTPERR
+        description: Master Start/Stop Error flag.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: SLVPENDING
+        description: Slave Pending.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+      - name: SLVNOTSTR
+        description: Slave Not Stretching status.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: SLVDESEL
+        description: Slave Deselected flag.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+      - name: MONRDY
+        description: Monitor Ready.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: MONOV
+        description: Monitor Overflow flag.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-only
+      - name: MONIDLE
+        description: Monitor Idle flag.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-only
+      - name: EVENTTIMEOUT
+        description: Event time-out Interrupt flag.
+        bitOffset: 24
+        bitWidth: 1
+        access: read-only
+      - name: SCLTIMEOUT
+        description: SCL time-out Interrupt flag.
+        bitOffset: 25
+        bitWidth: 1
+        access: read-only
+  - name: MSTCTL
+    description: Master control register.
+    addressOffset: 2080
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 14
+    fields:
+      - name: MSTCONTINUE
+        description: Master Continue. This bit is write-only.
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect.
+            value: 0
+          - name: CONTINUE
+            description: Continue. Informs the Master function to continue to 
+              the next operation. This must done after writing transmit data, 
+              reading received data, or any other housekeeping related to the 
+              next bus operation.
+            value: 1
+      - name: MSTSTART
+        description: Master Start control. This bit is write-only.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect.
+            value: 0
+          - name: START
+            description: Start. A Start will be generated on the I2C bus at the 
+              next allowed time.
+            value: 1
+      - name: MSTSTOP
+        description: Master Stop control. This bit is write-only.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect.
+            value: 0
+          - name: STOP
+            description: Stop. A Stop will be generated on the I2C bus at the 
+              next allowed time, preceded by a NACK to the slave if the master 
+              is receiving data from the slave (Master Receiver mode).
+            value: 1
+      - name: MSTDMA
+        description: Master DMA enable. Data operations of the I2C can be 
+          performed with DMA. Protocol type operations such as Start, address, 
+          Stop, and address match must always be done with software, typically 
+          via an interrupt. Address acknowledgement must also be done by 
+          software except when the I2C is configured to be HSCAPABLE (and 
+          address acknowledgement is handled entirely by hardware) or when 
+          Automatic Operation is enabled. When a DMA data transfer is complete, 
+          MSTDMA must be cleared prior to beginning the next operation, 
+          typically a Start or Stop.This bit is read/write.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disable. No DMA requests are generated for master 
+              operation.
+            value: 0
+          - name: ENABLED
+            description: Enable. A DMA request is generated for I2C master data 
+              operations. When this I2C master is generating Acknowledge bits in
+              Master Receiver mode, the acknowledge is generated automatically.
+            value: 1
+  - name: MSTTIME
+    description: Master timing configuration.
+    addressOffset: 2084
+    size: 32
+    access: read-write
+    resetValue: 119
+    resetMask: 119
+    fields:
+      - name: MSTSCLLOW
+        description: Master SCL Low time. Specifies the minimum low time that 
+          will be asserted by this master on SCL. Other devices on the bus 
+          (masters or slaves) could lengthen this time. This corresponds to the 
+          parameter t LOW in the I2C bus specification. I2C bus specification 
+          parameters tBUF and tSU;STA have the same values and are also 
+          controlled by MSTSCLLOW.
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: CLOCKS_2
+            description: 2 clocks. Minimum SCL low time is 2 clocks of the I2C 
+              clock pre-divider.
+            value: 0
+          - name: CLOCKS_3
+            description: 3 clocks. Minimum SCL low time is 3 clocks of the I2C 
+              clock pre-divider.
+            value: 1
+          - name: CLOCKS_4
+            description: 4 clocks. Minimum SCL low time is 4 clocks of the I2C 
+              clock pre-divider.
+            value: 2
+          - name: CLOCKS_5
+            description: 5 clocks. Minimum SCL low time is 5 clocks of the I2C 
+              clock pre-divider.
+            value: 3
+          - name: CLOCKS_6
+            description: 6 clocks. Minimum SCL low time is 6 clocks of the I2C 
+              clock pre-divider.
+            value: 4
+          - name: CLOCKS_7
+            description: 7 clocks. Minimum SCL low time is 7 clocks of the I2C 
+              clock pre-divider.
+            value: 5
+          - name: CLOCKS_8
+            description: 8 clocks. Minimum SCL low time is 8 clocks of the I2C 
+              clock pre-divider.
+            value: 6
+          - name: CLOCKS_9
+            description: 9 clocks. Minimum SCL low time is 9 clocks of the I2C 
+              clock pre-divider.
+            value: 7
+      - name: MSTSCLHIGH
+        description: Master SCL High time. Specifies the minimum high time that 
+          will be asserted by this master on SCL. Other masters in a 
+          multi-master system could shorten this time. This corresponds to the 
+          parameter tHIGH in the I2C bus specification. I2C bus specification 
+          parameters tSU;STO and tHD;STA have the same values and are also 
+          controlled by MSTSCLHIGH.
+        bitOffset: 4
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: CLOCKS_2
+            description: 2 clocks. Minimum SCL high time is 2 clock of the I2C 
+              clock pre-divider.
+            value: 0
+          - name: CLOCKS_3
+            description: 3 clocks. Minimum SCL high time is 3 clocks of the I2C 
+              clock pre-divider .
+            value: 1
+          - name: CLOCKS_4
+            description: 4 clocks. Minimum SCL high time is 4 clock of the I2C 
+              clock pre-divider.
+            value: 2
+          - name: CLOCKS_5
+            description: 5 clocks. Minimum SCL high time is 5 clock of the I2C 
+              clock pre-divider.
+            value: 3
+          - name: CLOCKS_6
+            description: 6 clocks. Minimum SCL high time is 6 clock of the I2C 
+              clock pre-divider.
+            value: 4
+          - name: CLOCKS_7
+            description: 7 clocks. Minimum SCL high time is 7 clock of the I2C 
+              clock pre-divider.
+            value: 5
+          - name: CLOCKS_8
+            description: 8 clocks. Minimum SCL high time is 8 clock of the I2C 
+              clock pre-divider.
+            value: 6
+          - name: CLOCKS_9
+            description: 9 clocks. Minimum SCL high time is 9 clocks of the I2C 
+              clock pre-divider.
+            value: 7
+  - name: MSTDAT
+    description: Combined Master receiver and transmitter data register.
+    addressOffset: 2088
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: DATA
+        description: 'Master function data register. Read: read the most recently
+          received data for the Master function. Write: transmit data using the Master
+          function.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: SLVCTL
+    description: Slave control register.
+    addressOffset: 2112
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 779
+    fields:
+      - name: SLVCONTINUE
+        description: Slave Continue.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect.
+            value: 0
+          - name: CONTINUE
+            description: Continue. Informs the Slave function to continue to the
+              next operation, by clearing the SLVPENDING flag in the STAT 
+              register. This must be done after writing transmit data, reading 
+              received data, or any other housekeeping related to the next bus 
+              operation. Automatic Operation has different requirements. 
+              SLVCONTINUE should not be set unless SLVPENDING = 1.
+            value: 1
+      - name: SLVNACK
+        description: Slave NACK.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect.
+            value: 0
+          - name: NACK
+            description: NACK. Causes the Slave function to NACK the master when
+              the slave is receiving data from the master (Slave Receiver mode).
+            value: 1
+      - name: SLVDMA
+        description: Slave DMA enable.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. No DMA requests are issued for Slave mode 
+              operation.
+            value: 0
+          - name: ENABLED
+            description: Enabled. DMA requests are issued for I2C slave data 
+              transmission and reception.
+            value: 1
+      - name: AUTOACK
+        description: 'Automatic Acknowledge.When this bit is set, it will cause an
+          I2C header which matches SLVADR0 and the direction set by AUTOMATCHREAD
+          to be ACKed immediately; this is used with DMA to allow processing of the
+          data without intervention. If this bit is clear and a header matches SLVADR0,
+          the behavior is controlled by AUTONACK in the SLVADR0 register: allowing
+          NACK or interrupt.'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal, non-automatic operation. If AUTONACK = 0, an 
+              SlvPending interrupt is generated when a matching address is 
+              received. If AUTONACK = 1, received addresses are NACKed 
+              (ignored).
+            value: 0
+          - name: AUTOMATIC_ACK
+            description: 'A header with matching SLVADR0 and matching direction as
+              set by AUTOMATCHREAD will be ACKed immediately, allowing the master
+              to move on to the data bytes. If the address matches SLVADR0, but the
+              direction does not match AUTOMATCHREAD, the behavior will depend on
+              the AUTONACK bit in the SLVADR0 register: if AUTONACK is set, then it
+              will be Nacked; else if AUTONACK is clear, then a SlvPending interrupt
+              is generated.'
+            value: 1
+      - name: AUTOMATCHREAD
+        description: When AUTOACK is set, this bit controls whether it matches a
+          read or write request on the next header with an address matching 
+          SLVADR0. Since DMA needs to be configured to match the transfer 
+          direction, the direction needs to be specified. This bit allows a 
+          direction to be chosen for the next operation.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: I2C_WRITE
+            description: The expected next operation in Automatic Mode is an I2C
+              write.
+            value: 0
+          - name: I2C_READ
+            description: The expected next operation in Automatic Mode is an I2C
+              read.
+            value: 1
+  - name: SLVDAT
+    description: Combined Slave receiver and transmitter data register.
+    addressOffset: 2116
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: DATA
+        description: 'Slave function data register. Read: read the most recently received
+          data for the Slave function. Write: transmit data using the Slave function.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - dim: 4
+    dimIncrement: 4
+    name: SLVADR[%s]
+    description: Slave address register.
+    addressOffset: 2120
+    size: 32
+    access: read-write
+    resetValue: 1
+    resetMask: 255
+    fields:
+      - name: SADISABLE
+        description: Slave Address n Disable.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: ENABLED
+            description: Enabled. Slave Address n is enabled.
+            value: 0
+          - name: DISABLED
+            description: Ignored Slave Address n is ignored.
+            value: 1
+      - name: SLVADR
+        description: Slave Address. Seven bit slave address that is compared to 
+          received addresses if enabled.
+        bitOffset: 1
+        bitWidth: 7
+        access: read-write
+      - name: AUTONACK
+        description: Automatic NACK operation. Used in conjunction with AUTOACK 
+          and AUTOMATCHREAD, allows software to ignore I2C traffic while 
+          handling previous I2C data or other operations.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal operation, matching I2C addresses are not 
+              ignored.
+            value: 0
+          - name: AUTOMATIC
+            description: Automatic-only mode. All incoming addresses are ignored
+              (NACKed), unless AUTOACK is set, it matches SLVADRn, and 
+              AUTOMATCHREAD matches the direction.
+            value: 1
+  - name: SLVQUAL0
+    description: Slave Qualification for address 0.
+    addressOffset: 2136
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: QUALMODE0
+        description: Qualify mode for slave address 0.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: MASK
+            description: Mask. The SLVQUAL0 field is used as a logical mask for 
+              matching address 0.
+            value: 0
+          - name: EXTEND
+            description: Extend. The SLVQUAL0 field is used to extend address 0 
+              matching in a range of addresses.
+            value: 1
+      - name: SLVQUAL0
+        description: Slave address Qualifier for address 0. A value of 0 causes 
+          the address in SLVADR0 to be used as-is, assuming that it is enabled. 
+          If QUALMODE0 = 0, any bit in this field which is set to 1 will cause 
+          an automatic match of the corresponding bit of the received address 
+          when it is compared to the SLVADR0 register. If QUALMODE0 = 1, an 
+          address range is matched for address 0. This range extends from the 
+          value defined by SLVADR0 to the address defined by SLVQUAL0 (address 
+          matches when SLVADR0[7:1] <= received address <= SLVQUAL0[7:1]).
+        bitOffset: 1
+        bitWidth: 7
+        access: read-write
+  - name: MONRXDAT
+    description: Monitor receiver data register.
+    addressOffset: 2176
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 2047
+    fields:
+      - name: MONRXDAT
+        description: Monitor function Receiver Data. This reflects every data 
+          byte that passes on the I2C pins.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-only
+      - name: MONSTART
+        description: Monitor Received Start.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: NO_START_DETECTED
+            description: No start detected. The Monitor function has not 
+              detected a Start event on the I2C bus.
+            value: 0
+          - name: START_DETECTED
+            description: Start detected. The Monitor function has detected a 
+              Start event on the I2C bus.
+            value: 1
+      - name: MONRESTART
+        description: Monitor Received Repeated Start.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: NOT_DETECTED
+            description: No repeated start detected. The Monitor function has 
+              not detected a Repeated Start event on the I2C bus.
+            value: 0
+          - name: DETECTED
+            description: Repeated start detected. The Monitor function has 
+              detected a Repeated Start event on the I2C bus.
+            value: 1
+      - name: MONNACK
+        description: Monitor Received NACK.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: ACKNOWLEDGED
+            description: Acknowledged. The data currently being provided by the 
+              Monitor function was acknowledged by at least one master or slave 
+              receiver.
+            value: 0
+          - name: NOT_ACKNOWLEDGED
+            description: Not acknowledged. The data currently being provided by 
+              the Monitor function was not acknowledged by any receiver.
+            value: 1
+  - name: ID
+    description: Peripheral identification register.
+    addressOffset: 4092
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: APERTURE
+        description: 'Aperture: encoded as (aperture size/4K) -1, so 0x00 means a
+          4K aperture.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-only
+      - name: MINOR_REV
+        description: Minor revision of module implementation.
+        bitOffset: 8
+        bitWidth: 4
+        access: read-only
+      - name: MAJOR_REV
+        description: Major revision of module implementation.
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+      - name: ID
+        description: Module identifier for the selected function.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-only
+interrupts:
+  - name: FLEXCOMM0
+addressBlocks:
+  - offset: 0
+    size: 4096
+    usage: registers
+clocks:
+  - name: base_clk
+  - name: busclk
+parameters:
+  - name: rx_req
+    bits: 5
+    min: 0
+    max: 31
+    description: DMA receive channel
+  - name: tx_req
+    bits: 5
+    min: 0
+    max: 31
+    description: DMA receive channel

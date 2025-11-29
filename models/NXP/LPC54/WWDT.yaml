@@ -1,0 +1,161 @@
+# Created from LPC54S018.svd
+
+name: WWDT
+description: LPC5411x Windowed Watchdog Timer (WWDT)
+groupName: WWDT
+registers:
+  - name: MOD
+    description: Watchdog mode register. This register contains the basic mode 
+      and status of the Watchdog Timer.
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: WDEN
+        description: Watchdog enable bit. Once this bit is set to one and a 
+          watchdog feed is performed, the watchdog timer will run permanently.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: STOP
+            description: Stop. The watchdog timer is stopped.
+            value: 0
+          - name: RUN
+            description: Run. The watchdog timer is running.
+            value: 1
+      - name: WDRESET
+        description: Watchdog reset enable bit. Once this bit has been written 
+          with a 1 it cannot be re-written with a 0.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: INTERRUPT
+            description: Interrupt. A watchdog time-out will not cause a chip 
+              reset.
+            value: 0
+          - name: RESET
+            description: Reset. A watchdog time-out will cause a chip reset.
+            value: 1
+      - name: WDTOF
+        description: Watchdog time-out flag. Set when the watchdog timer times 
+          out, by a feed error, or by events associated with WDPROTECT. Cleared 
+          by software writing a 0 to this bit position. Causes a chip reset if 
+          WDRESET = 1.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: WDINT
+        description: Warning interrupt flag. Set when the timer is at or below 
+          the value in WDWARNINT. Cleared by software writing a 1 to this bit 
+          position. Note that this bit cannot be cleared while the WARNINT value
+          is equal to the value of the TV register. This can occur if the value 
+          of WARNINT is 0 and the WDRESET bit is 0 when TV decrements to 0.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: WDPROTECT
+        description: Watchdog update mode. This bit can be set once by software 
+          and is only cleared by a reset.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: FLEXIBLE
+            description: Flexible. The watchdog time-out value (TC) can be 
+              changed at any time.
+            value: 0
+          - name: THRESHOLD
+            description: Threshold. The watchdog time-out value (TC) can be 
+              changed only after the counter is below the value of WDWARNINT and
+              WDWINDOW.
+            value: 1
+      - name: LOCK
+        description: Once this bit is set to one and a watchdog feed is 
+          performed, disabling or powering down the watchdog oscillator is 
+          prevented by hardware. This bit can be set once by software and is 
+          only cleared by any reset.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+  - name: TC
+    description: Watchdog timer constant register. This 24-bit register 
+      determines the time-out value.
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 255
+    resetMask: 16777215
+    fields:
+      - name: COUNT
+        description: Watchdog time-out value.
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: FEED
+    description: Watchdog feed sequence register. Writing 0xAA followed by 0x55 
+      to this register reloads the Watchdog timer with the value contained in 
+      TC.
+    addressOffset: 8
+    size: 32
+    access: write-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: FEED
+        description: Feed value should be 0xAA followed by 0x55.
+        bitOffset: 0
+        bitWidth: 8
+        access: write-only
+  - name: TV
+    description: Watchdog timer value register. This 24-bit register reads out 
+      the current value of the Watchdog timer.
+    addressOffset: 12
+    size: 32
+    access: read-only
+    resetValue: 255
+    resetMask: 16777215
+    fields:
+      - name: COUNT
+        description: Counter timer value.
+        bitOffset: 0
+        bitWidth: 24
+        access: read-only
+  - name: WARNINT
+    description: Watchdog Warning Interrupt compare value.
+    addressOffset: 20
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1023
+    fields:
+      - name: WARNINT
+        description: Watchdog warning interrupt compare value.
+        bitOffset: 0
+        bitWidth: 10
+        access: read-write
+  - name: WINDOW
+    description: Watchdog Window compare value.
+    addressOffset: 24
+    size: 32
+    access: read-write
+    resetValue: 16777215
+    resetMask: 16777215
+    fields:
+      - name: WINDOW
+        description: Watchdog window value.
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+interrupts:
+  - name: WDT_BOD
+addressBlocks:
+  - offset: 0
+    size: 28
+    usage: registers
+clocks:
+  - name: pclk
+  - name: wdt_clk
