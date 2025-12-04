@@ -15,7 +15,7 @@ class ChipFormatter:
     def __init__(self, **keywords):
         self.instanceParamTemplate= Template(keywords.get('instanceParam',  '\n\t.$name = ${value}u,'))
         self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.ex$name = ${value}u + interruptOffset,'))
-        self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$model.hpp"'))
+        self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$model$incl_suffix"'))
         self.instanceDeclTemplate = Template(keywords.get('instanceDecl', """\n/** Integration parameters for $name */
 EXPORT constexpr struct $model::Integration i_$name = {$params$ints$init};
 """))
@@ -42,7 +42,7 @@ EXPORT constexpr struct $model::Integration i_$name = {$params$ints$init};
             ints = self.createInterrupts(i)
             init = '\n\t.registers = %#Xu\n' % i['baseAddress']
             decl += self.instanceDeclTemplate.substitute(i, name=k, params=params, ints=ints, init=init)
-        includes = [self.instanceInclTemplate.substitute(model=t) for t in types]
+        includes = [self.instanceInclTemplate.substitute(model=t, incl_suffix='_.hpp') for t in types]
         return decl, ''.join(includes)
         
     def createHeader(self, chip, namespace, name, prefix, postfix):
@@ -50,10 +50,6 @@ EXPORT constexpr struct $model::Integration i_$name = {$params$ints$init};
         imports = [re.search(r'"(\w+)\.hpp"', l).group(1) for l in incl.splitlines() if '#   include ' in l]
         return prefix.substitute(chip, ns=namespace, name=name, incl=incl, imp=';\nimport '.join(imports)) + decl + postfix.substitute(ns=namespace)
                 
-yaml = YAML(typ='safe')
-chip = yaml.load(Path(sys.argv[1]))
-fmt = ChipFormatter()
-
 prefixTemplate = Template("""// File was generated, do not edit!
 #ifdef REGISTERS_MODULE
 module;
@@ -82,5 +78,9 @@ postfixTemplate = Template("""
 #undef EXPORT
 """)
 
+yaml = YAML(typ='safe')
+chip = yaml.load(Path(sys.argv[1]))
+fmt  = ChipFormatter()
+
 header = fmt.createHeader(chip, sys.argv[3], os.path.basename(sys.argv[2]), prefixTemplate, postfixTemplate)
-print(header, file=open(sys.argv[4], mode = 'w'))
+print(header, file=open(sys.argv[3]+sys.argv[4], mode = 'w'))
