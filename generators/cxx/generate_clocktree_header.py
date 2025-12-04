@@ -265,7 +265,6 @@ def generate_header(yaml_path, hpp_path, namespace):
         "// generated header file, please don't edit.",
         '#pragma once',
         '#include "clocktree.hpp"',
-        f'#include "{namespace}.hpp"',
         '',
         f'namespace {namespace} {{',
         '',

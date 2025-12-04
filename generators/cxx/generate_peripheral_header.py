@@ -209,8 +209,7 @@ namespace $ns {""")
 
 postfixTemplate = Template("""} // namespace $ns
 
-#undef EXPORT
-""")
+#undef EXPORT""")
 
 yaml= YAML(typ='safe')
 per = yaml.load(Path(sys.argv[1]))

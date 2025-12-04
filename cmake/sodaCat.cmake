@@ -1,5 +1,7 @@
 # sodaCat.cmake - Integration module for sodaCat resources
 
+set(SODACAT_LOCAL_DIR "${CMAKE_BINARY_DIR}/models" CACHE STRING "sodaCat local download dir")
+
 if(SODACAT_URL_BASE)
     message(VERBOSE "Using sodaCat repository in ${SODACAT_URL_BASE}")
 else()
@@ -10,15 +12,12 @@ endif()
 # Parameters:
 #   overwrite  - TRUE to overwrite existing files, FALSE to skip
 #   manifest   - manifest file path
-#   localdir   - local folder for downloaded files
-function(download_models overwrite manifest localdir)
+function(download_models overwrite manifest)
     # Read the list of relative paths from the manifest file
     file(READ "${manifest}" path_list)
 
     # Normalize line endings
     string(REGEX REPLACE "[\r\n]" ";" paths ${path_list})
-
-    cmake_path(ABSOLUTE_PATH localdir BASE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} NORMALIZE)
 
     # Counters
     set(success_count 0)
@@ -40,7 +39,7 @@ function(download_models overwrite manifest localdir)
 
         # Extract filename (flattened target folder)
         get_filename_component(fname "${relpath}" NAME)
-        set(dest "${localdir}/${fname}")
+        set(dest "${SODACAT_LOCAL_DIR}/${fname}")
 
         # Check if file exists
         if(EXISTS "${dest}" AND NOT overwrite)
@@ -69,8 +68,6 @@ function(download_models overwrite manifest localdir)
     message(STATUS "  Downloaded: ${success_count}")
     message(STATUS "  Skipped:    ${skip_count}")
     message(STATUS "  Failed:     ${fail_count}")
-
-    set(SODACAT_LOCAL_DIR "${localdir}" PARENT_SCOPE)
 endfunction()
 
 
