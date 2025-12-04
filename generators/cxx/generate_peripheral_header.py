@@ -187,10 +187,6 @@ $postfix"""))
         return self.headerTemplate.substitute(per, blocks=blocks, ints=ints, params=params, regs=regs, enums=enums, types=types, description=description, size=size, prefix=prefix, postfix=postfix)
     
          
-yaml=YAML(typ='safe')
-per = yaml.load(Path(sys.argv[1]))
-fmt = PerFormatter()
-
 prefixTemplate = Template("""// File was generated, do not edit!
 #ifdef REGISTERS_MODULE
 module;
@@ -216,4 +212,13 @@ postfixTemplate = Template("""} // namespace $ns
 #undef EXPORT
 """)
 
-print(fmt.formatPeripheral(per, prefixTemplate.substitute(ns=sys.argv[3], mod=os.path.basename(sys.argv[2])), postfixTemplate.substitute(ns=sys.argv[3])), file=open(sys.argv[4], mode = 'w'))
+yaml= YAML(typ='safe')
+per = yaml.load(Path(sys.argv[1]))
+if per:
+    fmt = PerFormatter()
+    prefix = prefixTemplate.substitute(ns=sys.argv[3], mod=sys.argv[2])
+    postfix = postfixTemplate.substitute(ns=sys.argv[3])
+    txt = fmt.formatPeripheral(per, prefix, postfix)
+    print(txt, file=open(sys.argv[4], mode = 'w'))
+else:
+    print(f"No model loaded: {sys.argv[1]}")
