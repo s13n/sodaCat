@@ -11,10 +11,10 @@ from pathlib import Path
 subdir = Path("./models/ST/H757")
 
 # models and instances we want to keep
-modelSet = frozenset({'ADC', 'ADC_Common', 'BDMA', 'RCC', 'DAC', 'DMA', 'DMAMUX1', 'DMAMUX2', 'EXTI', 'GPIO', 'I2C',
+modelSet = frozenset({'ADC', 'ADC_Common', 'ART', 'BDMA', 'RCC', 'DAC', 'DMA', 'DMAMUX1', 'DMAMUX2', 'EXTI', 'GPIO', 'I2C',
     'MDMA', 'SAI', 'SPDIFRX', 'SYSCFG', 'BasicTimer', 'GpTimer', 'AdvCtrlTimer', 'LPTIM', 'LPTIMenc', 'USART', 'LPUART',
     'QUADSPI', 'OPAMP', 'DFSDM', 'SPI', 'RTC', 'FMC'})
-instSet = frozenset({'MDMA', 'DMA1', 'DMA2', 'BDMA', 'DMAMUX1', 'DMAMUX2', 'RCC',
+instSet = frozenset({'MDMA', 'DMA1', 'DMA2', 'BDMA', 'DMAMUX1', 'DMAMUX2', 'RCC', 'ART',
     'ADC1', 'ADC2', 'ADC3', 'ADC3_Common', 'ADC12_Common', 'DAC', 'EXTI', 'SYSCFG',
     'I2C1', 'I2C2', 'I2C3', 'I2C4', 'SAI1', 'SAI2', 'SAI3', 'SAI4', 'SPDIFRX',
     'TIM1', 'TIM2', 'TIM3', 'TIM4', 'TIM5', 'TIM6', 'TIM7', 'TIM8', 'TIM12', 'TIM13', 'TIM14', 'TIM15', 'TIM16', 'TIM17',
