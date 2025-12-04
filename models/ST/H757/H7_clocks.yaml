@@ -1,24 +1,20 @@
 version: 1.0.0
 family: STM32H7
-reference_manual:
-  id: RM0399
-  devices:
-  - STM32H745
-  - STM32H755
-  - STM32H747
-  - STM32H757
-  revision: Rev.4
-  notes:
+documents:
+  - id: RM0399
+    devices:
+      - STM32H745
+      - STM32H755
+      - STM32H747
+      - STM32H757
+    revision: Rev.4
+notes:
   - "Clock sources: HSI, CSI (~4 MHz), HSE (4\u201348 MHz), LSE (32.768 kHz), LSI\
     \ (~32 kHz), HSI48 (48 MHz)."
   - 'System clock sources: HSE, HSI, CSI, or PLL1_P via RCC_CFGR.SW.'
   - "PLL ref (after DIVM) 1\u201316 MHz; \u03A3\u0394 fractional supported; VCO ranges\
     \ per VCOSEL."
-metadata:
-  modeling_goals:
-  - Each gate/mux/divider/source appears as a distinct node.
-  - Frequency limits live on producing nodes (sources, PLL VCOs, domain/bus outputs).
-  - Descriptions paraphrase RM text; device-dependent notes in 'notes'.
+instance: RCC
 signals:
 - name: hsi_ck
   description: High-speed internal RC; can feed SYSCLK and PLL.
@@ -131,7 +127,7 @@ muxes:
     - csi_ck
     - hse_ck
     - ""
-    reg: RCC_PLLCKSELR
+    reg: PLLCKSELR
     field: PLLSRC
     notes: Set '11' (none) if no PLL is used to save power.
   description: Common PLL source selection feeding DIVM1/2/3.
@@ -148,23 +144,23 @@ muxes:
     - csi_ck
     - hse_ck
     - pll1_p_ck
-    reg: RCC_CFGR
+    reg: CFGR
     field: SW
-  description: System clock source selection (status in RCC_CFGR.SWS).
+  description: System clock source selection (status in CFGR.SWS).
 plls:
 - name: PLL1
   input: ref1_ck
   output: vco1_ck
   feedback_integer:
-    reg: RCC_PLL1DIVR
-    field: DIVN
+    reg: PLL1DIVR
+    field: DIVN1
     value_range:
       min: 8
       max: 432
       offset: -1
   feedback_fraction:
-    reg: RCC_PLL1FRACR
-    field: FRACN
+    reg: PLL1FRACR
+    field: FRACN1
     value_range:
       min: 0
       max: 8191
@@ -177,15 +173,15 @@ plls:
   input: ref2_ck
   output: vco2_ck
   feedback_integer:
-    reg: RCC_PLL2DIVR
-    field: DIVN
+    reg: PLL2DIVR
+    field: DIVN2
     value_range:
       min: 8
       max: 432
       offset: -1
   feedback_fraction:
-    reg: RCC_PLL2FRACR
-    field: FRACN
+    reg: PLL2FRACR
+    field: FRACN2
     value_range:
       min: 0
       max: 8191
@@ -198,15 +194,15 @@ plls:
   input: ref3_ck
   output: vco3_ck
   feedback_integer:
-    reg: RCC_PLL3DIVR
-    field: DIVN
+    reg: PLL3DIVR
+    field: DIVN3
     value_range:
       min: 8
       max: 432
       offset: -1
   feedback_fraction:
-    reg: RCC_PLL3FRACR
-    field: FRACN
+    reg: PLL3FRACR
+    field: FRACN3
     value_range:
       min: 0
       max: 8191
@@ -220,7 +216,7 @@ dividers:
   input: pllsrc_mux_out_ck
   output: ref1_ck
   control:
-    reg: RCC_PLLCKSELR
+    reg: PLLCKSELR
     field: DIVM1
     range: '[1..63]'
   description: "PLL1 pre-divider; ensures 1\u201316 MHz at ref1_ck."
@@ -228,7 +224,7 @@ dividers:
   input: pllsrc_mux_out_ck
   output: ref2_ck
   control:
-    reg: RCC_PLLCKSELR
+    reg: PLLCKSELR
     field: DIVM2
     range: '[1..63]'
   description: PLL2 pre-divider.
@@ -236,7 +232,7 @@ dividers:
   input: pllsrc_mux_out_ck
   output: ref3_ck
   control:
-    reg: RCC_PLLCKSELR
+    reg: PLLCKSELR
     field: DIVM3
     range: '[1..63]'
   description: PLL3 pre-divider.
@@ -244,7 +240,7 @@ dividers:
   input: vco1_ck
   output: pll1_p_ck
   control:
-    reg: RCC_PLL1DIVR
+    reg: PLL1DIVR
     field: PLL1P
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVP1EN.
@@ -253,7 +249,7 @@ dividers:
   input: vco1_ck
   output: pll1_q_ck
   control:
-    reg: RCC_PLL1DIVR
+    reg: PLL1DIVR
     field: PLL1Q
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVQ1EN.
@@ -262,7 +258,7 @@ dividers:
   input: vco1_ck
   output: pll1_r_ck
   control:
-    reg: RCC_PLL1DIVR
+    reg: PLL1DIVR
     field: PLL1R
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVR1EN.
@@ -271,7 +267,7 @@ dividers:
   input: vco2_ck
   output: pll2_p_ck
   control:
-    reg: RCC_PLL2DIVR
+    reg: PLL2DIVR
     field: PLL2P
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVP2EN.
@@ -280,7 +276,7 @@ dividers:
   input: vco2_ck
   output: pll2_q_ck
   control:
-    reg: RCC_PLL2DIVR
+    reg: PLL2DIVR
     field: PLL2Q
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVQ2EN.
@@ -289,7 +285,7 @@ dividers:
   input: vco2_ck
   output: pll2_r_ck
   control:
-    reg: RCC_PLL2DIVR
+    reg: PLL2DIVR
     field: PLL2R
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVR2EN.
@@ -298,7 +294,7 @@ dividers:
   input: vco3_ck
   output: pll3_p_ck
   control:
-    reg: RCC_PLL3DIVR
+    reg: PLL3DIVR
     field: PLL3P
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVP3EN.
@@ -307,7 +303,7 @@ dividers:
   input: vco3_ck
   output: pll3_q_ck
   control:
-    reg: RCC_PLL3DIVR
+    reg: PLL3DIVR
     field: PLL3Q
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVQ3EN.
@@ -316,7 +312,7 @@ dividers:
   input: vco3_ck
   output: pll3_r_ck
   control:
-    reg: RCC_PLL3DIVR
+    reg: PLL3DIVR
     field: PLL3R
     range: '[2..128]'
     notes: Enable with RCC_PLLCFGR.DIVR3EN.
@@ -325,7 +321,7 @@ dividers:
   input: sys_ck
   output: d1_cpu_ck
   control:
-    reg: RCC_D1CFGR
+    reg: D1CFGR
     field: D1CPRE
     factors:
     - 1
@@ -342,7 +338,7 @@ dividers:
   input: d1_cpu_ck
   output: hclk_bus_matrix
   control:
-    reg: RCC_D1CFGR
+    reg: D1CFGR
     field: HPRE
     factors:
     - 1
@@ -355,7 +351,7 @@ dividers:
   input: hclk_bus_matrix
   output: pclk3
   control:
-    reg: RCC_D1CFGR
+    reg: D1CFGR
     field: D1PPRE
     factors:
     - 1
@@ -368,7 +364,7 @@ dividers:
   input: hclk_bus_matrix
   output: pclk1
   control:
-    reg: RCC_D2CFGR
+    reg: D2CFGR
     field: D2PPRE1
     factors:
     - 1
@@ -381,7 +377,7 @@ dividers:
   input: hclk_bus_matrix
   output: pclk2
   control:
-    reg: RCC_D2CFGR
+    reg: D2CFGR
     field: D2PPRE2
     factors:
     - 1
@@ -394,7 +390,7 @@ dividers:
   input: mco1_src_ck
   output: mco1_ck
   control:
-    reg: RCC_CFGR
+    reg: CFGR
     field: MCO1PRE
     range: '[1..15]'
   description: MCO1 prescaler.
@@ -402,7 +398,7 @@ dividers:
   input: mco2_src_ck
   output: mco2_ck
   control:
-    reg: RCC_CFGR
+    reg: CFGR
     field: MCO2PRE
     range: '[1..15]'
   description: MCO2 prescaler.
@@ -411,41 +407,41 @@ gates:
   output: dma1_hclk
   input: rcc_hclk1
   control:
-    reg: RCC_AHB1ENR
-    bit: DMA1EN
+    reg: AHB1ENR
+    field: DMA1EN
   description: DMA1 bus interface clock gate (AHB1).
 - name: ADC12EN
   output: adc12_bus_ck
   input: rcc_hclk1
   control:
-    reg: RCC_AHB1ENR
-    bit: ADC12EN
+    reg: AHB1ENR
+    field: ADC12EN
   description: ADC1/2 bus interface clock gate; ADC kernel clock selected separately.
-- name: USB1OTGHSEN
+- name: USB1OTGEN
   output: usb1otg_bus_ck
   input: rcc_hclk1
   control:
-    reg: RCC_AHB1ENR
-    bit: USB1OTGHSEN
+    reg: AHB1ENR
+    field: USB1OTGEN
   description: USB1 OTG HS peripheral bus clock gate.
 - name: ETH1MACEN
   output: eth1mac_bus_ck
   input: rcc_hclk1
   control:
-    reg: RCC_AHB1ENR
-    bit: ETH1MACEN
+    reg: AHB1ENR
+    field: ETH1MACEN
   description: Ethernet MAC bus interface clock gate.
 - name: ETH1TXEN
   output: eth1tx_ck
   input: rcc_hclk1
   control:
-    reg: RCC_AHB1ENR
-    bit: ETH1TXEN
+    reg: AHB1ENR
+    field: ETH1TXEN
   description: Ethernet TX clock gate.
 - name: ETH1RXEN
   output: eth1rx_ck
   input: rcc_hclk1
   control:
-    reg: RCC_AHB1ENR
-    bit: ETH1RXEN
+    reg: AHB1ENR
+    field: ETH1RXEN
   description: Ethernet RX clock gate.
