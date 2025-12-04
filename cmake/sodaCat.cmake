@@ -1,9 +1,5 @@
 # sodaCat.cmake - Integration module for sodaCat resources
 
-# Cache variables for the user to tweak when needed.
-set(SODACAT_LOCAL_DIR "${CMAKE_SOURCE_DIR}/models" CACHE PATH "Local directory for sodaCat models")
-set(SODACAT_MANIFEST "${CMAKE_SOURCE_DIR}/manifest.txt" CACHE PATH "Path of sodaCat manifest file")
-
 if(SODACAT_URL_BASE)
     message(VERBOSE "Using sodaCat repository in ${SODACAT_URL_BASE}")
 else()
@@ -13,15 +9,16 @@ endif()
 # Function to download files listed in the manifest file
 # Parameters:
 #   overwrite  - TRUE to overwrite existing files, FALSE to skip
-function(download_models overwrite)
-    # Ensure the output directory exists
-    file(MAKE_DIRECTORY "${SODACAT_LOCAL_DIR}")
-
+#   manifest   - manifest file path
+#   localdir   - local folder for downloaded files
+function(download_models overwrite manifest localdir)
     # Read the list of relative paths from the manifest file
-    file(READ "${SODACAT_MANIFEST}" path_list_raw)
+    file(READ "${manifest}" path_list)
 
     # Normalize line endings
-    string(REGEX REPLACE "[\r\n]" ";" paths ${path_list_raw})
+    string(REGEX REPLACE "[\r\n]" ";" paths ${path_list})
+
+    cmake_path(ABSOLUTE_PATH localdir BASE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} NORMALIZE)
 
     # Counters
     set(success_count 0)
@@ -43,7 +40,7 @@ function(download_models overwrite)
 
         # Extract filename (flattened target folder)
         get_filename_component(fname "${relpath}" NAME)
-        set(dest "${SODACAT_LOCAL_DIR}/${fname}")
+        set(dest "${localdir}/${fname}")
 
         # Check if file exists
         if(EXISTS "${dest}" AND NOT overwrite)
@@ -59,6 +56,7 @@ function(download_models overwrite)
             if(status_code EQUAL 0)
                 math(EXPR success_count "${success_count} + 1")
             else()
+                file(REMOVE "${dest}")  # delete empty file
                 list(GET status 1 status_message)
                 message(WARNING "Failed to download ${url}: ${status_message}")
                 math(EXPR fail_count "${fail_count} + 1")
@@ -71,6 +69,8 @@ function(download_models overwrite)
     message(STATUS "  Downloaded: ${success_count}")
     message(STATUS "  Skipped:    ${skip_count}")
     message(STATUS "  Failed:     ${fail_count}")
+
+    set(SODACAT_LOCAL_DIR "${localdir}" PARENT_SCOPE)
 endfunction()
 
 
@@ -84,13 +84,13 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 #   model     - Model name, also used in the header as type name
 #   outfile   - File name of generated header file
 macro(generate_header target generator namespace model outfile)
-    add_custom_command(OUTPUT ${outfile}
-        COMMAND ${Python3_EXECUTABLE} "${SODACAT_LOCAL_DIR}/${generator}.py" "${SODACAT_LOCAL_DIR}/${model}.yaml" "${CMAKE_CURRENT_BINARY_DIR}/${model}" ${namespace} ${outfile}
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${outfile}
+        COMMAND ${Python3_EXECUTABLE} "${SODACAT_LOCAL_DIR}/${generator}.py" "${SODACAT_LOCAL_DIR}/${model}.yaml" ${model} ${namespace} ${outfile}
         MAIN_DEPENDENCY "${SODACAT_LOCAL_DIR}/${model}.yaml"
         DEPENDS "${SODACAT_LOCAL_DIR}/${generator}.py"
         COMMENT "Generating ${outfile} in namespace ${namespace}"
     )
     target_sources(${target} PUBLIC
-        ${outfile}
+        ${CMAKE_CURRENT_BINARY_DIR}/${outfile}
     )
 endmacro()
