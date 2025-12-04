@@ -55,8 +55,10 @@ def formatElementsEnum(generators, plls, gates, dividers, muxes):
 def formatRegfieldEnum(entries):
     typ = 'uint8_t' if len(entries) < 255 else 'uint16_t'
     txt = [f"    enum class RegFields : {typ} {{"]
+    txt.append("        _,  //!< none")
     for f in entries:
-        txt.append(f"        {f['name']},  //!< {f.get('description', '')}")
+        name = f.get('name', f"{f['reg']}_{f.get('field', '')}")
+        txt.append(f"        {name},  //!< {f.get('description', '')}")
     txt.append("    };")
     return "\n".join(txt)
 
@@ -258,8 +260,8 @@ def generate_header(yaml_path, hpp_path, namespace):
     enum_count = len(signals)
     enum_type = 'uint8_t' if enum_count <= 256 else 'uint16_t' if enum_count <= 65536 else 'uint32_t'
     
-    structIndices = formatStructIndices(signals, signal_enum_map, generators, plls, gates, dividers, muxes, field_list)
     classClocks = formatClassClocks(signals, signal_enum_map, generators, plls, gates, dividers, muxes, instance)
+    structIndices = formatStructIndices(signals, signal_enum_map, generators, plls, gates, dividers, muxes, field_list)
     
     header = [
         "// generated header file, please don't edit.",
