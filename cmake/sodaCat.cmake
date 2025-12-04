@@ -82,13 +82,13 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 #   generator - Generator script in python
 #   namespace - Namespace name for the generated header
 #   model     - Model name, also used in the header as type name
-#   outfile   - File name of generated header file
-macro(generate_header target generator namespace model outfile)
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${outfile}
-        COMMAND ${Python3_EXECUTABLE} "${SODACAT_LOCAL_DIR}/${generator}.py" "${SODACAT_LOCAL_DIR}/${model}.yaml" ${model} ${namespace} ${outfile}
+#   suffix    - File name suffix of generated header file
+macro(generate_header target generator namespace model suffix)
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
+        COMMAND ${Python3_EXECUTABLE} "${SODACAT_LOCAL_DIR}/${generator}.py" "${SODACAT_LOCAL_DIR}/${model}.yaml" ${model} ${namespace} "${model}${suffix}"
         MAIN_DEPENDENCY "${SODACAT_LOCAL_DIR}/${model}.yaml"
         DEPENDS "${SODACAT_LOCAL_DIR}/${generator}.py"
-        COMMENT "Generating ${outfile} in namespace ${namespace}"
+        COMMENT "Generating ${model}${suffix} in namespace ${namespace}"
     )
     target_sources(${target} PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}/${outfile}
