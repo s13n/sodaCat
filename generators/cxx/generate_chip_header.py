@@ -82,5 +82,5 @@ yaml = YAML(typ='safe')
 chip = yaml.load(Path(sys.argv[1]))
 fmt  = ChipFormatter()
 
-header = fmt.createHeader(chip, sys.argv[3], os.path.basename(sys.argv[2]), prefixTemplate, postfixTemplate)
+header = fmt.createHeader(chip, sys.argv[2], sys.argv[3], prefixTemplate, postfixTemplate)
 print(header, file=open(sys.argv[3]+sys.argv[4], mode = 'w'))

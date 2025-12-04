@@ -281,4 +281,4 @@ def generate_header(yaml_path, hpp_path, namespace):
 
 
 if __name__ == "__main__":
-    generate_header(sys.argv[1], sys.argv[3]+sys.argv[4], sys.argv[3])
+    generate_header(sys.argv[1], sys.argv[3]+sys.argv[4], sys.argv[2])

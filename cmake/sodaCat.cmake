@@ -85,12 +85,12 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 #   suffix    - File name suffix of generated header file
 macro(generate_header target generator namespace model suffix)
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
-        COMMAND ${Python3_EXECUTABLE} "${SODACAT_LOCAL_DIR}/${generator}.py" "${SODACAT_LOCAL_DIR}/${model}.yaml" ${model} ${namespace} "${model}${suffix}"
+        COMMAND ${Python3_EXECUTABLE} "${SODACAT_LOCAL_DIR}/${generator}.py" "${SODACAT_LOCAL_DIR}/${model}.yaml" ${namespace} ${model} ${suffix}
         MAIN_DEPENDENCY "${SODACAT_LOCAL_DIR}/${model}.yaml"
         DEPENDS "${SODACAT_LOCAL_DIR}/${generator}.py"
-        COMMENT "Generating ${model}${suffix} in namespace ${namespace}"
+        COMMENT "Generating ${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix} in namespace ${namespace}"
     )
     target_sources(${target} PUBLIC
-        ${CMAKE_CURRENT_BINARY_DIR}/${outfile}
+        "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
     )
 endmacro()
