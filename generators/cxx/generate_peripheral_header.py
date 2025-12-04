@@ -219,6 +219,6 @@ if per:
     prefix = prefixTemplate.substitute(ns=sys.argv[3], mod=sys.argv[2])
     postfix = postfixTemplate.substitute(ns=sys.argv[3])
     txt = fmt.formatPeripheral(per, prefix, postfix)
-    print(txt, file=open(sys.argv[4], mode = 'w'))
+    print(txt, file=open(sys.argv[3]+sys.argv[4], mode = 'w'))
 else:
     print(f"No model loaded: {sys.argv[1]}")
