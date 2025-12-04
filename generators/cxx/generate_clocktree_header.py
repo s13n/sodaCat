@@ -262,6 +262,7 @@ def generate_header(yaml_path, hpp_path, namespace):
     classClocks = formatClassClocks(signals, signal_enum_map, generators, plls, gates, dividers, muxes, instance)
     
     header = [
+        "// generated header file, please don't edit.",
         '#pragma once',
         '#include "clocktree.hpp"',
         f'#include "{namespace}.hpp"',
@@ -280,4 +281,4 @@ def generate_header(yaml_path, hpp_path, namespace):
 
 
 if __name__ == "__main__":
-    generate_header(sys.argv[1], sys.argv[4], sys.argv[3])
+    generate_header(sys.argv[1], sys.argv[3]+sys.argv[4], sys.argv[3])
