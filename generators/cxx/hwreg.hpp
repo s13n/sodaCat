@@ -21,11 +21,12 @@ export module hwreg;
 #endif
 
 //! Templated unsigned integer type in the spirit of `boost::uint_t`.
-template<size_t N> struct UnsignedInt {};
-template<> struct UnsignedInt<1> { typedef uint8_t type; };
-template<> struct UnsignedInt<2> { typedef uint16_t type; };
-template<> struct UnsignedInt<4> { typedef uint32_t type; };
-template<> struct UnsignedInt<8> { typedef uint64_t type; };
+template<size_t N> using uint =
+    std::conditional_t<N == 1, std::uint8_t,
+    std::conditional_t<N == 2, std::uint16_t,
+    std::conditional_t<N == 4, std::uint32_t,
+    std::conditional_t<N == 8, std::uint64_t,
+    void>>>>;
 
 /** Swap bytes.
  * This is implemented depending on what's available in the standard library.
@@ -61,7 +62,7 @@ EXPORT template<typename X> constexpr X byteswap(X x) noexcept {
 EXPORT template<typename T> concept RegBitfield = requires(T x) {
     std::has_unique_object_representations_v<T>;
     std::is_aggregate_v<T>;
-    std::is_integral_v<typename UnsignedInt<sizeof(T)>::type>;
+    std::is_integral_v<uint<sizeof(T)>>;
 };
 
 /** The HwReg template is meant to represent hardware registers.
@@ -78,7 +79,7 @@ EXPORT template<typename T> concept RegBitfield = requires(T x) {
 EXPORT template<RegBitfield R, std::endian E = std::endian::native>
 struct HwReg {
     using BitField = R;
-    using Native = UnsignedInt<sizeof(R)>::type;
+    using Native = uint<sizeof(R)>;
     static constinit std::endian const endian = E;
 
     HwReg(HwReg &&) = delete;
