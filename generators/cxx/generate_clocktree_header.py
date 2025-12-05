@@ -60,6 +60,7 @@ def formatRegfieldEnum(entries):
     for f in entries:
         name = f.get('name', f"{f.get('reg', f.get('state', ''))}_{f.get('field', '')}")
         name = re.sub(r'(\w+)\[(\d+)\].(\w+)', r'\1_\2_\3', name)
+        name = f"{f.get('instance') + '_' if f.get('instance') else ''}{name}"
         txt.append(f"        {name},  //!< {f.get('description', '')}")
     txt.append("    };")
     return "\n".join(txt)
