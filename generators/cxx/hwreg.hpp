@@ -17,7 +17,7 @@ module;
 #include <version>
 
 #ifdef REGISTERS_MODULE
-export module registers;
+export module hwreg;
 #endif
 
 //! Templated unsigned integer type in the spirit of `boost::uint_t`.

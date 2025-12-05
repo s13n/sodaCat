@@ -193,7 +193,7 @@ module;
 #define EXPORT export
 #else
 #pragma once
-#include "registers.hpp"
+#include "hwreg.hpp"
 #undef EXPORT
 #define EXPORT
 #endif
@@ -202,7 +202,7 @@ module;
 
 #ifdef REGISTERS_MODULE
 export module $mod;
-import registers;
+import hwreg;
 #endif
 
 namespace $ns {""")

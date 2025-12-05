@@ -62,7 +62,7 @@ $incl
 #endif
 #ifdef REGISTERS_MODULE
 export module $name;
-import registers;
+import hwreg;
 import $imp;
 #endif
 
