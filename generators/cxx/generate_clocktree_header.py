@@ -87,7 +87,7 @@ def formatStructIndices(signals, signal_enum_map, generators, plls, gates, divid
         f'    static constexpr auto last_pll = Elements::{last_pll};',
         f'    static constexpr auto last_gate= Elements::{last_gate};',
         f'    static constexpr auto last_div = Elements::{last_div};',
-        f'    static constexpr auto last_mux = Elements::{last_mux};'
+        f'    static constexpr auto last_mux = Elements::{last_mux};',
         '};'
     ]
     return "\n".join(txt)
