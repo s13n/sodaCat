@@ -20,6 +20,8 @@ module;
 export module hwreg;
 #endif
 
+inline namespace hwreg {
+
 //! Templated unsigned integer type in the spirit of `boost::uint_t`.
 template<size_t N> using uint =
     std::conditional_t<N == 1, std::uint8_t,
@@ -199,9 +201,6 @@ struct HwReg {
     Native reg_;
 };
 
-// Bitfield mask for given bitfield
-#define FIELDMASK(t, f) []() constexpr { t r{}; r.f -= 1; return std::bit_cast<HwReg<t>::Native>(r); }()
-
 /** Pointer to a hardware register block.
  *
  * The motivation for this template is the fact that it is illegal since C++20
@@ -225,3 +224,8 @@ private:
 
 //! Type for representing exceptions/interrupts.
 EXPORT typedef uint16_t Exception;
+
+} // inline namespace hwreg
+
+// Bitfield mask for given bitfield
+#define FIELDMASK(t, f) []() constexpr { t r{}; r.f -= 1; return std::bit_cast<HwReg<t>::Native>(r); }()
