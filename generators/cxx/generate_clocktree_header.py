@@ -1,5 +1,6 @@
 import sys
 import yaml
+import re
 from pathlib import Path
 
 
@@ -57,7 +58,8 @@ def formatRegfieldEnum(entries):
     txt = [f"    enum class RegFields : {typ} {{"]
     txt.append("        _,  //!< none")
     for f in entries:
-        name = f.get('name', f"{f['reg']}_{f.get('field', '')}")
+        name = f.get('name', f"{f.get('reg', f.get('state', ''))}_{f.get('field', '')}")
+        name = re.sub(r'(\w+)\[(\d+)\].(\w+)', r'\1_\2_\3', name)
         txt.append(f"        {name},  //!< {f.get('description', '')}")
     txt.append("    };")
     return "\n".join(txt)
