@@ -42,7 +42,7 @@ EXPORT constexpr struct $model::Integration i_$name = {$params$ints$init};
             ints = self.createInterrupts(i)
             init = '\n\t.registers = %#Xu\n' % i['baseAddress']
             decl += self.instanceDeclTemplate.substitute(i, name=k, params=params, ints=ints, init=init)
-        includes = [self.instanceInclTemplate.substitute(model=t, incl_suffix='_.hpp') for t in types]
+        includes = [self.instanceInclTemplate.substitute(model=t, incl_suffix=sys.argv[4]) for t in types]
         return decl, ''.join(includes)
         
     def createHeader(self, chip, namespace, name, prefix, postfix):
