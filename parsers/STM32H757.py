@@ -308,6 +308,8 @@ transform.renameEntries(rtc['registers'], 'name', r'RTC_([0-9_A-Z]+)', r'\1')
 rcc = svd.findNamedEntry(chip['peripherals'], 'RCC')
 d1ccipr = svd.findNamedEntry(rcc['registers'], 'D1CCIPR')
 d1ccipr['fields'].append({ 'name': 'DSISRC', 'bitOffset': 8, 'description': 'DSI kernel clock source selection'})
+c1_apb3enr = svd.findNamedEntry(rcc['registers'], 'C1_APB3ENR')
+c1_apb3enr['fields'].append({ 'name': 'DSIEN', 'bitOffset': 4, 'description': 'DSI peripheral clocks enable'})
 
 # Add bus info
 chip['buses'] = {
