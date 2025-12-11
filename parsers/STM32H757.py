@@ -304,6 +304,11 @@ transform.renameEntries(rtc['interrupts'], 'name', r'RTC_([_A-Z]+)', r'\1')
 rtc['registers'] = transform.createClusterArray(rtc['registers'], r"RTC_BKP(\d+)(.+?)$", {'name': 'BKP', 'description': 'Backup registers'})
 transform.renameEntries(rtc['registers'], 'name', r'RTC_([0-9_A-Z]+)', r'\1')
 
+# Tweak the RCC
+rcc = svd.findNamedEntry(chip['peripherals'], 'RCC')
+d1ccipr = svd.findNamedEntry(rcc['registers'], 'D1CCIPR')
+d1ccipr['fields'].append({ 'name': 'DSISRC', 'bitOffset': 8, 'description': 'DSI kernel clock source selection'})
+
 # Add bus info
 chip['buses'] = {
     'AHB1': { 'addr': 0x40020000, 'size': 0x000A0000, 'domain': 2 },
