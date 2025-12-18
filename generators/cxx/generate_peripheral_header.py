@@ -38,7 +38,7 @@ class PerFormatter:
         self.parameterTemplate = Template(keywords.get('parameter', '\tuint16_t $name:$bits;\t//!< $description\n'))
         self.headerTemplate    = Template(keywords.get('header', """
 $prefix
-inline namespace $name {$enums
+inline namespace ${name}_ {$enums
 $types
 /** $description */
 EXPORT struct $name {$regs
@@ -48,7 +48,7 @@ EXPORT struct $name {$regs
 EXPORT struct Integration {
 $params$ints$blocks};
 
-} // inline namespace $name
+} // inline namespace ${name}_
 $postfix"""))
                                                        
     def formatEnumList(self, enums:list):
