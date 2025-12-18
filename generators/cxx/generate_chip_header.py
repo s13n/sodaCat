@@ -17,7 +17,7 @@ class ChipFormatter:
         self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.ex$name = ${value}u + interruptOffset,'))
         self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$model$incl_suffix"'))
         self.instanceDeclTemplate = Template(keywords.get('instanceDecl', """\n/** Integration parameters for $name */
-EXPORT constexpr struct $model::Integration i_$name = {$params$ints$init};
+EXPORT constexpr struct ${model}_::Integration i_$name = {$params$ints$init};
 """))
     
     def createParameters(self, instance):
