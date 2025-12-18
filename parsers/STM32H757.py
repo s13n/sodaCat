@@ -286,12 +286,10 @@ dac['interrupts'][0]['value'] = svd.findNamedEntry(tim6['interrupts'], 'TIM')['v
 # Tweak the GPIO naming
 gpioa = svd.findNamedEntry(chip['peripherals'], 'GPIOA')
 gpioa['headerStructName'] = 'GPIO'
-gpiok = svd.findNamedEntry(chip['peripherals'], 'GPIOK')
-gpiok['parameters'] = [
-    { 'name': 'pins', 'value': 0b11111111, 'bits': 16, 'min': 0, 'max': 0xFFFF, 'description': 'pins present' },
+gpioa['parameters'] = [
+    { 'name': 'pins', 'value': 0b1111111111111111, 'bits': 16, 'min': 0, 'max': 0xFFFF, 'description': 'pins present' },
 ]
 gpiopars = [('pins', 0b1111111111111111)]
-gpioa['parameters'] = [{'name': n, 'value': v} for n,v in gpiopars]
 gpiob = svd.findNamedEntry(chip['peripherals'], 'GPIOB')
 gpiob['parameters'] = [{'name': n, 'value': v} for n,v in gpiopars]
 gpioc = svd.findNamedEntry(chip['peripherals'], 'GPIOC')
@@ -310,6 +308,8 @@ gpioi = svd.findNamedEntry(chip['peripherals'], 'GPIOI')
 gpioi['parameters'] = [{'name': n, 'value': v} for n,v in gpiopars]
 gpioj = svd.findNamedEntry(chip['peripherals'], 'GPIOJ')
 gpioj['parameters'] = [{'name': n, 'value': v} for n,v in gpiopars]
+gpiok = svd.findNamedEntry(chip['peripherals'], 'GPIOK')
+gpiok['parameters'] = [{'name': 'pins', 'value': 0b11111111}]
 
 # Tweak the EXTI
 exti = svd.findNamedEntry(chip['peripherals'], 'EXTI')
