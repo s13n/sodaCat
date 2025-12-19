@@ -43,12 +43,13 @@ $types
 /** $description */
 EXPORT struct $name {$regs
 }; // size = $size
+} // inline namespace ${name}_
 
 /** Integration of peripheral in the SoC. */
-EXPORT struct Integration {
+namespace integration {
+EXPORT struct $name {
 $params$ints$blocks};
-
-} // inline namespace ${name}_
+} // namespace integration
 $postfix"""))
                                                        
     def formatEnumList(self, enums:list):
@@ -166,7 +167,7 @@ $postfix"""))
         """ Generate definitions for the parameterization of a peripheral """
         blocks = ''
         for block in per.get('addressBlocks', []):
-            type = ('HwPtr<struct ' + per['name'] + ' volatile> ') if block['usage'] == 'registers' else 'std::span<std::byte> '
+            type = (f'HwPtr<struct {per['name']}_::{per['name']} volatile> ') if block['usage'] == 'registers' else 'std::span<std::byte> '
             blocks += self.addressTemplate.substitute(block, type=type)
         ints = ''
         for int in per.get('interrupts', []):
