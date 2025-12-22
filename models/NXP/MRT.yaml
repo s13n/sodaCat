@@ -1,0 +1,246 @@
+name: MRT
+description: Fused peripheral template for MRT (LPC54) and MRT (LPC8).
+parameters: []
+variants:
+  LPC54: {}
+  LPC8: {}
+registers:
+- dim: 4
+  dimIncrement: 16
+  name: CHANNEL[%s]
+  description: no description available
+  registers:
+  - name: INTVAL
+    description: MRT Time interval value register. This value is loaded into the TIMER
+      register.
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 2164260863
+    fields:
+    - name: IVALUE
+      description: 'Time interval load value. This value is loaded into the TIMERn
+        register and the MRT channel n starts counting down from IVALUE -1. If the
+        timer is idle, writing a non-zero value to this bit field starts the timer
+        immediately. If the timer is running, writing a zero to this bit field does
+        the following: If LOAD = 1, the timer stops immediately. If LOAD = 0, the
+        timer stops at the end of the time interval.'
+      bitOffset: 0
+      bitWidth: 24
+      access: read-write
+    - name: LOAD
+      description: Determines how the timer interval value IVALUE -1 is loaded into
+        the TIMERn register. This bit is write-only. Reading this bit always returns
+        0.
+      bitOffset: 31
+      bitWidth: 1
+      access: read-write
+      enumeratedValues:
+      - name: NO_FORCE_LOAD
+        description: No force load. The load from the INTVALn register to the TIMERn
+          register is processed at the end of the time interval if the repeat mode
+          is selected.
+        value: 0
+      - name: FORCE_LOAD
+        description: Force load. The INTVALn interval value IVALUE -1 is immediately
+          loaded into the TIMERn register while TIMERn is running.
+        value: 1
+  - name: TIMER
+    description: MRT Timer register. This register reads the value of the down-counter.
+    addressOffset: 4
+    size: 32
+    access: read-only
+    resetValue: 16777215
+    resetMask: 16777215
+    fields:
+    - name: VALUE
+      description: 'Holds the current timer value of the down-counter. The initial
+        value of the TIMERn register is loaded as IVALUE - 1 from the INTVALn register
+        either at the end of the time interval or immediately in the following cases:
+        INTVALn register is updated in the idle state. INTVALn register is updated
+        with LOAD = 1. When the timer is in idle state, reading this bit fields returns
+        -1 (0x00FF FFFF).'
+      bitOffset: 0
+      bitWidth: 24
+      access: read-only
+  - name: CTRL
+    description: MRT Control register. This register controls the MRT modes.
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 7
+    fields:
+    - name: INTEN
+      description: Enable the TIMERn interrupt.
+      bitOffset: 0
+      bitWidth: 1
+      access: read-write
+      enumeratedValues:
+      - name: DISABLED
+        description: Disabled. TIMERn interrupt is disabled.
+        value: 0
+      - name: ENABLED
+        description: Enabled. TIMERn interrupt is enabled.
+        value: 1
+    - name: MODE
+      description: Selects timer mode.
+      bitOffset: 1
+      bitWidth: 2
+      access: read-write
+      enumeratedValues:
+      - name: REPEAT_INTERRUPT_MODE
+        description: Repeat interrupt mode.
+        value: 0
+      - name: ONE_SHOT_INTERRUPT_MODE
+        description: One-shot interrupt mode.
+        value: 1
+      - name: ONE_SHOT_STALL_MODE
+        description: One-shot stall mode.
+        value: 2
+  - name: STAT
+    description: MRT Status register.
+    addressOffset: 12
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 7
+    fields:
+    - name: INTFLAG
+      description: Monitors the interrupt flag.
+      bitOffset: 0
+      bitWidth: 1
+      access: read-write
+      enumeratedValues:
+      - name: NO_PENDING_INTERRUPT
+        description: No pending interrupt. Writing a zero is equivalent to no operation.
+        value: 0
+      - name: PENDING_INTERRUPT
+        description: Pending interrupt. The interrupt is pending because TIMERn has
+          reached the end of the time interval. If the INTEN bit in the CONTROLn is
+          also set to 1, the interrupt for timer channel n and the global interrupt
+          are raised. Writing a 1 to this bit clears the interrupt request.
+        value: 1
+    - name: RUN
+      description: Indicates the state of TIMERn. This bit is read-only.
+      bitOffset: 1
+      bitWidth: 1
+      access: read-write
+      enumeratedValues:
+      - name: IDLE_STATE
+        description: Idle state. TIMERn is stopped.
+        value: 0
+      - name: RUNNING
+        description: Running. TIMERn is running.
+        value: 1
+    - name: INUSE
+      description: Channel In Use flag. Operating details depend on the MULTITASK
+        bit in the MODCFG register, and affects the use of IDLE_CH. See Idle channel
+        register for details of the two operating modes.
+      bitOffset: 2
+      bitWidth: 1
+      access: read-write
+      enumeratedValues:
+      - name: false
+        description: This channel is not in use.
+        value: 0
+      - name: true
+        description: This channel is in use.
+        value: 1
+  addressOffset: 0
+  fields: []
+- name: IDLE_CH
+  description: Idle channel register. This register returns the number of the first
+    idle channel.
+  size: 32
+  access: read-only
+  resetValue: 0
+  resetMask: 240
+  fields:
+  - name: CHAN
+    description: Idle channel. Reading the CHAN bits, returns the lowest idle timer
+      channel. The number is positioned such that it can be used as an offset from
+      the MRT base address in order to access the registers for the allocated channel.
+      If all timer channels are running, CHAN = 0xF. See text above for more details.
+    bitOffset: 4
+    bitWidth: 4
+    access: read-only
+  addressOffset: 244
+- name: IRQ_FLAG
+  description: Global interrupt flag register
+  size: 32
+  access: read-write
+  resetValue: 0
+  resetMask: 15
+  fields:
+  - name: GFLAG0
+    description: Monitors the interrupt flag of TIMER0.
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: NO_PENDING_INTERRUPT
+      description: No pending interrupt. Writing a zero is equivalent to no operation.
+      value: 0
+    - name: PENDING_INTERRUPT
+      description: Pending interrupt. The interrupt is pending because TIMER0 has
+        reached the end of the time interval. If the INTEN bit in the CONTROL0 register
+        is also set to 1, the interrupt for timer channel 0 and the global interrupt
+        are raised. Writing a 1 to this bit clears the interrupt request.
+      value: 1
+  - name: GFLAG1
+    description: Monitors the interrupt flag of TIMER1. See description of channel
+      0.
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+  - name: GFLAG2
+    description: Monitors the interrupt flag of TIMER2. See description of channel
+      0.
+    bitOffset: 2
+    bitWidth: 1
+    access: read-write
+  - name: GFLAG3
+    description: Monitors the interrupt flag of TIMER3. See description of channel
+      0.
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+  addressOffset: 248
+- name: MODCFG
+  description: Module Configuration register. This register provides information about
+    this particular MRT instance, and allows choosing an overall mode for the idle
+    channel feature.
+  size: 32
+  access: read-write
+  resetValue: 371
+  resetMask: 2147484159
+  fields:
+  - name: NOC
+    description: Identifies the number of channels in this MRT.(4 channels on this
+      device.)
+    bitOffset: 0
+    bitWidth: 4
+    access: read-write
+  - name: NOB
+    description: Identifies the number of timer bits in this MRT. (24 bits wide on
+      this device.)
+    bitOffset: 4
+    bitWidth: 5
+    access: read-write
+  - name: MULTITASK
+    description: Selects the operating mode for the INUSE flags and the IDLE_CH register.
+    bitOffset: 31
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: HARDWARE_STATUS_MODE
+      description: Hardware status mode. In this mode, the INUSE(n) flags for all
+        channels are reset.
+      value: 0
+    - name: MULTI_TASK_MODE
+      description: Multi-task mode.
+      value: 1
+  present_when: variant == 'LPC54'
+  addressOffset: 240
