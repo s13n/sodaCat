@@ -16,9 +16,10 @@ except Exception:
     print("PyYAML not installed. Please run: pip install pyyaml")
     raise
 
-ROOT = Path('models/NXP')
-OUT_JSON = Path('tools/compare_report.json')
-OUT_CSV = Path('tools/compare_report.csv')
+ROOT = Path('.')
+# Write reports to the current working directory by default
+OUT_JSON = Path('compare_report.json')
+OUT_CSV = Path('compare_report.csv')
 
 
 def find_yaml_files(root):
@@ -132,9 +133,12 @@ def main():
     parser.add_argument('--fuse', nargs=2, help='Create fused YAML template and per-device params for two files')
     parser.add_argument('--top', type=int, default=20, help='Top N matches to print')
     parser.add_argument('--min-score', type=float, default=0.0, help='Minimum score to include')
+    parser.add_argument('--root', default=str(ROOT), help='Root folder to scan for peripheral YAMLs (default: current folder)')
+    parser.add_argument('--fused-name', default=None, help='Optional name for fused output YAML (e.g. CRC.yaml). If omitted the script uses its default naming.')
     args = parser.parse_args()
 
-    files = list(find_yaml_files(ROOT))
+    root = Path(args.root)
+    files = list(find_yaml_files(root))
     fps = []
     for f in sorted(files):
         try:
@@ -176,9 +180,9 @@ def main():
         fa = next((x for x in fps if x['path'] == a_path or x['path'].endswith(a_path)), None)
         fb = next((x for x in fps if x['path'] == b_path or x['path'].endswith(b_path)), None)
         if not fa or not fb:
-            print('One or both files not found under models/NXP: ', args.fuse)
+            print('One or both files not found under root: ', args.fuse)
             return
-        fuse_pair(fa, fb)
+        fuse_pair(fa, fb, out_dir=root, fused_name=args.fused_name)
         return
 
     print(f"\nTop {args.top} matches (min-score={args.min_score}):")
@@ -344,7 +348,7 @@ def pair_report(fp_a, fp_b):
                 print(f"  Field {fn}: identical")
 
 
-def fuse_pair(fp_a, fp_b, out_dir='models/NXP'):
+def fuse_pair(fp_a, fp_b, out_dir='models/NXP', fused_name=None):
     """Create a fused YAML template and per-device parameter JSON files.
 
     Strategy:
@@ -622,12 +626,14 @@ def fuse_pair(fp_a, fp_b, out_dir='models/NXP'):
     fused['registers'] = regs_out
 
     # write fused yaml and per-device params
-    # fused filename: if names are identical use that name (placed in models/NXP),
-    # otherwise include both stems
-    if name_a == name_b:
-        fused_fname = f"{name_a}.yaml"
+    # fused filename: allow caller to override via fused_name, else use existing behavior
+    if fused_name:
+        fused_fname = fused_name
     else:
-        fused_fname = f"fused_{name_a}_{name_b}.yaml"
+        if name_a == name_b:
+            fused_fname = f"{name_a}.yaml"
+        else:
+            fused_fname = f"fused_{name_a}_{name_b}.yaml"
     fused_path = out_dir / fused_fname
     # param files include the folder/family to avoid collisions
     params_a_path = out_dir / f"{name_a}_{folder_a}_params.json"
