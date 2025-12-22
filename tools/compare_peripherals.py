@@ -464,7 +464,8 @@ def fuse_pair(fp_a, fp_b, out_dir='models/NXP'):
         add_param_entry(p)
 
     # Add inferred parameters using same bitfield pattern
-    if offset_param is not None:
+    # Only expose offset parameter when a non-zero constant delta exists
+    if offset_param is not None and int(offset_param) != 0:
         # choose a sensible signed range for offset parameter
         if 'offset_B' not in param_map:
             param_map['offset_B'] = {'name': 'offset_B', 'bits': 16, 'min': -32768, 'max': 32767, 'description': f'Offset to add to variant B addresses to map to reference {name_a}.', 'default': int(offset_param)}
@@ -495,8 +496,9 @@ def fuse_pair(fp_a, fp_b, out_dir='models/NXP'):
     for p in fused['parameters']:
         name = p['name']
         if name == 'offset_B':
+            # baseline variant mapped to 0; other variant mapped to detected delta
             variants_map[folder_a][name] = 0
-            variants_map[folder_b][name] = int(offset_param if offset_param is not None else 0)
+            variants_map[folder_b][name] = int(offset_param)
         elif name == 'has_fifo':
             variants_map[folder_a][name] = 1 if fifo_in_a else 0
             variants_map[folder_b][name] = 1 if fifo_in_b else 0
