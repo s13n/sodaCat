@@ -12,7 +12,7 @@ subdir = Path("./models/NXP/LPC54")
 modelSet = [
     'SYSCON', 'IOCON', 'GINT0', 'PINT', 'INPUTMUX', 'CTIMER',
     'WWDT', 'MRT', 'UTICK0', 'OTPC', 'RTC', 'RIT', 'SMARTCARD0', 'PUF', 'ASYNC_SYSCON',
-    'SPIFI0', 'EMC', 'SmartDMA', 'LCD', 'USB0', 'SCT', 'FLEXCOMM0', 'I2C', 'SPI', 'USART'
+    'SPIFI0', 'EMC', 'SmartDMA', 'LCD', 'USB0', 'SCT', 'FLEXCOMM0', 'I2C', 'SPI', 'USART',
     'GPIO', 'DMIC0', 'ENET', 'USBHSD', 'CRC_ENGINE', 'I2S0', 'SDIF', 'CAN',
     'ADC', 'AES0', 'USBFSH', 'USBHSH', 'SHA0', 'ITM', 'SystemControl', 'SysTick', 'ETM']
 instSet = [
@@ -138,6 +138,7 @@ flexcomm0['headerStructName'] = 'FLEXCOMM'
 
 # Tweak the USARTs
 usart0 = svd.findNamedEntry(chip['peripherals'], 'USART0')
+usart0['headerStructName'] = 'USART'
 usart0['clocks'] = [ { 'name': 'u_clk' }, { 'name': 'busclk' } ]
 transform.renameEntries(usart0['interrupts'], 'name', 'USART0', 'USART')
 usart0['parameters'] = [
@@ -155,6 +156,48 @@ transform.renameEntries(usart2['interrupts'], 'name', 'USART2', 'USART')
 usart2['parameters'] = [
     dmaChanParams('rx_req', 4),
     dmaChanParams('tx_req', 5),
+]
+usart3 = svd.findNamedEntry(chip['peripherals'], 'USART3')
+transform.renameEntries(usart2['interrupts'], 'name', 'USART3', 'USART')
+usart3['parameters'] = [
+    dmaChanParams('rx_req', 6),
+    dmaChanParams('tx_req', 7),
+]
+usart4 = svd.findNamedEntry(chip['peripherals'], 'USART4')
+transform.renameEntries(usart2['interrupts'], 'name', 'USART4', 'USART')
+usart4['parameters'] = [
+    dmaChanParams('rx_req', 8),
+    dmaChanParams('tx_req', 9),
+]
+usart5 = svd.findNamedEntry(chip['peripherals'], 'USART5')
+transform.renameEntries(usart2['interrupts'], 'name', 'USART5', 'USART')
+usart5['parameters'] = [
+    dmaChanParams('rx_req',10),
+    dmaChanParams('tx_req',11),
+]
+usart6 = svd.findNamedEntry(chip['peripherals'], 'USART6')
+transform.renameEntries(usart2['interrupts'], 'name', 'USART6', 'USART')
+usart6['parameters'] = [
+    dmaChanParams('rx_req',12),
+    dmaChanParams('tx_req',13),
+]
+usart7 = svd.findNamedEntry(chip['peripherals'], 'USART7')
+transform.renameEntries(usart2['interrupts'], 'name', 'USART7', 'USART')
+usart7['parameters'] = [
+    dmaChanParams('rx_req',14),
+    dmaChanParams('tx_req',15),
+]
+usart8 = svd.findNamedEntry(chip['peripherals'], 'USART8')
+transform.renameEntries(usart2['interrupts'], 'name', 'USART8', 'USART')
+usart8['parameters'] = [
+    dmaChanParams('rx_req',20),
+    dmaChanParams('tx_req',21),
+]
+usart9 = svd.findNamedEntry(chip['peripherals'], 'USART9')
+transform.renameEntries(usart2['interrupts'], 'name', 'USART9', 'USART')
+usart9['parameters'] = [
+    dmaChanParams('rx_req',22),
+    dmaChanParams('tx_req',23),
 ]
 
 # Tweak the WWDT
