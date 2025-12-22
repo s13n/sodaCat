@@ -1,0 +1,286 @@
+name: XIP_CTRL
+description: Fused peripheral template for XIP_CTRL (RP2040) and XIP_CTRL (RP2350).
+parameters: []
+variants:
+  RP2040: {}
+  RP2350: {}
+registers:
+- name: CTRL
+  description: Cache control
+  resetValue: 3
+  fields:
+  - name: EN
+    description: "When 1, enable the cache. When the cache is disabled, all XIP accesses\
+      \ \n                            will go straight to the flash, without querying\
+      \ the cache. When enabled, \n                            cacheable XIP accesses\
+      \ will query the cache, and the flash will \n                            not\
+      \ be accessed if the tag matches and the valid bit is set.\n\n             \
+      \               If the cache is enabled, cache-as-SRAM accesses have no effect\
+      \ on the \n                            cache data RAM, and will produce a bus\
+      \ error response."
+    access: read-write
+    bitOffset: 0
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: ERR_BADWRITE
+    description: "When 1, writes to any alias other than 0x0 (caching, allocating)\
+      \ \n                            will produce a bus fault. When 0, these writes\
+      \ are silently ignored. \n                            In either case, writes\
+      \ to the 0x0 alias will deallocate on tag match, \n                        \
+      \    as usual."
+    access: read-write
+    bitOffset: 1
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: POWER_DOWN
+    description: "When 1, the cache memories are powered down. They retain state,\
+      \ \n                            but can not be accessed. This reduces static\
+      \ power dissipation. \n                            Writing 1 to this bit forces\
+      \ CTRL_EN to 0, i.e. the cache cannot \n                            be enabled\
+      \ when powered down. \n                            Cache-as-SRAM accesses will\
+      \ produce a bus error response when \n                            the cache\
+      \ is powered down."
+    access: read-write
+    bitOffset: 3
+    bitWidth: 1
+  - name: EN_SECURE
+    description: "When 1, enable the cache for Secure accesses. When enabled, Secure\
+      \ XIP accesses to the cached (addr[26] == 0) window will query the cache, and\
+      \ QSPI accesses are performed only if the requested data is not present. When\
+      \ disabled, Secure access ignore the cache contents, and always access the QSPI\
+      \ interface.\n\n                            Accesses to the uncached (addr[26]\
+      \ == 1) window will never query the cache, irrespective of this bit.\n\n   \
+      \                         There is no cache-as-SRAM address window. Cache lines\
+      \ are allocated for SRAM-like use by individually pinning them, and keeping\
+      \ the cache enabled."
+    access: read-write
+    bitOffset: 0
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: EN_NONSECURE
+    description: "When 1, enable the cache for Non-secure accesses. When enabled,\
+      \ Non-secure XIP accesses to the cached (addr[26] == 0) window will query the\
+      \ cache, and QSPI accesses are performed only if the requested data is not present.\
+      \ When disabled, Secure access ignore the cache contents, and always access\
+      \ the QSPI interface.\n\n                            Accesses to the uncached\
+      \ (addr[26] == 1) window will never query the cache, irrespective of this bit."
+    access: read-write
+    bitOffset: 1
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: NO_UNCACHED_SEC
+    description: "When 1, Secure accesses to the uncached window (addr[27:26] == 1)\
+      \ will generate a bus error. This may reduce the number of SAU/MPU/PMP regions\
+      \ required to protect flash contents.\n\n                            Note this\
+      \ does not disable access to the uncached, untranslated window -- see NO_UNTRANSLATED_SEC."
+    access: read-write
+    bitOffset: 4
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: NO_UNCACHED_NONSEC
+    description: "When 1, Non-secure accesses to the uncached window (addr[27:26]\
+      \ == 1) will generate a bus error. This may reduce the number of SAU/MPU/PMP\
+      \ regions required to protect flash contents.\n\n                          \
+      \  Note this does not disable access to the uncached, untranslated window --\
+      \ see NO_UNTRANSLATED_SEC."
+    access: read-write
+    bitOffset: 5
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: NO_UNTRANSLATED_SEC
+    description: When 1, Secure accesses to the uncached, untranslated window (addr[27:26]
+      == 3) will generate a bus error.
+    access: read-write
+    bitOffset: 6
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: NO_UNTRANSLATED_NONSEC
+    description: When 1, Non-secure accesses to the uncached, untranslated window
+      (addr[27:26] == 3) will generate a bus error.
+    access: read-write
+    bitOffset: 7
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: MAINT_NONSEC
+    description: "When 0, Non-secure accesses to the cache maintenance address window\
+      \ (addr[27] == 1, addr[26] == 0) will generate a bus error. When 1, Non-secure\
+      \ accesses can perform cache maintenance operations by writing to the cache\
+      \ maintenance address window.\n\n                            Cache maintenance\
+      \ operations may be used to corrupt Secure data by invalidating cache lines\
+      \ inappropriately, or map Secure content into a Non-secure region by pinning\
+      \ cache lines. Therefore this bit should generally be set to 0, unless Secure\
+      \ code is not using the cache.\n\n                            Care should also\
+      \ be taken to clear the cache data memory and tag memory before granting maintenance\
+      \ operations to Non-secure code."
+    access: read-write
+    bitOffset: 8
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: SPLIT_WAYS
+    description: "When 1, route all cached+Secure accesses to way 0 of the cache,\
+      \ and route all cached+Non-secure accesses to way 1 of the cache.\n\n      \
+      \                      This partitions the cache into two half-sized direct-mapped\
+      \ regions, such that Non-secure code can not observe cache line state changes\
+      \ caused by Secure execution.\n\n                            A full cache flush\
+      \ is required when changing the value of SPLIT_WAYS. The flush should be performed\
+      \ whilst SPLIT_WAYS is 0, so that both cache ways are accessible for invalidation."
+    access: read-write
+    bitOffset: 9
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: WRITABLE_M0
+    description: "If 1, enable writes to XIP memory window 0 (addresses 0x10000000\
+      \ through 0x10ffffff, and their uncached mirrors). If 0, this region is read-only.\n\
+      \n                            XIP memory is *read-only by default*. This bit\
+      \ must be set to enable writes if a RAM device is attached on QSPI chip select\
+      \ 0.\n\n                            The default read-only behaviour avoids two\
+      \ issues with writing to a read-only QSPI device (e.g. flash). First, a write\
+      \ will initially appear to succeed due to caching, but the data will eventually\
+      \ be lost when the written line is evicted, causing unpredictable behaviour.\n\
+      \n                            Second, when a written line is evicted, it will\
+      \ cause a write command to be issued to the flash, which can break the flash\
+      \ out of its continuous read mode. After this point, flash reads will return\
+      \ garbage. This is a security concern, as it allows Non-secure software to break\
+      \ Secure flash reads if it has permission to write to any flash address.\n\n\
+      \                            Note the read-only behaviour is implemented by\
+      \ downgrading writes to reads, so writes will still cause allocation of an address,\
+      \ but have no other effect."
+    access: read-write
+    bitOffset: 10
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: WRITABLE_M1
+    description: "If 1, enable writes to XIP memory window 1 (addresses 0x11000000\
+      \ through 0x11ffffff, and their uncached mirrors). If 0, this region is read-only.\n\
+      \n                            XIP memory is *read-only by default*. This bit\
+      \ must be set to enable writes if a RAM device is attached on QSPI chip select\
+      \ 1.\n\n                            The default read-only behaviour avoids two\
+      \ issues with writing to a read-only QSPI device (e.g. flash). First, a write\
+      \ will initially appear to succeed due to caching, but the data will eventually\
+      \ be lost when the written line is evicted, causing unpredictable behaviour.\n\
+      \n                            Second, when a written line is evicted, it will\
+      \ cause a write command to be issued to the flash, which can break the flash\
+      \ out of its continuous read mode. After this point, flash reads will return\
+      \ garbage. This is a security concern, as it allows Non-secure software to break\
+      \ Secure flash reads if it has permission to write to any flash address.\n\n\
+      \                            Note the read-only behaviour is implemented by\
+      \ downgrading writes to reads, so writes will still cause allocation of an address,\
+      \ but have no other effect."
+    access: read-write
+    bitOffset: 11
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  addressOffset: 0
+- name: CTR_ACC
+  description: Cache Access counter
+  resetValue: 0
+  fields:
+  - name: CTR_ACC
+    description: "A 32 bit saturating counter that increments upon each XIP access,\
+      \ \n                            whether the cache is hit or not. This includes\
+      \ noncacheable accesses. \n                            Write any value to clear."
+    access: read-write
+    modifiedWriteValues: oneToClear
+    bitOffset: 0
+    bitWidth: 32
+  addressOffset: 16
+- name: CTR_HIT
+  description: Cache Hit counter
+  resetValue: 0
+  fields:
+  - name: CTR_HIT
+    description: "A 32 bit saturating counter that increments upon each cache hit,\
+      \ \n                            i.e. when an XIP access is serviced directly\
+      \ from cached data. \n                            Write any value to clear."
+    access: read-write
+    modifiedWriteValues: oneToClear
+    bitOffset: 0
+    bitWidth: 32
+  addressOffset: 12
+- name: STAT
+  description: Cache Status
+  resetValue: 2
+  fields:
+  - name: FLUSH_READY
+    description: "Reads as 0 while a cache flush is in progress, and 1 otherwise.\
+      \ \n                            The cache is flushed whenever the XIP block\
+      \ is reset, and also \n                            when requested via the FLUSH\
+      \ register."
+    access: read-only
+    bitOffset: 0
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: FIFO_EMPTY
+    description: When 1, indicates the XIP streaming FIFO is completely empty.
+    access: read-only
+    bitOffset: 1
+    bitWidth: 1
+  - name: FIFO_FULL
+    description: "When 1, indicates the XIP streaming FIFO is completely full. \n\
+      \                            The streaming FIFO is 2 entries deep, so the full\
+      \ and empty \n                            flag allow its level to be ascertained."
+    access: read-only
+    bitOffset: 2
+    bitWidth: 1
+  addressOffset: 8
+- name: STREAM_ADDR
+  description: FIFO stream address
+  resetValue: 0
+  fields:
+  - name: STREAM_ADDR
+    description: "The address of the next word to be streamed from flash to the streaming\
+      \ FIFO. \n                            Increments automatically after each flash\
+      \ access. \n                            Write the initial access address here\
+      \ before starting a streaming read."
+    access: read-write
+    bitOffset: 2
+    bitWidth: 30
+  addressOffset: 20
+- name: STREAM_CTR
+  description: FIFO stream control
+  resetValue: 0
+  fields:
+  - name: STREAM_CTR
+    description: "Write a nonzero value to start a streaming read. This will then\
+      \ \n                            progress in the background, using flash idle\
+      \ cycles to transfer \n                            a linear data block from\
+      \ flash to the streaming FIFO. \n                            Decrements automatically\
+      \ (1 at a time) as the stream \n                            progresses, and\
+      \ halts on reaching 0. \n                            Write 0 to halt an in-progress\
+      \ stream, and discard any in-flight \n                            read, so that\
+      \ a new stream can immediately be started (after \n                        \
+      \    draining the FIFO and reinitialising STREAM_ADDR)"
+    access: read-write
+    bitOffset: 0
+    bitWidth: 22
+  addressOffset: 24
+- name: STREAM_FIFO
+  description: FIFO stream data
+  resetValue: 0
+  fields:
+  - name: STREAM_FIFO
+    description: "Streamed data is buffered here, for retrieval by the system DMA.\
+      \ \n                            This FIFO can also be accessed via the XIP_AUX\
+      \ slave, to avoid exposing \n                            the DMA to bus stalls\
+      \ caused by other XIP traffic."
+    access: read-only
+    readAction: modify
+    bitOffset: 0
+    bitWidth: 32
+  addressOffset: 28
+- name: FLUSH
+  description: Cache Flush control
+  resetValue: 0
+  fields:
+  - name: FLUSH
+    description: "Write 1 to flush the cache. This clears the tag memory, but \n \
+      \                           the data memory retains its contents. (This means\
+      \ cache-as-SRAM \n                            contents is not affected by flush\
+      \ or reset.) \n                            Reading will hold the bus (stall\
+      \ the processor) until the flush \n                            completes. Alternatively\
+      \ STAT can be polled until completion."
+    access: write-only
+    bitOffset: 0
+    bitWidth: 1
+  present_when: variant == 'RP2040'
+  addressOffset: 4

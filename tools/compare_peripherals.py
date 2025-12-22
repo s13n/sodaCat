@@ -424,11 +424,12 @@ def fuse_pair(fp_a, fp_b, out_dir='models/NXP', fused_name=None):
     # Build fused YAML structure
     fused = {}
     # If both peripherals share the same base name, use that name for the fused
+    # Use a local label variable to avoid clobbering the `fused_name` parameter
     if name_a == name_b:
-        fused_name = name_a
+        fused_label = name_a
     else:
-        fused_name = f"FUSED_{name_a}_{name_b}"
-    fused['name'] = fused_name
+        fused_label = f"FUSED_{name_a}_{name_b}"
+    fused['name'] = fused_label
     fused['description'] = f"Fused peripheral template for {name_a} ({folder_a}) and {name_b} ({folder_b})."
     # Merge declared parameters from both source files (preserve superset)
     params_a_raw = fp_a.get('raw', {}).get('parameters', []) or []

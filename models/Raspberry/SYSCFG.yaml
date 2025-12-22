@@ -1,0 +1,298 @@
+name: SYSCFG
+description: Fused peripheral template for SYSCFG (RP2040) and SYSCFG (RP2350).
+parameters:
+- name: offset_B
+  bits: 16
+  min: -32768
+  max: 32767
+  description: Offset to add to variant B addresses to map to reference SYSCFG.
+  default: -8
+variants:
+  RP2040:
+    offset_B: 0
+  RP2350:
+    offset_B: -8
+registers:
+- name: DBGFORCE
+  description: Directly control the SWD debug port of either processor
+  resetValue: 102
+  fields:
+  - name: PROC0_SWDO
+    description: Observe the value of processor 0 SWDIO output.
+    access: read-only
+    bitOffset: 0
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: PROC0_SWDI
+    description: Directly drive processor 0 SWDIO input, if PROC0_ATTACH is set
+    access: read-write
+    bitOffset: 1
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: PROC0_SWCLK
+    description: Directly drive processor 0 SWCLK, if PROC0_ATTACH is set
+    access: read-write
+    bitOffset: 2
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: PROC0_ATTACH
+    description: Attach processor 0 debug port to syscfg controls, and disconnect
+      it from external SWD pads.
+    access: read-write
+    bitOffset: 3
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: PROC1_SWDO
+    description: Observe the value of processor 1 SWDIO output.
+    access: read-only
+    bitOffset: 4
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: PROC1_SWDI
+    description: Directly drive processor 1 SWDIO input, if PROC1_ATTACH is set
+    access: read-write
+    bitOffset: 5
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: PROC1_SWCLK
+    description: Directly drive processor 1 SWCLK, if PROC1_ATTACH is set
+    access: read-write
+    bitOffset: 6
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: PROC1_ATTACH
+    description: Attach processor 1 debug port to syscfg controls, and disconnect
+      it from external SWD pads.
+    access: read-write
+    bitOffset: 7
+    bitWidth: 1
+    present_when: variant == 'RP2040'
+  - name: SWDO
+    description: Observe the value of SWDIO output.
+    access: read-only
+    bitOffset: 0
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: SWDI
+    description: Directly drive SWDIO input, if ATTACH is set
+    access: read-write
+    bitOffset: 1
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: SWCLK
+    description: Directly drive SWCLK, if ATTACH is set
+    access: read-write
+    bitOffset: 2
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: ATTACH
+    description: Attach chip debug port to syscfg controls, and disconnect it from
+      external SWD pads.
+    access: read-write
+    bitOffset: 3
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  addressOffset: 20
+- name: MEMPOWERDOWN
+  description: "Control power downs to memories. Set high to power down memories.\
+    \ \n                    Use with extreme caution"
+  resetValue: 0
+  fields:
+  - name: SRAM0
+    access: read-write
+    bitOffset: 0
+    bitWidth: 1
+  - name: SRAM1
+    access: read-write
+    bitOffset: 1
+    bitWidth: 1
+  - name: SRAM2
+    access: read-write
+    bitOffset: 2
+    bitWidth: 1
+  - name: SRAM3
+    access: read-write
+    bitOffset: 3
+    bitWidth: 1
+  - name: SRAM4
+    access: read-write
+    bitOffset: 4
+    bitWidth: 1
+  - name: SRAM5
+    access: read-write
+    bitOffset: 5
+    bitWidth: 1
+  - name: USB
+    access: read-write
+    bitOffset: 6
+    bitWidth: 1
+  - name: ROM
+    access: read-write
+    bitOffset: 7
+    bitWidth: 1
+  - name: SRAM6
+    access: read-write
+    bitOffset: 6
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: SRAM7
+    access: read-write
+    bitOffset: 7
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: SRAM8
+    access: read-write
+    bitOffset: 8
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: SRAM9
+    access: read-write
+    bitOffset: 9
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: BOOTRAM
+    access: read-write
+    bitOffset: 12
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  addressOffset: 24
+- name: PROC_CONFIG
+  description: Configuration for processors
+  resetValue: 268435456
+  fields:
+  - name: PROC0_HALTED
+    description: Indication that proc0 has halted
+    access: read-only
+    bitOffset: 0
+    bitWidth: 1
+  - name: PROC1_HALTED
+    description: Indication that proc1 has halted
+    access: read-only
+    bitOffset: 1
+    bitWidth: 1
+  - name: PROC0_DAP_INSTID
+    description: "Configure proc0 DAP instance ID. \n                            Recommend\
+      \ that this is NOT changed until you require debug access in multi-chip environment\
+      \ \n                            WARNING: do not set to 15 as this is reserved\
+      \ for RescueDP"
+    access: read-write
+    bitOffset: 24
+    bitWidth: 4
+    present_when: variant == 'RP2040'
+  - name: PROC1_DAP_INSTID
+    description: "Configure proc1 DAP instance ID. \n                            Recommend\
+      \ that this is NOT changed until you require debug access in multi-chip environment\
+      \ \n                            WARNING: do not set to 15 as this is reserved\
+      \ for RescueDP"
+    access: read-write
+    bitOffset: 28
+    bitWidth: 4
+    present_when: variant == 'RP2040'
+  addressOffset: 8
+- name: PROC_IN_SYNC_BYPASS
+  description: "For each bit, if 1, bypass the input synchronizer between that GPIO\
+    \ \n                    and the GPIO input register in the SIO. The input synchronizers\
+    \ should \n                    generally be unbypassed, to avoid injecting metastabilities\
+    \ into processors. \n                    If you're feeling brave, you can bypass\
+    \ to save two cycles of input \n                    latency. This register applies\
+    \ to GPIO 0...29."
+  resetValue: 0
+  fields:
+  - name: PROC_IN_SYNC_BYPASS
+    access: read-write
+    bitOffset: 0
+    bitWidth: 30
+    present_when: variant == 'RP2040'
+  - name: GPIO
+    access: read-write
+    bitOffset: 0
+    bitWidth: 32
+    present_when: variant == 'RP2350'
+  addressOffset: 12
+- name: PROC_IN_SYNC_BYPASS_HI
+  description: "For each bit, if 1, bypass the input synchronizer between that GPIO\
+    \ \n                    and the GPIO input register in the SIO. The input synchronizers\
+    \ should \n                    generally be unbypassed, to avoid injecting metastabilities\
+    \ into processors. \n                    If you're feeling brave, you can bypass\
+    \ to save two cycles of input \n                    latency. This register applies\
+    \ to GPIO 30...35 (the QSPI IOs)."
+  resetValue: 0
+  fields:
+  - name: PROC_IN_SYNC_BYPASS_HI
+    access: read-write
+    bitOffset: 0
+    bitWidth: 6
+    present_when: variant == 'RP2040'
+  - name: GPIO
+    access: read-write
+    bitOffset: 0
+    bitWidth: 16
+    present_when: variant == 'RP2350'
+  - name: USB_DP
+    access: read-write
+    bitOffset: 24
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: USB_DM
+    access: read-write
+    bitOffset: 25
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: QSPI_SCK
+    access: read-write
+    bitOffset: 26
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: QSPI_CSN
+    access: read-write
+    bitOffset: 27
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: QSPI_SD
+    access: read-write
+    bitOffset: 28
+    bitWidth: 4
+    present_when: variant == 'RP2350'
+  addressOffset: 16
+- name: PROC0_NMI_MASK
+  description: Processor core 0 NMI source mask
+  resetValue: 0
+  fields:
+  - name: PROC0_NMI_MASK
+    description: Set a bit high to enable NMI from that IRQ
+    access: read-write
+    bitOffset: 0
+    bitWidth: 32
+  present_when: variant == 'RP2040'
+  addressOffset: 0
+- name: PROC1_NMI_MASK
+  description: Processor core 1 NMI source mask
+  resetValue: 0
+  fields:
+  - name: PROC1_NMI_MASK
+    description: Set a bit high to enable NMI from that IRQ
+    access: read-write
+    bitOffset: 0
+    bitWidth: 32
+  present_when: variant == 'RP2040'
+  addressOffset: 4
+- name: AUXCTRL
+  description: Auxiliary system control register
+  resetValue: 0
+  fields:
+  - name: AUXCTRL
+    description: "* Bits 7:3: Reserved\n                            * Bit 2: Set to\
+      \ mask OTP power analogue power supply detection from resetting OTP controller\
+      \ and PSM\n\n                            * Bit 1: When clear, the LPOSC output\
+      \ is XORed into the TRNG ROSC output as an additional, uncorrelated entropy\
+      \ source. When set, this behaviour is disabled.\n\n                        \
+      \    * Bit 0: Force POWMAN clock to switch to LPOSC, by asserting its WDRESET\
+      \ input. This must be set before initiating a watchdog reset of the RSM from\
+      \ a stage that includes CLOCKS, if POWMAN is running from clk_ref at the point\
+      \ that the watchdog reset takes place. Otherwise, the short pulse generated\
+      \ on clk_ref by the reset of the CLOCKS block may affect POWMAN register state."
+    access: read-write
+    bitOffset: 0
+    bitWidth: 8
+  present_when: variant == 'RP2350'
+  addressOffset: 28

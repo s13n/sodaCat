@@ -1,0 +1,262 @@
+name: ROSC
+description: Fused peripheral template for ROSC (RP2040) and ROSC (RP2350).
+parameters: []
+variants:
+  RP2040: {}
+  RP2350: {}
+registers:
+- name: COUNT
+  description: "A down counter running at the ROSC frequency which counts to zero\
+    \ and stops. \n                    To start the counter write a non-zero value.\
+    \ \n                    Can be used for short software pauses when setting up\
+    \ time sensitive hardware."
+  resetValue: 0
+  fields:
+  - name: COUNT
+    access: read-write
+    bitOffset: 0
+    bitWidth: 8
+  addressOffset: 32
+- name: CTRL
+  description: Ring Oscillator control
+  resetValue: 2720
+  fields:
+  - name: FREQ_RANGE
+    description: "Controls the number of delay stages in the ROSC ring \n        \
+      \                    LOW uses stages 0 to 7 \n                            MEDIUM\
+      \ uses stages 2 to 7 \n                            HIGH uses stages 4 to 7 \n\
+      \                            TOOHIGH uses stages 6 to 7 and should not be used\
+      \ because its frequency exceeds design specifications \n                   \
+      \         The clock output will not glitch when changing the range up one step\
+      \ at a time \n                            The clock output will glitch when\
+      \ changing the range down \n                            Note: the values here\
+      \ are gray coded which is why HIGH comes before TOOHIGH"
+    access: read-write
+    enumeratedValues:
+    - name: LOW
+      value: 4004
+    - name: MEDIUM
+      value: 4005
+    - name: HIGH
+      value: 4007
+    - name: TOOHIGH
+      value: 4006
+    bitOffset: 0
+    bitWidth: 12
+  - name: ENABLE
+    description: "On power-up this field is initialised to ENABLE \n             \
+      \               The system clock must be switched to another source before setting\
+      \ this field to DISABLE otherwise the chip will lock up \n                 \
+      \           The 12-bit code is intended to give some protection against accidental\
+      \ writes. An invalid setting will enable the oscillator."
+    access: read-write
+    enumeratedValues:
+    - name: DISABLE
+      value: 3358
+    - name: ENABLE
+      value: 4011
+    bitOffset: 12
+    bitWidth: 12
+  addressOffset: 0
+- name: DIV
+  description: Controls the output divider
+  resetMask: 0
+  fields:
+  - name: DIV
+    description: "set to 0xaa0 + div where \n                            div = 0 divides\
+      \ by 32 \n                            div = 1-31 divides by div \n         \
+      \                   any other value sets div=31 \n                         \
+      \   this register resets to div=16"
+    access: read-write
+    enumeratedValues:
+    - name: PASS
+      value: 2720
+    bitOffset: 0
+    bitWidth: 12
+  addressOffset: 16
+- name: DORMANT
+  description: Ring Oscillator pause control
+  resetMask: 0
+  fields:
+  - name: DORMANT
+    description: "This is used to save power by pausing the ROSC \n              \
+      \              On power-up this field is initialised to WAKE \n            \
+      \                An invalid write will also select WAKE \n                 \
+      \           Warning: setup the irq before selecting dormant mode"
+    access: read-write
+    enumeratedValues:
+    - name: dormant
+      value: 1668246881
+    - name: WAKE
+      value: 2002873189
+    bitOffset: 0
+    bitWidth: 32
+  addressOffset: 12
+- name: FREQA
+  description: "The FREQA & FREQB registers control the frequency by controlling the\
+    \ drive strength of each stage \n                    The drive strength has 4\
+    \ levels determined by the number of bits set \n                    Increasing\
+    \ the number of bits set increases the drive strength and increases the oscillation\
+    \ frequency \n                    0 bits set is the default drive strength \n\
+    \                    1 bit set doubles the drive strength \n                 \
+    \   2 bits set triples drive strength \n                    3 bits set quadruples\
+    \ drive strength"
+  resetValue: 0
+  fields:
+  - name: DS0
+    description: Stage 0 drive strength
+    access: read-write
+    bitOffset: 0
+    bitWidth: 3
+  - name: DS1
+    description: Stage 1 drive strength
+    access: read-write
+    bitOffset: 4
+    bitWidth: 3
+  - name: DS2
+    description: Stage 2 drive strength
+    access: read-write
+    bitOffset: 8
+    bitWidth: 3
+  - name: DS3
+    description: Stage 3 drive strength
+    access: read-write
+    bitOffset: 12
+    bitWidth: 3
+  - name: PASSWD
+    description: "Set to 0x9696 to apply the settings \n                         \
+      \   Any other value in this field will set all drive strengths to 0"
+    access: read-write
+    enumeratedValues:
+    - name: PASS
+      value: 38550
+    bitOffset: 16
+    bitWidth: 16
+  - name: DS0_RANDOM
+    description: Randomises the stage 0 drive strength
+    access: read-write
+    bitOffset: 3
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  - name: DS1_RANDOM
+    description: Randomises the stage 1 drive strength
+    access: read-write
+    bitOffset: 7
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  addressOffset: 4
+- name: FREQB
+  description: For a detailed description see freqa register
+  resetValue: 0
+  fields:
+  - name: DS4
+    description: Stage 4 drive strength
+    access: read-write
+    bitOffset: 0
+    bitWidth: 3
+  - name: DS5
+    description: Stage 5 drive strength
+    access: read-write
+    bitOffset: 4
+    bitWidth: 3
+  - name: DS6
+    description: Stage 6 drive strength
+    access: read-write
+    bitOffset: 8
+    bitWidth: 3
+  - name: DS7
+    description: Stage 7 drive strength
+    access: read-write
+    bitOffset: 12
+    bitWidth: 3
+  - name: PASSWD
+    description: "Set to 0x9696 to apply the settings \n                         \
+      \   Any other value in this field will set all drive strengths to 0"
+    access: read-write
+    enumeratedValues:
+    - name: PASS
+      value: 38550
+    bitOffset: 16
+    bitWidth: 16
+  addressOffset: 8
+- name: PHASE
+  description: Controls the phase shifted output
+  resetValue: 8
+  fields:
+  - name: SHIFT
+    description: "phase shift the phase-shifted output by SHIFT input clocks \n  \
+      \                          this can be changed on-the-fly \n               \
+      \             must be set to 0 before setting div=1"
+    access: read-write
+    bitOffset: 0
+    bitWidth: 2
+  - name: FLIP
+    description: "invert the phase-shifted output \n                            this\
+      \ is ignored when div=1"
+    access: read-write
+    bitOffset: 2
+    bitWidth: 1
+  - name: ENABLE
+    description: "enable the phase-shifted output \n                            this\
+      \ can be changed on-the-fly"
+    access: read-write
+    bitOffset: 3
+    bitWidth: 1
+  - name: PASSWD
+    description: "set to 0xaa \n                            any other value enables\
+      \ the output with shift=0"
+    access: read-write
+    bitOffset: 4
+    bitWidth: 8
+  addressOffset: 20
+- name: RANDOMBIT
+  description: This just reads the state of the oscillator output so randomness is
+    compromised if the ring oscillator is stopped or run at a harmonic of the bus
+    frequency
+  resetValue: 1
+  fields:
+  - name: RANDOMBIT
+    access: read-only
+    bitOffset: 0
+    bitWidth: 1
+  addressOffset: 28
+- name: STATUS
+  description: Ring Oscillator Status
+  resetValue: 0
+  fields:
+  - name: ENABLED
+    description: "Oscillator is enabled but not necessarily running and stable \n\
+      \                            this resets to 0 but transitions to 1 during chip\
+      \ startup"
+    access: read-only
+    bitOffset: 12
+    bitWidth: 1
+  - name: DIV_RUNNING
+    description: "post-divider is running \n                            this resets\
+      \ to 0 but transitions to 1 during chip startup"
+    access: read-only
+    bitOffset: 16
+    bitWidth: 1
+  - name: BADWRITE
+    description: An invalid value has been written to CTRL_ENABLE or CTRL_FREQ_RANGE
+      or FREQA or FREQB or DIV or PHASE or DORMANT
+    access: read-write
+    modifiedWriteValues: oneToClear
+    bitOffset: 24
+    bitWidth: 1
+  - name: STABLE
+    description: Oscillator is running and stable
+    access: read-only
+    bitOffset: 31
+    bitWidth: 1
+  addressOffset: 24
+- name: RANDOM
+  description: Loads a value to the LFSR randomiser
+  resetValue: 1057272173
+  fields:
+  - name: SEED
+    access: read-write
+    bitOffset: 0
+    bitWidth: 32
+  present_when: variant == 'RP2350'
+  addressOffset: 12

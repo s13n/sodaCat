@@ -1,0 +1,141 @@
+name: PLL
+description: Fused peripheral template for PLL (RP2040) and PLL (RP2350).
+parameters: []
+variants:
+  RP2040: {}
+  RP2350: {}
+registers:
+- name: CS
+  description: "Control and Status \n                    GENERAL CONSTRAINTS: \n \
+    \                   Reference clock frequency min=5MHz, max=800MHz \n        \
+    \            Feedback divider min=16, max=320 \n                    VCO frequency\
+    \ min=750MHz, max=1600MHz"
+  resetValue: 1
+  fields:
+  - name: REFDIV
+    description: "Divides the PLL input reference clock. \n                      \
+      \      Behaviour is undefined for div=0. \n                            PLL output\
+      \ will be unpredictable during refdiv changes, wait for lock=1 before using\
+      \ it."
+    access: read-write
+    bitOffset: 0
+    bitWidth: 6
+  - name: BYPASS
+    description: Passes the reference clock to the output instead of the divided VCO.
+      The VCO continues to run so the user can switch between the reference clock
+      and the divided VCO but the output will glitch when doing so.
+    access: read-write
+    bitOffset: 8
+    bitWidth: 1
+  - name: LOCK
+    description: PLL is locked
+    access: read-only
+    bitOffset: 31
+    bitWidth: 1
+  - name: LOCK_N
+    description: "PLL is not locked \n                            Ideally this is\
+      \ cleared when PLL lock is seen and this should never normally be set"
+    access: read-write
+    modifiedWriteValues: oneToClear
+    bitOffset: 30
+    bitWidth: 1
+    present_when: variant == 'RP2350'
+  addressOffset: 0
+- name: FBDIV_INT
+  description: "Feedback divisor \n                    (note: this PLL does not support\
+    \ fractional division)"
+  resetValue: 0
+  fields:
+  - name: FBDIV_INT
+    description: see ctrl reg description for constraints
+    access: read-write
+    bitOffset: 0
+    bitWidth: 12
+  addressOffset: 8
+- name: PRIM
+  description: "Controls the PLL post dividers for the primary output \n         \
+    \           (note: this PLL does not have a secondary output) \n             \
+    \       the primary output is driven from VCO divided by postdiv1*postdiv2"
+  resetValue: 487424
+  fields:
+  - name: POSTDIV2
+    description: divide by 1-7
+    access: read-write
+    bitOffset: 12
+    bitWidth: 3
+  - name: POSTDIV1
+    description: divide by 1-7
+    access: read-write
+    bitOffset: 16
+    bitWidth: 3
+  addressOffset: 12
+- name: PWR
+  description: Controls the PLL power modes.
+  resetValue: 45
+  fields:
+  - name: PD
+    description: "PLL powerdown \n                            To save power set high\
+      \ when PLL output not required."
+    access: read-write
+    bitOffset: 0
+    bitWidth: 1
+  - name: DSMPD
+    description: "PLL DSM powerdown \n                            Nothing is achieved\
+      \ by setting this low."
+    access: read-write
+    bitOffset: 2
+    bitWidth: 1
+  - name: POSTDIVPD
+    description: "PLL post divider powerdown \n                            To save\
+      \ power set high when PLL output not required or bypass=1."
+    access: read-write
+    bitOffset: 3
+    bitWidth: 1
+  - name: VCOPD
+    description: "PLL VCO powerdown \n                            To save power set\
+      \ high when PLL output not required or bypass=1."
+    access: read-write
+    bitOffset: 5
+    bitWidth: 1
+  addressOffset: 4
+- name: INTE
+  description: Interrupt Enable
+  resetValue: 0
+  fields:
+  - name: LOCK_N_STICKY
+    access: read-write
+    bitOffset: 0
+    bitWidth: 1
+  present_when: variant == 'RP2350'
+  addressOffset: 20
+- name: INTF
+  description: Interrupt Force
+  resetValue: 0
+  fields:
+  - name: LOCK_N_STICKY
+    access: read-write
+    bitOffset: 0
+    bitWidth: 1
+  present_when: variant == 'RP2350'
+  addressOffset: 24
+- name: INTR
+  description: Raw Interrupts
+  resetValue: 0
+  fields:
+  - name: LOCK_N_STICKY
+    access: read-write
+    modifiedWriteValues: oneToClear
+    bitOffset: 0
+    bitWidth: 1
+  present_when: variant == 'RP2350'
+  addressOffset: 16
+- name: INTS
+  description: Interrupt status after masking & forcing
+  resetValue: 0
+  fields:
+  - name: LOCK_N_STICKY
+    access: read-only
+    bitOffset: 0
+    bitWidth: 1
+  present_when: variant == 'RP2350'
+  addressOffset: 28

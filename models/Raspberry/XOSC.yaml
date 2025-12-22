@@ -1,0 +1,129 @@
+name: XOSC
+description: Fused peripheral template for XOSC (RP2040) and XOSC (RP2350).
+parameters: []
+variants:
+  RP2040: {}
+  RP2350: {}
+registers:
+- name: COUNT
+  description: "A down counter running at the xosc frequency which counts to zero\
+    \ and stops. \n                    To start the counter write a non-zero value.\
+    \ \n                    Can be used for short software pauses when setting up\
+    \ time sensitive hardware."
+  resetValue: 0
+  fields:
+  - name: COUNT
+    access: read-write
+    bitOffset: 0
+    bitWidth: 8
+  addressOffset: 28
+- name: CTRL
+  description: Crystal Oscillator Control
+  resetValue: 0
+  fields:
+  - name: FREQ_RANGE
+    description: Frequency range. An invalid setting will retain the previous value.
+      The actual value being used can be read from STATUS_FREQ_RANGE. This resets
+      to 0xAA0 and cannot be changed.
+    access: read-write
+    enumeratedValues:
+    - name: 1_15MHZ
+      value: 2720
+    - name: RESERVED_1
+      value: 2721
+    - name: RESERVED_2
+      value: 2722
+    - name: RESERVED_3
+      value: 2723
+    bitOffset: 0
+    bitWidth: 12
+  - name: ENABLE
+    description: "On power-up this field is initialised to DISABLE and the chip runs\
+      \ from the ROSC. \n                            If the chip has subsequently\
+      \ been programmed to run from the XOSC then DISABLE may lock-up the chip. If\
+      \ this is a concern then run the clk_ref from the ROSC and enable the clk_sys\
+      \ RESUS feature. \n                            The 12-bit code is intended to\
+      \ give some protection against accidental writes. An invalid setting will enable\
+      \ the oscillator."
+    access: read-write
+    enumeratedValues:
+    - name: DISABLE
+      value: 3358
+    - name: ENABLE
+      value: 4011
+    bitOffset: 12
+    bitWidth: 12
+  addressOffset: 0
+- name: DORMANT
+  description: Crystal Oscillator pause control
+  resetMask: 0
+  fields:
+  - name: DORMANT
+    description: "This is used to save power by pausing the XOSC \n              \
+      \              On power-up this field is initialised to WAKE \n            \
+      \                An invalid write will also select WAKE \n                 \
+      \           Warning: stop the PLLs before selecting dormant mode \n        \
+      \                    Warning: setup the irq before selecting dormant mode"
+    access: read-write
+    enumeratedValues:
+    - name: dormant
+      value: 1668246881
+    - name: WAKE
+      value: 2002873189
+    bitOffset: 0
+    bitWidth: 32
+  addressOffset: 8
+- name: STARTUP
+  description: Controls the startup delay
+  resetValue: 0
+  fields:
+  - name: DELAY
+    description: in multiples of 256*xtal_period. The reset value of 0xc4 corresponds
+      to approx 50 000 cycles.
+    access: read-write
+    bitOffset: 0
+    bitWidth: 14
+  - name: X4
+    description: Multiplies the startup_delay by 4. This is of little value to the
+      user given that the delay can be programmed directly.
+    access: read-write
+    bitOffset: 20
+    bitWidth: 1
+  addressOffset: 12
+- name: STATUS
+  description: Crystal Oscillator Status
+  resetValue: 0
+  fields:
+  - name: FREQ_RANGE
+    description: The current frequency range setting, always reads 0
+    access: read-only
+    enumeratedValues:
+    - name: 1_15MHZ
+      value: 0
+    - name: RESERVED_1
+      value: 1
+    - name: RESERVED_2
+      value: 2
+    - name: RESERVED_3
+      value: 3
+    bitOffset: 0
+    bitWidth: 2
+  - name: ENABLED
+    description: Oscillator is enabled but not necessarily running and stable, resets
+      to 0
+    access: read-only
+    bitOffset: 12
+    bitWidth: 1
+  - name: BADWRITE
+    description: An invalid value has been written to CTRL_ENABLE or CTRL_FREQ_RANGE
+      or DORMANT
+    access: read-write
+    modifiedWriteValues: oneToClear
+    bitOffset: 24
+    bitWidth: 1
+  - name: STABLE
+    description: Oscillator is running and stable
+    access: read-only
+    bitOffset: 31
+    bitWidth: 1
+  addressOffset: 4
