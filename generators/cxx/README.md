@@ -49,7 +49,11 @@ isn't an error. The name in the surrounding scope will be found preferentially,
 but you can use the scope resolution operator to get at the name in the inline
 namespace when necessary. This is useful to reduce clutter and still allow name
 overlaps. It allows you to choose between being concise or being explicit on
-each instance. 
+each instance.
+
+We use a trailing underscore with inline namespaces to help recognizing when
+they are used to disambiguate names, and to minimize the chance of them being
+confused with type names.
 
 ## Example
 
