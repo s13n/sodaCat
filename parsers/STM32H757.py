@@ -207,10 +207,11 @@ usart1['parameters'] = [
     { 'name': 'modbus',    'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Modbus communication' },
     { 'name': 'autobaud',  'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Auto baud rate detection' },
     { 'name': 'prescaler', 'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Prescaler' },
+    { 'name': 'lpbaud',    'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'BRR has 20-bit LPUART format' },
 ]
-usartpars =  [('syncmode', 1), ('smartcard', 1), ('irdaSIR', 1), ('lin', 1), ('rxTimeout', 1), ('modbus', 1), ('autobaud', 1), ('prescaler', 1)]
-uartpars =   [('syncmode', 0), ('smartcard', 0), ('irdaSIR', 1), ('lin', 1), ('rxTimeout', 1), ('modbus', 1), ('autobaud', 1), ('prescaler', 1)]
-lpuartpars = [('syncmode', 0), ('smartcard', 0), ('irdaSIR', 0), ('lin', 0), ('rxTimeout', 0), ('modbus', 0), ('autobaud', 0), ('prescaler', 1)]
+usartpars =  [('syncmode', 1), ('smartcard', 1), ('irdaSIR', 1), ('lin', 1), ('rxTimeout', 1), ('modbus', 1), ('autobaud', 1), ('prescaler', 1), ('lpbaud', 0)]
+uartpars =   [('syncmode', 0), ('smartcard', 0), ('irdaSIR', 1), ('lin', 1), ('rxTimeout', 1), ('modbus', 1), ('autobaud', 1), ('prescaler', 1), ('lpbaud', 0)]
+lpuartpars = [('syncmode', 0), ('smartcard', 0), ('irdaSIR', 0), ('lin', 0), ('rxTimeout', 0), ('modbus', 0), ('autobaud', 0), ('prescaler', 1), ('lpbaud', 1)]
 
 usart2 = svd.findNamedEntry(chip['peripherals'], 'USART2')
 transform.renameEntries(usart2['interrupts'], 'name', 'USART2', 'USART')
