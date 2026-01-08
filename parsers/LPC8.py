@@ -43,7 +43,7 @@ acomp['clocks'] = [ { 'name': 'clk' } ]
 adc0 = svd.findNamedEntry(chip['peripherals'], 'ADC0')
 adc0['headerStructName'] = 'ADC'
 adc0['clocks'] = [ { 'name': 'sync_clk' }, { 'name': 'async_clk' } ]
-adc0['registers'] = transform.createClusterArray(adc0['registers'], r"DAT(\d+)", {'name': 'DAT', 'description': 'Channel data'})
+#adc0['registers'] = transform.createClusterArray(adc0['registers'], r"DAT(\d+)", {'name': 'DAT', 'description': 'Channel data'})
 transform.renameEntries(adc0['interrupts'], 'name', r'ADC0_([A-Z_0-9]+)', r'\1')
 
 # Tweak the DMA
