@@ -323,6 +323,15 @@ transform.renameEntries(dfsdm['interrupts'], 'description', 'DFSDM1', 'DFSDM')
 dfsdm['registers'] = transform.createClusterArray(dfsdm['registers'], r"CH(\d+)(.+?)$", {'name': 'CH', 'description': 'DFSDM channel'})
 dfsdm['registers'] = transform.createClusterArray(dfsdm['registers'], r"DFSDM_FLT(\d+)(.+?)$", {'name': 'FLT', 'description': 'DFSDM filter'})
 
+# Tweak the QUADSPI
+quadspi = svd.findNamedEntry(chip['peripherals'], 'QUADSPI')
+quadspi['parameters'] = [
+    { 'name': 'dual', 'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'dual mode supported' },
+    { 'name': 'fifo32', 'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'FIFO size is 32 bytes instead of 16 bytes' },
+    { 'name': 'logsize', 'value': 28, 'bits': 5, 'min': 0, 'max': 31, 'description': 'log2 of size of memory mapped area' },
+    { 'name': 'base', 'value': 0x90, 'bits': 8, 'min': 0, 'max': 0xFF, 'description': '(base address >> 24) of memory mapped area' },
+]
+
 # Tweak the RTC
 rtc = svd.findNamedEntry(chip['peripherals'], 'RTC')
 transform.renameEntries(rtc['interrupts'], 'name', r'RTC_([_A-Z]+)', r'\1')
