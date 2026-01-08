@@ -104,19 +104,19 @@ transform.renameEntries(tim2['interrupts'], 'name', 'TIM2', 'TIM')
 transform.renameEntries(tim2['interrupts'], 'description', 'TIM2', 'TIM')
 tim2['parameters'] = [
     { 'name': 'wide',     'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Counter is 32-bit' },
-    { 'name': 'channels', 'value': 4, 'bits': 3, 'min': 1, 'max': 4, 'description': 'Number of capture/compare channels' },
+    { 'name': 'chan_max', 'value': 3, 'bits': 2, 'min': 0, 'max': 3, 'description': 'Index of last capture/compare channel' },
     { 'name': 'rep',      'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Repetition counter present' },
     { 'name': 'compl1',   'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Complementary output on first channel' },
     { 'name': 'bkin',     'value': 0, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Break input supported' },
     { 'name': 'trigger',  'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Trigger events supported' },
     { 'name': 'encoder',  'value': 1, 'bits': 1, 'min': 0, 'max': 1, 'description': 'Quadrature encoder support' },
 ]
-tim3pars = [('wide', 0), ('channels', 4), ('rep', 0), ('compl1', 0), ('bkin', 0), ('trigger', 1), ('encoder', 1)]
-tim5pars = [('wide', 1), ('channels', 4), ('rep', 0), ('compl1', 0), ('bkin', 0), ('trigger', 1), ('encoder', 1)]
-tim12pars = [('wide', 0), ('channels', 2), ('rep', 0), ('compl1', 0), ('bkin', 0), ('trigger', 1), ('encoder', 0)]
-tim13pars = [('wide', 0), ('channels', 1), ('rep', 0), ('compl1', 0), ('bkin', 0), ('trigger', 0), ('encoder', 0)]
-tim15pars = [('wide', 0), ('channels', 2), ('rep', 1), ('compl1', 1), ('bkin', 1), ('trigger', 1), ('encoder', 0)]
-tim16pars = [('wide', 0), ('channels', 1), ('rep', 1), ('compl1', 1), ('bkin', 1), ('trigger', 0), ('encoder', 0)]
+tim3pars = [('wide', 0), ('chan_max', 3), ('rep', 0), ('compl1', 0), ('bkin', 0), ('trigger', 1), ('encoder', 1)]
+tim5pars = [('wide', 1), ('chan_max', 3), ('rep', 0), ('compl1', 0), ('bkin', 0), ('trigger', 1), ('encoder', 1)]
+tim12pars = [('wide', 0), ('chan_max', 1), ('rep', 0), ('compl1', 0), ('bkin', 0), ('trigger', 1), ('encoder', 0)]
+tim13pars = [('wide', 0), ('chan_max', 0), ('rep', 0), ('compl1', 0), ('bkin', 0), ('trigger', 0), ('encoder', 0)]
+tim15pars = [('wide', 0), ('chan_max', 1), ('rep', 1), ('compl1', 1), ('bkin', 1), ('trigger', 1), ('encoder', 0)]
+tim16pars = [('wide', 0), ('chan_max', 0), ('rep', 1), ('compl1', 1), ('bkin', 1), ('trigger', 0), ('encoder', 0)]
 
 tim3 = svd.findNamedEntry(chip['peripherals'], 'TIM3')
 tim3['parameters'] = [{'name': n, 'value': v} for n,v in tim3pars]
