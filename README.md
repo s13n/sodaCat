@@ -8,7 +8,7 @@ stable.
 
 The tools you can find here are helpers to generate and maintain the data in the
 database. The database itself consists of YAML files contained in the directory
-tree below `data`. You use the database by using one or several of those YAML
+tree below `models`. You use the database by using one or several of those YAML
 files in your own project.
 
 There are example code generation tools included here that generates C++20 files
@@ -27,11 +27,14 @@ The process typically involves two steps:
 
 The first step might have been done already, and you can access the models in
 the `models` subdirectory. If not, you may have to either use a parser from
-those in the `parsers` directory, or write one for the device family you're
+those in the `parsers` directory, or write a parser for the device family you're
 interested in. Such a parser would typically be a python script that uses some
 sort of manufacturer provided data file and extract the model from it, often
 applying further patches or alterations to the data, before dumping the model
-into YAML files.
+into YAML files. A third option is to manually write the model. You may also
+have success with using AI tools to create models. You choose the best option
+according to the situation, for example depending on where you get the
+information from, and what format it is in.
 
 The second step involves running a generator to convert the models into source
 files for your preferred programming language. A generator for C++ is provided
