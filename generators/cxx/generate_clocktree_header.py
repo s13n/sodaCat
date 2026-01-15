@@ -246,7 +246,7 @@ def formatClassClocks(signals, signal_enum_map, generators, plls, gates, divider
     ]
     return "\n".join(txt)
     
-def generate_header(yaml_path, hpp_path, namespace):
+def generate_header(yaml_path, namespace, hpp_path):
     with open(yaml_path, 'r') as f:
         data = yaml.safe_load(f)
 
@@ -285,4 +285,4 @@ def generate_header(yaml_path, hpp_path, namespace):
 
 
 if __name__ == "__main__":
-    generate_header(sys.argv[1], sys.argv[3]+sys.argv[4], sys.argv[2])
+    generate_header(sys.argv[1], sys.argv[2], sys.argv[3]+sys.argv[4])

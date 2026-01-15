@@ -1,11 +1,5 @@
 # Generate the header file for a System on Chip
 #
-# Script arguments:
-#   argv[1] - Model (Name of yaml file)
-#   argv[2] - Namespace name, or path of namespace file (yaml format)
-#   argv[3] - Model name (used for type names)
-#   argv[4] - Output file suffix (appended to model name)
-#
 # This generator expects that the formatting is going to be fine tuned with clang-format or a similar tool.
 # There is no point in trying to please everyone with the formatting done here, when there are much better
 # tools that can be configured to conform with arbitrary formatting wishes.
@@ -94,11 +88,20 @@ postfixTemplate = Template("""
 #undef EXPORT
 """)
 
-yaml = YAML(typ='safe')
-chip = yaml.load(Path(sys.argv[1]))
-fmt  = ChipFormatter()
-nsfile = Path(sys.argv[2])
-namespaces = yaml.load(nsfile) if nsfile.exists() else sys.argv[2]
+def generate_header(model_file, namespace, model_name, out_suffix):
+    yaml = YAML(typ='safe')
+    chip = yaml.load(Path(model_file))
+    fmt  = ChipFormatter()
+    nsfile = Path(namespace)
+    namespaces = yaml.load(nsfile) if nsfile.exists() else namespace
+    header = fmt.createHeader(chip, namespaces, model_name, prefixTemplate, postfixTemplate)
+    print(header, file=open(model_name+out_suffix, mode = 'w'))
 
-header = fmt.createHeader(chip, namespaces, sys.argv[3], prefixTemplate, postfixTemplate)
-print(header, file=open(sys.argv[3]+sys.argv[4], mode = 'w'))
+# Script arguments:
+#   argv[1] - Model (Name of yaml file)
+#   argv[2] - Namespace name, or path of namespace file (yaml format)
+#   argv[3] - Model name (used for type names)
+#   argv[4] - Output file suffix (appended to model name)
+#
+if __name__ == "__main__":
+    generate_header(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
