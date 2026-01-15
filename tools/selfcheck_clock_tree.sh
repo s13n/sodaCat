@@ -7,8 +7,8 @@ for p in \
   schemas/clock-tree.schema.yaml \
   tools/validate_clock_specs.py \
   .github/workflows/clock-spec.yml \
-  docs/tasks/clock-tree-task.md \
-  spec/clock-tree
+  tasks/clock-tree-task.md \
+  models
 do
   [[ -e "$p" ]] && echo "  ✓ $p" || { echo "  ✗ MISSING: $p"; missing=1; }
 done
@@ -28,6 +28,6 @@ echo "== Installing Python deps in $VENV_DIR =="
 echo "== Validating specs =="
 "$VENV_DIR/bin/python" tools/validate_clock_specs.py \
   --schema schemas/clock-tree.schema.yaml \
-  --docs "spec/clock-tree/**/*.y*ml"
+  --docs "models/**/*clocks.y*ml"
 
 echo "All good ✅"
