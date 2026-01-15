@@ -215,7 +215,6 @@ def formatClassClocks(signals, signal_enum_map, generators, plls, gates, divider
     
     txt = ['class Clocks {',
         f'{st}',
-        "",
         "public:",
         "    using Ix = Indices;",
         "    using S = Ix::Signals;",
