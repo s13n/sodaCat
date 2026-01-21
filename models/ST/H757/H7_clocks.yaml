@@ -177,6 +177,8 @@ signals:
     description: LPTIM1 kernel clock (max. 125 MHz)
   - name: lptim2_ker_ck
     description: LPTIM2 kernel clock (max. 125 MHz)
+  - name: lptim345_ker_ck
+    description: LPTIM3,4,5 selected kernel clock (max. 125 MHz)
   - name: lptim3_ker_ck
     description: LPTIM3 kernel clock (max. 125 MHz)
   - name: lptim4_ker_ck
@@ -287,6 +289,21 @@ muxes:
       reg: CFGR
       field: SW
     description: System clock source selection (status in CFGR.SWS).
+  - name: LPTIM345SEL
+    output: lptim345_ker_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - ""
+      - ""
+    control:
+      reg: D3CCIPR
+      field: LPTIM345SEL
+    description: LPTIM3,4,5 kernel clock source selection.
 plls:
   - name: PLL1
     input: ref1_ck
@@ -584,4 +601,25 @@ gates:
     control:
       reg: C[0].AHB1ENR
       field: ETH1RXEN
+    description: Ethernet RX clock gate.
+  - name: LPTIM3EN
+    output: lptim3_ker_ck
+    input: lptim345_ker_ck
+    control:
+      reg: C[0].APB4ENR
+      field: LPTIM3EN
+    description: Ethernet RX clock gate.
+  - name: LPTIM4EN
+    output: lptim4_ker_ck
+    input: lptim345_ker_ck
+    control:
+      reg: C[0].APB4ENR
+      field: LPTIM4EN
+    description: Ethernet RX clock gate.
+  - name: LPTIM5EN
+    output: lptim5_ker_ck
+    input: lptim345_ker_ck
+    control:
+      reg: C[0].APB4ENR
+      field: LPTIM5EN
     description: Ethernet RX clock gate.
