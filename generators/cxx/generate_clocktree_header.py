@@ -163,6 +163,7 @@ def formatFields(field_list, instance):
         reg = f.get("reg", "")
         field = f.get("field", "")
         state = f.get("state", "")
+        values = f.get("values", None)
         if state:
             states[state] = f.get("default", 0)
             f_get = f'''[](void const *ctx) -> uint32_t {{
@@ -174,7 +175,9 @@ def formatFields(field_list, instance):
             }}'''
         else:
             f_get = f'''[](void const *ctx) -> uint32_t {{
-                return i_{inst}.registers->{reg}.get().{field};
+                constexpr uint32_t const values[] = {",".join(str(x) for x in values)};
+                auto idx = i_{inst}.registers->{reg}.get().{field};
+                return idx < std::size(values) ? values[idx] : 0;
             }}'''
             f_set = f'''[](void *ctx, uint32_t val){{
                 auto reg = i_{inst}.registers->{reg}.get();
