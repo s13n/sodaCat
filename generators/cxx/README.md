@@ -61,7 +61,7 @@ confused with type names.
 // UART.hpp
 #include "registers.hpp"  // where HwReg template is defined
 namespace chipFamily {
-inline namespace UART {
+inline namespace UART_ {
 struct CR {
     uint32_t WL:2,        //!< Wordlength selection
     uint32_t PE:1,        //!< Parity enable
@@ -93,7 +93,7 @@ this:
 
 ```c++
 // UartDriver.hpp
-namespace chipFamily { inline namespace UART {
+namespace chipFamily { inline namespace UART_ {
     struct UART;       // forward declaration, no need for #include here
 }}
 
