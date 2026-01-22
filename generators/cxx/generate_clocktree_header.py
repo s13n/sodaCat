@@ -86,8 +86,11 @@ def formatPlls(plls, instance, signal_enum_map):
 def formatGates(gates, instance, signal_enum_map):
     txt = ["    static constexpr std::array gates = {"]
     for g in gates:
-        inp = signal_enum_map[g["input"]]
-        outp = signal_enum_map[g["output"]]
+        if (output := g.get("output")) is None:
+            raise ValueError(f"Gate {g["name"]} has no output signal")
+        if (inp := signal_enum_map.get(g.get("input", "_"))) is None:
+            raise ValueError(f"Gate {g["name"]} input signal has no generator")
+        outp = signal_enum_map[output]
         reg = emit_field_ref(g.get("control"), instance)
         txt.append(f'        Ga{{ S::{inp}, S::{outp}, {reg} }},  // {g['name']}')
     txt.append("    };")
