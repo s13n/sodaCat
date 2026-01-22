@@ -155,6 +155,10 @@ signals:
     description: I2C3 kernel clock (max. 125 MHz)
   - name: i2c4_ker_ck
     description: I2C4 kernel clock (max. 125 MHz)
+  - name: usart16_sel_ck
+    description: USART1,6 selected clock (max. 125 MHz)
+  - name: usart234578_sel_ck
+    description: USART2,3,4,5,7,8 selected clock (max. 125 MHz)
   - name: usart1_ker_ck
     description: USART1 kernel clock (max. 125 MHz)
   - name: usart2_ker_ck
@@ -177,7 +181,7 @@ signals:
     description: LPTIM1 kernel clock (max. 125 MHz)
   - name: lptim2_ker_ck
     description: LPTIM2 kernel clock (max. 125 MHz)
-  - name: lptim345_ker_ck
+  - name: lptim345_sel_ck
     description: LPTIM3,4,5 selected kernel clock (max. 125 MHz)
   - name: lptim3_ker_ck
     description: LPTIM3 kernel clock (max. 125 MHz)
@@ -289,8 +293,38 @@ muxes:
       reg: CFGR
       field: SW
     description: System clock source selection (status in CFGR.SWS).
+  - name: LPTIM1SEL
+    output: lptim1_sel_ck
+    inputs:
+      - rcc_pclk1
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - ""
+      - ""
+    control:
+      reg: D2CCIP2R
+      field: LPTIM1SRC
+    description: LPTIM1 kernel clock source selection.
+  - name: LPTIM2SEL
+    output: lptim2_sel_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - ""
+      - ""
+    control:
+      reg: D3CCIPR
+      field: LPTIM2SRC
+    description: LPTIM2 kernel clock source selection.
   - name: LPTIM345SEL
-    output: lptim345_ker_ck
+    output: lptim345_sel_ck
     inputs:
       - rcc_pclk4
       - pll2_p_ck
@@ -304,6 +338,36 @@ muxes:
       reg: D3CCIPR
       field: LPTIM345SRC
     description: LPTIM3,4,5 kernel clock source selection.
+  - name: USART16SEL
+    output: usart16_sel_ck
+    inputs:
+      - rcc_pclk2
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - lse_ck
+      - ""
+      - ""
+    control:
+      reg: D2CCIP2R
+      field: USART16SRC
+    description: USART1,6 kernel clock source selection.
+  - name: USART234578SEL
+    output: usart234578_sel_ck
+    inputs:
+      - rcc_pclk1
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - lse_ck
+      - ""
+      - ""
+    control:
+      reg: D2CCIP2R
+      field: USART234578SRC
+    description: USART2,3,4,5,7,8 kernel clock source selection.
   - name: QSPISEL
     output: quadspi_sel_ck
     inputs:
@@ -313,7 +377,7 @@ muxes:
       - per_ck
     control:
       reg: D1CCIPR
-      field: QSPISEL
+      field: QSPISRC
     description: QUADSPI clock source selection.
 plls:
   - name: PLL1
@@ -589,27 +653,97 @@ gates:
       reg: C[0].AHB1ENR
       field: ETH1RXEN
     description: Ethernet RX clock gate.
+  - name: LPTIM1EN
+    output: lptim1_ker_ck
+    input: lptim1_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: LPTIM1EN
+    description: LPTIMER1 clock gate.
+  - name: LPTIM2EN
+    output: lptim2_ker_ck
+    input: lptim2_sel_ck
+    control:
+      reg: C[0].APB4ENR
+      field: LPTIM2EN
+    description: LPTIMER2 clock gate.
   - name: LPTIM3EN
     output: lptim3_ker_ck
-    input: lptim345_ker_ck
+    input: lptim345_sel_ck
     control:
       reg: C[0].APB4ENR
       field: LPTIM3EN
     description: LPTIMER3 clock gate.
   - name: LPTIM4EN
     output: lptim4_ker_ck
-    input: lptim345_ker_ck
+    input: lptim345_sel_ck
     control:
       reg: C[0].APB4ENR
       field: LPTIM4EN
     description: LPTIMER4 clock gate.
   - name: LPTIM5EN
     output: lptim5_ker_ck
-    input: lptim345_ker_ck
+    input: lptim345_sel_ck
     control:
       reg: C[0].APB4ENR
       field: LPTIM5EN
     description: LPTIMER5 clock gate.
+  - name: USART1EN
+    output: usart1_ker_ck
+    input: usart16_sel_ck
+    control:
+      reg: C[0].APB2ENR
+      field: USART1EN
+    description: USART1 clock gate.
+  - name: USART6EN
+    output: usart6_ker_ck
+    input: usart16_sel_ck
+    control:
+      reg: C[0].APB2ENR
+      field: USART6EN
+    description: USART6 clock gate.
+  - name: USART2EN
+    output: usart2_ker_ck
+    input: usart234578_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: USART2EN
+    description: USART2 clock gate.
+  - name: USART3EN
+    output: usart3_ker_ck
+    input: usart234578_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: USART3EN
+    description: USART3 clock gate.
+  - name: UART4EN
+    output: uart4_ker_ck
+    input: usart234578_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: UART4EN
+    description: UART4 clock gate.
+  - name: UART5EN
+    output: uart5_ker_ck
+    input: usart234578_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: UART5EN
+    description: UART5 clock gate.
+  - name: UART7EN
+    output: uart7_ker_ck
+    input: usart234578_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: UART7EN
+    description: UART7 clock gate.
+  - name: UART8EN
+    output: uart8_ker_ck
+    input: usart234578_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: UART8EN
+    description: UART8 clock gate.
   - name: QSPIEN
     output: quadspi_ker_ck
     input: quadspi_sel_ck
