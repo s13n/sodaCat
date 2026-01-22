@@ -134,11 +134,11 @@ def formatFields(field_list, instance):
         if state:
             states[state] = f.get("default", 0)
             f_get = f'''[](void const *ctx) -> uint32_t {{
-                return static_cast<Clocks const*>(ctx)->{state};
+                return static_cast<Clocks const*>(ctx)->state.{state};
             }}'''
             f_set = f'''[](void *ctx, uint32_t val){{
                 {f.get("set", "")}
-                static_cast<Clocks*>(ctx)->{state} = val;
+                static_cast<Clocks*>(ctx)->state.{state} = val;
             }}'''
         elif values:
             f_get = f'''[](void const *ctx) -> uint32_t {{
@@ -185,9 +185,10 @@ def formatSignals(signals):
     return "\n".join(txt)
     
 def formatStates():
-    txt = []
+    txt = ["    struct State {"]
     for state,default in states.items():
-        txt.append(f'    uint32_t {state} = {default};')
+        txt.append(f'        uint32_t {state} = {default};')
+    txt.append("    } state;")
     return "\n".join(txt)
     
 def collectElements(generators, plls, gates, dividers, muxes):
@@ -225,7 +226,6 @@ def formatClassClocks(signals, signal_enum_map, generators, plls, gates, divider
     st = formatStates()
     
     txt = ['class Clocks {',
-        f'{st}',
         "public:",
         "    using Ix = Indices;",
         "    using S = Ix::Signals;",
@@ -238,6 +238,8 @@ def formatClassClocks(signals, signal_enum_map, generators, plls, gates, divider
         "    using Di = clocktree::Divider<Ix>;",
         "    using Mu = clocktree::Mux<Ix>;",
         "    using Si = clocktree::Signal<Ix>;",
+        "",
+        f'{st}',
         "",
         f'{ge}',
         "",
