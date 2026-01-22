@@ -96,6 +96,8 @@ namespace clocktree {
 /** ClockTree class template, parameterized with Signals enum. */
 EXPORT template<typename Base> class ClockTree : public Base {
 public:
+    template<typename... Args> ClockTree(Args&&... args) : Base(std::forward<Args>(args)...) {}
+
     /** Get frequency of given signal in Hz. */
     uint32_t getFrequency(typename Base::S s) const {
         size_t index = static_cast<size_t>(s);
