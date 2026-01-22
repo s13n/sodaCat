@@ -120,10 +120,7 @@ public:
 private:
     uint32_t get_frequency(typename Base::Ge const &gen) const {
         auto *get_sel = Base::register_fields[size_t(gen.control)].get;
-        size_t index = get_sel ? get_sel(static_cast<Base const*>(this)) : 0;
-        if (index >= gen.values.size()) [[unlikely]]
-            return 0;
-        return *std::next(gen.values.begin(), index);
+        return get_sel ? get_sel(static_cast<Base const*>(this)) : 0;
     }
 
     uint32_t get_frequency(typename Base::Pl const &pll) const {
