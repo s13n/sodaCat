@@ -21,12 +21,6 @@ def emit_field_ref(field, instance):
         return "{}"
     return f"R({register_field_id(field, instance)})"
 
-def collectElements(array, kind):
-    for elem in array:
-        last = elem['name']
-        elements[elem['output']] = (last, kind, elem)
-    return last
-
 def formatSignalsEnum(signals, enum_map):
     typ = 'uint8_t' if len(signals) < 255 else 'uint16_t'
     txt = [f'    enum class Signals : {typ} {{']
@@ -63,33 +57,6 @@ def formatRegfieldEnum(entries):
         name = f"{f.get('instance') + '_' if f.get('instance') else ''}{name}"
         txt.append(f"        {name},  //!< {f.get('description', '')}")
     txt.append("    };")
-    return "\n".join(txt)
-
-def formatStructIndices(signals, signal_enum_map, generators, plls, gates, dividers, muxes, field_list):
-    # Map signal name to generating element
-    last_gen = collectElements(generators, 'generators')
-    last_pll = collectElements(plls, 'plls')
-    last_gate = collectElements(gates, 'gates')
-    last_div = collectElements(dividers, 'dividers')
-    last_mux = collectElements(muxes, 'muxes')
-    signalsEnum = formatSignalsEnum(signals, signal_enum_map)
-    elementsEnum = formatElementsEnum(generators, plls, gates, dividers, muxes)
-    regEnums = formatRegfieldEnum(field_list)
-    
-    txt = ['struct Indices {',
-        f'{signalsEnum}',
-        '',
-        f'{elementsEnum}',
-        '',
-        f'{regEnums}',
-        '',
-        f'    static constexpr auto last_gen = Elements::{last_gen};',
-        f'    static constexpr auto last_pll = Elements::{last_pll};',
-        f'    static constexpr auto last_gate= Elements::{last_gate};',
-        f'    static constexpr auto last_div = Elements::{last_div};',
-        f'    static constexpr auto last_mux = Elements::{last_mux};',
-        '};'
-    ]
     return "\n".join(txt)
 
 def formatGenerators(generators, instance, signal_enum_map):
@@ -220,6 +187,30 @@ def formatStates():
         txt.append(f'    uint32_t {state} = {default};')
     return "\n".join(txt)
     
+def collectElements(generators, plls, gates, dividers, muxes):
+    last = {}
+    for elem in generators:
+        l = elem['name']
+        last['generators'] = l
+        elements[elem['output']] = (l, 'generators', elem)
+    for elem in plls:
+        l = elem['name']
+        last['plls'] = l
+        elements[elem['output']] = (l, 'plls', elem)
+    for elem in gates:
+        l = elem['name']
+        last['gates'] = l
+        elements[elem['output']] = (l, 'gates', elem)
+    for elem in dividers:
+        l = elem['name']
+        last['dividers'] = l
+        elements[elem['output']] = (l, 'dividers', elem)
+    for elem in muxes:
+        l = elem['name']
+        last['muxes'] = l
+        elements[elem['output']] = (l, 'muxes', elem)
+    return last
+
 def formatClassClocks(signals, signal_enum_map, generators, plls, gates, dividers, muxes, instance):
     ge = formatGenerators(generators, instance, signal_enum_map)
     pl = formatPlls(plls, instance, signal_enum_map)
@@ -262,6 +253,27 @@ def formatClassClocks(signals, signal_enum_map, generators, plls, gates, divider
     ]
     return "\n".join(txt)
     
+def formatStructIndices(signals, signal_enum_map, generators, plls, gates, dividers, muxes, field_list, last):
+    signalsEnum = formatSignalsEnum(signals, signal_enum_map)
+    elementsEnum = formatElementsEnum(generators, plls, gates, dividers, muxes)
+    regEnums = formatRegfieldEnum(field_list)
+    
+    txt = ['struct Indices {',
+        f'{signalsEnum}',
+        '',
+        f'{elementsEnum}',
+        '',
+        f'{regEnums}',
+        '',
+        f'    static constexpr auto last_gen = Elements::{last['generators']};',
+        f'    static constexpr auto last_pll = Elements::{last['plls']};',
+        f'    static constexpr auto last_gate= Elements::{last['gates']};',
+        f'    static constexpr auto last_div = Elements::{last['dividers']};',
+        f'    static constexpr auto last_mux = Elements::{last['muxes']};',
+        '};'
+    ]
+    return "\n".join(txt)
+
 def generate_header(yaml_path, namespace, hpp_path):
     with open(yaml_path, 'r') as f:
         data = yaml.safe_load(f)
@@ -279,8 +291,9 @@ def generate_header(yaml_path, namespace, hpp_path):
     enum_count = len(signals)
     enum_type = 'uint8_t' if enum_count <= 256 else 'uint16_t' if enum_count <= 65536 else 'uint32_t'
     
+    last = collectElements(generators, plls, gates, dividers, muxes)
     classClocks = formatClassClocks(signals, signal_enum_map, generators, plls, gates, dividers, muxes, instance)
-    structIndices = formatStructIndices(signals, signal_enum_map, generators, plls, gates, dividers, muxes, field_list)
+    structIndices = formatStructIndices(signals, signal_enum_map, generators, plls, gates, dividers, muxes, field_list, last)
     
     header = [
         "// generated header file, please don't edit.",
