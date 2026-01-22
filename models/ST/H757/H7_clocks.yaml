@@ -193,6 +193,8 @@ signals:
     description: SDMMC1 kernel clock (max. 250 MHz)
   - name: sdmmc2_ker_ck
     description: SDMMC2 kernel clock (max. 250 MHz)
+  - name: quadspi_sel_ck
+    description: QUADSPI selected clock
   - name: quadspi_ker_ck
     description: QUADSPI kernel clock (max. 250 MHz)
   - name: fmc_ker_ck
@@ -302,6 +304,17 @@ muxes:
       reg: D3CCIPR
       field: LPTIM345SRC
     description: LPTIM3,4,5 kernel clock source selection.
+  - name: QSPISEL
+    output: quadspi_sel_ck
+    inputs:
+      - rcc_hclk3
+      - pll1_q_ck
+      - pll2_r_ck
+      - per_ck
+    control:
+      reg: D1CCIPR
+      field: QSPISEL
+    description: QUADSPI clock source selection.
 plls:
   - name: PLL1
     input: ref1_ck
@@ -597,3 +610,10 @@ gates:
       reg: C[0].APB4ENR
       field: LPTIM5EN
     description: LPTIMER5 clock gate.
+  - name: QSPIEN
+    output: quadspi_ker_ck
+    input: quadspi_sel_ck
+    control:
+      reg: C[0].AHB3ENR
+      field: QSPIEN
+    description: Quadspi clock gate.
