@@ -157,12 +157,15 @@ def formatFields(field_list, instance):
                 i_{inst}.registers->{reg}.set(r);
             }}'''
         else:
+            value_range = f.get("value_range", None)
+            offset = value_range.get("offset", 0) if value_range else 0
+            scale = value_range.get("scale", 1) if value_range else 1
             f_get = f'''[](void const *ctx) -> uint32_t {{
-                return i_{inst}.registers->{reg}.get().{field};
+                return i_{inst}.registers->{reg}.get().{field} - {offset};
             }}'''
             f_set = f'''[](void *ctx, uint32_t val){{
                 auto reg = i_{inst}.registers->{reg}.get();
-                reg.{field} = val;
+                reg.{field} = val + {offset};
                 i_{inst}.registers->{reg}.set(reg);
             }}'''
         txt.append(f'        Rf{{ {f_get}, {f_set} }},')
