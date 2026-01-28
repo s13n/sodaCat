@@ -10,13 +10,13 @@ documents:
     title: STM32H745/755 and STM32H747/757 advanced Arm-based 32-bit MCUs
     revision: Rev.4
 notes:
-  - "Clock sources: HSI, CSI (~4 MHz), HSE (4\u201348 MHz), LSE (32.768 kHz), LSI (~32 kHz), HSI48 (48 MHz)."
-  - 'System clock sources: HSE, HSI, CSI, or PLL1_P via RCC_CFGR.SW.'
-  - "PLL ref (after DIVM) 1\u201316 MHz; \u03A3\u0394 fractional supported; VCO ranges per VCOSEL."
+  - "Clock sources: HSI, CSI (~4 MHz), HSE (4..48 MHz), LSE (32.768 kHz), LSI (~32 kHz), HSI48 (48 MHz)."
+  - "System clock sources: HSE, HSI, CSI, or PLL1_P via RCC_CFGR.SW."
+  - "PLL ref (after DIVM) 1..16 MHz; \u03A3\u0394 fractional supported; VCO ranges per VCOSEL."
 instance: RCC
 signals:
-  - name: hsi_div
-    description: High-speed internal RC; divider output.
+  - name: hsi_osc
+    description: High-speed internal RC; oscillator output.
   - name: hsi_ck
     description: High-speed internal RC; can feed SYSCLK and PLL.
   - name: hsi_ker_ck
@@ -36,7 +36,7 @@ signals:
   - name: hsi48_ck
     description: 48 MHz internal RC (USB and others, device-dependent).
   - name: ref1_ck
-    description: "PLL1 reference after DIVM1 (must be 1\u201316 MHz)."
+    description: PLL1 reference after DIVM1 (must be 1..16 MHz).
   - name: ref2_ck
     description: PLL2 reference after DIVM2.
   - name: ref3_ck
@@ -131,16 +131,26 @@ signals:
     description: Transmit clock for ETH1MAC
   - name: eth1rx_ck
     description: Receive clock for ETH1MAC
+  - name: sai4_a_sel_ck
+    description: SAI4a selected clock
   - name: sai4_a_ker_ck
     description: SAI4a kernel clock (max. 150 MHz)
+  - name: sai4_b_sel_ck
+    description: SAI4b selected clock
   - name: sai4_b_ker_ck
     description: SAI4b kernel clock (max. 150 MHz)
+  - name: sai23_sel_ck
+    description: SAI2,3 selected clock
   - name: sai3_ker_ck
     description: SAI3 kernel clock (max. 150 MHz)
   - name: sai2_ker_ck
     description: SAI2 kernel clock (max. 150 MHz)
+  - name: sai1_sel_ck
+    description: SAI1 selected Clock
   - name: sai1_ker_ck
     description: SAI1 kernel clock (max. 150 MHz)
+  - name: dfsdm_sel_ck
+    description: DFSDM selected clock
   - name: dfsdm_ck
     description: DFSDM kernel clock (max. 250 MHz)
   - name: dfsdm_ack
@@ -239,7 +249,7 @@ signals:
     description: CEC kernel clock (HDMI, max. 66 MHz)
 generators:
   - name: HSI
-    output: hsi_div
+    output: hsi_osc
     description: Internal high-speed RC.
     control:
       reg: CR
@@ -287,205 +297,6 @@ generators:
   - name: DSI_PHY_CK
     output: dsi_phy_ck
     description: DSI Phy clock.
-muxes:
-  - name: PLLSRC_mux
-    output: pllsrc_mux_out_ck
-    inputs:
-      - hsi_ck
-      - csi_ck
-      - hse_ck
-      - ""
-    control:
-      reg: PLLCKSELR
-      field: PLLSRC
-      notes: Set '11' (none) if no PLL is used to save power.
-    description: Common PLL source selection feeding DIVM1/2/3.
-  - name: SYSCLK_mux
-    output: sys_ck
-    inputs:
-      - hsi_ck
-      - csi_ck
-      - hse_ck
-      - pll1_p_ck
-    control:
-      reg: CFGR
-      field: SW
-    description: System clock source selection (status in CFGR.SWS).
-  - name: RTCSRC
-    output: rtc_sel_ck
-    inputs:
-      - ""
-      - lse_ck
-      - lsi_ck
-      - hse_1M_ck
-    control:
-      reg: BDCR
-      field: RTCSRC
-    description: RTC clock source selection.
-  - name: MCO1SEL
-    output: mco1_sel_ck
-    inputs:
-      - hsi_ck
-      - lse_ck
-      - hse_ck
-      - pll1_q_ck
-      - hsi48_ck
-      - ""
-      - ""
-      - ""
-    control:
-      reg: CFGR
-      field: MCO1SEL
-    description: MCO1 source selection.
-  - name: MCO2SEL
-    output: mco2_sel_ck
-    inputs:
-      - sys_ck
-      - pll2_p_ck
-      - hse_ck
-      - pll1_p_ck
-      - csi_ck
-      - lsi_ck
-      - ""
-      - ""
-    control:
-      reg: CFGR
-      field: MCO2SEL
-    description: MCO2 source selection.
-  - name: CKPERSRC
-    output: per_ck
-    inputs:
-      - hsi_ker_ck
-      - csi_ker_ck
-      - hse_ck
-      - ""
-    control:
-      reg: D1CCIPR
-      field: CKPERSRC
-    description: Peripheral clock source selection.
-  - name: LPTIM1SEL
-    output: lptim1_sel_ck
-    inputs:
-      - rcc_pclk1
-      - pll2_p_ck
-      - pll3_r_ck
-      - lse_ck
-      - lsi_ck
-      - per_ck
-      - ""
-      - ""
-    control:
-      reg: D2CCIP2R
-      field: LPTIM1SRC
-    description: LPTIM1 kernel clock source selection.
-  - name: LPTIM2SEL
-    output: lptim2_sel_ck
-    inputs:
-      - rcc_pclk4
-      - pll2_p_ck
-      - pll3_r_ck
-      - lse_ck
-      - lsi_ck
-      - per_ck
-      - ""
-      - ""
-    control:
-      reg: D3CCIPR
-      field: LPTIM2SRC
-    description: LPTIM2 kernel clock source selection.
-  - name: LPTIM345SEL
-    output: lptim345_sel_ck
-    inputs:
-      - rcc_pclk4
-      - pll2_p_ck
-      - pll3_r_ck
-      - lse_ck
-      - lsi_ck
-      - per_ck
-      - ""
-      - ""
-    control:
-      reg: D3CCIPR
-      field: LPTIM345SRC
-    description: LPTIM3,4,5 kernel clock source selection.
-  - name: USART16SEL
-    output: usart16_sel_ck
-    inputs:
-      - rcc_pclk2
-      - pll2_q_ck
-      - pll3_q_ck
-      - hsi_ker_ck
-      - csi_ker_ck
-      - lse_ck
-      - ""
-      - ""
-    control:
-      reg: D2CCIP2R
-      field: USART16SRC
-    description: USART1,6 kernel clock source selection.
-  - name: USART234578SEL
-    output: usart234578_sel_ck
-    inputs:
-      - rcc_pclk1
-      - pll2_q_ck
-      - pll3_q_ck
-      - hsi_ker_ck
-      - csi_ker_ck
-      - lse_ck
-      - ""
-      - ""
-    control:
-      reg: D2CCIP2R
-      field: USART234578SRC
-    description: USART2,3,4,5,7,8 kernel clock source selection.
-  - name: LPUART1SEL
-    output: lpuart_sel_ck
-    inputs:
-      - rcc_pclk4
-      - pll2_q_ck
-      - pll3_q_ck
-      - hsi_ker_ck
-      - csi_ker_ck
-      - lse_ck
-      - ""
-      - ""
-    control:
-      reg: D3CCIPR
-      field: LPUART1SRC
-    description: LPUART1 kernel clock source selection.
-  - name: QSPISEL
-    output: quadspi_sel_ck
-    inputs:
-      - rcc_hclk3
-      - pll1_q_ck
-      - pll2_r_ck
-      - per_ck
-    control:
-      reg: D1CCIPR
-      field: QSPISRC
-    description: QUADSPI clock source selection.
-  - name: I2C123SEL
-    output: i2c123_sel_ck
-    inputs:
-      - rcc_pclk1
-      - pll3_r_ck
-      - hsi_ker_ck
-      - csi_ker_ck
-    control:
-      reg: D2CCIP2R
-      field: I2C123SRC
-    description: I2C1,2,3 clock source selection.
-  - name: I2C4SEL
-    output: i2c4_sel_ck
-    inputs:
-      - rcc_pclk4
-      - pll3_r_ck
-      - hsi_ker_ck
-      - csi_ker_ck
-    control:
-      reg: D3CCIPR
-      field: I2C4SRC
-    description: I2C4 clock source selection.
 plls:
   - name: PLL1
     input: ref1_ck
@@ -739,6 +550,265 @@ dividers:
       reg: CFGR
       field: MCO2PRE
     description: MCO2 prescaler.
+muxes:
+  - name: PLLSRC_mux
+    output: pllsrc_mux_out_ck
+    inputs:
+      - hsi_ck
+      - csi_ck
+      - hse_ck
+      - ""
+    control:
+      reg: PLLCKSELR
+      field: PLLSRC
+      notes: Set '11' (none) if no PLL is used to save power.
+    description: Common PLL source selection feeding DIVM1/2/3.
+  - name: SYSCLK_mux
+    output: sys_ck
+    inputs:
+      - hsi_ck
+      - csi_ck
+      - hse_ck
+      - pll1_p_ck
+    control:
+      reg: CFGR
+      field: SW
+    description: System clock source selection (status in CFGR.SWS).
+  - name: RTCSRC
+    output: rtc_sel_ck
+    inputs:
+      - ""
+      - lse_ck
+      - lsi_ck
+      - hse_1M_ck
+    control:
+      reg: BDCR
+      field: RTCSRC
+    description: RTC clock source selection.
+  - name: MCO1SEL
+    output: mco1_sel_ck
+    inputs:
+      - hsi_ck
+      - lse_ck
+      - hse_ck
+      - pll1_q_ck
+      - hsi48_ck
+      - ""
+      - ""
+      - ""
+    control:
+      reg: CFGR
+      field: MCO1SEL
+    description: MCO1 source selection.
+  - name: MCO2SEL
+    output: mco2_sel_ck
+    inputs:
+      - sys_ck
+      - pll2_p_ck
+      - hse_ck
+      - pll1_p_ck
+      - csi_ck
+      - lsi_ck
+      - ""
+      - ""
+    control:
+      reg: CFGR
+      field: MCO2SEL
+    description: MCO2 source selection.
+  - name: CKPERSRC
+    output: per_ck
+    inputs:
+      - hsi_ker_ck
+      - csi_ker_ck
+      - hse_ck
+      - ""
+    control:
+      reg: D1CCIPR
+      field: CKPERSRC
+    description: Peripheral clock source selection.
+  - name: LPTIM1SEL
+    output: lptim1_sel_ck
+    inputs:
+      - rcc_pclk1
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - ""
+      - ""
+    control:
+      reg: D2CCIP2R
+      field: LPTIM1SRC
+    description: LPTIM1 kernel clock source selection.
+  - name: LPTIM2SEL
+    output: lptim2_sel_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - ""
+      - ""
+    control:
+      reg: D3CCIPR
+      field: LPTIM2SRC
+    description: LPTIM2 kernel clock source selection.
+  - name: LPTIM345SEL
+    output: lptim345_sel_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - ""
+      - ""
+    control:
+      reg: D3CCIPR
+      field: LPTIM345SRC
+    description: LPTIM3,4,5 kernel clock source selection.
+  - name: USART16SEL
+    output: usart16_sel_ck
+    inputs:
+      - rcc_pclk2
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - lse_ck
+      - ""
+      - ""
+    control:
+      reg: D2CCIP2R
+      field: USART16SRC
+    description: USART1,6 kernel clock source selection.
+  - name: USART234578SEL
+    output: usart234578_sel_ck
+    inputs:
+      - rcc_pclk1
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - lse_ck
+      - ""
+      - ""
+    control:
+      reg: D2CCIP2R
+      field: USART234578SRC
+    description: USART2,3,4,5,7,8 kernel clock source selection.
+  - name: LPUART1SEL
+    output: lpuart_sel_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - lse_ck
+      - ""
+      - ""
+    control:
+      reg: D3CCIPR
+      field: LPUART1SRC
+    description: LPUART1 kernel clock source selection.
+  - name: QSPISEL
+    output: quadspi_sel_ck
+    inputs:
+      - rcc_hclk3
+      - pll1_q_ck
+      - pll2_r_ck
+      - per_ck
+    control:
+      reg: D1CCIPR
+      field: QSPISRC
+    description: QUADSPI clock source selection.
+  - name: I2C123SEL
+    output: i2c123_sel_ck
+    inputs:
+      - rcc_pclk1
+      - pll3_r_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+    control:
+      reg: D2CCIP2R
+      field: I2C123SRC
+    description: I2C1,2,3 clock source selection.
+  - name: I2C4SEL
+    output: i2c4_sel_ck
+    inputs:
+      - rcc_pclk4
+      - pll3_r_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+    control:
+      reg: D3CCIPR
+      field: I2C4SRC
+    description: I2C4 clock source selection.
+  - name: SAI4ASEL
+    output: sai4_a_sel_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - i2s_ckin
+      - per_ck
+      - ""
+      - ""
+      - ""
+    control:
+      reg: D3CCIPR
+      field: SAI4ASEL
+    description: SAI4A clock source selection.
+  - name: SAI4BSEL
+    output: sai4_b_sel_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - i2s_ckin
+      - per_ck
+      - ""
+      - ""
+      - ""
+    control:
+      reg: D3CCIPR
+      field: SAI4BSEL
+    description: SAI4B clock source selection.
+  - name: SAI23SEL
+    output: sai23_sel_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - i2s_ckin
+      - per_ck
+      - ""
+      - ""
+      - ""
+    control:
+      reg: D2CCIP1R
+      field: SAI23SEL
+    description: SAI2,3 clock source selection.
+  - name: SAI1SEL
+    output: sai1_sel_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - i2s_ckin
+      - per_ck
+      - ""
+      - ""
+      - ""
+    control:
+      reg: D2CCIP1R
+      field: SAI1SEL
+    description: SAI1 clock source selection.
 gates:
   - name: RTCEN
     output: rcc_rtc_ck
@@ -749,11 +819,11 @@ gates:
     description: RTC clock gate.
   - name: HSIEN
     output: hsi_ck
-    input: hsi_div
+    input: hsi_osc
     description: HSI clock gate.
   - name: HSIKEREN
     output: hsi_ker_ck
-    input: hsi_div
+    input: hsi_osc
     description: HSI kernel clock gate.
   - name: CSIEN
     output: csi_ck
@@ -966,3 +1036,54 @@ gates:
       reg: C[0].APB4ENR
       field: I2C4EN
     description: I2C4 clock gate.
+  - name: SAI4AEN
+    output: sai4_a_ker_ck
+    input: sai4_a_sel_ck
+    control:
+      reg: C[0].APB4ENR
+      field: SAI4EN
+    description: SAI4A clock gate.
+  - name: SAI4BEN
+    output: sai4_b_ker_ck
+    input: sai4_b_sel_ck
+    control:
+      reg: C[0].APB4ENR
+      field: SAI4EN
+    description: SAI4B clock gate.
+  - name: SAI3EN
+    output: sai3_ker_ck
+    input: sai23_sel_ck
+    control:
+      reg: C[0].APB2ENR
+      field: SAI3EN
+    description: SAI3 clock gate.
+  - name: SAI2EN
+    output: sai2_ker_ck
+    input: sai23_sel_ck
+    control:
+      reg: C[0].APB2ENR
+      field: SAI2EN
+    description: SAI2 clock gate.
+  - name: SAI1EN
+    output: sai1_ker_ck
+    input: sai1_sel_ck
+    control:
+      reg: C[0].APB2ENR
+      field: SAI1EN
+    description: SAI1 clock gate.
+  - name: DFSDMEN
+    output: dfsdm_ck
+    input: dfsdm_sel_ck
+    control:
+      instance: DFSDM
+      reg: CH0CFGR1
+      field: DFSDMEN
+    description: DFSDM clock gate.
+  - name: DFSDMAEN
+    output: dfsdm_ack
+    input: sai1_sel_ck
+    control:
+      instance: DFSDM
+      reg: CH0CFGR1
+      field: DFSDMEN
+    description: DFSDM A clock gate.
