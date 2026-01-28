@@ -3,8 +3,8 @@ $id: https://example.org/schemas/mcu-clock-tree.schema.json
 title: MCU Clock-Tree Specification
 type: object
 required:
-- family
-- signals
+  - family
+  - signals
 properties:
   version:
     type: string
@@ -23,7 +23,7 @@ properties:
       type: object
       additionalProperties: true
       required:
-      - id
+        - id
       properties:
         id:
           type: string
@@ -83,126 +83,128 @@ $defs:
       notes:
         type: string
     required:
-    - name
+      - name
   Signal:
     allOf:
-    - $ref: '#/$defs/BlockBase'
-    - properties:
-        nominal:
-          type: integer
-          description: Nominal clock frequency in Hz
-        min:
-          type: integer
-          description: Minimal clock frequency in Hz
-        max:
-          type: integer
-          description: Maximal clock frequency in Hz
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          nominal:
+            type: integer
+            description: Nominal clock frequency in Hz
+          min:
+            type: integer
+            description: Minimal clock frequency in Hz
+          max:
+            type: integer
+            description: Maximal clock frequency in Hz
   Generator:
     allOf:
-    - $ref: '#/$defs/BlockBase'
-    - properties:
-        output:
-          type: string
-        control:
-          $ref: '#/$defs/RegisterField'
-      required:
-      - output
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          output:
+            type: string
+          control:
+            $ref: '#/$defs/RegisterField'
+        required:
+          - output
+        description: When the register field is just an enable or disable bit,
+          Use the values array with two entries, one of which is 0
   Mux:
     allOf:
-    - $ref: '#/$defs/BlockBase'
-    - properties:
-        inputs:
-          type: array
-          items:
-            type:
-              - string
-              - "null"
-          minItems: 1
-          description: Size must be a power of 2, corresponding to the bitfield width
-            in the control. Position in the array must correspond to bitfield encoding.
-        output:
-          type: string
-          description: Name of the output signal from the mux.
-        control:
-          $ref: '#/$defs/RegisterField'
-      required:
-      - inputs
-      - output
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          inputs:
+            type: array
+            items:
+              type:
+                - string
+                - "null"
+            minItems: 1
+            description: Size must be a power of 2, corresponding to the bitfield width
+              in the control. Position in the array must correspond to bitfield encoding.
+          output:
+            type: string
+            description: Name of the output signal from the mux.
+          control:
+            $ref: '#/$defs/RegisterField'
+        required:
+          - inputs
+          - output
   Pll:
     allOf:
-    - $ref: '#/$defs/BlockBase'
-    - required:
-      - input
-      - output
-      - feedback_integer
-      - vco_limits
-      properties:
-        input:
-          type: string
-          description: Clock signal feeding the PLL phase detector
-        output:
-          type: string
-          description: Clock signal output from the PLL VCO after the post-divider
-        feedback_integer:
-          $ref: '#/$defs/RegisterField'
-        feedback_fraction:
-          $ref: '#/$defs/RegisterField'
-        post_divider:
-          $ref: '#/$defs/RegisterField'
-        vco_limits:
-          type: object
-          required: [ min, max ]
-          properties:
-            min:
-              type: integer
-            max:
-              type: integer
-          description: Frequency range of VCO before post-divider
-      description: fOut = fIn * M, where M is the feedback divider factor. M is
-        formed by combining integer and (if present) fractional parts.
+      - $ref: '#/$defs/BlockBase'
+      - required:
+          - input
+          - output
+          - feedback_integer
+          - vco_limits
+        properties:
+          input:
+            type: string
+            description: Clock signal feeding the PLL phase detector
+          output:
+            type: string
+            description: Clock signal output from the PLL VCO after the post-divider
+          feedback_integer:
+            $ref: '#/$defs/RegisterField'
+          feedback_fraction:
+            $ref: '#/$defs/RegisterField'
+          post_divider:
+            $ref: '#/$defs/RegisterField'
+          vco_limits:
+            type: object
+            required: [ min, max ]
+            properties:
+              min:
+                type: integer
+              max:
+                type: integer
+            description: Frequency range of VCO before post-divider
+        description: fOut = fIn * M, where M is the feedback divider factor. M is
+          formed by combining integer and (if present) fractional parts.
   Divider:
     allOf:
-    - $ref: '#/$defs/BlockBase'
-    - properties:
-        input:
-          type: string
-        output:
-          type: string
-        factor:
-          $ref: '#/$defs/RegisterField'
-        denominator:
-          $ref: '#/$defs/RegisterField'
-        value:
-          type: integer
-          default: 0
-      required:
-      - input
-      - output
-      description: |-
-        The divider factor can either be fixed, in which case it is given by the value property,
-        or it can be an integer factor from a register field, or it can be a fractional value
-        given by two register fields, one for the numerator (factor) and one for the denominator.
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          input:
+            type: string
+          output:
+            type: string
+          factor:
+            $ref: '#/$defs/RegisterField'
+          denominator:
+            $ref: '#/$defs/RegisterField'
+          value:
+            type: integer
+            default: 0
+        required:
+          - input
+          - output
+        description: |-
+          The divider factor can either be fixed, in which case it is given by the value property,
+          or it can be an integer factor from a register field, or it can be a fractional value
+          given by two register fields, one for the numerator (factor) and one for the denominator.
 
-        When both register(s) and value are given, the value is an offset to be applied after
-        forming the integer or fractional value from the register fields.
+          When both register(s) and value are given, the value is an offset to be applied after
+          forming the integer or fractional value from the register fields.
 
-        If none is given, the divider doesn't divide (i.e. factor is 1)
+          If none is given, the divider doesn't divide (i.e. factor is 1)
 
-        If the divider factor ends up being 0, the divider is disabled
+          If the divider factor ends up being 0, the divider is disabled
   Gate:
     allOf:
-    - $ref: '#/$defs/BlockBase'
-    - properties:
-        input:
-          type: string
-        output:
-          type: string
-        control:
-          $ref: '#/$defs/EnableControl'
-      required:
-      - input
-      - output
-    description: Clock gate. Always on when no control given.
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          input:
+            type: string
+          output:
+            type: string
+          control:
+            $ref: '#/$defs/EnableControl'
+        required:
+          - input
+          - output
+      description: Clock gate. Always on when no control given.
   RegisterField:
     type: object
     description: |-
@@ -213,12 +215,12 @@ $defs:
       the register can be found. How the register can be addressed and
       accessed is specified elsewhere.
     required:
-    - reg
+      - reg
     not:
       required:
-      - value_range
-      - values
-    properties:
+        - value_range
+        - values
+      properties:
       state:
         type: string
       set:
@@ -235,7 +237,7 @@ $defs:
       value_range:
         type: object
         required:
-        - max
+          - max
         properties:
           max:
             type: integer
@@ -260,11 +262,11 @@ $defs:
         description: Default value, which typically is active after reset.
   EnableControl:
     allOf:
-    - $ref: '#/$defs/RegisterField'
-    - properties:
-        inverted:
-          type: boolean
-          default: false
-      description: |-
-        Register bit that can control a function that can be enabled or disabled.
-        The optional inverted property specifies whether a 0 bit enables or disables.
+      - $ref: '#/$defs/RegisterField'
+      - properties:
+          inverted:
+            type: boolean
+            default: false
+        description: |-
+          Register bit that can control a function that can be enabled or disabled.
+          The optional inverted property specifies whether a 0 bit enables or disables.
