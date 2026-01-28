@@ -231,8 +231,12 @@ signals:
     description: LPTIM5 kernel clock (max. 125 MHz)
   - name: ltdc_ker_ck
     description: LTDC kernel clock (max. 150 MHz)
+  - name: blclk_sel_ck
+    description: DSI BLCLK selected clock
   - name: blclk_ck
     description: BLCLK kernel clock (DSI, max. 133 MHz)
+  - name: sdmmc_sel_ck
+    description: SDMMC selected clock
   - name: sdmmc1_ker_ck
     description: SDMMC1 kernel clock (max. 250 MHz)
   - name: sdmmc2_ker_ck
@@ -882,6 +886,24 @@ muxes:
       reg: D3CCIPR
       field: SPI6SRC
     description: SPI6 clock source selection.
+  - name: DSISRC
+    output: blclk_sel_ck
+    inputs:
+      - dsi_phy_ck
+      - pll2_q_ck
+    control:
+      reg: D1CCIPR
+      field: DSISRC
+    description: DSI clock source selection.
+  - name: SDMMCSRC
+    output: sdmmc_sel_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_r_ck
+    control:
+      reg: D1CCIPR
+      field: SDMMCSRC
+    description: SDMMC clock source selection.
 gates:
   - name: RTCEN
     output: rcc_rtc_ck
@@ -1209,3 +1231,31 @@ gates:
       reg: C[0].APB4ENR
       field: SPI6EN
     description: SPI6 clock gate.
+  - name: LTDCEN
+    output: ltdc_ker_ck
+    input: pll3_r_ck
+    control:
+      reg: C[0].APB3ENR
+      field: LTDCEN
+    description: LTDC clock gate.
+  - name: DSIEN
+    output: blclk_ck
+    input: blclk_sel_ck
+    control:
+      reg: C[0].APB3ENR
+      field: DSIEN
+    description: DSI clock gate.
+  - name: SDMMC1EN
+    output: sdmmc1_ker_ck
+    input: sdmmc_sel_ck
+    control:
+      reg: C[0].AHB3ENR
+      field: SDMMC1EN
+    description: SDMMC1 clock gate.
+  - name: SDMMC2EN
+    output: sdmmc2_ker_ck
+    input: sdmmc_sel_ck
+    control:
+      reg: C[0].AHB2ENR
+      field: SDMMC2EN
+    description: SDMMC2 clock gate.
