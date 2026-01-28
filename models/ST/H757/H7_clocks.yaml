@@ -20,7 +20,7 @@ signals:
   - name: csi_ck
     description: Low-power internal RC (~4 MHz); can feed SYSCLK and PLL.
   - name: hse_ck
-    description: "External high-speed crystal/clock (4\u201348 MHz). For external clock, set RCC_CR.HSEBYP and drive OSC_IN (bypass)."
+    description: External high-speed crystal/clock (4..48 MHz). For external clock, set RCC_CR.HSEBYP and drive OSC_IN (bypass).
   - name: lse_ck
     description: Low-speed external 32.768 kHz in backup domain. For bypass mode, use RCC_BDCR.LSEBYP.
   - name: lsi_ck
@@ -99,6 +99,10 @@ signals:
     description: APB3 peripheral clock (domain D1)
   - name: rcc_pclk4
     description: APB4 peripheral clock (domain D3)
+  - name: hse_1M_ck
+    description: Prescaled external clock
+  - name: rtc_sel_ck
+    description: RTC/AWU selected clock
   - name: rcc_rtc_ck
     description: RTC/AWU kernel clock
   - name: per_ck
@@ -269,6 +273,12 @@ generators:
       reg: CR
       field: RC48ON
       default: 48000000
+  - name: I2S_CKIN
+    output: i2s_ckin
+    description: I2S_CKIN input pin.
+  - name: DSI_PHY_CK
+    output: dsi_phy_ck
+    description: DSI Phy clock.
 muxes:
   - name: PLLSRC_mux
     output: pllsrc_mux_out_ck
@@ -303,6 +313,17 @@ muxes:
       reg: CFGR
       field: SW
     description: System clock source selection (status in CFGR.SWS).
+  - name: RTCSRC
+    output: rtc_sel_ck
+    inputs:
+      - ""
+      - lse_ck
+      - lsi_ck
+      - hse_1M_ck
+    control:
+      reg: BDCR
+      field: RTCSRC
+    description: RTC clock source selection.
   - name: MCO1SEL
     output: mco1_sel_ck
     inputs:
@@ -333,6 +354,17 @@ muxes:
       reg: CFGR
       field: MCO2SEL
     description: MCO2 source selection.
+  - name: CKPERSRC
+    output: per_ck
+    inputs:
+      - hsi_ck
+      - csi_ck
+      - hse_ck
+      - ""
+    control:
+      reg: D1CCIPR
+      field: CKPERSRC
+    description: Peripheral clock source selection.
   - name: LPTIM1SEL
     output: lptim1_sel_ck
     inputs:
@@ -623,6 +655,13 @@ dividers:
       notes: Enable with RCC_PLLCFGR.DIVR3EN.
     value: 1
     description: PLL3 R output divider.
+  - name: RTCPRE
+    input: hse_ck
+    output: hse_1M_ck
+    factor:
+      reg: CFGR
+      field: RTCPRE
+    description: RTC clock prescaler.
   - name: D1CPRE
     input: sys_ck
     output: sys_d1cpre_ck
@@ -686,6 +725,13 @@ dividers:
       field: MCO2PRE
     description: MCO2 prescaler.
 gates:
+  - name: RTCEN
+    output: rcc_rtc_ck
+    input: rtc_sel_ck
+    control:
+      reg: BDCR
+      field: RTCEN
+    description: RTC clock gate.
   - name: DMA1EN
     output: dma1_hclk
     input: rcc_hclk1
