@@ -179,8 +179,10 @@ signals:
     description: UART7 kernel clock (max. 125 MHz)
   - name: uart8_ker_ck
     description: UART8 kernel clock (max. 125 MHz)
+  - name: lpuart_sel_ck
+    description: LPUART selected clock
   - name: lpuart_ker_ck
-    description: LPUSART kernel clock (max. 125 MHz)
+    description: LPUART kernel clock (max. 125 MHz)
   - name: lptim1_sel_ck
     description: LPTIM1 selected clock (max. 125 MHz)
   - name: lptim1_ker_ck
@@ -376,6 +378,21 @@ muxes:
       reg: D2CCIP2R
       field: USART234578SRC
     description: USART2,3,4,5,7,8 kernel clock source selection.
+  - name: LPUART1SEL
+    output: lpuart_sel_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ck
+      - csi_ck
+      - lse_ck
+      - ""
+      - ""
+    control:
+      reg: D3CCIPR
+      field: LPUART1SRC
+    description: LPUART1 kernel clock source selection.
   - name: QSPISEL
     output: quadspi_sel_ck
     inputs:
@@ -774,6 +791,13 @@ gates:
       reg: C[0].APB1LENR
       field: USART8EN
     description: UART8 clock gate.
+  - name: LPUART1EN
+    output: lpuart_ker_ck
+    input: lpuart_sel_ck
+    control:
+      reg: C[0].APB4ENR
+      field: LPUART1EN
+    description: LPUART1 clock gate.
   - name: QSPIEN
     output: quadspi_ker_ck
     input: quadspi_sel_ck
