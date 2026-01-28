@@ -63,11 +63,11 @@ signals:
     description: D1 domain prescaled CPU clock.
   - name: sys_hpre_ck
     description: AXI/AHB bus matrix clock
-  - name: mco1_src_ck
+  - name: mco1_sel_ck
     description: MCO1 source selection.
   - name: mco1_ck
     description: MCO1 output clock after prescaler.
-  - name: mco2_src_ck
+  - name: mco2_sel_ck
     description: MCO2 source selection.
   - name: mco2_ck
     description: MCO2 output clock after prescaler.
@@ -303,6 +303,36 @@ muxes:
       reg: CFGR
       field: SW
     description: System clock source selection (status in CFGR.SWS).
+  - name: MCO1SEL
+    output: mco1_sel_ck
+    inputs:
+      - hsi_ck
+      - lse_ck
+      - hse_ck
+      - pll1_q_ck
+      - hsi48_ck
+      - ""
+      - ""
+      - ""
+    control:
+      reg: CFGR
+      field: MCO1SEL
+    description: MCO1 source selection.
+  - name: MCO2SEL
+    output: mco2_sel_ck
+    inputs:
+      - sys_ck
+      - pll2_p_ck
+      - hse_ck
+      - pll1_p_ck
+      - csi_ck
+      - lsi_ck
+      - ""
+      - ""
+    control:
+      reg: CFGR
+      field: MCO2SEL
+    description: MCO2 source selection.
   - name: LPTIM1SEL
     output: lptim1_sel_ck
     inputs:
@@ -642,20 +672,18 @@ dividers:
       values: [1, 1, 1, 1, 2, 4, 8, 16]
     description: APB4 prescaler (D3 domain).
   - name: MCO1PRE
-    input: mco1_src_ck
+    input: mco1_sel_ck
     output: mco1_ck
     factor:
       reg: CFGR
       field: MCO1PRE
-      range: '[1..15]'
     description: MCO1 prescaler.
   - name: MCO2PRE
-    input: mco2_src_ck
+    input: mco2_sel_ck
     output: mco2_ck
     factor:
       reg: CFGR
       field: MCO2PRE
-      range: '[1..15]'
     description: MCO2 prescaler.
 gates:
   - name: DMA1EN
