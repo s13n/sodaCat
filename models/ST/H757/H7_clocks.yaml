@@ -259,10 +259,18 @@ signals:
     description: SWPMI selected clock
   - name: swpmi_ker_ck
     description: SWPMI kernel clock (max. 125 MHz)
+  - name: rng_sel_ck
+    description: RNG selected clock
   - name: rng_ker_ck
     description: RNG kernel clock (max. 250 MHz)
+  - name: fdcan_sel_ck
+    description: FDCAN selected clock
   - name: fdcan_ker_ck
     description: FDCAN kernel clock (max. 125 MHz)
+  - name: csi_122_ck
+    description: CEC kernel clock / 122
+  - name: cec_sel_ck
+    description: CEC selected clock
   - name: cec_ker_ck
     description: CEC kernel clock (HDMI, max. 66 MHz)
 generators:
@@ -568,6 +576,11 @@ dividers:
       reg: CFGR
       field: MCO2PRE
     description: MCO2 prescaler.
+  - name: CSI122
+    input: csi_ker_ck
+    output: csi_122_ck
+    value: 122
+    description: CSI / 122 divider.
 muxes:
   - name: PLLSRC_mux
     output: pllsrc_mux_out_ck
@@ -935,12 +948,45 @@ muxes:
   - name: SWPSEL
     output: swp_sel_ck
     inputs:
-      - pclk
+      - rcc_pclk1
       - hsi_ker_ck
     control:
       reg: D2CCIP1R
       field: SWPSRC
     description: SWPMI clock source selection.
+  - name: RNGSEL
+    output: rng_sel_ck
+    inputs:
+      - hsi48_ck
+      - pll1_q_ck
+      - lse_ck
+      - lsi_ck
+    control:
+      reg: D2CCIP2R
+      field: RNGSRC
+    description: RNG clock source selection.
+  - name: FDCANSEL
+    output: fdcan_sel_ck
+    inputs:
+      - hse_ck
+      - pll1_q_ck
+      - pll2_q_ck
+      - ""
+    control:
+      reg: D2CCIP1R
+      field: FDCANSRC
+    description: FDCAN clock source selection.
+  - name: CECSEL
+    output: cec_sel_ck
+    inputs:
+      - lse_ck
+      - lsi_ck
+      - csi_122_ck
+      - ""
+    control:
+      reg: D2CCIP2R
+      field: CECSEL
+    description: HDMI-CEC clock source selection.
 gates:
   - name: RTCEN
     output: rcc_rtc_ck
@@ -1317,3 +1363,24 @@ gates:
       reg: C[0].AHB1ENR
       field: ADC12EN
     description: ADC1,2 clock gate.
+  - name: RNGEN
+    output: rng_ker_ck
+    input: rng_sel_ck
+    control:
+      reg: C[0].AHB2ENR
+      field: RNGEN
+    description: RNG clock gate.
+  - name: FDCANEN
+    output: fdcan_ker_ck
+    input: fdcan_sel_ck
+    control:
+      reg: C[0].APB1HENR
+      field: FDCANEN
+    description: FDCAN clock gate.
+  - name: CECEN
+    output: cec_ker_ck
+    input: cec_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: CECEN
+    description: HDMI-CEC clock gate.
