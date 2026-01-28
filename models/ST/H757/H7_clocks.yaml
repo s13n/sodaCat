@@ -147,12 +147,16 @@ signals:
     description: SPI5 kernel clock (max. 125 MHz)
   - name: spi6_ker_ck
     description: SPI6 kernel clock (max. 125 MHz)
+  - name: i2c123_sel_ck
+    description: I2C1,2,3 selected clock
   - name: i2c1_ker_ck
     description: I2C1 kernel clock (max. 125 MHz)
   - name: i2c2_ker_ck
     description: I2C2 kernel clock (max. 125 MHz)
   - name: i2c3_ker_ck
     description: I2C3 kernel clock (max. 125 MHz)
+  - name: i2c4_sel_ck
+    description: I2C4 selected clock
   - name: i2c4_ker_ck
     description: I2C4 kernel clock (max. 125 MHz)
   - name: usart16_sel_ck
@@ -383,6 +387,28 @@ muxes:
       reg: D1CCIPR
       field: QSPISRC
     description: QUADSPI clock source selection.
+  - name: I2C123SEL
+    output: i2c123_sel_ck
+    inputs:
+      - rcc_pclk1
+      - pll3_r_ck
+      - hsi_ck
+      - csi_ck
+    control:
+      reg: D2CCIP2R
+      field: I2C123SRC
+    description: I2C1,2,3 clock source selection.
+  - name: I2C4SEL
+    output: i2c4_sel_ck
+    inputs:
+      - rcc_pclk4
+      - pll3_r_ck
+      - hsi_ck
+      - csi_ck
+    control:
+      reg: D3CCIPR
+      field: I2C4SRC
+    description: I2C4 clock source selection.
 plls:
   - name: PLL1
     input: ref1_ck
@@ -755,3 +781,31 @@ gates:
       reg: C[0].AHB3ENR
       field: QSPIEN
     description: Quadspi clock gate.
+  - name: I2C1EN
+    output: i2c1_ker_ck
+    input: i2c123_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: I2C1EN
+    description: I2C1 clock gate.
+  - name: I2C2EN
+    output: i2c2_ker_ck
+    input: i2c123_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: I2C2EN
+    description: I2C2 clock gate.
+  - name: I2C3EN
+    output: i2c3_ker_ck
+    input: i2c123_sel_ck
+    control:
+      reg: C[0].APB1LENR
+      field: I2C3EN
+    description: I2C3 clock gate.
+  - name: I2C4EN
+    output: i2c4_ker_ck
+    input: i2c4_sel_ck
+    control:
+      reg: C[0].APB4ENR
+      field: I2C4EN
+    description: I2C4 clock gate.
