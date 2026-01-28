@@ -15,10 +15,18 @@ notes:
   - "PLL ref (after DIVM) 1\u201316 MHz; \u03A3\u0394 fractional supported; VCO ranges per VCOSEL."
 instance: RCC
 signals:
+  - name: hsi_div
+    description: High-speed internal RC; divider output.
   - name: hsi_ck
     description: High-speed internal RC; can feed SYSCLK and PLL.
+  - name: hsi_ker_ck
+    description: High-speed internal RC; can feed peripherals.
+  - name: csi_osc
+    description: Low-power internal RC (~4 MHz); oscillator output.
   - name: csi_ck
     description: Low-power internal RC (~4 MHz); can feed SYSCLK and PLL.
+  - name: csi_ker_ck
+    description: Low-power internal RC (~4 MHz); can feed peripherals.
   - name: hse_ck
     description: External high-speed crystal/clock (4..48 MHz). For external clock, set RCC_CR.HSEBYP and drive OSC_IN (bypass).
   - name: lse_ck
@@ -231,7 +239,7 @@ signals:
     description: CEC kernel clock (HDMI, max. 66 MHz)
 generators:
   - name: HSI
-    output: hsi_ck
+    output: hsi_div
     description: Internal high-speed RC.
     control:
       reg: CR
@@ -239,7 +247,7 @@ generators:
       values: [64000000, 32000000, 16000000, 8000000]
       default: 64000000
   - name: CSI
-    output: csi_ck
+    output: csi_osc
     description: Internal ~4 MHz RC.
     control:
       reg: CR
@@ -288,11 +296,6 @@ muxes:
       - hse_ck
       - ""
     control:
-      inputs:
-        - hsi_ck
-        - csi_ck
-        - hse_ck
-        - ""
       reg: PLLCKSELR
       field: PLLSRC
       notes: Set '11' (none) if no PLL is used to save power.
@@ -305,11 +308,6 @@ muxes:
       - hse_ck
       - pll1_p_ck
     control:
-      inputs:
-        - hsi_ck
-        - csi_ck
-        - hse_ck
-        - pll1_p_ck
       reg: CFGR
       field: SW
     description: System clock source selection (status in CFGR.SWS).
@@ -357,8 +355,8 @@ muxes:
   - name: CKPERSRC
     output: per_ck
     inputs:
-      - hsi_ck
-      - csi_ck
+      - hsi_ker_ck
+      - csi_ker_ck
       - hse_ck
       - ""
     control:
@@ -416,8 +414,8 @@ muxes:
       - rcc_pclk2
       - pll2_q_ck
       - pll3_q_ck
-      - hsi_ck
-      - csi_ck
+      - hsi_ker_ck
+      - csi_ker_ck
       - lse_ck
       - ""
       - ""
@@ -431,8 +429,8 @@ muxes:
       - rcc_pclk1
       - pll2_q_ck
       - pll3_q_ck
-      - hsi_ck
-      - csi_ck
+      - hsi_ker_ck
+      - csi_ker_ck
       - lse_ck
       - ""
       - ""
@@ -446,8 +444,8 @@ muxes:
       - rcc_pclk4
       - pll2_q_ck
       - pll3_q_ck
-      - hsi_ck
-      - csi_ck
+      - hsi_ker_ck
+      - csi_ker_ck
       - lse_ck
       - ""
       - ""
@@ -471,8 +469,8 @@ muxes:
     inputs:
       - rcc_pclk1
       - pll3_r_ck
-      - hsi_ck
-      - csi_ck
+      - hsi_ker_ck
+      - csi_ker_ck
     control:
       reg: D2CCIP2R
       field: I2C123SRC
@@ -482,8 +480,8 @@ muxes:
     inputs:
       - rcc_pclk4
       - pll3_r_ck
-      - hsi_ck
-      - csi_ck
+      - hsi_ker_ck
+      - csi_ker_ck
     control:
       reg: D3CCIPR
       field: I2C4SRC
@@ -553,6 +551,13 @@ plls:
       max: 960000000
     description: "Dedicated PLL for peripherals"  
 dividers:
+  - name: HSIDIV
+    input: pllsrc_mux_out_ck
+    output: ref1_ck
+    factor:
+      reg: PLLCKSELR
+      field: DIVM1
+    description: PLL1 pre-divider; ensures 1..16 MHz at ref1_ck.
   - name: DIVM1
     input: pllsrc_mux_out_ck
     output: ref1_ck
@@ -732,6 +737,46 @@ gates:
       reg: BDCR
       field: RTCEN
     description: RTC clock gate.
+  - name: HSIEN
+    output: hsi_ck
+    input: hsi_div
+    description: HSI clock gate.
+  - name: HSIKEREN
+    output: hsi_ker_ck
+    input: hsi_div
+    description: HSI kernel clock gate.
+  - name: CSIEN
+    output: csi_ck
+    input: csi_osc
+    description: CSI clock gate.
+  - name: CSIKEREN
+    output: csi_ker_ck
+    input: csi_osc
+    description: CSI kernel clock gate.
+  - name: RCC_C1EN
+    output: rcc_c1_ck
+    input: sys_d1cpre_ck
+    description: CPU1 clock gate.
+  - name: RCC_C2EN
+    output: rcc_c2_ck
+    input: sys_hpre_ck
+    description: CPU2 clock gate.
+  - name: RCC_HCLK3EN
+    output: rcc_hclk3
+    input: sys_hpre_ck
+    description: HCLK3 clock gate.
+  - name: RCC_HCLK2EN
+    output: rcc_hclk2
+    input: sys_hpre_ck
+    description: HCLK2 clock gate.
+  - name: RCC_HCLK1EN
+    output: rcc_hclk1
+    input: sys_hpre_ck
+    description: HCLK1 clock gate.
+  - name: RCC_HCLK4EN
+    output: rcc_hclk4
+    input: sys_hpre_ck
+    description: HCLK4 clock gate.
   - name: DMA1EN
     output: dma1_hclk
     input: rcc_hclk1
