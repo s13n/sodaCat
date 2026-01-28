@@ -141,7 +141,7 @@ private:
 
     uint32_t get_frequency(typename Base::Ga const &gate) const {
         auto *get = Base::register_fields[size_t(gate.control)].get;
-        return get && get(static_cast<Base const*>(this)) ? getFrequency(gate.input) : 0;
+        return !get || get(static_cast<Base const*>(this)) ? getFrequency(gate.input) : 0;
     }
 
     uint32_t get_frequency(typename Base::Di const &div) const {
