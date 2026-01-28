@@ -245,12 +245,18 @@ signals:
     description: QUADSPI selected clock
   - name: quadspi_ker_ck
     description: QUADSPI kernel clock (max. 250 MHz)
+  - name: fmc_sel_ck
+    description: FMC selected clock
   - name: fmc_ker_ck
     description: FMC kernel clock (max. 300 MHz)
+  - name: adc_sel_ck
+    description: ADC selected clock
   - name: adc3_ker_ck
     description: ADC3 kernel clock (max. 80 MHz)
   - name: adc12_ker_ck
     description: ADC1/2 kernel clock (max. 80 MHz)
+  - name: swp_sel_ck
+    description: SWPMI selected clock
   - name: swpmi_ker_ck
     description: SWPMI kernel clock (max. 125 MHz)
   - name: rng_ker_ck
@@ -904,6 +910,37 @@ muxes:
       reg: D1CCIPR
       field: SDMMCSRC
     description: SDMMC clock source selection.
+  - name: FMCSRC
+    output: fmc_sel_ck
+    inputs:
+      - rcc_hclk3
+      - pll1_q_ck
+      - pll2_r_ck
+      - per_ck
+    control:
+      reg: D1CCIPR
+      field: FMCSRC
+    description: FMC clock source selection.
+  - name: ADCSEL
+    output: adc_sel_ck
+    inputs:
+      - pll2_p_ck
+      - pll3_r_ck
+      - per_ck
+      - ""
+    control:
+      reg: D3CCIPR
+      field: ADCSRC
+    description: ADC clock source selection.
+  - name: SWPSEL
+    output: swp_sel_ck
+    inputs:
+      - pclk
+      - hsi_ker_ck
+    control:
+      reg: D2CCIP1R
+      field: SWPSRC
+    description: SWPMI clock source selection.
 gates:
   - name: RTCEN
     output: rcc_rtc_ck
@@ -1259,3 +1296,24 @@ gates:
       reg: C[0].AHB2ENR
       field: SDMMC2EN
     description: SDMMC2 clock gate.
+  - name: FMCEN
+    output: fmc_ker_ck
+    input: fmc_sel_ck
+    control:
+      reg: C[0].AHB3ENR
+      field: FMCEN
+    description: FMC clock gate.
+  - name: ADC3EN
+    output: adc3_ker_ck
+    input: adc_sel_ck
+    control:
+      reg: C[0].AHB4ENR
+      field: ADC3EN
+    description: ADC3 clock gate.
+  - name: ADC12EN
+    output: adc12_ker_ck
+    input: adc_sel_ck
+    control:
+      reg: C[0].AHB1ENR
+      field: ADC12EN
+    description: ADC1,2 clock gate.
