@@ -117,8 +117,6 @@ signals:
     description: global peripheral clock
   - name: ulpi1_phy_ck
     description: ULPI1 clock input pin
-  - name: ulpi2_phy_ck
-    description: ULPI2 clock input pin
   - name: i2s_ckin
     description: audio master clock input (I2S_CKIN pin function)
   - name: dsi_phy_ck
@@ -129,6 +127,8 @@ signals:
     description: Bus clock for ADC1 and ADC2
   - name: usb1otg_bus_ck
     description: Bus clock for USB1OTG
+  - name: usb2otg_bus_ck
+    description: Bus clock for USB2OTG
   - name: eth1mac_bus_ck
     description: Bus clock for ETH1MAC
   - name: eth1tx_ck
@@ -337,14 +337,9 @@ generators:
     description: DSI Phy clock.
   - name: USB_PHY1
     output: ulpi1_phy_ck
-    description: ULPI1 Phy clock.
+    description: ULPI1 clock input from external PHY.
     control:
       state: freqULPI1
-  - name: USB_PHY2
-    output: ulpi2_phy_ck
-    description: ULPI2 Phy clock.
-    control:
-      state: freqULPI2
 plls:
   - name: PLL1
     input: ref1_ck
@@ -1093,6 +1088,13 @@ gates:
       reg: C[0].AHB1ENR
       field: USB1OTGEN
     description: USB1 OTG HS peripheral bus clock gate.
+  - name: USB2OTGBUSEN
+    output: usb2otg_bus_ck
+    input: rcc_hclk1
+    control:
+      reg: C[0].AHB1ENR
+      field: USB2OTGEN
+    description: USB1 OTG HS peripheral bus clock gate.
   - name: ETH1MACEN
     output: eth1mac_bus_ck
     input: rcc_hclk1
@@ -1438,3 +1440,10 @@ gates:
       reg: C[0].AHB1ENR
       field: USB2OTGEN
     description: USB2 clock gate.
+  - name: USB1ULPIEN
+    output: ck_ulpi
+    input: ulpi1_phy_ck
+    control:
+      reg: C[0].AHB1ENR
+      field: USB1ULPIEN
+    description: ULPI1 clock gate.
