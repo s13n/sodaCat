@@ -43,6 +43,12 @@ signals:
     description: PLL3 reference after DIVM3.
   - name: vco1_ck
     description: "PLL1 VCO (integer/fractional \u03A3\u0394; FRAC update on-the-fly)."
+  - name: pllp1_ck
+    description: PLL1 'P' divider input.
+  - name: pllq1_ck
+    description: PLL1 'Q' divider input.
+  - name: pllr1_ck
+    description: PLL1 'R' divider input.
   - name: pll1_p_ck
     description: PLL1 'P' output; can feed SYSCLK.
   - name: pll1_q_ck
@@ -51,6 +57,12 @@ signals:
     description: PLL1 'R' output (e.g., TRACE).
   - name: vco2_ck
     description: PLL2 VCO; same constraints as PLL1.
+  - name: pllp2_ck
+    description: PLL2 'P' divider input.
+  - name: pllq2_ck
+    description: PLL2 'Q' divider input.
+  - name: pllr2_ck
+    description: PLL2 'R' divider input.
   - name: pll2_p_ck
     description: PLL2 'P' output.
   - name: pll2_q_ck
@@ -59,6 +71,12 @@ signals:
     description: PLL2 'R' output.
   - name: vco3_ck
     description: PLL3 VCO; same constraints as PLL1/2.
+  - name: pllp3_ck
+    description: PLL3 'P' divider input.
+  - name: pllq3_ck
+    description: PLL3 'Q' divider input.
+  - name: pllr3_ck
+    description: PLL3 'R' divider input.
   - name: pll3_p_ck
     description: PLL3 'P' output.
   - name: pll3_q_ck
@@ -133,7 +151,7 @@ signals:
     description: Bus clock for USB2OTG
   - name: eth_ref_ck
     description: Ethernet reference clock
-  - name: eth1mac_bus_ck
+  - name: eth_bus_ck
     description: Bus clock for ETH1MAC
   - name: eth_mii_tx_clk
     description: Transmit clock for ETH1MAC
@@ -443,7 +461,7 @@ dividers:
       field: DIVM3
     description: PLL3 pre-divider; ensures 1..16 MHz at ref3_ck.
   - name: PLL1_DIVP
-    input: vco1_ck
+    input: pll1p1_ck
     output: pll1_p_ck
     factor:
       reg: PLL1DIVR
@@ -452,7 +470,7 @@ dividers:
     value: 1
     description: PLL1 P output divider.
   - name: PLL1_DIVQ
-    input: vco1_ck
+    input: pllq1_ck
     output: pll1_q_ck
     factor:
       reg: PLL1DIVR
@@ -461,7 +479,7 @@ dividers:
     value: 1
     description: PLL1 Q output divider.
   - name: PLL1_DIVR
-    input: vco1_ck
+    input: pllr1_ck
     output: pll1_r_ck
     factor:
       reg: PLL1DIVR
@@ -470,7 +488,7 @@ dividers:
     value: 1
     description: PLL1 R output divider.
   - name: PLL2_DIVP
-    input: vco2_ck
+    input: pllp2_ck
     output: pll2_p_ck
     factor:
       reg: PLL2DIVR
@@ -479,7 +497,7 @@ dividers:
     value: 1
     description: PLL2 P output divider.
   - name: PLL2_DIVQ
-    input: vco2_ck
+    input: pllq2_ck
     output: pll2_q_ck
     factor:
       reg: PLL2DIVR
@@ -488,7 +506,7 @@ dividers:
     value: 1
     description: PLL2 Q output divider.
   - name: PLL2_DIVR
-    input: vco2_ck
+    input: pllr2_ck
     output: pll2_r_ck
     factor:
       reg: PLL2DIVR
@@ -497,7 +515,7 @@ dividers:
     value: 1
     description: PLL2 R output divider.
   - name: PLL3_DIVP
-    input: vco3_ck
+    input: pll3p_ck
     output: pll3_p_ck
     factor:
       reg: PLL3DIVR
@@ -506,7 +524,7 @@ dividers:
     value: 1
     description: PLL3 P output divider.
   - name: PLL3_DIVQ
-    input: vco3_ck
+    input: pllq3_ck
     output: pll3_q_ck
     factor:
       reg: PLL3DIVR
@@ -515,7 +533,7 @@ dividers:
     value: 1
     description: PLL3 Q output divider.
   - name: PLL3_DIVR
-    input: vco3_ck
+    input: pllr3_ck
     output: pll3_r_ck
     factor:
       reg: PLL3DIVR
@@ -1048,6 +1066,69 @@ gates:
     output: csi_ker_ck
     input: csi_osc
     description: CSI kernel clock gate.
+  - name: DIVP1EN
+    input: vco1_ck
+    output: pllp1_ck
+    control:
+      reg: PLLCFGR
+      field: DIVP1EN
+    description: PLL1 P output divider enable.
+  - name: DIVQ1EN
+    input: vco1_ck
+    output: pllq1_ck
+    control:
+      reg: PLLCFGR
+      field: DIVQ1EN
+    description: PLL1 Q output divider enable.
+  - name: DIVR1EN
+    input: vco1_ck
+    output: pllr1_ck
+    control:
+      reg: PLLCFGR
+      field: DIVR1EN
+    description: PLL1 R output divider enable.
+  - name: DIVP2EN
+    input: vco2_ck
+    output: pllp2_ck
+    control:
+      reg: PLLCFGR
+      field: DIVP2EN
+    description: PLL2 P output divider enable.
+  - name: DIVQ2EN
+    input: vco2_ck
+    output: pllq2_ck
+    control:
+      reg: PLLCFGR
+      field: DIVQ2EN
+    description: PLL2 Q output divider enable.
+  - name: DIVR2EN
+    input: vco2_ck
+    output: pllr2_ck
+    control:
+      reg: PLLCFGR
+      field: DIVR2EN
+    description: PLL2 R output divider enable.
+  - name: DIVP3EN
+    input: vco3_ck
+    output: pllp3_ck
+    control:
+      reg: PLLCFGR
+      field: DIVP3EN
+    description: PLL3 P output divider enable.
+  - name: DIVQ3EN
+    input: vco3_ck
+    output: pllq3_ck
+    control:
+      reg: PLLCFGR
+      field: DIVQ3EN
+    description: PLL3 Q output divider enable.
+  - name: DIVR3EN
+    input: vco3_ck
+    output: pllr3_ck
+    control:
+      reg: PLLCFGR
+      field: DIVR3EN
+    description: PLL3 R output divider enable.
   - name: RCC_C1EN
     output: rcc_c1_ck
     input: sys_d1cpre_ck
@@ -1105,7 +1186,7 @@ gates:
       field: USB2OTGEN
     description: USB1 OTG HS peripheral bus clock gate.
   - name: ETH1MACEN
-    output: eth1mac_bus_ck
+    output: eth_bus_ck
     input: rcc_hclk1
     control:
       reg: C[0].AHB1ENR
