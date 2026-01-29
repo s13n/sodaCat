@@ -165,11 +165,11 @@ def formatFields(field_list, instance):
             scale = value_range.get("scale", 2 ** 32) if value_range else 2 ** 32
             mult = (2 ** 32) // scale
             f_get = f'''[](void const *ctx) -> uint32_t {{
-                return {mult} * (i_{inst}.registers->{reg}.get().{field} - {offset});
+                return {mult}U * (i_{inst}.registers->{reg}.get().{field} - {offset});
             }}'''
             f_set = f'''[](void *ctx, uint32_t val){{
                 auto reg = i_{inst}.registers->{reg}.get();
-                reg.{field} = val / {scale} + {offset};
+                reg.{field} = val / {mult}U + {offset};
                 i_{inst}.registers->{reg}.set(reg);
             }}'''
         txt.append(f'        Rf{{ {f_get}, {f_set} }},')
