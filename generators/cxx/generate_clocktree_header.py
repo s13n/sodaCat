@@ -162,9 +162,10 @@ def formatFields(field_list, instance):
         else:
             value_range = f.get("value_range", None)
             offset = value_range.get("offset", 0) if value_range else 0
-            scale = value_range.get("scale", 1) if value_range else 1
+            scale = value_range.get("scale", 2 ** 32) if value_range else 2 ** 32
+            mult = (2 ** 32) / scale
             f_get = f'''[](void const *ctx) -> uint32_t {{
-                return i_{inst}.registers->{reg}.get().{field} - {offset};
+                return {mult} * (i_{inst}.registers->{reg}.get().{field} - {offset});
             }}'''
             f_set = f'''[](void *ctx, uint32_t val){{
                 auto reg = i_{inst}.registers->{reg}.get();
