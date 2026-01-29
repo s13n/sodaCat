@@ -130,13 +130,13 @@ private:
     uint32_t get_frequency(typename Base::Pl const &pll) const {
         uint32_t input_freq = getFrequency(pll.input);
         auto *get_int = Base::register_fields[size_t(pll.feedback_integer)].get;
-        uint32_t fb_int = get_int ? get_int(static_cast<Base const*>(this)) : 1;
+        uint64_t fb_int = get_int ? get_int(static_cast<Base const*>(this)) : 1;
         auto *get_frac = Base::register_fields[size_t(pll.feedback_fraction)].get;
         uint32_t fb_frac = get_frac ? get_frac(static_cast<Base const*>(this)) : 0;
         auto *get_div = Base::register_fields[size_t(pll.post_divider)].get;
-        uint32_t post_div = get_div ? get_div(static_cast<Base const*>(this)) : 1;
-        double fb = fb_int + fb_frac / 65536.0;
-        return uint32_t(input_freq * fb / post_div);
+        uint64_t post_div = get_div ? get_div(static_cast<Base const*>(this)) : 1;
+        uint64_t mult = (fb_int << 32) + fb_frac;
+        return uint32_t(input_freq * mult / (post_div << 32));
     }
 
     uint32_t get_frequency(typename Base::Ga const &gate) const {
