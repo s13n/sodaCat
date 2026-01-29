@@ -169,7 +169,7 @@ def formatFields(field_list, instance):
             }}'''
             f_set = f'''[](void *ctx, uint32_t val){{
                 auto reg = i_{inst}.registers->{reg}.get();
-                reg.{field} = val + {offset};
+                reg.{field} = val / {scale} + {offset};
                 i_{inst}.registers->{reg}.set(reg);
             }}'''
         txt.append(f'        Rf{{ {f_get}, {f_set} }},')
