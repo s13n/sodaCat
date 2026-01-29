@@ -115,6 +115,10 @@ signals:
     description: RTC/AWU kernel clock
   - name: per_ck
     description: global peripheral clock
+  - name: ulpi1_phy_ck
+    description: ULPI1 clock input pin
+  - name: ulpi2_phy_ck
+    description: ULPI2 clock input pin
   - name: i2s_ckin
     description: audio master clock input (I2S_CKIN pin function)
   - name: dsi_phy_ck
@@ -273,6 +277,12 @@ signals:
     description: CEC selected clock
   - name: cec_ker_ck
     description: CEC kernel clock (HDMI, max. 66 MHz)
+  - name: usb_sel_ck
+    description: USB selected clock
+  - name: usb1_ker_ck
+    description: USB1 kernel clock
+  - name: usb2_ker_ck
+    description: USB2 kernel clock
 generators:
   - name: HSI
     output: hsi_osc
@@ -320,9 +330,21 @@ generators:
   - name: I2S_CKIN
     output: i2s_ckin
     description: I2S_CKIN input pin.
+    control:
+      state: freqI2S
   - name: DSI_PHY_CK
     output: dsi_phy_ck
     description: DSI Phy clock.
+  - name: USB_PHY1
+    output: ulpi1_phy_ck
+    description: ULPI1 Phy clock.
+    control:
+      state: freqULPI1
+  - name: USB_PHY2
+    output: ulpi2_phy_ck
+    description: ULPI2 Phy clock.
+    control:
+      state: freqULPI2
 plls:
   - name: PLL1
     input: ref1_ck
@@ -987,6 +1009,17 @@ muxes:
       reg: D2CCIP2R
       field: CECSRC
     description: HDMI-CEC clock source selection.
+  - name: USBSEL
+    output: usb_sel_ck
+    inputs:
+      - ""
+      - pll1_q_ck
+      - pll3_q_ck
+      - hsi48_ck
+    control:
+      reg: D2CCIP2R
+      field: USBSEL
+    description: USB clock source selection.
 gates:
   - name: RTCEN
     output: rcc_rtc_ck
@@ -1391,3 +1424,17 @@ gates:
       reg: C[0].APB1LENR
       field: HDMICECEN
     description: HDMI-CEC clock gate.
+  - name: USB1OTGEN
+    output: usb1_ker_ck
+    input: usb_sel_ck
+    control:
+      reg: C[0].AHB1ENR
+      field: USB1OTGEN
+    description: USB1 clock gate.
+  - name: USB2OTGEN
+    output: usb2_ker_ck
+    input: usb_sel_ck
+    control:
+      reg: C[0].AHB1ENR
+      field: USB2OTGEN
+    description: USB2 clock gate.
