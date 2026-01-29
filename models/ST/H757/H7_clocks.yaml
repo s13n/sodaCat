@@ -117,6 +117,8 @@ signals:
     description: global peripheral clock
   - name: ulpi1_phy_ck
     description: ULPI1 clock input pin
+  - name: ck_ulpi
+    description: Function clock for USB1ULPI
   - name: i2s_ckin
     description: audio master clock input (I2S_CKIN pin function)
   - name: dsi_phy_ck
@@ -129,13 +131,13 @@ signals:
     description: Bus clock for USB1OTG
   - name: usb2otg_bus_ck
     description: Bus clock for USB2OTG
-  - name: ck_ulpi
-    description: Function clock for USB1ULPI
+  - name: eth_ref_ck
+    description: Ethernet reference clock
   - name: eth1mac_bus_ck
     description: Bus clock for ETH1MAC
-  - name: eth1tx_ck
+  - name: eth_mii_tx_clk
     description: Transmit clock for ETH1MAC
-  - name: eth1rx_ck
+  - name: eth_mii_rx_clk
     description: Receive clock for ETH1MAC
   - name: sai4_a_sel_ck
     description: SAI4a selected clock
@@ -337,6 +339,11 @@ generators:
   - name: DSI_PHY_CK
     output: dsi_phy_ck
     description: DSI Phy clock.
+  - name: ETH_RMII_REF_CLK
+    output: eth_ref_ck
+    description: Ethernet clock input from external PHY.
+    control:
+      state: freqETH
   - name: USB_PHY1
     output: ulpi1_phy_ck
     description: ULPI1 clock input from external PHY.
@@ -1105,15 +1112,15 @@ gates:
       field: ETH1MACEN
     description: Ethernet MAC bus interface clock gate.
   - name: ETH1TXEN
-    output: eth1tx_ck
-    input: rcc_hclk1
+    output: eth_mii_tx_clk
+    input: eth_ref_ck
     control:
       reg: C[0].AHB1ENR
       field: ETH1TXEN
     description: Ethernet TX clock gate.
   - name: ETH1RXEN
-    output: eth1rx_ck
-    input: rcc_hclk1
+    output: eth_mii_rx_clk
+    input: eth_ref_ck
     control:
       reg: C[0].AHB1ENR
       field: ETH1RXEN
