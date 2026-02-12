@@ -1,7 +1,7 @@
-import sys
-import yaml
-import re
+from ruamel.yaml import YAML
 from pathlib import Path
+import re
+import sys
 
 
 field_map = {}
@@ -284,8 +284,8 @@ def formatStructIndices(signals, signal_enum_map, generators, plls, gates, divid
     return "\n".join(txt)
 
 def generate_header(yaml_path, namespace, hpp_path):
-    with open(yaml_path, 'r') as f:
-        data = yaml.safe_load(f)
+    yaml = YAML(typ='safe')
+    data = yaml.load(Path(yaml_path))
 
     instance = data.get('instance', '')
     signals = data.get('signals', [])

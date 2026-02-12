@@ -6,6 +6,8 @@ whether macro `REGISTERS_MODULE` is defined.
 
 See the project in the `test` folder to see how this is used.
 
+Note that the Python generator scripts require `ruamel` to be installed.
+
 ### C++ scoping rules
 
 Starting from the C rules, the following additions are made:
