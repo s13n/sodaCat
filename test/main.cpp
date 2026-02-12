@@ -19,7 +19,7 @@ int main() {
     auto ξ = dma.S[2].CR.val();             // read CR register as 32-bit integer
     uint32_t d = dma.S[2].CR;               // dto.
     auto b = mdma.C[6].CR.get();            // read CR register as bitfield struct
-    MDMA::CR c = mdma.C[6].CR;              // dto., must disambiguate between CR registers
+    MDMA_::CR c = mdma.C[6].CR;             // dto., must disambiguate between CR registers
     auto e = mdma.C[6].CR.get().EN;         // read individual bitfield
     auto f = get(mdma.C[6].CR).EN;          // dto.
     auto ma1 = get(dma.S[1].M1AR).M1A;      // dto.
