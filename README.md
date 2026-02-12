@@ -18,6 +18,10 @@ generation, and thus help you write your custom generator tools, but they can be
 used as-is if you are satisfied with the output they create. Header generation
 is described in [this page](Header-generation.md).
 
+## Documentation
+
+For comprehensive documentation on sodaCat, including guides for users and developers, see [docs/index.md](docs/index.md).
+
 ## How to use this database
 
 The process typically involves two steps:

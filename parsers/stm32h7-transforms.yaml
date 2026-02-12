@@ -1,0 +1,619 @@
+# Transformation configuration for STM32H7 family blocks
+#
+# This file specifies how to transform raw SVD peripheral data into
+# normalized functional block models. By separating transformations
+# from code, the same configurations can be applied across all
+# STM32H7 family variants (H73x, H74x/H75x, H7A3/B).
+#
+# Each block entry defines:
+#   instances: List of peripheral names in SVD that use this block
+#   headerStructName: Name of the resulting functional block model
+#   renames: Field renaming rules (to normalize instance names)
+#   arrays: Register-to-cluster conversions (for repetitive patterns)
+#   parameters: Per-instance capability metadata
+#   fields: Missing fields to add (if not in SVD)
+
+blocks:
+  
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TIMER BLOCKS
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  AdvCtrlTimer:
+    description: Advanced-control timers (TIM1, TIM8)
+    instances: [TIM1, TIM8]
+    headerStructName: AdvCtrlTimer
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'TIM\d?_([A-Z_0-9]+)'
+        replacement: '\1'
+      - target: interrupts
+        field: description
+        pattern: 'TIM\d'
+        replacement: 'TIM'
+  
+  GpTimer:
+    description: General-purpose timers (TIM2-5, TIM12-14, TIM15-17)
+    instances: 
+      - TIM2    # 32-bit
+      - TIM3    # 16-bit
+      - TIM4    # 16-bit
+      - TIM5    # 32-bit
+      - TIM12   # 16-bit, 2 channels
+      - TIM13   # 16-bit, 1 channel
+      - TIM14   # 16-bit, 1 channel
+      - TIM15   # 16-bit, 2 channels, with repetition
+      - TIM16   # 16-bit, 1 channel, with repetition
+      - TIM17   # 16-bit, 1 channel, with repetition
+    
+    headerStructName: GpTimer
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'TIM(\d+)'
+        replacement: 'TIM'
+      - target: interrupts
+        field: description
+        pattern: 'TIM\d+'
+        replacement: 'TIM'
+    
+    # Each instance has different capabilities encoded as parameters
+    # These help code generators understand what features are available
+    parameters:
+      TIM2:
+        wide: 1           # 32-bit counter
+        chan_max: 3       # 4 capture/compare channels (0-3)
+        rep: 0            # No repetition counter
+        compl1: 0         # No complementary output
+        bkin: 0           # No break input
+        trigger: 1        # Supports trigger events
+        encoder: 1        # Quadrature encoder support
+      
+      TIM3:
+        wide: 0           # 16-bit
+        chan_max: 3
+        rep: 0
+        compl1: 0
+        bkin: 0
+        trigger: 1
+        encoder: 1
+      
+      TIM4:
+        wide: 0
+        chan_max: 3
+        rep: 0
+        compl1: 0
+        bkin: 0
+        trigger: 1
+        encoder: 1
+      
+      TIM5:
+        wide: 1           # 32-bit
+        chan_max: 3
+        rep: 0
+        compl1: 0
+        bkin: 0
+        trigger: 1
+        encoder: 1
+      
+      TIM12:
+        wide: 0
+        chan_max: 1       # 2 capture/compare channels (0-1)
+        rep: 0
+        compl1: 0
+        bkin: 0
+        trigger: 1
+        encoder: 0        # No encoder support
+      
+      TIM13:
+        wide: 0
+        chan_max: 0       # 1 capture/compare channel
+        rep: 0
+        compl1: 0
+        bkin: 0
+        trigger: 0        # No trigger
+        encoder: 0
+      
+      TIM14:
+        wide: 0
+        chan_max: 0
+        rep: 0
+        compl1: 0
+        bkin: 0
+        trigger: 0
+        encoder: 0
+      
+      TIM15:
+        wide: 0
+        chan_max: 1       # 2 channels
+        rep: 1            # Has repetition counter
+        compl1: 1         # Has complementary output
+        bkin: 1           # Break input supported
+        trigger: 1
+        encoder: 0
+      
+      TIM16:
+        wide: 0
+        chan_max: 0
+        rep: 1
+        compl1: 1
+        bkin: 1
+        trigger: 0
+        encoder: 0
+      
+      TIM17:
+        wide: 0
+        chan_max: 0
+        rep: 1
+        compl1: 1
+        bkin: 1
+        trigger: 0
+        encoder: 0
+
+  BasicTimer:
+    description: Basic timers (TIM6, TIM7)
+    instances: [TIM6, TIM7]
+    headerStructName: BasicTimer
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'TIM[67](?:_DAC)?'
+        replacement: 'TIM'
+      - target: interrupts
+        field: description
+        pattern: 'TIM[67]'
+        replacement: 'TIM'
+
+  LPTIM:
+    description: Low-power timers (LPTIM1-5)
+    instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4, LPTIM5]
+    
+    # Note: LPTIM1 and LPTIM3 use different block types
+    headerStructNameMap:
+      LPTIM1: 'LPTIMenc'    # Has encoder functionality
+      LPTIM2: 'LPTIM'
+      LPTIM3: 'LPTIM'       # Also has encoder
+      LPTIM4: 'LPTIM'
+      LPTIM5: 'LPTIM'
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'LPTIM\d+'
+        replacement: 'LPTIM'
+      - target: interrupts
+        field: description
+        pattern: 'LPTIM\d+'
+        replacement: 'LPTIM'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # COMMUNICATION INTERFACES
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  USART:
+    description: UART/USART serial interfaces
+    instances: [USART1, USART2, USART3, USART6, UART4, UART5, UART7, UART8]
+    
+    headerStructNameMap:
+      USART1: USART
+      USART2: USART
+      USART3: USART
+      USART6: USART
+      UART4: USART
+      UART5: USART
+      UART7: USART
+      UART8: USART
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: '(USART|UART)\d+'
+        replacement: 'USART'
+      - target: interrupts
+        field: description
+        pattern: '(USART|UART)\d+'
+        replacement: 'USART'
+    
+    # Capability differences between USART and UART variants
+    parameters:
+      USART1: &usart_full
+        syncmode: 1         # Supports synchronous mode (Master/Slave)
+        smartcard: 1        # Smartcard mode
+        irdaSIR: 1          # IrDA SIR ENDEC block
+        lin: 1              # LIN mode
+        rxTimeout: 1        # Receiver timeout interrupt
+        modbus: 1           # Modbus communication
+        autobaud: 1         # Auto baud rate detection
+        prescaler: 1        # Prescaler
+        lpbaud: 0           # Standard BRR format (not LP)
+      
+      USART2: *usart_full
+      USART3: *usart_full
+      USART6: *usart_full
+      
+      # UARTs have fewer features
+      UART4: &uart_lite
+        syncmode: 0         # No synchronous mode
+        smartcard: 0        # No smartcard
+        irdaSIR: 1          # Has IrDA
+        lin: 1
+        rxTimeout: 1
+        modbus: 1
+        autobaud: 1
+        prescaler: 1
+        lpbaud: 0
+      
+      UART5: *uart_lite
+      UART7: *uart_lite
+      UART8: *uart_lite
+
+  LPUART:
+    description: Low-power UART
+    instances: [LPUART1]
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'LPUART'
+        replacement: 'USART'
+    
+    parameters:
+      LPUART1:
+        syncmode: 0
+        smartcard: 0
+        irdaSIR: 0
+        lin: 0
+        rxTimeout: 0
+        modbus: 0
+        autobaud: 0
+        prescaler: 1
+        lpbaud: 1           # 20-bit LPUART BRR format
+
+  SPI:
+    description: SPI/I2S interfaces
+    instances: [SPI1, SPI2, SPI3, SPI4, SPI5, SPI6]
+    
+    headerStructNameMap:
+      SPI1: SPI
+      SPI2: SPI
+      SPI3: SPI
+      SPI4: SPI
+      SPI5: SPI
+      SPI6: SPI
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'SPI(\d+)'
+        replacement: 'SPI'
+      - target: interrupts
+        field: description
+        pattern: 'SPI\d+'
+        replacement: 'SPI'
+    
+    parameters:
+      SPI1: &spi_advanced
+        i2smode: 1          # I2S mode support
+        width32: 1          # 32-bit data size support
+      SPI2: *spi_advanced
+      SPI3: *spi_advanced
+      
+      SPI4: &spi_basic
+        i2smode: 0          # No I2S
+        width32: 0          # No 32-bit support
+      SPI5: *spi_basic
+      SPI6: *spi_basic
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # MEMORY ACCESS & CONTROLLERS
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  DMA:
+    description: Direct memory access
+    instances: [DMA1, DMA2]
+    
+    headerStructNameMap:
+      DMA1: DMA
+      DMA2: DMA
+    
+    arrays:
+      - name: streams
+        description: DMA stream registers
+        pattern: 'S(\d+)(.+)'
+        clusterName: 'S'
+        clusterDesc: 'DMA stream'
+        count: 8
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: '[A-Z0-9]+_([A-Z_0-9]+)'
+        replacement: '\1'
+
+  BDMA:
+    description: Basic DMA (backup domain)
+    instances: [BDMA]
+    
+    arrays:
+      - name: channels
+        description: BDMA channel registers
+        pattern: 'C(.+?)(\d+)$'
+        clusterName: 'C'
+        clusterDesc: 'BDMA channel'
+        count: 8
+    
+    renames:
+      - target: registers
+        field: name
+        pattern: 'BDMA_([A-Z_0-9]+)'
+        replacement: '\1'
+      - target: interrupts
+        field: name
+        pattern: 'BDMA_([A-Z_0-9]+)'
+        replacement: '\1'
+
+  MDMA:
+    description: Memory-to-memory DMA
+    instances: [MDMA]
+    
+    arrays:
+      - name: channels
+        description: MDMA channel registers
+        pattern: 'MDMA_C(\d+)(.+)'
+        clusterName: 'C'
+        clusterDesc: 'MDMA channel'
+        count: 32
+    
+    renames:
+      - target: registers
+        field: name
+        pattern: 'MDMA_GISR0'
+        replacement: 'GISR0'
+      - target: registers
+        field: displayName
+        pattern: 'MDMA_GISR0'
+        replacement: 'GISR0'
+
+  DMAMUX1:
+    description: DMA request router instance 1
+    instances: [DMAMUX1]
+    # No transformations needed
+
+  DMAMUX2:
+    description: DMA request router instance 2
+    instances: [DMAMUX2]
+    # No transformations needed
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CONVERTERS & FILTERS
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  ADC:
+    description: Analog-to-digital converters
+    instances: [ADC1, ADC2, ADC3]
+    
+    headerStructNameMap:
+      ADC1: ADC
+      ADC2: ADC
+      ADC3: ADC
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'ADC[123]?'
+        replacement: 'ADC'
+
+  ADC_Common:
+    description: ADC common registers
+    instances: [ADC12_Common, ADC3_Common]
+    
+    headerStructNameMap:
+      ADC12_Common: ADC_Common
+      ADC3_Common: ADC_Common
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'ADC1_2'
+        replacement: 'ADC'
+
+  DAC:
+    description: Digital-to-analog converter
+    instances: [DAC]
+    # Interrupt number copied from TIM6 (see special handling in parser)
+
+  DFSDM:
+    description: Delta-sigma filter DSP controller
+    instances: [DFSDM, DFSDM1, DFSDM2]
+    
+    arrays:
+      - name: channels
+        description: DFSDM channel registers
+        pattern: 'CH(\d+)(.+?)$'
+        clusterName: 'CH'
+        clusterDesc: 'DFSDM channel'
+        count: 8
+      
+      - name: filters
+        description: DFSDM filter registers
+        pattern: 'DFSDM_?FLT(\d+)(.+?)$'
+        clusterName: 'FLT'
+        clusterDesc: 'DFSDM filter'
+        count: 4
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'DFSDM[1]?_([0-9_A-Z]+)'
+        replacement: '\1'
+      - target: interrupts
+        field: description
+        pattern: 'DFSDM1'
+        replacement: 'DFSDM'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # STORAGE & MEMORY
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  Flash:
+    description: Flash memory controller
+    instances: [Flash]
+
+  FMC:
+    description: Flexible memory controller
+    instances: [FMC]
+
+  QUADSPI:
+    description: Quad SPI interface
+    instances: [QUADSPI]
+    
+    parameters:
+      QUADSPI:
+        dual: 0             # Dual mode supported
+        fifo32: 0           # FIFO is 16 bytes (not 32)
+        logsize: 28         # 256 MB address space (2^28)
+        base: 0x90          # Base address 0x90000000
+
+  RTC:
+    description: Real-time clock
+    instances: [RTC]
+    
+    arrays:
+      - name: backupRegisters
+        description: Backup registers for RTC
+        pattern: 'RTC_BKP(\d+)(.+?)$'
+        clusterName: 'BKP'
+        clusterDesc: 'Backup register'
+        count: 32
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'RTC_([_A-Z]+)'
+        replacement: '\1'
+      - target: registers
+        field: name
+        pattern: 'RTC_([0-9_A-Z]+)'
+        replacement: '\1'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SYSTEM & I/O
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  GPIO:
+    description: General-purpose I/O
+    instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
+    
+    headerStructNameMap:
+      GPIOA: GPIO
+      GPIOB: GPIO
+      GPIOC: GPIO
+      GPIOD: GPIO
+      GPIOE: GPIO
+      GPIOF: GPIO
+      GPIOG: GPIO
+      GPIOH: GPIO
+      GPIOI: GPIO
+      GPIOJ: GPIO
+      GPIOK: GPIO
+    
+    # GPIO ports diff in pins (16 for most, 8 for GPIOK)
+    parameters:
+      GPIOA: &gpio_full
+        pins: 0xFFFF       # Pins 0-15 present
+      GPIOB: *gpio_full
+      GPIOC: *gpio_full
+      GPIOD: *gpio_full
+      GPIOE: *gpio_full
+      GPIOF: *gpio_full
+      GPIOG: *gpio_full
+      GPIOH: *gpio_full
+      GPIOI: *gpio_full
+      GPIOJ: *gpio_full
+      
+      GPIOK:
+        pins: 0xFF         # Pins 0-7 only
+
+  EXTI:
+    description: External interrupt/event controller
+    instances: [EXTI]
+
+  I2C:
+    description: Inter-integrated circuit interfaces
+    instances: [I2C1, I2C2, I2C3, I2C4]
+    
+    headerStructNameMap:
+      I2C1: I2C
+      I2C2: I2C
+      I2C3: I2C
+      I2C4: I2C
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'I2C([1-4])_([A-Z_0-9]+)'
+        replacement: '\2'
+      - target: interrupts
+        field: description
+        pattern: 'I2C[1-4]'
+        replacement: 'I2C'
+
+  SAI:
+    description: Serial audio interface
+    instances: [SAI1, SAI2, SAI3, SAI4]
+    
+    headerStructNameMap:
+      SAI1: SAI
+      SAI2: SAI
+      SAI3: SAI
+      SAI4: SAI
+    
+    renames:
+      - target: interrupts
+        field: name
+        pattern: 'SAI[1-4]'
+        replacement: 'SAI'
+      - target: interrupts
+        field: description
+        pattern: 'SAI[1-4]'
+        replacement: 'SAI'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # MISCELLANEOUS
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  RCC:
+    description: Reset and clock control
+    instances: [RCC]
+    
+    # Note: RCC has special transformation for dual-core support
+    # This is handled in the parser with custom code
+    specialHandling: rcc_cpu_clustering
+
+  ART:
+    description: Adaptive real-time accelerator
+    instances: [ART]
+
+  DBGMCU:
+    description: Debug MCU
+    instances: [DBGMCU]
+
+  PWR:
+    description: Power controller
+    instances: [PWR]
+
+  SYSCFG:
+    description: System configuration
+    instances: [SYSCFG]
+
+  OPAMP:
+    description: Operational amplifier
+    instances: [OPAMP]
+
+  SPDIFRX:
+    description: S/PDIF receiver
+    instances: [SPDIFRX]
