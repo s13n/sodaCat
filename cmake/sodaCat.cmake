@@ -5,7 +5,7 @@ set(SODACAT_LOCAL_DIR "${CMAKE_BINARY_DIR}/models" CACHE STRING "sodaCat local d
 if(SODACAT_URL_BASE)
     message(VERBOSE "Using sodaCat repository in ${SODACAT_URL_BASE}")
 else()
-    message(SEND_ERROR "Must define variable SODACAT_URL_BASE")
+    message(WARNING "Variable SODACAT_URL_BASE not defined. Can't download models.")
 endif()
 
 # Function to download files listed in the manifest file
@@ -75,16 +75,25 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 # Macro to generate a header file for a target
 # Parameters:
-#   target    - Target to which the generated header is added as a source file
-#   generator - Generator script in python
-#   namespace - Namespace name for the generated header
-#   model     - Model name, also used in the header as type name
-#   suffix    - File name suffix of generated header file
-macro(generate_header target generator namespace model suffix)
+#   target      - Target to which the generated header is added as a source file
+#   generator   - Generator script in python
+#   namespace   - Namespace name for the generated header
+#   model_path  - Path to model file relative to SODACAT_LOCAL_DIR (e.g., ST/H757/H757)
+#   suffix      - File name suffix of generated header file
+macro(generate_header target generator namespace model_path suffix)
+    # Extract model name from path (last component)
+    get_filename_component(model "${model_path}" NAME)
+    
+    # Construct the full model file path
+    set(model_file "${SODACAT_LOCAL_DIR}/${model_path}.yaml")
+    
+    # Generator script path
+    set(generator_script "${CMAKE_SOURCE_DIR}/generators/cxx/${generator}.py")
+    
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
-        COMMAND ${Python3_EXECUTABLE} "${SODACAT_LOCAL_DIR}/${generator}.py" "${SODACAT_LOCAL_DIR}/${model}.yaml" ${namespace} ${model} ${suffix}
-        MAIN_DEPENDENCY "${SODACAT_LOCAL_DIR}/${model}.yaml"
-        DEPENDS "${SODACAT_LOCAL_DIR}/${generator}.py"
+        COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${namespace} ${model} ${suffix}
+        MAIN_DEPENDENCY "${model_file}"
+        DEPENDS "${generator_script}"
         COMMENT "Generating ${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix} in namespace ${namespace}"
     )
     target_sources(${target} PUBLIC
