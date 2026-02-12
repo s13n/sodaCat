@@ -1,0 +1,1152 @@
+name: SAI1
+description: SAI
+groupName: SAI
+baseAddress: 1073829888
+registers:
+- name: SAI_GCR
+  displayName: SAI_GCR
+  description: Global configuration register
+  addressOffset: 0
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: SYNCIN
+    description: Synchronization inputs
+    bitOffset: 0
+    bitWidth: 2
+  - name: SYNCOUT
+    description: "Synchronization outputs These bits are\n              set and cleared\
+      \ by software."
+    bitOffset: 4
+    bitWidth: 2
+- name: SAI_ACR1
+  displayName: SAI_ACR1
+  description: Configuration register 1
+  addressOffset: 4
+  size: 32
+  access: read-write
+  resetValue: 64
+  fields:
+  - name: MODE
+    description: "SAIx audio block mode\n              immediately"
+    bitOffset: 0
+    bitWidth: 2
+  - name: PRTCFG
+    description: "Protocol configuration. These bits are\n              set and cleared\
+      \ by software. These bits have to be\n              configured when the audio\
+      \ block is\n              disabled."
+    bitOffset: 2
+    bitWidth: 2
+  - name: DS
+    description: "Data size. These bits are set and\n              cleared by software.\
+      \ These bits are ignored when the\n              SPDIF protocols are selected\
+      \ (bit PRTCFG[1:0]),\n              because the frame and the data size are\
+      \ fixed in such\n              case. When the companding mode is selected through\n\
+      \              COMP[1:0] bits, DS[1:0] are ignored since the data\n        \
+      \      size is fixed to 8 bits by the algorithm. These bits\n              must\
+      \ be configured when the audio block is\n              disabled."
+    bitOffset: 5
+    bitWidth: 3
+  - name: LSBFIRST
+    description: "Least significant bit first. This bit is\n              set and\
+      \ cleared by software. It must be configured\n              when the audio block\
+      \ is disabled. This bit has no\n              meaning in AC97 audio protocol\
+      \ since AC97 data are\n              always transferred with the MSB first.\
+      \ This bit has\n              no meaning in SPDIF audio protocol since in SPDIF\n\
+      \              data are always transferred with LSB\n              first."
+    bitOffset: 8
+    bitWidth: 1
+  - name: CKSTR
+    description: "Clock strobing edge. This bit is set and\n              cleared\
+      \ by software. It must be configured when the\n              audio block is\
+      \ disabled. This bit has no meaning in\n              SPDIF audio protocol."
+    bitOffset: 9
+    bitWidth: 1
+  - name: SYNCEN
+    description: "Synchronization enable. These bits are\n              set and cleared\
+      \ by software. They must be configured\n              when the audio sub-block\
+      \ is disabled. Note: The audio\n              sub-block should be configured\
+      \ as asynchronous when\n              SPDIF mode is enabled."
+    bitOffset: 10
+    bitWidth: 2
+  - name: MONO
+    description: "Mono mode. This bit is set and cleared\n              by software.\
+      \ It is meaningful only when the number of\n              slots is equal to\
+      \ 2. When the mono mode is selected,\n              slot 0 data are duplicated\
+      \ on slot 1 when the audio\n              block operates as a transmitter. In\
+      \ reception mode,\n              the slot1 is discarded and only the data received\n\
+      \              from slot 0 are stored. Refer to Section: Mono/stereo\n     \
+      \         mode for more details."
+    bitOffset: 12
+    bitWidth: 1
+  - name: OUTDRIV
+    description: "Output drive. This bit is set and\n              cleared by software.\
+      \ Note: This bit has to be set\n              before enabling the audio block\
+      \ and after the audio\n              block configuration."
+    bitOffset: 13
+    bitWidth: 1
+  - name: SAIXEN
+    description: "Audio block enable where x is A or B.\n              This bit is\
+      \ set by software. To switch off the audio\n              block, the application\
+      \ software must program this bit\n              to 0 and poll the bit till it\
+      \ reads back 0, meaning\n              that the block is completely disabled.\
+      \ Before setting\n              this bit to 1, check that it is set to 0, otherwise\n\
+      \              the enable command will not be taken into account.\n        \
+      \      This bit allows to control the state of SAIx audio\n              block.\
+      \ If it is disabled when an audio frame transfer\n              is ongoing,\
+      \ the ongoing transfer completes and the\n              cell is fully disabled\
+      \ at the end of this audio frame\n              transfer. Note: When SAIx block\
+      \ is configured in\n              master mode, the clock must be present on\
+      \ the input\n              of SAIx before setting SAIXEN bit."
+    bitOffset: 16
+    bitWidth: 1
+  - name: DMAEN
+    description: "DMA enable. This bit is set and cleared\n              by software.\
+      \ Note: Since the audio block defaults to\n              operate as a transmitter\
+      \ after reset, the MODE[1:0]\n              bits must be configured before setting\
+      \ DMAEN to avoid\n              a DMA request in receiver mode."
+    bitOffset: 17
+    bitWidth: 1
+  - name: NOMCK
+    description: No divider
+    bitOffset: 19
+    bitWidth: 1
+  - name: MCKDIV
+    description: "Master clock divider. These bits are set\n              and cleared\
+      \ by software. These bits are meaningless\n              when the audio block\
+      \ operates in slave mode. They\n              have to be configured when the\
+      \ audio block is\n              disabled. Others: the master clock frequency\
+      \ is\n              calculated accordingly to the following\n              formula:"
+    bitOffset: 20
+    bitWidth: 4
+  - name: OSR
+    description: "Oversampling ratio for master\n              clock"
+    bitOffset: 26
+    bitWidth: 1
+- name: SAI_ACR2
+  displayName: SAI_ACR2
+  description: Configuration register 2
+  addressOffset: 8
+  size: 32
+  resetValue: 0
+  fields:
+  - name: FTH
+    description: "FIFO threshold. This bit is set and\n              cleared by software."
+    bitOffset: 0
+    bitWidth: 3
+    access: read-write
+  - name: FFLUSH
+    description: "FIFO flush. This bit is set by software.\n              It is always\
+      \ read as 0. This bit should be configured\n              when the SAI is disabled."
+    bitOffset: 3
+    bitWidth: 1
+    access: write-only
+  - name: TRIS
+    description: "Tristate management on data line. This\n              bit is set\
+      \ and cleared by software. It is meaningful\n              only if the audio\
+      \ block is configured as a\n              transmitter. This bit is not used\
+      \ when the audio\n              block is configured in SPDIF mode. It should\
+      \ be\n              configured when SAI is disabled. Refer to Section:\n   \
+      \           Output data line management on an inactive slot for\n          \
+      \    more details."
+    bitOffset: 4
+    bitWidth: 1
+    access: read-write
+  - name: MUTE
+    description: "Mute. This bit is set and cleared by\n              software. It\
+      \ is meaningful only when the audio block\n              operates as a transmitter.\
+      \ The MUTE value is linked\n              to value of MUTEVAL if the number\
+      \ of slots is lower\n              or equal to 2, or equal to 0 if it is greater\
+      \ than 2.\n              Refer to Section: Mute mode for more details. Note:\n\
+      \              This bit is meaningless and should not be used for\n        \
+      \      SPDIF audio blocks."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-write
+  - name: MUTEVAL
+    description: "Mute value. This bit is set and cleared\n              by software.It\
+      \ must be written before enabling the\n              audio block: SAIXEN. This\
+      \ bit is meaningful only when\n              the audio block operates as a transmitter,\
+      \ the number\n              of slots is lower or equal to 2 and the MUTE bit\
+      \ is\n              set. If more slots are declared, the bit value sent\n  \
+      \            during the transmission in mute mode is equal to 0,\n         \
+      \     whatever the value of MUTEVAL. if the number of slot\n              is\
+      \ lower or equal to 2 and MUTEVAL = 1, the MUTE\n              value transmitted\
+      \ for each slot is the one sent\n              during the previous frame. Refer\
+      \ to Section: Mute\n              mode for more details. Note: This bit is meaningless\n\
+      \              and should not be used for SPDIF audio\n              blocks."
+    bitOffset: 6
+    bitWidth: 1
+    access: read-write
+  - name: MUTECNT
+    description: "Mute counter. These bits are set and\n              cleared by software.\
+      \ They are used only in reception\n              mode. The value set in these\
+      \ bits is compared to the\n              number of consecutive mute frames detected\
+      \ in\n              reception. When the number of mute frames is equal to\n\
+      \              this value, the flag MUTEDET will be set and an\n           \
+      \   interrupt will be generated if bit MUTEDETIE is set.\n              Refer\
+      \ to Section: Mute mode for more\n              details."
+    bitOffset: 7
+    bitWidth: 6
+    access: read-write
+  - name: CPL
+    description: "Complement bit. This bit is set and\n              cleared by software.\
+      \ It defines the type of\n              complement to be used for companding\
+      \ mode Note: This\n              bit has effect only when the companding mode\
+      \ is -Law\n              algorithm or A-Law algorithm."
+    bitOffset: 13
+    bitWidth: 1
+    access: read-write
+  - name: COMP
+    description: "Companding mode. These bits are set and\n              cleared by\
+      \ software. The -Law and the A-Law log are a\n              part of the CCITT\
+      \ G.711 recommendation, the type of\n              complement that will be used\
+      \ depends on CPL bit. The\n              data expansion or data compression\
+      \ are determined by\n              the state of bit MODE[0]. The data compression\
+      \ is\n              applied if the audio block is configured as a\n        \
+      \      transmitter. The data expansion is automatically\n              applied\
+      \ when the audio block is configured as a\n              receiver. Refer to\
+      \ Section: Companding mode for more\n              details. Note: Companding\
+      \ mode is applicable only\n              when TDM is selected."
+    bitOffset: 14
+    bitWidth: 2
+    access: read-write
+- name: SAI_AFRCR
+  displayName: SAI_AFRCR
+  description: "This register has no meaning in AC97 and\n          SPDIF audio protocol"
+  addressOffset: 12
+  size: 32
+  resetValue: 7
+  fields:
+  - name: FRL
+    description: "Frame length. These bits are set and\n              cleared by software.\
+      \ They define the audio frame\n              length expressed in number of SCK\
+      \ clock cycles: the\n              number of bits in the frame is equal to FRL[7:0]\
+      \ + 1.\n              The minimum number of bits to transfer in an audio\n \
+      \             frame must be equal to 8, otherwise the audio block\n        \
+      \      will behaves in an unexpected way. This is the case\n              when\
+      \ the data size is 8 bits and only one slot 0 is\n              defined in NBSLOT[4:0]\
+      \ of SAI_xSLOTR register\n              (NBSLOT[3:0] = 0000). In master mode,\
+      \ if the master\n              clock (available on MCLK_x pin) is used, the\
+      \ frame\n              length should be aligned with a number equal to a\n \
+      \             power of 2, ranging from 8 to 256. When the master\n         \
+      \     clock is not used (NODIV = 1), it is recommended to\n              program\
+      \ the frame length to an value ranging from 8\n              to 256. These bits\
+      \ are meaningless and are not used\n              in AC97 or SPDIF audio block\n\
+      \              configuration."
+    bitOffset: 0
+    bitWidth: 8
+    access: read-write
+  - name: FSALL
+    description: "Frame synchronization active level\n              length. These\
+      \ bits are set and cleared by software.\n              They specify the length\
+      \ in number of bit clock (SCK)\n              + 1 (FSALL[6:0] + 1) of the active\
+      \ level of the FS\n              signal in the audio frame These bits are meaningless\n\
+      \              and are not used in AC97 or SPDIF audio block\n             \
+      \ configuration. They must be configured when the audio\n              block\
+      \ is disabled."
+    bitOffset: 8
+    bitWidth: 7
+    access: read-write
+  - name: FSDEF
+    description: "Frame synchronization definition. This\n              bit is set\
+      \ and cleared by software. When the bit is\n              set, the number of\
+      \ slots defined in the SAI_xSLOTR\n              register has to be even. It\
+      \ means that half of this\n              number of slots will be dedicated to\
+      \ the left channel\n              and the other slots for the right channel\
+      \ (e.g: this\n              bit has to be set for I2S or MSB/LSB-justified\n\
+      \              protocols...). This bit is meaningless and is not\n         \
+      \     used in AC97 or SPDIF audio block configuration. It\n              must\
+      \ be configured when the audio block is\n              disabled."
+    bitOffset: 16
+    bitWidth: 1
+    access: read-only
+  - name: FSPOL
+    description: "Frame synchronization polarity. This bit\n              is set and\
+      \ cleared by software. It is used to\n              configure the level of the\
+      \ start of frame on the FS\n              signal. It is meaningless and is not\
+      \ used in AC97 or\n              SPDIF audio block configuration. This bit must\
+      \ be\n              configured when the audio block is\n              disabled."
+    bitOffset: 17
+    bitWidth: 1
+    access: read-write
+  - name: FSOFF
+    description: "Frame synchronization offset. This bit\n              is set and\
+      \ cleared by software. It is meaningless and\n              is not used in AC97\
+      \ or SPDIF audio block\n              configuration. This bit must be configured\
+      \ when the\n              audio block is disabled."
+    bitOffset: 18
+    bitWidth: 1
+    access: read-write
+- name: SAI_ASLOTR
+  displayName: SAI_ASLOTR
+  description: "This register has no meaning in AC97 and\n          SPDIF audio protocol"
+  addressOffset: 16
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: FBOFF
+    description: "First bit offset These bits are set and\n              cleared by\
+      \ software. The value set in this bitfield\n              defines the position\
+      \ of the first data transfer bit\n              in the slot. It represents an\
+      \ offset value. In\n              transmission mode, the bits outside the data\
+      \ field\n              are forced to 0. In reception mode, the extra\n     \
+      \         received bits are discarded. These bits must be set\n            \
+      \  when the audio block is disabled. They are ignored in\n              AC97\
+      \ or SPDIF mode."
+    bitOffset: 0
+    bitWidth: 5
+  - name: SLOTSZ
+    description: "Slot size This bits is set and cleared\n              by software.\
+      \ The slot size must be higher or equal to\n              the data size. If\
+      \ this condition is not respected,\n              the behavior of the SAI will\
+      \ be undetermined. Refer\n              to Section: Output data line management\
+      \ on an\n              inactive slot for information on how to drive SD\n  \
+      \            line. These bits must be set when the audio block is\n        \
+      \      disabled. They are ignored in AC97 or SPDIF\n              mode."
+    bitOffset: 6
+    bitWidth: 2
+  - name: NBSLOT
+    description: "Number of slots in an audio frame. These\n              bits are\
+      \ set and cleared by software. The value set\n              in this bitfield\
+      \ represents the number of slots + 1\n              in the audio frame (including\
+      \ the number of inactive\n              slots). The maximum number of slots\
+      \ is 16. The number\n              of slots should be even if FSDEF bit in the\
+      \ SAI_xFRCR\n              register is set. The number of slots must be\n  \
+      \            configured when the audio block is disabled. They are\n       \
+      \       ignored in AC97 or SPDIF mode."
+    bitOffset: 8
+    bitWidth: 4
+  - name: SLOTEN
+    description: "Slot enable. These bits are set and\n              cleared by software.\
+      \ Each SLOTEN bit corresponds to a\n              slot position from 0 to 15\
+      \ (maximum 16 slots). The\n              slot must be enabled when the audio\
+      \ block is\n              disabled. They are ignored in AC97 or SPDIF\n    \
+      \          mode."
+    bitOffset: 16
+    bitWidth: 16
+- name: SAI_AIM
+  displayName: SAI_AIM
+  description: Interrupt mask register 2
+  addressOffset: 20
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: OVRUDRIE
+    description: "Overrun/underrun interrupt enable. This\n              bit is set\
+      \ and cleared by software. When this bit is\n              set, an interrupt\
+      \ is generated if the OVRUDR bit in\n              the SAI_xSR register is set."
+    bitOffset: 0
+    bitWidth: 1
+  - name: MUTEDETIE
+    description: "Mute detection interrupt enable. This\n              bit is set\
+      \ and cleared by software. When this bit is\n              set, an interrupt\
+      \ is generated if the MUTEDET bit in\n              the SAI_xSR register is\
+      \ set. This bit has a meaning\n              only if the audio block is configured\
+      \ in receiver\n              mode."
+    bitOffset: 1
+    bitWidth: 1
+  - name: WCKCFGIE
+    description: "Wrong clock configuration interrupt\n              enable. This\
+      \ bit is set and cleared by software. This\n              bit is taken into\
+      \ account only if the audio block is\n              configured as a master (MODE[1]\
+      \ = 0) and NODIV = 0.\n              It generates an interrupt if the WCKCFG\
+      \ flag in the\n              SAI_xSR register is set. Note: This bit is used\
+      \ only\n              in TDM mode and is meaningless in other\n            \
+      \  modes."
+    bitOffset: 2
+    bitWidth: 1
+  - name: FREQIE
+    description: "FIFO request interrupt enable. This bit\n              is set and\
+      \ cleared by software. When this bit is set,\n              an interrupt is\
+      \ generated if the FREQ bit in the\n              SAI_xSR register is set. Since\
+      \ the audio block\n              defaults to operate as a transmitter after\
+      \ reset, the\n              MODE bit must be configured before setting FREQIE\
+      \ to\n              avoid a parasitic interruption in receiver\n           \
+      \   mode,"
+    bitOffset: 3
+    bitWidth: 1
+  - name: CNRDYIE
+    description: "Codec not ready interrupt enable (AC97).\n              This bit\
+      \ is set and cleared by software. When the\n              interrupt is enabled,\
+      \ the audio block detects in the\n              slot 0 (tag0) of the AC97 frame\
+      \ if the Codec\n              connected to this line is ready or not. If it\
+      \ is not\n              ready, the CNRDY flag in the SAI_xSR register is set\n\
+      \              and an interruption i generated. This bit has a\n           \
+      \   meaning only if the AC97 mode is selected through\n              PRTCFG[1:0]\
+      \ bits and the audio block is operates as a\n              receiver."
+    bitOffset: 4
+    bitWidth: 1
+  - name: AFSDETIE
+    description: "Anticipated frame synchronization\n              detection interrupt\
+      \ enable. This bit is set and\n              cleared by software. When this\
+      \ bit is set, an\n              interrupt will be generated if the AFSDET bit\
+      \ in the\n              SAI_xSR register is set. This bit is meaningless in\n\
+      \              AC97, SPDIF mode or when the audio block operates as\n      \
+      \        a master."
+    bitOffset: 5
+    bitWidth: 1
+  - name: LFSDETIE
+    description: "Late frame synchronization detection\n              interrupt enable.\
+      \ This bit is set and cleared by\n              software. When this bit is set,\
+      \ an interrupt will be\n              generated if the LFSDET bit is set in\
+      \ the SAI_xSR\n              register. This bit is meaningless in AC97, SPDIF\
+      \ mode\n              or when the audio block operates as a\n              master."
+    bitOffset: 6
+    bitWidth: 1
+- name: SAI_ASR
+  displayName: SAI_ASR
+  description: Status register
+  addressOffset: 24
+  size: 32
+  access: read-only
+  resetValue: 8
+  fields:
+  - name: OVRUDR
+    description: "Overrun / underrun. This bit is read\n              only. The overrun\
+      \ and underrun conditions can occur\n              only when the audio block\
+      \ is configured as a receiver\n              and a transmitter, respectively.\
+      \ It can generate an\n              interrupt if OVRUDRIE bit is set in SAI_xIM\
+      \ register.\n              This flag is cleared when the software sets COVRUDR\n\
+      \              bit in SAI_xCLRFR register."
+    bitOffset: 0
+    bitWidth: 1
+  - name: MUTEDET
+    description: "Mute detection. This bit is read only.\n              This flag\
+      \ is set if consecutive 0 values are received\n              in each slot of\
+      \ a given audio frame and for a\n              consecutive number of audio frames\
+      \ (set in the\n              MUTECNT bit in the SAI_xCR2 register). It can\n\
+      \              generate an interrupt if MUTEDETIE bit is set in\n          \
+      \    SAI_xIM register. This flag is cleared when the\n              software\
+      \ sets bit CMUTEDET in the SAI_xCLRFR\n              register."
+    bitOffset: 1
+    bitWidth: 1
+  - name: WCKCFG
+    description: "Wrong clock configuration flag. This bit\n              is read\
+      \ only. This bit is used only when the audio\n              block operates in\
+      \ master mode (MODE[1] = 0) and NODIV\n              = 0. It can generate an\
+      \ interrupt if WCKCFGIE bit is\n              set in SAI_xIM register. This\
+      \ flag is cleared when\n              the software sets CWCKCFG bit in SAI_xCLRFR\n\
+      \              register."
+    bitOffset: 2
+    bitWidth: 1
+  - name: FREQ
+    description: "FIFO request. This bit is read only. The\n              request\
+      \ depends on the audio block configuration: If\n              the block is configured\
+      \ in transmission mode, the\n              FIFO request is related to a write\
+      \ request operation\n              in the SAI_xDR. If the block configured in\
+      \ reception,\n              the FIFO request related to a read request operation\n\
+      \              from the SAI_xDR. This flag can generate an interrupt\n     \
+      \         if FREQIE bit is set in SAI_xIM\n              register."
+    bitOffset: 3
+    bitWidth: 1
+  - name: CNRDY
+    description: "Codec not ready. This bit is read only.\n              This bit\
+      \ is used only when the AC97 audio protocol is\n              selected in the\
+      \ SAI_xCR1 register and configured in\n              receiver mode. It can generate\
+      \ an interrupt if\n              CNRDYIE bit is set in SAI_xIM register. This\
+      \ flag is\n              cleared when the software sets CCNRDY bit in\n    \
+      \          SAI_xCLRFR register."
+    bitOffset: 4
+    bitWidth: 1
+  - name: AFSDET
+    description: "Anticipated frame synchronization\n              detection. This\
+      \ bit is read only. This flag can be\n              set only if the audio block\
+      \ is configured in slave\n              mode. It is not used in AC97or SPDIF\
+      \ mode. It can\n              generate an interrupt if AFSDETIE bit is set in\n\
+      \              SAI_xIM register. This flag is cleared when the\n           \
+      \   software sets CAFSDET bit in SAI_xCLRFR\n              register."
+    bitOffset: 5
+    bitWidth: 1
+  - name: LFSDET
+    description: "Late frame synchronization detection.\n              This bit is\
+      \ read only. This flag can be set only if\n              the audio block is\
+      \ configured in slave mode. It is\n              not used in AC97 or SPDIF mode.\
+      \ It can generate an\n              interrupt if LFSDETIE bit is set in the\
+      \ SAI_xIM\n              register. This flag is cleared when the software sets\n\
+      \              bit CLFSDET in SAI_xCLRFR register"
+    bitOffset: 6
+    bitWidth: 1
+  - name: FLVL
+    description: "FIFO level threshold. This bit is read\n              only. The\
+      \ FIFO level threshold flag is managed only\n              by hardware and its\
+      \ setting depends on SAI block\n              configuration (transmitter or\
+      \ receiver mode). If the\n              SAI block is configured as transmitter:\
+      \ If SAI block\n              is configured as receiver:"
+    bitOffset: 16
+    bitWidth: 3
+- name: SAI_ACLRFR
+  displayName: SAI_ACLRFR
+  description: Clear flag register
+  addressOffset: 28
+  size: 32
+  access: write-only
+  resetValue: 0
+  fields:
+  - name: COVRUDR
+    description: "Clear overrun / underrun. This bit is\n              write only.\
+      \ Programming this bit to 1 clears the\n              OVRUDR flag in the SAI_xSR\
+      \ register. Reading this bit\n              always returns the value 0."
+    bitOffset: 0
+    bitWidth: 1
+  - name: CMUTEDET
+    description: "Mute detection flag. This bit is write\n              only. Programming\
+      \ this bit to 1 clears the MUTEDET\n              flag in the SAI_xSR register.\
+      \ Reading this bit always\n              returns the value 0."
+    bitOffset: 1
+    bitWidth: 1
+  - name: CWCKCFG
+    description: "Clear wrong clock configuration flag.\n              This bit is\
+      \ write only. Programming this bit to 1\n              clears the WCKCFG flag\
+      \ in the SAI_xSR register. This\n              bit is used only when the audio\
+      \ block is set as\n              master (MODE[1] = 0) and NODIV = 0 in the SAI_xCR1\n\
+      \              register. Reading this bit always returns the value\n       \
+      \       0."
+    bitOffset: 2
+    bitWidth: 1
+  - name: CCNRDY
+    description: "Clear Codec not ready flag. This bit is\n              write only.\
+      \ Programming this bit to 1 clears the\n              CNRDY flag in the SAI_xSR\
+      \ register. This bit is used\n              only when the AC97 audio protocol\
+      \ is selected in the\n              SAI_xCR1 register. Reading this bit always\
+      \ returns\n              the value 0."
+    bitOffset: 4
+    bitWidth: 1
+  - name: CAFSDET
+    description: "Clear anticipated frame synchronization\n              detection\
+      \ flag. This bit is write only. Programming\n              this bit to 1 clears\
+      \ the AFSDET flag in the SAI_xSR\n              register. It is not used in\
+      \ AC97or SPDIF mode.\n              Reading this bit always returns the value\n\
+      \              0."
+    bitOffset: 5
+    bitWidth: 1
+  - name: CLFSDET
+    description: "Clear late frame synchronization\n              detection flag.\
+      \ This bit is write only. Programming\n              this bit to 1 clears the\
+      \ LFSDET flag in the SAI_xSR\n              register. This bit is not used in\
+      \ AC97or SPDIF mode\n              Reading this bit always returns the value\n\
+      \              0."
+    bitOffset: 6
+    bitWidth: 1
+- name: SAI_ADR
+  displayName: SAI_ADR
+  description: Data register
+  addressOffset: 32
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: DATA
+    description: "Data A write to this register loads the\n              FIFO provided\
+      \ the FIFO is not full. A read from this\n              register empties the\
+      \ FIFO if the FIFO is not\n              empty."
+    bitOffset: 0
+    bitWidth: 32
+- name: SAI_BCR1
+  displayName: SAI_BCR1
+  description: Configuration register 1
+  addressOffset: 36
+  size: 32
+  access: read-write
+  resetValue: 64
+  fields:
+  - name: MODE
+    description: "SAIx audio block mode\n              immediately"
+    bitOffset: 0
+    bitWidth: 2
+  - name: PRTCFG
+    description: "Protocol configuration. These bits are\n              set and cleared\
+      \ by software. These bits have to be\n              configured when the audio\
+      \ block is\n              disabled."
+    bitOffset: 2
+    bitWidth: 2
+  - name: DS
+    description: "Data size. These bits are set and\n              cleared by software.\
+      \ These bits are ignored when the\n              SPDIF protocols are selected\
+      \ (bit PRTCFG[1:0]),\n              because the frame and the data size are\
+      \ fixed in such\n              case. When the companding mode is selected through\n\
+      \              COMP[1:0] bits, DS[1:0] are ignored since the data\n        \
+      \      size is fixed to 8 bits by the algorithm. These bits\n              must\
+      \ be configured when the audio block is\n              disabled."
+    bitOffset: 5
+    bitWidth: 3
+  - name: LSBFIRST
+    description: "Least significant bit first. This bit is\n              set and\
+      \ cleared by software. It must be configured\n              when the audio block\
+      \ is disabled. This bit has no\n              meaning in AC97 audio protocol\
+      \ since AC97 data are\n              always transferred with the MSB first.\
+      \ This bit has\n              no meaning in SPDIF audio protocol since in SPDIF\n\
+      \              data are always transferred with LSB\n              first."
+    bitOffset: 8
+    bitWidth: 1
+  - name: CKSTR
+    description: "Clock strobing edge. This bit is set and\n              cleared\
+      \ by software. It must be configured when the\n              audio block is\
+      \ disabled. This bit has no meaning in\n              SPDIF audio protocol."
+    bitOffset: 9
+    bitWidth: 1
+  - name: SYNCEN
+    description: "Synchronization enable. These bits are\n              set and cleared\
+      \ by software. They must be configured\n              when the audio sub-block\
+      \ is disabled. Note: The audio\n              sub-block should be configured\
+      \ as asynchronous when\n              SPDIF mode is enabled."
+    bitOffset: 10
+    bitWidth: 2
+  - name: MONO
+    description: "Mono mode. This bit is set and cleared\n              by software.\
+      \ It is meaningful only when the number of\n              slots is equal to\
+      \ 2. When the mono mode is selected,\n              slot 0 data are duplicated\
+      \ on slot 1 when the audio\n              block operates as a transmitter. In\
+      \ reception mode,\n              the slot1 is discarded and only the data received\n\
+      \              from slot 0 are stored. Refer to Section: Mono/stereo\n     \
+      \         mode for more details."
+    bitOffset: 12
+    bitWidth: 1
+  - name: OUTDRIV
+    description: "Output drive. This bit is set and\n              cleared by software.\
+      \ Note: This bit has to be set\n              before enabling the audio block\
+      \ and after the audio\n              block configuration."
+    bitOffset: 13
+    bitWidth: 1
+  - name: SAIXEN
+    description: "Audio block enable where x is A or B.\n              This bit is\
+      \ set by software. To switch off the audio\n              block, the application\
+      \ software must program this bit\n              to 0 and poll the bit till it\
+      \ reads back 0, meaning\n              that the block is completely disabled.\
+      \ Before setting\n              this bit to 1, check that it is set to 0, otherwise\n\
+      \              the enable command will not be taken into account.\n        \
+      \      This bit allows to control the state of SAIx audio\n              block.\
+      \ If it is disabled when an audio frame transfer\n              is ongoing,\
+      \ the ongoing transfer completes and the\n              cell is fully disabled\
+      \ at the end of this audio frame\n              transfer. Note: When SAIx block\
+      \ is configured in\n              master mode, the clock must be present on\
+      \ the input\n              of SAIx before setting SAIXEN bit."
+    bitOffset: 16
+    bitWidth: 1
+  - name: DMAEN
+    description: "DMA enable. This bit is set and cleared\n              by software.\
+      \ Note: Since the audio block defaults to\n              operate as a transmitter\
+      \ after reset, the MODE[1:0]\n              bits must be configured before setting\
+      \ DMAEN to avoid\n              a DMA request in receiver mode."
+    bitOffset: 17
+    bitWidth: 1
+  - name: NOMCK
+    description: No divider
+    bitOffset: 19
+    bitWidth: 1
+  - name: MCKDIV
+    description: "Master clock divider. These bits are set\n              and cleared\
+      \ by software. These bits are meaningless\n              when the audio block\
+      \ operates in slave mode. They\n              have to be configured when the\
+      \ audio block is\n              disabled. Others: the master clock frequency\
+      \ is\n              calculated accordingly to the following\n              formula:"
+    bitOffset: 20
+    bitWidth: 4
+  - name: OSR
+    description: "Oversampling ratio for master\n              clock"
+    bitOffset: 26
+    bitWidth: 1
+- name: SAI_BCR2
+  displayName: SAI_BCR2
+  description: Configuration register 2
+  addressOffset: 40
+  size: 32
+  resetValue: 0
+  fields:
+  - name: FTH
+    description: "FIFO threshold. This bit is set and\n              cleared by software."
+    bitOffset: 0
+    bitWidth: 3
+    access: read-write
+  - name: FFLUSH
+    description: "FIFO flush. This bit is set by software.\n              It is always\
+      \ read as 0. This bit should be configured\n              when the SAI is disabled."
+    bitOffset: 3
+    bitWidth: 1
+    access: write-only
+  - name: TRIS
+    description: "Tristate management on data line. This\n              bit is set\
+      \ and cleared by software. It is meaningful\n              only if the audio\
+      \ block is configured as a\n              transmitter. This bit is not used\
+      \ when the audio\n              block is configured in SPDIF mode. It should\
+      \ be\n              configured when SAI is disabled. Refer to Section:\n   \
+      \           Output data line management on an inactive slot for\n          \
+      \    more details."
+    bitOffset: 4
+    bitWidth: 1
+    access: read-write
+  - name: MUTE
+    description: "Mute. This bit is set and cleared by\n              software. It\
+      \ is meaningful only when the audio block\n              operates as a transmitter.\
+      \ The MUTE value is linked\n              to value of MUTEVAL if the number\
+      \ of slots is lower\n              or equal to 2, or equal to 0 if it is greater\
+      \ than 2.\n              Refer to Section: Mute mode for more details. Note:\n\
+      \              This bit is meaningless and should not be used for\n        \
+      \      SPDIF audio blocks."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-write
+  - name: MUTEVAL
+    description: "Mute value. This bit is set and cleared\n              by software.It\
+      \ must be written before enabling the\n              audio block: SAIXEN. This\
+      \ bit is meaningful only when\n              the audio block operates as a transmitter,\
+      \ the number\n              of slots is lower or equal to 2 and the MUTE bit\
+      \ is\n              set. If more slots are declared, the bit value sent\n  \
+      \            during the transmission in mute mode is equal to 0,\n         \
+      \     whatever the value of MUTEVAL. if the number of slot\n              is\
+      \ lower or equal to 2 and MUTEVAL = 1, the MUTE\n              value transmitted\
+      \ for each slot is the one sent\n              during the previous frame. Refer\
+      \ to Section: Mute\n              mode for more details. Note: This bit is meaningless\n\
+      \              and should not be used for SPDIF audio\n              blocks."
+    bitOffset: 6
+    bitWidth: 1
+    access: read-write
+  - name: MUTECNT
+    description: "Mute counter. These bits are set and\n              cleared by software.\
+      \ They are used only in reception\n              mode. The value set in these\
+      \ bits is compared to the\n              number of consecutive mute frames detected\
+      \ in\n              reception. When the number of mute frames is equal to\n\
+      \              this value, the flag MUTEDET will be set and an\n           \
+      \   interrupt will be generated if bit MUTEDETIE is set.\n              Refer\
+      \ to Section: Mute mode for more\n              details."
+    bitOffset: 7
+    bitWidth: 6
+    access: read-write
+  - name: CPL
+    description: "Complement bit. This bit is set and\n              cleared by software.\
+      \ It defines the type of\n              complement to be used for companding\
+      \ mode Note: This\n              bit has effect only when the companding mode\
+      \ is -Law\n              algorithm or A-Law algorithm."
+    bitOffset: 13
+    bitWidth: 1
+    access: read-write
+  - name: COMP
+    description: "Companding mode. These bits are set and\n              cleared by\
+      \ software. The -Law and the A-Law log are a\n              part of the CCITT\
+      \ G.711 recommendation, the type of\n              complement that will be used\
+      \ depends on CPL bit. The\n              data expansion or data compression\
+      \ are determined by\n              the state of bit MODE[0]. The data compression\
+      \ is\n              applied if the audio block is configured as a\n        \
+      \      transmitter. The data expansion is automatically\n              applied\
+      \ when the audio block is configured as a\n              receiver. Refer to\
+      \ Section: Companding mode for more\n              details. Note: Companding\
+      \ mode is applicable only\n              when TDM is selected."
+    bitOffset: 14
+    bitWidth: 2
+    access: read-write
+- name: SAI_BFRCR
+  displayName: SAI_BFRCR
+  description: "This register has no meaning in AC97 and\n          SPDIF audio protocol"
+  addressOffset: 44
+  size: 32
+  resetValue: 7
+  fields:
+  - name: FRL
+    description: "Frame length. These bits are set and\n              cleared by software.\
+      \ They define the audio frame\n              length expressed in number of SCK\
+      \ clock cycles: the\n              number of bits in the frame is equal to FRL[7:0]\
+      \ + 1.\n              The minimum number of bits to transfer in an audio\n \
+      \             frame must be equal to 8, otherwise the audio block\n        \
+      \      will behaves in an unexpected way. This is the case\n              when\
+      \ the data size is 8 bits and only one slot 0 is\n              defined in NBSLOT[4:0]\
+      \ of SAI_xSLOTR register\n              (NBSLOT[3:0] = 0000). In master mode,\
+      \ if the master\n              clock (available on MCLK_x pin) is used, the\
+      \ frame\n              length should be aligned with a number equal to a\n \
+      \             power of 2, ranging from 8 to 256. When the master\n         \
+      \     clock is not used (NODIV = 1), it is recommended to\n              program\
+      \ the frame length to an value ranging from 8\n              to 256. These bits\
+      \ are meaningless and are not used\n              in AC97 or SPDIF audio block\n\
+      \              configuration."
+    bitOffset: 0
+    bitWidth: 8
+    access: read-write
+  - name: FSALL
+    description: "Frame synchronization active level\n              length. These\
+      \ bits are set and cleared by software.\n              They specify the length\
+      \ in number of bit clock (SCK)\n              + 1 (FSALL[6:0] + 1) of the active\
+      \ level of the FS\n              signal in the audio frame These bits are meaningless\n\
+      \              and are not used in AC97 or SPDIF audio block\n             \
+      \ configuration. They must be configured when the audio\n              block\
+      \ is disabled."
+    bitOffset: 8
+    bitWidth: 7
+    access: read-write
+  - name: FSDEF
+    description: "Frame synchronization definition. This\n              bit is set\
+      \ and cleared by software. When the bit is\n              set, the number of\
+      \ slots defined in the SAI_xSLOTR\n              register has to be even. It\
+      \ means that half of this\n              number of slots will be dedicated to\
+      \ the left channel\n              and the other slots for the right channel\
+      \ (e.g: this\n              bit has to be set for I2S or MSB/LSB-justified\n\
+      \              protocols...). This bit is meaningless and is not\n         \
+      \     used in AC97 or SPDIF audio block configuration. It\n              must\
+      \ be configured when the audio block is\n              disabled."
+    bitOffset: 16
+    bitWidth: 1
+    access: read-only
+  - name: FSPOL
+    description: "Frame synchronization polarity. This bit\n              is set and\
+      \ cleared by software. It is used to\n              configure the level of the\
+      \ start of frame on the FS\n              signal. It is meaningless and is not\
+      \ used in AC97 or\n              SPDIF audio block configuration. This bit must\
+      \ be\n              configured when the audio block is\n              disabled."
+    bitOffset: 17
+    bitWidth: 1
+    access: read-write
+  - name: FSOFF
+    description: "Frame synchronization offset. This bit\n              is set and\
+      \ cleared by software. It is meaningless and\n              is not used in AC97\
+      \ or SPDIF audio block\n              configuration. This bit must be configured\
+      \ when the\n              audio block is disabled."
+    bitOffset: 18
+    bitWidth: 1
+    access: read-write
+- name: SAI_BSLOTR
+  displayName: SAI_BSLOTR
+  description: "This register has no meaning in AC97 and\n          SPDIF audio protocol"
+  addressOffset: 48
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: FBOFF
+    description: "First bit offset These bits are set and\n              cleared by\
+      \ software. The value set in this bitfield\n              defines the position\
+      \ of the first data transfer bit\n              in the slot. It represents an\
+      \ offset value. In\n              transmission mode, the bits outside the data\
+      \ field\n              are forced to 0. In reception mode, the extra\n     \
+      \         received bits are discarded. These bits must be set\n            \
+      \  when the audio block is disabled. They are ignored in\n              AC97\
+      \ or SPDIF mode."
+    bitOffset: 0
+    bitWidth: 5
+  - name: SLOTSZ
+    description: "Slot size This bits is set and cleared\n              by software.\
+      \ The slot size must be higher or equal to\n              the data size. If\
+      \ this condition is not respected,\n              the behavior of the SAI will\
+      \ be undetermined. Refer\n              to Section: Output data line management\
+      \ on an\n              inactive slot for information on how to drive SD\n  \
+      \            line. These bits must be set when the audio block is\n        \
+      \      disabled. They are ignored in AC97 or SPDIF\n              mode."
+    bitOffset: 6
+    bitWidth: 2
+  - name: NBSLOT
+    description: "Number of slots in an audio frame. These\n              bits are\
+      \ set and cleared by software. The value set\n              in this bitfield\
+      \ represents the number of slots + 1\n              in the audio frame (including\
+      \ the number of inactive\n              slots). The maximum number of slots\
+      \ is 16. The number\n              of slots should be even if FSDEF bit in the\
+      \ SAI_xFRCR\n              register is set. The number of slots must be\n  \
+      \            configured when the audio block is disabled. They are\n       \
+      \       ignored in AC97 or SPDIF mode."
+    bitOffset: 8
+    bitWidth: 4
+  - name: SLOTEN
+    description: "Slot enable. These bits are set and\n              cleared by software.\
+      \ Each SLOTEN bit corresponds to a\n              slot position from 0 to 15\
+      \ (maximum 16 slots). The\n              slot must be enabled when the audio\
+      \ block is\n              disabled. They are ignored in AC97 or SPDIF\n    \
+      \          mode."
+    bitOffset: 16
+    bitWidth: 16
+- name: SAI_BIM
+  displayName: SAI_BIM
+  description: Interrupt mask register 2
+  addressOffset: 52
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: OVRUDRIE
+    description: "Overrun/underrun interrupt enable. This\n              bit is set\
+      \ and cleared by software. When this bit is\n              set, an interrupt\
+      \ is generated if the OVRUDR bit in\n              the SAI_xSR register is set."
+    bitOffset: 0
+    bitWidth: 1
+  - name: MUTEDETIE
+    description: "Mute detection interrupt enable. This\n              bit is set\
+      \ and cleared by software. When this bit is\n              set, an interrupt\
+      \ is generated if the MUTEDET bit in\n              the SAI_xSR register is\
+      \ set. This bit has a meaning\n              only if the audio block is configured\
+      \ in receiver\n              mode."
+    bitOffset: 1
+    bitWidth: 1
+  - name: WCKCFGIE
+    description: "Wrong clock configuration interrupt\n              enable. This\
+      \ bit is set and cleared by software. This\n              bit is taken into\
+      \ account only if the audio block is\n              configured as a master (MODE[1]\
+      \ = 0) and NODIV = 0.\n              It generates an interrupt if the WCKCFG\
+      \ flag in the\n              SAI_xSR register is set. Note: This bit is used\
+      \ only\n              in TDM mode and is meaningless in other\n            \
+      \  modes."
+    bitOffset: 2
+    bitWidth: 1
+  - name: FREQIE
+    description: "FIFO request interrupt enable. This bit\n              is set and\
+      \ cleared by software. When this bit is set,\n              an interrupt is\
+      \ generated if the FREQ bit in the\n              SAI_xSR register is set. Since\
+      \ the audio block\n              defaults to operate as a transmitter after\
+      \ reset, the\n              MODE bit must be configured before setting FREQIE\
+      \ to\n              avoid a parasitic interruption in receiver\n           \
+      \   mode,"
+    bitOffset: 3
+    bitWidth: 1
+  - name: CNRDYIE
+    description: "Codec not ready interrupt enable (AC97).\n              This bit\
+      \ is set and cleared by software. When the\n              interrupt is enabled,\
+      \ the audio block detects in the\n              slot 0 (tag0) of the AC97 frame\
+      \ if the Codec\n              connected to this line is ready or not. If it\
+      \ is not\n              ready, the CNRDY flag in the SAI_xSR register is set\n\
+      \              and an interruption i generated. This bit has a\n           \
+      \   meaning only if the AC97 mode is selected through\n              PRTCFG[1:0]\
+      \ bits and the audio block is operates as a\n              receiver."
+    bitOffset: 4
+    bitWidth: 1
+  - name: AFSDETIE
+    description: "Anticipated frame synchronization\n              detection interrupt\
+      \ enable. This bit is set and\n              cleared by software. When this\
+      \ bit is set, an\n              interrupt will be generated if the AFSDET bit\
+      \ in the\n              SAI_xSR register is set. This bit is meaningless in\n\
+      \              AC97, SPDIF mode or when the audio block operates as\n      \
+      \        a master."
+    bitOffset: 5
+    bitWidth: 1
+  - name: LFSDETIE
+    description: "Late frame synchronization detection\n              interrupt enable.\
+      \ This bit is set and cleared by\n              software. When this bit is set,\
+      \ an interrupt will be\n              generated if the LFSDET bit is set in\
+      \ the SAI_xSR\n              register. This bit is meaningless in AC97, SPDIF\
+      \ mode\n              or when the audio block operates as a\n              master."
+    bitOffset: 6
+    bitWidth: 1
+- name: SAI_BSR
+  displayName: SAI_BSR
+  description: Status register
+  addressOffset: 56
+  size: 32
+  access: read-only
+  resetValue: 8
+  fields:
+  - name: OVRUDR
+    description: "Overrun / underrun. This bit is read\n              only. The overrun\
+      \ and underrun conditions can occur\n              only when the audio block\
+      \ is configured as a receiver\n              and a transmitter, respectively.\
+      \ It can generate an\n              interrupt if OVRUDRIE bit is set in SAI_xIM\
+      \ register.\n              This flag is cleared when the software sets COVRUDR\n\
+      \              bit in SAI_xCLRFR register."
+    bitOffset: 0
+    bitWidth: 1
+  - name: MUTEDET
+    description: "Mute detection. This bit is read only.\n              This flag\
+      \ is set if consecutive 0 values are received\n              in each slot of\
+      \ a given audio frame and for a\n              consecutive number of audio frames\
+      \ (set in the\n              MUTECNT bit in the SAI_xCR2 register). It can\n\
+      \              generate an interrupt if MUTEDETIE bit is set in\n          \
+      \    SAI_xIM register. This flag is cleared when the\n              software\
+      \ sets bit CMUTEDET in the SAI_xCLRFR\n              register."
+    bitOffset: 1
+    bitWidth: 1
+  - name: WCKCFG
+    description: "Wrong clock configuration flag. This bit\n              is read\
+      \ only. This bit is used only when the audio\n              block operates in\
+      \ master mode (MODE[1] = 0) and NODIV\n              = 0. It can generate an\
+      \ interrupt if WCKCFGIE bit is\n              set in SAI_xIM register. This\
+      \ flag is cleared when\n              the software sets CWCKCFG bit in SAI_xCLRFR\n\
+      \              register."
+    bitOffset: 2
+    bitWidth: 1
+  - name: FREQ
+    description: "FIFO request. This bit is read only. The\n              request\
+      \ depends on the audio block configuration: If\n              the block is configured\
+      \ in transmission mode, the\n              FIFO request is related to a write\
+      \ request operation\n              in the SAI_xDR. If the block configured in\
+      \ reception,\n              the FIFO request related to a read request operation\n\
+      \              from the SAI_xDR. This flag can generate an interrupt\n     \
+      \         if FREQIE bit is set in SAI_xIM\n              register."
+    bitOffset: 3
+    bitWidth: 1
+  - name: CNRDY
+    description: "Codec not ready. This bit is read only.\n              This bit\
+      \ is used only when the AC97 audio protocol is\n              selected in the\
+      \ SAI_xCR1 register and configured in\n              receiver mode. It can generate\
+      \ an interrupt if\n              CNRDYIE bit is set in SAI_xIM register. This\
+      \ flag is\n              cleared when the software sets CCNRDY bit in\n    \
+      \          SAI_xCLRFR register."
+    bitOffset: 4
+    bitWidth: 1
+  - name: AFSDET
+    description: "Anticipated frame synchronization\n              detection. This\
+      \ bit is read only. This flag can be\n              set only if the audio block\
+      \ is configured in slave\n              mode. It is not used in AC97or SPDIF\
+      \ mode. It can\n              generate an interrupt if AFSDETIE bit is set in\n\
+      \              SAI_xIM register. This flag is cleared when the\n           \
+      \   software sets CAFSDET bit in SAI_xCLRFR\n              register."
+    bitOffset: 5
+    bitWidth: 1
+  - name: LFSDET
+    description: "Late frame synchronization detection.\n              This bit is\
+      \ read only. This flag can be set only if\n              the audio block is\
+      \ configured in slave mode. It is\n              not used in AC97 or SPDIF mode.\
+      \ It can generate an\n              interrupt if LFSDETIE bit is set in the\
+      \ SAI_xIM\n              register. This flag is cleared when the software sets\n\
+      \              bit CLFSDET in SAI_xCLRFR register"
+    bitOffset: 6
+    bitWidth: 1
+  - name: FLVL
+    description: "FIFO level threshold. This bit is read\n              only. The\
+      \ FIFO level threshold flag is managed only\n              by hardware and its\
+      \ setting depends on SAI block\n              configuration (transmitter or\
+      \ receiver mode). If the\n              SAI block is configured as transmitter:\
+      \ If SAI block\n              is configured as receiver:"
+    bitOffset: 16
+    bitWidth: 3
+- name: SAI_BCLRFR
+  displayName: SAI_BCLRFR
+  description: Clear flag register
+  addressOffset: 60
+  size: 32
+  access: write-only
+  resetValue: 0
+  fields:
+  - name: COVRUDR
+    description: "Clear overrun / underrun. This bit is\n              write only.\
+      \ Programming this bit to 1 clears the\n              OVRUDR flag in the SAI_xSR\
+      \ register. Reading this bit\n              always returns the value 0."
+    bitOffset: 0
+    bitWidth: 1
+  - name: CMUTEDET
+    description: "Mute detection flag. This bit is write\n              only. Programming\
+      \ this bit to 1 clears the MUTEDET\n              flag in the SAI_xSR register.\
+      \ Reading this bit always\n              returns the value 0."
+    bitOffset: 1
+    bitWidth: 1
+  - name: CWCKCFG
+    description: "Clear wrong clock configuration flag.\n              This bit is\
+      \ write only. Programming this bit to 1\n              clears the WCKCFG flag\
+      \ in the SAI_xSR register. This\n              bit is used only when the audio\
+      \ block is set as\n              master (MODE[1] = 0) and NODIV = 0 in the SAI_xCR1\n\
+      \              register. Reading this bit always returns the value\n       \
+      \       0."
+    bitOffset: 2
+    bitWidth: 1
+  - name: CCNRDY
+    description: "Clear Codec not ready flag. This bit is\n              write only.\
+      \ Programming this bit to 1 clears the\n              CNRDY flag in the SAI_xSR\
+      \ register. This bit is used\n              only when the AC97 audio protocol\
+      \ is selected in the\n              SAI_xCR1 register. Reading this bit always\
+      \ returns\n              the value 0."
+    bitOffset: 4
+    bitWidth: 1
+  - name: CAFSDET
+    description: "Clear anticipated frame synchronization\n              detection\
+      \ flag. This bit is write only. Programming\n              this bit to 1 clears\
+      \ the AFSDET flag in the SAI_xSR\n              register. It is not used in\
+      \ AC97or SPDIF mode.\n              Reading this bit always returns the value\n\
+      \              0."
+    bitOffset: 5
+    bitWidth: 1
+  - name: CLFSDET
+    description: "Clear late frame synchronization\n              detection flag.\
+      \ This bit is write only. Programming\n              this bit to 1 clears the\
+      \ LFSDET flag in the SAI_xSR\n              register. This bit is not used in\
+      \ AC97or SPDIF mode\n              Reading this bit always returns the value\n\
+      \              0."
+    bitOffset: 6
+    bitWidth: 1
+- name: SAI_BDR
+  displayName: SAI_BDR
+  description: Data register
+  addressOffset: 64
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: DATA
+    description: "Data A write to this register loads the\n              FIFO provided\
+      \ the FIFO is not full. A read from this\n              register empties the\
+      \ FIFO if the FIFO is not\n              empty."
+    bitOffset: 0
+    bitWidth: 32
+- name: SAI_PDMCR
+  displayName: SAI_PDMCR
+  description: PDM control register
+  addressOffset: 68
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: PDMEN
+    description: PDM enable
+    bitOffset: 0
+    bitWidth: 1
+  - name: MICNBR
+    description: Number of microphones
+    bitOffset: 4
+    bitWidth: 2
+  - name: CKEN1
+    description: "Clock enable of bitstream clock number\n              1"
+    bitOffset: 8
+    bitWidth: 1
+  - name: CKEN2
+    description: "Clock enable of bitstream clock number\n              2"
+    bitOffset: 9
+    bitWidth: 1
+  - name: CKEN3
+    description: "Clock enable of bitstream clock number\n              3"
+    bitOffset: 10
+    bitWidth: 1
+  - name: CKEN4
+    description: "Clock enable of bitstream clock number\n              4"
+    bitOffset: 11
+    bitWidth: 1
+- name: SAI_PDMDLY
+  displayName: SAI_PDMDLY
+  description: PDM delay register
+  addressOffset: 72
+  size: 32
+  access: read-write
+  resetValue: 0
+  fields:
+  - name: DLYM1L
+    description: "Delay line adjust for first microphone\n              of pair 1"
+    bitOffset: 0
+    bitWidth: 3
+  - name: DLYM1R
+    description: "Delay line adjust for second microphone\n              of pair 1"
+    bitOffset: 4
+    bitWidth: 3
+  - name: DLYM2L
+    description: "Delay line for first microphone of pair\n              2"
+    bitOffset: 8
+    bitWidth: 3
+  - name: DLYM2R
+    description: "Delay line for second microphone of pair\n              2"
+    bitOffset: 12
+    bitWidth: 3
+  - name: DLYM3L
+    description: "Delay line for first microphone of pair\n              3"
+    bitOffset: 16
+    bitWidth: 3
+  - name: DLYM3R
+    description: "Delay line for second microphone of pair\n              3"
+    bitOffset: 20
+    bitWidth: 3
+  - name: DLYM4L
+    description: "Delay line for first microphone of pair\n              4"
+    bitOffset: 24
+    bitWidth: 3
+  - name: DLYM4R
+    description: "Delay line for second microphone of pair\n              4"
+    bitOffset: 28
+    bitWidth: 3
+interrupts:
+- name: SAI1
+  description: SAI1 global interrupt
+  value: 87
+addressBlocks:
+- offset: 0
+  size: 1024
+  usage: registers
