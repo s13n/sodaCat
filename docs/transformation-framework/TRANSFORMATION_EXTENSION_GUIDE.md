@@ -13,13 +13,13 @@ import tools.svd as svd
 engine = TransformationEngine(verbose=True)
 
 # 2. Auto-discover and register family-specific transformations
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 for name, func in family_transforms.items():
     engine.register_transformation(name, func)
 
 # 3. Load configuration
 yaml = YAML()
-with open('parsers/stm32h7-transforms.yaml') as f:
+with open('extractors/stm32h7-transforms.yaml') as f:
     config = yaml.load(f)
 
 # 4. Parse SVD and apply transformations
@@ -110,10 +110,10 @@ The engine will automatically discover and call `addDescriptions` when present i
 
 **Example:** Add RCC bus domain enumeration
 
-#### Step 1: Add Function to `parsers/stm32h7_transforms.py`
+#### Step 1: Add Function to `extractors/stm32h7_transforms.py`
 
 ```python
-# In parsers/stm32h7_transforms.py
+# In extractors/stm32h7_transforms.py
 
 def transform_rcc_bus_domain_enums(block: dict, config: dict) -> None:
     """
@@ -182,7 +182,7 @@ RCC:
 
 When you call:
 ```python
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 for name, func in family_transforms.items():
     engine.register_transformation(name, func)
 ```
@@ -198,7 +198,7 @@ It automatically finds `transform_rcc_bus_domain_enums` and registers it as `rcc
 #### Step 1: Create Specialized Function
 
 ```python
-# In parsers/nxp/imx_transforms.py (for a different MCU family)
+# In extractors/nxp/imx_transforms.py (for a different MCU family)
 
 def transform_nvic_cmsis_core_vectors(block: dict, config: dict) -> None:
     """
@@ -226,7 +226,7 @@ import importlib.util
 # Load this transformation function
 spec = importlib.util.spec_from_file_location(
     'custom_transforms', 
-    'parsers/cortex_m7_transforms.py'
+    'extractors/cortex_m7_transforms.py'
 )
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -245,7 +245,7 @@ engine.register_transformation(
 ### Directory Structure for New MCU Family (e.g., NXP i.MX)
 
 ```
-parsers/
+extractors/
 ├── stm32h7-transforms.yaml
 ├── stm32h7_transforms.py
 │
@@ -259,7 +259,7 @@ parsers/
 ### Creating Family Transformations for i.MX
 
 ```python
-# parsers/imx_transforms.py
+# extractors/imx_transforms.py
 
 def transform_ccm_clock_gating(block: dict, config: dict) -> None:
     """CCM (Clock Control Module) specific logic for i.MX."""
@@ -277,7 +277,7 @@ def transform_flexram_configuration(block: dict, config: dict) -> None:
 ### Configuration for i.MX
 
 ```yaml
-# parsers/imx-transforms.yaml
+# extractors/imx-transforms.yaml
 
 blocks:
   CCM:
@@ -300,7 +300,7 @@ blocks:
 ### Running Extraction for i.MX
 
 ```python
-# parsers/generate_imx_models.py
+# extractors/generate_imx_models.py
 
 engine = TransformationEngine()
 
@@ -311,7 +311,7 @@ for name, func in imx_transforms.items():
         engine.register_transformation(name, func)
 
 # Load configuration and apply
-config = load_yaml('parsers/imx-transforms.yaml')
+config = load_yaml('extractors/imx-transforms.yaml')
 # ... rest of extraction ...
 ```
 
@@ -405,7 +405,7 @@ def test_stm32h7_complete_extraction():
     
     # Load config
     yaml = YAML()
-    with open('parsers/stm32h7-transforms.yaml') as f:
+    with open('extractors/stm32h7-transforms.yaml') as f:
         config = yaml.load(f)
     
     # Parse SVD
@@ -471,7 +471,7 @@ def test_stm32h7_complete_extraction():
 **Symptom:** `"Transformation 'my_custom_transform' not registered"`
 
 **Solution:**
-1. Verify function exists in `parsers/stm32h7_transforms.py`
+1. Verify function exists in `extractors/stm32h7_transforms.py`
 2. Function must be named `transform_<name>` (correct format for auto-discovery)
 3. Explicitly register if not using auto-discovery:
    ```python
@@ -587,7 +587,7 @@ def transform_something(block: dict, config: dict) -> None:
 | Task | Where | How |
 |------|-------|-----|
 | Create generic transformation | `tools/generic_transform.py` | Add method to `TransformationRegistry` |
-| Create family-specific transformation | `parsers/<family>_transforms.py` | Add `def transform_<name>(block, config)` function |
+| Create family-specific transformation | `extractors/<family>_transforms.py` | Add `def transform_<name>(block, config)` function |
 | Use transformation | `<family>-transforms.yaml` | Add configuration key matching transformation name |
 | Register transformation | Code | Automatic via `discover_family_transformations()` or manual `register_transformation()` |
 | Test transformation | `tests/` | Unit tests + integration tests |
@@ -597,7 +597,7 @@ def transform_something(block: dict, config: dict) -> None:
 ## Examples
 
 - **[GENERIC_TRANSFORMATION_FRAMEWORK.md](GENERIC_TRANSFORMATION_FRAMEWORK.md)** - Complete framework documentation
-- **[parsers/STM32H757_template.py](parsers/STM32H757_template.py)** - Using the engine
-- **[parsers/stm32h7_transforms.py](parsers/stm32h7_transforms.py)** - Family-specific transformations
-- **[parsers/stm32h7-transforms.yaml](parsers/stm32h7-transforms.yaml)** - Configuration examples
+- **[extractors/STM32H757_template.py](extractors/STM32H757_template.py)** - Using the engine
+- **[extractors/stm32h7_transforms.py](extractors/stm32h7_transforms.py)** - Family-specific transformations
+- **[extractors/stm32h7-transforms.yaml](extractors/stm32h7-transforms.yaml)** - Configuration examples
 

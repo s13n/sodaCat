@@ -2,9 +2,9 @@
 
 ## Issue 1: File Organization
 
-**Current**: Script in `generators/generate_stm32h7_models.py`
+**Current**: Script in `extractors/generate_stm32h7_models.py`
 **Problem**: Generators are for SVD→source code, not SVD→models
-**Solution**: Move to `parsers/generate_stm32h7_models.py` to align with existing STM32H757.py
+**Solution**: Move to `extractors/generate_stm32h7_models.py` to align with existing STM32H757.py
 
 ## Issue 2: Inflexible Transformation Handling
 
@@ -74,7 +74,7 @@ apb3enr['fields'].append({'name': 'DSIEN', 'bitOffset': 4, ...})
 
 ### Architecture
 
-Create `parsers/stm32h7-transforms.yaml` containing transformation rules:
+Create `extractors/stm32h7-transforms.yaml` containing transformation rules:
 
 ```yaml
 # Transformation configuration for STM32H7 family blocks
@@ -540,9 +540,9 @@ Array Transformation Opportunities for STM32H7 Family
 
 ## Summary of Changes
 
-1. **Move script**: `generators/generate_stm32h7_models.py` → `parsers/generate_stm32h7_models.py`
+1. **Move script**: `extractors/generate_stm32h7_models.py` → `extractors/generate_stm32h7_models.py`
 
-2. **Create transformation config**: `parsers/stm32h7-transforms.yaml`
+2. **Create transformation config**: `extractors/stm32h7-transforms.yaml`
    - Specifies all rename, array, and parameter transformations
    - Makes it easy to add new variants without code changes
    - Documents which instances map to which functional blocks

@@ -59,7 +59,7 @@ sodaCat/
 │   ├── H73x/blocks/               (H73x subfamily-specific blocks)
 │   ├── H74x_H75x/blocks/          (H74x/H75x subfamily-specific blocks)
 │   └── H7A3_B/blocks/             (H7A3/B subfamily-specific blocks)
-├── parsers/                       (MCU-specific extraction code)
+├── extractors/                       (MCU-specific extraction code)
 ├── tools/                         (Generic utilities and frameworks)
 └── svd/                           (SVD source files)
 ```
@@ -94,7 +94,7 @@ This prevents duplication while keeping incompatible blocks isolated.
 ### Generic Transformation Framework
 A plugin-based system where:
 - **Generic transformations** in `tools/` work across all MCU families
-- **Family-specific transformations** in `parsers/` handle MCU-specific logic
+- **Family-specific transformations** in `extractors/` handle MCU-specific logic
 - **Configuration files** (YAML) control which transformations apply
 - Only configured transformations are executed (no hardcoded logic)
 

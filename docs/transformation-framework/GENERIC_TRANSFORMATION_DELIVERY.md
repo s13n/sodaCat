@@ -28,7 +28,7 @@ A reusable, plugin-based transformation framework with:
 
 ---
 
-### 2. Refactored Parser Template: `parsers/STM32H757_template.py` ✅
+### 2. Refactored Parser Template: `extractors/STM32H757_template.py` ✅
 
 Shows how to use the new framework:
 
@@ -43,7 +43,7 @@ for periph in chip['peripherals']:
 
 # NEW Approach (Configuration-Driven):
 engine = TransformationEngine()
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 for name, func in family_transforms.items():
     engine.register_transformation(name, func)
 
@@ -57,7 +57,7 @@ engine.apply_transformations(block, instance_name, block_config)
 
 ---
 
-### 3. Family-Specific Transformations: `parsers/stm32h7_transforms.py` ✅
+### 3. Family-Specific Transformations: `extractors/stm32h7_transforms.py` ✅
 
 Contains STM32H7-specific complex logic:
 
@@ -83,7 +83,7 @@ def transform_hsem_mailbox_format(block: dict, config: dict) -> None:
 
 **Auto-Discovered & Registered:**
 ```python
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 # Automatically finds and registers transform_* functions
 ```
 
@@ -103,7 +103,7 @@ family_transforms = discover_family_transformations('parsers/stm32h7')
 #### [TRANSFORMATION_EXTENSION_GUIDE.md](TRANSFORMATION_EXTENSION_GUIDE.md)
 - Quick start
 - Adding generic transformations (to `tools/generic_transform.py`)
-- Adding family-specific transformations (to `parsers/stm32h7_transforms.py`)
+- Adding family-specific transformations (to `extractors/stm32h7_transforms.py`)
 - Family-specific with complex logic
 - Creating new MCU family support
 - Unit testing
@@ -159,7 +159,7 @@ engine.apply_transformations(block, instance_name, block_config)
 
 **Old:**
 ```
-parsers/STM32H757.py
+extractors/STM32H757.py
 ├── Transformation logic (5 functions × 80 lines)
 ├── Transformation configuration (hardcoded)
 └── Main loop that calls both
@@ -171,13 +171,13 @@ tools/generic_transform.py
 ├── Framework (TransformationEngine, Registry)
 └── Built-in transformations (generic, MCU-agnostic)
 
-parsers/stm32h7-transforms.yaml
+extractors/stm32h7-transforms.yaml
 └── Configuration (YAML)
 
-parsers/stm32h7_transforms.py
+extractors/stm32h7_transforms.py
 └── Family-specific logic (when needed)
 
-parsers/STM32H757_template.py
+extractors/STM32H757_template.py
 └── Main loop that uses the engine
 ```
 
@@ -196,7 +196,7 @@ _handle_timer_channel_mapping(timer_block)
 **New:**
 ```python
 # Automatically discovers all transform_* functions
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 for name, func in family_transforms.items():
     engine.register_transformation(name, func)
 
@@ -213,7 +213,7 @@ for name, func in family_transforms.items():
 ### Example: Timer Block Configuration
 
 ```yaml
-# parsers/stm32h7-transforms.yaml
+# extractors/stm32h7-transforms.yaml
 
 GpTimer:
   instances: [TIM2, TIM3, TIM4, TIM5]
@@ -260,7 +260,7 @@ engine.apply_transformations(block, 'TIM2', block_config)
 
 ```python
 engine = TransformationEngine()
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 for name, func in family_transforms.items():
     engine.register_transformation(name, func)
 
@@ -276,11 +276,11 @@ engine.apply_transformations(block, instance_name, config)
 4. Use in any MCU's config file
 
 **Family-Specific (STM32H7 only):**
-1. Add function to `parsers/stm32h7_transforms.py`
+1. Add function to `extractors/stm32h7_transforms.py`
 2. Name it `transform_<feature_name>`
 3. Write implementation
 4. Auto-discovered and registered
-5. Use in `parsers/stm32h7-transforms.yaml` via `specialHandling` key
+5. Use in `extractors/stm32h7-transforms.yaml` via `specialHandling` key
 
 ---
 
@@ -289,8 +289,8 @@ engine.apply_transformations(block, instance_name, config)
 | File | Type | Change |
 |------|------|--------|
 | `tools/generic_transform.py` | ✅ NEW | Generic transformation framework (500+ lines) |
-| `parsers/STM32H757_template.py` | ✅ UPDATED | Refactored to use new engine |
-| `parsers/stm32h7_transforms.py` | ✅ NEW | Family-specific STM32H7 transformations |
+| `extractors/STM32H757_template.py` | ✅ UPDATED | Refactored to use new engine |
+| `extractors/stm32h7_transforms.py` | ✅ NEW | Family-specific STM32H7 transformations |
 | `GENERIC_TRANSFORMATION_FRAMEWORK.md` | ✅ NEW | Framework documentation |
 | `TRANSFORMATION_EXTENSION_GUIDE.md` | ✅ NEW | How to use and extend framework |
 
@@ -305,7 +305,7 @@ User Code (e.g., generate_stm32h7_models.py)
     │
     ├─ Create TransformationEngine()
     │
-    ├─ Discover family transforms (parsers/stm32h7_transforms.py)
+    ├─ Discover family transforms (extractors/stm32h7_transforms.py)
     │   ├─ transform_rcc_cpu_clustering
     │   ├─ transform_timer_channel_mapping
     │   └─ ... (auto-registered)
@@ -387,7 +387,7 @@ ADC:
 ### Family-Specific: Adding Custom RCC Logic
 
 ```python
-# In parsers/stm32h7_transforms.py
+# In extractors/stm32h7_transforms.py
 
 def transform_rcc_pll_configuration(block: dict, config: dict) -> None:
     """Add PLL-specific enumerations and validation."""
@@ -416,21 +416,21 @@ def transform_rcc_pll_configuration(block: dict, config: dict) -> None:
 ### Immediate (Ready to Use)
 
 1. ✅ Generic framework complete (`tools/generic_transform.py`)
-2. ✅ Reference implementation complete (`parsers/STM32H757_template.py`)
-3. ✅ Family transformations complete (`parsers/stm32h7_transforms.py`)
+2. ✅ Reference implementation complete (`extractors/STM32H757_template.py`)
+3. ✅ Family transformations complete (`extractors/stm32h7_transforms.py`)
 4. ✅ Documentation complete (2 guides)
 
 ### To Integrate with Main Extraction
 
-1. Update `parsers/generate_stm32h7_models.py` to use TransformationEngine
+1. Update `extractors/generate_stm32h7_models.py` to use TransformationEngine
 2. Replace hardcoded transformation calls with `engine.apply_transformations()`
 3. Use family transform auto-discovery
 4. Test with full SVD extraction
 
 ### To Support More MCU Families
 
-1. Create `<family>-transforms.yaml` in `parsers/`
-2. Create `<family>_transforms.py` in `parsers/` with family-specific logic
+1. Create `<family>-transforms.yaml` in `extractors/`
+2. Create `<family>_transforms.py` in `extractors/` with family-specific logic
 3. Main extraction code remains unchanged
 4. Framework handles the dispatch
 
@@ -452,7 +452,7 @@ The new **generic transformation framework:**
 - Decouples transformation logic from dispatch
 - Enables configuration-driven transformation application
 - Supports plugin-based extension (register a function, use it everywhere)
-- Separates generic code (tools/) from family-specific code (parsers/)
+- Separates generic code (tools/) from family-specific code (extractors/)
 - Reduces code duplication across MCU variants by ~75%
 - Scales to support unlimited MCU families
 - Improves maintainability and clarity

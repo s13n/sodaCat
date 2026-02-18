@@ -97,7 +97,7 @@ add_stm32h7_extraction_target(extract_stm32h7_models)
 ```
 
 ### 3. **Model Extraction Script**
-🐍 [`generators/generate_stm32h7_models.py`](generators/generate_stm32h7_models.py)
+🐍 [`extractors/generate_stm32h7_models.py`](extractors/generate_stm32h7_models.py)
 - Parses all 21 SVD files from `svd/stm32h7-svd.zip`
 - Extracts and categorizes peripheral blocks
 - Generates YAML models organized by subfamily
@@ -105,7 +105,7 @@ add_stm32h7_extraction_target(extract_stm32h7_models)
 
 **Execution**:
 ```bash
-python3 generators/generate_stm32h7_models.py svd/stm32h7-svd.zip output/models/ST
+python3 extractors/generate_stm32h7_models.py svd/stm32h7-svd.zip output/models/ST
 ```
 
 ### 4. **Usage Examples & Documentation**
@@ -153,7 +153,7 @@ Examples of:
 add_stm32h7_extraction_target(extract_stm32h7_models)
     ↓
 Creates custom command that runs:
-    python3 generators/generate_stm32h7_models.py
+    python3 extractors/generate_stm32h7_models.py
     svd/stm32h7-svd.zip → build/models/ST/
     ↓
 Generates: .extracted marker file (blocks re-extraction)
@@ -346,6 +346,6 @@ The system reduces model duplication from ~12x (current) to ~3.5x (new), while e
 - ✅ `ANALYSIS_STM32H7_COMPATIBILITY.md` - Full compatibility analysis
 - ✅ `cmake/stm32h7-extraction.cmake` - CMake module with functions
 - ✅ `cmake/stm32h7-extraction-example.cmake` - Usage examples
-- ✅ `generators/generate_stm32h7_models.py` - Python extraction script
+- ✅ `extractors/generate_stm32h7_models.py` - Python extraction script
 - ✅ `README_STM32H7_EXTRACTION.md` - Comprehensive user guide
 - ✅ `IMPLEMENTATION_SUMMARY.md` - This file

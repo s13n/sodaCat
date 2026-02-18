@@ -282,7 +282,7 @@ class BlockSourceSelector:
 ```python
 def main():
     # 1. Load transformation config
-    transforms = load_transforms_config('parsers/stm32h7-transforms.yaml')
+    transforms = load_transforms_config('extractors/stm32h7-transforms.yaml')
     
     # 2. Initialize source selector
     selector = BlockSourceSelector(transforms)

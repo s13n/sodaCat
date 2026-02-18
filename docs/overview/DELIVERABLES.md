@@ -109,7 +109,7 @@ get_stm32h7_family_chips(H74x_H75x chips)
 
 ### For Deep Dives (Technical Phase)
 1. **IMPLEMENTATION_SUMMARY.md** - How extraction works
-2. **generators/generate_stm32h7_models.py** - Python implementation
+2. **extractors/generate_stm32h7_models.py** - Python implementation
 3. **cmake/stm32h7-extraction.cmake** - CMake implementation
 
 ## 🏗️ Model Organization

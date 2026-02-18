@@ -10,7 +10,7 @@ set(STM32H7_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/stm32h7-svd.zip" CACHE PATH
     "Path to stm32h7-svd.zip containing all STM32H7 SVD files")
 set(STM32H7_MODELS_DIR "${CMAKE_SOURCE_DIR}/models/ST" CACHE PATH 
     "Output directory for generated STM32H7 models (source tree - commitable to git)")
-set(STM32H7_GENERATOR "${CMAKE_SOURCE_DIR}/generators/generate_stm32h7_models.py" CACHE PATH
+set(STM32H7_GENERATOR "${CMAKE_SOURCE_DIR}/extractors/generate_stm32h7_models.py" CACHE PATH
     "Path to model generation script")
 
 # STM32H7 Family definitions

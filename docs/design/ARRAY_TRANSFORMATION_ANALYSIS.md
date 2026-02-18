@@ -398,9 +398,9 @@ def detect_register_arrays(peripheral_registers):
 
 Create variant-specific transform configs:
 ```yaml
-# parsers/stm32h7-transforms-h73x.yaml (H73x variant)
-# parsers/stm32h7-transforms-h74x.yaml (H74x/H75x variant)
-# parsers/stm32h7-transforms-h7a3.yaml (H7A3/B variant)
+# extractors/stm32h7-transforms-h73x.yaml (H73x variant)
+# extractors/stm32h7-transforms-h74x.yaml (H74x/H75x variant)
+# extractors/stm32h7-transforms-h7a3.yaml (H7A3/B variant)
 ```
 
 Each variant might have:
@@ -453,8 +453,8 @@ Score register array quality before commitment:
 
 ## References
 
-- **STM32H757 Parser:** [parsers/STM32H757.py](parsers/STM32H757.py) - Lines 147-300 show array transformations
-- **Transforms Config:** [parsers/stm32h7-transforms.yaml](parsers/stm32h7-transforms.yaml) - Active array definitions
+- **STM32H757 Parser:** [extractors/STM32H757.py](extractors/STM32H757.py) - Lines 147-300 show array transformations
+- **Transforms Config:** [extractors/stm32h7-transforms.yaml](extractors/stm32h7-transforms.yaml) - Active array definitions
 - **Schema Documentation:** [schemas/peripheral.schema.yaml](schemas/peripheral.schema.yaml) - Array cluster format spec
 - **RM0399 (STM32H7 Reference Manual)** - Official register descriptions
 

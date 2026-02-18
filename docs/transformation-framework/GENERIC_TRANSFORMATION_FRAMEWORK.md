@@ -108,12 +108,12 @@ TransformationRegistry
 Complex transformations specific to a MCU family go in separate modules:
 
 ```
-parsers/stm32h7/
+extractors/stm32h7/
     └── stm32h7_transforms.py
         ├── def transform_rcc_cpu_clustering(block, config):
         └── def transform_quadspi_mapping(block, config):
 
-parsers/nxp/
+extractors/nxp/
     └── imx_transforms.py
         ├── def transform_ccm_clock_gating(block, config):
         └── def transform_iomuxc_mux_selection(block, config):
@@ -154,7 +154,7 @@ from generic_transform import TransformationEngine, discover_family_transformati
 engine = TransformationEngine(verbose=True)
 
 # 2. Register family-specific transformations
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 for name, func in family_transforms.items():
     engine.register_transformation(name, func)
 
@@ -168,7 +168,7 @@ engine.apply_transformations(block, instance_name, block_config)
 #### Step 1: Create Function in Family Folder
 
 ```python
-# parsers/stm32h7/stm32h7_transforms.py
+# extractors/stm32h7/stm32h7_transforms.py
 
 def transform_rcc_cpu_clustering(block: dict, config: dict) -> None:
     """
@@ -200,7 +200,7 @@ def transform_rcc_cpu_clustering(block: dict, config: dict) -> None:
 #### Step 2: Reference in Config
 
 ```yaml
-# parsers/stm32h7-transforms.yaml
+# extractors/stm32h7-transforms.yaml
 
 RCC:
   instances: [RCC]
@@ -219,7 +219,7 @@ RCC:
 ```python
 # At startup
 engine = TransformationEngine()
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 for name, func in family_transforms.items():
     engine.register_transformation(name, func)
     # Now 'rcc_cpu_clustering' is available without code changes
@@ -364,7 +364,7 @@ Add a new transformation type by:
 ### 3. **Reusability**
 - Generic transformations work for any MCU family
 - Core framework in `tools/`
-- Family-specific variants in `parsers/<family>/`
+- Family-specific variants in `extractors/<family>/`
 
 ### 4. **Performance**
 - Only call transformations that are configured
@@ -387,7 +387,7 @@ Add a new transformation type by:
 
 ### Before (Hardcoded Approach)
 
-**File:** parsers/STM32H757.py (401 lines)
+**File:** extractors/STM32H757.py (401 lines)
 
 ```python
 def apply_transformations(chip_data):
@@ -445,7 +445,7 @@ tools/
         └── TransformationRegistry
         └── Built-in transformations (rename, array, etc.)
 
-parsers/
+extractors/
     ├── stm32h7-transforms.yaml     ← Configuration
     │
     ├── stm32h7_transforms.py       ← Family-specific (auto-discovered)
@@ -466,7 +466,7 @@ parsers/
 ```python
 # Finds all .py files in a folder
 # Imports them and discovers transform_* functions
-family_transforms = discover_family_transformations('parsers/stm32h7')
+family_transforms = discover_family_transformations('extractors/stm32h7')
 # Returns: {'rcc_cpu_clustering': <function>, 'quadspi_special_mapping': <function>}
 
 # Register with engine
@@ -513,11 +513,11 @@ def test_rename_registers():
 ```python
 def test_stm32h7_extraction():
     engine = TransformationEngine()
-    family_transforms = discover_family_transformations('parsers/stm32h7')
+    family_transforms = discover_family_transformations('extractors/stm32h7')
     for name, func in family_transforms.items():
         engine.register_transformation(name, func)
     
-    config = load_yaml('parsers/stm32h7-transforms.yaml')
+    config = load_yaml('extractors/stm32h7-transforms.yaml')
     
     # Test on actual SVD
     root = svd.parse('svd/STM32H757_CM4.svd')
@@ -540,7 +540,7 @@ def test_stm32h7_extraction():
 | Aspect | Before | After |
 |--------|--------|-------|
 | **Framework** | Monolithic per-variant | Generic + family-specific |
-| **File Location** | parsers/STM32H757.py | tools/generic_transform.py + parsers/* |
+| **File Location** | extractors/STM32H757.py | tools/generic_transform.py + extractors/* |
 | **Lines of Code** | 400+ per variant | ~100 per variant + reusable framework |
 | **Adding Transform** | Modify parser code | Register a function |
 | **Calling Pattern** | All-5-always | Only-what-configured |
@@ -553,9 +553,9 @@ def test_stm32h7_extraction():
 ## Next Steps
 
 1. ✅ Create `tools/generic_transform.py`
-2. ✅ Update `parsers/STM32H757_template.py` to use it
-3. ⏳ Move family-specific transforms to `parsers/stm32h7_transforms.py`
-4. ⏳ Update `parsers/generate_stm32h7_models.py` to use the engine
+2. ✅ Update `extractors/STM32H757_template.py` to use it
+3. ⏳ Move family-specific transforms to `extractors/stm32h7_transforms.py`
+4. ⏳ Update `extractors/generate_stm32h7_models.py` to use the engine
 5. ⏳ Create unit tests for transformations
 6. ⏳ Document available transformations in reference
 

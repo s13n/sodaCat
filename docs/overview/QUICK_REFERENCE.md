@@ -9,10 +9,10 @@ Automatically extract reusable functional block models for 21 STM32H7 microcontr
 
 | File | Purpose | Location | Status |
 |------|---------|----------|--------|
-| **stm32h7-transforms.yaml** | All transformation rules | `parsers/` | ✅ Ready |
-| **generate_stm32h7_models.py** | Main extraction script | `parsers/` | 🟡 40% coded |
+| **stm32h7-transforms.yaml** | All transformation rules | `extractors/` | ✅ Ready |
+| **generate_stm32h7_models.py** | Main extraction script | `extractors/` | 🟡 40% coded |
 | **stm32h7-extraction.cmake** | CMake build integration | `cmake/` | ✅ Ready |
-| **STM32H757_template.py** | Shows config-driven approach | `parsers/` | ✅ Reference |
+| **STM32H757_template.py** | Shows config-driven approach | `extractors/` | ✅ Reference |
 
 ---
 
@@ -134,10 +134,10 @@ STM32H730.svd:  50 + 4 + 0 + 8  + 0 + 0 = 62
 
 ```bash
 # 1. Analyze and select best SVD source for each block
-python3 parsers/generate_stm32h7_models.py --analyze-sources
+python3 extractors/generate_stm32h7_models.py --analyze-sources
 
 # 2. Extract all models
-python3 parsers/generate_stm32h7_models.py --extract-all
+python3 extractors/generate_stm32h7_models.py --extract-all
 
 # 3. Verify output
 ls models/ST/H7_common/ | wc -l    # Should be 58
@@ -152,7 +152,7 @@ ls models/ST/H73x/blocks/ | wc -l  # Variable
 - [x] CMake module created (stm32h7-extraction.cmake)
 - [x] Design documented (5 documents)
 - [x] Reference implementation provided (STM32H757_template.py)
-- [ ] Move extraction script to parsers/
+- [ ] Move extraction script to extractors/
 - [ ] Implement TransformationLoader class
 - [ ] Implement BlockSourceSelector class
 - [ ] Implement ArrayTransformationDetector class
@@ -231,13 +231,13 @@ ADC:
 
 **Configurations:**
 ```
-parsers/stm32h7-transforms.yaml         ← Transformation rules
+extractors/stm32h7-transforms.yaml         ← Transformation rules
 cmake/stm32h7-extraction.cmake          ← Build integration
 ```
 
 **Implementation (IN PROGRESS):**
 ```
-parsers/generate_stm32h7_models.py      ← Main script
+extractors/generate_stm32h7_models.py      ← Main script
   ├─ TransformationLoader               ← TODO: 2-3h
   ├─ BlockSourceSelector                ← TODO: 3-4h  
   └─ ArrayTransformationDetector        ← TODO: 2-3h
@@ -245,8 +245,8 @@ parsers/generate_stm32h7_models.py      ← Main script
 
 **Reference/Design:**
 ```
-parsers/STM32H757.py                    ← Original (401 lines)
-parsers/STM32H757_template.py           ← Config-driven refactor
+extractors/STM32H757.py                    ← Original (401 lines)
+extractors/STM32H757_template.py           ← Config-driven refactor
 REFINEMENTS.md                          ← Problem analysis
 ARRAY_TRANSFORMATION_ANALYSIS.md        ← Array patterns
 BLOCK_SOURCE_SELECTION_DESIGN.md        ← Scoring algorithm
@@ -261,22 +261,22 @@ ANALYSIS_STM32H7_COMPATIBILITY.md       ← Block compatibility breakdown
 
 ### Extract Single SVD
 ```bash
-python3 parsers/generate_stm32h7_models.py \
+python3 extractors/generate_stm32h7_models.py \
   --svd svd/STM32H757_CM4.svd \
-  --transforms parsers/stm32h7-transforms.yaml \
+  --transforms extractors/stm32h7-transforms.yaml \
   --output models/ST/H757/
 ```
 
 ### Analyze SVD Sources
 ```bash
-python3 parsers/generate_stm32h7_models.py \
+python3 extractors/generate_stm32h7_models.py \
   --analyze-sources \
   --svd-dir svd
 ```
 
 ### Extract All H7 Variants
 ```bash
-python3 parsers/generate_stm32h7_models.py \
+python3 extractors/generate_stm32h7_models.py \
   --extract-all \
   --models-dir models/ST/
 ```
@@ -349,7 +349,7 @@ cd build && cmake .. && make models
 
 ## Next 10 Steps
 
-1. Move extraction script to `parsers/`
+1. Move extraction script to `extractors/`
 2. Load YAML configuration
 3. Apply transformations from config
 4. Parse all 21 SVDs

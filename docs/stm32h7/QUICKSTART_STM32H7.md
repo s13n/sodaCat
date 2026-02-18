@@ -89,7 +89,7 @@ H7A3_B/                 # H7A3, H7B0, H7B3
 | File | Purpose |
 |------|---------|
 | `cmake/stm32h7-extraction.cmake` | **Main module** - Include this in your CMakeLists.txt |
-| `generators/generate_stm32h7_models.py` | Python script that does the extraction |
+| `extractors/generate_stm32h7_models.py` | Python script that does the extraction |
 | `cmake/stm32h7-extraction-example.cmake` | Usage examples |
 | `ANALYSIS_STM32H7_COMPATIBILITY.md` | Detailed compatibility breakdown |
 | `README_STM32H7_EXTRACTION.md` | Full documentation |

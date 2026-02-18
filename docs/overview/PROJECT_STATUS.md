@@ -13,7 +13,7 @@
 ### Phase 2: Design & Configuration ✅ COMPLETE
 
 #### 1. Transformation Configuration System
-- **File:** [parsers/stm32h7-transforms.yaml](parsers/stm32h7-transforms.yaml)
+- **File:** [extractors/stm32h7-transforms.yaml](extractors/stm32h7-transforms.yaml)
 - **Status:** ✅ **PRODUCTION READY**
 - **Content:** 30+ functional blocks with complete specifications
 - **Includes:**
@@ -40,12 +40,12 @@
 - **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** - Step-by-step implementation guide
 
 #### 4. Reference Implementation
-- **File:** [parsers/STM32H757_template.py](parsers/STM32H757_template.py)
+- **File:** [extractors/STM32H757_template.py](extractors/STM32H757_template.py)
 - **Status:** ✅ **COMPLETE**
 - **Shows:** How to refactor existing parser to use configuration-driven transformation system
 
 #### 5. Existing Reference
-- **File:** [parsers/STM32H757.py](parsers/STM32H757.py)
+- **File:** [extractors/STM32H757.py](extractors/STM32H757.py)
 - **Status:** Existing implementation (401 lines)
 - **Shows:** All 5 transformation types in original hardcoded format
 
@@ -55,15 +55,15 @@
 
 | Deliverable | Purpose | Status | File |
 |-------------|---------|--------|------|
-| **Configuration** | Transform rules for all blocks | ✅ Complete | [stm32h7-transforms.yaml](parsers/stm32h7-transforms.yaml) |
+| **Configuration** | Transform rules for all blocks | ✅ Complete | [stm32h7-transforms.yaml](extractors/stm32h7-transforms.yaml) |
 | **CMake Module** | Build system integration | ✅ Complete | [stm32h7-extraction.cmake](cmake/stm32h7-extraction.cmake) |
 | **Compatibility Analysis** | Which blocks can be shared | ✅ Complete | [ANALYSIS_STM32H7_COMPATIBILITY.md](ANALYSIS_STM32H7_COMPATIBILITY.md) |
 | **Array Analysis** | Array transformation patterns | ✅ Complete | [ARRAY_TRANSFORMATION_ANALYSIS.md](ARRAY_TRANSFORMATION_ANALYSIS.md) |
 | **Source Selection Design** | Quality scoring for SVDs | ✅ Complete | [BLOCK_SOURCE_SELECTION_DESIGN.md](BLOCK_SOURCE_SELECTION_DESIGN.md) |
-| **Implementation Design** | Refactoring to use config | ✅ Complete | [STM32H757_template.py](parsers/STM32H757_template.py) |
+| **Implementation Design** | Refactoring to use config | ✅ Complete | [STM32H757_template.py](extractors/STM32H757_template.py) |
 | **Implementation Guide** | Step-by-step walkthrough | ✅ Complete | [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) |
 | **Refinement Analysis** | Problem statement & solutions | ✅ Complete | [REFINEMENTS.md](REFINEMENTS.md) |
-| **Extraction Script (Skeleton)** | Main extraction tool | 🟡 40% | [generate_stm32h7_models.py](parsers/generate_stm32h7_models.py) |
+| **Extraction Script (Skeleton)** | Main extraction tool | 🟡 40% | [generate_stm32h7_models.py](extractors/generate_stm32h7_models.py) |
 
 ---
 
@@ -73,22 +73,22 @@
 
 #### Task 1: Move & Update Extraction Script [1-2 hours]
 
-**Current Status:** File exists at `generators/generate_stm32h7_models.py` (incorrect location)
+**Current Status:** File exists at `extractors/generate_stm32h7_models.py` (incorrect location)
 
 **Required Actions:**
 ```bash
-# Move file to parsers/
-mv generators/generate_stm32h7_models.py parsers/generate_stm32h7_models.py
+# Move file to extractors/
+mv extractors/generate_stm32h7_models.py extractors/generate_stm32h7_models.py
 
 # Update CMake references
-# (Search for generators/generate in cmake files and update to parsers/generate)
+# (Search for generators/generate in cmake files and update to extractors/generate)
 
 # Test that imports work from new location
 ```
 
 **Verification:**
 ```bash
-python3 parsers/generate_stm32h7_models.py --help
+python3 extractors/generate_stm32h7_models.py --help
 ```
 
 ---
@@ -108,9 +108,9 @@ See [IMPLEMENTATION_GUIDE.md - Task 2.2](IMPLEMENTATION_GUIDE.md#task-22-load-tr
 
 **Verification Test:**
 ```bash
-python3 parsers/generate_stm32h7_models.py \
+python3 extractors/generate_stm32h7_models.py \
   --svd svd/STM32H757_CM4.svd \
-  --transforms parsers/stm32h7-transforms.yaml \
+  --transforms extractors/stm32h7-transforms.yaml \
   --output /tmp/test_output/
 
 # Check that ADC.yaml, DMA.yaml, etc. were created with correct transformations
@@ -152,7 +152,7 @@ ADC
 
 **Verification Test:**
 ```bash
-python3 parsers/generate_stm32h7_models.py \
+python3 extractors/generate_stm32h7_models.py \
   --analyze-sources \
   --svd-dir svd \
   --output output/
@@ -216,7 +216,7 @@ EOF
 
 **Test 1: Single SVD Parsing**
 ```bash
-python3 parsers/generate_stm32h7_models.py \
+python3 extractors/generate_stm32h7_models.py \
   --svd svd/STM32H757_CM4.svd \
   --output /tmp/test_h757/
 ```
@@ -224,14 +224,14 @@ Expected: ~30 YAML files (ADC.yaml, DMA.yaml, ..., H757.yaml chip model)
 
 **Test 2: Multi-SVD Source Selection**
 ```bash
-python3 parsers/generate_stm32h7_models.py \
+python3 extractors/generate_stm32h7_models.py \
   --analyze-sources --svd-dir svd
 ```
 Expected: block_source_selection.md report + block_sources.json
 
 **Test 3: Full Family Extraction**
 ```bash
-python3 parsers/generate_stm32h7_models.py --extract-all
+python3 extractors/generate_stm32h7_models.py --extract-all
 ```
 Expected: 
 - 58 blocks in `models/ST/H7_common/`
@@ -368,13 +368,13 @@ RCC:
 
 ### **Configuration Files** (You Edit These)
 ```
-parsers/stm32h7-transforms.yaml          ✅ COMPLETE
+extractors/stm32h7-transforms.yaml          ✅ COMPLETE
 cmake/stm32h7-extraction.cmake           ✅ COMPLETE
 ```
 
 ### **Implementation Files** (You Code These)
 ```
-parsers/generate_stm32h7_models.py       🟡 40% complete
+extractors/generate_stm32h7_models.py       🟡 40% complete
   └─ TransformationLoader class          ⏳ TODO
   └─ BlockSourceSelector class           ⏳ TODO
   └─ ArrayTransformationDetector class   ⏳ TODO
@@ -382,8 +382,8 @@ parsers/generate_stm32h7_models.py       🟡 40% complete
 
 ### **Reference/Template Files** (Done)
 ```
-parsers/STM32H757_template.py            ✅ Shows config-driven approach
-parsers/STM32H757.py                     ✅ Reference implementation
+extractors/STM32H757_template.py            ✅ Shows config-driven approach
+extractors/STM32H757.py                     ✅ Reference implementation
 ```
 
 ### **Analysis Documents** (Done)
@@ -472,15 +472,15 @@ IMPLEMENTATION_GUIDE.md                  ✅ Step-by-step walkthrough
 
 ```bash
 # 1. Move file
-mv generators/generate_stm32h7_models.py parsers/generate_stm32h7_models.py
+mv extractors/generate_stm32h7_models.py extractors/generate_stm32h7_models.py
 
 # 2. Implement TransformationLoader class
 #    (See IMPLEMENTATION_GUIDE.md Task 2.2 for pseudocode)
 
 # 3. Test with single SVD
-python3 parsers/generate_stm32h7_models.py \
+python3 extractors/generate_stm32h7_models.py \
   --svd svd/STM32H757_CM4.svd \
-  --transforms parsers/stm32h7-transforms.yaml \
+  --transforms extractors/stm32h7-transforms.yaml \
   --output /tmp/test/
 ```
 

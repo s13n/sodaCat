@@ -32,13 +32,13 @@ from generic_transform import TransformationEngine, discover_family_transformati
 # ═══════════════════════════════════════════════════════════════════════════
 
 OUTPUT_DIR = Path("./models/ST/H757")
-TRANSFORMS_CONFIG = Path("./parsers/stm32h7-transforms.yaml")
+TRANSFORMS_CONFIG = Path("./extractors/stm32h7-transforms.yaml")
 SVD_FILE = './svd/STM32H757_CM4.svd'
 HEADER = "# Created from STM32H757_CM4.svd (Rev 1.9)\n"
 
 # For H73x, H74x_H75x, H7A3_B, would use their respective configs
-# TRANSFORMS_CONFIG = Path("./parsers/stm32h7-transforms.yaml")
-# TRANSFORMS_CONFIG_H73x = Path("./parsers/stm32h7-transforms-h73x.yaml")
+# TRANSFORMS_CONFIG = Path("./extractors/stm32h7-transforms.yaml")
+# TRANSFORMS_CONFIG_H73x = Path("./extractors/stm32h7-transforms-h73x.yaml")
 # (These could be combined or split depending on variant differences)
 
 # Transformation engine (singleton)
@@ -55,7 +55,7 @@ def load_transforms_config(config_path):
         return yaml.load(f)
 
 
-def register_family_specific_transformations(engine: TransformationEngine, family_folder: str = 'parsers/stm32h7'):
+def register_family_specific_transformations(engine: TransformationEngine, family_folder: str = 'extractors/stm32h7'):
     """Register any family-specific transformations.
     
     Family-specific transformations are discovered and loaded from a folder.

@@ -153,7 +153,7 @@ get_stm32h7_family_chips(H73x chips)
 
 ```bash
 # Extract all models
-python3 generators/generate_stm32h7_models.py svd/stm32h7-svd.zip build/models/ST
+python3 extractors/generate_stm32h7_models.py svd/stm32h7-svd.zip build/models/ST
 
 # With CMake
 mkdir build && cd build
@@ -230,7 +230,7 @@ Variants identified by comparing register structure hashes:
 - **`ANALYSIS_STM32H7_COMPATIBILITY.md`** - Detailed compatibility analysis
 - **`cmake/stm32h7-extraction.cmake`** - Main CMake module with functions
 - **`cmake/stm32h7-extraction-example.cmake`** - Usage examples
-- **`generators/generate_stm32h7_models.py`** - Python extraction script
+- **`extractors/generate_stm32h7_models.py`** - Python extraction script
 
 ## Next Steps
 

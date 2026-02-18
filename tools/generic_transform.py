@@ -471,19 +471,19 @@ def discover_family_transformations(family_folder: str) -> Dict[str, Callable]:
     
     Args:
         family_folder: Path to folder containing family-specific transforms
-                      (e.g., 'parsers/stm32h7/')
+                      (e.g., 'extractors/stm32h7/')
     
     Returns:
         Dict mapping transformation names to functions
     
     Example:
-        # In parsers/stm32h7/stm32h7_transforms.py:
+        # In extractors/stm32h7/stm32h7_transforms.py:
         def transform_rcc_cpu_clustering(block, config):
             # Custom RCC handling...
             pass
         
         # At startup:
-        family_transforms = discover_family_transformations('parsers/stm32h7')
+        family_transforms = discover_family_transformations('extractors/stm32h7')
         engine.register_transformation('rcc_cpu_clustering', 
                                        family_transforms['rcc_cpu_clustering'])
     """
