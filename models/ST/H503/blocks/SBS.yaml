@@ -1,0 +1,526 @@
+name: SBS
+description: System configuration, boot and security
+groupName: SBS
+baseAddress: 1140851712
+registers:
+- name: SBS_HDPLCR
+  displayName: SBS_HDPLCR
+  description: SBS temporal isolation control register
+  addressOffset: 16
+  size: 32
+  resetValue: 180
+  resetMask: 4294967295
+  fields:
+  - name: INCR_HDPL
+    description: "increment HDPL value\nOther: all other values allow a HDPL level
+      increment."
+    bitOffset: 0
+    bitWidth: 8
+    access: read-write
+    enumeratedValues:
+    - name: B_0xB4
+      description: no increment
+      value: 180
+    - name: B_0x6A
+      description: recommended value to increment HDPL level by one
+      value: 106
+- name: SBS_HDPLSR
+  displayName: SBS_HDPLSR
+  description: SBS temporal isolation status register
+  addressOffset: 20
+  size: 32
+  resetValue: 0
+  resetMask: 0
+  fields:
+  - name: HDPL
+    description: "temporal isolation level\nThis bitfield returns the current temporal
+      isolation level."
+    bitOffset: 0
+    bitWidth: 8
+    access: read-only
+    enumeratedValues:
+    - name: B_0xB4
+      description: HDPL0, RSS
+      value: 180
+    - name: B_0x51
+      description: HDPL1, iRoT
+      value: 81
+    - name: B_0x8A
+      description: HDPL2, uRoT
+      value: 138
+    - name: B_0x6F
+      description: HDPL3, application
+      value: 111
+- name: SBS_DBGCR
+  displayName: SBS_DBGCR
+  description: SBS debug control register
+  addressOffset: 32
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: AP_UNLOCK
+    description: "access port unlock\nWrite 0xB4 to this bitfield to open the device
+      access port."
+    bitOffset: 0
+    bitWidth: 8
+    access: read-write
+  - name: DBG_UNLOCK
+    description: "debug unlock when DBG_AUTH_HDPL is reached\nWrite 0xB4 to this bitfield
+      to open the debug when HDPL in SBS_HDPLSR equals to DBG_AUTH_HDPL in this register."
+    bitOffset: 8
+    bitWidth: 8
+    access: read-write
+  - name: DBG_AUTH_HDPL
+    description: "authenticated debug temporal isolation level\nWriting to this bitfield
+      defines at which HDPL the authenticated debug opens.\nNote: Writing any other
+      values is ignored. Reading any other value means the debug never opens."
+    bitOffset: 16
+    bitWidth: 8
+    access: read-write
+    enumeratedValues:
+    - name: B_0x51
+      description: HDPL1
+      value: 81
+    - name: B_0x8A
+      description: HDPL2
+      value: 138
+    - name: B_0x6F
+      description: HDPL3
+      value: 111
+- name: SBS_DBGLOCKR
+  displayName: SBS_DBGLOCKR
+  description: SBS debug lock register
+  addressOffset: 36
+  size: 32
+  resetValue: 180
+  resetMask: 4294967295
+  fields:
+  - name: DBGCFG_LOCK
+    description: "debug configuration lock\nReading this bitfield returns 0x6A if
+      the bitfield value is different from 0xB4.\n0xC3 is the recommended value to
+      lock the debug configuration using this bitfield.\nOther: Writes to SBS_DBGCR
+      ignored"
+    bitOffset: 0
+    bitWidth: 8
+    access: read-write
+    enumeratedValues:
+    - name: B_0xB4
+      description: Writes to SBS_DBGCR allowed (default)
+      value: 180
+- name: SBS_PMCR
+  displayName: SBS_PMCR
+  description: SBS product mode and configuration register
+  addressOffset: 256
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: BOOSTEN
+    description: "booster enable\nSet this bit to reduce the total harmonic distortion
+      of the analog switch when the processor supply is below 2.7 V. The booster can
+      be activated to guaranty AC performance on analog switch when the supply is
+      below 2.7 V. When the booster is activated, the analog switch performances are
+      the same as with the full voltage range."
+    bitOffset: 8
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Booster disabled
+      value: 0
+    - name: B_0x1
+      description: Booster enabled
+      value: 1
+  - name: BOOSTVDDSEL
+    description: "booster V DD  selection\nNote: Booster must not be used when V DDA\
+      \   2.7 V, but V DD   2.7 V (add current consumption).\nNote: When both V DD\
+      \   2.7 V and V DDA   2.7 V, booster is needed to get full AC performances from
+      I/O analog switches."
+    bitOffset: 9
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: V DDA  is selected as V BOOSTER  supply (BOOSTE = 0)
+      value: 0
+    - name: B_0x1
+      description: V DD  is selected as V BOOSTER  supply (regardless BOOSTEN 
+        that must be cleared to avoid unwanted power consumption)
+      value: 1
+  - name: PB6_FMPLUS
+    description: Fast-mode Plus command on PB(6)
+    bitOffset: 16
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Fast-mode Plus mode on PB(6) is disabled
+      value: 0
+    - name: B_0x1
+      description: Fast-mode Plus mode on PB(6) is enabled
+      value: 1
+  - name: PB7_FMPLUS
+    description: Fast-mode Plus command on PB(7)
+    bitOffset: 17
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Fast-mode Plus mode on PB(7) is disabled
+      value: 0
+    - name: B_0x1
+      description: Fast mode plus mode on PB(7) is enabled
+      value: 1
+  - name: PB8_FMPLUS
+    description: Fast-mode Plus command on PB(8)
+    bitOffset: 18
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Fast-mode Plus mode on PB(8) is disabled
+      value: 0
+    - name: B_0x1
+      description: Fast-mode Plus mode on PB(8) is enabled
+      value: 1
+- name: SBS_FPUIMR
+  displayName: SBS_FPUIMR
+  description: SBS FPU interrupt mask register
+  addressOffset: 260
+  size: 32
+  resetValue: 31
+  resetMask: 4294967295
+  fields:
+  - name: FPU_IE
+    description: "FPU interrupt enable\nSet and cleared by software to enable the
+      Cortex-M33 FPU interrupts\nFPU_IE[5]: inexact interrupt enable (interrupt disabled
+      at reset)\nFPU_IE[4]: input abnormal interrupt enable\nFPU_IE[3]: overflow interrupt
+      enable\nFPU_IE[2]: underflow interrupt enable\nFPU_IE[1]: divide-by-zero interrupt
+      enable\nFPU_IE[0]: invalid operation interrupt enable"
+    bitOffset: 0
+    bitWidth: 6
+    access: read-write
+- name: SBS_MESR
+  displayName: SBS_MESR
+  description: SBS memory erase status register
+  addressOffset: 264
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: MCLR
+    description: "erase after reset status\nThis bit shows the status of the protection
+      for SRAM2, BKPRAM, ICACHE, ICACHE. It is set by hardware and reset by software"
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Memory erase on going (if not yet cleared by software)
+      value: 0
+    - name: B_0x1
+      description: Memory erase done
+      value: 1
+  - name: IPMEE
+    description: "end-of-erase status for ICACHE\nThis bit shows the status of the
+      protection for ICACHE. It is set by hardware and reset by software."
+    bitOffset: 16
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: ICACHE erase on going
+      value: 0
+    - name: B_0x1
+      description: ICACHE erase ended
+      value: 1
+- name: SBS_CCCSR
+  displayName: SBS_CCCSR
+  description: SBS compensation cell for I/Os control and status register
+  addressOffset: 272
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: EN1
+    description: "enable compensation cell for VDDIO power rail\nThis bit enables
+      the I/O compensation cell."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: I/O compensation cell disabled
+      value: 0
+    - name: B_0x1
+      description: I/O compensation cell enabled
+      value: 1
+  - name: CS1
+    description: "code selection for VDDIO power rail (reset value set to 1)\nThis
+      bit selects the code to be applied for the I/O compensation cell."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Code from the cell (available in the SBS_CCVR)
+      value: 0
+    - name: B_0x1
+      description: Code from SBS_CCCR
+      value: 1
+  - name: EN2
+    description: "enable compensation cell for VDDIO2 power rail\nThis bit enables
+      the I/O compensation cell."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: I/O compensation cell disabled
+      value: 0
+    - name: B_0x1
+      description: I/O compensation cell enabled
+      value: 1
+  - name: CS2
+    description: "code selection for VDDIO2 power rail (reset value set to 1)\nThis
+      bit selects the code to be applied for the I/O compensation cell."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Code from the cell (available in SBS_CCVR)
+      value: 0
+    - name: B_0x1
+      description: Code from SBS_CCCR
+      value: 1
+  - name: RDY1
+    description: "VDDIO compensation cell ready flag\nThis bit provides the status
+      of the compensation cell."
+    bitOffset: 8
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: VDDIO compensation cell not ready
+      value: 0
+    - name: B_0x1
+      description: VDDIO compensation cell ready (code value provided by the 
+        cell can be used)
+      value: 1
+  - name: RDY2
+    description: "VDDIO2 compensation cell ready flag\nThis bit provides the status
+      of the VDDIO2 compensation cell."
+    bitOffset: 9
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: VDDIO2 compensation cell not ready
+      value: 0
+    - name: B_0x1
+      description: VDDIO2 compensation cell ready (code value provided by the 
+        cell can be used)
+      value: 1
+- name: SBS_CCVALR
+  displayName: SBS_CCVALR
+  description: SBS compensation cell for I/Os value register
+  addressOffset: 276
+  size: 32
+  resetValue: 136
+  resetMask: 4294967295
+  fields:
+  - name: ANSRC1
+    description: "compensation value for the NMOS transistor\nThis value is provided
+      by the cell and must be interpreted by the processor to compensate the slew
+      rate in the functional range."
+    bitOffset: 0
+    bitWidth: 4
+    access: read-only
+  - name: APSRC1
+    description: "compensation value for the PMOS transistor \nThis value is provided
+      by the cell and must be interpreted by the processor to compensate the slew
+      rate in the functional range."
+    bitOffset: 4
+    bitWidth: 4
+    access: read-only
+  - name: ANSRC2
+    description: "Compensation value for the NMOS transistor \nThis value is provided
+      by the cell and must be interpreted by the processor to compensate the slew
+      rate in the functional range."
+    bitOffset: 8
+    bitWidth: 4
+    access: read-only
+  - name: APSRC2
+    description: "compensation value for the PMOS transistor\nThis value is provided
+      by the cell and must be interpreted by the processor to compensate the slew
+      rate in the functional range."
+    bitOffset: 12
+    bitWidth: 4
+    access: read-only
+- name: SBS_CCSWCR
+  displayName: SBS_CCSWCR
+  description: SBS compensation cell for I/Os software code register
+  addressOffset: 280
+  size: 32
+  resetValue: 30840
+  resetMask: 4294967295
+  fields:
+  - name: SW_ANSRC1
+    description: "NMOS compensation code for VDD power rails\nThis bitfield is written
+      by software to define an I/O compensation cell code for NMOS transistors of
+      the VDD power rail. This code is applied to the I/O when CS1 is set in SBS_CCSR."
+    bitOffset: 0
+    bitWidth: 4
+    access: read-write
+  - name: SW_APSRC1
+    description: "PMOS compensation code for the VDD power rails\nThis bitfield is
+      written by software to define an I/O compensation cell code for PMOS transistors
+      of the VDDIO power rail. This code is applied to the I/O when CS1 is set in
+      SBS_CCSR."
+    bitOffset: 4
+    bitWidth: 4
+    access: read-write
+  - name: SW_ANSRC2
+    description: "NMOS compensation code for VDDIO power rails\nThis bitfield is written
+      by software to define an I/O compensation cell code for NMOS transistors of
+      the VDD power rail. This code is applied to the I/O when CS2 is set in SBS_CCSR."
+    bitOffset: 8
+    bitWidth: 4
+    access: read-write
+  - name: SW_APSRC2
+    description: "PMOS compensation code for the V DDIO  power rails\nThis bitfield
+      is written by software to define an I/O compensation cell code for PMOS transistors
+      of the VDDIO power rail. This code is applied to the I/O when CS2 is set in
+      SBS_CCSR."
+    bitOffset: 12
+    bitWidth: 4
+    access: read-write
+- name: SBS_CFGR2
+  displayName: SBS_CFGR2
+  description: SBS Class B register
+  addressOffset: 288
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: CLL
+    description: "core lockup lock\nThis bit is set by software and cleared only by
+      a system reset. It can be used to enable and lock the lockup (HardFault) output
+      of Cortex-M33 with TIM1 break inputs."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: lockup output disconnected from timer break inputs
+      value: 0
+    - name: B_0x1
+      description: lockup output connected to timer break inputs
+      value: 1
+  - name: SEL
+    description: "SRAM ECC error lock\nThis bit is set by software and cleared only
+      by a system reset. It can be used to enable and lock the SRAM double ECC error
+      signal with break input of TIM1."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: SRAM double ECC error flag disconnected from timer break 
+        inputs
+      value: 0
+    - name: B_0x1
+      description: SRAM double ECC error flag connected to timer break inputs
+      value: 1
+  - name: PVDL
+    description: "PVD lock\nThis bit is set by software and cleared only by a system
+      reset. It can be used to enable and lock the PVD connection with TIM1 break
+      inputs."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: PVD interrupt disconnected from timer break inputs. PVD_EN 
+        and PVD_SEL[2:0] in the PWR registers are read/write.
+      value: 0
+    - name: B_0x1
+      description: PVD interrupt is connected to timer break inputs. PVD_EN and 
+        PVD_SEL[2:0] in the PWR registers are read only
+      value: 1
+  - name: ECCL
+    description: "ECC lock\nThis bit is set and cleared by software. It can be used
+      to enable and lock the Flash memory double ECC error with break input of TIM1."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: double ECC error flag disconnected to timer break inputs
+      value: 0
+    - name: B_0x1
+      description: double ECC error flag connected to timer break inputs
+      value: 1
+- name: SBS_CNSLCKR
+  displayName: SBS_CNSLCKR
+  description: SBS CPU lock register
+  addressOffset: 324
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: LOCKNSVTOR
+    description: "VTOR_NS register lock\nThis bit is set by software and cleared only
+      by a system reset."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: VTOR_NS register write enabled
+      value: 0
+    - name: B_0x1
+      description: VTOR_NS register write disabled
+      value: 1
+  - name: LOCKNSMPU
+    description: "MPU register lock \nThis bit is set by software and cleared only
+      by a system reset. When set, this bit disables write access to MPU_CTRL_NS,
+      MPU_RNR_NS and MPU_RBAR_NS registers."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: MPU registers write enabled
+      value: 0
+    - name: B_0x1
+      description: MPU registers write disabled
+      value: 1
+- name: SBS_ECCNMIR
+  displayName: SBS_ECCNMIR
+  description: SBS flift ECC NMI mask register
+  addressOffset: 332
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: ECCNMI_MASK_EN
+    description: NMI behavior setup when a double ECC error occurs on flitf data
+      part
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: NMI generated if a double ECC error in the flitf data part
+      value: 0
+    - name: B_0x1
+      description: NMI not generated if a double ECC error in the flitf data 
+        part
+      value: 1
+addressBlocks:
+- offset: 0
+  size: 336
+  usage: registers

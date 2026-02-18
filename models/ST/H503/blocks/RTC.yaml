@@ -1,0 +1,1601 @@
+name: RTC
+description: Real-time clock
+groupName: RTC
+baseAddress: 1140881408
+registers:
+- name: RTC_TR
+  displayName: RTC_TR
+  description: RTC time register
+  addressOffset: 0
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SU
+    description: Second units in BCD format
+    bitOffset: 0
+    bitWidth: 4
+    access: read-write
+  - name: ST
+    description: Second tens in BCD format
+    bitOffset: 4
+    bitWidth: 3
+    access: read-write
+  - name: MNU
+    description: Minute units in BCD format
+    bitOffset: 8
+    bitWidth: 4
+    access: read-write
+  - name: MNT
+    description: Minute tens in BCD format
+    bitOffset: 12
+    bitWidth: 3
+    access: read-write
+  - name: HU
+    description: Hour units in BCD format
+    bitOffset: 16
+    bitWidth: 4
+    access: read-write
+  - name: HT
+    description: Hour tens in BCD format
+    bitOffset: 20
+    bitWidth: 2
+    access: read-write
+  - name: PM
+    description: AM/PM notation
+    bitOffset: 22
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: AM or 24-hour format
+      value: 0
+    - name: B_0x1
+      description: PM
+      value: 1
+- name: RTC_DR
+  displayName: RTC_DR
+  description: RTC date register
+  addressOffset: 4
+  size: 32
+  resetValue: 8449
+  resetMask: 4294967295
+  fields:
+  - name: DU
+    description: Date units in BCD format
+    bitOffset: 0
+    bitWidth: 4
+    access: read-write
+  - name: DT
+    description: Date tens in BCD format
+    bitOffset: 4
+    bitWidth: 2
+    access: read-write
+  - name: MU
+    description: Month units in BCD format
+    bitOffset: 8
+    bitWidth: 4
+    access: read-write
+  - name: MT
+    description: Month tens in BCD format
+    bitOffset: 12
+    bitWidth: 1
+    access: read-write
+  - name: WDU
+    description: "Week day units\n..."
+    bitOffset: 13
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: forbidden
+      value: 0
+    - name: B_0x1
+      description: Monday
+      value: 1
+    - name: B_0x7
+      description: Sunday
+      value: 7
+  - name: YU
+    description: Year units in BCD format
+    bitOffset: 16
+    bitWidth: 4
+    access: read-write
+  - name: YT
+    description: Year tens in BCD format
+    bitOffset: 20
+    bitWidth: 4
+    access: read-write
+- name: RTC_SSR
+  displayName: RTC_SSR
+  description: RTC subsecond register
+  addressOffset: 8
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SS
+    description: "Synchronous binary counter\nSS[31:16]: Synchronous binary counter
+      MSB values\nWhen Binary or Mixed mode is selected (BIN = 01 or 10 or 11):\n\
+      SS[31:16] are the 16 MSB of the SS[31:0] free-running down-counter.\nWhen BCD
+      mode is selected (BIN=00):\nSS[31:16] are forced by hardware to 0x0000.\nSS[15:0]:
+      Subsecond value/synchronous binary counter LSB values\nWhen Binary mode is selected
+      (BIN = 01 or 10 or 11):\nSS[15:0] are the 16 LSB of the SS[31:0] free-running
+      down-counter.\nWhen BCD mode is selected (BIN=00):\nSS[15:0] is the value in
+      the synchronous prescaler counter. The fraction of a second is given by the
+      formula below:\nSecond fraction = (PREDIV_S - SS) / (PREDIV_S + 1)\nSS can be
+      larger than PREDIV_S only after a shift operation. In that case, the correct
+      time/date is one second less than as indicated by RTC_TR/RTC_DR."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-only
+- name: RTC_ICSR
+  displayName: RTC_ICSR
+  description: RTC initialization control and status register
+  addressOffset: 12
+  size: 32
+  resetValue: 7
+  resetMask: 4294967295
+  fields:
+  - name: WUTWF
+    description: "Wakeup timer write flag\nThis bit is set by hardware when WUT value
+      can be changed, after the WUTE bit has been set to 0 in RTC_CR.\nIt is cleared
+      by hardware in initialization mode."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: Wakeup timer configuration update not allowed except in 
+        initialization mode
+      value: 0
+    - name: B_0x1
+      description: Wakeup timer configuration update allowed
+      value: 1
+  - name: SHPF
+    description: "Shift operation pending\nThis flag is set by hardware as soon as
+      a shift operation is initiated by a write to the RTC_SHIFTR register. It is
+      cleared by hardware when the corresponding shift operation has been executed.
+      Writing to the SHPF bit has no effect."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No shift operation is pending
+      value: 0
+    - name: B_0x1
+      description: A shift operation is pending
+      value: 1
+  - name: INITS
+    description: "Initialization status flag\nThis bit is set by hardware when the
+      calendar year field is different from 0 (Backup domain reset state)."
+    bitOffset: 4
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: Calendar has not been initialized
+      value: 0
+    - name: B_0x1
+      description: Calendar has been initialized
+      value: 1
+  - name: RSF
+    description: "Registers synchronization flag\nThis bit is set by hardware each
+      time the calendar registers are copied into the shadow registers (RTC_SSR, RTC_TR
+      and RTC_DR). This bit is cleared by hardware in initialization mode, while a
+      shift operation is pending (SHPF = 1), or when in bypass shadow register mode
+      (BYPSHAD = 1). This bit can also be cleared by software.\nIt is cleared either
+      by software or by hardware in initialization mode."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Calendar shadow registers not yet synchronized
+      value: 0
+    - name: B_0x1
+      description: Calendar shadow registers synchronized
+      value: 1
+  - name: INITF
+    description: "Initialization flag\nWhen this bit is set to 1, the RTC is in initialization
+      state, and the time, date and prescaler registers can be updated."
+    bitOffset: 6
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: Calendar registers update is not allowed
+      value: 0
+    - name: B_0x1
+      description: Calendar registers update is allowed
+      value: 1
+  - name: INIT
+    description: Initialization mode
+    bitOffset: 7
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Free running mode
+      value: 0
+    - name: B_0x1
+      description: Initialization mode used to program time and date register 
+        (RTC_TR and RTC_DR), and prescaler register (RTC_PRER), plus BIN and 
+        BCDU fields. Counters are stopped and start counting from the new value 
+        when INIT is reset.
+      value: 1
+  - name: BIN
+    description: Binary mode
+    bitOffset: 8
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Free running BCD calendar mode (Binary mode disabled).
+      value: 0
+    - name: B_0x1
+      description: Free running Binary mode (BCD mode disabled)
+      value: 1
+    - name: B_0x2
+      description: Free running BCD calendar and Binary modes
+      value: 2
+    - name: B_0x3
+      description: Free running BCD calendar and Binary modes
+      value: 3
+  - name: BCDU
+    description: "BCD update (BIN = 10 or 11)\nIn mixed mode when both BCD calendar
+      and binary extended counter are used (BIN = 10 or 11), the calendar second is
+      incremented using the SSR Least Significant Bits."
+    bitOffset: 10
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 1s calendar increment is generated each time SS[7:0] = 0
+      value: 0
+    - name: B_0x1
+      description: 1s calendar increment is generated each time SS[8:0] = 0
+      value: 1
+    - name: B_0x2
+      description: 1s calendar increment is generated each time SS[9:0] = 0
+      value: 2
+    - name: B_0x3
+      description: 1s calendar increment is generated each time SS[10:0] = 0
+      value: 3
+    - name: B_0x4
+      description: 1s calendar increment is generated each time SS[11:0] = 0
+      value: 4
+    - name: B_0x5
+      description: 1s calendar increment is generated each time SS[12:0] = 0
+      value: 5
+    - name: B_0x6
+      description: 1s calendar increment is generated each time SS[13:0] = 0
+      value: 6
+    - name: B_0x7
+      description: 1s calendar increment is generated each time SS[14:0] = 0
+      value: 7
+  - name: RECALPF
+    description: "Recalibration pending Flag\nThe RECALPF status flag is automatically
+      set to 1 when software writes to the RTC_CALR register, indicating that the
+      RTC_CALR register is blocked. When the new calibration settings are taken into
+      account, this bit returns to 0. Refer to Re-calibration on-the-fly."
+    bitOffset: 16
+    bitWidth: 1
+    access: read-only
+- name: RTC_PRER
+  displayName: RTC_PRER
+  description: RTC prescaler register
+  addressOffset: 16
+  size: 32
+  resetValue: 8323327
+  resetMask: 4294967295
+  fields:
+  - name: PREDIV_S
+    description: "Synchronous prescaler factor\nThis is the synchronous division factor:\n\
+      ck_spre frequency = ck_apre frequency/(PREDIV_S+1)"
+    bitOffset: 0
+    bitWidth: 15
+    access: read-write
+  - name: PREDIV_A
+    description: "Asynchronous prescaler factor\nThis is the asynchronous division
+      factor:\nck_apre frequency = RTCCLK frequency/(PREDIV_A+1)"
+    bitOffset: 16
+    bitWidth: 7
+    access: read-write
+- name: RTC_WUTR
+  displayName: RTC_WUTR
+  description: RTC wakeup timer register
+  addressOffset: 20
+  size: 32
+  resetValue: 65535
+  resetMask: 4294967295
+  fields:
+  - name: WUT
+    description: "Wakeup auto-reload value bits\nWhen the wakeup timer is enabled
+      (WUTE set to 1), the WUTF flag is set every (WUT[15:0] + 1) ck_wut cycles. The
+      ck_wut period is selected through WUCKSEL[2:0] bits of the RTC_CR register.\n\
+      When WUCKSEL[2] = 1, the wakeup timer becomes 17-bits and WUCKSEL[1] effectively
+      becomes WUT[16] the most-significant bit to be reloaded into the timer.\nThe
+      first assertion of WUTF occurs between WUT and (WUT + 2) ck_wut cycles after
+      WUTE is set. Setting WUT[15:0] to 0x0000 with WUCKSEL[2:0] = 011 (RTCCLK/2)
+      is forbidden."
+    bitOffset: 0
+    bitWidth: 16
+    access: read-write
+  - name: WUTOCLR
+    description: "Wakeup auto-reload output clear value\nWhen WUTOCLR[15:0] is different
+      from 0x0000, WUTF is set by hardware when the auto-reload down-counter reaches
+      0 and is cleared by hardware when the auto-reload downcounter reaches WUTOCLR[15:0].\n\
+      When WUTOCLR[15:0] = 0x0000, WUTF is set by hardware when the WUT down-counter\n\
+      reaches 0 and is cleared by software."
+    bitOffset: 16
+    bitWidth: 16
+    access: read-write
+- name: RTC_CR
+  displayName: RTC_CR
+  description: RTC control register
+  addressOffset: 24
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: WUCKSEL
+    description: "ck_wut wakeup clock selection\n10x: ck_spre (usually 1 Hz) clock
+      is selected in BCD mode. In binary or mixed mode, this is the clock selected
+      by BCDU.\n11x: ck_spre (usually 1 Hz) clock is selected in BCD mode. In binary
+      or mixed mode, this is the clock selected by BCDU. Furthermore, 2sup16/sup is
+      added to the WUT counter value."
+    bitOffset: 0
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RTC/16 clock is selected
+      value: 0
+    - name: B_0x1
+      description: RTC/8 clock is selected
+      value: 1
+    - name: B_0x2
+      description: RTC/4 clock is selected
+      value: 2
+    - name: B_0x3
+      description: RTC/2 clock is selected
+      value: 3
+  - name: TSEDGE
+    description: "Timestamp event active edge\nTSE must be reset when TSEDGE is changed
+      to avoid unwanted TSF setting."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RTC_TS input rising edge generates a timestamp event
+      value: 0
+    - name: B_0x1
+      description: RTC_TS input falling edge generates a timestamp event
+      value: 1
+  - name: REFCKON
+    description: "RTC_REFIN reference clock detection enable (50 or 60 Hz)\nNote:
+      BIN must be 0x00 and PREDIV_S must be 0x00FF."
+    bitOffset: 4
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RTC_REFIN detection disabled
+      value: 0
+    - name: B_0x1
+      description: RTC_REFIN detection enabled
+      value: 1
+  - name: BYPSHAD
+    description: "Bypass the shadow registers\nNote: If the frequency of the APB1
+      clock is less than seven times the frequency of RTCCLK, BYPSHAD must be set
+      to 1."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Calendar values (when reading from RTC_SSR, RTC_TR, and 
+        RTC_DR) are taken from the shadow registers, which are updated once 
+        every two RTCCLK cycles.
+      value: 0
+    - name: B_0x1
+      description: Calendar values (when reading from RTC_SSR, RTC_TR, and 
+        RTC_DR) are taken directly from the calendar counters.
+      value: 1
+  - name: FMT
+    description: Hour format
+    bitOffset: 6
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 24 hour/day format
+      value: 0
+    - name: B_0x1
+      description: AM/PM hour format
+      value: 1
+  - name: SSRUIE
+    description: SSR underflow interrupt enable
+    bitOffset: 7
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: SSR underflow interrupt disabled
+      value: 0
+    - name: B_0x1
+      description: SSR underflow interrupt enabled
+      value: 1
+  - name: ALRAE
+    description: Alarm A enable
+    bitOffset: 8
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm A disabled
+      value: 0
+    - name: B_0x1
+      description: Alarm A enabled
+      value: 1
+  - name: ALRBE
+    description: Alarm B enable
+    bitOffset: 9
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm B disabled
+      value: 0
+    - name: B_0x1
+      description: Alarm B enabled
+      value: 1
+  - name: WUTE
+    description: "Wakeup timer enable\nNote: When the wakeup timer is disabled, wait
+      for WUTWF = 1 before enabling it again."
+    bitOffset: 10
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Wakeup timer disabled
+      value: 0
+    - name: B_0x1
+      description: Wakeup timer enabled
+      value: 1
+  - name: TSE
+    description: timestamp enable
+    bitOffset: 11
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: timestamp disable
+      value: 0
+    - name: B_0x1
+      description: timestamp enable
+      value: 1
+  - name: ALRAIE
+    description: Alarm A interrupt enable
+    bitOffset: 12
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm A interrupt disabled
+      value: 0
+    - name: B_0x1
+      description: Alarm A interrupt enabled
+      value: 1
+  - name: ALRBIE
+    description: Alarm B interrupt enable
+    bitOffset: 13
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm B interrupt disable
+      value: 0
+    - name: B_0x1
+      description: Alarm B interrupt enable
+      value: 1
+  - name: WUTIE
+    description: Wakeup timer interrupt enable
+    bitOffset: 14
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Wakeup timer interrupt disabled
+      value: 0
+    - name: B_0x1
+      description: Wakeup timer interrupt enabled
+      value: 1
+  - name: TSIE
+    description: Timestamp interrupt enable
+    bitOffset: 15
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Timestamp interrupt disable
+      value: 0
+    - name: B_0x1
+      description: Timestamp interrupt enable
+      value: 1
+  - name: ADD1H
+    description: "Add 1 hour (summer time change)\nWhen this bit is set outside initialization
+      mode, 1 hour is added to the calendar time. This bit is always read as 0."
+    bitOffset: 16
+    bitWidth: 1
+    access: write-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No effect
+      value: 0
+    - name: B_0x1
+      description: Adds 1 hour to the current time. This can be used for summer 
+        time change
+      value: 1
+  - name: SUB1H
+    description: "Subtract 1 hour (winter time change)\nWhen this bit is set outside
+      initialization mode, 1 hour is subtracted to the calendar time if the current
+      hour is not 0. This bit is always read as 0.\nSetting this bit has no effect
+      when current hour is 0."
+    bitOffset: 17
+    bitWidth: 1
+    access: write-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No effect
+      value: 0
+    - name: B_0x1
+      description: Subtracts 1 hour to the current time. This can be used for 
+        winter time change.
+      value: 1
+  - name: BKP
+    description: "Backup\nThis bit can be written by the user to memorize whether
+      the daylight saving time change has been performed or not."
+    bitOffset: 18
+    bitWidth: 1
+    access: read-write
+  - name: COSEL
+    description: "Calibration output selection\nWhen COE = 1, this bit selects which
+      signal is output on CALIB.\nThese frequencies are valid for RTCCLK at 32.768
+      kHz and prescalers at their default values (PREDIV_A = 127 and PREDIV_S = 255).
+      Refer to Section 31.3.17: Calibration clock output."
+    bitOffset: 19
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Calibration output is 512 Hz
+      value: 0
+    - name: B_0x1
+      description: Calibration output is 1 Hz
+      value: 1
+  - name: POL
+    description: "Output polarity\nThis bit is used to configure the polarity of TAMPALRM
+      output."
+    bitOffset: 20
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: The pin is high when ALRAF/ALRBF/WUTF is asserted (depending 
+        on OSEL[1:0]), or when a TAMPxF/ITAMPxF is asserted (if TAMPOE = 1).
+      value: 0
+    - name: B_0x1
+      description: The pin is low when ALRAF/ALRBF/WUTF is asserted (depending 
+        on OSEL[1:0]), or when a TAMPxF/ITAMPxF is asserted (if TAMPOE = 1).
+      value: 1
+  - name: OSEL
+    description: "Output selection\nThese bits are used to select the flag to be routed
+      to TAMPALRM output."
+    bitOffset: 21
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Output disabled
+      value: 0
+    - name: B_0x1
+      description: Alarm A output enabled
+      value: 1
+    - name: B_0x2
+      description: Alarm B output enabled
+      value: 2
+    - name: B_0x3
+      description: Wakeup output enabled
+      value: 3
+  - name: COE
+    description: "Calibration output enable\nThis bit enables the CALIB output"
+    bitOffset: 23
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Calibration output disabled
+      value: 0
+    - name: B_0x1
+      description: Calibration output enabled
+      value: 1
+  - name: ITSE
+    description: timestamp on internal event enable
+    bitOffset: 24
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: internal event timestamp disabled
+      value: 0
+    - name: B_0x1
+      description: internal event timestamp enabled
+      value: 1
+  - name: TAMPTS
+    description: "Activate timestamp on tamper detection event\nTAMPTS is valid even
+      if TSE = 0 in the RTC_CR register. Timestamp flag is set up to 3 ck_apre cycles
+      after the tamper flags."
+    bitOffset: 25
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Tamper detection event does not cause a RTC timestamp to be 
+        saved
+      value: 0
+    - name: B_0x1
+      description: Save RTC timestamp on tamper detection event
+      value: 1
+  - name: TAMPOE
+    description: Tamper detection output enable on TAMPALRM
+    bitOffset: 26
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: The tamper flag is not routed on TAMPALRM
+      value: 0
+    - name: B_0x1
+      description: The tamper flag is routed on TAMPALRM, combined with the 
+        signal provided by OSEL and with the polarity provided by POL.
+      value: 1
+  - name: ALRAFCLR
+    description: Alarm A flag automatic clear
+    bitOffset: 27
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm A event generates a trigger event and ALRAF must be 
+        cleared by software to allow next alarm event.
+      value: 0
+    - name: B_0x1
+      description: Alarm A event generates a trigger event. ALRAF is 
+        automatically cleared by hardware after 1 ck_apre cycle.
+      value: 1
+  - name: ALRBFCLR
+    description: Alarm B flag automatic clear
+    bitOffset: 28
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm B event generates a trigger event and ALRBF must be 
+        cleared by software to allow next alarm event.
+      value: 0
+    - name: B_0x1
+      description: Alarm B event generates a trigger event. ALRBF is 
+        automatically cleared by hardware after 1 ck_apre cycle.
+      value: 1
+  - name: TAMPALRM_PU
+    description: TAMPALRM pull-up enable
+    bitOffset: 29
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No pull-up is applied on TAMPALRM output
+      value: 0
+    - name: B_0x1
+      description: A pull-up is applied on TAMPALRM output
+      value: 1
+  - name: TAMPALRM_TYPE
+    description: TAMPALRM output type
+    bitOffset: 30
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: TAMPALRM is push-pull output
+      value: 0
+    - name: B_0x1
+      description: TAMPALRM is open-drain output
+      value: 1
+  - name: OUT2EN
+    description: "RTC_OUT2 output enable\nWith this bit set, the RTC outputs can be
+      remapped on RTC_OUT2 as follows:\nOUT2EN = 0: RTC output 2 disable\nIf OSEL
+      different  00 or TAMPOE = 1: TAMPALRM is output on RTC_OUT1\nIf OSEL = 00 and
+      TAMPOE = 0 and COE = 1: CALIB is output on RTC_OUT1\nOUT2EN = 1: RTC output
+      2 enable\nIf (OSEL different  00 or TAMPOE = 1) and COE = 0: TAMPALRM is output
+      on RTC_OUT2\nIf OSEL = 00 and TAMPOE = 0 and COE = 1: CALIB is output on RTC_OUT2\n\
+      If (OSEL different  00 or TAMPOE = 1) and COE = 1: CALIB is output on RTC_OUT2
+      and TAMPALRM is output on RTC_OUT1."
+    bitOffset: 31
+    bitWidth: 1
+    access: read-write
+- name: RTC_PRIVCFGR
+  displayName: RTC_PRIVCFGR
+  description: RTC privilege mode control register
+  addressOffset: 28
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: ALRAPRIV
+    description: Alarm A and SSR underflow privilege protection
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RTC Alarm A and SSR underflow configuration and interrupt 
+        clear can be written when the APB access is privileged or 
+        non-privileged.
+      value: 0
+    - name: B_0x1
+      description: RTC Alarm A and SSR underflow configuration and interrupt 
+        clear can be written only when the APB access is privileged.
+      value: 1
+  - name: ALRBPRIV
+    description: Alarm B privilege protection
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RTC Alarm B configuration and interrupt clear can be written 
+        when the APB access is privileged or non-privileged.
+      value: 0
+    - name: B_0x1
+      description: RTC Alarm B configuration and interrupt clear can be written 
+        only when the APB access is privileged.
+      value: 1
+  - name: WUTPRIV
+    description: Wakeup timer privilege protection
+    bitOffset: 2
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RTC Wakeup timer configuration and interrupt clear can be 
+        written when the APB access is privileged or non-privileged.
+      value: 0
+    - name: B_0x1
+      description: RTC Wakeup timer configuration and interrupt clear can be 
+        written only when the APB access is privileged.
+      value: 1
+  - name: TSPRIV
+    description: Timestamp privilege protection
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RTC Timestamp configuration and interrupt clear can be 
+        written when the APB access is privileged or non-privileged.
+      value: 0
+    - name: B_0x1
+      description: RTC Timestamp configuration and interrupt clear can be 
+        written only when the APB access is privileged.
+      value: 1
+  - name: CALPRIV
+    description: Shift register, Delight saving, calibration and reference clock
+      privilege protection
+    bitOffset: 13
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Shift register, Delight saving, calibration and reference 
+        clock can be written when the APB access is privileged or 
+        non-privileged.
+      value: 0
+    - name: B_0x1
+      description: Shift register, Delight saving, calibration and reference 
+        clock can be written only when the APB access is privileged.
+      value: 1
+  - name: INITPRIV
+    description: Initialization privilege protection
+    bitOffset: 14
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RTC Initialization mode, calendar and prescalers registers 
+        can be written when the APB access is privileged or non-privileged.
+      value: 0
+    - name: B_0x1
+      description: RTC Initialization mode, calendar and prescalers registers 
+        can be written only when the APB access is privileged.
+      value: 1
+  - name: PRIV
+    description: RTC privilege protection
+    bitOffset: 15
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: All RTC registers can be written when the APB access is 
+        privileged or non-privileged, except the registers protected by other 
+        privilege protection bits.
+      value: 0
+    - name: B_0x1
+      description: All RTC registers can be written only when the APB access is 
+        privileged.
+      value: 1
+- name: RTC_WPR
+  displayName: RTC_WPR
+  description: RTC write protection register
+  addressOffset: 36
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Write protection key\nThis byte is written by software.\nReading
+      this byte always returns 0x00.\nRefer to RTC register write protection for a
+      description of how to unlock RTC register write protection."
+    bitOffset: 0
+    bitWidth: 8
+    access: write-only
+- name: RTC_CALR
+  displayName: RTC_CALR
+  description: RTC calibration register
+  addressOffset: 40
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: CALM
+    description: "Calibration minus\nThe frequency of the calendar is reduced by masking
+      CALM out of 2sup20/sup RTCCLK pulses (32 seconds if the input frequency is 32768
+      Hz). This decreases the frequency of the calendar with a resolution of 0.9537
+      ppm.\nTo increase the frequency of the calendar, this feature should be used
+      in conjunction with CALP. See Section 31.3.15: RTC smooth digital calibration
+      on page 1092."
+    bitOffset: 0
+    bitWidth: 9
+    access: read-write
+  - name: LPCAL
+    description: RTC low-power mode
+    bitOffset: 12
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Calibration window is 2sup20/sup RTCCLK, which is a 
+        high-consumption mode. This mode must be set only when less than 32s 
+        calibration window is required.
+      value: 0
+    - name: B_0x1
+      description: Calibration window is 2sup20/sup ck_apre, which is the 
+        required configuration for ultra-low consumption mode.
+      value: 1
+  - name: CALW16
+    description: "Use a 16-second calibration cycle period\nWhen CALW16 is set to
+      1, the 16-second calibration cycle period is selected. This bit must not be
+      set to 1 if CALW8 = 1.\nNote: CALM[0] is stuck at 0 when CALW16 = 1. Refer to
+      Section 31.3.15: RTC smooth digital calibration."
+    bitOffset: 13
+    bitWidth: 1
+    access: read-write
+  - name: CALW8
+    description: "Use an 8-second calibration cycle period\nWhen CALW8 is set to 1,
+      the 8-second calibration cycle period is selected.\nNote: CALM[1:0] are stuck
+      at 00 when CALW8 = 1. Refer to Section 31.3.15: RTC smooth digital calibration."
+    bitOffset: 14
+    bitWidth: 1
+    access: read-write
+  - name: CALP
+    description: "Increase frequency of RTC by 488.5 ppm\nThis feature is intended
+      to be used in conjunction with CALM, which lowers the frequency of the calendar
+      with a fine resolution.\nRefer to Section 31.3.15: RTC smooth digital calibration."
+    bitOffset: 15
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No RTCCLK pulses are added.
+      value: 0
+    - name: B_0x1
+      description: One RTCCLK pulse is effectively inserted every 2sup11/sup 
+        pulses (frequency increased by 488.5 ppm).
+      value: 1
+- name: RTC_SHIFTR
+  displayName: RTC_SHIFTR
+  description: RTC shift control register
+  addressOffset: 44
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUBFS
+    description: "Subtract a fraction of a second\nThese bits are write only and is
+      always read as zero. Writing to this bit has no effect when a shift operation
+      is pending (when SHPF = 1, in RTC_ICSR).\nThe value which is written to SUBFS
+      is added to the synchronous prescaler counter. Since this counter counts down,
+      this operation effectively subtracts from (delays) the clock by:\nDelay (seconds)
+      = SUBFS / (PREDIV_S + 1)\nA fraction of a second can effectively be added to
+      the clock (advancing the clock) when the ADD1S function is used in conjunction
+      with SUBFS, effectively advancing the clock by:\nAdvance (seconds) = (1 - (SUBFS
+      / (PREDIV_S + 1))).\nIn mixed BCD-binary mode (BIN=10 or 11), the SUBFS[14:BCDU+8]
+      must be written with 0.\nNote: Writing to SUBFS causes RSF to be cleared. Software
+      can then wait until RSF = 1 to be sure that the shadow registers have been updated
+      with the shifted time."
+    bitOffset: 0
+    bitWidth: 15
+    access: write-only
+  - name: ADD1S
+    description: "Add one second\nThis bit is write only and is always read as zero.
+      Writing to this bit has no effect when a shift operation is pending (when SHPF
+      = 1, in RTC_ICSR).\nThis function is intended to be used with SUBFS (see description
+      below) in order to effectively add a fraction of a second to the clock in an
+      atomic operation."
+    bitOffset: 31
+    bitWidth: 1
+    access: write-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No effect
+      value: 0
+    - name: B_0x1
+      description: Add one second to the clock/calendar
+      value: 1
+- name: RTC_TSTR
+  displayName: RTC_TSTR
+  description: RTC timestamp time register
+  addressOffset: 48
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SU
+    description: Second units in BCD format.
+    bitOffset: 0
+    bitWidth: 4
+    access: read-only
+  - name: ST
+    description: Second tens in BCD format.
+    bitOffset: 4
+    bitWidth: 3
+    access: read-only
+  - name: MNU
+    description: Minute units in BCD format.
+    bitOffset: 8
+    bitWidth: 4
+    access: read-only
+  - name: MNT
+    description: Minute tens in BCD format.
+    bitOffset: 12
+    bitWidth: 3
+    access: read-only
+  - name: HU
+    description: Hour units in BCD format.
+    bitOffset: 16
+    bitWidth: 4
+    access: read-only
+  - name: HT
+    description: Hour tens in BCD format.
+    bitOffset: 20
+    bitWidth: 2
+    access: read-only
+  - name: PM
+    description: AM/PM notation
+    bitOffset: 22
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: AM or 24-hour format
+      value: 0
+    - name: B_0x1
+      description: PM
+      value: 1
+- name: RTC_TSDR
+  displayName: RTC_TSDR
+  description: RTC timestamp date register
+  addressOffset: 52
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DU
+    description: Date units in BCD format
+    bitOffset: 0
+    bitWidth: 4
+    access: read-only
+  - name: DT
+    description: Date tens in BCD format
+    bitOffset: 4
+    bitWidth: 2
+    access: read-only
+  - name: MU
+    description: Month units in BCD format
+    bitOffset: 8
+    bitWidth: 4
+    access: read-only
+  - name: MT
+    description: Month tens in BCD format
+    bitOffset: 12
+    bitWidth: 1
+    access: read-only
+  - name: WDU
+    description: Week day units
+    bitOffset: 13
+    bitWidth: 3
+    access: read-only
+- name: RTC_TSSSR
+  displayName: RTC_TSSSR
+  description: RTC timestamp subsecond register
+  addressOffset: 56
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SS
+    description: "Subsecond value/synchronous binary counter values\nSS[31:0] is the
+      value of the synchronous prescaler counter when the timestamp event occurred."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-only
+- name: RTC_ALRMAR
+  displayName: RTC_ALRMAR
+  description: RTC alarm A register
+  addressOffset: 64
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SU
+    description: Second units in BCD format.
+    bitOffset: 0
+    bitWidth: 4
+    access: read-write
+  - name: ST
+    description: Second tens in BCD format.
+    bitOffset: 4
+    bitWidth: 3
+    access: read-write
+  - name: MSK1
+    description: Alarm A seconds mask
+    bitOffset: 7
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm A set if the seconds match
+      value: 0
+    - name: B_0x1
+      description: Seconds don't care in alarm A comparison
+      value: 1
+  - name: MNU
+    description: Minute units in BCD format
+    bitOffset: 8
+    bitWidth: 4
+    access: read-write
+  - name: MNT
+    description: Minute tens in BCD format
+    bitOffset: 12
+    bitWidth: 3
+    access: read-write
+  - name: MSK2
+    description: Alarm A minutes mask
+    bitOffset: 15
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm A set if the minutes match
+      value: 0
+    - name: B_0x1
+      description: Minutes don't care in alarm A comparison
+      value: 1
+  - name: HU
+    description: Hour units in BCD format
+    bitOffset: 16
+    bitWidth: 4
+    access: read-write
+  - name: HT
+    description: Hour tens in BCD format
+    bitOffset: 20
+    bitWidth: 2
+    access: read-write
+  - name: PM
+    description: AM/PM notation
+    bitOffset: 22
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: AM or 24-hour format
+      value: 0
+    - name: B_0x1
+      description: PM
+      value: 1
+  - name: MSK3
+    description: Alarm A hours mask
+    bitOffset: 23
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm A set if the hours match
+      value: 0
+    - name: B_0x1
+      description: Hours don't care in alarm A comparison
+      value: 1
+  - name: DU
+    description: Date units or day in BCD format
+    bitOffset: 24
+    bitWidth: 4
+    access: read-write
+  - name: DT
+    description: Date tens in BCD format
+    bitOffset: 28
+    bitWidth: 2
+    access: read-write
+  - name: WDSEL
+    description: Week day selection
+    bitOffset: 30
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DU[3:0] represents the date units
+      value: 0
+    - name: B_0x1
+      description: DU[3:0] represents the week day. DT[1:0] is don't care.
+      value: 1
+  - name: MSK4
+    description: Alarm A date mask
+    bitOffset: 31
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm A set if the date/day match
+      value: 0
+    - name: B_0x1
+      description: Date/day don't care in alarm A comparison
+      value: 1
+- name: RTC_ALRMASSR
+  displayName: RTC_ALRMASSR
+  description: RTC alarm A subsecond register
+  addressOffset: 68
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SS
+    description: "Subseconds value\nThis value is compared with the contents of the
+      synchronous prescaler counter to determine if alarm A is to be activated. Only
+      bits 0 up MASKSS-1 are compared.\nThis field is the mirror of SS[14:0] in the
+      RTC_ALRMABINR, and so can also be read or written through RTC_ALRMABINR."
+    bitOffset: 0
+    bitWidth: 15
+    access: read-write
+  - name: MASKSS
+    description: "Mask the most-significant bits starting at this bit\n...\nFrom 32
+      to 63: All 32 SS bits are compared and must match to activate alarm.\nNote:
+      In BCD mode (BIN=00) the overflow bits of the synchronous counter (bits 31:15)
+      are never compared. These bits can be different from 0 only after a shift operation."
+    bitOffset: 24
+    bitWidth: 6
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No comparison on subseconds for Alarm A. The alarm is set 
+        when the seconds unit is incremented (assuming that the rest of the 
+        fields match).
+      value: 0
+    - name: B_0x1
+      description: SS[31:1] are don't care in Alarm A comparison. Only SS[0] is 
+        compared.
+      value: 1
+  - name: SSCLR
+    description: "Clear synchronous counter on alarm (Binary mode only)\nNote: SSCLR
+      must be kept to 0 when BCD or mixed mode is used (BIN = 00, 10 or 11)."
+    bitOffset: 31
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: The synchronous binary counter (SS[31:0] in RTC_SSR) is 
+        free-running.
+      value: 0
+    - name: B_0x1
+      description: The synchronous binary counter (SS[31:0] in RTC_SSR) is 
+        running from 0xFFFF FFFF to RTC_ALRMABINR.SS[31:0] value and is 
+        automatically reloaded with 0xFFFF FFFF one ck_apre cycle after reaching
+        RTC_ALRMABINR.SS[31:0].
+      value: 1
+- name: RTC_ALRMBR
+  displayName: RTC_ALRMBR
+  description: RTC alarm B register
+  addressOffset: 72
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SU
+    description: Second units in BCD format
+    bitOffset: 0
+    bitWidth: 4
+    access: read-write
+  - name: ST
+    description: Second tens in BCD format
+    bitOffset: 4
+    bitWidth: 3
+    access: read-write
+  - name: MSK1
+    description: Alarm B seconds mask
+    bitOffset: 7
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm B set if the seconds match
+      value: 0
+    - name: B_0x1
+      description: Seconds don't care in alarm B comparison
+      value: 1
+  - name: MNU
+    description: Minute units in BCD format
+    bitOffset: 8
+    bitWidth: 4
+    access: read-write
+  - name: MNT
+    description: Minute tens in BCD format
+    bitOffset: 12
+    bitWidth: 3
+    access: read-write
+  - name: MSK2
+    description: Alarm B minutes mask
+    bitOffset: 15
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm B set if the minutes match
+      value: 0
+    - name: B_0x1
+      description: Minutes don't care in alarm B comparison
+      value: 1
+  - name: HU
+    description: Hour units in BCD format
+    bitOffset: 16
+    bitWidth: 4
+    access: read-write
+  - name: HT
+    description: Hour tens in BCD format
+    bitOffset: 20
+    bitWidth: 2
+    access: read-write
+  - name: PM
+    description: AM/PM notation
+    bitOffset: 22
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: AM or 24-hour format
+      value: 0
+    - name: B_0x1
+      description: PM
+      value: 1
+  - name: MSK3
+    description: Alarm B hours mask
+    bitOffset: 23
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm B set if the hours match
+      value: 0
+    - name: B_0x1
+      description: Hours don't care in alarm B comparison
+      value: 1
+  - name: DU
+    description: Date units or day in BCD format
+    bitOffset: 24
+    bitWidth: 4
+    access: read-write
+  - name: DT
+    description: Date tens in BCD format
+    bitOffset: 28
+    bitWidth: 2
+    access: read-write
+  - name: WDSEL
+    description: Week day selection
+    bitOffset: 30
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DU[3:0] represents the date units
+      value: 0
+    - name: B_0x1
+      description: DU[3:0] represents the week day. DT[1:0] is don't care.
+      value: 1
+  - name: MSK4
+    description: Alarm B date mask
+    bitOffset: 31
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Alarm B set if the date and day match
+      value: 0
+    - name: B_0x1
+      description: Date and day don't care in alarm B comparison
+      value: 1
+- name: RTC_ALRMBSSR
+  displayName: RTC_ALRMBSSR
+  description: RTC alarm B subsecond register
+  addressOffset: 76
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SS
+    description: "Subseconds value\nThis value is compared with the contents of the
+      synchronous prescaler counter to determine if alarm B is to be activated. Only
+      bits 0 up to MASKSS-1 are compared.\nThis field is the mirror of SS[14:0] in
+      the RTC_ALRMBBINR, and so can also be read or written through RTC_ALRMBBINR."
+    bitOffset: 0
+    bitWidth: 15
+    access: read-write
+  - name: MASKSS
+    description: "Mask the most-significant bits starting at this bit\n...\nFrom 32
+      to 63: All 32 SS bits are compared and must match to activate alarm.\nNote:
+      In BCD mode (BIN=00)The overflow bits of the synchronous counter (bits 15) is
+      never compared. This bit can be different from 0 only after a shift operation."
+    bitOffset: 24
+    bitWidth: 6
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No comparison on subseconds for Alarm B. The alarm is set 
+        when the seconds unit is incremented (assuming that the rest of the 
+        fields match).
+      value: 0
+    - name: B_0x1
+      description: SS[31:1] are don't care in Alarm B comparison. Only SS[0] is 
+        compared.
+      value: 1
+  - name: SSCLR
+    description: "Clear synchronous counter on alarm (Binary mode only)\nNote: SSCLR
+      must be kept to 0 when BCD or mixed mode is used (BIN = 00, 10 or 11)."
+    bitOffset: 31
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: The synchronous binary counter (SS[31:0] in RTC_SSR) is 
+        free-running.
+      value: 0
+    - name: B_0x1
+      description: The synchronous binary counter (SS[31:0] in RTC_SSR) is 
+        running from 0xFFFF FFFF to RTC_ALRMBBINR.SS[31:0] value and is 
+        automatically reloaded with 0xFFFF FFFF one ck_apre cycle after reaching
+        RTC_ALRMBBINR.SS[31:0].
+      value: 1
+- name: RTC_SR
+  displayName: RTC_SR
+  description: RTC status register
+  addressOffset: 80
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: ALRAF
+    description: "Alarm A flag\nThis flag is set by hardware when the time/date registers
+      (RTC_TR and RTC_DR) match the alarm A register (RTC_ALRMAR)."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-only
+  - name: ALRBF
+    description: "Alarm B flag\nThis flag is set by hardware when the time/date registers
+      (RTC_TR and RTC_DR) match the alarm B register (RTC_ALRMBR)."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-only
+  - name: WUTF
+    description: "Wakeup timer flag\nThis flag is set by hardware when the wakeup
+      auto-reload counter reaches 0.\nIf WUTOCLR[15:0] is different from 0x0000, WUTF
+      is cleared by hardware when the wakeup\nauto-reload counter reaches WUTOCLR
+      value.\nIf WUTOCLR[15:0] is 0x0000, WUTF must be cleared by software.\nThis
+      flag must be cleared by software at least 1.5 RTCCLK periods before WUTF is
+      set to 1 again."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-only
+  - name: TSF
+    description: "Timestamp flag\nThis flag is set by hardware when a timestamp event
+      occurs.\nIf ITSF flag is set, TSF must be cleared together with ITSF.\nNote:
+      TSF is not set if TAMPTS = 1 and the tamper flag is read during the 3 ck_apre
+      cycles following tamper event. Refer to Timestamp on tamper event for more details."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-only
+  - name: TSOVF
+    description: "Timestamp overflow flag\nThis flag is set by hardware when a timestamp
+      event occurs while TSF is already set.\nIt is recommended to check and then
+      clear TSOVF only after clearing the TSF bit. Otherwise, an overflow might not
+      be noticed if a timestamp event occurs immediately before the TSF bit is cleared."
+    bitOffset: 4
+    bitWidth: 1
+    access: read-only
+  - name: ITSF
+    description: "Internal timestamp flag\nThis flag is set by hardware when a timestamp
+      on the internal event occurs."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-only
+  - name: SSRUF
+    description: "SSR underflow flag\nThis flag is set by hardware when the SSR rolls
+      under 0. SSRUF is not set when SSCLR=1."
+    bitOffset: 6
+    bitWidth: 1
+    access: read-only
+- name: RTC_MISR
+  displayName: RTC_MISR
+  description: RTC masked interrupt status register
+  addressOffset: 84
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: ALRAMF
+    description: "Alarm A masked flag\nThis flag is set by hardware when the alarm
+      A interrupt occurs."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-only
+  - name: ALRBMF
+    description: "Alarm B masked flag\nThis flag is set by hardware when the alarm
+      B interrupt occurs."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-only
+  - name: WUTMF
+    description: "Wakeup timer masked flag\nThis flag is set by hardware when the
+      wakeup timer interrupt occurs.\nThis flag must be cleared by software at least
+      1.5 RTCCLK periods before WUTF is set to 1 again."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-only
+  - name: TSMF
+    description: "Timestamp masked flag\nThis flag is set by hardware when a timestamp
+      interrupt occurs.\nIf ITSF flag is set, TSF must be cleared together with ITSF."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-only
+  - name: TSOVMF
+    description: "Timestamp overflow masked flag\nThis flag is set by hardware when
+      a timestamp interrupt occurs while TSMF is already set.\nIt is recommended to
+      check and then clear TSOVF only after clearing the TSF bit. Otherwise, an overflow
+      might not be noticed if a timestamp event occurs immediately before the TSF
+      bit is cleared."
+    bitOffset: 4
+    bitWidth: 1
+    access: read-only
+  - name: ITSMF
+    description: "Internal timestamp masked flag\nThis flag is set by hardware when
+      a timestamp on the internal event occurs and timestampinterrupt is raised."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-only
+  - name: SSRUMF
+    description: "SSR underflow masked flag\nThis flag is set by hardware when the
+      SSR underflow interrupt occurs."
+    bitOffset: 6
+    bitWidth: 1
+    access: read-only
+- name: RTC_SCR
+  displayName: RTC_SCR
+  description: RTC status clear register
+  addressOffset: 92
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: CALRAF
+    description: "Clear alarm A flag\nWriting 1 in this bit clears the ALRAF bit in
+      the RTC_SR register."
+    bitOffset: 0
+    bitWidth: 1
+    access: write-only
+  - name: CALRBF
+    description: "Clear alarm B flag\nWriting 1 in this bit clears the ALRBF bit in
+      the RTC_SR register."
+    bitOffset: 1
+    bitWidth: 1
+    access: write-only
+  - name: CWUTF
+    description: "Clear wakeup timer flag\nWriting 1 in this bit clears the WUTF bit
+      in the RTC_SR register."
+    bitOffset: 2
+    bitWidth: 1
+    access: write-only
+  - name: CTSF
+    description: "Clear timestamp flag\nWriting 1 in this bit clears the TSOVF bit
+      in the RTC_SR register.\nIf ITSF flag is set, TSF must be cleared together with
+      ITSF by setting CRSF and CITSF."
+    bitOffset: 3
+    bitWidth: 1
+    access: write-only
+  - name: CTSOVF
+    description: "Clear timestamp overflow flag\nWriting 1 in this bit clears the
+      TSOVF bit in the RTC_SR register.\nIt is recommended to check and then clear
+      TSOVF only after clearing the TSF bit. Otherwise, an overflow might not be noticed
+      if a timestamp event occurs immediately before the TSF bit is cleared."
+    bitOffset: 4
+    bitWidth: 1
+    access: write-only
+  - name: CITSF
+    description: "Clear internal timestamp flag\nWriting 1 in this bit clears the
+      ITSF bit in the RTC_SR register."
+    bitOffset: 5
+    bitWidth: 1
+    access: write-only
+  - name: CSSRUF
+    description: "Clear SSR underflow flag\nWriting '1' in this bit clears the SSRUF
+      in the RTC_SR register."
+    bitOffset: 6
+    bitWidth: 1
+    access: write-only
+- name: RTC_ALRABINR
+  displayName: RTC_ALRABINR
+  description: RTC alarm A binary mode register
+  addressOffset: 112
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SS
+    description: "Synchronous counter alarm value in Binary mode\nThis value is compared
+      with the contents of the synchronous counter to determine if Alarm A is to be
+      activated. Only bits 0 up MASKSS-1 are compared.\nSS[14:0] is the mirror of
+      SS[14:0] in the RTC_ALRMASSRR, and so can also be read or written through RTC_ALRMASSR."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: RTC_ALRBBINR
+  displayName: RTC_ALRBBINR
+  description: RTC alarm B binary mode register
+  addressOffset: 116
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SS
+    description: "Synchronous counter alarm value in Binary mode\nThis value is compared
+      with the contents of the synchronous counter to determine if Alarm Bis to be
+      activated. Only bits 0 up MASKSS-1 are compared.\nSS[14:0] is the mirror of
+      SS[14:0] in the RTC_ALRMBSSRR, and so can also be read or written through RTC_ALRMBSSR."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+interrupts:
+- name: RTC
+  description: RTC global interrupt
+  value: 2
+addressBlocks:
+- offset: 0
+  size: 1024
+  usage: registers
