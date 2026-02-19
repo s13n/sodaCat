@@ -21,6 +21,16 @@ def parse(filename:str):
     with open(filename, 'r') as file:
         return xmltodict.parse(file.read())
 
+def extractFromZip(zip_path, svd_filename):
+    """Extract a single SVD from a zip archive, regardless of internal directory structure."""
+    import zipfile
+    target = f'/{svd_filename}.svd'
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+        for name in zf.namelist():
+            if name.endswith(target):
+                return zf.read(name)
+    return None
+
 def toNumber(tbl:dict, keys:list):
     """ In a table, in-place convert all listed keys into a number. """
     for k in keys:

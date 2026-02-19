@@ -130,17 +130,6 @@ NAME_MAP = {
     'USART9': 'USART',
 }
 
-def extract_svd_from_zip(zip_path, svd_filename):
-    """Extract a single SVD from the zip package."""
-    import zipfile
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            # SVD files are in STM32H7_svd_V2.8 subdirectory
-            svd_path = f'STM32H7_svd_V2.8/{svd_filename}.svd'
-            return zf.read(svd_path)
-    except Exception as e:
-        print(f"Error extracting {svd_filename}: {e}")
-        return None
 
 def process_chip(svd_root, chip_name):
     """Process a single STM32H7 chip SVD and extract functional blocks."""
@@ -251,7 +240,7 @@ def main():
         for chip_name in family_info['chips']:
             try:
                 # Extract and parse SVD
-                svd_content = extract_svd_from_zip(zip_path, chip_name)
+                svd_content = svd.extractFromZip(zip_path, chip_name)
                 if svd_content is not None:
                     # Write to temp file for parsing
                     with tempfile.NamedTemporaryFile(mode='wb', suffix='.svd', delete=False) as tf:
