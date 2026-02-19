@@ -166,7 +166,12 @@ def process_chip(svd_root, chip_name):
             }
 
             if block_type not in blocks:
-                blocks[block_type] = periph.copy()
+                block_data = periph.copy()
+                block_data.pop('baseAddress', None)
+                block_data['name'] = block_type
+                for intr in block_data.get('interrupts', []):
+                    intr.pop('value', None)
+                blocks[block_type] = block_data
 
         return blocks, chip_peripheral_refs, chip
     except Exception as e:
@@ -180,6 +185,7 @@ def save_yaml_model(model_dict, output_path):
     yaml = YAML()
     yaml.default_flow_style = False
     yaml.preserve_quotes = True
+    yaml.indent(mapping=2, sequence=4, offset=2)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w') as f:
@@ -284,35 +290,29 @@ def main():
         block_families = all_blocks[block_name]
 
         families_present = set(block_families.keys())
-        all_families = set(STM32U3_FAMILIES.keys())
 
-        if families_present == all_families:
-            first_family = list(families_present)[0]
-            reference_hash = block_families[first_family][0]['hash']
+        # Check if block is identical across all subfamilies that have it
+        hashes = {block_families[f][0]['hash'] for f in families_present}
 
-            all_hashes_same = all(
-                block_families[f][0]['hash'] == reference_hash
-                for f in families_present
-            )
+        if len(hashes) == 1:
+            # Block is identical everywhere it appears -> common dir
+            common_count += 1
+            first_family = next(iter(families_present))
+            block_data = block_families[first_family][0]['data']
+            block_file = common_blocks_dir / f'{block_name}.yaml'
+            save_yaml_model(block_data, block_file)
+            print(f"  + {block_name:20} -> U3 (shared)")
+            continue
 
-            if all_hashes_same:
-                common_count += 1
-                block_data = block_families[first_family][0]['data']
-                block_file = common_blocks_dir / f'{block_name}.yaml'
-                save_yaml_model(block_data, block_file)
-                print(f"  + {block_name:20} -> U3 (shared across all families)")
-                continue
-
-        # Block differs across families or missing in some
+        # Block differs between subfamilies -> subfamily-specific
         for family_name in STM32U3_FAMILIES:
             if family_name in families_present:
                 family_specific_count += 1
                 family_dir = output_dir / 'U3' / family_name
-                block_dir = family_dir
-                block_dir.mkdir(parents=True, exist_ok=True)
+                family_dir.mkdir(parents=True, exist_ok=True)
 
                 block_data = block_families[family_name][0]['data']
-                block_file = block_dir / f'{block_name}.yaml'
+                block_file = family_dir / f'{block_name}.yaml'
                 save_yaml_model(block_data, block_file)
 
     # ================================================================================

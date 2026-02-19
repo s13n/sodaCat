@@ -1,295 +1,297 @@
 name: RNG
 description: True random number generator
 groupName: RNG
-baseAddress: 1140981760
 registers:
-- name: RNG_CR
-  displayName: RNG_CR
-  description: RNG control register
-  addressOffset: 0
-  size: 32
-  resetValue: 8391936
-  resetMask: 4294967295
-  fields:
-  - name: RNGEN
-    description: True random number generator enable
-    bitOffset: 2
-    bitWidth: 1
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: True random number generator is disabled. Analog noise sources
-        are powered off and logic clocked by the RNG clock is gated.
-      value: 0
-    - name: B_0x1
-      description: True random number generator is enabled.
-      value: 1
-  - name: IE
-    description: Interrupt enable
-    bitOffset: 3
-    bitWidth: 1
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: RNG interrupt is disabled
-      value: 0
-    - name: B_0x1
-      description: RNG interrupt is enabled. An interrupt is pending as soon as DRDY
-        = 1, SEIS = 1 or CEIS = 1 in the RNG_SR register.
-      value: 1
-  - name: CED
-    description: Clock error detection
-    bitOffset: 5
-    bitWidth: 1
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: Clock error detection enabled
-      value: 0
-    - name: B_0x1
-      description: Clock error detection is disabled
-      value: 1
-  - name: ARDIS
-    description: Auto reset disable
-    bitOffset: 7
-    bitWidth: 1
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: When a noise source error occurs RNG performs an automatic reset
-        to clear the SECS bit.
-      value: 0
-    - name: B_0x1
-      description: When a noise source error occurs the application must reset RNG
-        by writing CONDRST to 1 then to 0, in order to restart random number generation.
-      value: 1
-  - name: RNG_CONFIG3
-    description: RNG configuration 3
-    bitOffset: 8
-    bitWidth: 4
-    access: read-write
-  - name: NISTC
-    description: NIST custom
-    bitOffset: 12
-    bitWidth: 1
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: Hardware default values for NIST compliant RNG. In this configuration
-        per 128-bit output
-      value: 0
-    - name: B_0x1
-      description: 'Custom values for NIST compliant RNG. See Section 47.6: RNG entropy
-        source validation for proposed configuration.'
-      value: 1
-  - name: RNG_CONFIG2
-    description: RNG configuration 2
-    bitOffset: 13
-    bitWidth: 3
-    access: read-write
-  - name: CLKDIV
-    description: Clock divider factor
-    bitOffset: 16
-    bitWidth: 4
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: internal RNG clock after divider is similar to incoming RNG clock.
-      value: 0
-    - name: B_0x1
-      description: two RNG clock cycles per internal RNG clock.
-      value: 1
-    - name: B_0x2
-      description: 2 less than sup>2 less than /sup> (= 4) RNG clock cycles per internal
-        RNG clock.
-      value: 2
-    - name: B_0xF
-      description: 2 less than sup>15 less than /sup> RNG clock cycles per internal
-        clock (for example. an incoming 48 MHz RNG clock becomes a 1.5 kHz internal
-        RNG clock)
-      value: 15
-  - name: RNG_CONFIG1
-    description: RNG configuration 1
-    bitOffset: 20
-    bitWidth: 6
-    access: read-write
-  - name: CONDRST
-    description: Conditioning soft reset
-    bitOffset: 30
-    bitWidth: 1
-    access: read-write
-  - name: CONFIGLOCK
-    description: RNG Config lock
-    bitOffset: 31
-    bitWidth: 1
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: Writes to the RNG_NSCR, RNG_HTCR and RNG_CR configuration bits
-        [29:4] are allowed.
-      value: 0
-    - name: B_0x1
-      description: Writes to the RNG_NSCR, RNG_HTCR and RNG_CR configuration bits
-        [29:4] are ignored until the next RNG reset.
-      value: 1
-- name: RNG_SR
-  displayName: RNG_SR
-  description: RNG status register
-  addressOffset: 4
-  size: 32
-  resetValue: 0
-  resetMask: 4294967295
-  fields:
-  - name: DRDY
-    description: Data ready
-    bitOffset: 0
-    bitWidth: 1
-    access: read-only
-    enumeratedValues:
-    - name: B_0x0
-      description: The RNG_DR register is not yet valid, no random data is available.
-      value: 0
-    - name: B_0x1
-      description: The RNG_DR register contains valid random data.
-      value: 1
-  - name: CECS
-    description: Clock error current status
-    bitOffset: 1
-    bitWidth: 1
-    access: read-only
-    enumeratedValues:
-    - name: B_0x0
-      description: The RNG clock is correct (f less than sub>RNGCLK less than /sub>>
-        f less than sub>HCLK less than /sub>/32). If the CEIS bit is set, this means
-        that a slow clock was detected and the situation has been recovered.
-      value: 0
-    - name: B_0x1
-      description: The RNG clock is too slow (f less than sub>RNGCLK less than /sub>
-        less than  f less than sub>HCLK less than /sub>/32).
-      value: 1
-  - name: SECS
-    description: Seed error current status
-    bitOffset: 2
-    bitWidth: 1
-    access: read-only
-    enumeratedValues:
-    - name: B_0x0
-      description: No faulty sequence has currently been detected. If the SEIS bit
-        is set, this means that a faulty sequence was detected and the situation has
-        been recovered.
-      value: 0
-    - name: B_0x1
-      description: 'At least one of the following faulty sequences has been detected:'
-      value: 1
-  - name: CEIS
-    description: Clock error interrupt status
-    bitOffset: 5
-    bitWidth: 1
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: The RNG clock is correct (f less than sub>RNGCLK less than /sub>>
-        f less than sub>HCLK less than /sub>/32)
-      value: 0
-    - name: B_0x1
-      description: The RNG clock before the internal divider is detected too slow
-        (f less than sub>RNGCLK less than /sub> less than  f less than sub>HCLK less
-        than /sub>/32)
-      value: 1
-  - name: SEIS
-    description: Seed error interrupt status
-    bitOffset: 6
-    bitWidth: 1
-    access: read-write
-    enumeratedValues:
-    - name: B_0x0
-      description: No faulty sequence detected
-      value: 0
-    - name: B_0x1
-      description: At least one faulty sequence is detected. See SECS bit description
-        for details.
-      value: 1
-- name: RNG_DR
-  displayName: RNG_DR
-  description: RNG data register
-  addressOffset: 8
-  size: 32
-  resetValue: 0
-  resetMask: 4294967295
-  fields:
-  - name: RNDATA
-    description: Random data
-    bitOffset: 0
-    bitWidth: 32
-    access: read-only
-- name: RNG_NSCR
-  displayName: RNG_NSCR
-  description: RNG noise source control register
-  addressOffset: 12
-  size: 32
-  resetValue: 262143
-  resetMask: 4294967295
-  fields:
-  - name: EN_OSC1
-    description: Each bit drives one oscillator enable signal input of instance number
-      1, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator). Bit
-      is ignored otherwise.
-    bitOffset: 0
-    bitWidth: 3
-    access: read-write
-  - name: EN_OSC2
-    description: Each bit drives one oscillator enable signal input of instance number
-      2, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator). Bit
-      is ignored otherwise.
-    bitOffset: 3
-    bitWidth: 3
-    access: read-write
-  - name: EN_OSC3
-    description: Each bit drives one oscillator enable signal input of instance number
-      3, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator). Bit
-      is ignored otherwise.
-    bitOffset: 6
-    bitWidth: 3
-    access: read-write
-  - name: EN_OSC4
-    description: Each bit drives one oscillator enable signal input of instance number
-      4, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator). Bit
-      is ignored otherwise.
-    bitOffset: 9
-    bitWidth: 3
-    access: read-write
-  - name: EN_OSC5
-    description: Each bit drives one oscillator enable signal input of instance number
-      5, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator). Bit
-      is ignored otherwise.
-    bitOffset: 12
-    bitWidth: 3
-    access: read-write
-  - name: EN_OSC6
-    description: Each bit drives one oscillator enable signal input of instance number
-      6, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator). Bit
-      is ignored otherwise.
-    bitOffset: 15
-    bitWidth: 3
-    access: read-write
-- name: RNG_HTCR
-  displayName: RNG_HTCR
-  description: RNG health test control register
-  addressOffset: 16
-  size: 32
-  resetValue: 29356
-  resetMask: 4294967295
-  fields:
-  - name: HTCFG
-    description: health test configuration
-    bitOffset: 0
-    bitWidth: 32
-    access: read-write
+  - name: RNG_CR
+    displayName: RNG_CR
+    description: RNG control register
+    addressOffset: 0
+    size: 32
+    resetValue: 8391936
+    resetMask: 4294967295
+    fields:
+      - name: RNGEN
+        description: True random number generator enable
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: True random number generator is disabled. Analog noise sources
+              are powered off and logic clocked by the RNG clock is gated.
+            value: 0
+          - name: B_0x1
+            description: True random number generator is enabled.
+            value: 1
+      - name: IE
+        description: Interrupt enable
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: RNG interrupt is disabled
+            value: 0
+          - name: B_0x1
+            description: RNG interrupt is enabled. An interrupt is pending as soon
+              as DRDY = 1, SEIS = 1 or CEIS = 1 in the RNG_SR register.
+            value: 1
+      - name: CED
+        description: Clock error detection
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Clock error detection enabled
+            value: 0
+          - name: B_0x1
+            description: Clock error detection is disabled
+            value: 1
+      - name: ARDIS
+        description: Auto reset disable
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: When a noise source error occurs RNG performs an automatic
+              reset to clear the SECS bit.
+            value: 0
+          - name: B_0x1
+            description: When a noise source error occurs the application must reset
+              RNG by writing CONDRST to 1 then to 0, in order to restart random number
+              generation.
+            value: 1
+      - name: RNG_CONFIG3
+        description: RNG configuration 3
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: NISTC
+        description: NIST custom
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Hardware default values for NIST compliant RNG. In this configuration
+              per 128-bit output
+            value: 0
+          - name: B_0x1
+            description: 'Custom values for NIST compliant RNG. See Section 47.6:
+              RNG entropy source validation for proposed configuration.'
+            value: 1
+      - name: RNG_CONFIG2
+        description: RNG configuration 2
+        bitOffset: 13
+        bitWidth: 3
+        access: read-write
+      - name: CLKDIV
+        description: Clock divider factor
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: internal RNG clock after divider is similar to incoming RNG
+              clock.
+            value: 0
+          - name: B_0x1
+            description: two RNG clock cycles per internal RNG clock.
+            value: 1
+          - name: B_0x2
+            description: 2 less than sup>2 less than /sup> (= 4) RNG clock cycles
+              per internal RNG clock.
+            value: 2
+          - name: B_0xF
+            description: 2 less than sup>15 less than /sup> RNG clock cycles per internal
+              clock (for example. an incoming 48 MHz RNG clock becomes a 1.5 kHz internal
+              RNG clock)
+            value: 15
+      - name: RNG_CONFIG1
+        description: RNG configuration 1
+        bitOffset: 20
+        bitWidth: 6
+        access: read-write
+      - name: CONDRST
+        description: Conditioning soft reset
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: CONFIGLOCK
+        description: RNG Config lock
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to the RNG_NSCR, RNG_HTCR and RNG_CR configuration
+              bits [29:4] are allowed.
+            value: 0
+          - name: B_0x1
+            description: Writes to the RNG_NSCR, RNG_HTCR and RNG_CR configuration
+              bits [29:4] are ignored until the next RNG reset.
+            value: 1
+  - name: RNG_SR
+    displayName: RNG_SR
+    description: RNG status register
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DRDY
+        description: Data ready
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: The RNG_DR register is not yet valid, no random data is available.
+            value: 0
+          - name: B_0x1
+            description: The RNG_DR register contains valid random data.
+            value: 1
+      - name: CECS
+        description: Clock error current status
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: The RNG clock is correct (f less than sub>RNGCLK less than
+              /sub>> f less than sub>HCLK less than /sub>/32). If the CEIS bit is
+              set, this means that a slow clock was detected and the situation has
+              been recovered.
+            value: 0
+          - name: B_0x1
+            description: The RNG clock is too slow (f less than sub>RNGCLK less than
+              /sub> less than  f less than sub>HCLK less than /sub>/32).
+            value: 1
+      - name: SECS
+        description: Seed error current status
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No faulty sequence has currently been detected. If the SEIS
+              bit is set, this means that a faulty sequence was detected and the situation
+              has been recovered.
+            value: 0
+          - name: B_0x1
+            description: 'At least one of the following faulty sequences has been
+              detected:'
+            value: 1
+      - name: CEIS
+        description: Clock error interrupt status
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The RNG clock is correct (f less than sub>RNGCLK less than
+              /sub>> f less than sub>HCLK less than /sub>/32)
+            value: 0
+          - name: B_0x1
+            description: The RNG clock before the internal divider is detected too
+              slow (f less than sub>RNGCLK less than /sub> less than  f less than
+              sub>HCLK less than /sub>/32)
+            value: 1
+      - name: SEIS
+        description: Seed error interrupt status
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No faulty sequence detected
+            value: 0
+          - name: B_0x1
+            description: At least one faulty sequence is detected. See SECS bit description
+              for details.
+            value: 1
+  - name: RNG_DR
+    displayName: RNG_DR
+    description: RNG data register
+    addressOffset: 8
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RNDATA
+        description: Random data
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: RNG_NSCR
+    displayName: RNG_NSCR
+    description: RNG noise source control register
+    addressOffset: 12
+    size: 32
+    resetValue: 262143
+    resetMask: 4294967295
+    fields:
+      - name: EN_OSC1
+        description: Each bit drives one oscillator enable signal input of instance
+          number 1, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator).
+          Bit is ignored otherwise.
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+      - name: EN_OSC2
+        description: Each bit drives one oscillator enable signal input of instance
+          number 2, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator).
+          Bit is ignored otherwise.
+        bitOffset: 3
+        bitWidth: 3
+        access: read-write
+      - name: EN_OSC3
+        description: Each bit drives one oscillator enable signal input of instance
+          number 3, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator).
+          Bit is ignored otherwise.
+        bitOffset: 6
+        bitWidth: 3
+        access: read-write
+      - name: EN_OSC4
+        description: Each bit drives one oscillator enable signal input of instance
+          number 4, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator).
+          Bit is ignored otherwise.
+        bitOffset: 9
+        bitWidth: 3
+        access: read-write
+      - name: EN_OSC5
+        description: Each bit drives one oscillator enable signal input of instance
+          number 5, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator).
+          Bit is ignored otherwise.
+        bitOffset: 12
+        bitWidth: 3
+        access: read-write
+      - name: EN_OSC6
+        description: Each bit drives one oscillator enable signal input of instance
+          number 6, gated with the RNGEN bit in RNG_CR (set bit to enable the oscillator).
+          Bit is ignored otherwise.
+        bitOffset: 15
+        bitWidth: 3
+        access: read-write
+  - name: RNG_HTCR
+    displayName: RNG_HTCR
+    description: RNG health test control register
+    addressOffset: 16
+    size: 32
+    resetValue: 29356
+    resetMask: 4294967295
+    fields:
+      - name: HTCFG
+        description: health test configuration
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
 interrupts:
-- name: RNG
-  description: RNG global interrupt
-  value: 40
+  - name: RNG
+    description: RNG global interrupt
 addressBlocks:
-- offset: 0
-  size: 20
-  usage: registers
+  - offset: 0
+    size: 20
+    usage: registers

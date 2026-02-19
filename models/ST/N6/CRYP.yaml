@@ -1,0 +1,783 @@
+name: CRYP
+description: Cryptographic processor
+groupName: CRYP
+registers:
+  - name: CRYP_CR
+    displayName: CRYP_CR
+    description: CRYP control register
+    addressOffset: 0
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ALGODIR
+        description: Algorithm direction
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Encryption
+            value: 0
+          - name: B_0x1
+            description: Decryption
+            value: 1
+      - name: ALGOMODE
+        description: 'ALGOMODE[2:0]: Algorithm mode'
+        bitOffset: 3
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x4
+            description: Electronic codebook (ECB)
+            value: 4
+          - name: B_0x5
+            description: Cipher Block Chaining (CBC)
+            value: 5
+          - name: B_0x6
+            description: Counter mode (CTR)
+            value: 6
+          - name: B_0x7
+            description: AES key preparation for ECB or CBC decryption
+            value: 7
+      - name: DATATYPE
+        description: Data type
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No swapping (32-bit data).
+            value: 0
+          - name: B_0x1
+            description: Half-word swapping (16-bit data).
+            value: 1
+          - name: B_0x2
+            description: Byte swapping (8-bit data).
+            value: 2
+          - name: B_0x3
+            description: Bit-level swapping.
+            value: 3
+      - name: KEYSIZE
+        description: Key size selection
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 128-bits
+            value: 0
+          - name: B_0x1
+            description: 192 bits
+            value: 1
+          - name: B_0x2
+            description: 256 bits
+            value: 2
+      - name: FFLUSH
+        description: FIFO flush
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No effect
+            value: 0
+          - name: B_0x1
+            description: FIFO flush enabled
+            value: 1
+      - name: CRYPEN
+        description: CRYP enable
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: CRYP disabled
+            value: 0
+          - name: B_0x1
+            description: CRYP enabled
+            value: 1
+      - name: GCM_CCMPH
+        description: GCM or CCM phase selection
+        bitOffset: 16
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Initialization phase
+            value: 0
+          - name: B_0x1
+            description: Header phase
+            value: 1
+          - name: B_0x2
+            description: Payload phase
+            value: 2
+          - name: B_0x3
+            description: Final phase
+            value: 3
+      - name: ALGOMODE_1
+        description: ALGOMODE[3]
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: NPBLB
+        description: Number of padding bytes in last block
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: All bytes are valid (no padding)
+            value: 0
+          - name: B_0x1
+            description: Padding for the last LSB byte
+            value: 1
+          - name: B_0xF
+            description: Padding for the 15 LSB bytes of last block.
+            value: 15
+      - name: KMOD
+        description: Key mode selection
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Normal-key mode. Key registers are freely usable.
+            value: 0
+          - name: B_0x2
+            description: Shared-key mode. If shared-key mode is properly initialized
+              in SAES peripheral, the CRYP peripheral automatically loads its key
+              registers with the data stored in the SAES key registers. The key value
+              is available in CRYP key registers when BUSY bit is cleared and KEYVALID
+              is set in the CRYP_SR register. Key error flag KERF is set otherwise
+              in the CRYP_SR register.
+            value: 2
+      - name: IPRST
+        description: CRYP peripheral software reset
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: CRYP_SR
+    displayName: CRYP_SR
+    description: CRYP status register
+    addressOffset: 4
+    size: 32
+    resetValue: 3
+    resetMask: 4294967295
+    fields:
+      - name: IFEM
+        description: Input FIFO empty flag
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Input FIFO is not empty
+            value: 0
+          - name: B_0x1
+            description: Input FIFO is empty
+            value: 1
+      - name: IFNF
+        description: Input FIFO not full flag
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Input FIFO is full
+            value: 0
+          - name: B_0x1
+            description: Input FIFO is not full
+            value: 1
+      - name: OFNE
+        description: Output FIFO not empty flag
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Output FIFO is empty
+            value: 0
+          - name: B_0x1
+            description: Output FIFO is not empty
+            value: 1
+      - name: OFFU
+        description: Output FIFO full flag
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Output FIFO is not full
+            value: 0
+          - name: B_0x1
+            description: Output FIFO is full
+            value: 1
+      - name: BUSY
+        description: Busy bit
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Idle
+            value: 0
+          - name: B_0x1
+            description: Busy
+            value: 1
+      - name: KERF
+        description: Key error flag
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No key error detected
+            value: 0
+          - name: B_0x1
+            description: Key information failed to load into key registers
+            value: 1
+      - name: KEYVALID
+        description: Key valid flag
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Key not valid
+            value: 0
+          - name: B_0x1
+            description: Key valid
+            value: 1
+  - name: CRYP_DINR
+    displayName: CRYP_DINR
+    description: CRYP data input register
+    addressOffset: 8
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: Data input
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_DOUTR
+    displayName: CRYP_DOUTR
+    description: CRYP data output register
+    addressOffset: 12
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: Data output
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: CRYP_DMACR
+    displayName: CRYP_DMACR
+    description: CRYP DMA control register
+    addressOffset: 16
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIEN
+        description: DMA input enable
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Incoming data transfer to CRYP via DMA is disabled
+            value: 0
+          - name: B_0x1
+            description: Incoming data transfer to CRYP via DMA is disabled
+            value: 1
+      - name: DOEN
+        description: DMA output enable
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Outgoing data transfer from CRYP via DMA is disabled
+            value: 0
+          - name: B_0x1
+            description: Outgoing data transfer from CRYP via DMA is enabled
+            value: 1
+  - name: CRYP_IMSCR
+    displayName: CRYP_IMSCR
+    description: CRYP interrupt mask set/clear register
+    addressOffset: 20
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: INIM
+        description: Input FIFO service interrupt mask
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Input FIFO interrupt is disabled (masked), masked interrupt
+              status (INMIS) stays cleared
+            value: 0
+          - name: B_0x1
+            description: Input FIFO interrupt is enabled (not masked)
+            value: 1
+      - name: OUTIM
+        description: Output FIFO service interrupt mask
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Output FIFO interrupt is disabled (masked), masked interrupt
+              status (OUTMIS) stays cleared
+            value: 0
+          - name: B_0x1
+            description: Output FIFO interrupt is enabled (not masked)
+            value: 1
+  - name: CRYP_RISR
+    displayName: CRYP_RISR
+    description: CRYP raw interrupt status register
+    addressOffset: 24
+    size: 32
+    resetValue: 1
+    resetMask: 4294967295
+    fields:
+      - name: INRIS
+        description: Input FIFO service raw interrupt status
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No input FIFO event detected
+            value: 0
+          - name: B_0x1
+            description: Input FIFO empty or not full detected; an interrupt is generated
+              if CRYPEN is set and if INIM bit is set in CRYP_IMSCR register
+            value: 1
+      - name: OUTRIS
+        description: Output FIFO service raw interrupt status
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No output FIFO event detected
+            value: 0
+          - name: B_0x1
+            description: Output FIFO full or not empty detected; an interrupt is generated
+              if OUTIM bit is set in CRYP_IMSCR register
+            value: 1
+  - name: CRYP_MISR
+    displayName: CRYP_MISR
+    description: CRYP masked interrupt status register
+    addressOffset: 28
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: INMIS
+        description: Input FIFO service masked interrupt status
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No input FIFO event detected or INIM mask cleared in CRYP_IMSCR
+              or CRYPEN bit cleared.
+            value: 0
+          - name: B_0x1
+            description: Input FIFO empty or not full detected, with an interrupt
+              pending
+            value: 1
+      - name: OUTMIS
+        description: Output FIFO service masked interrupt status
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No output FIFO event detected or OUTIM mask cleared in CRYP_IMSCR
+            value: 0
+          - name: B_0x1
+            description: Output FIFO full or not empty detected, with an interrupt
+              pending
+            value: 1
+  - name: CRYP_K0LR
+    displayName: CRYP_K0LR
+    description: CRYP key register 0L
+    addressOffset: 32
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: K
+        description: Key bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CRYP_K0RR
+    displayName: CRYP_K0RR
+    description: CRYP key register 0R
+    addressOffset: 36
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: K
+        description: Key bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CRYP_K1LR
+    displayName: CRYP_K1LR
+    description: CRYP key register 1L
+    addressOffset: 40
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: K
+        description: Key bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CRYP_K1RR
+    displayName: CRYP_K1RR
+    description: CRYP key register 1R
+    addressOffset: 44
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: K
+        description: Key bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CRYP_K2LR
+    displayName: CRYP_K2LR
+    description: CRYP key register 2L
+    addressOffset: 48
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: K
+        description: Key bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CRYP_K2RR
+    displayName: CRYP_K2RR
+    description: CRYP key register 2R
+    addressOffset: 52
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: K
+        description: Key bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CRYP_K3LR
+    displayName: CRYP_K3LR
+    description: CRYP key register 3L
+    addressOffset: 56
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: K
+        description: Key bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CRYP_K3RR
+    displayName: CRYP_K3RR
+    description: CRYP key register 3R
+    addressOffset: 60
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: K
+        description: Key bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CRYP_IV0LR
+    displayName: CRYP_IV0LR
+    description: CRYP initialization vector register 0L
+    addressOffset: 64
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IVI
+        description: Initialization vector bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_IV0RR
+    displayName: CRYP_IV0RR
+    description: CRYP initialization vector register 0R
+    addressOffset: 68
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IVI
+        description: Initialization vector bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_IV1LR
+    displayName: CRYP_IV1LR
+    description: CRYP initialization vector register 1L
+    addressOffset: 72
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IVI
+        description: Initialization vector bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_IV1RR
+    displayName: CRYP_IV1RR
+    description: CRYP initialization vector register 1R
+    addressOffset: 76
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IVI
+        description: Initialization vector bit x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCMCCM0R
+    displayName: CRYP_CSGCMCCM0R
+    description: CRYP context swap GCM-CCM registers
+    addressOffset: 80
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCMCCM
+        description: Context swap for GCM/GMAC and CCM modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCMCCM1R
+    displayName: CRYP_CSGCMCCM1R
+    description: CRYP context swap GCM-CCM registers
+    addressOffset: 84
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCMCCM
+        description: Context swap for GCM/GMAC and CCM modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCMCCM2R
+    displayName: CRYP_CSGCMCCM2R
+    description: CRYP context swap GCM-CCM registers
+    addressOffset: 88
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCMCCM
+        description: Context swap for GCM/GMAC and CCM modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCMCCM3R
+    displayName: CRYP_CSGCMCCM3R
+    description: CRYP context swap GCM-CCM registers
+    addressOffset: 92
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCMCCM
+        description: Context swap for GCM/GMAC and CCM modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCMCCM4R
+    displayName: CRYP_CSGCMCCM4R
+    description: CRYP context swap GCM-CCM registers
+    addressOffset: 96
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCMCCM
+        description: Context swap for GCM/GMAC and CCM modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCMCCM5R
+    displayName: CRYP_CSGCMCCM5R
+    description: CRYP context swap GCM-CCM registers
+    addressOffset: 100
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCMCCM
+        description: Context swap for GCM/GMAC and CCM modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCMCCM6R
+    displayName: CRYP_CSGCMCCM6R
+    description: CRYP context swap GCM-CCM registers
+    addressOffset: 104
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCMCCM
+        description: Context swap for GCM/GMAC and CCM modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCMCCM7R
+    displayName: CRYP_CSGCMCCM7R
+    description: CRYP context swap GCM-CCM registers
+    addressOffset: 108
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCMCCM
+        description: Context swap for GCM/GMAC and CCM modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCM0R
+    displayName: CRYP_CSGCM0R
+    description: CRYP context swap GCM registers
+    addressOffset: 112
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCM
+        description: Context swap for GCM/GMAC modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCM1R
+    displayName: CRYP_CSGCM1R
+    description: CRYP context swap GCM registers
+    addressOffset: 116
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCM
+        description: Context swap for GCM/GMAC modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCM2R
+    displayName: CRYP_CSGCM2R
+    description: CRYP context swap GCM registers
+    addressOffset: 120
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCM
+        description: Context swap for GCM/GMAC modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCM3R
+    displayName: CRYP_CSGCM3R
+    description: CRYP context swap GCM registers
+    addressOffset: 124
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCM
+        description: Context swap for GCM/GMAC modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCM4R
+    displayName: CRYP_CSGCM4R
+    description: CRYP context swap GCM registers
+    addressOffset: 128
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCM
+        description: Context swap for GCM/GMAC modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCM5R
+    displayName: CRYP_CSGCM5R
+    description: CRYP context swap GCM registers
+    addressOffset: 132
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCM
+        description: Context swap for GCM/GMAC modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCM6R
+    displayName: CRYP_CSGCM6R
+    description: CRYP context swap GCM registers
+    addressOffset: 136
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCM
+        description: Context swap for GCM/GMAC modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CRYP_CSGCM7R
+    displayName: CRYP_CSGCM7R
+    description: CRYP context swap GCM registers
+    addressOffset: 140
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CSGCM
+        description: Context swap for GCM/GMAC modes
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+interrupts:
+  - name: CRYP
+    description: CRYP global interrupt
+addressBlocks:
+  - offset: 0
+    size: 1024
+    usage: registers
