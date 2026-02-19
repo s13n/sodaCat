@@ -1,0 +1,768 @@
+name: AES
+description: AES register block
+groupName: AES
+baseAddress: 1073897472
+registers:
+- name: AES_CR
+  displayName: AES_CR
+  description: AES control register
+  addressOffset: 0
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: EN
+    description: "Enable\nThis bit enables/disables the AES peripheral.\nAt any moment,
+      clearing then setting the bit re-initializes the AES peripheral.\nThis bit is
+      automatically cleared by hardware upon the completion of the key preparation
+      (MODE[1:0] at 0x1) and upon the completion of GCM/GMAC/CCM initialization phase.\n\
+      The bit cannot be set as long as KEYVALID1is cleared"
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Disable
+      value: 0
+    - name: B_0x1
+      description: Enable
+      value: 1
+  - name: DATATYPE
+    description: "Data type\nThis bitfield defines the format of data written in the
+      AES_DINR register or read from the AES_DOUTR register, through selecting the
+      mode of data swapping. This swapping is defined in Section121.4.14: AES data
+      registers and data swapping.\nAttempts to write the bitfield are ignored when
+      EN is set before the write access and it is not cleared by that write access."
+    bitOffset: 1
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No swapping (32-bit data).
+      value: 0
+    - name: B_0x1
+      description: Half-word swapping (16-bit data)
+      value: 1
+    - name: B_0x2
+      description: Byte swapping (8-bit data)
+      value: 2
+    - name: B_0x3
+      description: Bit-level swapping
+      value: 3
+  - name: MODE
+    description: "Operating mode\nThis bitfield selects the AES operating mode:\n\
+      Attempts to write the bitfield are ignored when EN is set before the write access
+      and it is not cleared by that write access."
+    bitOffset: 3
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Encryption
+      value: 0
+    - name: B_0x1
+      description: Key derivation (or key preparation), for ECB/CBC decryption 
+        only
+      value: 1
+    - name: B_0x2
+      description: Decryption
+      value: 2
+  - name: CHMOD
+    description: "CHMOD[1:0]: Chaining mode\nThis bitfield selects the AES chaining
+      mode:\nothers: Reserved\nAttempts to write the bitfield are ignored when EN
+      is set before the write access and it is not cleared by that write access."
+    bitOffset: 5
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Electronic codebook (ECB)
+      value: 0
+    - name: B_0x1
+      description: Cipher-block chaining (CBC)
+      value: 1
+    - name: B_0x2
+      description: Counter mode (CTR)
+      value: 2
+    - name: B_0x3
+      description: Galois counter mode (GCM) and Galois message authentication 
+        code (GMAC)
+      value: 3
+  - name: DMAINEN
+    description: "DMA input enable\nThis bit enables automatic generation of DMA requests
+      during the data phase, for incoming data transfers to AES via DMA.\nSetting
+      this bit is ignored when MODE[1:0] is at 0x1 (key derivation)."
+    bitOffset: 11
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Disable
+      value: 0
+    - name: B_0x1
+      description: Enable
+      value: 1
+  - name: DMAOUTEN
+    description: "DMA output enable\nThis bit enables automatic generation of DMA
+      requests during the data phase, for outgoing data transfers from AES via DMA.\n\
+      Setting this bit is ignored when MODE[1:0] is at 0x1 (key derivation)."
+    bitOffset: 12
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Disable
+      value: 0
+    - name: B_0x1
+      description: Enable
+      value: 1
+  - name: GCMPH
+    description: "GCM or CCM phase selection\nThis bitfield selects the phase, applicable
+      only with GCM, GMAC or CCM chaining modes."
+    bitOffset: 13
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Initialization phase
+      value: 0
+    - name: B_0x1
+      description: Header phase
+      value: 1
+    - name: B_0x2
+      description: Payload phase
+      value: 2
+    - name: B_0x3
+      description: Final phase
+      value: 3
+  - name: CHMOD_1
+    description: CHMOD[2]
+    bitOffset: 16
+    bitWidth: 1
+    access: read-write
+  - name: KEYSIZE
+    description: "Key size selection\nThis bitfield defines the key length in bits
+      of the key used by AES.\nAttempts to write the bit are ignored when the EN is
+      set before the write access and it is not cleared by that write access."
+    bitOffset: 18
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 128-bit
+      value: 0
+    - name: B_0x1
+      description: 256-bit
+      value: 1
+  - name: NPBLB
+    description: "Number of padding bytes in last block\nThis padding information
+      must be filled by software before processing the last block of GCM payload encryption
+      or CCM payload decryption, otherwise authentication tag computation is incorrect.\n\
+      ..."
+    bitOffset: 20
+    bitWidth: 4
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: All bytes are valid (no padding)
+      value: 0
+    - name: B_0x1
+      description: Padding for the last LSB byte
+      value: 1
+    - name: B_0xF
+      description: Padding for the 15 LSB bytes of last block.
+      value: 15
+  - name: IPRST
+    description: "AES peripheral software reset\nSetting the bit resets the AES peripheral,
+      putting all registers to their default values, except the IPRST bit itself.
+      Hence, any key-relative data are lost. For this reason, it is recommended to
+      set the bit before handing over the AES to a less secure application.\nThe bit
+      must be kept low while writing any configuration registers."
+    bitOffset: 31
+    bitWidth: 1
+    access: read-write
+- name: AES_SR
+  displayName: AES_SR
+  description: AES status register
+  addressOffset: 4
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: RDERRF
+    description: "Read error flag\nThis bit is set when an unexpected read to the
+      AES_DOUTR register occurred. When set RDERRF bit has no impact on the AES operations.\n\
+      The flag setting generates an interrupt if the RWEIE bit of the AES_IER register
+      is set.\nThe flag is cleared by setting the RWEIF bit of the AES_ICR register."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No error
+      value: 0
+    - name: B_0x1
+      description: Unexpected read to AES_DOUTR register occurred during 
+        computation or data input phase.
+      value: 1
+  - name: WRERRF
+    description: "Write error flag\nThis bit is set when an unexpected write to the
+      AES_DINR register occurred. When set WRERRF bit has no impact on the AES operations.\n\
+      The flag setting generates an interrupt if the RWEIE bit of the AES_IER register
+      is set.\nThe flag is cleared by setting the RWEIF bit of the AES_ICR register."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No error
+      value: 0
+    - name: B_0x1
+      description: Unexpected write to AES_DINR register occurred during 
+        computation or data output phase.
+      value: 1
+  - name: BUSY
+    description: "Busy\nThis flag indicates whether AES is idle or busy.\nAES is flagged
+      as idle when disabled (when EN is low) or when the last processing is completed.\n\
+      AES is flagged as busy when processing a block data, preparing a key (ECB or
+      CBC decryption only).\nWhen GCM encryption is selected, this flag must be at
+      zero before suspending current process to manage a higher-priority message."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: Idle
+      value: 0
+    - name: B_0x1
+      description: Busy
+      value: 1
+  - name: KEYVALID
+    description: "Key valid flag\nThis bit is set by hardware when the key of size
+      defined by KEYSIZE is loaded in AES_KEYRx key registers.\nThe EN bit can only
+      be set when KEYVALID is set.\nThe key must be written in the key registers in
+      the correct sequence, otherwise the KEIF flag is set and KEYVALID remains cleared.\n\
+      If set, KEIF must be cleared through the AES_ICR register, otherwise KEYVALID
+      cannot be set. See the KEIF flag description for more details.\nFor further
+      information on key loading, refer to Section121.4.15: AES key registers."
+    bitOffset: 7
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: Key not valid
+      value: 0
+    - name: B_0x1
+      description: Key valid
+      value: 1
+- name: AES_DINR
+  displayName: AES_DINR
+  description: AES data input register
+  addressOffset: 8
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DIN
+    description: "Data input\nA four-fold sequential write to this bitfield during
+      the Input phase results in writing a complete 16-bytes block of input data to
+      the AES peripheral. From the first to the fourth write, the corresponding data
+      weights are [127:96], [95:64], [63:32], and [31:0]. Upon each write, the data
+      from the 32-bit input buffer are handled by the data swap block according to
+      the DATATYPE[1:0] bitfield, then written into the AES core 16-bytes input buffer.\n\
+      Reads return zero."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_DOUTR
+  displayName: AES_DOUTR
+  description: AES data output register
+  addressOffset: 12
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DOUT
+    description: "Data output\nThis read-only bitfield fetches a 32-bit output buffer.
+      A four-fold sequential read of this bitfield, upon\nthe computation completion
+      (CCF flag set), virtually reads a complete 16-byte block of output data from
+      the AES peripheral. Before reaching the output buffer, the data produced by
+      the AES core are\nhandled by the data swap block according to the DATATYPE[1:0]
+      bitfield.\nData weights from the first to the fourth read operation are: [127:96],
+      [95:64], [63:32], and [31:0]."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-only
+- name: AES_KEYR0
+  displayName: AES_KEYR0
+  description: AES key register 0
+  addressOffset: 16
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Cryptographic key, bits [31:0]\nThese are bits [31:0] of the write-only
+      bitfield KEY[255:0] AES encryption or decryption key, depending on the MODE[1:0]
+      bitfield of the AES_CR register.\nWrites to AES_KEYRx registers are ignored
+      when AES is enabled (EN bit set).\n A special writing sequence is required.
+      In this sequence, any valid write to AES_KEYRx register clears the KEYVALID
+      flag except for the sequence-completing write that sets it. Also refer to the
+      description of the KEYVALID flag in the AES_SR register."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_KEYR1
+  displayName: AES_KEYR1
+  description: AES key register 1
+  addressOffset: 20
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Cryptographic key, bits [63:32]\nRefer to the AES_KEYR0 register
+      for description of the KEY[255:0] bitfield and for information relative to writing
+      AES_KEYRx registers."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_KEYR2
+  displayName: AES_KEYR2
+  description: AES key register 2
+  addressOffset: 24
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Cryptographic key, bits [95:64]\nRefer to the AES_KEYR0 register
+      for description of the KEY[255:0] bitfield and for information relative to writing
+      AES_KEYRx registers."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_KEYR3
+  displayName: AES_KEYR3
+  description: AES key register 3
+  addressOffset: 28
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Cryptographic key, bits [127:96]\nRefer to the AES_KEYR0 register
+      for description of the KEY[255:0] bitfield and for information relative to writing
+      AES_KEYRx registers."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_IVR0
+  displayName: AES_IVR0
+  description: AES initialization vector register 0
+  addressOffset: 32
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: IVI
+    description: "Initialization vector input, bits [31:0]\nAES_IVRx registers store
+      the 128-bit initialization vector or the nonce, depending on the chaining mode
+      selected. This value is updated by hardware after each computation round (when
+      applicable).\nWrite to this register is ignored when EN bit is set in AES_SR
+      register"
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_IVR1
+  displayName: AES_IVR1
+  description: AES initialization vector register 1
+  addressOffset: 36
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: IVI
+    description: "Initialization vector input, bits [63:32]\nRefer to the AES_IVR0
+      register for description of the IVI[128:0] bitfield."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_IVR2
+  displayName: AES_IVR2
+  description: AES initialization vector register 2
+  addressOffset: 40
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: IVI
+    description: "Initialization vector input, bits [95:64]\nRefer to the AES_IVR0
+      register for description of the IVI[128:0] bitfield."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_IVR3
+  displayName: AES_IVR3
+  description: AES initialization vector register 3
+  addressOffset: 44
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: IVI
+    description: "Initialization vector input, bits [127:96]\nRefer to the AES_IVR0
+      register for description of the IVI[128:0] bitfield."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_KEYR4
+  displayName: AES_KEYR4
+  description: AES key register 4
+  addressOffset: 48
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Cryptographic key, bits [159:128]\nRefer to the AES_KEYR0 register
+      for description of the KEY[255:0] bitfield and for information relative to writing
+      AES_KEYRx registers."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_KEYR5
+  displayName: AES_KEYR5
+  description: AES key register 5
+  addressOffset: 52
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Cryptographic key, bits [191:160]\nRefer to the AES_KEYR0 register
+      for description of the KEY[255:0] bitfield and for information relative to writing
+      AES_KEYRx registers."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_KEYR6
+  displayName: AES_KEYR6
+  description: AES key register 6
+  addressOffset: 56
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Cryptographic key, bits [223:192]\nRefer to the AES_KEYR0 register
+      for description of the KEY[255:0] bitfield and for information relative to writing
+      AES_KEYRx registers."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_KEYR7
+  displayName: AES_KEYR7
+  description: AES key register 7
+  addressOffset: 60
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: KEY
+    description: "Cryptographic key, bits [255:224]\nRefer to the AES_KEYR0 register
+      for description of the KEY[255:0] bitfield and for information relative to writing
+      AES_KEYRx registers."
+    bitOffset: 0
+    bitWidth: 32
+    access: write-only
+- name: AES_SUSPR0
+  displayName: AES_SUSPR0
+  description: AES suspend registers
+  addressOffset: 64
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUSP
+    description: "Suspend data\nAES_SUSPRx registers contain the complete internal
+      register states of the AES when the GCM, GMAC or CCM processing of the current
+      task is suspended to process a higher-priority task. Refer to Section121.4.8:
+      AES suspend and resume operations for more details.\nRead to this register returns
+      zero when EN bit is cleared in AES_SR register.\nAES_SUSPRx registers are not
+      used in other chaining modes than GCM, GMAC or CCM."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_SUSPR1
+  displayName: AES_SUSPR1
+  description: AES suspend registers
+  addressOffset: 68
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUSP
+    description: "Suspend data\nAES_SUSPRx registers contain the complete internal
+      register states of the AES when the GCM, GMAC or CCM processing of the current
+      task is suspended to process a higher-priority task. Refer to Section121.4.8:
+      AES suspend and resume operations for more details.\nRead to this register returns
+      zero when EN bit is cleared in AES_SR register.\nAES_SUSPRx registers are not
+      used in other chaining modes than GCM, GMAC or CCM."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_SUSPR2
+  displayName: AES_SUSPR2
+  description: AES suspend registers
+  addressOffset: 72
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUSP
+    description: "Suspend data\nAES_SUSPRx registers contain the complete internal
+      register states of the AES when the GCM, GMAC or CCM processing of the current
+      task is suspended to process a higher-priority task. Refer to Section121.4.8:
+      AES suspend and resume operations for more details.\nRead to this register returns
+      zero when EN bit is cleared in AES_SR register.\nAES_SUSPRx registers are not
+      used in other chaining modes than GCM, GMAC or CCM."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_SUSPR3
+  displayName: AES_SUSPR3
+  description: AES suspend registers
+  addressOffset: 76
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUSP
+    description: "Suspend data\nAES_SUSPRx registers contain the complete internal
+      register states of the AES when the GCM, GMAC or CCM processing of the current
+      task is suspended to process a higher-priority task. Refer to Section121.4.8:
+      AES suspend and resume operations for more details.\nRead to this register returns
+      zero when EN bit is cleared in AES_SR register.\nAES_SUSPRx registers are not
+      used in other chaining modes than GCM, GMAC or CCM."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_SUSPR4
+  displayName: AES_SUSPR4
+  description: AES suspend registers
+  addressOffset: 80
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUSP
+    description: "Suspend data\nAES_SUSPRx registers contain the complete internal
+      register states of the AES when the GCM, GMAC or CCM processing of the current
+      task is suspended to process a higher-priority task. Refer to Section121.4.8:
+      AES suspend and resume operations for more details.\nRead to this register returns
+      zero when EN bit is cleared in AES_SR register.\nAES_SUSPRx registers are not
+      used in other chaining modes than GCM, GMAC or CCM."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_SUSPR5
+  displayName: AES_SUSPR5
+  description: AES suspend registers
+  addressOffset: 84
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUSP
+    description: "Suspend data\nAES_SUSPRx registers contain the complete internal
+      register states of the AES when the GCM, GMAC or CCM processing of the current
+      task is suspended to process a higher-priority task. Refer to Section121.4.8:
+      AES suspend and resume operations for more details.\nRead to this register returns
+      zero when EN bit is cleared in AES_SR register.\nAES_SUSPRx registers are not
+      used in other chaining modes than GCM, GMAC or CCM."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_SUSPR6
+  displayName: AES_SUSPR6
+  description: AES suspend registers
+  addressOffset: 88
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUSP
+    description: "Suspend data\nAES_SUSPRx registers contain the complete internal
+      register states of the AES when the GCM, GMAC or CCM processing of the current
+      task is suspended to process a higher-priority task. Refer to Section121.4.8:
+      AES suspend and resume operations for more details.\nRead to this register returns
+      zero when EN bit is cleared in AES_SR register.\nAES_SUSPRx registers are not
+      used in other chaining modes than GCM, GMAC or CCM."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_SUSPR7
+  displayName: AES_SUSPR7
+  description: AES suspend registers
+  addressOffset: 92
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: SUSP
+    description: "Suspend data\nAES_SUSPRx registers contain the complete internal
+      register states of the AES when the GCM, GMAC or CCM processing of the current
+      task is suspended to process a higher-priority task. Refer to Section121.4.8:
+      AES suspend and resume operations for more details.\nRead to this register returns
+      zero when EN bit is cleared in AES_SR register.\nAES_SUSPRx registers are not
+      used in other chaining modes than GCM, GMAC or CCM."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: AES_IER
+  displayName: AES_IER
+  description: AES interrupt enable register
+  addressOffset: 768
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: CCFIE
+    description: "Computation complete flag interrupt enable\nThis bit enables or
+      disables (masks) the AES interrupt generation when CCF (computation complete
+      flag) is set."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Disabled (masked)
+      value: 0
+    - name: B_0x1
+      description: Enabled (not masked)
+      value: 1
+  - name: RWEIE
+    description: "Read or write error interrupt enable\nThis bit enables or disables
+      (masks) the AES interrupt generation when RWEIF (read and/or write error flag)
+      is set."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Disabled (masked)
+      value: 0
+    - name: B_0x1
+      description: Enabled (not masked)
+      value: 1
+  - name: KEIE
+    description: "Key error interrupt enable\nThis bit enables or disables (masks)
+      the AES interrupt generation when KEIF (key error flag) is set."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Disabled (masked)
+      value: 0
+    - name: B_0x1
+      description: Enabled (not masked)
+      value: 1
+- name: AES_ISR
+  displayName: AES_ISR
+  description: AES interrupt status register
+  addressOffset: 772
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: CCF
+    description: "Computation complete flag\nThis flag indicates whether the computation
+      is completed. It is significant only when the DMAOUTEN bit is cleared, and it
+      may stay high when DMAOUTEN is set.\nThe flag setting generates an interrupt
+      if the CCFIE bit of the AES_IER register is set.\nThe flag is cleared by setting
+      the corresponding bit of the AES_ICR register."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: Not completed
+      value: 0
+    - name: B_0x1
+      description: Completed
+      value: 1
+  - name: RWEIF
+    description: "Read or write error interrupt flag\nThis read-only bit is set by
+      hardware when a RDERRF or a WRERRF error flag is set in the AES_SR register.\n\
+      The flag setting generates an interrupt if the RWEIE bit of the AES_IER register
+      is set.\nThe flag is cleared by setting the corresponding bit of the AES_ICR
+      register.\nThe flags has no meaning when key derivation mode is selected.\n\
+      See the AES_SR register for details."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No read or write error detected
+      value: 0
+    - name: B_0x1
+      description: Read or write error detected
+      value: 1
+  - name: KEIF
+    description: "Key error interrupt flag\nThis read-only bit is set by hardware
+      when the key information fails to load into key registers.\nThe flag setting
+      generates an interrupt if the KEIE bit of the AES_IER register is set.\nThe
+      flag is cleared by setting the corresponding bit of the AES_ICR register.\n\
+      KEIF is raised upon any of the following events:\nAES_KEYRx register write does
+      not respect the correct order. (For KEYSIZE1cleared, AES_KEYR0 then AES_KEYR1
+      then AES_KEYR2 then AES_KEYR3 register, or reverse. For KEYSIZE set, AES_KEYR0
+      then AES_KEYR1 then AES_KEYR2 then AES_KEYR3 then AES_KEYR4 then AES_KEYR5 then
+      AES_KEYR6 then AES_KEYR7, or reverse).\nKEIF must be cleared by the application
+      software, otherwise KEYVALID cannot be set."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No key error detected
+      value: 0
+    - name: B_0x1
+      description: Key information failed to load into key registers
+      value: 1
+- name: AES_ICR
+  displayName: AES_ICR
+  description: AES interrupt clear register
+  addressOffset: 776
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: CCF
+    description: "Computation complete flag clear\nSetting this bit clears the CCF
+      status bit of the AES_ISR register."
+    bitOffset: 0
+    bitWidth: 1
+    access: write-only
+  - name: RWEIF
+    description: "Read or write error interrupt flag clear\nSetting this bit clears
+      the RWEIF status bit of the AES_ISR register, and clears both RDERRF and WRERRF
+      flags in the AES_SR register."
+    bitOffset: 1
+    bitWidth: 1
+    access: write-only
+  - name: KEIF
+    description: "Key error interrupt flag clear\nSetting this bit clears the KEIF
+      status bit of the AES_ISR register."
+    bitOffset: 2
+    bitWidth: 1
+    access: write-only
+interrupts:
+- name: AES_RNG
+  description: AES and RNG global interrupts
+  value: 31
+addressBlocks:
+- offset: 0
+  size: 1024
+  usage: registers
