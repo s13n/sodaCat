@@ -1,0 +1,252 @@
+name: CRS
+description: CRS
+groupName: CRS
+registers:
+  - name: CR
+    displayName: CR
+    description: CRS control register
+    addressOffset: 0
+    size: 32
+    resetValue: 8192
+    fields:
+      - name: SYNCOKIE
+        description: "SYNC event OK interrupt\n              enable"
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: SYNCWARNIE
+        description: "SYNC warning interrupt\n              enable"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: ERRIE
+        description: "Synchronization or trimming error\n              interrupt enable"
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: ESYNCIE
+        description: "Expected SYNC interrupt\n              enable"
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: CEN
+        description: "Frequency error counter enable This bit\n              enables
+          the oscillator clock for the frequency error\n              counter. When
+          this bit is set, the CRS_CFGR register\n              is write-protected
+          and cannot be\n              modified."
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: AUTOTRIMEN
+        description: "Automatic trimming enable This bit\n              enables the
+          automatic hardware adjustment of TRIM\n              bits according to the
+          measured frequency error\n              between two SYNC events. If this
+          bit is set, the TRIM\n              bits are read-only. The TRIM value can
+          be adjusted by\n              hardware by one or two steps at a time, depending
+          on\n              the measured frequency error value. Refer to\n       \
+          \       Section7.3.4: Frequency error evaluation and\n              automatic
+          trimming for more details."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: SWSYNC
+        description: "Generate software SYNC event This bit is\n              set
+          by software in order to generate a software SYNC\n              event. It
+          is automatically cleared by\n              hardware."
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: TRIM
+        description: "HSI48 oscillator smooth trimming These\n              bits provide
+          a user-programmable trimming value to\n              the HSI48 oscillator.
+          They can be programmed to\n              adjust to variations in voltage
+          and temperature that\n              influence the frequency of the HSI48.
+          The default\n              value is 32, which corresponds to the middle
+          of the\n              trimming interval. The trimming step is around 67
+          kHz\n              between two consecutive TRIM steps. A higher TRIM\n \
+          \             value corresponds to a higher output frequency. When\n   \
+          \           the AUTOTRIMEN bit is set, this field is controlled\n      \
+          \        by hardware and is read-only."
+        bitOffset: 8
+        bitWidth: 6
+        access: read-write
+  - name: CFGR
+    displayName: CFGR
+    description: "This register can be written only when the\n          frequency
+      error counter is disabled (CEN bit is cleared\n          in CRS_CR). When the
+      counter is enabled, this register is\n          write-protected."
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 539147135
+    fields:
+      - name: RELOAD
+        description: "Counter reload value RELOAD is the value\n              to be
+          loaded in the frequency error counter with each\n              SYNC event.
+          Refer to Section7.3.3: Frequency error\n              measurement for more
+          details about counter\n              behavior."
+        bitOffset: 0
+        bitWidth: 16
+      - name: FELIM
+        description: "Frequency error limit FELIM contains the\n              value
+          to be used to evaluate the captured frequency\n              error value
+          latched in the FECAP[15:0] bits of the\n              CRS_ISR register.
+          Refer to Section7.3.4: Frequency\n              error evaluation and automatic
+          trimming for more\n              details about FECAP evaluation."
+        bitOffset: 16
+        bitWidth: 8
+      - name: SYNCDIV
+        description: "SYNC divider These bits are set and\n              cleared by
+          software to control the division factor of\n              the SYNC signal."
+        bitOffset: 24
+        bitWidth: 3
+      - name: SYNCSRC
+        description: "SYNC signal source selection These bits\n              are set
+          and cleared by software to select the SYNC\n              signal source.
+          Note: When using USB LPM (Link Power\n              Management) and the
+          device is in Sleep mode, the\n              periodic USB SOF will not be
+          generated by the host.\n              No SYNC signal will therefore be provided
+          to the CRS\n              to calibrate the HSI48 on the run. To guarantee
+          the\n              required clock precision after waking up from Sleep\n\
+          \              mode, the LSE or reference clock on the GPIOs should\n  \
+          \            be used as SYNC signal."
+        bitOffset: 28
+        bitWidth: 2
+      - name: SYNCPOL
+        description: "SYNC polarity selection This bit is set\n              and cleared
+          by software to select the input polarity\n              for the SYNC signal
+          source."
+        bitOffset: 31
+        bitWidth: 1
+  - name: ISR
+    displayName: ISR
+    description: "CRS interrupt and status\n          register"
+    addressOffset: 8
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: SYNCOKF
+        description: "SYNC event OK flag This flag is set by\n              hardware
+          when the measured frequency error is smaller\n              than FELIM *
+          3. This means that either no adjustment\n              of the TRIM value
+          is needed or that an adjustment by\n              one trimming step is enough
+          to compensate the\n              frequency error. An interrupt is generated
+          if the\n              SYNCOKIE bit is set in the CRS_CR register. It is\n\
+          \              cleared by software by setting the SYNCOKC bit in the\n \
+          \             CRS_ICR register."
+        bitOffset: 0
+        bitWidth: 1
+      - name: SYNCWARNF
+        description: "SYNC warning flag This flag is set by\n              hardware
+          when the measured frequency error is greater\n              than or equal
+          to FELIM * 3, but smaller than FELIM *\n              128. This means that
+          to compensate the frequency\n              error, the TRIM value must be
+          adjusted by two steps\n              or more. An interrupt is generated
+          if the SYNCWARNIE\n              bit is set in the CRS_CR register. It is
+          cleared by\n              software by setting the SYNCWARNC bit in the CRS_ICR\n\
+          \              register."
+        bitOffset: 1
+        bitWidth: 1
+      - name: ERRF
+        description: "Error flag This flag is set by hardware\n              in case
+          of any synchronization or trimming error. It\n              is the logical
+          OR of the TRIMOVF, SYNCMISS and\n              SYNCERR bits. An interrupt
+          is generated if the ERRIE\n              bit is set in the CRS_CR register.
+          It is cleared by\n              software in reaction to setting the ERRC
+          bit in the\n              CRS_ICR register, which clears the TRIMOVF, SYNCMISS\n\
+          \              and SYNCERR bits."
+        bitOffset: 2
+        bitWidth: 1
+      - name: ESYNCF
+        description: "Expected SYNC flag This flag is set by\n              hardware
+          when the frequency error counter reached a\n              zero value. An
+          interrupt is generated if the ESYNCIE\n              bit is set in the CRS_CR
+          register. It is cleared by\n              software by setting the ESYNCC
+          bit in the CRS_ICR\n              register."
+        bitOffset: 3
+        bitWidth: 1
+      - name: SYNCERR
+        description: "SYNC error This flag is set by hardware\n              when
+          the SYNC pulse arrives before the ESYNC event\n              and the measured
+          frequency error is greater than or\n              equal to FELIM * 128.
+          This means that the frequency\n              error is too big (internal
+          frequency too low) to be\n              compensated by adjusting the TRIM
+          value, and that\n              some other action should be taken. An interrupt
+          is\n              generated if the ERRIE bit is set in the CRS_CR\n    \
+          \          register. It is cleared by software by setting the\n        \
+          \      ERRC bit in the CRS_ICR register."
+        bitOffset: 8
+        bitWidth: 1
+      - name: SYNCMISS
+        description: "SYNC missed This flag is set by hardware\n              when
+          the frequency error counter reached value FELIM\n              * 128 and
+          no SYNC was detected, meaning either that a\n              SYNC pulse was
+          missed or that the frequency error is\n              too big (internal frequency
+          too high) to be\n              compensated by adjusting the TRIM value,
+          and that\n              some other action should be taken. At this point,
+          the\n              frequency error counter is stopped (waiting for a\n \
+          \             next SYNC) and an interrupt is generated if the ERRIE\n  \
+          \            bit is set in the CRS_CR register. It is cleared by\n     \
+          \         software by setting the ERRC bit in the CRS_ICR\n            \
+          \  register."
+        bitOffset: 9
+        bitWidth: 1
+      - name: TRIMOVF
+        description: "Trimming overflow or underflow This flag\n              is set
+          by hardware when the automatic trimming tries\n              to over- or
+          under-flow the TRIM value. An interrupt\n              is generated if the
+          ERRIE bit is set in the CRS_CR\n              register. It is cleared by
+          software by setting the\n              ERRC bit in the CRS_ICR register."
+        bitOffset: 10
+        bitWidth: 1
+      - name: FEDIR
+        description: "Frequency error direction FEDIR is the\n              counting
+          direction of the frequency error counter\n              latched in the time
+          of the last SYNC event. It shows\n              whether the actual frequency
+          is below or above the\n              target."
+        bitOffset: 15
+        bitWidth: 1
+      - name: FECAP
+        description: "Frequency error capture FECAP is the\n              frequency
+          error counter value latched in the time of\n              the last SYNC
+          event. Refer to Section7.3.4: Frequency\n              error evaluation
+          and automatic trimming for more\n              details about FECAP usage."
+        bitOffset: 16
+        bitWidth: 16
+  - name: ICR
+    displayName: ICR
+    description: "CRS interrupt flag clear\n          register"
+    addressOffset: 12
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: SYNCOKC
+        description: "SYNC event OK clear flag Writing 1 to\n              this bit
+          clears the SYNCOKF flag in the CRS_ISR\n              register."
+        bitOffset: 0
+        bitWidth: 1
+      - name: SYNCWARNC
+        description: "SYNC warning clear flag Writing 1 to\n              this bit
+          clears the SYNCWARNF flag in the CRS_ISR\n              register."
+        bitOffset: 1
+        bitWidth: 1
+      - name: ERRC
+        description: "Error clear flag Writing 1 to this bit\n              clears
+          TRIMOVF, SYNCMISS and SYNCERR bits and\n              consequently also
+          the ERRF flag in the CRS_ISR\n              register."
+        bitOffset: 2
+        bitWidth: 1
+      - name: ESYNCC
+        description: "Expected SYNC clear flag Writing 1 to\n              this bit
+          clears the ESYNCF flag in the CRS_ISR\n              register."
+        bitOffset: 3
+        bitWidth: 1
+interrupts:
+  - name: CRS
+    description: Clock Recovery System globa
+addressBlocks:
+  - offset: 0
+    size: 1024
+    usage: registers

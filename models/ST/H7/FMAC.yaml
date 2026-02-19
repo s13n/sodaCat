@@ -1,0 +1,436 @@
+name: FMAC
+description: FMAC register block
+groupName: FMAC
+registers:
+  - name: FMAC_X1BUFCFG
+    displayName: FMAC_X1BUFCFG
+    description: FMAC X1 buffer configuration register
+    addressOffset: 0
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: X1_BASE
+        description: Base address of X1 buffer
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: X1_BUF_SIZE
+        description: "Allocated size of X1 buffer in 16-bit words\nThe minimum buffer
+          size is the number of feed-forward taps in the filter (+ the watermark threshold
+          - 1)."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: FULL_WM
+        description: "Watermark for buffer full flag\nDefines the threshold for setting
+          the X1 buffer full flag when operating in circular mode. The flag is set
+          if the number of free spaces in the buffer is less than 2FULL_WM.\n2: Threshold
+          = 4\n3: Threshold = 8\nSetting a threshold greater than 1 allows several
+          data to be transferred into the buffer under one interrupt.\nThreshold should
+          be set to 1 if DMA write requests are enabled (DMAWEN = 1 in FMAC_CR register)."
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Threshold = 1
+            value: 0
+          - name: B_0x1
+            description: Threshold = 2
+            value: 1
+  - name: FMAC_X2BUFCFG
+    displayName: FMAC_X2BUFCFG
+    description: FMAC X2 buffer configuration register
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: X2_BASE
+        description: "Base address of X2 buffer\nThe X2 buffer base address can be
+          modified while START=1, for example to change coefficient values. The filter
+          should be stalled when doing this, since changing the coefficients while
+          a calculation is ongoing affects the result."
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: X2_BUF_SIZE
+        description: "Size of X2 buffer in 16-bit words\nThis bitfield can not be
+          modified when a function is ongoing (START = 1)."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+  - name: FMAC_YBUFCFG
+    displayName: FMAC_YBUFCFG
+    description: FMAC Y buffer configuration register
+    addressOffset: 8
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: Y_BASE
+        description: Base address of Y buffer
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: Y_BUF_SIZE
+        description: "Size of Y buffer in 16-bit words\nFor FIR filters, the minimum
+          buffer size is 1 (+ the watermark threshold). For IIR filters the minimum
+          buffer size is the number of feedback taps (+ the watermark threshold)."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: EMPTY_WM
+        description: "Watermark for buffer empty flag\nDefines the threshold for setting
+          the Y buffer empty flag when operating in circular mode. The flag is set
+          if the number of unread values in the buffer is less than 2EMPTY_WM.\n2:
+          Threshold = 4\n3: Threshold = 8\nSetting a threshold greater than 1 allows
+          several data to be transferred from the buffer under one interrupt.\nThreshold
+          should be set to 1 if DMA read requests are enabled (DMAREN = 1 in FMAC_CR
+          register)."
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Threshold = 1
+            value: 0
+          - name: B_0x1
+            description: Threshold = 2
+            value: 1
+  - name: FMAC_PARAM
+    displayName: FMAC_PARAM
+    description: FMAC parameter register
+    addressOffset: 12
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: P
+        description: "Input parameter P.\nThe value of this parameter is dependent
+          on the function\nThis bitfield can not be modified when a function is ongoing
+          (START = 1)"
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: Q
+        description: "Input parameter Q.\nThe value of this parameter is dependent
+          on the function.\nThis bitfield can not be modified when a function is ongoing
+          (START = 1)"
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: R
+        description: "Input parameter R.\nThe value of this parameter is dependent
+          on the function.\nThis bitfield can not be modified when a function is ongoing
+          (START = 1)"
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: FUNC
+        description: "Function\n2: Load X2 buffer\n3: Load Y buffer\n4 to 7: Reserved\n\
+          8: Convolution (FIR filter)\n9: IIR filter (direct form 1)\nThis bitfield
+          can not be modified when a function is ongoing (START = 1)"
+        bitOffset: 24
+        bitWidth: 7
+        access: read-write
+        enumeratedValues:
+          - name: B_0x1
+            description: Load X1 buffer
+            value: 1
+      - name: START
+        description: "Enable execution\nSetting this bit triggers the execution of
+          the function selected in the FUNC bitfield. Resetting it by software stops
+          any ongoing function. For initialization functions, this bit is reset by
+          hardware."
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Stop execution
+            value: 0
+          - name: B_0x1
+            description: Start execution
+            value: 1
+  - name: FMAC_CR
+    displayName: FMAC_CR
+    description: FMAC control register
+    addressOffset: 16
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RIEN
+        description: "Enable read interrupt\nThis bit is set and cleared by software.
+          A read returns the current state of the bit."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disabled. No read interrupt requests are generated.
+            value: 0
+          - name: B_0x1
+            description: Enabled. An interrupt request is generated while the Y 
+              buffer EMPTY flag is not set.
+            value: 1
+      - name: WIEN
+        description: "Enable write interrupt\nThis bit is set and cleared by software.
+          A read returns the current state of the bit."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disabled. No write interrupt requests are generated.
+            value: 0
+          - name: B_0x1
+            description: Enabled. An interrupt request is generated while the X1
+              buffer FULL flag is not set.
+            value: 1
+      - name: OVFLIEN
+        description: "Enable overflow error interrupts\nThis bit is set and cleared
+          by software. A read returns the current state of the bit."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disabled. No interrupts are generated upon overflow 
+              detection.
+            value: 0
+          - name: B_0x1
+            description: Enabled. An interrupt request is generated if the OVFL 
+              flag is set
+            value: 1
+      - name: UNFLIEN
+        description: "Enable underflow error interrupts\nThis bit is set and cleared
+          by software. A read returns the current state of the bit."
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disabled. No interrupts are generated upon underflow 
+              detection.
+            value: 0
+          - name: B_0x1
+            description: Enabled. An interrupt request is generated if the UNFL 
+              flag is set
+            value: 1
+      - name: SATIEN
+        description: "Enable saturation error interrupts\nThis bit is set and cleared
+          by software. A read returns the current state of the bit."
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disabled. No interrupts are generated upon saturation 
+              detection.
+            value: 0
+          - name: B_0x1
+            description: Enabled. An interrupt request is generated if the SAT 
+              flag is set
+            value: 1
+      - name: DMAREN
+        description: "Enable DMA read channel requests\nThis bit can only be modified
+          when START= 0 in the FMAC_PARAM register. A read returns\nthe current state
+          of the bit."
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disable. No DMA requests are generated
+            value: 0
+          - name: B_0x1
+            description: Enable. DMA requests are generated while the Y buffer 
+              is not empty.
+            value: 1
+      - name: DMAWEN
+        description: "Enable DMA write channel requests\nThis bit can only be modified
+          when START= 0 in the FMAC_PARAM register. A read returns the current state
+          of the bit."
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disable. No DMA requests are generated
+            value: 0
+          - name: B_0x1
+            description: Enable. DMA requests are generated while the X1 buffer 
+              is not full.
+            value: 1
+      - name: CLIPEN
+        description: Enable clipping
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Clipping disabled. Values at the output of the 
+              accumulator which exceed the q1.15 range, wrap.
+            value: 0
+          - name: B_0x1
+            description: Clipping enabled. Values at the output of the 
+              accumulator which exceed the q1.15 range are saturated to the 
+              maximum positive or negative value (+1 or -1) according to the 
+              sign.
+            value: 1
+      - name: RESET
+        description: "Reset FMAC unit\nThis resets the write and read pointers, the
+          internal control logic, the FMAC_SR register and the FMAC_PARAM register,
+          including the START bit if active. Other register settings are not affected.
+          This bit is reset by hardware."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Reset inactive
+            value: 0
+          - name: B_0x1
+            description: Reset active
+            value: 1
+  - name: FMAC_SR
+    displayName: FMAC_SR
+    description: FMAC status register
+    addressOffset: 20
+    size: 32
+    resetValue: 1
+    resetMask: 4294967295
+    fields:
+      - name: YEMPTY
+        description: "Y buffer empty flag\nThe buffer is flagged as empty if the number
+          of unread data is less than the EMPTY_WM threshold. The number of unread
+          data is the difference between the read pointer and the current output destination
+          address.\nThis flag is set and cleared by hardware, or by a reset.\nNote:
+          after the last sample is read from the Y buffer there is a delay of 3 clock
+          cycles before the YEMPTY flag goes high. To avoid any risk of underflow
+          it is recommended to insert a software delay after reading from the Y buffer
+          before reading the FMAC_SR. Alternatively, an EMPTY_WM threshold of 2 can
+          be used."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Y buffer not empty. If the RIEN bit is set, the 
+              interrupt request is asserted until the flag is set. If DMAREN is 
+              set, DMA read channel requests are generated until the flag is 
+              set.
+            value: 0
+          - name: B_0x1
+            description: Y buffer empty.
+            value: 1
+      - name: X1FULL
+        description: "X1 buffer full flag\nThe buffer is flagged as full if the number
+          of available spaces is less than the FULL_WM threshold. The number of available
+          spaces is the difference between the write pointer and the least recent
+          sample currently in use.\nThis flag is set and cleared by hardware, or by
+          a reset.\nNote: after the last available space in the X1 buffer is filled
+          there is a delay of 3 clock cycles before the X1FULL flag goes high. To
+          avoid any risk of overflow it is recommended to insert a software delay
+          after writing to the X1 buffer before reading the FMAC_SR. Alternatively,
+          a FULL_WM threshold of 2 can be used."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: X1 buffer not full. If the WIEN bit is set, the 
+              interrupt request is asserted until the flag is set. If DMAWEN is 
+              set, DMA write channel requests are generated until the flag is 
+              set.
+            value: 0
+          - name: B_0x1
+            description: X1 buffer full.
+            value: 1
+      - name: OVFL
+        description: "Overflow error flag\nAn overflow occurs when a write is made
+          to FMAC_WDATA when no free space is available in the X1 buffer.\nThis flag
+          is cleared by a reset of the unit."
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No overflow detected
+            value: 0
+          - name: B_0x1
+            description: Overflow detected. If the OVFLIEN bit is set, an 
+              interrupt is generated.
+            value: 1
+      - name: UNFL
+        description: "Underflow error flag\nAn underflow occurs when a read is made
+          from FMAC_RDATA when no valid data is available in the Y buffer.\nThis flag
+          is cleared by a reset of the unit."
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No underflow detected
+            value: 0
+          - name: B_0x1
+            description: Underflow detected. If the UNFLIEN bit is set, an 
+              interrupt is generated.
+            value: 1
+      - name: SAT
+        description: "Saturation error flag\nSaturation occurs when the result of
+          an accumulation exceeds the numeric range of the accumulator.\nThis flag
+          is cleared by a reset of the unit."
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No saturation detected
+            value: 0
+          - name: B_0x1
+            description: Saturation detected. If the SATIEN bit is set, an 
+              interrupt is generated.
+            value: 1
+  - name: FMAC_WDATA
+    displayName: FMAC_WDATA
+    description: FMAC write data register
+    addressOffset: 24
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WDATA
+        description: "Write data\nWhen a write access to this register occurs, the
+          write data are transferred to the address offset indicated by the write
+          pointer. The pointer address is automatically incremented after each write
+          access."
+        bitOffset: 0
+        bitWidth: 16
+        access: write-only
+  - name: FMAC_RDATA
+    displayName: FMAC_RDATA
+    description: FMAC read data register
+    addressOffset: 28
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RDATA
+        description: "Read data\nWhen a read access to this register occurs, the read
+          data are the contents of the Y output buffer at the address offset indicated
+          by the READ pointer. The pointer address is automatically incremented after
+          each read access."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+interrupts:
+  - name: FMAC
+    description: FMAC interrupt
+addressBlocks:
+  - offset: 0
+    size: 1024
+    usage: registers
