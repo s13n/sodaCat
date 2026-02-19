@@ -129,48 +129,6 @@ def process_chip(svd_root, chip_name):
         return {}, {}, {}
 
 
-def save_yaml_model(model_dict, output_path):
-    """Save a model dictionary as YAML."""
-    from ruamel.yaml import YAML
-    yaml = YAML()
-    yaml.default_flow_style = False
-    yaml.preserve_quotes = True
-    yaml.indent(mapping=2, sequence=4, offset=2)
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
-        yaml.dump(model_dict, f)
-    print(f"  Generated: {output_path.relative_to(output_path.parent.parent)}")
-
-
-def hash_block_structure(block_data):
-    """Create a hash of a block's register structure for comparison."""
-    import hashlib
-    import json
-
-    structure = {
-        'registers': []
-    }
-
-    for reg in block_data.get('registers', []):
-        reg_info = {
-            'name': reg.get('name'),
-            'offset': reg.get('addressOffset'),
-            'size': reg.get('size'),
-            'fields': []
-        }
-        for field in (reg.get('fields') or []):
-            reg_info['fields'].append({
-                'name': field.get('name'),
-                'offset': field.get('bitOffset'),
-                'width': field.get('bitWidth')
-            })
-        structure['registers'].append(reg_info)
-
-    json_str = json.dumps(structure, sort_keys=True, indent=None)
-    return hashlib.sha256(json_str.encode()).hexdigest()
-
-
 def main():
     if len(sys.argv) < 3:
         print("Usage: generate_stm32g0_models.py <zip_path> <output_dir>")
@@ -208,7 +166,7 @@ def main():
                         blocks, _, _ = process_chip(root, chip_name)
 
                         for block_name, block_data in blocks.items():
-                            block_hash = hash_block_structure(block_data)
+                            block_hash = svd.hashBlockStructure(block_data)
                             all_blocks[block_name][family_name].append({
                                 'hash': block_hash,
                                 'data': block_data,
@@ -243,8 +201,8 @@ def main():
             common_count += 1
             first_family = next(iter(families_present))
             block_data = block_families[first_family][0]['data']
-            block_file = common_blocks_dir / f'{block_name}.yaml'
-            save_yaml_model(block_data, block_file)
+            block_file = common_blocks_dir / block_name
+            svd.dumpModel(block_data, block_file)
             print(f"  + {block_name:20} -> G0 (shared)")
             continue
 
@@ -256,8 +214,8 @@ def main():
                 family_dir.mkdir(parents=True, exist_ok=True)
 
                 block_data = block_families[family_name][0]['data']
-                block_file = family_dir / f'{block_name}.yaml'
-                save_yaml_model(block_data, block_file)
+                block_file = family_dir / block_name
+                svd.dumpModel(block_data, block_file)
 
     print(f"\n{'='*60}")
     print(f"Generation Summary:")

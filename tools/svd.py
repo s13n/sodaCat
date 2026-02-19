@@ -257,15 +257,46 @@ def printInterrupts(interrupts:dict):
             s = (s + ", " + src) if s else src
         print("{:3}: {}".format(i, s))
 
-def dumpModel(model:dict, filename:Path, comment:str):
+def hashBlockStructure(block_data):
+    """Create a hash of a block's register structure for comparison."""
+    import hashlib
+    import json
+
+    structure = {
+        'registers': []
+    }
+
+    for reg in block_data.get('registers', []):
+        reg_info = {
+            'name': reg.get('name'),
+            'offset': reg.get('addressOffset'),
+            'size': reg.get('size'),
+            'fields': []
+        }
+        for field in (reg.get('fields') or []):
+            reg_info['fields'].append({
+                'name': field.get('name'),
+                'offset': field.get('bitOffset'),
+                'width': field.get('bitWidth')
+            })
+        structure['registers'].append(reg_info)
+
+    json_str = json.dumps(structure, sort_keys=True, indent=None)
+    return hashlib.sha256(json_str.encode()).hexdigest()
+
+def dumpModel(model:dict, filename:Path, comment:str=None):
     """ write a YAML file for a model """
-    file = open(str(filename) + ".yaml", "w")
-    if comment:
-        file.write(comment + "\n")
-    yaml = YAML()
-    yaml.indent(mapping=2, sequence=4, offset=2)
-    yaml.dump(model, file)
-    file.close()
+    output_path = Path(str(filename) + ".yaml")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, 'w') as f:
+        if comment:
+            f.write(comment + "\n")
+        yaml = YAML()
+        yaml.default_flow_style = False
+        yaml.preserve_quotes = True
+        yaml.indent(mapping=2, sequence=4, offset=2)
+        yaml.dump(model, f)
+    print(f"  Generated: {output_path.relative_to(output_path.parent.parent)}")
 
 def dumpPeripheral(device:dict, name:str, filename:Path, comment:str):
     """ write a YAML file for a peripheral """
