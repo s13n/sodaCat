@@ -35,18 +35,6 @@ STM32U5_FAMILIES = {
     },
 }
 
-# Peripheral blocks to extract
-FUNCTIONAL_BLOCKS = frozenset({
-    'ADC', 'ADC_Common', 'ADF', 'AES', 'COMP', 'CORDIC', 'CRC', 'CRS', 'DAC',
-    'DBGMCU', 'DMA2D', 'DSI', 'DTS', 'EXTI', 'FDCAN', 'Flash', 'FMAC', 'FMC',
-    'GFXMMU', 'GFXTIM', 'GPDMA', 'GPIO', 'HASH', 'HSPI',
-    'I2C', 'I3C', 'IWDG', 'JPEG', 'LPTIM', 'LPUART', 'LTDC',
-    'MDF', 'OCTOSPI', 'OPAMP', 'OTG_FS', 'OTG_HS', 'OTFDEC',
-    'PKA', 'PSSI', 'PWR', 'RAMCFG', 'RCC', 'RNG', 'RTC',
-    'SAES', 'SAI', 'SBS', 'SDMMC', 'SPI', 'SYSCFG',
-    'TAMP', 'AdvCtrlTimer', 'GpTimer', 'BasicTimer',
-    'TSC', 'UCPD', 'USART', 'USB', 'VREFBUF', 'WWDG',
-})
 
 # Map SVD peripheral instance names to canonical block type names.
 # Entries where canonical == instance name are omitted (handled by .get() default).
@@ -137,6 +125,8 @@ NAME_MAP = {
     'SEC_JPEG': None,
     'SEC_LPDMA1': None,
     'SEC_LPGPIO1': None,
+    'LPDMA1': 'LPDMA',
+    'LPGPIO1': 'LPGPIO',
     'SEC_LPTIM1': None,
     'SEC_LPTIM2': None,
     'SEC_LPTIM3': None,
@@ -224,6 +214,8 @@ NAME_MAP = {
     'TIM4': 'GpTimer',
     'TIM5': 'GpTimer',
     'HSPI1': 'HSPI',
+    'ICache': 'ICACHE',
+    'SEC_ICache': None,
     'I2C1': 'I2C',
     'I2C2': 'I2C',
     'I2C3': 'I2C',
@@ -270,8 +262,6 @@ def process_chip(svd_root, chip_name):
             block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
-                continue
-            if block_type not in FUNCTIONAL_BLOCKS:
                 continue
 
             chip_peripheral_refs[periph_name] = {

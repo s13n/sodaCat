@@ -39,24 +39,17 @@ STM32H7_FAMILIES = {
     }
 }
 
-# Peripheral blocks to extract (from existing H757 implementation)
-FUNCTIONAL_BLOCKS = frozenset({
-    'ADC', 'ADC_Common', 'ART', 'BDMA', 'RCC', 'DAC', 'DMA', 'DMAMUX1', 'DMAMUX2',
-    'EXTI', 'GPIO', 'I2C', 'MDMA', 'SAI', 'SPDIFRX', 'SYSCFG', 'BasicTimer', 'GpTimer',
-    'AdvCtrlTimer', 'LPTIM', 'LPTIMenc', 'USART', 'LPUART', 'QUADSPI', 'OPAMP', 'DFSDM',
-    'SPI', 'RTC', 'FMC', 'PWR', 'DBGMCU', 'Flash', 'NVIC'
-})
-
-INCOMPATIBLE_BLOCKS = frozenset({
-    'ADC', 'ADC_Common', 'AdvCtrlTimer', 'BDMA', 'DMA', 'DBGMCU', 'DFSDM',
-    'FMC', 'Flash', 'GpTimer', 'LPTIM', 'MDMA', 'PWR', 'QUADSPI', 'RCC',
-    'RTC', 'SPDIFRX', 'SYSCFG', 'OPAMP',
-})
 
 # Map SVD peripheral instance names to canonical block type names.
 # Entries where canonical == instance name are omitted (handled by .get() default).
 # None means the peripheral is skipped (ARM core internals, security shadows, etc.).
 NAME_MAP = {
+    'DELAY_Block_QUADSPI': None,
+    'DELAY_Block_SDMMC1': None,
+    'DELAY_Block_SDMMC2': None,
+    'Delay_Block_OCTOSPI1': None,
+    'Delay_Block_OCTOSPI2': None,
+    'OctoSPII_O_Manager': None,
     'ADC1': 'ADC',
     'ADC2': 'ADC',
     'ADC3': 'ADC',
@@ -68,11 +61,22 @@ NAME_MAP = {
     'BDMA2': 'BDMA',
     'TIM6': 'BasicTimer',
     'TIM7': 'BasicTimer',
+    'COMP1': 'COMP',
+    'DAC1': 'DAC',
+    'DAC2': 'DAC',
+    'DFSDM1': 'DFSDM',
+    'DFSDM2': 'DFSDM',
     'DMA1': 'DMA',
     'DMA2': 'DMA',
     'DMA2D': 'DMA',
     'DMAMUX1': 'DMA',
     'DMAMUX2': 'DMA',
+    'Ethernet_DMA': 'Ethernet_DMA',
+    'Ethernet_MAC': 'Ethernet_MAC',
+    'Ethernet_MTL': 'Ethernet_MTL',
+    'FDCAN1': 'FDCAN',
+    'FDCAN2': 'FDCAN',
+    'FLASH': 'Flash',
     'GPIOA': 'GPIO',
     'GPIOB': 'GPIO',
     'GPIOC': 'GPIO',
@@ -96,6 +100,11 @@ NAME_MAP = {
     'TIM3': 'GpTimer',
     'TIM4': 'GpTimer',
     'TIM5': 'GpTimer',
+    'HRTIM_TIMA': 'HRTIM_Timer',
+    'HRTIM_TIMB': 'HRTIM_Timer',
+    'HRTIM_TIMC': 'HRTIM_Timer',
+    'HRTIM_TIMD': 'HRTIM_Timer',
+    'HRTIM_TIME': 'HRTIM_Timer',
     'I2C1': 'I2C',
     'I2C2': 'I2C',
     'I2C3': 'I2C',
@@ -107,10 +116,25 @@ NAME_MAP = {
     'LPTIM4': 'LPTIM',
     'LPTIM5': 'LPTIM',
     'LPUART1': 'LPUART',
+    'OCTOSPI1': 'OCTOSPI',
+    'OCTOSPI2': 'OCTOSPI',
+    'OTG1_HS_DEVICE': 'OTG_HS_DEVICE',
+    'OTG1_HS_GLOBAL': 'OTG_HS_GLOBAL',
+    'OTG1_HS_HOST': 'OTG_HS_HOST',
+    'OTG1_HS_PWRCLK': 'OTG_HS_PWRCLK',
+    'OTG2_HS_DEVICE': 'OTG_HS_DEVICE',
+    'OTG2_HS_GLOBAL': 'OTG_HS_GLOBAL',
+    'OTG2_HS_HOST': 'OTG_HS_HOST',
+    'OTG2_HS_PWRCLK': 'OTG_HS_PWRCLK',
+    'RAMECC1': 'RAMECC',
+    'RAMECC2': 'RAMECC',
+    'RAMECC3': 'RAMECC',
     'SAI1': 'SAI',
     'SAI2': 'SAI',
     'SAI3': 'SAI',
     'SAI4': 'SAI',
+    'SDMMC1': 'SDMMC',
+    'SDMMC2': 'SDMMC',
     'SPI1': 'SPI',
     'SPI2': 'SPI',
     'SPI3': 'SPI',
@@ -142,8 +166,7 @@ def process_chip(svd_root, chip_name):
             periph_name = periph['name']
             block_type = NAME_MAP.get(periph_name, periph_name)
             
-            # Only keep relevant blocks
-            if block_type not in FUNCTIONAL_BLOCKS and block_type not in INCOMPATIBLE_BLOCKS:
+            if block_type is None:
                 continue
                 
             # Store peripheral reference for chip model

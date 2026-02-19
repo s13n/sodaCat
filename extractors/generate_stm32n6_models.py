@@ -27,17 +27,6 @@ STM32N6_FAMILIES = {
     },
 }
 
-# Peripheral blocks to extract
-FUNCTIONAL_BLOCKS = frozenset({
-    'ADC', 'ADC_Common', 'ADF', 'CRYP', 'CSI', 'CRC', 'DBGMCU',
-    'DCMI', 'DCMIPP', 'DMA2D', 'DTS', 'ETH', 'EXTI', 'FDCAN', 'FMC',
-    'GFXMMU', 'GFXTIM', 'GPDMA', 'GPIO', 'HASH', 'HPDMA',
-    'I2C', 'I3C', 'IWDG', 'JPEG', 'LPTIM', 'LPUART', 'LTDC',
-    'MDF', 'MDIOS', 'OTG', 'PKA', 'PSSI', 'PWR', 'RAMCFG', 'RCC',
-    'RNG', 'RTC', 'SAES', 'SAI', 'SDMMC', 'SPDIFRX', 'SPI', 'SYSCFG',
-    'TAMP', 'AdvCtrlTimer', 'GpTimer', 'BasicTimer',
-    'UCPD', 'USART', 'VENC', 'VREFBUF', 'WWDG', 'XSPI', 'XSPIM',
-})
 
 # Map SVD peripheral instance names to canonical block type names.
 # Entries where canonical == instance name are omitted (handled by .get() default).
@@ -270,8 +259,6 @@ def process_chip(svd_root, chip_name):
             block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
-                continue
-            if block_type not in FUNCTIONAL_BLOCKS:
                 continue
 
             chip_peripheral_refs[periph_name] = {
