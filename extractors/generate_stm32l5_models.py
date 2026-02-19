@@ -38,74 +38,142 @@ FUNCTIONAL_BLOCKS = frozenset({
     'TSC', 'UCPD', 'USART', 'USB', 'VREFBUF', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    # Skip security shadow peripherals
-    if periph_name.startswith('SEC_'):
-        return None
-    # Skip security zone controllers
-    if periph_name.startswith('GTZC'):
-        return None
-    # Skip cache controllers and debug control block
-    if periph_name in ('ICache', 'DCB'):
-        return None
-    if periph_name in ('NVIC', 'SCB', 'SCB_ACTRL', 'STK', 'MPU', 'FPU'):
-        return None
-
-    if periph_name == 'FLASH':
-        return 'Flash'
-    if periph_name == 'DMAMUX1':
-        return 'DMAMUX'
-    if periph_name == 'FDCAN1':
-        return 'FDCAN'
-    if periph_name.startswith('OCTOSPI'):
-        return 'OCTOSPI'
-    if periph_name.startswith('DFSDM'):
-        return 'DFSDM'
-    if periph_name.startswith('OTFDEC'):
-        return 'OTFDEC'
-    if periph_name.startswith('UCPD'):
-        return 'UCPD'
-    if periph_name.startswith('SDMMC'):
-        return 'SDMMC'
-    if periph_name.startswith('LPUART'):
-        return 'LPUART'
-
-    # ADC
-    if periph_name == 'ADC_Common':
-        return 'ADC_Common'
-    if periph_name.startswith('ADC'):
-        return 'ADC'
-
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    if periph_name in ('DMA1', 'DMA2'):
-        return 'DMA'
-
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    if periph_name.startswith('USART') or periph_name.startswith('UART'):
-        return 'USART'
-
-    if periph_name.startswith('SAI'):
-        return 'SAI'
-
-    if periph_name.startswith('LPTIM'):
-        return 'LPTIM'
-
-    # Timers
-    if periph_name.startswith('TIM'):
-        if periph_name in ('TIM1', 'TIM8'):
-            return 'AdvCtrlTimer'
-        elif periph_name in ('TIM6', 'TIM7'):
-            return 'BasicTimer'
-        return 'GpTimer'
-
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'DCB': None,
+    'GTZC_MPCBB1': None,
+    'GTZC_MPCBB2': None,
+    'GTZC_TZIC': None,
+    'GTZC_TZSC': None,
+    'ICache': None,
+    'SEC_ADC1': None,
+    'SEC_ADC2': None,
+    'SEC_ADC_Common': None,
+    'SEC_AES': None,
+    'SEC_COMP': None,
+    'SEC_CRC': None,
+    'SEC_CRS': None,
+    'SEC_DAC': None,
+    'SEC_DFSDM1': None,
+    'SEC_DMA1': None,
+    'SEC_DMA2': None,
+    'SEC_DMAMUX1': None,
+    'SEC_EXTI': None,
+    'SEC_FDCAN1': None,
+    'SEC_FLASH': None,
+    'SEC_FMC': None,
+    'SEC_GPIOA': None,
+    'SEC_GPIOB': None,
+    'SEC_GPIOC': None,
+    'SEC_GPIOD': None,
+    'SEC_GPIOE': None,
+    'SEC_GPIOF': None,
+    'SEC_GPIOG': None,
+    'SEC_GPIOH': None,
+    'SEC_GTZC_MPCBB1': None,
+    'SEC_GTZC_MPCBB2': None,
+    'SEC_GTZC_TZIC': None,
+    'SEC_GTZC_TZSC': None,
+    'SEC_HASH': None,
+    'SEC_I2C1': None,
+    'SEC_I2C2': None,
+    'SEC_I2C3': None,
+    'SEC_I2C4': None,
+    'SEC_ICache': None,
+    'SEC_IWDG': None,
+    'SEC_LPTIM1': None,
+    'SEC_LPTIM2': None,
+    'SEC_LPTIM3': None,
+    'SEC_LPUART1': None,
+    'SEC_OCTOSPI1': None,
+    'SEC_OPAMP': None,
+    'SEC_OTFDEC1': None,
+    'SEC_PKA': None,
+    'SEC_PWR': None,
+    'SEC_RCC': None,
+    'SEC_RNG': None,
+    'SEC_RTC': None,
+    'SEC_SAI1': None,
+    'SEC_SAI2': None,
+    'SEC_SDMMC1': None,
+    'SEC_SPI1': None,
+    'SEC_SPI2': None,
+    'SEC_SPI3': None,
+    'SEC_SYSCFG': None,
+    'SEC_TAMP': None,
+    'SEC_TIM1': None,
+    'SEC_TIM15': None,
+    'SEC_TIM16': None,
+    'SEC_TIM17': None,
+    'SEC_TIM2': None,
+    'SEC_TIM3': None,
+    'SEC_TIM4': None,
+    'SEC_TIM5': None,
+    'SEC_TIM6': None,
+    'SEC_TIM7': None,
+    'SEC_TIM8': None,
+    'SEC_TSC': None,
+    'SEC_UART4': None,
+    'SEC_UART5': None,
+    'SEC_UCPD1': None,
+    'SEC_USART1': None,
+    'SEC_USART2': None,
+    'SEC_USART3': None,
+    'SEC_USB': None,
+    'SEC_VREFBUF': None,
+    'SEC_WWDG': None,
+    'ADC1': 'ADC',
+    'ADC2': 'ADC',
+    'TIM1': 'AdvCtrlTimer',
+    'TIM8': 'AdvCtrlTimer',
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'DFSDM1': 'DFSDM',
+    'DMA1': 'DMA',
+    'DMA2': 'DMA',
+    'DMAMUX1': 'DMAMUX',
+    'FDCAN1': 'FDCAN',
+    'FLASH': 'Flash',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOF': 'GPIO',
+    'GPIOG': 'GPIO',
+    'GPIOH': 'GPIO',
+    'TIM15': 'GpTimer',
+    'TIM16': 'GpTimer',
+    'TIM17': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'TIM4': 'GpTimer',
+    'TIM5': 'GpTimer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'I2C3': 'I2C',
+    'I2C4': 'I2C',
+    'LPTIM1': 'LPTIM',
+    'LPTIM2': 'LPTIM',
+    'LPTIM3': 'LPTIM',
+    'LPUART1': 'LPUART',
+    'OCTOSPI1': 'OCTOSPI',
+    'OTFDEC1': 'OTFDEC',
+    'SAI1': 'SAI',
+    'SAI2': 'SAI',
+    'SDMMC1': 'SDMMC',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SPI3': 'SPI',
+    'UCPD1': 'UCPD',
+    'UART4': 'USART',
+    'UART5': 'USART',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -129,7 +197,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue

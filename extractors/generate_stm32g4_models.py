@@ -42,95 +42,70 @@ FUNCTIONAL_BLOCKS = frozenset({
     'UCPD', 'USART', 'USB', 'VREFBUF', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    # Skip core/debug peripherals
-    if periph_name in ('NVIC', 'SCB', 'SCB_ACTRL', 'STK', 'MPU', 'FPU'):
-        return None
-
-    # ADC instances and common blocks
-    if periph_name.startswith('ADC'):
-        if 'Common' in periph_name or 'COMMON' in periph_name:
-            return 'ADC_Common'
-        return 'ADC'
-
-    # Normalize FLASH
-    if periph_name == 'FLASH':
-        return 'Flash'
-
-    # GPIO
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    # DMA (not DMAMUX)
-    if periph_name in ('DMA1', 'DMA2'):
-        return 'DMA'
-    if periph_name.startswith('DMAMUX'):
-        return 'DMAMUX'
-
-    # I2C
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-
-    # SPI
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    # USART/UART
-    if periph_name.startswith('USART') or periph_name.startswith('UART'):
-        return 'USART'
-    if periph_name.startswith('LPUART'):
-        return 'LPUART'
-
-    # SAI
-    if periph_name.startswith('SAI'):
-        return 'SAI'
-
-    # FDCAN
-    if periph_name.startswith('FDCAN'):
-        return 'FDCAN'
-
-    # LPTIM
-    if periph_name.startswith('LPTIM'):
-        return 'LPTIM'
-
-    # COMP
-    if periph_name.startswith('COMP'):
-        return 'COMP'
-
-    # OPAMP
-    if periph_name.startswith('OPAMP'):
-        return 'OPAMP'
-
-    # DAC
-    if periph_name.startswith('DAC'):
-        return 'DAC'
-
-    # UCPD
-    if periph_name.startswith('UCPD'):
-        return 'UCPD'
-
-    # USB
-    if periph_name.startswith('USB'):
-        return 'USB'
-
-    # HRTIM sub-blocks
-    if periph_name == 'HRTIM_Common':
-        return 'HRTIM_Common'
-    if periph_name == 'HRTIM_Master':
-        return 'HRTIM_Master'
-    if periph_name.startswith('HRTIM_TIM'):
-        return 'HRTIM_Timer'
-
-    # Timers
-    if periph_name.startswith('TIM'):
-        if periph_name in ('TIM1', 'TIM8', 'TIM20'):
-            return 'AdvCtrlTimer'
-        elif periph_name in ('TIM6', 'TIM7'):
-            return 'BasicTimer'
-        return 'GpTimer'
-
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'ADC1': 'ADC',
+    'ADC2': 'ADC',
+    'ADC3': 'ADC',
+    'ADC4': 'ADC',
+    'ADC5': 'ADC',
+    'ADC12_Common': 'ADC_Common',
+    'ADC345_Common': 'ADC_Common',
+    'TIM1': 'AdvCtrlTimer',
+    'TIM20': 'AdvCtrlTimer',
+    'TIM8': 'AdvCtrlTimer',
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'DAC1': 'DAC',
+    'DAC2': 'DAC',
+    'DAC3': 'DAC',
+    'DAC4': 'DAC',
+    'DMA1': 'DMA',
+    'DMA2': 'DMA',
+    'FDCAN1': 'FDCAN',
+    'FDCAN2': 'FDCAN',
+    'FDCAN3': 'FDCAN',
+    'FLASH': 'Flash',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOF': 'GPIO',
+    'GPIOG': 'GPIO',
+    'TIM15': 'GpTimer',
+    'TIM16': 'GpTimer',
+    'TIM17': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'TIM4': 'GpTimer',
+    'TIM5': 'GpTimer',
+    'HRTIM_TIMA': 'HRTIM_Timer',
+    'HRTIM_TIMB': 'HRTIM_Timer',
+    'HRTIM_TIMC': 'HRTIM_Timer',
+    'HRTIM_TIMD': 'HRTIM_Timer',
+    'HRTIM_TIME': 'HRTIM_Timer',
+    'HRTIM_TIMF': 'HRTIM_Timer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'I2C3': 'I2C',
+    'I2C4': 'I2C',
+    'LPTIM1': 'LPTIM',
+    'LPUART1': 'LPUART',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SPI3': 'SPI',
+    'SPI4': 'SPI',
+    'UCPD1': 'UCPD',
+    'UART4': 'USART',
+    'UART5': 'USART',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+    'USB_FS_device': 'USB',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -154,7 +129,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue

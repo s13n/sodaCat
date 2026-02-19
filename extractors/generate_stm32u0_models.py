@@ -36,48 +36,44 @@ FUNCTIONAL_BLOCKS = frozenset({
     'TSC', 'USART', 'USB', 'VREFBUF', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    if periph_name in ('NVIC', 'SCB', 'SCB_ACTRL', 'STK', 'MPU', 'FPU'):
-        return None
-
-    if periph_name == 'FLASH':
-        return 'Flash'
-
-    # COMP (SVD uses COMP or COMP1)
-    if periph_name in ('COMP', 'COMP1'):
-        return 'COMP'
-
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    if periph_name in ('DMA1', 'DMA2'):
-        return 'DMA'
-    if periph_name.startswith('DMAMUX'):
-        return 'DMAMUX'
-
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    if periph_name.startswith('USART'):
-        return 'USART'
-    if periph_name.startswith('LPUART'):
-        return 'LPUART'
-
-    if periph_name.startswith('LPTIM'):
-        return 'LPTIM'
-
-    # Timers
-    if periph_name.startswith('TIM'):
-        if periph_name == 'TIM1':
-            return 'AdvCtrlTimer'
-        elif periph_name in ('TIM6', 'TIM7'):
-            return 'BasicTimer'
-        return 'GpTimer'
-
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'TIM1': 'AdvCtrlTimer',
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'COMP1': 'COMP',
+    'DMA1': 'DMA',
+    'DMA2': 'DMA',
+    'FLASH': 'Flash',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOF': 'GPIO',
+    'TIM15': 'GpTimer',
+    'TIM16': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'I2C3': 'I2C',
+    'LPTIM1': 'LPTIM',
+    'LPTIM2': 'LPTIM',
+    'LPTIM3': 'LPTIM',
+    'LPUART1': 'LPUART',
+    'LPUART2': 'LPUART',
+    'LPUART3': 'LPUART',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SPI3': 'SPI',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+    'USART4': 'USART',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -101,7 +97,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue

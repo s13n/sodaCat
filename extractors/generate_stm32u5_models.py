@@ -48,133 +48,214 @@ FUNCTIONAL_BLOCKS = frozenset({
     'TSC', 'UCPD', 'USART', 'USB', 'VREFBUF', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    # Skip security shadow peripherals
-    if periph_name.startswith('SEC_'):
-        return None
-    # Skip security zone controllers
-    if periph_name.startswith('GTZC'):
-        return None
-    # Skip delay blocks
-    if periph_name.startswith('DLYB'):
-        return None
-    # Skip cache controllers
-    if periph_name in ('ICACHE', 'DCACHE', 'DCACHE1', 'DCACHE2'):
-        return None
-    # Skip USB SRAM
-    if periph_name == 'USBSRAM':
-        return None
-
-    # ADC instances and common block
-    if periph_name.startswith('ADC'):
-        if 'Common' in periph_name or '_COMMON' in periph_name:
-            return 'ADC_Common'
-        if periph_name == 'ADC12':
-            return 'ADC_Common'
-        return 'ADC'
-
-    # Normalize ExTI/EXTI
-    if periph_name in ('ExTI', 'EXTI'):
-        return 'EXTI'
-
-    # Normalize FLASH
-    if periph_name == 'FLASH':
-        return 'Flash'
-
-    # GPDMA
-    if periph_name.startswith('GPDMA'):
-        return 'GPDMA'
-
-    # GPIO
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    # I3C (check before I2C)
-    if periph_name.startswith('I3C'):
-        return 'I3C'
-
-    # I2C
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-
-    # SPI
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    # USART/UART
-    if periph_name.startswith('USART') or periph_name.startswith('UART'):
-        return 'USART'
-    if periph_name.startswith('LPUART'):
-        return 'LPUART'
-
-    # SAI
-    if periph_name.startswith('SAI'):
-        return 'SAI'
-
-    # FDCAN
-    if periph_name.startswith('FDCAN'):
-        return 'FDCAN'
-
-    # SDMMC
-    if periph_name.startswith('SDMMC'):
-        return 'SDMMC'
-
-    # LPTIM
-    if periph_name.startswith('LPTIM'):
-        return 'LPTIM'
-
-    # COMP
-    if periph_name.startswith('COMP'):
-        return 'COMP'
-
-    # OPAMP
-    if periph_name.startswith('OPAMP'):
-        return 'OPAMP'
-
-    # UCPD
-    if periph_name.startswith('UCPD'):
-        return 'UCPD'
-
-    # OTFDEC
-    if periph_name.startswith('OTFDEC'):
-        return 'OTFDEC'
-
-    # OCTOSPI
-    if periph_name.startswith('OCTOSPI'):
-        return 'OCTOSPI'
-
-    # HSPI
-    if periph_name.startswith('HSPI'):
-        return 'HSPI'
-
-    # OTG USB
-    if periph_name == 'OTG_FS':
-        return 'OTG_FS'
-    if periph_name == 'OTG_HS':
-        return 'OTG_HS'
-
-    # MDF
-    if periph_name.startswith('MDF'):
-        return 'MDF'
-
-    # ADF
-    if periph_name.startswith('ADF'):
-        return 'ADF'
-
-    # DAC
-    if periph_name.startswith('DAC'):
-        return 'DAC'
-
-    # Timers
-    if periph_name.startswith('TIM'):
-        if periph_name in ('TIM1', 'TIM8'):
-            return 'AdvCtrlTimer'
-        elif periph_name in ('TIM6', 'TIM7'):
-            return 'BasicTimer'
-        return 'GpTimer'
-
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'DCACHE': None,
+    'DCACHE1': None,
+    'DCACHE2': None,
+    'DLYBOS': None,
+    'DLYBOS1': None,
+    'DLYBOS2': None,
+    'DLYBSD': None,
+    'DLYBSD1': None,
+    'DLYBSD2': None,
+    'GTZC1_MPCBB1': None,
+    'GTZC1_MPCBB2': None,
+    'GTZC1_MPCBB3': None,
+    'GTZC1_MPCBB5': None,
+    'GTZC1_MPCBB6': None,
+    'GTZC1_TZIC': None,
+    'GTZC1_TZSC': None,
+    'GTZC2_MPCBB4': None,
+    'GTZC2_TZIC': None,
+    'GTZC2_TZSC': None,
+    'SEC_ADC1': None,
+    'SEC_ADC12': None,
+    'SEC_ADC12_Common': None,
+    'SEC_ADC2': None,
+    'SEC_ADC4': None,
+    'SEC_ADF1': None,
+    'SEC_AES': None,
+    'SEC_COMP': None,
+    'SEC_CORDIC': None,
+    'SEC_CRC': None,
+    'SEC_CRS': None,
+    'SEC_DAC1': None,
+    'SEC_DCACHE': None,
+    'SEC_DCACHE1': None,
+    'SEC_DCACHE2': None,
+    'SEC_DCMI': None,
+    'SEC_DLYBOS': None,
+    'SEC_DLYBOS1': None,
+    'SEC_DLYBOS2': None,
+    'SEC_DLYBSD': None,
+    'SEC_DLYBSD1': None,
+    'SEC_DLYBSD2': None,
+    'SEC_DMA2D': None,
+    'SEC_DSI': None,
+    'SEC_EXTI': None,
+    'SEC_FDCAN1': None,
+    'SEC_FDCAN1_RAM': None,
+    'SEC_FLASH': None,
+    'SEC_FMAC': None,
+    'SEC_FMC': None,
+    'SEC_GFXMMU': None,
+    'SEC_GFXTIM': None,
+    'SEC_GPDMA1': None,
+    'SEC_GPIOA': None,
+    'SEC_GPIOB': None,
+    'SEC_GPIOC': None,
+    'SEC_GPIOD': None,
+    'SEC_GPIOE': None,
+    'SEC_GPIOF': None,
+    'SEC_GPIOG': None,
+    'SEC_GPIOH': None,
+    'SEC_GPIOI': None,
+    'SEC_GPIOJ': None,
+    'SEC_GTZC1_MPCBB1': None,
+    'SEC_GTZC1_MPCBB2': None,
+    'SEC_GTZC1_MPCBB3': None,
+    'SEC_GTZC1_MPCBB5': None,
+    'SEC_GTZC1_MPCBB6': None,
+    'SEC_GTZC1_TZIC': None,
+    'SEC_GTZC1_TZSC': None,
+    'SEC_GTZC2_MPCBB4': None,
+    'SEC_GTZC2_TZIC': None,
+    'SEC_GTZC2_TZSC': None,
+    'SEC_HASH': None,
+    'SEC_HSPI1': None,
+    'SEC_I2C1': None,
+    'SEC_I2C2': None,
+    'SEC_I2C3': None,
+    'SEC_I2C4': None,
+    'SEC_I2C5': None,
+    'SEC_I2C6': None,
+    'SEC_ICache': None,
+    'SEC_IWDG': None,
+    'SEC_JPEG': None,
+    'SEC_LPDMA1': None,
+    'SEC_LPGPIO1': None,
+    'SEC_LPTIM1': None,
+    'SEC_LPTIM2': None,
+    'SEC_LPTIM3': None,
+    'SEC_LPTIM4': None,
+    'SEC_LPUART1': None,
+    'SEC_LTDC': None,
+    'SEC_MDF1': None,
+    'SEC_OCTOSPI1': None,
+    'SEC_OCTOSPI2': None,
+    'SEC_OCTOSPIM': None,
+    'SEC_OPAMP': None,
+    'SEC_OTFDEC1': None,
+    'SEC_OTFDEC2': None,
+    'SEC_OTG_FS': None,
+    'SEC_OTG_HS': None,
+    'SEC_PKA': None,
+    'SEC_PSSI': None,
+    'SEC_PWR': None,
+    'SEC_RAMCFG': None,
+    'SEC_RCC': None,
+    'SEC_RNG': None,
+    'SEC_RTC': None,
+    'SEC_SAES': None,
+    'SEC_SAI1': None,
+    'SEC_SAI2': None,
+    'SEC_SDMMC': None,
+    'SEC_SDMMC1': None,
+    'SEC_SDMMC2': None,
+    'SEC_SPI1': None,
+    'SEC_SPI2': None,
+    'SEC_SPI3': None,
+    'SEC_SYSCFG': None,
+    'SEC_TAMP': None,
+    'SEC_TIM1': None,
+    'SEC_TIM15': None,
+    'SEC_TIM16': None,
+    'SEC_TIM17': None,
+    'SEC_TIM2': None,
+    'SEC_TIM3': None,
+    'SEC_TIM4': None,
+    'SEC_TIM5': None,
+    'SEC_TIM6': None,
+    'SEC_TIM7': None,
+    'SEC_TIM8': None,
+    'SEC_TSC': None,
+    'SEC_UART4': None,
+    'SEC_UART5': None,
+    'SEC_UCPD1': None,
+    'SEC_USART1': None,
+    'SEC_USART2': None,
+    'SEC_USART3': None,
+    'SEC_USART6': None,
+    'SEC_VREFBUF': None,
+    'SEC_WWDG': None,
+    'ADC1': 'ADC',
+    'ADC2': 'ADC',
+    'ADC4': 'ADC',
+    'ADC12': 'ADC_Common',
+    'ADC12_Common': 'ADC_Common',
+    'ADF1': 'ADF',
+    'TIM1': 'AdvCtrlTimer',
+    'TIM8': 'AdvCtrlTimer',
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'DAC1': 'DAC',
+    'FDCAN1': 'FDCAN',
+    'FDCAN1_RAM': 'FDCAN',
+    'FLASH': 'Flash',
+    'GPDMA1': 'GPDMA',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOF': 'GPIO',
+    'GPIOG': 'GPIO',
+    'GPIOH': 'GPIO',
+    'GPIOI': 'GPIO',
+    'GPIOJ': 'GPIO',
+    'TIM15': 'GpTimer',
+    'TIM16': 'GpTimer',
+    'TIM17': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'TIM4': 'GpTimer',
+    'TIM5': 'GpTimer',
+    'HSPI1': 'HSPI',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'I2C3': 'I2C',
+    'I2C4': 'I2C',
+    'I2C5': 'I2C',
+    'I2C6': 'I2C',
+    'LPTIM1': 'LPTIM',
+    'LPTIM2': 'LPTIM',
+    'LPTIM3': 'LPTIM',
+    'LPTIM4': 'LPTIM',
+    'LPUART1': 'LPUART',
+    'MDF1': 'MDF',
+    'OCTOSPI1': 'OCTOSPI',
+    'OCTOSPI2': 'OCTOSPI',
+    'OCTOSPIM': 'OCTOSPI',
+    'OTFDEC1': 'OTFDEC',
+    'OTFDEC2': 'OTFDEC',
+    'SAI1': 'SAI',
+    'SAI2': 'SAI',
+    'SDMMC1': 'SDMMC',
+    'SDMMC2': 'SDMMC',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SPI3': 'SPI',
+    'UCPD1': 'UCPD',
+    'UART4': 'USART',
+    'UART5': 'USART',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+    'USART6': 'USART',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -198,7 +279,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue

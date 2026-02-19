@@ -46,78 +46,72 @@ FUNCTIONAL_BLOCKS = frozenset({
     'USART', 'USBPHYC', 'VREFINT', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    # Skip core/debug peripherals
-    if periph_name in ('NVIC', 'SCB', 'SCB_ACTRL', 'STK', 'MPU', 'FPU', 'AC'):
-        return None
-
-    # Normalize ADC Common blocks (SVD uses C_ADC or ADC_Common depending on chip)
-    if periph_name in ('C_ADC', 'ADC_Common'):
-        return 'ADC_Common'
-    if periph_name.startswith('ADC'):
-        return 'ADC'
-
-    # Normalize naming inconsistencies across F7 SVD files
-    if periph_name == 'FLASH':
-        return 'Flash'
-    if periph_name == 'DBG':
-        return 'DBGMCU'
-    if periph_name == 'LTCD':  # Typo in F767/F777 SVDs
-        return 'LTDC'
-    if periph_name == 'SPDIF_RX':
-        return 'SPDIFRX'
-
-    # CAN bus
-    if periph_name.startswith('CAN'):
-        return 'bxCAN'
-
-    # GPIO
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    # DMA (not DMA2D)
-    if periph_name in ('DMA1', 'DMA2'):
-        return 'DMA'
-
-    # I2C
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-
-    # SPI
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    # USART/UART
-    if periph_name.startswith('USART') or periph_name.startswith('UART'):
-        return 'USART'
-
-    # SAI
-    if periph_name.startswith('SAI'):
-        return 'SAI'
-
-    # SDMMC
-    if periph_name.startswith('SDMMC'):
-        return 'SDMMC'
-
-    # LPTIM
-    if periph_name.startswith('LPTIM'):
-        return 'LPTIM'
-
-    # Timers
-    if periph_name.startswith('TIM'):
-        if periph_name in ('TIM1', 'TIM8'):
-            return 'AdvCtrlTimer'
-        elif periph_name in ('TIM6', 'TIM7'):
-            return 'BasicTimer'
-        return 'GpTimer'
-
-    # DFSDM (may have channel/filter sub-peripherals)
-    if periph_name.startswith('DFSDM'):
-        return 'DFSDM'
-
-    # Ethernet and OTG sub-blocks keep their individual names
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'ADC1': 'ADC',
+    'ADC2': 'ADC',
+    'ADC3': 'ADC',
+    'C_ADC': 'ADC_Common',
+    'TIM1': 'AdvCtrlTimer',
+    'TIM8': 'AdvCtrlTimer',
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'DBG': 'DBGMCU',
+    'DMA1': 'DMA',
+    'DMA2': 'DMA',
+    'FLASH': 'Flash',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOF': 'GPIO',
+    'GPIOG': 'GPIO',
+    'GPIOH': 'GPIO',
+    'GPIOI': 'GPIO',
+    'GPIOJ': 'GPIO',
+    'GPIOK': 'GPIO',
+    'TIM10': 'GpTimer',
+    'TIM11': 'GpTimer',
+    'TIM12': 'GpTimer',
+    'TIM13': 'GpTimer',
+    'TIM14': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'TIM4': 'GpTimer',
+    'TIM5': 'GpTimer',
+    'TIM9': 'GpTimer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'I2C3': 'I2C',
+    'I2C4': 'I2C',
+    'LPTIM1': 'LPTIM',
+    'LTCD': 'LTDC',
+    'SAI1': 'SAI',
+    'SAI2': 'SAI',
+    'SDMMC1': 'SDMMC',
+    'SDMMC2': 'SDMMC',
+    'SPDIF_RX': 'SPDIFRX',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SPI3': 'SPI',
+    'SPI4': 'SPI',
+    'SPI5': 'SPI',
+    'SPI6': 'SPI',
+    'UART4': 'USART',
+    'UART5': 'USART',
+    'UART7': 'USART',
+    'UART8': 'USART',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+    'USART6': 'USART',
+    'CAN1': 'bxCAN',
+    'CAN2': 'bxCAN',
+    'CAN3': 'bxCAN',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -141,7 +135,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue

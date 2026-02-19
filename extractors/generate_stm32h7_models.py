@@ -53,41 +53,82 @@ INCOMPATIBLE_BLOCKS = frozenset({
     'RTC', 'SPDIFRX', 'SYSCFG', 'OPAMP',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    if periph_name.startswith('ADC'):
-        return 'ADC_Common' if 'Common' in periph_name else 'ADC'
-    if periph_name.startswith('SAI'):
-        return 'SAI'
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-    if periph_name.startswith('USART') or periph_name.startswith('UART'):
-        return 'USART'
-    if periph_name.startswith('LPUART'):
-        return 'LPUART'
-    if periph_name.startswith('TIM'):
-        if periph_name in ['TIM1', 'TIM8']:
-            return 'AdvCtrlTimer'
-        elif periph_name in ['TIM2', 'TIM3', 'TIM4', 'TIM5']:
-            return 'GpTimer'
-        elif periph_name in ['TIM6', 'TIM7']:
-            return 'BasicTimer'
-        return 'GpTimer'
-    if periph_name.startswith('LPTIM'):
-        return 'LPTIMenc' if 'enc' in periph_name else 'LPTIM'
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-    if periph_name.startswith('DMA') and 'COMMON' not in periph_name:
-        return 'DMA'
-    if periph_name.startswith('DMAMUX'):
-        return periph_name
-    if periph_name.startswith('BDMA'):
-        return 'BDMA'
-    if periph_name.startswith('MDMA'):
-        return 'MDMA'
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'ADC1': 'ADC',
+    'ADC2': 'ADC',
+    'ADC3': 'ADC',
+    'ADC12_Common': 'ADC_Common',
+    'ADC3_Common': 'ADC_Common',
+    'TIM1': 'AdvCtrlTimer',
+    'TIM8': 'AdvCtrlTimer',
+    'BDMA1': 'BDMA',
+    'BDMA2': 'BDMA',
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'DMA1': 'DMA',
+    'DMA2': 'DMA',
+    'DMA2D': 'DMA',
+    'DMAMUX1': 'DMA',
+    'DMAMUX2': 'DMA',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOF': 'GPIO',
+    'GPIOG': 'GPIO',
+    'GPIOH': 'GPIO',
+    'GPIOI': 'GPIO',
+    'GPIOJ': 'GPIO',
+    'GPIOK': 'GPIO',
+    'TIM12': 'GpTimer',
+    'TIM13': 'GpTimer',
+    'TIM14': 'GpTimer',
+    'TIM15': 'GpTimer',
+    'TIM16': 'GpTimer',
+    'TIM17': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM23': 'GpTimer',
+    'TIM24': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'TIM4': 'GpTimer',
+    'TIM5': 'GpTimer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'I2C3': 'I2C',
+    'I2C4': 'I2C',
+    'I2C5': 'I2C',
+    'LPTIM1': 'LPTIM',
+    'LPTIM2': 'LPTIM',
+    'LPTIM3': 'LPTIM',
+    'LPTIM4': 'LPTIM',
+    'LPTIM5': 'LPTIM',
+    'LPUART1': 'LPUART',
+    'SAI1': 'SAI',
+    'SAI2': 'SAI',
+    'SAI3': 'SAI',
+    'SAI4': 'SAI',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SPI3': 'SPI',
+    'SPI4': 'SPI',
+    'SPI5': 'SPI',
+    'SPI6': 'SPI',
+    'UART4': 'USART',
+    'UART5': 'USART',
+    'UART7': 'USART',
+    'UART8': 'USART',
+    'UART9': 'USART',
+    'USART1': 'USART',
+    'USART10': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+    'USART6': 'USART',
+    'USART9': 'USART',
+}
 
 def extract_svd_from_zip(zip_path, svd_filename):
     """Extract a single SVD from the zip package."""
@@ -110,7 +151,7 @@ def process_chip(svd_root, chip_name):
         
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
             
             # Only keep relevant blocks
             if block_type not in FUNCTIONAL_BLOCKS and block_type not in INCOMPATIBLE_BLOCKS:

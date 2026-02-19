@@ -39,43 +39,33 @@ FUNCTIONAL_BLOCKS = frozenset({
     'USART', 'USB', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    if periph_name in ('NVIC', 'SCB', 'SCB_ACTRL', 'STK', 'MPU', 'FPU'):
-        return None
-
-    if periph_name == 'DBG':
-        return 'DBGMCU'
-    if periph_name == 'FLASH':
-        return 'Flash'
-
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    if periph_name in ('DMA1', 'DMA2', 'DMA'):
-        return 'DMA'
-    if periph_name.startswith('DMAMUX'):
-        return 'DMAMUX'
-
-    # I2C (SVD uses both "I2C" and "I2C1"/"I2C2")
-    if periph_name == 'I2C' or periph_name.startswith('I2C'):
-        return 'I2C'
-
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    if periph_name.startswith('USART'):
-        return 'USART'
-
-    if periph_name.startswith('FDCAN'):
-        return 'FDCAN'
-
-    if periph_name.startswith('TIM'):
-        if periph_name == 'TIM1':
-            return 'AdvCtrlTimer'
-        return 'GpTimer'
-
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'TIM1': 'AdvCtrlTimer',
+    'DBG': 'DBGMCU',
+    'FLASH': 'Flash',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOF': 'GPIO',
+    'TIM14': 'GpTimer',
+    'TIM15': 'GpTimer',
+    'TIM16': 'GpTimer',
+    'TIM17': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+    'USART4': 'USART',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -99,7 +89,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue

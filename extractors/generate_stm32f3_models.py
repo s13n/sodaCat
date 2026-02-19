@@ -41,78 +41,71 @@ FUNCTIONAL_BLOCKS = frozenset({
     'TSC', 'USART', 'USB', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    if periph_name in ('NVIC', 'SCB', 'SCB_ACTRL', 'STK', 'MPU', 'FPU'):
-        return None
-
-    # Skip I2S extension peripherals
-    if periph_name in ('I2S2ext', 'I2S3ext'):
-        return None
-
-    # ADC instances and common blocks
-    if periph_name in ('ADC1_2', 'ADC3_4', 'ADC_Common'):
-        return 'ADC_Common'
-    if periph_name.startswith('ADC') or periph_name == 'ADC':
-        return 'ADC'
-
-    # CAN bus
-    if periph_name == 'CAN':
-        return 'bxCAN'
-
-    # DAC (SVD uses DAC, DAC1, DAC2)
-    if periph_name.startswith('DAC') or periph_name == 'DAC':
-        return 'DAC'
-
-    # SDADC
-    if periph_name.startswith('SDADC'):
-        return 'SDADC'
-
-    # SYSCFG (SVD names it SYSCFG_COMP_OPAMP)
-    if periph_name == 'SYSCFG_COMP_OPAMP':
-        return 'SYSCFG'
-
-    # USB (SVD uses USB or USB_FS)
-    if periph_name in ('USB', 'USB_FS'):
-        return 'USB'
-
-    # GPIO
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    # DMA
-    if periph_name in ('DMA1', 'DMA2'):
-        return 'DMA'
-
-    # I2C
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-
-    # SPI
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    # USART/UART
-    if periph_name.startswith('USART') or periph_name.startswith('UART'):
-        return 'USART'
-
-    # HRTIM sub-blocks
-    if periph_name == 'HRTIM_Common':
-        return 'HRTIM_Common'
-    if periph_name == 'HRTIM_Master':
-        return 'HRTIM_Master'
-    if periph_name.startswith('HRTIM_TIM'):
-        return 'HRTIM_Timer'
-
-    # Timers
-    if periph_name.startswith('TIM'):
-        if periph_name in ('TIM1', 'TIM8', 'TIM20'):
-            return 'AdvCtrlTimer'
-        elif periph_name in ('TIM6', 'TIM7'):
-            return 'BasicTimer'
-        return 'GpTimer'
-
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'I2S2ext': None,
+    'I2S3ext': None,
+    'ADC1': 'ADC',
+    'ADC2': 'ADC',
+    'ADC3': 'ADC',
+    'ADC4': 'ADC',
+    'ADC1_2': 'ADC_Common',
+    'ADC3_4': 'ADC_Common',
+    'TIM1': 'AdvCtrlTimer',
+    'TIM20': 'AdvCtrlTimer',
+    'TIM8': 'AdvCtrlTimer',
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'DAC1': 'DAC',
+    'DAC2': 'DAC',
+    'DMA1': 'DMA',
+    'DMA2': 'DMA',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOF': 'GPIO',
+    'GPIOG': 'GPIO',
+    'GPIOH': 'GPIO',
+    'TIM12': 'GpTimer',
+    'TIM13': 'GpTimer',
+    'TIM14': 'GpTimer',
+    'TIM15': 'GpTimer',
+    'TIM16': 'GpTimer',
+    'TIM17': 'GpTimer',
+    'TIM18': 'GpTimer',
+    'TIM19': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'TIM4': 'GpTimer',
+    'TIM5': 'GpTimer',
+    'HRTIM_TIMA': 'HRTIM_Timer',
+    'HRTIM_TIMB': 'HRTIM_Timer',
+    'HRTIM_TIMC': 'HRTIM_Timer',
+    'HRTIM_TIMD': 'HRTIM_Timer',
+    'HRTIM_TIME': 'HRTIM_Timer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'I2C3': 'I2C',
+    'SDADC1': 'SDADC',
+    'SDADC2': 'SDADC',
+    'SDADC3': 'SDADC',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SPI3': 'SPI',
+    'SPI4': 'SPI',
+    'SYSCFG_COMP_OPAMP': 'SYSCFG',
+    'UART4': 'USART',
+    'UART5': 'USART',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+    'USB_FS': 'USB',
+    'CAN': 'bxCAN',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -136,7 +129,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue

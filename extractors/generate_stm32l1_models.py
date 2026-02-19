@@ -36,37 +36,43 @@ FUNCTIONAL_BLOCKS = frozenset({
     'USART', 'USB', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    if periph_name in ('NVIC', 'SCB', 'SCB_ACTRL', 'STK', 'MPU', 'FPU'):
-        return None
-
-    # Skip USB SRAM
-    if periph_name == 'USB_SRAM':
-        return None
-
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    if periph_name in ('DMA1', 'DMA2'):
-        return 'DMA'
-
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    # USART/UART (L100 uses USART4/USART5, L15x uses UART4/UART5)
-    if periph_name.startswith('USART') or periph_name.startswith('UART'):
-        return 'USART'
-
-    # Timers (no AdvCtrlTimer in L1)
-    if periph_name.startswith('TIM'):
-        if periph_name in ('TIM6', 'TIM7'):
-            return 'BasicTimer'
-        return 'GpTimer'
-
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'USB_SRAM': None,
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'DMA1': 'DMA',
+    'DMA2': 'DMA',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOF': 'GPIO',
+    'GPIOG': 'GPIO',
+    'GPIOH': 'GPIO',
+    'TIM10': 'GpTimer',
+    'TIM11': 'GpTimer',
+    'TIM2': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'TIM4': 'GpTimer',
+    'TIM5': 'GpTimer',
+    'TIM9': 'GpTimer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SPI3': 'SPI',
+    'UART4': 'USART',
+    'UART5': 'USART',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART3': 'USART',
+    'USART4': 'USART',
+    'USART5': 'USART',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -90,7 +96,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue

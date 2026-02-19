@@ -36,52 +36,44 @@ FUNCTIONAL_BLOCKS = frozenset({
     'TSC', 'USART', 'USB', 'WWDG',
 })
 
-def get_canonical_name(periph_name, periph_obj=None):
-    """Map peripheral instance name to functional block type."""
-    if periph_name in ('NVIC', 'SCB', 'SCB_ACTRL', 'STK', 'MPU', 'FPU'):
-        return None
-
-    # Skip Firewall and USB SRAM
-    if periph_name in ('Firewall', 'USB_SRAM'):
-        return None
-
-    # DBG/DBGMCU (SVD uses both across chips)
-    if periph_name in ('DBG', 'DBGMCU'):
-        return 'DBGMCU'
-
-    # LPUART (SVD uses LPUART1 on some chips, LPUSART1 on others)
-    if periph_name in ('LPUART1', 'LPUSART1'):
-        return 'LPUART'
-
-    # SYSCFG (SVD uses SYSCFG or SYSCFG_COMP)
-    if periph_name in ('SYSCFG', 'SYSCFG_COMP'):
-        return 'SYSCFG'
-
-    # USB
-    if periph_name == 'USB_FS':
-        return 'USB'
-
-    if periph_name.startswith('GPIO'):
-        return 'GPIO'
-
-    if periph_name == 'DMA1':
-        return 'DMA'
-
-    if periph_name.startswith('I2C'):
-        return 'I2C'
-    if periph_name.startswith('SPI'):
-        return 'SPI'
-
-    if periph_name.startswith('USART'):
-        return 'USART'
-
-    # Timers (no AdvCtrlTimer in L0)
-    if periph_name.startswith('TIM'):
-        if periph_name in ('TIM6', 'TIM7'):
-            return 'BasicTimer'
-        return 'GpTimer'
-
-    return periph_name
+# Map SVD peripheral instance names to canonical block type names.
+# Entries where canonical == instance name are omitted (handled by .get() default).
+# None means the peripheral is skipped (ARM core internals, security shadows, etc.).
+NAME_MAP = {
+    'Firewall': None,
+    'MPU': None,
+    'NVIC': None,
+    'SCB': None,
+    'STK': None,
+    'USB_SRAM': None,
+    'TIM6': 'BasicTimer',
+    'TIM7': 'BasicTimer',
+    'DBG': 'DBGMCU',
+    'DMA1': 'DMA',
+    'GPIOA': 'GPIO',
+    'GPIOB': 'GPIO',
+    'GPIOC': 'GPIO',
+    'GPIOD': 'GPIO',
+    'GPIOE': 'GPIO',
+    'GPIOH': 'GPIO',
+    'TIM2': 'GpTimer',
+    'TIM21': 'GpTimer',
+    'TIM22': 'GpTimer',
+    'TIM3': 'GpTimer',
+    'I2C1': 'I2C',
+    'I2C2': 'I2C',
+    'I2C3': 'I2C',
+    'LPUART1': 'LPUART',
+    'LPUSART1': 'LPUART',
+    'SPI1': 'SPI',
+    'SPI2': 'SPI',
+    'SYSCFG_COMP': 'SYSCFG',
+    'USART1': 'USART',
+    'USART2': 'USART',
+    'USART4': 'USART',
+    'USART5': 'USART',
+    'USB_FS': 'USB',
+}
 
 
 def extract_svd_from_zip(zip_path, svd_filename):
@@ -105,7 +97,7 @@ def process_chip(svd_root, chip_name):
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = get_canonical_name(periph_name, periph)
+            block_type = NAME_MAP.get(periph_name, periph_name)
 
             if block_type is None:
                 continue
