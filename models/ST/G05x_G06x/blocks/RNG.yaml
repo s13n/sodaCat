@@ -1,0 +1,160 @@
+name: RNG
+description: Random number generator
+groupName: RNG
+baseAddress: 1073893376
+registers:
+- name: RNG_CR
+  displayName: RNG_CR
+  description: control register
+  addressOffset: 0
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: RNGEN
+    description: True random number generator enable
+    bitOffset: 2
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: True random number generator is disabled. Analog noise 
+        sources are powered off and logic clocked by the RNG clock is gated.
+      value: 0
+    - name: B_0x1
+      description: True random number generator is enabled.
+      value: 1
+  - name: IE
+    description: Interrupt Enable
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: RNG Interrupt is disabled
+      value: 0
+    - name: B_0x1
+      description: RNG Interrupt is enabled. An interrupt is pending as soon as 
+        DRDY='1', SEIS='1' or CEIS=1 in the RNG_SR register.
+      value: 1
+  - name: CED
+    description: "Clock error detection\nThe clock error detection cannot be enabled
+      nor disabled on-the-fly when the RNG is enabled, i.e. to enable or disable CED
+      the RNG must be disabled."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Clock error detection is enable
+      value: 0
+    - name: B_0x1
+      description: Clock error detection is disable
+      value: 1
+- name: RNG_SR
+  displayName: RNG_SR
+  description: status register
+  addressOffset: 4
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DRDY
+    description: "Data Ready\nOnce the output buffer becomes empty (after reading
+      the RNG_DR register), this bit returns to 0 until a new random value is generated.\n\
+      Note: The DRDY bit can rise when the peripheral is disabled (RNGEN=0 in the
+      RNG_CR register).\nIf IE=1 in the RNG_CR register, an interrupt is generated
+      when DRDY=1."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: The RNG_DR register is not yet valid, no random data is 
+        available.
+      value: 0
+    - name: B_0x1
+      description: The RNG_DR register contains valid random data.
+      value: 1
+  - name: CECS
+    description: "Clock error current status\nNote: CECS bit is valid only if the
+      CED bit in the RNG_CR register is set to 0."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: The RNG clock is correct (fRNGCLK fHCLK/32). If the CEIS bit 
+        is set, this means that a slow clock was detected and the situation has 
+        been recovered.
+      value: 0
+    - name: B_0x1
+      description: The RNG clock is too slow (fRNGCLK fHCLK/32).
+      value: 1
+  - name: SECS
+    description: "Seed error current status\nOne of the noise source has provided
+      more than 64 consecutive bits at a constant value ('0' or '1'), or more than
+      32 consecutive occurrence of two bit patterns ('01' or '10')\nBoth noise sources
+      have delivered more than 32 consecutive bits at a constant value ('0' or '1'),
+      or more than 16 consecutive occurrence of two bit patterns ('01' or '10')"
+    bitOffset: 2
+    bitWidth: 1
+    access: read-only
+    enumeratedValues:
+    - name: B_0x0
+      description: No faulty sequence has currently been detected. If the SEIS 
+        bit is set, this means that a faulty sequence was detected and the 
+        situation has been recovered.
+      value: 0
+    - name: B_0x1
+      description: 'At least one of the following faulty sequence has been detected:'
+      value: 1
+  - name: CEIS
+    description: "Clock error interrupt status\nThis bit is set at the same time as
+      CECS. It is cleared by writing 0. Writing 1 has no effect.\nAn interrupt is
+      pending if IE = 1 in the RNG_CR register."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: The RNG clock is correct (fRNGCLK fHCLK/32)
+      value: 0
+    - name: B_0x1
+      description: The RNG has been detected too slow (fRNGCLK fHCLK/32)
+      value: 1
+  - name: SEIS
+    description: "Seed error interrupt status\nThis bit is set at the same time as
+      SECS. It is cleared by writing 0. Writing 1 has no effect.\nAn interrupt is
+      pending if IE = 1 in the RNG_CR register."
+    bitOffset: 6
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No faulty sequence detected
+      value: 0
+    - name: B_0x1
+      description: At least one faulty sequence has been detected. See SECS bit 
+        description for details.
+      value: 1
+- name: RNG_DR
+  displayName: RNG_DR
+  description: RNG data register
+  addressOffset: 8
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: RNDATA
+    description: "Random data\n32-bit random data which are valid when DRDY=1. When
+      DRDY=0 RNDATA value is zero.\nIt is recommended to always verify that RNG_DR
+      is different from zero. Because when it is the case a seed error occurred between
+      RNG_SR polling and RND_DR output reading (rare event)."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-only
+addressBlocks:
+- offset: 0
+  size: 1024
+  usage: registers
