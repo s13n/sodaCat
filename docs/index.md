@@ -54,11 +54,11 @@ sodaCat/
 │   └── design/                    (Design documents and analysis)
 ├── cmake/                         (CMake modules for model generation)
 ├── generators/                    (Model extraction scripts)
-├── models/ST/                     (Generated STM32H7 models)
-│   ├── H7_common/                 (Blocks shared across all variants)
-│   ├── H73x/blocks/               (H73x subfamily-specific blocks)
-│   ├── H74x_H75x/blocks/          (H74x/H75x subfamily-specific blocks)
-│   └── H7A3_B/blocks/             (H7A3/B subfamily-specific blocks)
+├── models/ST/                     (Generated STM32 models)
+│   └── H7/                        (H7 family: common blocks + subfamilies)
+│       ├── H73x/           (H73x subfamily-specific blocks)
+│       ├── H74x_H75x/      (H74x/H75x subfamily-specific blocks)
+│       └── H7A3_B/         (H7A3/B subfamily-specific blocks)
 ├── extractors/                       (MCU-specific extraction code)
 ├── tools/                         (Generic utilities and frameworks)
 └── svd/                           (SVD source files)
@@ -85,7 +85,7 @@ sodaCat/
 
 ### Three-Tier Model Organization
 Models are organized into three tiers to maximize code reuse:
-1. **H7_common/** - Blocks shared identically across ALL subfamilies
+1. **H7/** - Blocks shared identically across ALL subfamilies
 2. **Family-specific/** (H73x, H74x_H75x, H7A3_B) - Blocks that differ within subfamilies
 3. **Chip-specific/** (referenced in family models) - Chip-level configurations
 

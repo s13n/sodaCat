@@ -87,7 +87,7 @@ cmake --build . --target extract_stm32h7_models
 # Get chip model path
 get_stm32h7_chip_path(STM32H757_CM4 H74x_H75x chip_path)
 
-# Get block path (auto routes to H7_common or family-specific)
+# Get block path (auto routes to H7 or family-specific)
 get_stm32h7_block_path(GPIO H73x gpio_path)
 get_stm32h7_block_path(ADC H73x adc_path)
 
@@ -118,26 +118,25 @@ After extraction, models are organized as:
 
 ```
 models/ST/
-├── H7_common/           ← 58 universal blocks (GPIO, I2C, SPI, etc.)
-├── H73x/                ← H73x subfamily models
-│   └── blocks/          ← H73x-specific variants
-├── H74x_H75x/           ← H74x/H75x subfamily models  
-│   └── blocks/          ← H74x/H75x-specific variants
-└── H7A3_B/              ← H7A3/H7B0/H7B3 models
-    └── blocks/          ← H7A3/B-specific variants
+└── H7/                      ← Family folder
+    ├── GPIO.yaml              (58 common blocks)
+    ├── ...
+    ├── H73x/                ← H73x subfamily models
+    ├── H74x_H75x/           ← H74x/H75x subfamily models
+    └── H7A3_B/              ← H7A3/H7B0/H7B3 models
 ```
 
 ## 💡 Key Features
 
 ### Smart Block Routing
 ```cmake
-# Common blocks automatically go to H7_common/
+# Common blocks automatically go to H7/
 get_stm32h7_block_path(GPIO H73x path)
-# → models/ST/H7_common/GPIO.yaml
+# → models/ST/H7/GPIO.yaml
 
 # Incompatible blocks route to family-specific
 get_stm32h7_block_path(ADC H73x path)
-# → models/ST/H73x/blocks/ADC.yaml
+# → models/ST/H7/H73x/ADC.yaml
 ```
 
 ### 21 STM32H7 Variants Supported
@@ -189,7 +188,7 @@ CMake functions automatically determine which directory to use
 ### Common Questions
 
 **Q: Can different H7 variants use the same GPIO model?**
-A: Yes! GPIO is in H7_common/ - 58 blocks are identical.
+A: Yes! GPIO is in H7/ - 58 blocks are identical.
 
 **Q: Why does ADC need variants?**
 A: Register structures differ between H73x, H74x/H75x, and H7A3/B families. See ANALYSIS for details.
@@ -208,7 +207,7 @@ A: Models are generated; modifications are overwritten. Store customizations sep
 | Metric | Value |
 |--------|-------|
 | Total models generated | ~100+ YAML files |
-| Shared (H7_common) | 58 blocks |
+| Shared (H7) | 58 blocks |
 | Family-specific | ~42 blocks × 3 families |
 | Total disk space | ~150-200 MB |
 | Extraction time | ~20-30s (first run) |
@@ -233,12 +232,12 @@ A: Models are generated; modifications are overwritten. Store customizations sep
 INPUT: Get block path for "ADC" in "H73x"
   → Check if ADC is in COMPATIBLE_BLOCKS
   → No, it's incompatible
-  → Return "models/ST/H73x/blocks/ADC.yaml" ✓
+  → Return "models/ST/H7/H73x/ADC.yaml" ✓
 
 INPUT: Get block path for "GPIO" in "H77x"
   → Check if GPIO is in COMPATIBLE_BLOCKS
   → Yes, it's compatible
-  → Return "models/ST/H7_common/GPIO.yaml" ✓
+  → Return "models/ST/H7/GPIO.yaml" ✓
 ```
 
 ## 🚢 Next Steps for ProductionDeployment

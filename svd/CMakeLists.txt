@@ -11,10 +11,10 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/stm32h7-extraction.cmake)
 # - Parses all 21 STM32H7 SVD files from the zip archive
 # - Extracts functional blocks (peripherals)
 # - Organizes models into a three-tier structure:
-#   * H7_common/      - Blocks shared across all variants (58 blocks)
-#   * H73x/           - H73x subfamily-specific blocks
-#   * H74x_H75x/      - H74x/H75x subfamily-specific blocks
-#   * H7A3_B/         - H7A3/B subfamily-specific blocks
+#   * H7/             - Family folder with common blocks + subfamily subdirs
+#   * H7/H73x/        - H73x subfamily-specific blocks
+#   * H7/H74x_H75x/   - H74x/H75x subfamily-specific blocks
+#   * H7/H7A3_B/      - H7A3/B subfamily-specific blocks
 # - Creates chip-level models for all 21 variants
 #
 # See: IMPLEMENTATION_SUMMARY.md for detailed architecture documentation

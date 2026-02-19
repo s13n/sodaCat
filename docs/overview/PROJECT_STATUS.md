@@ -234,10 +234,10 @@ Expected: block_source_selection.md report + block_sources.json
 python3 extractors/generate_stm32h7_models.py --extract-all
 ```
 Expected: 
-- 58 blocks in `models/ST/H7_common/`
-- 12 variant blocks in `models/ST/H73x/blocks/`
-- 8 variant blocks in `models/ST/H74x_H75x/blocks/`
-- 3 variant blocks in `models/ST/H7A3_B/blocks/`
+- 58 blocks in `models/ST/H7/`
+- 12 variant blocks in `models/ST/H7/H73x/`
+- 8 variant blocks in `models/ST/H7/H74x_H75x/`
+- 3 variant blocks in `models/ST/H7/H7A3_B/`
 
 **Test 4: Validate Output Quality**
 ```bash
@@ -247,7 +247,7 @@ python3 tools/compare_peripherals.py \
   /tmp/reference_h757/
 
 # Check schema compliance
-python3 tools/validate_clock_specs.py models/ST/H7_common/
+python3 tools/validate_clock_specs.py models/ST/H7/
 ```
 
 ---
@@ -284,11 +284,11 @@ python3 tools/validate_clock_specs.py models/ST/H7_common/
 **Decision:** Separate models into common (shared) + subfamily-specific (variants)
 
 ```
-H7_common/          ← 58 blocks used by all 21 chips
-H73x/blocks/        ← H73x-only variants
-H74x_H75x/blocks/   ← H74x/H75x-only variants
-H7A3_B/blocks/      ← H7A3/B-only variants
-chips/              ← Complete chip definitions
+H7/                     ← H7 family folder
+├── (common).yaml         58 blocks used by all 21 chips
+├── H73x/        ← H73x-only variants
+├── H74x_H75x/   ← H74x/H75x-only variants
+└── H7A3_B/      ← H7A3/B-only variants
 ```
 
 **Rationale:**
@@ -433,7 +433,7 @@ IMPLEMENTATION_GUIDE.md                  ✅ Step-by-step walkthrough
 - ⏳ Build system integration works (CMake extract_stm32h7_models target)
 
 **Final Success:** 
-- 58 common blocks extracted to `models/ST/H7_common/`
+- 58 common blocks extracted to `models/ST/H7/`
 - Family-specific variants organized by subfamily
 - 21 complete chip models generated
 - Full documentation of transformation decisions

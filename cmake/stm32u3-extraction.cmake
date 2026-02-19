@@ -42,9 +42,9 @@ endfunction()
 # Helper function to get block model path
 function(get_stm32u3_block_path block_name family_or_common output_var)
     if(family_or_common STREQUAL "U3_common")
-        set(${output_var} "${STM32U3_MODELS_DIR}/U3_common/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32U3_MODELS_DIR}/U3/${block_name}.yaml" PARENT_SCOPE)
     else()
-        set(${output_var} "${STM32U3_MODELS_DIR}/${family_or_common}/blocks/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32U3_MODELS_DIR}/U3/${family_or_common}/${block_name}.yaml" PARENT_SCOPE)
     endif()
 endfunction()
 

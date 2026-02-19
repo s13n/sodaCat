@@ -43,9 +43,9 @@ endfunction()
 # Helper function to get block model path
 function(get_stm32f7_block_path block_name family_or_common output_var)
     if(family_or_common STREQUAL "F7_common")
-        set(${output_var} "${STM32F7_MODELS_DIR}/F7_common/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32F7_MODELS_DIR}/F7/${block_name}.yaml" PARENT_SCOPE)
     else()
-        set(${output_var} "${STM32F7_MODELS_DIR}/${family_or_common}/blocks/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32F7_MODELS_DIR}/F7/${family_or_common}/${block_name}.yaml" PARENT_SCOPE)
     endif()
 endfunction()
 

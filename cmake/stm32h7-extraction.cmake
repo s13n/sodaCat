@@ -64,16 +64,16 @@ function(get_stm32h7_block_path block_name family_or_common output_var)
     
     if(is_compatible GREATER -1)
         # Compatible block - can be shared
-        set(${output_var} "${STM32H7_MODELS_DIR}/H7_common/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32H7_MODELS_DIR}/H7/${block_name}.yaml" PARENT_SCOPE)
     else()
         # Family-specific block
-        set(${output_var} "${STM32H7_MODELS_DIR}/${family_or_common}/blocks/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32H7_MODELS_DIR}/H7/${family_or_common}/${block_name}.yaml" PARENT_SCOPE)
     endif()
 endfunction()
 
 # Helper to get chip model path
 function(get_stm32h7_chip_path chip_name family_name output_var)
-    set(${output_var} "${STM32H7_MODELS_DIR}/${family_name}/${chip_name}.yaml" PARENT_SCOPE)
+    set(${output_var} "${STM32H7_MODELS_DIR}/H7/${family_name}/${chip_name}.yaml" PARENT_SCOPE)
 endfunction()
 
 # Parse family definitions and return list of chips in a family

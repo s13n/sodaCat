@@ -16,59 +16,40 @@ This system provides automated extraction and organization of YAML models for al
 
 ```
 models/ST/
-├── H7_common/              # Truly universal blocks (58 blocks)
-│   ├── AXI.yaml
-│   ├── BasicTimer.yaml
-│   ├── GPIO.yaml
-│   ├── EXTI.yaml
-│   ├── I2C.yaml
-│   ├── LPUART.yaml
-│   ├── SPI.yaml
-│   ├── USART.yaml
-│   ├── SAI.yaml
-│   └── ... (54 more)
-│
-├── H73x/                   # H73x subfamily (H723, H725, H730, H733, H735, H73x)
-│   ├── blocks/             # Family-specific blocks
-│   │   ├── ADC.yaml
-│   │   ├── RCC.yaml
-│   │   ├── DMA.yaml
-│   │   └── ... (18 incompatible blocks)
-│   ├── H723.yaml            # Chip-level model
-│   ├── H725.yaml
-│   ├── H730.yaml
-│   ├── H733.yaml
-│   ├── H735.yaml
-│   └── H73x.yaml
-│
-├── H74x_H75x/              # H74x/H75x subfamily (includes H745, H747, H755, H757, H750, etc)
-│   ├── blocks/
-│   │   ├── ADC.yaml
-│   │   ├── RCC.yaml
-│   │   ├── DMA.yaml
-│   │   └── ... (18 incompatible blocks)
-│   ├── H742.yaml
-│   ├── H743.yaml
-│   ├── H745_CM4.yaml
-│   ├── H745_CM7.yaml
-│   ├── H747_CM4.yaml
-│   ├── H747_CM7.yaml
-│   ├── H750.yaml
-│   ├── H753.yaml
-│   ├── H755_CM4.yaml
-│   ├── H755_CM7.yaml
-│   ├── H757_CM4.yaml
-│   └── H757_CM7.yaml
-│
-└── H7A3_B/                 # H7A3/H7B0/H7B3 subfamily
-    ├── blocks/
+└── H7/                         # H7 family folder
+    ├── AXI.yaml                  (58 common blocks)
+    ├── BasicTimer.yaml
+    ├── GPIO.yaml
+    ├── I2C.yaml
+    ├── SPI.yaml
+    ├── USART.yaml
+    ├── SAI.yaml
+    ├── ... (51 more)
+    │
+    ├── H73x/                   # H73x subfamily
     │   ├── ADC.yaml
     │   ├── RCC.yaml
     │   ├── DMA.yaml
-    │   └── ... (18 incompatible blocks)
-    ├── H7A3.yaml
-    ├── H7B0.yaml
-    └── H7B3.yaml
+    │   ├── ... (18 incompatible blocks)
+    │   ├── H723.yaml           # Chip-level model
+    │   ├── H725.yaml
+    │   └── ...
+    │
+    ├── H74x_H75x/              # H74x/H75x subfamily
+    │   ├── ADC.yaml
+    │   ├── RCC.yaml
+    │   ├── ... (18 incompatible blocks)
+    │   ├── H742.yaml
+    │   ├── H757_CM4.yaml
+    │   └── ...
+    │
+    └── H7A3_B/                 # H7A3/H7B0/H7B3 subfamily
+        ├── ADC.yaml
+        ├── RCC.yaml
+        ├── ... (18 incompatible blocks)
+        ├── H7A3.yaml
+        ├── H7B0.yaml
+        └── H7B3.yaml
 ```
 
 ### Functional Block Categories
@@ -135,14 +116,14 @@ add_dependencies(my_target extract_stm32h7_models)
 ```cmake
 # Get path to a chip model (automatically routed to correct family directory)
 get_stm32h7_chip_path(STM32H757_CM4 H74x_H75x chip_model_path)
-# Result: ${CMAKE_BINARY_DIR}/models/ST/H74x_H75x/STM32H757_CM4.yaml
+# Result: ${CMAKE_BINARY_DIR}/models/ST/H7/H74x_H75x/STM32H757_CM4.yaml
 
 # Get path to a functional block (autodetects common vs family-specific)
 get_stm32h7_block_path(GPIO H73x gpio_path)
-# Result: ${CMAKE_BINARY_DIR}/models/ST/H7_common/GPIO.yaml (shared)
+# Result: ${CMAKE_BINARY_DIR}/models/ST/H7/GPIO.yaml (shared)
 
 get_stm32h7_block_path(ADC H73x adc_path)
-# Result: ${CMAKE_BINARY_DIR}/models/ST/H73x/blocks/ADC.yaml (family-specific)
+# Result: ${CMAKE_BINARY_DIR}/models/ST/H7/H73x/ADC.yaml (family-specific)
 
 # Get all chips in a family
 get_stm32h7_family_chips(H73x chips)
@@ -175,7 +156,7 @@ cmake --build . --target extract_stm32h7_models
 
 ## Integration With Existing H757 Models
 
-The existing `models/ST/H757` directory contains manually maintained models. The new system will:
+The existing `models/ST/H7/H757` directory contains manually maintained models. The new system will:
 
 1. **Preserve** existing H757 models as reference implementations
 2. **Extract** similar models for all other H7 variants
@@ -187,19 +168,19 @@ The existing `models/ST/H757` directory contains manually maintained models. The
 Current code references:
 ```yaml
 peripherals:
-  RCC: st/H757/RCC
+  RCC: st/H7/H757/RCC
 ```
 
 With the new system, this becomes:
 ```yaml
 peripherals:
-  RCC: st/H74x_H75x/blocks/RCC  # Family-specific variant
+  RCC: st/H7/H74x_H75x/RCC  # Family-specific variant
 ```
 
 Or for compatible blocks:
 ```yaml
 peripherals:
-  GPIO: st/H7_common/GPIO  # Shared across all families
+  GPIO: st/H7/GPIO  # Shared across all families
 ```
 
 ## Technical Details
@@ -251,7 +232,7 @@ Variants identified by comparing register structure hashes:
 - Re-extract from updated zip: `rm -f models/ST/.extracted && cmake --build . --target extract_stm32h7_models`
 
 ### Custom modifications to blocks
-- Edit `models/ST/<family>/blocks/<Block>.yaml` directly
+- Edit `models/ST/<family>/<Block>.yaml` directly
 - Custom edits will be preserved across regenerations (tracked separately)
 
 ## References

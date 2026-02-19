@@ -43,9 +43,9 @@ endfunction()
 # Helper function to get block model path
 function(get_stm32c0_block_path block_name family_or_common output_var)
     if(family_or_common STREQUAL "C0_common")
-        set(${output_var} "${STM32C0_MODELS_DIR}/C0_common/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32C0_MODELS_DIR}/C0/${block_name}.yaml" PARENT_SCOPE)
     else()
-        set(${output_var} "${STM32C0_MODELS_DIR}/${family_or_common}/blocks/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32C0_MODELS_DIR}/C0/${family_or_common}/${block_name}.yaml" PARENT_SCOPE)
     endif()
 endfunction()
 

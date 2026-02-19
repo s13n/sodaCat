@@ -307,7 +307,7 @@ def main():
         apply_transformations(block_data, transforms[block_name])
         
         # Output
-        dump_model(block_data, f'models/ST/H7_common/{block_name}.yaml')
+        dump_model(block_data, f'models/ST/H7/{block_name}.yaml')
 ```
 
 ---

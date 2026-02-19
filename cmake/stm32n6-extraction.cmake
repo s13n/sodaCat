@@ -42,9 +42,9 @@ endfunction()
 # Helper function to get block model path
 function(get_stm32n6_block_path block_name family_or_common output_var)
     if(family_or_common STREQUAL "N6_common")
-        set(${output_var} "${STM32N6_MODELS_DIR}/N6_common/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32N6_MODELS_DIR}/N6/${block_name}.yaml" PARENT_SCOPE)
     else()
-        set(${output_var} "${STM32N6_MODELS_DIR}/${family_or_common}/blocks/${block_name}.yaml" PARENT_SCOPE)
+        set(${output_var} "${STM32N6_MODELS_DIR}/N6/${family_or_common}/${block_name}.yaml" PARENT_SCOPE)
     endif()
 endfunction()
 

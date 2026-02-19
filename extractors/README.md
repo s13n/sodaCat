@@ -30,8 +30,8 @@ the register structure of each peripheral block and compares them across
 subfamily groupings to determine which blocks are identical and which differ.
 The output is organized into a three-tier directory structure:
 
-- A `common/` directory for blocks that are identical across all subfamilies.
-- A `subfamily/blocks/` directory for each subfamily, containing blocks that
+- The family directory itself for blocks that are identical across all subfamilies.
+- A `subfamily/` directory for each subfamily, containing blocks that
   differ from the common set or are absent in other subfamilies.
 
 This approach avoids redundant model files and makes cross-variant differences

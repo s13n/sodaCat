@@ -58,10 +58,12 @@ Plus **28 additional blocks** with minor variations (CAN_CCU, CRYP, HASH, SPDIFR
 
 ```
 models/ST/
-├── H7_common/        → 58 shared blocks (GPIO, I2C, SPI, USART, etc.)
-├── H73x/             → H73x-specific models + chip models
-├── H74x_H75x/        → H74x/H75x-specific models + chip models  
-└── H7A3_B/           → H7A3/B-specific models + chip models
+└── H7/                   → Family folder
+    ├── GPIO.yaml           (58 shared blocks: GPIO, I2C, SPI, USART, etc.)
+    ├── ...
+    ├── H73x/             → H73x-specific models + chip models
+    ├── H74x_H75x/        → H74x/H75x-specific models + chip models
+    └── H7A3_B/           → H7A3/B-specific models + chip models
 ```
 
 ### Key Design Principles
@@ -134,17 +136,17 @@ Examples of:
 4. Hash each block's register structure
                     ↓
 5. Compare hashes across families
-   Same hash → "compatible" (H7_common/)
+   Same hash → "compatible" (H7/)
    Different → "incompatible" (H73x/, H74x_H75x/, H7A3_B/)
                     ↓
 6. Generate YAML models organized by subfamily
-   models/ST/H73x/blocks/ADC.yaml
-   models/ST/H74x_H75x/blocks/RCC.yaml
-   models/ST/H7A3_B/blocks/PWR.yaml
+   models/ST/H7/H73x/ADC.yaml
+   models/ST/H7/H74x_H75x/RCC.yaml
+   models/ST/H7/H7A3_B/PWR.yaml
                     ↓
 7. Create chip-level models referencing blocks
-   models/ST/H74x_H75x/STM32H757_CM4.yaml
-   → links to H74x_H75x/blocks/ADC.yaml + H7_common/GPIO.yaml
+   models/ST/H7/H74x_H75x/STM32H757_CM4.yaml
+   → links to H74x_H75x/ADC.yaml + H7/GPIO.yaml
 ```
 
 ### CMake Integration
@@ -162,7 +164,7 @@ Any target depending on extract_stm32h7_models waits for completion
     ↓
 CMake functions locate models automatically:
     get_stm32h7_chip_path(H757_CM4, H74x_H75x, path)
-    → path = build/models/ST/H74x_H75x/H757_CM4.yaml
+    → path = build/models/ST/H7/H74x_H75x/H757_CM4.yaml
 ```
 
 ## Integration Steps
@@ -175,8 +177,8 @@ CMake functions locate models automatically:
 
 ### Phase 2: Testing
 1. Run extraction: `cmake --build . --target extract_stm32h7_models`
-2. Verify `models/ST/H7_common/` created with 58 blocks
-3. Verify `models/ST/H73x/blocks/` has incompatible blocks
+2. Verify `models/ST/H7/` created with 58 blocks
+3. Verify `models/ST/H7/H73x/` has incompatible blocks
 4. Test CMake functions
 
 ### Phase 3: Migration
@@ -197,59 +199,56 @@ After running the extraction target:
 
 ```
 build/models/ST/
-├── .extracted                      ← Marker file (prevents re-extraction)
-├── H7_common/                      ← 58 truly universal blocks
-│   ├── AXI.yaml
-│   ├── BasicTimer.yaml
-│   ├── GPIO.yaml
-│   ├── I2C.yaml
-│   ├── LPUART.yaml
-│   ├── OPAMP.yaml
-│   ├── SAI.yaml
-│   ├── SPI.yaml
-│   ├── USART.yaml
-│   ├── EXTI.yaml
-│   └── ... (49 more)
-│
-├── H73x/
-│   ├── blocks/                     ← Family-specific incompatible blocks
-│   │   ├── ADC.yaml                ← H73x variant
-│   │   ├── RCC.yaml                ← H73x variant
-│   │   ├── DMA.yaml                ← H73x variant
-│   │   └── ... (15 more)
-│   ├── H723.yaml                   ← Chip model
-│   ├── H725.yaml
-│   ├── H730.yaml
-│   ├── H733.yaml
-│   ├── H735.yaml
-│   └── H73x.yaml
-│
-├── H74x_H75x/
-│   ├── blocks/
-│   │   ├── ADC.yaml                ← H74x/H75x variant (different registers)
-│   │   ├── RCC.yaml                ← H74x/H75x variant
-│   │   └── ... (15 more)
-│   ├── H742.yaml
-│   ├── H743.yaml
-│   ├── H745_CM4.yaml
-│   ├── H745_CM7.yaml
-│   ├── H747_CM4.yaml
-│   ├── H747_CM7.yaml
-│   ├── H750.yaml
-│   ├── H753.yaml
-│   ├── H755_CM4.yaml
-│   ├── H755_CM7.yaml
-│   ├── H757_CM4.yaml               ← Current reference model
-│   └── H757_CM7.yaml
-│
-└── H7A3_B/
-    ├── blocks/
-    │   ├── ADC.yaml                ← H7A3/B variant
-    │   ├── RCC.yaml                ← H7A3/B variant
-    │   └── ... (15 more)
-    ├── H7A3.yaml
-    ├── H7B0.yaml
-    └── H7B3.yaml
+├── .extracted                          ← Marker file (prevents re-extraction)
+└── H7/                                 ← H7 family folder
+    ├── AXI.yaml                          (58 common blocks)
+    ├── BasicTimer.yaml
+    ├── GPIO.yaml
+    ├── I2C.yaml
+    ├── LPUART.yaml
+    ├── OPAMP.yaml
+    ├── SAI.yaml
+    ├── SPI.yaml
+    ├── USART.yaml
+    ├── EXTI.yaml
+    ├── ... (49 more)
+    │
+    ├── H73x/
+    │   ├── ADC.yaml                ← H73x variant
+    │   ├── RCC.yaml                ← H73x variant
+    │   ├── DMA.yaml                ← H73x variant
+    │   ├── ... (15 more)
+    │   ├── H723.yaml               ← Chip model
+    │   ├── H725.yaml
+    │   ├── H730.yaml
+    │   ├── H733.yaml
+    │   ├── H735.yaml
+    │   └── H73x.yaml
+    │
+    ├── H74x_H75x/
+    │   ├── ADC.yaml                ← H74x/H75x variant
+    │   ├── RCC.yaml                ← H74x/H75x variant
+    │   ├── ... (15 more)
+    │   ├── H742.yaml
+    │   ├── H743.yaml
+    │   ├── H745_CM4.yaml
+    │   ├── H745_CM7.yaml
+    │   ├── H747_CM4.yaml
+    │   ├── H747_CM7.yaml
+    │   ├── H750.yaml
+    │   ├── H753.yaml
+    │   ├── H755_CM4.yaml
+    │   ├── H755_CM7.yaml
+    │   ├── H757_CM4.yaml          ← Current reference model
+    │   └── H757_CM7.yaml
+    │
+    └── H7A3_B/
+        ├── ADC.yaml                ← H7A3/B variant
+        ├── RCC.yaml                ← H7A3/B variant
+        ├── ... (15 more)
+        ├── H7A3.yaml
+        ├── H7B0.yaml
+        └── H7B3.yaml
 ```
 
 ## CMake Functions Reference
@@ -266,15 +265,15 @@ Gets the path to a chip model YAML file.
 
 ```cmake
 get_stm32h7_chip_path(STM32H757_CM4 H74x_H75x chip_path)
-# chip_path = ${CMAKE_BINARY_DIR}/models/ST/H74x_H75x/STM32H757_CM4.yaml
+# chip_path = ${CMAKE_BINARY_DIR}/models/ST/H7/H74x_H75x/STM32H757_CM4.yaml
 ```
 
 ### `get_stm32h7_block_path(block_name, family_name, output_var)`
 Gets the path to a functional block, automatically routing to common or family-specific dir.
 
 ```cmake
-get_stm32h7_block_path(GPIO H73x path)     # → H7_common/GPIO.yaml
-get_stm32h7_block_path(ADC H73x path)      # → H73x/blocks/ADC.yaml
+get_stm32h7_block_path(GPIO H73x path)     # → H7/GPIO.yaml
+get_stm32h7_block_path(ADC H73x path)      # → H73x/ADC.yaml
 ```
 
 ### `get_stm32h7_family_chips(family_name, output_var)`
@@ -303,9 +302,9 @@ cmake --build . --target extract_stm32h7_models
 
 ### Step 2: Verify Files
 ```bash
-ls -la models/ST/H7_common/ | wc -l      # Should be ~60 (58 blocks + ..)
-ls -la models/ST/H73x/blocks/ | wc -l    # Should be ~19 (17 blocks + ..)
-ls models/ST/H74x_H75x/ | grep H757      # Should find H757_CM4.yaml, H757_CM7.yaml
+ls -la models/ST/H7/ | wc -l      # Should be ~60 (58 blocks + ..)
+ls -la models/ST/H7/H73x/ | wc -l    # Should be ~19 (17 blocks + ..)
+ls models/ST/H7/H74x_H75x/ | grep H757      # Should find H757_CM4.yaml, H757_CM7.yaml
 ```
 
 ### Step 3: Test CMake Queries

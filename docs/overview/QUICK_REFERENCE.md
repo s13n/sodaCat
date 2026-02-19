@@ -47,28 +47,23 @@ Output:    58 Common Models + 42 Subfamily Variants
 ## Three-Tier Model Organization
 
 ```
-H7_common/
-├── ADC.yaml          ← 58 blocks → all variants use these
+H7/                       ← H7 family folder
+├── ADC.yaml                (58 common blocks → all variants use these)
 ├── DMA.yaml
 ├── RTC.yaml
-└── ...
-
-H73x/blocks/
-├── RCC.yaml          ← H73x-specific variants (12 blocks)
-└── ...
-
-H74x_H75x/blocks/
-├── RCC.yaml          ← H74x/H75x-specific variants (8 blocks)
-└── ...
-
-H7A3_B/blocks/
-├── RCC.yaml          ← H7A3/B-specific variants (3 blocks)
-└── ...
-
-chips/
-├── H730.yaml         ← Chip model = common blocks + H73x variants
-├── H743.yaml         ← Chip model = common blocks + H74x variants
-└── H757.yaml         ← etc.
+├── ...
+│
+├── H73x/
+│   ├── RCC.yaml          ← H73x-specific variants (12 blocks)
+│   └── ...
+│
+├── H74x_H75x/
+│   ├── RCC.yaml          ← H74x/H75x-specific variants (8 blocks)
+│   └── ...
+│
+└── H7A3_B/
+    ├── RCC.yaml          ← H7A3/B-specific variants (3 blocks)
+    └── ...
 ```
 
 ---
@@ -140,8 +135,8 @@ python3 extractors/generate_stm32h7_models.py --analyze-sources
 python3 extractors/generate_stm32h7_models.py --extract-all
 
 # 3. Verify output
-ls models/ST/H7_common/ | wc -l    # Should be 58
-ls models/ST/H73x/blocks/ | wc -l  # Variable
+ls models/ST/H7/ | wc -l    # Should be 58
+ls models/ST/H7/H73x/ | wc -l  # Variable
 ```
 
 ---
@@ -264,7 +259,7 @@ ANALYSIS_STM32H7_COMPATIBILITY.md       ← Block compatibility breakdown
 python3 extractors/generate_stm32h7_models.py \
   --svd svd/STM32H757_CM4.svd \
   --transforms extractors/stm32h7-transforms.yaml \
-  --output models/ST/H757/
+  --output models/ST/H7/H757/
 ```
 
 ### Analyze SVD Sources
@@ -318,7 +313,7 @@ cd build && cmake .. && make models
 ## Success Metrics
 
 **When done:**
-- ✅ 58 shared blocks in `H7_common/`
+- ✅ 58 shared blocks in `H7/`
 - ✅ Family-specific variants organized by subfamily
 - ✅ All 21 chip models generated
 - ✅ Transformation decisions documented

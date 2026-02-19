@@ -250,7 +250,7 @@ def main():
     print("PASS 2: Analyzing compatibility and generating models")
     print(f"{'='*60}")
 
-    common_blocks_dir = output_dir / 'L4P_common'
+    common_blocks_dir = output_dir / 'L4P'
     common_blocks_dir.mkdir(parents=True, exist_ok=True)
 
     common_count = 0
@@ -276,14 +276,14 @@ def main():
                 block_data = block_families[first_family][0]['data']
                 block_file = common_blocks_dir / f'{block_name}.yaml'
                 save_yaml_model(block_data, block_file)
-                print(f"  + {block_name:20} -> L4P_common (shared across all families)")
+                print(f"  + {block_name:20} -> L4P (shared across all families)")
                 continue
 
         for family_name in STM32L4P_FAMILIES:
             if family_name in families_present:
                 family_specific_count += 1
-                family_dir = output_dir / family_name
-                block_dir = family_dir / 'blocks'
+                family_dir = output_dir / 'L4P' / family_name
+                block_dir = family_dir
                 block_dir.mkdir(parents=True, exist_ok=True)
 
                 block_data = block_families[family_name][0]['data']
@@ -292,7 +292,7 @@ def main():
 
     print(f"\n{'='*60}")
     print(f"Generation Summary:")
-    print(f"  Common blocks (L4P_common):    {common_count}")
+    print(f"  Common blocks (L4P):    {common_count}")
     print(f"  Family-specific blocks:        {family_specific_count}")
     print(f"  Total block types processed:   {len(all_blocks)}")
     print(f"{'='*60}")

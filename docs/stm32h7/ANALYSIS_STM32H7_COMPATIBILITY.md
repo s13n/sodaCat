@@ -113,36 +113,31 @@ These blocks differ due to fundamental architectural differences between H7 subf
 
 ```
 models/ST/
-├── H7_common/              # 58 truly universal blocks
-│   ├── AXI.yaml
-│   ├── BasicTimer.yaml
-│   ├── GPIO.yaml
-│   ├── I2C.yaml
-│   ├── ... (all compatible blocks)
-│   └── Makefile (symlinks to actual files)
-│
-├── H73x/                   # H73x group (6 variants)
-│   ├── ADC.yaml            # H73x-specific
-│   ├── RCC.yaml            # H73x-specific
-│   ├── H723.yaml
-│   ├── H725.yaml
-│   ├── ... (other 4 chips)
-│
-├── H74x_H75x/              # H74x/H75x group (10 chips) 
-│   ├── ADC.yaml            # H74x-H75x specific
-│   ├── RCC.yaml            # H74x-H75x specific
-│   ├── H742.yaml
-│   ├── H743.yaml
-│   ├── H745_CM4.yaml
-│   ├── H745_CM7.yaml
-│   ├── ... (and so on)
-│
-└── H7A3_B/                 # H7A3/H7B0/H7B3 (3 variants)
-    ├── ADC.yaml            # High-end specific
-    ├── RCC.yaml            # High-end specific
-    ├── H7A3.yaml
-    ├── H7B0.yaml
-    └── H7B3.yaml
+└── H7/                         # H7 family folder
+    ├── AXI.yaml                  (58 common blocks)
+    ├── BasicTimer.yaml
+    ├── GPIO.yaml
+    ├── I2C.yaml
+    ├── ...
+    │
+    ├── H73x/                   # H73x group (6 variants)
+    │   ├── ADC.yaml     # H73x-specific
+    │   ├── RCC.yaml
+    │   ├── H723.yaml
+    │   └── ...
+    │
+    ├── H74x_H75x/              # H74x/H75x group (10 chips)
+    │   ├── ADC.yaml     # H74x-H75x specific
+    │   ├── RCC.yaml
+    │   ├── H742.yaml
+    │   └── ...
+    │
+    └── H7A3_B/                 # H7A3/H7B0/H7B3 (3 variants)
+        ├── ADC.yaml     # High-end specific
+        ├── RCC.yaml
+        ├── H7A3.yaml
+        ├── H7B0.yaml
+        └── H7B3.yaml
 ```
 
 ### Key Parameters for Compatible Blocks

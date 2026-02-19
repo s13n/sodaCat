@@ -34,8 +34,8 @@ python3 extractors/generate_stm32h7_models.py --analyze-sources
 python3 extractors/generate_stm32h7_models.py --extract-all
 
 # Step 3: Verify output
-ls -la models/ST/H7_common/   # 58 blocks
-ls -la models/ST/H73x/        # H73x variants
+ls -la models/ST/H7/   # 58 blocks
+ls -la models/ST/H7/H73x/        # H73x variants
 ls -la models/ST/H74x/        # H74x/H75x variants
 ls -la models/ST/H7A3/        # H7A3/B variants
 ```
@@ -82,29 +82,23 @@ BlockSourceSelector
 
 ```
 models/ST/
-    ├── H7_common/          ← Shared blocks (58)
-    │   ├── ADC.yaml          (from H743.svd)
-    │   ├── DMA.yaml          (from H743.svd)
-    │   ├── RTC.yaml          (from H757.svd)
-    │   └── ...
+└── H7/                      ← H7 family folder
+    ├── ADC.yaml               (58 common blocks)
+    ├── DMA.yaml
+    ├── RTC.yaml
+    ├── ...
     │
-    ├── H73x/blocks/         ← H73x-only variants (12)
-    │   ├── RCC.yaml          (H73x specific)
+    ├── H73x/         ← H73x-only variants (12)
+    │   ├── RCC.yaml
     │   ├── ADC_Common.yaml
     │   └── ...
     │
-    ├── H74x_H75x/blocks/    ← H74x/H75x variants (8)
+    ├── H74x_H75x/    ← H74x/H75x variants (8)
     │   ├── RCC.yaml
     │   └── ...
     │
-    ├── H7A3_B/blocks/       ← H7A3/B variants (3)
-    │   ├── RCC.yaml
-    │   └── ...
-    │
-    └── chips/               ← Complete chip definitions
-        ├── H730.yaml        (H730 uses H7_common + H73x blocks)
-        ├── H743.yaml        (H743 uses H7_common + H74x blocks)
-        ├── H757.yaml        (H757 uses H7_common + H75x blocks)
+    └── H7A3_B/       ← H7A3/B variants (3)
+        ├── RCC.yaml
         └── ...
 ```
 
@@ -245,7 +239,7 @@ class TransformationLoader:
 python3 extractors/generate_stm32h7_models.py \
   --svd svd/STM32H757_CM4.svd \
   --transforms extractors/stm32h7-transforms.yaml \
-  --output models/ST/H757/
+  --output models/ST/H7/H757/
 ```
 
 ---
@@ -546,10 +540,10 @@ python3 extractors/generate_stm32h7_models.py \
   --models-dir models/ST/
 
 # Count outputs
-echo "Common blocks:" && ls models/ST/H7_common/ | wc -l
-echo "H73x blocks:" && ls models/ST/H73x/blocks/ | wc -l
-echo "H74x/H75x blocks:" && ls models/ST/H74x_H75x/blocks/ | wc -l
-echo "H7A3/B blocks:" && ls models/ST/H7A3_B/blocks/ | wc -l
+echo "Common blocks:" && ls models/ST/H7/ | wc -l
+echo "H73x blocks:" && ls models/ST/H7/H73x/ | wc -l
+echo "H74x/H75x blocks:" && ls models/ST/H7/H74x_H75x/ | wc -l
+echo "H7A3/B blocks:" && ls models/ST/H7/H7A3_B/ | wc -l
 ```
 
 ---
@@ -618,12 +612,12 @@ GpTimer:
 
 ```bash
 # Check for schema compliance
-python3 tools/validate_clock_specs.py models/ST/H7_common/
+python3 tools/validate_clock_specs.py models/ST/H7/
 
 # Compare with reference (H757)
 python3 tools/compare_peripherals.py \
-  models/ST/H7_common/ \
-  models/ST/H757/
+  models/ST/H7/ \
+  models/ST/H7/H757/
 ```
 
 ---

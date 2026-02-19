@@ -18,10 +18,12 @@ cmake --build . --target extract_stm32h7_models
 ### 3. Models Are Ready
 ```
 build/models/ST/
-├── H7_common/          ← 58 universal blocks
-├── H73x/blocks/        ← H73x-specific blocks
-├── H74x_H75x/blocks/   ← H74x/H75x-specific blocks
-└── H7A3_B/blocks/      ← H7A3/B-specific blocks
+└── H7/                     ← Family folder
+    ├── GPIO.yaml             (58 common blocks)
+    ├── ...
+    ├── H73x/        ← H73x-specific blocks
+    ├── H74x_H75x/   ← H74x/H75x-specific blocks
+    └── H7A3_B/      ← H7A3/B-specific blocks
 ```
 
 ## Summary of What You Got
@@ -37,9 +39,9 @@ build/models/ST/
 # Get chip model path (automatically determines family)
 get_stm32h7_chip_path(STM32H757_CM4 H74x_H75x my_path)
 
-# Get block path (smart: routes to H7_common/ OR family-specific/)
-get_stm32h7_block_path(GPIO H73x gpio_path)     # → H7_common/GPIO.yaml
-get_stm32h7_block_path(ADC H73x adc_path)       # → H73x/blocks/ADC.yaml
+# Get block path (smart: routes to H7/ OR family-specific/)
+get_stm32h7_block_path(GPIO H73x gpio_path)     # → H7/GPIO.yaml
+get_stm32h7_block_path(ADC H73x adc_path)       # → H73x/ADC.yaml
 
 # Get all variants in a family
 get_stm32h7_family_chips(H74x_H75x all_chips)
@@ -48,24 +50,24 @@ get_stm32h7_family_chips(H74x_H75x all_chips)
 ### 📁 Model Organization
 
 ```
-H7_common/              # GPIO, I2C, SPI, USART, SAI, EXTI, etc. (58 blocks)
+H7/                         # Family folder
+├── GPIO.yaml                 (58 common blocks: GPIO, I2C, SPI, USART, SAI, EXTI, etc.)
 ├── ADC.yaml
-├── GPIO.yaml
-└── ...
-
-H73x/                   # H723, H725, H730, H733, H735, H73x
-├── blocks/ADC.yaml     # H73x-specific ADC
-├── H723.yaml
-└── ...
-
-H74x_H75x/              # H742, H743, H745, H747, H750, H753, H755, H757 (+CM4/CM7)
-├── blocks/ADC.yaml     # H74x/H75x-specific ADC (different from H73x)
-├── H757_CM4.yaml
-└── ...
-
-H7A3_B/                 # H7A3, H7B0, H7B3
-├── blocks/ADC.yaml     # H7A3/B-specific ADC
-└── ...
+├── ...
+│
+├── H73x/                   # H723, H725, H730, H733, H735, H73x
+│   ├── ADC.yaml     # H73x-specific ADC
+│   ├── H723.yaml
+│   └── ...
+│
+├── H74x_H75x/              # H742, H743, H745, H747, H750, H753, H755, H757 (+CM4/CM7)
+│   ├── ADC.yaml     # H74x/H75x-specific ADC (different from H73x)
+│   ├── H757_CM4.yaml
+│   └── ...
+│
+└── H7A3_B/                 # H7A3, H7B0, H7B3
+    ├── ADC.yaml     # H7A3/B-specific ADC
+    └── ...
 ```
 
 ## Blocks That Require Variants (14 Critical)
@@ -123,13 +125,13 @@ get_stm32h7_chip_path(STM32H757_CM4 H74x_H75x chip_model_path)
 
 ### Check if block is common or family-specific
 ```cmake
-# Common blocks are always in H7_common/:
+# Common blocks are always in H7/:
 get_stm32h7_block_path(GPIO H73x gpio_path)
-# → ${CMAKE_BINARY_DIR}/models/ST/H7_common/GPIO.yaml
+# → ${CMAKE_BINARY_DIR}/models/ST/H7/GPIO.yaml
 
 # Incompatible blocks route to family subdir:
 get_stm32h7_block_path(ADC H73x adc_path)
-# → ${CMAKE_BINARY_DIR}/models/ST/H73x/blocks/ADC.yaml
+# → ${CMAKE_BINARY_DIR}/models/ST/H7/H73x/ADC.yaml
 ```
 
 ## Expected Output
@@ -138,83 +140,39 @@ After running extraction, you should see:
 
 ```
 models/ST/
-├── .extracted                          ← Marker (prevents re-extraction)
-│
-├── H7_common/                          ← Shared across all variants
-│   ├── AXI.yaml
-│   ├── BasicTimer.yaml
-│   ├── DCMI.yaml
-│   ├── EXTI.yaml
-│   ├── GPIO.yaml
-│   ├── I2C.yaml
-│   ├── LPUART.yaml
-│   ├── LTDC.yaml
-│   ├── OPAMP.yaml
-│   ├── OTG1_HS_DEVICE.yaml
-│   ├── OTG1_HS_HOST.yaml
-│   ├── OTG1_HS_PWRCLK.yaml
-│   ├── OTG2_HS_DEVICE.yaml
-│   ├── OTG2_HS_HOST.yaml
-│   ├── OTG2_HS_PWRCLK.yaml
-│   ├── SDMMC2.yaml
-│   ├── SPI.yaml
-│   ├── SWPMI.yaml
-│   ├── USART.yaml
-│   └── ... (38 more blocks)
-│
-├── H73x/
-│   ├── blocks/                         ← H73x-specific variants
-│   │   ├── ADC.yaml
-│   │   ├── BDMA.yaml
-│   │   ├── DMA.yaml
-│   │   ├── DFSDM.yaml
-│   │   ├── FMC.yaml
-│   │   ├── Flash.yaml
-│   │   ├── LPTIM.yaml
-│   │   ├── MDMA.yaml
-│   │   ├── PWR.yaml
-│   │   ├── QUADSPI.yaml
-│   │   ├── RCC.yaml
-│   │   ├── RTC.yaml
-│   │   ├── SPDIFRX.yaml
-│   │   ├── SYSCFG.yaml
-│   │   ├── AdvCtrlTimer.yaml
-│   │   ├── GpTimer.yaml
-│   │   ├── DBGMCU.yaml
-│   │   └── ... (more)
-│   ├── H723.yaml                       ← Chip models
-│   ├── H725.yaml
-│   ├── H730.yaml
-│   ├── H733.yaml
-│   ├── H735.yaml
-│   └── H73x.yaml
-│
-├── H74x_H75x/
-│   ├── blocks/                         ← Different from H73x!
-│   │   ├── ADC.yaml                    ← H74x/H75x-specific
-│   │   ├── RCC.yaml                    ← H74x/H75x-specific
-│   │   └── ... (16 more)
-│   ├── H742.yaml
-│   ├── H743.yaml
-│   ├── H745_CM4.yaml
-│   ├── H745_CM7.yaml
-│   ├── H747_CM4.yaml
-│   ├── H747_CM7.yaml
-│   ├── H750.yaml
-│   ├── H753.yaml
-│   ├── H755_CM4.yaml
-│   ├── H755_CM7.yaml
-│   ├── H757_CM4.yaml
-│   └── H757_CM7.yaml
-│
-└── H7A3_B/
-    ├── blocks/                         ← Different again!
-    │   ├── ADC.yaml                    ← H7A3/B-specific
-    │   ├── RCC.yaml                    ← H7A3/B-specific
-    │   └── ... (16 more)
-    ├── H7A3.yaml
-    ├── H7B0.yaml
-    └── H7B3.yaml
+└── H7/                                 ← H7 family folder
+    ├── AXI.yaml                          (58 common blocks)
+    ├── BasicTimer.yaml
+    ├── GPIO.yaml
+    ├── I2C.yaml
+    ├── SPI.yaml
+    ├── USART.yaml
+    ├── ... (52 more)
+    │
+    ├── H73x/
+    │   ├── ADC.yaml
+    │   ├── RCC.yaml
+    │   ├── DMA.yaml
+    │   ├── ... (more)
+    │   ├── H723.yaml               ← Chip models
+    │   ├── H725.yaml
+    │   └── ...
+    │
+    ├── H74x_H75x/
+    │   ├── ADC.yaml
+    │   ├── RCC.yaml
+    │   ├── ... (16 more)
+    │   ├── H742.yaml
+    │   ├── H757_CM4.yaml
+    │   └── ...
+    │
+    └── H7A3_B/
+        ├── ADC.yaml
+        ├── RCC.yaml
+        ├── ... (16 more)
+        ├── H7A3.yaml
+        ├── H7B0.yaml
+        └── H7B3.yaml
 ```
 
 ## Troubleshooting
