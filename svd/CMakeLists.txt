@@ -56,30 +56,66 @@ add_custom_target(rebuild-stm32n6-models
 )
 
 # ============================================================================
+# STM32F7 Model Extraction Target
+# ============================================================================
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/stm32f7-extraction.cmake)
+
+add_stm32f7_extraction_target(stm32f7-models)
+
+add_custom_target(rebuild-stm32f7-models
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target clean-stm32f7-models
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target stm32f7-models
+    COMMENT "Force rebuild of STM32F7 family models"
+)
+
+# ============================================================================
+# STM32G4 Model Extraction Target
+# ============================================================================
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/stm32g4-extraction.cmake)
+
+add_stm32g4_extraction_target(stm32g4-models)
+
+add_custom_target(rebuild-stm32g4-models
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target clean-stm32g4-models
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target stm32g4-models
+    COMMENT "Force rebuild of STM32G4 family models"
+)
+
+# ============================================================================
+# STM32U3 Model Extraction Target
+# ============================================================================
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/stm32u3-extraction.cmake)
+
+add_stm32u3_extraction_target(stm32u3-models)
+
+add_custom_target(rebuild-stm32u3-models
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target clean-stm32u3-models
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target stm32u3-models
+    COMMENT "Force rebuild of STM32U3 family models"
+)
+
+# ============================================================================
+# STM32U5 Model Extraction Target
+# ============================================================================
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/stm32u5-extraction.cmake)
+
+add_stm32u5_extraction_target(stm32u5-models)
+
+add_custom_target(rebuild-stm32u5-models
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target clean-stm32u5-models
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target stm32u5-models
+    COMMENT "Force rebuild of STM32U5 family models"
+)
+
+# ============================================================================
 # Summary
 # ============================================================================
-message(STATUS "STM32H7 Model Generation:")
-message(STATUS "  Target: stm32h7-models")
-message(STATUS "  Extracts all 21 STM32H7 variants into three-tier structure")
-message(STATUS "  Output: ${STM32H7_MODELS_DIR}/")
-message(STATUS "           ├── H7_common/        (shared blocks)")
-message(STATUS "           ├── H73x/blocks/      (H73x-specific)")
-message(STATUS "           ├── H74x_H75x/blocks/ (H74x/H75x-specific)")
-message(STATUS "           └── H7A3_B/blocks/    (H7A3/B-specific)")
+message(STATUS "STM32 Model Generation targets:")
 message(STATUS "")
-message(STATUS "STM32H5 Model Generation:")
-message(STATUS "  Target: stm32h5-models")
-message(STATUS "  Extracts all 6 STM32H5 variants into three-tier structure")
-message(STATUS "  Output: ${STM32H5_MODELS_DIR}/")
-message(STATUS "           ├── H5_common/        (shared blocks)")
-message(STATUS "           ├── H503/blocks/      (H503-specific)")
-message(STATUS "           ├── H52x_H53x/blocks/ (H52x/H53x-specific)")
-message(STATUS "           └── H56x_H57x/blocks/ (H56x/H57x-specific)")
-message(STATUS "")
-message(STATUS "STM32N6 Model Generation:")
-message(STATUS "  Target: stm32n6-models")
-message(STATUS "  Extracts all 4 STM32N6 variants into three-tier structure")
-message(STATUS "  Output: ${STM32N6_MODELS_DIR}/")
-message(STATUS "           ├── N6_common/        (shared blocks)")
-message(STATUS "           ├── N64x/blocks/      (N64x-specific)")
-message(STATUS "           └── N65x/blocks/      (N65x-specific)")
+message(STATUS "  stm32h7-models  - 21 STM32H7 variants")
+message(STATUS "  stm32h5-models  -  6 STM32H5 variants")
+message(STATUS "  stm32n6-models  -  4 STM32N6 variants")
+message(STATUS "  stm32f7-models  - 16 STM32F7 variants")
+message(STATUS "  stm32g4-models  - 10 STM32G4 variants")
+message(STATUS "  stm32u3-models  -  2 STM32U3 variants")
+message(STATUS "  stm32u5-models  - 10 STM32U5 variants")

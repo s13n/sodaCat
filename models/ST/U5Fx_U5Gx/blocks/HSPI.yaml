@@ -1,0 +1,1690 @@
+name: HSPI1
+description: HSPI1
+groupName: HSPI
+baseAddress: 1108161536
+registers:
+- name: HSPI_CR
+  displayName: HSPI_CR
+  description: HSPI control register
+  addressOffset: 0
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: EN
+    description: "Enable\nThis bit enables the HSPI.\nNote: The DMA request can be
+      aborted without having received the ACK in case this EN bit is cleared during
+      the operation.\nIn case this bit is set to 0 during a DMA transfer, the REQ
+      signal to DMA returns to inactive state without waiting for the ACK signal from
+      DMA to be active."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: HSPI disabled
+      value: 0
+    - name: B_0x1
+      description: HSPI enabled
+      value: 1
+  - name: ABORT
+    description: "Abort request\nThis bit aborts the on-going command sequence. It
+      is automatically reset once the abort is completed. This bit stops the current
+      transfer.\nNote: This bit is always read as 0."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No abort requested
+      value: 0
+    - name: B_0x1
+      description: Abort requested
+      value: 1
+  - name: DMAEN
+    description: "DMA enable\nIn Indirect mode, the DMA can be used to input or output
+      data via HSPI_DR. DMA transfers are initiated when FTF is set.\nNote: Resetting
+      the DMAEN bit while a DMA transfer is ongoing, breaks the handshake with the
+      DMA. Do not write this bit during DMA operation."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DMA disabled for Indirect mode
+      value: 0
+    - name: B_0x1
+      description: DMA enabled for Indirect mode
+      value: 1
+  - name: TCEN
+    description: "Timeout counter enable\nThis bit is valid only when the Memory-mapped
+      mode (FMODE[1:0]Â =Â 11) is selected. This bit enables the timeout counter."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Timeout counter is disabled, and thus the chip-select (nCS) 
+        remains active indefinitely after an access in Memory-mapped mode.
+      value: 0
+    - name: B_0x1
+      description: Timeout counter is enabled, and thus the chip-select is 
+        released in the Memory-mapped mode after TIMEOUT[15:0] cycles of 
+        external device inactivity.
+      value: 1
+  - name: DMM
+    description: "Dual-memory mode\nThis bit activates the Dual-memory mode, where
+      two external devices are used simultaneously to double the throughput and the
+      capacity"
+    bitOffset: 6
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Dual-quad mode disabled
+      value: 0
+    - name: B_0x1
+      description: Dual-quad mode enabled
+      value: 1
+  - name: FSEL
+    description: "Memory select\nThis bit is the mirror of bit 30. Refer to the description
+      of MSEL[1:0] above.\nThis bit is set when 1 is written in bit 30 or bit 7. When
+      this bit is set, both b30 and b7 are read as 1.\nThis bit is reset when bit
+      30 and bit7 are set to 0. When this bit is reset, both bit 30 and bit7 are read
+      as 0."
+    bitOffset: 7
+    bitWidth: 1
+    access: read-write
+  - name: FTHRES
+    description: "FIFO threshold level\nThis field defines, in Indirect mode, the
+      threshold number of bytes in the FIFO that causes the FIFO threshold flag FTF
+      in HSPI_SR, to be set.\n...\nNote: If DMAENÂ =Â 1, the DMA controller for the
+      corresponding channel must be disabled before changing the FTHRES[5:0] value."
+    bitOffset: 8
+    bitWidth: 6
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: FTF is set if there are one or more free bytes available to 
+        be written to in the FIFO in Indirect-write mode, or if there are one or
+        more valid bytes can be read from the FIFO in Indirect-read mode.
+      value: 0
+    - name: B_0x1
+      description: FTF is set if there are two or more free bytes available to 
+        be written to in the FIFO in Indirect-write mode, or if there are two or
+        more valid bytes can be read from the FIFO in Indirect-read mode.
+      value: 1
+    - name: B_0x3F
+      description: FTF is set if there are 64 free bytes available to be written
+        to in the FIFO in Indirect-write mode, or if there are 64 valid bytes 
+        can be read from the FIFO in Indirect-read mode.
+      value: 63
+  - name: TEIE
+    description: "Transfer error interrupt enable\nThis bit enables the transfer error
+      interrupt."
+    bitOffset: 16
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Interrupt disabled
+      value: 0
+    - name: B_0x1
+      description: Interrupt enabled
+      value: 1
+  - name: TCIE
+    description: "Transfer complete interrupt enable\nThis bit enables the transfer
+      complete interrupt."
+    bitOffset: 17
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Interrupt disabled
+      value: 0
+    - name: B_0x1
+      description: Interrupt enabled
+      value: 1
+  - name: FTIE
+    description: "FIFO threshold interrupt enable\nThis bit enables the FIFO threshold
+      interrupt."
+    bitOffset: 18
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Interrupt disabled
+      value: 0
+    - name: B_0x1
+      description: Interrupt enabled
+      value: 1
+  - name: SMIE
+    description: "Status match interrupt enable\nThis bit enables the status match
+      interrupt."
+    bitOffset: 19
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Interrupt disabled
+      value: 0
+    - name: B_0x1
+      description: Interrupt enabled
+      value: 1
+  - name: TOIE
+    description: "Timeout interrupt enable\nThis bit enables the timeout interrupt."
+    bitOffset: 20
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Interrupt disabled
+      value: 0
+    - name: B_0x1
+      description: Interrupt enabled
+      value: 1
+  - name: APMS
+    description: "Automatic-polling mode stop\nThis bit determines if the automatic
+      polling is stopped after a match."
+    bitOffset: 22
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Automatic-polling mode is stopped only by abort or by 
+        disabling the HSPI.
+      value: 0
+    - name: B_0x1
+      description: Automatic-polling mode stops as soon as there is a match.
+      value: 1
+  - name: PMM
+    description: "Polling match mode\nThis bit indicates which method must be used
+      to determine a match during the Automatic-polling mode."
+    bitOffset: 23
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: AND-match mode, SMF is set if all the unmasked bits received 
+        from the device match the corresponding bits in the match register.
+      value: 0
+    - name: B_0x1
+      description: OR-match mode, SMF is set if any of the unmasked bits 
+        received from the device matches its corresponding bit in the match 
+        register.
+      value: 1
+  - name: FMODE
+    description: "Functional mode\nThis field defines the HSPI functional mode of
+      operation.\nIf DMAENÂ =Â 1 already, then the DMA controller for the corresponding
+      channel must be disabled before changing the FMODE[1:0] value. If FMODE[1:0]
+      and FTHRES[4:0] are wrongly updated while DMAENÂ =Â 1, the DMA request signal
+      automatically goes to inactive state."
+    bitOffset: 28
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Indirect-write mode
+      value: 0
+    - name: B_0x1
+      description: Indirect-read mode
+      value: 1
+    - name: B_0x2
+      description: Automatic-polling mode
+      value: 2
+    - name: B_0x3
+      description: Memory-mapped mode
+      value: 3
+  - name: MSEL
+    description: "Flash select\nThese bits select the memory to be addressed in Single,
+      Dual, Quad or Octal mode in singleâ\x80\x91memory configuration (when DMM =
+      0).\n- when in Quad mode:\n- when in Octal mode or Dual-quad mode:\n0x: data
+      exchanged over IO[7:0]\n1x: data exchanged over IO[15:8]\nThese bits are ignored
+      when in dual-octal configuration (data on 8 bits and DMMÂ =Â 1) or 16â\x80\x91
+      bit configuration (data exchanged over IO[15:0])."
+    bitOffset: 30
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: data exchanged over IO[3:0]
+      value: 0
+    - name: B_0x1
+      description: data exchanged over IO[7:4]
+      value: 1
+    - name: B_0x2
+      description: data exchanged over IO11:8]
+      value: 2
+    - name: B_0x3
+      description: data exchanged over IO[15:12]
+      value: 3
+- name: HSPI_DCR1
+  displayName: HSPI_DCR1
+  description: HSPI device configuration register 1
+  addressOffset: 8
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: CKMODE
+    description: "Mode 0/Mode 3\nThis bit indicates the level taken by the CLK between
+      commands (when nCSÂ =Â 1)."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: CLK must stay low while nCS is high (chip-select released). 
+        This is referred to as Mode 0.
+      value: 0
+    - name: B_0x1
+      description: CLK must stay high while nCS is high (chip-select released). 
+        This is referred to as Mode 3.
+      value: 1
+  - name: FRCK
+    description: "Free running clock\nThis bit configures the free running clock."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: CLK is not free running.
+      value: 0
+    - name: B_0x1
+      description: CLK is free running (always provided).
+      value: 1
+  - name: DLYBYP
+    description: Delay block bypass
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: The internal sampling clock (called feedback clock) or the 
+        DQS data strobe external signal is delayed by the delay block (for more 
+        details on this block, refer to the dedicated section of the reference 
+        manual as it is not part of the HSPI).
+      value: 0
+    - name: B_0x1
+      description: The delay block is bypassed, so the internal sampling clock 
+        or the DQS data strobe external signal is not affected by the delay 
+        block. The delay is shorter than when the delay block is not bypassed, 
+        even with the delay value set to minimum value in delay block.
+      value: 1
+  - name: CSHT
+    description: "Chip-select high time\nCSHTÂ +Â 1 defines the minimum number of
+      CLK cycles where the chip-select (nCS) must remain high between commands issued
+      to the external device.\n...\n63: nCS stays high for at least 64 cycles between
+      external device commands.\nNote: When the extended CSHT timeout feature is not
+      supported, CSHT[5:3] are reserved and the number of cycles is limited to eight
+      (refer to implementation)."
+    bitOffset: 8
+    bitWidth: 6
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: nCS stays high for at least 1 cycle between external device 
+        commands.
+      value: 0
+    - name: B_0x1
+      description: nCS stays high for at least 2 cycles between external device 
+        commands.
+      value: 1
+  - name: DEVSIZE
+    description: "Device size\nThis field defines the size of the external device
+      using the following formula:\nNumber of bytes in device = 2[DEVSIZE+1].\nDEVSIZE+1
+      is effectively the number of address bits required to address the external device.
+      The device capacity can be up to 4Â Gbytes (addressed using 32-bits) in Indirect
+      mode, but the addressable space in Memory-mapped mode is limited to 256Â Mbytes.\n\
+      In Regular-command mode, if DMMÂ =Â 1, DEVSIZE[4:0] indicates the total capacity
+      of the two devices together."
+    bitOffset: 16
+    bitWidth: 5
+    access: read-write
+  - name: MTYP
+    description: "Memory type\nThis bit indicates the type of memory to be supported.\n\
+      Note: In this mode, DQS signal polarity is inverted with respect to the memory
+      clock signal. This is the default value and care must be taken to change MTYP[2:0]
+      for memories different from Micron.\nOthers: Reserved"
+    bitOffset: 24
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Micron mode, D0/D1 ordering in DTR 8-data-bit mode. Regular 
+        SPI protocol in Octal-, Quad-, Dual- and Single-SPI modes
+      value: 0
+    - name: B_0x1
+      description: Macronix mode, D1/D0 ordering in DTR 8-data-bit mode. Regular
+        SPI protocol in Octal-, Quad-, Dual-, and Single-SPI modes
+      value: 1
+    - name: B_0x2
+      description: Standard mode
+      value: 2
+    - name: B_0x3
+      description: Macronix RAM mode, D1/D0 ordering in DTR 8-data-bit mode. 
+        Regular SPI protocol in Octal-, Quad-, Dual-, and Single-SPI with 
+        dedicated address mapping.
+      value: 3
+    - name: B_0x4
+      description: HyperBus memory mode, the protocol follows the HyperBus 
+        specification. 8-data-bit DTR mode must be selected.
+      value: 4
+    - name: B_0x5
+      description: HyperBus register mode, addressing register space. The 
+        memory-mapped accesses in this mode must be non-cacheable, or Indirect 
+        read/write modes must be used.
+      value: 5
+- name: HSPI_DCR2
+  displayName: HSPI_DCR2
+  description: HSPI device configuration register 2
+  addressOffset: 12
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: PRESCALER
+    description: "Clock prescaler\nThis field defines the scaler factor for generating
+      the CLK based on the kernel clock (valueÂ +Â 1).\n2: FCLK = FKERNEL/3\n...\n\
+      255: FCLK = FKERNEL/256\nFor odd clock division factors, the CLK duty cycle
+      is not 50Â %. The clock signal remains low one cycle longer than it stays high.\n\
+      Writing this field automatically starts a new calibration of high-speed interface
+      DLL at the start of next transfer, except in case HSPI_CALOSR or HSPI_CALISR
+      have been written in the meantime. BUSY stays high during the whole calibration
+      execution."
+    bitOffset: 0
+    bitWidth: 8
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: FCLK = FKERNEL, kernel clock used directly as HSPICLK 
+        (prescaler bypassed). In this case, if the DDR mode is used, it is 
+        mandatory to provide to the HSPI a kernel clock that has 50% duty-cycle.
+      value: 0
+    - name: B_0x1
+      description: FCLK = FKERNEL/2
+      value: 1
+  - name: WRAPSIZE
+    description: "Wrap size\nThis field indicates the wrap size to which the memory
+      is configured. For memories which have a separate command for wrapped instructions,
+      this field indicates the wrap-size associated with the command held in the HSPI_WPIR
+      register.\n110-111: Reserved"
+    bitOffset: 16
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Wrapped reads are not supported by the memory.
+      value: 0
+    - name: B_0x2
+      description: External memory supports wrap size of 16 bytes.
+      value: 2
+    - name: B_0x3
+      description: External memory supports wrap size of 32 bytes.
+      value: 3
+    - name: B_0x4
+      description: External memory supports wrap size of 64 bytes.
+      value: 4
+    - name: B_0x5
+      description: External memory supports wrap size of 128 bytes.
+      value: 5
+- name: HSPI_DCR3
+  displayName: HSPI_DCR3
+  description: HSPI device configuration register 3
+  addressOffset: 16
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: MAXTRAN
+    description: "Maximum transfer\nThis field enables the communication regulation
+      feature.\nThe nCS is released every MAXTRAN+1 clock cycles when the other HSPI
+      request the access to the bus.\nothers: Maximum communication is set to MAXTRAN+1
+      bytes"
+    bitOffset: 0
+    bitWidth: 8
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Maximum communication disabled
+      value: 0
+  - name: CSBOUND
+    description: "CS boundary\nThis field enables the transaction boundary feature.
+      When active, a minimum value of 3 is recommended.\nThe nCS is released on each
+      boundary of 2CSBOUND bytes.\nothers: CS boundary set to 2CSBOUND bytes"
+    bitOffset: 16
+    bitWidth: 5
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: CS boundary disabled
+      value: 0
+- name: HSPI_DCR4
+  displayName: HSPI_DCR4
+  description: HSPI device configuration register 4
+  addressOffset: 20
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: REFRESH
+    description: "Refresh rate\nThis field enables the refresh rate feature.\nThe
+      nCS is released every REFRESH+1 clock cycles for writes, and REFRESH+4 clock
+      cycles for reads.\nNote: These two values can be extended with few clock cycles
+      when refresh occurs during a byte transmission in single, dual or quad mode,
+      because the byte transmission must be completed.\nothers: Maximum communication
+      length is set to REFRESH+1 clock cycles."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Refresh disabled
+      value: 0
+- name: HSPI_SR
+  displayName: HSPI_SR
+  addressOffset: 32
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: TEF
+    description: "Transfer error flag\nThis bit is set in Indirect mode when an invalid
+      address is being accessed in Indirect mode.\nIt is cleared by writing 1 to CTEF."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-only
+  - name: TCF
+    description: "Transfer complete flag\nThis bit is set in Indirect mode when the
+      programmed number of data has been transferred or in any mode when the transfer
+      has been aborted.It is cleared by writing 1 to CTCF."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-only
+  - name: FTF
+    description: "FIFO threshold flag\nIn Indirect mode, this bit is set when the
+      FIFO threshold has been reached, or if there is any data left in the FIFO after
+      the reads from the external device are complete.\nIt is cleared automatically
+      as soon as the threshold condition is no longer true.\nIn Automatic-polling
+      mode this bit is set every time the status register is read, and the bit is
+      cleared when the data register is read."
+    bitOffset: 2
+    bitWidth: 1
+    access: read-only
+  - name: SMF
+    description: "Status match flag\nThis bit is set in Automatic-polling mode when
+      the unmasked received data matches the corresponding bits in the match register
+      (HSPI_PSMAR).\nIt is cleared by writing 1 to CSMF."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-only
+  - name: TOF
+    description: "Timeout flag\nThis bit is set when timeout occurs. It is cleared
+      by writing 1 to CTOF."
+    bitOffset: 4
+    bitWidth: 1
+    access: read-only
+  - name: BUSY
+    description: "Busy\nThis bit is set when an operation is ongoing. It is cleared
+      automatically when the operation with the external device is finished and the
+      FIFO is empty."
+    bitOffset: 5
+    bitWidth: 1
+    access: read-only
+  - name: FLEVEL
+    description: "FIFO level\nThis field gives the number of valid bytes that are
+      being held in the FIFO. FLEVELÂ =Â 0 when the FIFO is empty, and 64 when it
+      is full.\nIn Automatic-status polling mode, FLEVEL is zero."
+    bitOffset: 8
+    bitWidth: 7
+    access: read-only
+- name: HSPI_FCR
+  displayName: HSPI_FCR
+  addressOffset: 36
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: CTEF
+    description: "Clear transfer error flag\nWriting 1 clears the TEF flag in the
+      HSPI_SR register."
+    bitOffset: 0
+    bitWidth: 1
+    access: write-only
+  - name: CTCF
+    description: "Clear transfer complete flag\nWriting 1 clears the TCF flag in the
+      HSPI_SR register."
+    bitOffset: 1
+    bitWidth: 1
+    access: write-only
+  - name: CSMF
+    description: "Clear status match flag\nWriting 1 clears the SMF flag in the HSPI_SR
+      register."
+    bitOffset: 3
+    bitWidth: 1
+    access: write-only
+  - name: CTOF
+    description: "Clear timeout flag\nWriting 1 clears the TOF flag in the HSPI_SR
+      register."
+    bitOffset: 4
+    bitWidth: 1
+    access: write-only
+- name: HSPI_DLR
+  displayName: HSPI_DLR
+  description: HSPI data length register
+  addressOffset: 64
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DL
+    description: "[31: 0]: Data length\nNumber of data to be retrieved (value+1) in
+      Indirect and Status-polling modes. A value not greater than three (indicating
+      4 bytes) must be used for status polling-mode.\nAll 1's in Indirect mode means
+      undefined length, where HSPI continues until the end of the memory, as defined
+      by DEVSIZE.\n0x0000_0000: 1 byte is to be transferred.\n0x0000_0001: 2 bytes
+      are to be transferred.\n0x0000_0002: 3 bytes are to be transferred.\n0x0000_0003:
+      4 bytes are to be transferred.\n...\n0xFFFF_FFFD: 4,294,967,294 (4G-2) bytes
+      are to be transferred.\n0xFFFF_FFFE: 4,294,967,295 (4G-1) bytes are to be transferred.\n\
+      0xFFFF_FFFF: undefined length; all bytes, until the end of the external device,
+      (as defined by DEVSIZE) are to be transferred. Continue reading indefinitely
+      if DEVSIZEÂ =Â 0x1F.\nDL[0] is stuck at 1 in Dual-memory mode (DMMÂ =Â 1) even
+      when 0 is written to this bit, thus assuring that each access transfers an even
+      number of bytes.\nThis field has no effect when in Memory-mapped mode."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_AR
+  displayName: HSPI_AR
+  addressOffset: 72
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: ADDRESS
+    description: "Address\nAddress to be sent to the external device. In HyperBus
+      mode, this field must be even as this protocol is 16-bit word oriented. In dual-memory
+      mode, AR[0] is forced to 1.\nWrites to this field are ignored when BUSYÂ =Â 1
+      or when FMODE = 11 (Memory-mapped mode)."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_DR
+  displayName: HSPI_DR
+  addressOffset: 80
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DATA
+    description: "[31: 0]: Data\nData to be sent/received to/from the external SPI
+      device\nIn Indirect-write mode, data written to this register is stored on the
+      FIFO before it is sent to the external device during the data phase. If the
+      FIFO is too full, a write operation is stalled until the FIFO has enough space
+      to accept the amount of data being written.\nIn Indirect-read mode, reading
+      this register gives (via the FIFO) the data that was received from the external
+      device. If the FIFO does not have as many bytes as requested by the read operation
+      and if BUSYÂ =Â 1, the read operation is stalled until enough data is present
+      or until the transfer is complete, whichever happens first.\nIn Automatic-polling
+      mode, this register contains the last data read from the external device (without
+      masking).\nWord, half-word, and byte accesses to this register are supported.
+      In Indirect-write mode, a byte write adds 1 byte to the FIFO, a half-word write
+      2 bytes, and a word write 4 bytes.\nSimilarly, in Indirect-read mode, a byte
+      read removes 1 byte from the FIFO, a halfword read 2Â bytes, and a word read
+      4Â bytes. Accesses in Indirect mode must be aligned to the bottom of this register:
+      A byte read must read DATA[7:0] and a half-word read must read DATA[15:0]."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_PSMKR
+  displayName: HSPI_PSMKR
+  description: HSPI polling status mask register
+  addressOffset: 128
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: MASK
+    description: "Status mask\nMask to be applied to the status bytes received in
+      Polling mode\nFor bit n:"
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Bit n of the data received in Automatic-polling mode is 
+        masked and its value is not considered in the matching logic.
+      value: 0
+    - name: B_0x1
+      description: Bit n of the data received in Automatic-polling mode is 
+        unmasked and its value is considered in the matching logic.
+      value: 1
+- name: HSPI_PSMAR
+  displayName: HSPI_PSMAR
+  description: HSPI polling status match register
+  addressOffset: 136
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: MATCH
+    description: "[31: 0]: Status match\nValue to be compared with the masked status
+      register to get a match"
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_PIR
+  displayName: HSPI_PIR
+  description: HSPI polling interval register
+  addressOffset: 144
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: INTERVAL
+    description: "[15: 0]: Polling interval\nNumber of CLK cycle between a read during
+      the automatic-polling phases"
+    bitOffset: 0
+    bitWidth: 16
+    access: read-write
+- name: HSPI_CCR
+  displayName: HSPI_CCR
+  description: HSPI communication configuration register
+  addressOffset: 256
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: IMODE
+    description: "Instruction mode\nThis field defines the instruction phase mode
+      of operation.\n101-111: Reserved"
+    bitOffset: 0
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No instruction
+      value: 0
+    - name: B_0x1
+      description: Instruction on a single line
+      value: 1
+    - name: B_0x2
+      description: Instruction on two lines
+      value: 2
+    - name: B_0x3
+      description: Instruction on four lines
+      value: 3
+    - name: B_0x4
+      description: Instruction on eight lines
+      value: 4
+  - name: IDTR
+    description: "Instruction double transfer rate\nThis bit sets the DTR mode for
+      the instruction phase."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for instruction phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for instruction phase
+      value: 1
+  - name: ISIZE
+    description: "Instruction size\nThis bit defines instruction size."
+    bitOffset: 4
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit instruction
+      value: 0
+    - name: B_0x1
+      description: 16-bit instruction
+      value: 1
+    - name: B_0x2
+      description: 24-bit instruction
+      value: 2
+    - name: B_0x3
+      description: 32-bit instruction
+      value: 3
+  - name: ADMODE
+    description: "Address mode\nThis field defines the address phase mode of operation.\n\
+      101-111: Reserved"
+    bitOffset: 8
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No address
+      value: 0
+    - name: B_0x1
+      description: Address on a single line
+      value: 1
+    - name: B_0x2
+      description: Address on two lines
+      value: 2
+    - name: B_0x3
+      description: Address on four lines
+      value: 3
+    - name: B_0x4
+      description: Address on eight lines
+      value: 4
+  - name: ADDTR
+    description: "Address double transfer rate\nThis bit sets the DTR mode for the
+      address phase."
+    bitOffset: 11
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for address phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for address phase
+      value: 1
+  - name: ADSIZE
+    description: "Address size\nThis field defines address size."
+    bitOffset: 12
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit address
+      value: 0
+    - name: B_0x1
+      description: 16-bit address
+      value: 1
+    - name: B_0x2
+      description: 24-bit address
+      value: 2
+    - name: B_0x3
+      description: 32-bit address
+      value: 3
+  - name: ABMODE
+    description: "Alternate-byte mode\nThis field defines the alternate byte phase
+      mode of operation.\n100-111: Reserved"
+    bitOffset: 16
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No alternate bytes
+      value: 0
+    - name: B_0x1
+      description: Alternate bytes on a single line
+      value: 1
+    - name: B_0x2
+      description: Alternate bytes on two lines
+      value: 2
+    - name: B_0x3
+      description: Alternate bytes on four lines
+      value: 3
+  - name: ABDTR
+    description: "Alternate bytes double transfer rate\nThis bit sets the DTR mode
+      for the alternate bytes phase.\nThis field can be written only when BUSYÂ =Â 0."
+    bitOffset: 19
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for alternate bytes phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for alternate bytes phase
+      value: 1
+  - name: ABSIZE
+    description: "Alternate bytes size\nThis bit defines alternate bytes size."
+    bitOffset: 20
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit alternate bytes
+      value: 0
+    - name: B_0x1
+      description: 16-bit alternate bytes
+      value: 1
+    - name: B_0x2
+      description: 24-bit alternate bytes
+      value: 2
+    - name: B_0x3
+      description: 32-bit alternate bytes
+      value: 3
+  - name: DMODE
+    description: "Data mode\nThis field defines the data phase mode of operation.\n\
+      110-111: Reserved"
+    bitOffset: 24
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No data
+      value: 0
+    - name: B_0x1
+      description: Data on a single line
+      value: 1
+    - name: B_0x2
+      description: Data on two lines
+      value: 2
+    - name: B_0x3
+      description: Data on four lines
+      value: 3
+    - name: B_0x4
+      description: Data on eight lines
+      value: 4
+    - name: B_0x5
+      description: data on 16 lines
+      value: 5
+  - name: DDTR
+    description: "Data double transfer rate\nThis bit sets the DTR mode for the data
+      phase."
+    bitOffset: 27
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for data phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for data phase
+      value: 1
+  - name: DQSE
+    description: "DQS enable\nThis bit enables the data strobe management."
+    bitOffset: 29
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DQS disabled
+      value: 0
+    - name: B_0x1
+      description: DQS enabled
+      value: 1
+  - name: SIOO
+    description: "Send instruction only once mode\nThis bit has no effect when IMODEÂ =Â 00
+      (see )."
+    bitOffset: 31
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Send instruction on every transaction
+      value: 0
+    - name: B_0x1
+      description: Send instruction only for the first command
+      value: 1
+- name: HSPI_TCR
+  displayName: HSPI_TCR
+  description: HSPI timing configuration register
+  addressOffset: 264
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DCYC
+    description: "Number of dummy cycles\nThis field defines the duration of the dummy
+      phase.\nIn both SDR and DTR modes, it specifies a number of CLK cycles (0-31)."
+    bitOffset: 0
+    bitWidth: 5
+    access: read-write
+  - name: DHQC
+    description: Delay hold quarter cycle
+    bitOffset: 28
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No delay hold
+      value: 0
+    - name: B_0x1
+      description: 1/4 cycle hold
+      value: 1
+  - name: SSHIFT
+    description: "Sample shift\nBy default, the HSPI samples data 1/2 of a CLK cycle
+      after the data is driven by the external device.\nThis bit allows the data to
+      be sampled later in order to consider the external signal delays.\nThe software
+      must ensure that SSHIFTÂ =Â 0 when the data phase is configured in DTR mode
+      (when DDTRÂ =Â 1.)"
+    bitOffset: 30
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No shift
+      value: 0
+    - name: B_0x1
+      description: 1/2 cycle shift
+      value: 1
+- name: HSPI_IR
+  displayName: HSPI_IR
+  description: HSPI instruction register
+  addressOffset: 272
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: INSTRUCTION
+    description: "Instruction\nInstruction to be sent to the external SPI device"
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_ABR
+  displayName: HSPI_ABR
+  description: HSPI alternate bytes register
+  addressOffset: 288
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: ALTERNATE
+    description: "[31: 0]: Alternate bytes\nOptional data to be send to the external
+      SPI device right after the address."
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_LPTR
+  displayName: HSPI_LPTR
+  description: HSPI low-power timeout register
+  addressOffset: 304
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: TIMEOUT
+    description: "[15: 0]: Timeout period\nAfter each access in Memory-mapped mode,
+      the HSPI prefetches the subsequent bytes and hold them in the FIFO.\nThis field
+      indicates how many CLK cycles the HSPI waits after the clock becomes inactive
+      and until it raises the nCS, putting the external device in a lower-consumption
+      state."
+    bitOffset: 0
+    bitWidth: 16
+    access: read-write
+- name: HSPI_WPCCR
+  displayName: HSPI_WPCCR
+  description: HSPI wrap communication configuration register
+  addressOffset: 320
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: IMODE
+    description: "Instruction mode\nThis field defines the instruction phase mode
+      of operation.\n101-111: Reserved"
+    bitOffset: 0
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No instruction
+      value: 0
+    - name: B_0x1
+      description: Instruction on a single line
+      value: 1
+    - name: B_0x2
+      description: Instruction on two lines
+      value: 2
+    - name: B_0x3
+      description: Instruction on four lines
+      value: 3
+    - name: B_0x4
+      description: Instruction on eight lines
+      value: 4
+  - name: IDTR
+    description: "Instruction double transfer rate\nThis bit sets the DTR mode for
+      the instruction phase."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for instruction phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for instruction phase
+      value: 1
+  - name: ISIZE
+    description: "Instruction size\nThis field defines instruction size."
+    bitOffset: 4
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit instruction
+      value: 0
+    - name: B_0x1
+      description: 16-bit instruction
+      value: 1
+    - name: B_0x2
+      description: 24-bit instruction
+      value: 2
+    - name: B_0x3
+      description: 32-bit instruction
+      value: 3
+  - name: ADMODE
+    description: "Address mode\nThis field defines the address phase mode of operation.\n\
+      101-111: Reserved"
+    bitOffset: 8
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No address
+      value: 0
+    - name: B_0x1
+      description: Address on a single line
+      value: 1
+    - name: B_0x2
+      description: Address on two lines
+      value: 2
+    - name: B_0x3
+      description: Address on four lines
+      value: 3
+    - name: B_0x4
+      description: Address on eight lines
+      value: 4
+  - name: ADDTR
+    description: "Address double transfer rate\nThis bit sets the DTR mode for the
+      address phase."
+    bitOffset: 11
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for address phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for address phase
+      value: 1
+  - name: ADSIZE
+    description: "Address size\nThis field defines address size."
+    bitOffset: 12
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit address
+      value: 0
+    - name: B_0x1
+      description: 16-bit address
+      value: 1
+    - name: B_0x2
+      description: 24-bit address
+      value: 2
+    - name: B_0x3
+      description: 32-bit address
+      value: 3
+  - name: ABMODE
+    description: "Alternate-byte mode\nThis field defines the alternate byte phase
+      mode of operation."
+    bitOffset: 16
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No alternate bytes
+      value: 0
+    - name: B_0x1
+      description: Alternate bytes on a single line
+      value: 1
+    - name: B_0x2
+      description: Alternate bytes on two lines
+      value: 2
+    - name: B_0x3
+      description: Alternate bytes on four lines
+      value: 3
+    - name: B_0x4
+      description: Alternate bytes on eight lines
+      value: 4
+    - name: B_0x5
+      description: Alternate bytes on 16 lines
+      value: 5
+  - name: ABDTR
+    description: "Alternate bytes double transfer rate\nThis bit sets the DTR mode
+      for the alternate bytes phase."
+    bitOffset: 19
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for alternate bytes phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for alternate bytes phase
+      value: 1
+  - name: ABSIZE
+    description: "Alternate bytes size\nThis bit defines alternate bytes size."
+    bitOffset: 20
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit alternate bytes
+      value: 0
+    - name: B_0x1
+      description: 16-bit alternate bytes
+      value: 1
+    - name: B_0x2
+      description: 24-bit alternate bytes
+      value: 2
+    - name: B_0x3
+      description: 32-bit alternate bytes
+      value: 3
+  - name: DMODE
+    description: "Data mode\nThis field defines the data phase mode of operation.\n\
+      101; Data on 16 lines\n110-111: Reserved"
+    bitOffset: 24
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No data
+      value: 0
+    - name: B_0x1
+      description: Data on a single line
+      value: 1
+    - name: B_0x2
+      description: Data on two lines
+      value: 2
+    - name: B_0x3
+      description: Data on four lines
+      value: 3
+    - name: B_0x4
+      description: Data on eight lines
+      value: 4
+  - name: DDTR
+    description: "Data double transfer rate\nThis bit sets the DTR mode for the data
+      phase."
+    bitOffset: 27
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for data phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for data phase
+      value: 1
+  - name: DQSE
+    description: "DQS enable\nThis bit enables the data strobe management."
+    bitOffset: 29
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DQS disabled
+      value: 0
+    - name: B_0x1
+      description: DQS enabled
+      value: 1
+- name: HSPI_WPTCR
+  displayName: HSPI_WPTCR
+  description: HSPI wrap timing configuration register
+  addressOffset: 328
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DCYC
+    description: "Number of dummy cycles\nThis field defines the duration of the dummy
+      phase.\nIn both SDR and DTR modes, it specifies a number of CLK cycles (0-31).
+      It is recommended to have at least 5 dummy cycles when using memories with DQS
+      activated."
+    bitOffset: 0
+    bitWidth: 5
+    access: read-write
+  - name: DHQC
+    description: "Delay hold quarter cycle\nAdd a quarter cycle delay on the outputs
+      in DTR communication to match hold requirement."
+    bitOffset: 28
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No quarter cycle delay
+      value: 0
+    - name: B_0x1
+      description: Quarter cycle delay inserted
+      value: 1
+  - name: SSHIFT
+    description: "Sample shift\nBy default, the HSPI samples data 1/2 of a CLK cycle
+      after the data is driven by the external device.\nThis bit allows the data to
+      be sampled later in order to consider the external signal delays.\nThe firmware
+      must assure that SSHIFT=0 when the data phase is configured in DTR mode (when
+      DDTRÂ =Â 1)."
+    bitOffset: 30
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No shift
+      value: 0
+    - name: B_0x1
+      description: 1/2 cycle shift
+      value: 1
+- name: HSPI_WPIR
+  displayName: HSPI_WPIR
+  description: HSPI wrap instruction register
+  addressOffset: 336
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: INSTRUCTION
+    description: "[31: 0]: Instruction\nInstruction to be sent to the external SPI
+      device"
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_WPABR
+  displayName: HSPI_WPABR
+  description: HSPI wrap alternate bytes register
+  addressOffset: 352
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: ALTERNATE
+    description: "[31: 0]: Alternate bytes\nOptional data to be sent to the external
+      SPI device right after the address"
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_WCCR
+  displayName: HSPI_WCCR
+  description: HSPI write communication configuration register
+  addressOffset: 384
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: IMODE
+    description: "Instruction mode\nThis field defines the instruction phase mode
+      of operation.\n101-111: Reserved"
+    bitOffset: 0
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No instruction
+      value: 0
+    - name: B_0x1
+      description: Instruction on a single line
+      value: 1
+    - name: B_0x2
+      description: Instruction on two lines
+      value: 2
+    - name: B_0x3
+      description: Instruction on four lines
+      value: 3
+    - name: B_0x4
+      description: Instruction on eight lines
+      value: 4
+  - name: IDTR
+    description: "Instruction double transfer rate\nThis bit sets the DTR mode for
+      the instruction phase."
+    bitOffset: 3
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for instruction phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for instruction phase
+      value: 1
+  - name: ISIZE
+    description: "Instruction size\nThis bit defines instruction size:"
+    bitOffset: 4
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit instruction
+      value: 0
+    - name: B_0x1
+      description: 16-bit instruction
+      value: 1
+    - name: B_0x2
+      description: 24-bit instruction
+      value: 2
+    - name: B_0x3
+      description: 32-bit instruction
+      value: 3
+  - name: ADMODE
+    description: "Address mode\nThis field defines the address phase mode of operation.\n\
+      101-111: Reserved"
+    bitOffset: 8
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No address
+      value: 0
+    - name: B_0x1
+      description: Address on a single line
+      value: 1
+    - name: B_0x2
+      description: Address on two lines
+      value: 2
+    - name: B_0x3
+      description: Address on four lines
+      value: 3
+    - name: B_0x4
+      description: Address on eight lines
+      value: 4
+  - name: ADDTR
+    description: "Address double transfer rate\nThis bit sets the DTR mode for the
+      address phase."
+    bitOffset: 11
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for address phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for address phase
+      value: 1
+  - name: ADSIZE
+    description: "Address size\nThis field defines address size."
+    bitOffset: 12
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit address
+      value: 0
+    - name: B_0x1
+      description: 16-bit address
+      value: 1
+    - name: B_0x2
+      description: 24-bit address
+      value: 2
+    - name: B_0x3
+      description: 32-bit address
+      value: 3
+  - name: ABMODE
+    description: "Alternate-byte mode\nThis field defines the alternate-byte phase
+      mode of operation.\n101-111: Reserved"
+    bitOffset: 16
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No alternate bytes
+      value: 0
+    - name: B_0x1
+      description: Alternate bytes on a single line
+      value: 1
+    - name: B_0x2
+      description: Alternate bytes on two lines
+      value: 2
+    - name: B_0x3
+      description: Alternate bytes on four lines
+      value: 3
+    - name: B_0x4
+      description: Alternate bytes on eight lines
+      value: 4
+  - name: ABDTR
+    description: "Alternate bytes double-transfer rate\nThis bit sets the DTR mode
+      for the alternate-bytes phase."
+    bitOffset: 19
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for alternate-bytes phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for alternate-bytes phase
+      value: 1
+  - name: ABSIZE
+    description: "Alternate bytes size\nThis field defines alternate bytes size:"
+    bitOffset: 20
+    bitWidth: 2
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: 8-bit alternate bytes
+      value: 0
+    - name: B_0x1
+      description: 16-bit alternate bytes
+      value: 1
+    - name: B_0x2
+      description: 24-bit alternate bytes
+      value: 2
+    - name: B_0x3
+      description: 32-bit alternate bytes
+      value: 3
+  - name: DMODE
+    description: "Data mode\nThis field defines the data phase mode of operation."
+    bitOffset: 24
+    bitWidth: 3
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: No data
+      value: 0
+    - name: B_0x1
+      description: Data on a single line
+      value: 1
+    - name: B_0x2
+      description: Data on two lines
+      value: 2
+    - name: B_0x3
+      description: Data on four lines
+      value: 3
+    - name: B_0x4
+      description: Data on eight lines
+      value: 4
+    - name: B_0x5
+      description: Data on 16 lines
+      value: 5
+  - name: DDTR
+    description: "data double transfer rate\nThis bit sets the DTR mode for the data
+      phase."
+    bitOffset: 27
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DTR mode disabled for data phase
+      value: 0
+    - name: B_0x1
+      description: DTR mode enabled for data phase
+      value: 1
+  - name: DQSE
+    description: "DQS enable\nThis bit enables the data strobe management."
+    bitOffset: 29
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: DQS disabled
+      value: 0
+    - name: B_0x1
+      description: DQS enabled
+      value: 1
+- name: HSPI_WTCR
+  displayName: HSPI_WTCR
+  description: HSPI write timing configuration register
+  addressOffset: 392
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: DCYC
+    description: "Number of dummy cycles\nThis field defines the duration of the dummy
+      phase.\nIn both SDR and DTR modes, it specifies a number of CLK cycles (0-31).
+      It is recommended to have at least 5 dummy cycles when using memories with DQS
+      activated."
+    bitOffset: 0
+    bitWidth: 5
+    access: read-write
+- name: HSPI_WIR
+  displayName: HSPI_WIR
+  description: HSPI write instruction register
+  addressOffset: 400
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: INSTRUCTION
+    description: "Instruction\nInstruction to be sent to the external SPI device"
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_WABR
+  displayName: HSPI_WABR
+  description: HSPI write alternate bytes register
+  addressOffset: 416
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: ALTERNATE
+    description: "[31: 0]: Alternate bytes\nOptional data to be sent to the external
+      SPI device right after the address"
+    bitOffset: 0
+    bitWidth: 32
+    access: read-write
+- name: HSPI_HLCR
+  displayName: HSPI_HLCR
+  description: HSPI HyperBus latency configuration register
+  addressOffset: 512
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: LM
+    description: "Latency mode\nThis bit selects the Latency mode."
+    bitOffset: 0
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Variable initial latency
+      value: 0
+    - name: B_0x1
+      description: Fixed latency
+      value: 1
+  - name: WZL
+    description: "Write zero latency\nThis bit enables zero latency on write operations."
+    bitOffset: 1
+    bitWidth: 1
+    access: read-write
+    enumeratedValues:
+    - name: B_0x0
+      description: Latency on write accesses
+      value: 0
+    - name: B_0x1
+      description: No latency on write accesses
+      value: 1
+  - name: TACC
+    description: "[7: 0]: Access time\nDevice access time expressed in number of communication
+      clock cycles"
+    bitOffset: 8
+    bitWidth: 8
+    access: read-write
+  - name: TRWR
+    description: "Read write recovery time\nDevice read write recovery time expressed
+      in number of communication clock cycles"
+    bitOffset: 16
+    bitWidth: 8
+    access: read-write
+- name: HSPI_CALFCR
+  displayName: HSPI_CALFCR
+  description: HSPI full-cycle calibration configuration
+  addressOffset: 528
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: FINE
+    description: "[6: 0]: Fine calibration\nThe unitary value of delay for this field
+      depends on product technology (refer to the product datasheet)."
+    bitOffset: 0
+    bitWidth: 7
+    access: read-only
+  - name: COARSE
+    description: "[4: 0]: Coarse calibration\nThe unitary value of delay for this
+      field depends on product technology (refer to the product datasheet)."
+    bitOffset: 16
+    bitWidth: 5
+    access: read-only
+  - name: CALMAX
+    description: "Max value\nThis bit gets set when the memory-clock period is outside
+      the range of DLLM, in which case HSPI_CALFCR and HSPI_CALSR are updated with
+      the values for the maximum delay."
+    bitOffset: 31
+    bitWidth: 1
+    access: read-only
+- name: HSPI_CALMR
+  displayName: HSPI_CALMR
+  description: HSPI DLL master calibration configuration
+  addressOffset: 536
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: FINE
+    description: "[6: 0]: Fine calibration\nThe unitary value of delay for this field
+      depends on product technology (refer to the product datasheet)."
+    bitOffset: 0
+    bitWidth: 7
+    access: read-write
+  - name: COARSE
+    description: "[4: 0]: Coarse calibration\nThe unitary value of delay for this
+      field depends on product technology (refer to the product datasheet)."
+    bitOffset: 16
+    bitWidth: 5
+    access: read-write
+- name: HSPI_CALSOR
+  displayName: HSPI_CALSOR
+  description: HSPI DLL slave output calibration configuration
+  addressOffset: 544
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: FINE
+    description: "[6: 0]: Fine calibration\nThe unitary value of delay for this field
+      depends on product technology (refer to the product datasheet)."
+    bitOffset: 0
+    bitWidth: 7
+    access: read-write
+  - name: COARSE
+    description: "[4: 0]: Coarse calibration\nThe unitary value of delay for this
+      field depends on product technology (refer to the product datasheet)."
+    bitOffset: 16
+    bitWidth: 5
+    access: read-write
+- name: HSPI_CALSIR
+  displayName: HSPI_CALSIR
+  description: HSPI DLL slave input calibration configuration
+  addressOffset: 552
+  size: 32
+  resetValue: 0
+  resetMask: 4294967295
+  fields:
+  - name: FINE
+    description: "[6: 0]: Fine calibration\nThe unitary value of delay for this field
+      depends on product technology (refer to the product datasheet)."
+    bitOffset: 0
+    bitWidth: 7
+    access: read-write
+  - name: COARSE
+    description: "[4: 0]: Coarse calibration\nThe unitary value of delay for this
+      field depends on product technology (refer to the product datasheet)."
+    bitOffset: 16
+    bitWidth: 5
+    access: read-write
+interrupts:
+- name: HSPI1
+  description: Hexadeca-SPI1 global interrupt
+  value: 131
+addressBlocks:
+- offset: 0
+  size: 1024
+  usage: registers
