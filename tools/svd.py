@@ -6,6 +6,16 @@ from ruamel.yaml import YAML
 import re
 from pathlib import Path
 
+def _safe_int(s, base=0):
+    """Parse integer string, handling leading zeros that Python 3 int(base=0) rejects."""
+    if isinstance(s, int):
+        return s
+    try:
+        return int(s, base=base)
+    except ValueError:
+        # Strip leading zeros from bare decimal values (e.g. '072', '00000010')
+        return int(s.lstrip('0') or '0')
+
 def parse(filename:str):
     """ read a SVD file and return it as a data structure """
     with open(filename, 'r') as file:
@@ -16,7 +26,7 @@ def toNumber(tbl:dict, keys:list):
     for k in keys:
         if k in tbl:
             v = re.sub(r'^#', '0b', tbl[k].lower())
-            tbl[k] = int(v, base=0)
+            tbl[k] = _safe_int(v)
 
 def toBoolean(tbl:dict, keys:list):
     """ In a table, in-place convert all listed keys into a boolean. """
@@ -47,7 +57,7 @@ def collateInterrupts(peripheral:dict, offset:int):
         del peripheral['interrupt']
     for i in peripheral['interrupts']:
         assert i and i.get('value') and i.get('name')
-        i['value'] = int(i['value'], base=0)
+        i['value'] = _safe_int(i['value'])
     if "interrupts" in peripheral and not peripheral.get("interrupts"):
         del peripheral["interrupts"]
 
@@ -61,12 +71,12 @@ def collateEnums(field:dict):
             val = re.sub(r'^#', '0b', e['value'].lower())
             if val[0:2] == "0b":
                 v = val.replace("x", "0")
-                e['value'] = int(v, base=0)
+                e['value'] = _safe_int(v)
                 if val != v:  # value has "don't care" bits
                     v = val[2:].replace("0", "1").replace("x", "0")
                     e['valuemask'] = int(v, base=2)
             else:
-                e['value'] = int(val, base=0)
+                e['value'] = _safe_int(val)
 
 def collateFields(fields:dict):
     """ Go through the register and collate the fields into an array
@@ -81,11 +91,11 @@ def collateFields(fields:dict):
             del f['bitRange']
         if f.get('msb') and f.get('lsb'):
             f['bitOffset'] = f['lsb']
-            f['bitWidth'] = str(int(f['msb'], base=0) - int(f['lsb'], base=0) + 1);
+            f['bitWidth'] = str(_safe_int(f['msb']) - _safe_int(f['lsb']) + 1);
             del f['msb']
             del f['lsb']
         if f.get('bitWidth'):
-            f['bitWidth'] = int(f['bitWidth'], base=0)
+            f['bitWidth'] = _safe_int(f['bitWidth'])
         else:
             f['bitWidth'] = 1
         toNumber(f, [ "bitOffset", "dim", "dimIncrement" ])
