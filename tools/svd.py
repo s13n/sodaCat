@@ -257,6 +257,39 @@ def printInterrupts(interrupts:dict):
             s = (s + ", " + src) if s else src
         print("{:3}: {}".format(i, s))
 
+def processChip(svd_root, chip_name, name_map):
+    """Process a single chip SVD and extract functional blocks."""
+    try:
+        chip = collateDevice(svd_root)
+        blocks = {}
+        chip_peripheral_refs = {}
+
+        for periph in chip['peripherals']:
+            periph_name = periph['name']
+            block_type = name_map.get(periph_name, periph_name)
+
+            if block_type is None:
+                continue
+
+            chip_peripheral_refs[periph_name] = {
+                'blockType': block_type,
+                'baseAddress': periph.get('baseAddress'),
+                'interrupts': [i['value'] for i in (periph.get('interrupts') or [])]
+            }
+
+            if block_type not in blocks:
+                block_data = periph.copy()
+                block_data.pop('baseAddress', None)
+                block_data['name'] = block_type
+                for intr in block_data.get('interrupts', []):
+                    intr.pop('value', None)
+                blocks[block_type] = block_data
+
+        return blocks, chip_peripheral_refs, chip
+    except Exception as e:
+        print(f"Error processing {chip_name}: {e}")
+        return {}, {}, {}
+
 def hashBlockStructure(block_data):
     """Create a hash of a block's register structure for comparison."""
     import hashlib

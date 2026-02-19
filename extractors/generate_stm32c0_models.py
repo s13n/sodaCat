@@ -13,7 +13,6 @@ from collections import defaultdict
 # Add sodaCat tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
-import transform
 
 # Define STM32C0 family information
 STM32C0_FAMILIES = {
@@ -61,39 +60,6 @@ NAME_MAP = {
 }
 
 
-def process_chip(svd_root, chip_name):
-    """Process a single chip SVD and extract functional blocks."""
-    try:
-        chip = svd.collateDevice(svd_root)
-        blocks = {}
-        chip_peripheral_refs = {}
-
-        for periph in chip['peripherals']:
-            periph_name = periph['name']
-            block_type = NAME_MAP.get(periph_name, periph_name)
-
-            if block_type is None:
-                continue
-
-            chip_peripheral_refs[periph_name] = {
-                'blockType': block_type,
-                'baseAddress': periph.get('baseAddress'),
-                'interrupts': [i['value'] for i in (periph.get('interrupts') or [])]
-            }
-
-            if block_type not in blocks:
-                block_data = periph.copy()
-                block_data.pop('baseAddress', None)
-                block_data['name'] = block_type
-                for intr in block_data.get('interrupts', []):
-                    intr.pop('value', None)
-                blocks[block_type] = block_data
-
-        return blocks, chip_peripheral_refs, chip
-    except Exception as e:
-        print(f"Error processing {chip_name}: {e}")
-        return {}, {}, {}
-
 
 def main():
     if len(sys.argv) < 3:
@@ -129,7 +95,7 @@ def main():
 
                     try:
                         root = svd.parse(temp_svd)
-                        blocks, _, _ = process_chip(root, chip_name)
+                        blocks, _, _ = svd.processChip(root, chip_name, NAME_MAP)
 
                         for block_name, block_data in blocks.items():
                             block_hash = svd.hashBlockStructure(block_data)
