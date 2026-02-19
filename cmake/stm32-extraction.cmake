@@ -12,15 +12,17 @@
 #   stm32<id>-models         - Extract YAML models from the SVD archive
 #   rebuild-stm32<id>-models - Force re-extraction (deletes stamp, then rebuilds)
 #
-# User-overridable cache variables (per family, named by CODE):
-#   STM32<CODE>_SVD_ZIP      - Path to the SVD zip archive
-#   STM32<CODE>_GENERATOR    - Path to the Python generator script
+# User-overridable cache variables:
+#   STM32<CODE>_SVD_ZIP      - Path to the SVD zip archive (per family)
+#   STM32_GENERATOR          - Path to the unified Python generator script
 #   STM32_MODELS_DIR         - Shared output directory (default: models/ST)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(STM32_MODELS_DIR "${CMAKE_SOURCE_DIR}/models/ST" CACHE PATH
     "Output directory for generated STM32 models")
+set(STM32_GENERATOR "${CMAKE_SOURCE_DIR}/extractors/generate_stm32_models.py" CACHE PATH
+    "Path to the unified STM32 model generator script")
 
 # Internal registry of family IDs
 set(_STM32_FAMILY_IDS "" CACHE INTERNAL "")
@@ -30,13 +32,12 @@ set(_STM32_FAMILY_IDS "" CACHE INTERNAL "")
 #     CODE <code>                # Directory name under models/ST/ (e.g. "C0", "L4P")
 #     DISPLAY <name>             # Display name for messages (e.g. "STM32C0", "STM32L4+")
 #     ZIP <filename>             # SVD zip filename in svd/ directory
-#     GENERATOR <filename>       # Generator script filename in extractors/
 #     SUBFAMILIES <def>...       # Subfamily defs, each "Name:Chip1,Chip2,..."
 # )
 function(stm32_add_family)
-    cmake_parse_arguments(FAM "" "ID;CODE;DISPLAY;ZIP;GENERATOR" "SUBFAMILIES" ${ARGN})
+    cmake_parse_arguments(FAM "" "ID;CODE;DISPLAY;ZIP" "SUBFAMILIES" ${ARGN})
 
-    foreach(_arg ID CODE DISPLAY ZIP GENERATOR)
+    foreach(_arg ID CODE DISPLAY ZIP)
         if(NOT DEFINED FAM_${_arg})
             message(FATAL_ERROR "stm32_add_family: ${_arg} is required")
         endif()
@@ -47,11 +48,12 @@ function(stm32_add_family)
     set(_STM32_${FAM_ID}_DISPLAY "${FAM_DISPLAY}" CACHE INTERNAL "")
     set(_STM32_${FAM_ID}_SUBFAMILIES "${FAM_SUBFAMILIES}" CACHE INTERNAL "")
 
-    # User-overridable paths (named to match old per-family convention)
+    # User-overridable SVD zip path
     set(STM32${FAM_CODE}_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/${FAM_ZIP}" CACHE PATH
         "Path to ${FAM_DISPLAY} SVD archive")
-    set(STM32${FAM_CODE}_GENERATOR "${CMAKE_SOURCE_DIR}/extractors/${FAM_GENERATOR}" CACHE PATH
-        "Path to ${FAM_DISPLAY} generator script")
+
+    # Family config file (YAML with subfamily/chip mapping and name_map)
+    set(_family_config "${CMAKE_SOURCE_DIR}/extractors/families/${FAM_CODE}.yaml")
 
     # Create extraction target
     set(_target "stm32${FAM_ID}-models")
@@ -59,11 +61,11 @@ function(stm32_add_family)
 
     add_custom_command(
         OUTPUT ${_marker}
-        COMMAND ${Python3_EXECUTABLE} ${STM32${FAM_CODE}_GENERATOR}
-                ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
+        COMMAND ${Python3_EXECUTABLE} ${STM32_GENERATOR}
+                ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
         COMMAND ${CMAKE_COMMAND} -E touch ${_marker}
         MAIN_DEPENDENCY ${STM32${FAM_CODE}_SVD_ZIP}
-        DEPENDS ${STM32${FAM_CODE}_GENERATOR}
+        DEPENDS ${STM32_GENERATOR} ${_family_config}
         COMMENT "Extracting ${FAM_DISPLAY} family models from SVD files..."
         VERBATIM
     )

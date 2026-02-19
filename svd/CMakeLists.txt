@@ -11,7 +11,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/stm32-extraction.cmake)
 #   rebuild-stm32<id>-models - Force re-extraction
 
 stm32_add_family(ID c0 CODE C0 DISPLAY "STM32C0"
-    ZIP stm32c0-svd.zip GENERATOR generate_stm32c0_models.py
+    ZIP stm32c0-svd.zip
     SUBFAMILIES
         "C01x_C03x:STM32C011,STM32C031"
         "C05x_C07x:STM32C051,STM32C071"
@@ -19,7 +19,7 @@ stm32_add_family(ID c0 CODE C0 DISPLAY "STM32C0"
 )
 
 stm32_add_family(ID f3 CODE F3 DISPLAY "STM32F3"
-    ZIP stm32f3-svd.zip GENERATOR generate_stm32f3_models.py
+    ZIP stm32f3-svd.zip
     SUBFAMILIES
         "F30x:STM32F301,STM32F302,STM32F303"
         "F37x:STM32F373"
@@ -27,7 +27,7 @@ stm32_add_family(ID f3 CODE F3 DISPLAY "STM32F3"
 )
 
 stm32_add_family(ID f4 CODE F4 DISPLAY "STM32F4"
-    ZIP stm32f4-svd.zip GENERATOR generate_stm32f4_models.py
+    ZIP stm32f4-svd.zip
     SUBFAMILIES
         "F401_F410_F411:STM32F401,STM32F410,STM32F411"
         "F405_F407:STM32F405,STM32F407,STM32F415,STM32F417"
@@ -37,7 +37,7 @@ stm32_add_family(ID f4 CODE F4 DISPLAY "STM32F4"
 )
 
 stm32_add_family(ID f7 CODE F7 DISPLAY "STM32F7"
-    ZIP stm32f7-svd.zip GENERATOR generate_stm32f7_models.py
+    ZIP stm32f7-svd.zip
     SUBFAMILIES
         "F72x_F73x:STM32F722,STM32F723,STM32F730,STM32F732,STM32F733"
         "F74x_F75x:STM32F745,STM32F746,STM32F750,STM32F756,STM32F765"
@@ -45,7 +45,7 @@ stm32_add_family(ID f7 CODE F7 DISPLAY "STM32F7"
 )
 
 stm32_add_family(ID g0 CODE G0 DISPLAY "STM32G0"
-    ZIP stm32g0-svd.zip GENERATOR generate_stm32g0_models.py
+    ZIP stm32g0-svd.zip
     SUBFAMILIES
         "G03x_G04x:STM32G030,STM32G031,STM32G041"
         "G05x_G06x:STM32G050,STM32G051,STM32G061"
@@ -54,7 +54,7 @@ stm32_add_family(ID g0 CODE G0 DISPLAY "STM32G0"
 )
 
 stm32_add_family(ID g4 CODE G4 DISPLAY "STM32G4"
-    ZIP stm32g4_svd.zip GENERATOR generate_stm32g4_models.py
+    ZIP stm32g4_svd.zip
     SUBFAMILIES
         "G43x_G44x:STM32G431,STM32G441,STM32GBK1CBT6"
         "G47x_G48x:STM32G471,STM32G473,STM32G474,STM32G483,STM32G484"
@@ -62,7 +62,7 @@ stm32_add_family(ID g4 CODE G4 DISPLAY "STM32G4"
 )
 
 stm32_add_family(ID h5 CODE H5 DISPLAY "STM32H5"
-    ZIP stm32h5-svd.zip GENERATOR generate_stm32h5_models.py
+    ZIP stm32h5-svd.zip
     SUBFAMILIES
         "H503:STM32H503"
         "H52x_H53x:STM32H523,STM32H533"
@@ -70,7 +70,7 @@ stm32_add_family(ID h5 CODE H5 DISPLAY "STM32H5"
 )
 
 stm32_add_family(ID h7 CODE H7 DISPLAY "STM32H7"
-    ZIP stm32h7-svd.zip GENERATOR generate_stm32h7_models.py
+    ZIP stm32h7-svd.zip
     SUBFAMILIES
         "H73x:STM32H723,STM32H725,STM32H730,STM32H733,STM32H735,STM32H73x"
         "H74x_H75x:STM32H742,STM32H743,STM32H745_CM4,STM32H745_CM7,STM32H747_CM4,STM32H747_CM7,STM32H750,STM32H753,STM32H755_CM4,STM32H755_CM7,STM32H757_CM4,STM32H757_CM7"
@@ -78,21 +78,21 @@ stm32_add_family(ID h7 CODE H7 DISPLAY "STM32H7"
 )
 
 stm32_add_family(ID l0 CODE L0 DISPLAY "STM32L0"
-    ZIP stm32l0-svd.zip GENERATOR generate_stm32l0_models.py
+    ZIP stm32l0-svd.zip
     SUBFAMILIES
         "L0x0_L0x1:STM32L0x0,STM32L0x1"
         "L0x2_L0x3:STM32L052,STM32L053,STM32L062,STM32L063,STM32L0x2,STM32L0x3"
 )
 
 stm32_add_family(ID l1 CODE L1 DISPLAY "STM32L1"
-    ZIP stm32l1_svd.zip GENERATOR generate_stm32l1_models.py
+    ZIP stm32l1_svd.zip
     SUBFAMILIES
         "L10x:STM32L100"
         "L15x_L16x:STM32L151,STM32L152,STM32L162"
 )
 
 stm32_add_family(ID l4 CODE L4 DISPLAY "STM32L4"
-    ZIP stm32l4_svd.zip GENERATOR generate_stm32l4_models.py
+    ZIP stm32l4_svd.zip
     SUBFAMILIES
         "L41x_L42x:STM32L412,STM32L422"
         "L43x_L44x:STM32L431,STM32L432,STM32L433,STM32L442,STM32L443"
@@ -102,42 +102,42 @@ stm32_add_family(ID l4 CODE L4 DISPLAY "STM32L4"
 )
 
 stm32_add_family(ID l4plus CODE L4P DISPLAY "STM32L4+"
-    ZIP stm32l4plus-svd.zip GENERATOR generate_stm32l4plus_models.py
+    ZIP stm32l4plus-svd.zip
     SUBFAMILIES
         "L4Px_L4Qx:STM32L4P5,STM32L4Q5"
         "L4Rx_L4Sx:STM32L4R5,STM32L4R7,STM32L4R9,STM32L4S5,STM32L4S7,STM32L4S9"
 )
 
 stm32_add_family(ID l5 CODE L5 DISPLAY "STM32L5"
-    ZIP stm32l5-svd.zip GENERATOR generate_stm32l5_models.py
+    ZIP stm32l5-svd.zip
     SUBFAMILIES
         "L55x:STM32L552"
         "L56x:STM32L562"
 )
 
 stm32_add_family(ID n6 CODE N6 DISPLAY "STM32N6"
-    ZIP stm32n6-svd.zip GENERATOR generate_stm32n6_models.py
+    ZIP stm32n6-svd.zip
     SUBFAMILIES
         "N64x:STM32N645,STM32N647"
         "N65x:STM32N655,STM32N657"
 )
 
 stm32_add_family(ID u0 CODE U0 DISPLAY "STM32U0"
-    ZIP stm32u0-svd.zip GENERATOR generate_stm32u0_models.py
+    ZIP stm32u0-svd.zip
     SUBFAMILIES
         "U03x:STM32U031"
         "U07x_U08x:STM32U073,STM32U083"
 )
 
 stm32_add_family(ID u3 CODE U3 DISPLAY "STM32U3"
-    ZIP stm32u3-svd.zip GENERATOR generate_stm32u3_models.py
+    ZIP stm32u3-svd.zip
     SUBFAMILIES
         "U37x:STM32U375"
         "U38x:STM32U385"
 )
 
 stm32_add_family(ID u5 CODE U5 DISPLAY "STM32U5"
-    ZIP stm32u5_svd.zip GENERATOR generate_stm32u5_models.py
+    ZIP stm32u5_svd.zip
     SUBFAMILIES
         "U53x_U54x:STM32U535,STM32U545"
         "U57x_U58x:STM32U575,STM32U585"

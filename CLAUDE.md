@@ -71,23 +71,19 @@ Family generators use structural hashing (SHA-256 of register names, offsets, fi
 
 ### CMake integration
 
-Each family cmake module provides:
-- `add_stm32XX_extraction_target(target_name)` — creates a build target that runs the Python generator
-- `get_stm32XX_block_path(block family output_var)` — resolves to common or subfamily dir
-- `get_stm32XX_chip_path(chip family output_var)` — resolves chip model path
+The unified `cmake/stm32-extraction.cmake` module provides:
+- `stm32_add_family()` — registers a family and creates extraction/rebuild targets
+- `stm32_block_path()` — resolves to common or subfamily dir
+- `stm32_chip_path()` — resolves chip model path
+- `stm32_subfamily_chips()` — gets the list of chips in a subfamily
 
 The `generate_header()` macro in `sodaCat.cmake` wires YAML → C++ generation as CMake custom commands with proper dependency tracking.
 
-### Family generator pattern
+### Family generator
 
-All 17 family generators in `extractors/generate_stm32*_models.py` follow the same structure:
-1. Define `STM32XX_FAMILIES` dict mapping subfamily names to chip lists
-2. Define `FUNCTIONAL_BLOCKS` frozenset of block types to extract
-3. `get_canonical_name()` maps SVD peripheral instance names to block types (e.g., `GPIOA` → `GPIO`, `TIM1` → `AdvCtrlTimer`)
-4. `extract_svd_from_zip()` reads individual SVD from the family zip archive
-5. Two-pass processing: Pass 1 collects and hashes all blocks; Pass 2 compares hashes across subfamilies to separate common from subfamily-specific blocks
+A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. Per-family configuration (subfamily-to-chip mapping and SVD peripheral name map) lives in YAML files under `extractors/families/<CODE>.yaml`. Two-pass processing: Pass 1 collects and hashes all blocks; Pass 2 compares hashes across subfamilies to separate common from subfamily-specific blocks.
 
-**Usage:** `python3 extractors/generate_stm32XX_models.py <zip_path> <output_dir>`
+**Usage:** `python3 extractors/generate_stm32_models.py <family_code> <zip_path> <output_dir>`
 
 ## Key conventions
 
