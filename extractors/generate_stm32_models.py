@@ -46,14 +46,27 @@ def load_family_config(family_code):
         }
         if block_cfg.get('interrupts') is not None:
             entry['interrupts'] = dict(block_cfg['interrupts'])
+        if block_cfg.get('variants') is not None:
+            entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
         blocks_config[block_type] = entry
 
     return families, blocks_config
 
 
-def _select_block_data(block_families, families, families_present, blocks_config, block_name):
-    """Select the best block data entry, preferring the 'from' chip."""
-    block_cfg = blocks_config.get(block_name, {})
+def _resolve_block_config(block_cfg, subfamily_name):
+    """Resolve a block config for a specific subfamily by merging variant overrides."""
+    variants = block_cfg.get('variants')
+    if not variants or subfamily_name not in variants:
+        return block_cfg
+
+    resolved = dict(block_cfg)
+    resolved.update(variants[subfamily_name])
+    del resolved['variants']
+    return resolved
+
+
+def _select_block_data(block_families, families, families_present, block_cfg):
+    """Select the best block data entry for a shared block, preferring the 'from' chip."""
     source = block_cfg.get('from', '')
     source_chip = source.split('.')[0] if '.' in source else ''
 
@@ -70,9 +83,8 @@ def _select_block_data(block_families, families, families_present, blocks_config
     return block_families[first_family][0]['data']
 
 
-def _select_subfamily_data(entries, blocks_config, block_name):
+def _select_subfamily_data(entries, block_cfg):
     """Select the best entry within a subfamily, preferring the 'from' chip."""
-    block_cfg = blocks_config.get(block_name, {})
     source = block_cfg.get('from', '')
     source_chip = source.split('.')[0] if '.' in source else ''
 
@@ -114,6 +126,12 @@ def main():
     for family_name, family_info in families.items():
         print(f"\nProcessing {family_name} family...")
 
+        # Resolve block configs for this subfamily (applies variant overrides)
+        effective_blocks = {
+            bt: _resolve_block_config(bc, family_name)
+            for bt, bc in blocks_config.items()
+        }
+
         for chip_name in family_info['chips']:
             try:
                 svd_content = svd.extractFromZip(zip_path, chip_name)
@@ -124,12 +142,10 @@ def main():
 
                     try:
                         root = svd.parse(temp_svd)
-                        blocks, _, _ = svd.processChip(root, chip_name, blocks_config)
+                        blocks, _, _ = svd.processChip(root, chip_name, effective_blocks)
 
                         for block_name, block_data in blocks.items():
-                            block_hash = svd.hashBlockStructure(block_data)
                             all_blocks[block_name][family_name].append({
-                                'hash': block_hash,
                                 'data': block_data,
                                 'chip': chip_name
                             })
@@ -140,10 +156,10 @@ def main():
                 print(f"  ERROR processing {chip_name}: {e}")
 
     # ==========================================================================
-    # PASS 2: Analyze compatibility and generate models
+    # PASS 2: Generate models (placement driven by config)
     # ==========================================================================
     print(f"\n{'='*60}")
-    print("PASS 2: Analyzing compatibility and generating models")
+    print("PASS 2: Generating models")
     print(f"{'='*60}")
 
     common_blocks_dir = output_dir / family_code
@@ -154,33 +170,28 @@ def main():
 
     for block_name in sorted(all_blocks.keys()):
         block_families = all_blocks[block_name]
-
+        block_cfg = blocks_config.get(block_name, {})
         families_present = set(block_families.keys())
 
-        # Check if block is identical across all subfamilies that have it
-        hashes = {block_families[f][0]['hash'] for f in families_present}
+        if block_cfg.get('variants'):
+            # Config declares variants -> subfamily-specific placement
+            for fam_name in families:
+                if fam_name in families_present:
+                    family_specific_count += 1
+                    family_dir = output_dir / family_code / fam_name
+                    family_dir.mkdir(parents=True, exist_ok=True)
 
-        if len(hashes) == 1:
-            # Block is identical everywhere it appears -> common dir
+                    resolved = _resolve_block_config(block_cfg, fam_name)
+                    block_data = _select_subfamily_data(
+                        block_families[fam_name], resolved)
+                    svd.dumpModel(block_data, family_dir / block_name)
+        else:
+            # No variants -> shared placement in base dir
             common_count += 1
             block_data = _select_block_data(
-                block_families, families, families_present, blocks_config, block_name)
-            block_file = common_blocks_dir / block_name
-            svd.dumpModel(block_data, block_file)
+                block_families, families, families_present, block_cfg)
+            svd.dumpModel(block_data, common_blocks_dir / block_name)
             print(f"  + {block_name:20} -> {family_code} (shared)")
-            continue
-
-        # Block differs between subfamilies -> subfamily-specific
-        for fam_name in families:
-            if fam_name in families_present:
-                family_specific_count += 1
-                family_dir = output_dir / family_code / fam_name
-                family_dir.mkdir(parents=True, exist_ok=True)
-
-                block_data = _select_subfamily_data(
-                    block_families[fam_name], blocks_config, block_name)
-                block_file = family_dir / block_name
-                svd.dumpModel(block_data, block_file)
 
     # ==========================================================================
     # Summary

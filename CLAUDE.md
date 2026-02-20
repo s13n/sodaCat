@@ -67,7 +67,7 @@ models/ST/<Family>/
     └── ...
 ```
 
-Family generators use structural hashing (SHA-256 of register names, offsets, field layouts) to automatically determine which blocks are common vs. subfamily-specific.
+Model placement is config-driven: blocks without `variants` go in the base directory (shared across all subfamilies); blocks with `variants` go in subfamily subdirectories.
 
 ### CMake integration
 
@@ -84,10 +84,12 @@ The `generate_header()` macro in `sodaCat.cmake` wires YAML → C++ generation a
 A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. Per-family configuration lives in YAML files under `extractors/families/<CODE>.yaml` with these top-level keys:
 
 - `families`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
-- `blocks`: block_type → `{from, instances, interrupts, params}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, and optional parameter declarations
+- `blocks`: block_type → `{from, instances, interrupts, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, optional parameter declarations, and optional per-subfamily overrides
 - `chip_params` (optional): per-chip parameter overrides for values declared in block `params`
 
-Two-pass processing: Pass 1 collects and hashes all blocks; Pass 2 compares hashes across subfamilies to separate common from subfamily-specific blocks.
+Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: blocks **without** `variants` are written to the family base directory (shared); blocks **with** `variants` are written to each subfamily subdirectory.
+
+Two-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement.
 
 **Usage:** `python3 extractors/generate_stm32_models.py <family_code> <zip_path> <output_dir>`
 
