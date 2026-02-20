@@ -25,20 +25,25 @@ Examples: `STM32H757.py`, `RP2040.py`, `LPC8.py`, `SAMV71.py`.
 ## Family extractors
 
 For chip families where the same peripheral block appears across many variants,
-a family extractor processes all SVD files in a zip archive at once. It hashes
-the register structure of each peripheral block and compares them across
-subfamily groupings to determine which blocks are identical and which differ.
-The output is organized into a three-tier directory structure:
+a family extractor processes all SVD files in a zip archive at once. The output
+is organized into a three-tier directory structure:
 
-- The family directory itself for blocks that are identical across all subfamilies.
-- A `subfamily/` directory for each subfamily, containing blocks that
-  differ from the common set or are absent in other subfamilies.
+- The family directory itself for blocks that are identical across all
+  subfamilies (or differ only in parameters).
+- A `subfamily/` directory for each subfamily, containing blocks whose
+  register-level structure differs between subfamilies in ways that
+  cannot be captured by parameters alone.
 
 This approach avoids redundant model files and makes cross-variant differences
 immediately visible in the directory layout.
 
-Examples: `generate_stm32h7_models.py`, `generate_stm32h5_models.py`,
-`generate_stm32n6_models.py`.
+All 17 STM32 families are handled by a single unified script,
+`generate_stm32_models.py`. Per-family configuration lives in YAML files under
+`families/<CODE>.yaml` (e.g. `families/H7.yaml`, `families/F4.yaml`). Each
+config file declares subfamily-to-chip mappings, block-to-instance mappings,
+interrupt name mappings, parameter declarations, and optional per-subfamily
+variant overrides. Subfamilies are aligned with ST reference manual boundaries
+so each subfamily corresponds to exactly one RM.
 
 ## Transformation configuration
 
