@@ -257,16 +257,46 @@ def printInterrupts(interrupts:dict):
             s = (s + ", " + src) if s else src
         print("{:3}: {}".format(i, s))
 
-def processChip(svd_root, chip_name, name_map):
-    """Process a single chip SVD and extract functional blocks."""
+def _applyInterruptMapping(interrupts, interrupt_map):
+    """Apply data-driven interrupt name mapping from blocks config.
+
+    interrupt_map maps raw SVD interrupt names to canonical block-level names.
+    Interrupts not in the map are dropped (this handles filtering of
+    shared/misattributed vectors).
+    """
+    if not interrupts or not interrupt_map:
+        return []
+
+    mapped = []
+    for intr in interrupts:
+        canonical = interrupt_map.get(intr['name'])
+        if canonical is not None:
+            new_intr = {'name': canonical}
+            if 'description' in intr:
+                new_intr['description'] = intr['description']
+            mapped.append(new_intr)
+    return mapped
+
+def processChip(svd_root, chip_name, blocks_config):
+    """Process a single chip SVD and extract functional blocks.
+
+    blocks_config is a dict keyed by block type:
+      { 'GPIO': { 'instances': [...], 'interrupts': {...}, 'from': 'chip.inst' }, ... }
+    """
     try:
         chip = collateDevice(svd_root)
         blocks = {}
         chip_peripheral_refs = {}
 
+        # Build instance -> block_type mapping from blocks config
+        instance_to_block = {}
+        for block_type, block_cfg in blocks_config.items():
+            for inst in block_cfg.get('instances', []):
+                instance_to_block[inst] = block_type
+
         for periph in chip['peripherals']:
             periph_name = periph['name']
-            block_type = name_map.get(periph_name, periph_name)
+            block_type = instance_to_block.get(periph_name)
 
             if block_type is None:
                 continue
@@ -281,8 +311,21 @@ def processChip(svd_root, chip_name, name_map):
                 block_data = periph.copy()
                 block_data.pop('baseAddress', None)
                 block_data['name'] = block_type
-                for intr in block_data.get('interrupts', []):
-                    intr.pop('value', None)
+
+                # Apply interrupt mapping from blocks config
+                block_cfg = blocks_config[block_type]
+                interrupt_map = block_cfg.get('interrupts')
+                if interrupt_map:
+                    intrs = _applyInterruptMapping(
+                        block_data.get('interrupts', []), interrupt_map)
+                    if intrs:
+                        block_data['interrupts'] = intrs
+                    else:
+                        block_data.pop('interrupts', None)
+                else:
+                    # No interrupt mapping configured — remove raw interrupts
+                    block_data.pop('interrupts', None)
+
                 blocks[block_type] = block_data
 
         return blocks, chip_peripheral_refs, chip
@@ -327,6 +370,7 @@ def dumpModel(model:dict, filename:Path, comment:str=None):
         yaml = YAML()
         yaml.default_flow_style = False
         yaml.preserve_quotes = True
+        yaml.width = 4096
         yaml.indent(mapping=2, sequence=4, offset=2)
         yaml.dump(model, f)
     print(f"  Generated: {output_path.relative_to(output_path.parent.parent)}")
@@ -348,6 +392,7 @@ def dumpDevice(device:dict, filename:Path, header:str):
     if header:
         file.write(header)
     yaml = YAML()
+    yaml.width = 4096
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.dump(device, file)
     file.close()
