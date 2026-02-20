@@ -81,7 +81,13 @@ The `generate_header()` macro in `sodaCat.cmake` wires YAML → C++ generation a
 
 ### Family generator
 
-A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. Per-family configuration (subfamily-to-chip mapping and SVD peripheral name map) lives in YAML files under `extractors/families/<CODE>.yaml`. Two-pass processing: Pass 1 collects and hashes all blocks; Pass 2 compares hashes across subfamilies to separate common from subfamily-specific blocks.
+A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. Per-family configuration lives in YAML files under `extractors/families/<CODE>.yaml` with these top-level keys:
+
+- `families`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
+- `blocks`: block_type → `{from, instances, interrupts, params}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, and optional parameter declarations
+- `chip_params` (optional): per-chip parameter overrides for values declared in block `params`
+
+Two-pass processing: Pass 1 collects and hashes all blocks; Pass 2 compares hashes across subfamilies to separate common from subfamily-specific blocks.
 
 **Usage:** `python3 extractors/generate_stm32_models.py <family_code> <zip_path> <output_dir>`
 

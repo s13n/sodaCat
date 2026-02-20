@@ -226,7 +226,7 @@ registers:
       - name: PNB
         description: "Page number selection\nThese bits select the page to erase:\n...\nNote: Values corresponding to addresses outside the Main memory are not allowed. See Table 6 and Table 7."
         bitOffset: 3
-        bitWidth: 4
+        bitWidth: 6
         access: read-write
         enumeratedValues:
           - name: B_0x00
@@ -235,6 +235,9 @@ registers:
           - name: B_0x01
             description: page 1
             value: 1
+          - name: B_0x3F
+            description: page 63
+            value: 63
       - name: STRT
         description: "Start erase operation\nThis bit triggers an erase operation when set.\nThis bit is possible to set only by software and to clear only by hardware. The hardware clears it when one of BSY1 and BSY2 flags in the FLASH_SR register transits to zero."
         bitOffset: 16
@@ -354,7 +357,7 @@ registers:
             description: Configurable brown out reset enabled, values of BORR_LEV and BORF_LEV taken into account
             value: 1
       - name: BORR_LEV
-        description: "BOR threshold at falling VDD supply\nFalling VDD crossings this threshold activates the reset signal."
+        description: "BOR threshold at rising V<sub>DD</sub> supply\nRising V<sub>DD</sub> crossings this threshold releases the reset signal."
         bitOffset: 9
         bitWidth: 2
         access: read-write
@@ -372,7 +375,7 @@ registers:
             description: BOR rising level 4 with threshold around 2.9 V
             value: 3
       - name: BORF_LEV
-        description: "BOR threshold at falling VDD supply\nFalling VDD crossings this threshold activates the reset signal."
+        description: "BOR threshold at falling V<sub>DD</sub> supply\nFalling V<sub>DD</sub> crossings this threshold activates the reset signal."
         bitOffset: 11
         bitWidth: 2
         access: read-write
@@ -389,17 +392,17 @@ registers:
           - name: B_0x3
             description: BOR falling level 4 with threshold around 2.8 V
             value: 3
-      - name: NRST_STOP
+      - name: nRST_STOP
         description: None
         bitOffset: 13
         bitWidth: 1
         access: read-write
-      - name: NRST_STDBY
+      - name: nRST_STDBY
         description: None
         bitOffset: 14
         bitWidth: 1
         access: read-write
-      - name: NRST_SHDW
+      - name: nRST_SHDW
         description: None
         bitOffset: 15
         bitWidth: 1
@@ -474,7 +477,7 @@ registers:
           - name: B_0x1
             description: Enable
             value: 1
-      - name: NBOOT_SEL
+      - name: nBOOT_SEL
         description: "BOOT0 signal source selection\nThis option bit defines the source of the BOOT0 signal."
         bitOffset: 24
         bitWidth: 1
@@ -486,12 +489,12 @@ registers:
           - name: B_0x1
             description: nBOOT0 option bit
             value: 1
-      - name: NBOOT1
+      - name: nBOOT1
         description: "Boot configuration\nTogether with the BOOT0 pin or option bit nBOOT0 (depending on nBOOT_SEL option bit configuration), this bit selects boot mode from the Main flash memory, SRAM or the System memory. Refer to Section 3: Boot configuration."
         bitOffset: 25
         bitWidth: 1
         access: read-write
-      - name: NBOOT0
+      - name: nBOOT0
         description: nBOOT0 option bit
         bitOffset: 26
         bitWidth: 1
@@ -542,7 +545,7 @@ registers:
       - name: PCROP1A_STRT
         description: "PCROP1A area start offset\nContains the offset of the first subpage of the PCROP1A area.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 0
-        bitWidth: 6
+        bitWidth: 8
         access: read-write
   - name: FLASH_PCROP1AER
     displayName: FLASH_PCROP1AER
@@ -556,7 +559,7 @@ registers:
       - name: PCROP1A_END
         description: "PCROP1A area end offset\nContains the offset of the last subpage of the PCROP1A area.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 0
-        bitWidth: 6
+        bitWidth: 8
         access: read-write
       - name: PCROP_RDP
         description: "PCROP area erase upon RDP level regression\nThis bit determines whether the PCROP area (and the totality of the PCROP area boundary pages) is erased by the mass erase triggered by the RDP level regression from Level 1 to Level 0:\nThe software can only set this bit. It is automatically reset upon mass erase following the RDP regression from Level 1 to Level 0."
@@ -582,12 +585,12 @@ registers:
       - name: WRP1A_STRT
         description: "WRP area A start offset\nThis bitfield contains the offset of the first page of the WRP area A.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 0
-        bitWidth: 4
+        bitWidth: 6
         access: read-write
       - name: WRP1A_END
         description: "WRP area A end offset\nThis bitfield contains the offset of the last page of the WRP area A.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 16
-        bitWidth: 4
+        bitWidth: 6
         access: read-write
   - name: FLASH_WRP1BR
     displayName: FLASH_WRP1BR
@@ -601,12 +604,12 @@ registers:
       - name: WRP1B_STRT
         description: "WRP area B start offset\nThis bitfield contains the offset of the first page of the WRP area B.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 0
-        bitWidth: 4
+        bitWidth: 6
         access: read-write
       - name: WRP1B_END
         description: "WRP area B end offset\nThis bitfield contains the offset of the last page of the WRP area B.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 16
-        bitWidth: 4
+        bitWidth: 6
         access: read-write
   - name: FLASH_PCROP1BSR
     displayName: FLASH_PCROP1BSR
@@ -620,7 +623,7 @@ registers:
       - name: PCROP1B_STRT
         description: "PCROP1B area start offset\nContains the offset of the first subpage of the PCROP1B area.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 0
-        bitWidth: 6
+        bitWidth: 8
         access: read-write
   - name: FLASH_PCROP1BER
     displayName: FLASH_PCROP1BER
@@ -634,7 +637,7 @@ registers:
       - name: PCROP1B_END
         description: "PCROP1B area end offset\nContains the offset of the last subpage of the PCROP1B area.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 0
-        bitWidth: 6
+        bitWidth: 8
         access: read-write
   - name: FLASH_SECR
     displayName: FLASH_SECR
@@ -648,7 +651,7 @@ registers:
       - name: SEC_SIZE
         description: "Securable memory area size\nContains the number of securable flash memory pages.\nNote: The number of effective bits depends on the size of the flash memory in the device."
         bitOffset: 0
-        bitWidth: 5
+        bitWidth: 6
         access: read-write
       - name: BOOT_LOCK
         description: "used to force boot from user area\nIf the bit is set in association with RDP level 1, the debug capabilities are disabled, except in the case of a bad OBL (mismatch)."
