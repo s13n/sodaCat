@@ -200,12 +200,11 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
     if not registers:
         return
 
-    # Build candidate prefixes, longest first
+    # Build candidate prefixes (with '_' separator), longest first
     base = re.sub(r'\d+$', '', instance_name)  # e.g., ADC1 -> ADC
     candidates = set()
     for name in (instance_name, base, block_type):
         candidates.add(name + '_')
-        candidates.add(name)
     # Sort longest-first so we prefer the most specific match
     candidates = sorted(candidates, key=len, reverse=True)
 
@@ -213,12 +212,7 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
         rname = reg.get('name', '')
         for prefix in candidates:
             if rname.startswith(prefix):
-                suffix = rname[len(prefix):]
-                # If prefix doesn't end with '_', require non-alpha after it
-                # (avoid stripping "ADDR" when block type is "ADC")
-                if not prefix.endswith('_') and suffix and suffix[0].isalpha():
-                    continue
-                reg['name'] = suffix
+                reg['name'] = rname[len(prefix):]
                 dn = reg.get('displayName', '')
                 if dn.startswith(prefix):
                     reg['displayName'] = dn[len(prefix):]
