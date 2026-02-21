@@ -258,28 +258,30 @@ def main():
         block_families = all_blocks[block_name]
         block_cfg = blocks_config.get(block_name, {})
         families_present = set(block_families.keys())
+        variants = block_cfg.get('variants') or {}
 
-        if block_cfg.get('variants'):
-            # Config declares variants -> subfamily-specific placement
-            for fam_name in families:
-                if fam_name in families_present:
-                    family_specific_count += 1
-                    family_dir = output_dir / family_code / fam_name
-                    family_dir.mkdir(parents=True, exist_ok=True)
+        # Variant subfamilies -> subfamily-specific placement
+        for fam_name in families:
+            if fam_name in families_present and fam_name in variants:
+                family_specific_count += 1
+                family_dir = output_dir / family_code / fam_name
+                family_dir.mkdir(parents=True, exist_ok=True)
 
-                    resolved = _resolve_block_config(block_cfg, fam_name)
-                    block_data = _select_subfamily_data(
-                        block_families[fam_name], resolved)
-                    transforms = resolved.get('transforms')
-                    if transforms:
-                        block_data = copy.deepcopy(block_data)
-                        _apply_transforms(block_data, transforms)
-                    svd.dumpModel(block_data, family_dir / block_name)
-        else:
-            # No variants -> shared placement in base dir
+                resolved = _resolve_block_config(block_cfg, fam_name)
+                block_data = _select_subfamily_data(
+                    block_families[fam_name], resolved)
+                transforms = resolved.get('transforms')
+                if transforms:
+                    block_data = copy.deepcopy(block_data)
+                    _apply_transforms(block_data, transforms)
+                svd.dumpModel(block_data, family_dir / block_name)
+
+        # Non-variant subfamilies -> shared placement in base dir
+        default_present = {f for f in families_present if f not in variants}
+        if default_present:
             common_count += 1
             block_data = _select_block_data(
-                block_families, families, families_present, block_cfg)
+                block_families, families, default_present, block_cfg)
             transforms = block_cfg.get('transforms')
             if transforms:
                 block_data = copy.deepcopy(block_data)

@@ -34,9 +34,47 @@ families:
     - STM32H7B3
 blocks:
   ADC:
+    from: STM32H743.ADC1
     instances: [ADC1, ADC2, ADC3]
     interrupts:
       ADC1_2: INTR
+    transforms:
+      - type: renameRegisters
+        pattern: '^LHTR1$'
+        replacement: 'HTR1'
+      - type: renameFields
+        register: HTR1
+        pattern: '^LHTR1$'
+        replacement: 'HTR1'
+      - type: patchRegisters
+        registers:
+          - name: CR
+            resetValue: 536870912
+          - name: CFGR
+            resetValue: 2147483648
+          - name: HTR1
+            description: ADC watchdog higher threshold register 1
+      - type: patchFields
+        register: HTR1
+        fields:
+          - name: HTR1
+            description: Analog watchdog 1 higher threshold
+      - type: patchFields
+        register: CR
+        fields:
+          - name: BOOST
+            description: "Boost mode control (STM32H742/43/45/47/50/53/55/57 Rev Y implements only bit 0)"
+            bitWidth: 2
+      - type: patchFields
+        register: DR
+        fields:
+          - name: RDATA
+            bitWidth: 32
+      - type: patchFields
+        register: AWD3CR
+        fields:
+          - name: AWD3CH
+            bitOffset: 0
     variants:
       H73x:
         from: STM32H723.ADC1
@@ -44,72 +82,6 @@ blocks:
           - type: renameRegisters
             pattern: '^ADC_'
             replacement: ''
-      H742_H753:
-        from: STM32H743.ADC1
-        transforms:
-          - type: renameRegisters
-            pattern: '^LHTR1$'
-            replacement: 'HTR1'
-          - type: renameFields
-            register: HTR1
-            pattern: '^LHTR1$'
-            replacement: 'HTR1'
-          - type: patchRegisters
-            registers:
-              - name: CR
-                resetValue: 536870912
-              - name: CFGR
-                resetValue: 2147483648
-              - name: HTR1
-                description: ADC watchdog higher threshold register 1
-          - type: patchFields
-            register: HTR1
-            fields:
-              - name: HTR1
-                description: Analog watchdog 1 higher threshold
-          - type: patchFields
-            register: DR
-            fields:
-              - name: RDATA
-                bitWidth: 32
-          - type: patchFields
-            register: AWD3CR
-            fields:
-              - name: AWD3CH
-                bitOffset: 0
-      H745_H757:
-        from: STM32H745_CM4.ADC1
-        transforms:
-          - type: renameRegisters
-            pattern: '^LHTR1$'
-            replacement: 'HTR1'
-          - type: renameFields
-            register: HTR1
-            pattern: '^LHTR1$'
-            replacement: 'HTR1'
-          - type: patchRegisters
-            registers:
-              - name: CR
-                resetValue: 536870912
-              - name: CFGR
-                resetValue: 2147483648
-              - name: HTR1
-                description: ADC watchdog higher threshold register 1
-          - type: patchFields
-            register: HTR1
-            fields:
-              - name: HTR1
-                description: Analog watchdog 1 higher threshold
-          - type: patchFields
-            register: DR
-            fields:
-              - name: RDATA
-                bitWidth: 32
-          - type: patchFields
-            register: AWD3CR
-            fields:
-              - name: AWD3CH
-                bitOffset: 0
       H7A3_B:
         from: STM32H7A3.ADC1
         transforms:
@@ -154,14 +126,11 @@ blocks:
               - name: AWD3CH
                 bitOffset: 0
   ADC_Common:
+    from: STM32H743.ADC12_Common
     instances: [ADC12_Common, ADC3_Common]
     variants:
       H73x:
         from: STM32H723.ADC12_Common
-      H742_H753:
-        from: STM32H743.ADC12_Common
-      H745_H757:
-        from: STM32H745_CM4.ADC12_Common
       H7A3_B:
         from: STM32H7A3.ADC12_Common
   ART:
