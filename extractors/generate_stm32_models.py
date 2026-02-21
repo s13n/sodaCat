@@ -100,6 +100,66 @@ def _select_subfamily_data(entries, block_cfg):
     return entries[0]['data']
 
 
+def _patch_fields(registers, reg_name, field_patches):
+    """Patch fields in a named register.
+
+    For each entry in field_patches:
+      - name + properties, field exists   -> merge properties into existing field
+      - name + properties, field absent   -> append new field
+      - name only, field exists           -> remove field
+      - name only, field absent           -> warning (no-op)
+    """
+    reg = next((r for r in registers if r.get('name') == reg_name), None)
+    if reg is None:
+        print(f"  WARNING: patchFields: register '{reg_name}' not found")
+        return
+
+    fields = reg.get('fields')
+    if fields is None:
+        fields = []
+        reg['fields'] = fields
+
+    for patch in field_patches:
+        name = patch['name']
+        props = {k: v for k, v in patch.items() if k != 'name'}
+        existing = next((f for f in fields if f.get('name') == name), None)
+
+        if props:
+            if existing:
+                existing.update(props)
+            else:
+                fields.append(dict(patch))
+        else:
+            if existing:
+                fields.remove(existing)
+            else:
+                print(f"  WARNING: patchFields: field '{name}' not found in '{reg_name}'")
+
+
+def _patch_registers(registers, reg_patches):
+    """Patch register-level properties. Same semantics as _patch_fields:
+
+      - name + properties, register exists  -> merge properties
+      - name only, register exists          -> remove register
+      - register absent                     -> warning
+    """
+    for patch in reg_patches:
+        name = patch['name']
+        props = {k: v for k, v in patch.items() if k != 'name'}
+        existing = next((r for r in registers if r.get('name') == name), None)
+
+        if props:
+            if existing:
+                existing.update(props)
+            else:
+                print(f"  WARNING: patchRegisters: register '{name}' not found")
+        else:
+            if existing:
+                registers.remove(existing)
+            else:
+                print(f"  WARNING: patchRegisters: register '{name}' not found")
+
+
 def _apply_transforms(block_data, transforms):
     """Apply a list of transforms to extracted block data (in-place)."""
     for t in transforms:
@@ -107,6 +167,17 @@ def _apply_transforms(block_data, transforms):
         if typ == 'renameRegisters':
             renameEntries(block_data.get('registers', []), 'name', t['pattern'], t['replacement'])
             renameEntries(block_data.get('registers', []), 'displayName', t['pattern'], t['replacement'])
+        elif typ == 'renameFields':
+            reg = next((r for r in block_data.get('registers', [])
+                        if r.get('name') == t['register']), None)
+            if reg and reg.get('fields'):
+                renameEntries(reg['fields'], 'name', t['pattern'], t['replacement'])
+            elif reg is None:
+                print(f"  WARNING: renameFields: register '{t['register']}' not found")
+        elif typ == 'patchFields':
+            _patch_fields(block_data.get('registers', []), t['register'], t['fields'])
+        elif typ == 'patchRegisters':
+            _patch_registers(block_data.get('registers', []), t['registers'])
         else:
             print(f"  WARNING: unknown transform type '{typ}'")
 
