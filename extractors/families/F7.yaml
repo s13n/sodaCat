@@ -89,16 +89,20 @@ blocks:
     from: STM32F722.DAC
     instances: [DAC]
   DBGMCU:
+    from: STM32F745.DBG
     instances: [DBG, DBGMCU]
     interrupts:
       FPU: INTR
-    variants:
-      F72x_F73x:
-        from: STM32F722.DBG
-      F74x_F75x:
-        from: STM32F745.DBG
-      F76x_F77x:
-        from: STM32F767.DBG
+    transforms:
+      - {type: renameFields, register: APB1_FZ, pattern: '^DBG_J2C', replacement: DBG_I2C}
+      - {type: renameFields, register: APB1_FZ, pattern: '^DBG_IWDEG_STOP$', replacement: DBG_IWDG_STOP}
+      - {type: renameFields, register: APB1_FZ, pattern: '^DBG_I2C3SMBUS', replacement: DBG_I2C3_SMBUS}
+      - type: patchFields
+        register: APB1_FZ
+        fields:
+          - {name: DBG_LPTIM1_STOP, bitOffset: 9, bitWidth: 1}
+          - {name: DBG_CAN3_STOP, bitOffset: 13, bitWidth: 1}
+          - {name: DBG_I2C4_SMBUS_TIMEOUT, bitOffset: 24, bitWidth: 1}
   DCMI:
     from: STM32F745.DCMI
     instances: [DCMI]
