@@ -178,6 +178,12 @@ def _apply_transforms(block_data, transforms):
             _patch_fields(block_data.get('registers', []), t['register'], t['fields'])
         elif typ == 'patchRegisters':
             _patch_registers(block_data.get('registers', []), t['registers'])
+        elif typ == 'patchAddressBlock':
+            for ab in block_data.get('addressBlocks', []):
+                for k, v in t.items():
+                    if k != 'type':
+                        ab[k] = v
+                break  # patch first (typically only) address block
         else:
             print(f"  WARNING: unknown transform type '{typ}'")
 

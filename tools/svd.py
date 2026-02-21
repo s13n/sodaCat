@@ -2,6 +2,7 @@
 # (C) 2024 Stefan Heinzmann
 
 import xmltodict
+from collections import defaultdict
 from ruamel.yaml import YAML
 import re
 from pathlib import Path
@@ -290,9 +291,16 @@ def processChip(svd_root, chip_name, blocks_config):
 
         # Build instance -> block_type mapping from blocks config
         instance_to_block = {}
+        preferred_instance = {}
         for block_type, block_cfg in blocks_config.items():
             for inst in block_cfg.get('instances', []):
                 instance_to_block[inst] = block_type
+            from_spec = block_cfg.get('from', '')
+            if '.' in from_spec:
+                preferred_instance[block_type] = from_spec.split('.', 1)[1]
+
+        # Collect raw interrupts from all instances per block type
+        block_raw_interrupts = defaultdict(list)
 
         for periph in chip['peripherals']:
             periph_name = periph['name']
@@ -307,26 +315,28 @@ def processChip(svd_root, chip_name, blocks_config):
                 'interrupts': [i['value'] for i in (periph.get('interrupts') or [])]
             }
 
-            if block_type not in blocks:
+            for intr in (periph.get('interrupts') or []):
+                block_raw_interrupts[block_type].append(intr)
+
+            # Select block template: prefer the named instance if it has registers
+            is_preferred = periph_name == preferred_instance.get(block_type)
+            has_registers = not periph.get('@derivedFrom')
+            if block_type not in blocks or (is_preferred and has_registers):
                 block_data = periph.copy()
                 block_data.pop('baseAddress', None)
+                block_data.pop('interrupts', None)
                 block_data['name'] = block_type
-
-                # Apply interrupt mapping from blocks config
-                block_cfg = blocks_config[block_type]
-                interrupt_map = block_cfg.get('interrupts')
-                if interrupt_map:
-                    intrs = _applyInterruptMapping(
-                        block_data.get('interrupts', []), interrupt_map)
-                    if intrs:
-                        block_data['interrupts'] = intrs
-                    else:
-                        block_data.pop('interrupts', None)
-                else:
-                    # No interrupt mapping configured — remove raw interrupts
-                    block_data.pop('interrupts', None)
-
                 blocks[block_type] = block_data
+
+        # Apply interrupt mapping using collected interrupts from all instances
+        for block_type, block_data in blocks.items():
+            block_cfg = blocks_config[block_type]
+            interrupt_map = block_cfg.get('interrupts')
+            if interrupt_map:
+                intrs = _applyInterruptMapping(
+                    block_raw_interrupts.get(block_type, []), interrupt_map)
+                if intrs:
+                    block_data['interrupts'] = intrs
 
         return blocks, chip_peripheral_refs, chip
     except Exception as e:

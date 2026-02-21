@@ -68,7 +68,7 @@ models/ST/<Family>/
     └── ...
 ```
 
-Model placement is config-driven: blocks without `variants` go in the base directory (shared across all subfamilies); blocks with `variants` go in subfamily subdirectories.
+Model placement is config-driven via the `variants` key — see "Family generator" below for the full partial-variants rule.
 
 ### CMake integration
 
@@ -94,10 +94,10 @@ They use `string.Template` for code emission and produce `HwReg<T>`-based regist
 A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. Per-family configuration lives in YAML files under `extractors/families/<CODE>.yaml` with these top-level keys:
 
 - `families`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
-- `blocks`: block_type → `{from, instances, interrupts, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, optional parameter declarations, and optional per-subfamily overrides
+- `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides
 - `chip_params` (optional): per-chip parameter overrides for values declared in block `params`
 
-Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: blocks **without** `variants` are written to the family base directory (shared); blocks **with** `variants` are written to each subfamily subdirectory.
+Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: blocks **without** `variants` are written to the family base directory (shared); subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** in `variants` share the base-directory model using the top-level config. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
 
 Two-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement.
 
@@ -105,7 +105,14 @@ Two-pass processing: Pass 1 collects blocks from all chips (resolving per-subfam
 
 ### Transformation framework
 
-`tools/generic_transform.py` provides a `TransformationEngine` with built-in transforms: `renameFields`, `renameRegisters`, `renameInterrupts`, `createArrays`, `setParameters`, `setHeaderStructName`, `addFields`. These are config-driven via YAML (see `extractors/stm32h7-transforms.yaml` for format). **Note:** the engine is not yet wired into `generate_stm32_models.py` — the plan is to add a per-block `transforms` key in the family YAML config.
+Per-block `transforms` lists in the family YAML config fix SVD bugs during extraction. The generator (`generate_stm32_models.py`) applies these in-place after data selection, before writing models. Supported transform types:
+
+- `renameRegisters` — regex rename on register `name` and `displayName`: `{type, pattern, replacement}`
+- `renameFields` — regex rename on field `name` within a specific register: `{type, register, pattern, replacement}`
+- `patchFields` — add/modify/remove fields in a register: `{type, register, fields: [{name, ...props}]}`. Name-only entries remove the field; name+props entries add or merge.
+- `patchRegisters` — add/modify/remove register-level properties: `{type, registers: [{name, ...props}]}`. Same add/merge/remove semantics.
+
+Additionally, `tools/generic_transform.py` provides a standalone `TransformationEngine` with broader transforms (`createArrays`, `setParameters`, `setHeaderStructName`, `addFields`) driven via separate YAML config files (see `extractors/stm32h7-transforms.yaml`). This engine is not currently used by the family generator.
 
 ## CI
 
