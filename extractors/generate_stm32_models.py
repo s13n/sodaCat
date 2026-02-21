@@ -51,6 +51,8 @@ def load_family_config(family_code):
             entry['interrupts'] = dict(block_cfg['interrupts'])
         if block_cfg.get('transforms') is not None:
             entry['transforms'] = [dict(t) for t in block_cfg['transforms']]
+        if block_cfg.get('params') is not None:
+            entry['params'] = {k: dict(v) for k, v in block_cfg['params'].items()}
         if block_cfg.get('variants') is not None:
             entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
         blocks_config[block_type] = entry
@@ -219,6 +221,20 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
                 break  # first matching prefix wins
 
 
+def _inject_params(block_data, params):
+    """Insert params declaration into block_data before 'registers' key."""
+    if not params:
+        return block_data
+    ordered = {}
+    for k, v in block_data.items():
+        if k == 'registers' and 'params' not in ordered:
+            ordered['params'] = dict(params)
+        ordered[k] = v
+    if 'params' not in ordered:
+        ordered['params'] = dict(params)
+    return ordered
+
+
 def main():
     if len(sys.argv) < 4:
         print("Usage: generate_stm32_models.py <family_code> <zip_path> <output_dir>")
@@ -318,6 +334,7 @@ def main():
                 if transforms:
                     block_data = copy.deepcopy(block_data)
                     _apply_transforms(block_data, transforms)
+                block_data = _inject_params(block_data, block_cfg.get('params'))
                 svd.dumpModel(block_data, family_dir / block_name)
 
         # Non-variant subfamilies -> shared placement in base dir
@@ -330,6 +347,7 @@ def main():
             if transforms:
                 block_data = copy.deepcopy(block_data)
                 _apply_transforms(block_data, transforms)
+            block_data = _inject_params(block_data, block_cfg.get('params'))
             svd.dumpModel(block_data, common_blocks_dir / block_name)
             print(f"  + {block_name:20} -> {family_code} (shared)")
 
