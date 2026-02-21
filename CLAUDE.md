@@ -29,7 +29,7 @@ cmake --build . --target rebuild-stm32h7-models
 ./test/soc-data-test
 ```
 
-**Python dependencies:** `pip install PyYAML` (or `pip install -r requirements-dev.txt`)
+**Python dependencies:** `pip install ruamel.yaml PyYAML` (or `pip install -r requirements-dev.txt`). The primary YAML library is `ruamel.yaml` (roundtrip-safe); `PyYAML` is used in generators for safe loading.
 
 **CMake requirement:** 3.28+, C++20 compiler, Python 3
 
@@ -47,13 +47,14 @@ cmake --build . --target rebuild-stm32h7-models
 
 ### Directory roles
 
-- `extractors/` — Python scripts that convert SVD → YAML. Per-chip scripts (e.g., `STM32H757.py`) and family-wide generators (e.g., `generate_stm32h7_models.py`).
+- `extractors/` — Python scripts that convert SVD → YAML. The unified `generate_stm32_models.py` handles all STM32 families; per-family config lives in `families/<CODE>.yaml`.
 - `generators/cxx/` — Python scripts that convert YAML → C++20 headers. Also contains `hwreg.hpp` (the HwReg template).
 - `tools/` — Shared libraries: `svd.py` (parser), `transform.py` (register/field transforms), `compare_peripherals.py` (similarity analysis).
 - `cmake/` — One `stm32XX-extraction.cmake` module per family, plus `sodaCat.cmake` (the `generate_header()` macro).
 - `models/` — Generated YAML organized as `models/<Vendor>/<Family>/`. The `ST/H7/H757/` directory contains manually maintained reference models.
 - `svd/` — Vendor SVD zip archives and `CMakeLists.txt` that wires up all extraction targets.
-- `schemas/` — YAML schemas for peripheral and clock-tree model validation.
+- `schemas/` — JSON Schema (Draft 7) for peripheral and clock-tree model validation.
+- `tasks/` — AI agent task descriptions for writing parsers and generators.
 
 ### Model directory organization (three-tier)
 
@@ -79,6 +80,15 @@ The unified `cmake/stm32-extraction.cmake` module provides:
 
 The `generate_header()` macro in `sodaCat.cmake` wires YAML → C++ generation as CMake custom commands with proper dependency tracking.
 
+### C++ generation
+
+`generators/cxx/generate_peripheral_header.py` and `generate_chip_header.py` are invoked as:
+```
+python3 generate_peripheral_header.py <model.yaml> <namespace> <model_name> <suffix>
+python3 generate_chip_header.py <chip_model.yaml> <namespace> <model_name> <suffix>
+```
+They use `string.Template` for code emission and produce `HwReg<T>`-based register wrappers with type-safe bitfield access. The `hwreg.hpp` template provides `.val()` (read as int), `.get()` (read as bitfield struct), and assignment for writes.
+
 ### Family generator
 
 A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. Per-family configuration lives in YAML files under `extractors/families/<CODE>.yaml` with these top-level keys:
@@ -93,9 +103,17 @@ Two-pass processing: Pass 1 collects blocks from all chips (resolving per-subfam
 
 **Usage:** `python3 extractors/generate_stm32_models.py <family_code> <zip_path> <output_dir>`
 
+### Transformation framework
+
+`tools/generic_transform.py` provides a `TransformationEngine` with built-in transforms: `renameFields`, `renameRegisters`, `renameInterrupts`, `createArrays`, `setParameters`, `setHeaderStructName`, `addFields`. These are config-driven via YAML (see `extractors/stm32h7-transforms.yaml` for format). **Note:** the engine is not yet wired into `generate_stm32_models.py` — the plan is to add a per-block `transforms` key in the family YAML config.
+
+## CI
+
+A GitHub Actions workflow validates clock-tree specs: `tools/validate_clock_specs.py` checks `spec/clock-tree/**/*.yaml` against `schemas/clock-tree.schema.yaml`. Triggered on changes to `schemas/`, `spec/clock-tree/`, or the validator script.
+
 ## Key conventions
 
-- YAML models use `ruamel.yaml` (not PyYAML) for roundtrip-safe output
+- YAML models use `ruamel.yaml` (not PyYAML) for roundtrip-safe output. Always set `yaml.width = 4096` (prevents non-deterministic line wrapping) and `yaml.indent(mapping=2, sequence=4, offset=2)`. Use `CommentedMap` from ruamel, not `OrderedDict` (avoids `!!omap` tags)
 - Peripheral block files are PascalCase (`ADC.yaml`, `BasicTimer.yaml`, `GpTimer.yaml`)
 - The `headerStructName` field in a model determines the C++ struct name; it maps instance names to generic block types
 - `svd.dumpModel()` writes block models; `svd.dumpDevice()` writes chip-level models
@@ -103,3 +121,5 @@ Two-pass processing: Pass 1 collects blocks from all chips (resolving per-subfam
 - The `test/CMakeLists.txt` references models via paths relative to `SODACAT_LOCAL_DIR` (defaults to `${CMAKE_SOURCE_DIR}/models`)
 - CMake extraction targets use stamp files (`<target>.stamp`) to avoid redundant re-extraction
 - Cache variables like `STM32XX_GENERATOR` persist in CMakeCache.txt — after moving files, a stale cache may need `cmake .. -DSTM32XX_GENERATOR=<new_path>` or a clean reconfigure
+- SVD zip naming: most are `stm32<family>-svd.zip`; exceptions use underscores: `stm32g4_svd.zip`, `stm32l1_svd.zip`, `stm32l4_svd.zip`, `stm32l4plus-svd.zip`, `stm32u5_svd.zip`
+- Interrupt mapping is data-driven via `interrupts` in family config — SVD interrupt names not listed are dropped (acts as filter)
