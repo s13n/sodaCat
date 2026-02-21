@@ -269,9 +269,11 @@ def _applyInterruptMapping(interrupts, interrupt_map):
         return []
 
     mapped = []
+    seen = set()
     for intr in interrupts:
         canonical = interrupt_map.get(intr['name'])
-        if canonical is not None:
+        if canonical is not None and canonical not in seen:
+            seen.add(canonical)
             new_intr = {'name': canonical}
             if 'description' in intr:
                 new_intr['description'] = intr['description']
