@@ -9,6 +9,7 @@ which provides the subfamily-to-chip mapping and the block definitions
 (source instances, interrupt mappings) for that family.
 """
 
+import copy
 import sys
 import os
 import tempfile
@@ -19,6 +20,7 @@ from ruamel.yaml import YAML
 # Add sodaCat tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
+from transform import renameEntries
 
 
 def load_family_config(family_code):
@@ -46,6 +48,8 @@ def load_family_config(family_code):
         }
         if block_cfg.get('interrupts') is not None:
             entry['interrupts'] = dict(block_cfg['interrupts'])
+        if block_cfg.get('transforms') is not None:
+            entry['transforms'] = [dict(t) for t in block_cfg['transforms']]
         if block_cfg.get('variants') is not None:
             entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
         blocks_config[block_type] = entry
@@ -94,6 +98,17 @@ def _select_subfamily_data(entries, block_cfg):
                 return entry['data']
 
     return entries[0]['data']
+
+
+def _apply_transforms(block_data, transforms):
+    """Apply a list of transforms to extracted block data (in-place)."""
+    for t in transforms:
+        typ = t['type']
+        if typ == 'renameRegisters':
+            renameEntries(block_data.get('registers', []), 'name', t['pattern'], t['replacement'])
+            renameEntries(block_data.get('registers', []), 'displayName', t['pattern'], t['replacement'])
+        else:
+            print(f"  WARNING: unknown transform type '{typ}'")
 
 
 def main():
@@ -184,12 +199,20 @@ def main():
                     resolved = _resolve_block_config(block_cfg, fam_name)
                     block_data = _select_subfamily_data(
                         block_families[fam_name], resolved)
+                    transforms = resolved.get('transforms')
+                    if transforms:
+                        block_data = copy.deepcopy(block_data)
+                        _apply_transforms(block_data, transforms)
                     svd.dumpModel(block_data, family_dir / block_name)
         else:
             # No variants -> shared placement in base dir
             common_count += 1
             block_data = _select_block_data(
                 block_families, families, families_present, block_cfg)
+            transforms = block_cfg.get('transforms')
+            if transforms:
+                block_data = copy.deepcopy(block_data)
+                _apply_transforms(block_data, transforms)
             svd.dumpModel(block_data, common_blocks_dir / block_name)
             print(f"  + {block_name:20} -> {family_code} (shared)")
 
