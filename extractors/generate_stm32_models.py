@@ -140,11 +140,12 @@ def _patch_fields(registers, reg_name, field_patches):
 
 
 def _patch_registers(registers, reg_patches):
-    """Patch register-level properties. Same semantics as _patch_fields:
+    """Patch register-level properties.
 
       - name + properties, register exists  -> merge properties
+      - name + properties, register absent  -> add new register
       - name only, register exists          -> remove register
-      - register absent                     -> warning
+      - name only, register absent          -> warning
     """
     for patch in reg_patches:
         name = patch['name']
@@ -155,7 +156,7 @@ def _patch_registers(registers, reg_patches):
             if existing:
                 existing.update(props)
             else:
-                print(f"  WARNING: patchRegisters: register '{name}' not found")
+                registers.append(dict(patch))
         else:
             if existing:
                 registers.remove(existing)

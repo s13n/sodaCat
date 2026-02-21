@@ -44,19 +44,38 @@ blocks:
     interrupts:
       AES: INTR
   AdvCtrlTimer:
+    from: STM32F722.TIM1
     instances: [TIM1, TIM8]
     interrupts:
       TIM1_BRK_TIM9: BRK
       TIM1_UP_TIM10: UP
       TIM1_TRG_COM_TIM11: TRG
       TIM1_CC: CC
-    variants:
-      F72x_F73x:
-        from: STM32F722.TIM1
-      F74x_F75x:
-        from: STM32F745.TIM1
-      F76x_F77x:
-        from: STM32F767.TIM1
+    transforms:
+      - type: patchRegisters
+        registers:
+          - name: AF1
+            displayName: AF1
+            description: alternate function option register 1
+            addressOffset: 96
+            size: 32
+            access: read-write
+            resetValue: 1
+            fields:
+              - {name: BKINE, description: BRK BKIN input enable, bitOffset: 0, bitWidth: 1}
+              - {name: BKDFBKE, description: "BRK DFSDM_BREAK[0] enable", bitOffset: 8, bitWidth: 1}
+              - {name: BKINP, description: BRK BKIN input polarity, bitOffset: 9, bitWidth: 1}
+          - name: AF2
+            displayName: AF2
+            description: alternate function option register 2
+            addressOffset: 100
+            size: 32
+            access: read-write
+            resetValue: 1
+            fields:
+              - {name: BK2INE, description: BRK2 BKIN input enable, bitOffset: 0, bitWidth: 1}
+              - {name: BK2DFBKE, description: BRK2 DFSDM_BREAK enable, bitOffset: 8, bitWidth: 1}
+              - {name: BK2INP, description: BRK2 BKIN2 input polarity, bitOffset: 9, bitWidth: 1}
   BasicTimer:
     from: STM32F745.TIM6
     instances: [TIM6, TIM7]
