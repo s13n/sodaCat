@@ -39,7 +39,7 @@ cmake --build . --target rebuild-stm32h7-models
 
 1. **SVD parsing** (`tools/svd.py`): `svd.parse()` reads XML, `svd.collateDevice()` normalizes into Python dicts with numeric values, collated arrays, and cleaned interrupts.
 
-2. **Transformation** (`tools/transform.py`, `tools/generic_transform.py`): Fixes SVD issues — strips instance-specific prefixes from field names, groups repetitive registers into arrays (`createClusterArray`), maps instance names to block types (`headerStructName`). Can be driven declaratively via YAML config files (e.g., `extractors/stm32h7-transforms.yaml`).
+2. **Transformation** (`tools/transform.py`, `tools/generic_transform.py`): Fixes SVD issues — strips instance-specific prefixes from field names, groups repetitive registers into arrays (`createClusterArray`), maps instance names to block types (`headerStructName`). Can be driven declaratively via YAML config files (e.g., `extractors/stm32h7-transforms.yaml`). Note: the family generator (`generate_stm32_models.py`) has its own auto-strip and inline transform system — see "Family generator" below.
 
 3. **Model output** (`svd.dumpModel`, `svd.dumpDevice`): Writes YAML using `ruamel.yaml` with `indent(mapping=2, sequence=4, offset=2)`.
 
@@ -103,14 +103,19 @@ Two-pass processing: Pass 1 collects blocks from all chips (resolving per-subfam
 
 **Usage:** `python3 extractors/generate_stm32_models.py <family_code> <zip_path> <output_dir>`
 
+### Register name prefix stripping
+
+SVD files often prefix register names with the instance name (e.g., `ADC_ISR`, `GPIOA_MODER`, `FLASH_ACR`). The generator auto-strips these in Pass 1 via `_strip_instance_prefix()`, which removes prefixes matching `instance_name_`, `base_name_` (digits stripped), or `block_type_` — always requiring a `_` separator. Cases the auto-strip can't handle (case mismatch, compound block names, numbered instances like `OPAMP1_`/`COMP2_`) are covered by explicit `renameRegisters` transforms in the family config.
+
 ### Transformation framework
 
-Per-block `transforms` lists in the family YAML config fix SVD bugs during extraction. The generator (`generate_stm32_models.py`) applies these in-place after data selection, before writing models. Supported transform types:
+Per-block `transforms` lists in the family YAML config fix SVD bugs and naming issues during extraction. The generator (`generate_stm32_models.py`) applies these in-place after auto-strip, before writing models. Supported transform types:
 
 - `renameRegisters` — regex rename on register `name` and `displayName`: `{type, pattern, replacement}`
 - `renameFields` — regex rename on field `name` within a specific register: `{type, register, pattern, replacement}`
 - `patchFields` — add/modify/remove fields in a register: `{type, register, fields: [{name, ...props}]}`. Name-only entries remove the field; name+props entries add or merge.
 - `patchRegisters` — add/modify/remove register-level properties: `{type, registers: [{name, ...props}]}`. Same add/merge/remove semantics.
+- `patchAddressBlock` — override addressBlock properties: `{type, size}` (and optionally other addressBlock fields).
 
 Additionally, `tools/generic_transform.py` provides a standalone `TransformationEngine` with broader transforms (`createArrays`, `setParameters`, `setHeaderStructName`, `addFields`) driven via separate YAML config files (see `extractors/stm32h7-transforms.yaml`). This engine is not currently used by the family generator.
 
