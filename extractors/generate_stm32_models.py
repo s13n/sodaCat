@@ -10,6 +10,7 @@ which provides the subfamily-to-chip mapping and the block definitions
 """
 
 import copy
+import re
 import sys
 import os
 import tempfile
@@ -188,6 +189,42 @@ def _apply_transforms(block_data, transforms):
             print(f"  WARNING: unknown transform type '{typ}'")
 
 
+def _strip_instance_prefix(block_data, instance_name, block_type):
+    """Auto-strip instance/block-type prefix from register names.
+
+    For each register, if its name starts with the instance name or
+    block type (optionally followed by '_'), strip that prefix.
+    Prefixes are tried longest-first so 'GPIOA_' is preferred over 'GPIO_'.
+    """
+    registers = block_data.get('registers', [])
+    if not registers:
+        return
+
+    # Build candidate prefixes, longest first
+    base = re.sub(r'\d+$', '', instance_name)  # e.g., ADC1 -> ADC
+    candidates = set()
+    for name in (instance_name, base, block_type):
+        candidates.add(name + '_')
+        candidates.add(name)
+    # Sort longest-first so we prefer the most specific match
+    candidates = sorted(candidates, key=len, reverse=True)
+
+    for reg in registers:
+        rname = reg.get('name', '')
+        for prefix in candidates:
+            if rname.startswith(prefix):
+                suffix = rname[len(prefix):]
+                # If prefix doesn't end with '_', require non-alpha after it
+                # (avoid stripping "ADDR" when block type is "ADC")
+                if not prefix.endswith('_') and suffix and suffix[0].isalpha():
+                    continue
+                reg['name'] = suffix
+                dn = reg.get('displayName', '')
+                if dn.startswith(prefix):
+                    reg['displayName'] = dn[len(prefix):]
+                break  # first matching prefix wins
+
+
 def main():
     if len(sys.argv) < 4:
         print("Usage: generate_stm32_models.py <family_code> <zip_path> <output_dir>")
@@ -235,6 +272,13 @@ def main():
                     try:
                         root = svd.parse(temp_svd)
                         blocks, _, _ = svd.processChip(root, chip_name, effective_blocks)
+
+                        # Auto-strip instance prefixes from register names
+                        for bn, bd in blocks.items():
+                            from_spec = effective_blocks.get(bn, {}).get('from', '')
+                            if '.' in from_spec:
+                                inst = from_spec.split('.', 1)[1]
+                                _strip_instance_prefix(bd, inst, bn)
 
                         for block_name, block_data in blocks.items():
                             all_blocks[block_name][family_name].append({

@@ -1,10 +1,10 @@
 name: GpTimer
-description: TIM2 address block description
-groupName: TIM2
+description: TIM15 address block description
+groupName: TIM15
 registers:
-  - name: TIM2_CR1
-    displayName: TIM2_CR1
-    description: TIM2 control register 1
+  - name: CR1
+    displayName: CR1
+    description: TIM15 control register 1
     addressOffset: 0
     size: 16
     access: read-write
@@ -42,10 +42,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Any of the following events generate an update interrupt or DMA request if enabled.
+            description: Any of the following events generate an update interrupt if enabled.
             value: 0
           - name: B_0x1
-            description: Only counter overflow/underflow generates an update interrupt or DMA request if enabled.
+            description: Only counter overflow/underflow generates an update interrupt if enabled
             value: 1
       - name: OPM
         description: One-pulse mode
@@ -59,47 +59,17 @@ registers:
           - name: B_0x1
             description: Counter stops counting at the next update event (clearing the bit CEN)
             value: 1
-      - name: DIR
-        description: Direction
-        bitOffset: 4
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Counter used as upcounter
-            value: 0
-          - name: B_0x1
-            description: Counter used as downcounter
-            value: 1
-      - name: CMS
-        description: Center-aligned mode selection
-        bitOffset: 5
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Edge-aligned mode.
-            value: 0
-          - name: B_0x1
-            description: Center-aligned mode 1.
-            value: 1
-          - name: B_0x2
-            description: Center-aligned mode 2.
-            value: 2
-          - name: B_0x3
-            description: Center-aligned mode 3.
-            value: 3
       - name: ARPE
-        description: Autoreload preload enable
+        description: Auto-reload preload enable
         bitOffset: 7
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: TIMx_ARR register is not buffered
+            description: TIM15_ARR register is not buffered
             value: 0
           - name: B_0x1
-            description: TIMx_ARR register is buffered
+            description: TIM15_ARR register is buffered
             value: 1
       - name: CKD
         description: Clock division
@@ -108,13 +78,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: tless thansub>DTSless than/sub> = tless thansub>tim_ker_ckless than/sub>
+            description: tless thansub>DTS less than/sub>= tless thansub>tim_ker_ckless than/sub>
             value: 0
           - name: B_0x1
-            description: tless thansub>DTSless than/sub> = 2 x tless thansub>tim_ker_ckless than/sub>
+            description: tless thansub>DTSless than/sub> = 2xtless thansub>tim_ker_ckless than/sub>
             value: 1
           - name: B_0x2
-            description: tless thansub>DTSless than/sub> = 4 x tless thansub>tim_ker_ckless than/sub>
+            description: tless thansub>DTSless than/sub> = 4xtless thansub>tim_ker_ckless than/sub>
             value: 2
       - name: UIFREMAP
         description: UIF status bit remapping
@@ -129,7 +99,7 @@ registers:
             description: Remapping enabled.
             value: 1
       - name: DITHEN
-        description: Dithering Enable
+        description: Dithering enable
         bitOffset: 12
         bitWidth: 1
         access: read-write
@@ -140,15 +110,39 @@ registers:
           - name: B_0x1
             description: Dithering enabled
             value: 1
-  - name: TIM2_CR2
-    displayName: TIM2_CR2
-    description: TIM2 control register 2
+  - name: CR2
+    displayName: CR2
+    description: TIM15 control register 2
     addressOffset: 4
     size: 32
     access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
+      - name: CCPC
+        description: Capture/compare preloaded control
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: CCxE, CCxNE and OCxM bits are not preloaded
+            value: 0
+          - name: B_0x1
+            description: CCxE, CCxNE and OCxM bits are preloaded, after having been written, they are updated only when a commutation event (COM) occurs (COMG bit set or rising edge detected on tim_trgi, depending on the CCUS bit).
+            value: 1
+      - name: CCUS
+        description: Capture/compare control update selection
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: When capture/compare control bits are preloaded (CCPC = 1), they are updated by setting the COMG bit only.
+            value: 0
+          - name: B_0x1
+            description: When capture/compare control bits are preloaded (CCPC = 1), they are updated by setting the COMG bit or when an rising edge occurs on tim_trgi.
+            value: 1
       - name: CCDS
         description: Capture/compare DMA selection
         bitOffset: 3
@@ -162,16 +156,16 @@ registers:
             description: CCx DMA requests sent when update event occurs
             value: 1
       - name: MMS
-        description: 'MMS[2:0]: Master mode selection'
+        description: Master mode selection
         bitOffset: 4
         bitWidth: 3
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Reset-the UG bit from the TIMx_EGR register is used as trigger output (tim_trgo).
+            description: Reset-the UG bit from the TIM15_EGR register is used as trigger output (tim_trgo).
             value: 0
           - name: B_0x1
-            description: Enable-the Counter enable signal, CNT_EN, is used as trigger output (tim_trgo).
+            description: Enable-the Counter Enable signal CNT_EN is used as trigger output (tim_trgo).
             value: 1
           - name: B_0x2
             description: Update-The update event is selected as trigger output (tim_trgo).
@@ -180,17 +174,11 @@ registers:
             description: Compare Pulse-The trigger output send a positive pulse when the CC1IF flag is to be set (even if it was already high), as soon as a capture or a compare match occurred (tim_trgo).
             value: 3
           - name: B_0x4
-            description: Compare-tim_oc1refc signal is used as trigger output (tim_trgo)
+            description: Compare-tim_oc1refc signal is used as trigger output (tim_trgo).
             value: 4
           - name: B_0x5
-            description: Compare-tim_oc2refc signal is used as trigger output (tim_trgo)
+            description: Compare-tim_oc2refc signal is used as trigger output (tim_trgo).
             value: 5
-          - name: B_0x6
-            description: Compare-tim_oc3refc signal is used as trigger output (tim_trgo)
-            value: 6
-          - name: B_0x7
-            description: Compare-tim_oc4refc signal is used as trigger output (tim_trgo)
-            value: 7
       - name: TI1S
         description: tim_ti1 selection
         bitOffset: 7
@@ -198,16 +186,47 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: The tim_ti1_in[15:0] multiplexer output is to tim_ti1 input
+            description: The tim_ti1_in[15:0] multiplexer output is connected to tim_ti1 input
             value: 0
           - name: B_0x1
-            description: The tim_ti1_in[15:0], tim_ti2_in[15:0] and tim_ti3_in[15:0] multiplexers outputs are xORed and connected to the tim_ti1 input.
+            description: The tim_ti1_in[15:0] and tim_ti2_in[15:0] multiplexers output are connected to the tim_ti1 input (xOR combination)
             value: 1
-      - name: MMS_1
-        description: MMS[3]
-        bitOffset: 25
+      - name: OIS1
+        description: Output Idle state 1 (tim_oc1 output)
+        bitOffset: 8
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_oc1 = 0 after a dead-time when MOE = 0
+            value: 0
+          - name: B_0x1
+            description: tim_oc1 = 1 after a dead-time when MOE = 0
+            value: 1
+      - name: OIS1N
+        description: Output Idle state 1 (tim_oc1n output)
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_oc1n = 0 after a dead-time when MOE = 0
+            value: 0
+          - name: B_0x1
+            description: tim_oc1n = 1 after a dead-time when MOE = 0
+            value: 1
+      - name: OIS2
+        description: Output idle state 2 (tim_oc2 output)
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_oc2 = 0 when MOE = 0
+            value: 0
+          - name: B_0x1
+            description: tim_oc2 = 1 when MOE = 0
+            value: 1
       - name: ADSYNC
         description: ADC synchronization
         bitOffset: 28
@@ -220,9 +239,9 @@ registers:
           - name: B_0x1
             description: The timer operation is synchronized with the ADC clock to provide jitter-free sampling point.
             value: 1
-  - name: TIM2_SMCR
-    displayName: TIM2_SMCR
-    description: TIM2 slave mode control register
+  - name: SMCR
+    displayName: SMCR
+    description: TIM15 slave mode control register
     addressOffset: 8
     size: 32
     access: read-write
@@ -238,15 +257,6 @@ registers:
           - name: B_0x0
             description: Slave mode disabled-if CEN = 1 then the prescaler is clocked directly by the internal clock.
             value: 0
-          - name: B_0x1
-            description: Encoder mode 1-Counter counts up/down on tim_ti1fp1 edge depending on tim_ti2fp2 level.
-            value: 1
-          - name: B_0x2
-            description: Encoder mode 2-Counter counts up/down on tim_ti2fp2 edge depending on tim_ti1fp1 level.
-            value: 2
-          - name: B_0x3
-            description: Encoder mode 3-Counter counts up/down on both tim_ti1fp1 and tim_ti2fp2 edges depending on the level of the other input.
-            value: 3
           - name: B_0x4
             description: Reset mode-Rising edge of the selected trigger input (tim_trgi) reinitializes the counter and generates an update of the registers.
             value: 4
@@ -257,20 +267,8 @@ registers:
             description: Trigger mode-The counter starts at a rising edge of the trigger tim_trgi (but it is not reset).
             value: 6
           - name: B_0x7
-            description: External clock mode 1-Rising edges of the selected trigger (tim_trgi) clock the counter.
+            description: External Clock mode 1-Rising edges of the selected trigger (tim_trgi) clock the counter.
             value: 7
-      - name: OCCS
-        description: OCREF clear selection
-        bitOffset: 3
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: tim_ocref_clr_int is connected to the tim_ocref_clr input
-            value: 0
-          - name: B_0x1
-            description: tim_ocref_clr_int is connected to tim_etrf
-            value: 1
       - name: TS
         description: 'TS[2:0]: Trigger selection'
         bitOffset: 4
@@ -278,31 +276,28 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Internal trigger 0 (tim_itr0)
+            description: Internal Trigger 0 (tim_itr0)
             value: 0
           - name: B_0x1
-            description: Internal trigger 1 (tim_itr1)
+            description: Internal Trigger 1 (tim_itr1)
             value: 1
           - name: B_0x2
-            description: Internal trigger 2 (tim_itr2)
+            description: Internal Trigger 2 (tim_itr2)
             value: 2
           - name: B_0x3
-            description: Internal trigger 3 (tim_itr3)
+            description: Internal Trigger 3 (tim_itr3)
             value: 3
           - name: B_0x4
-            description: tim_ti1 edge detector (tim_ti1f_ed)
+            description: tim_ti1 Edge Detector (tim_ti1f_ed)
             value: 4
           - name: B_0x5
-            description: Filtered timer input 1 (tim_ti1fp1)
+            description: Filtered Timer Input 1 (tim_ti1fp1)
             value: 5
           - name: B_0x6
-            description: Filtered timer input 2 (tim_ti2fp2)
+            description: Filtered Timer Input 2 (tim_ti2fp2)
             value: 6
-          - name: B_0x7
-            description: External trigger input (tim_etrf)
-            value: 7
       - name: MSM
-        description: Master/Slave mode
+        description: Master/slave mode
         bitOffset: 7
         bitWidth: 1
         access: read-write
@@ -312,102 +307,6 @@ registers:
             value: 0
           - name: B_0x1
             description: The effect of an event on the trigger input (tim_trgi) is delayed to allow a perfect synchronization between the current timer and its slaves (through tim_trgo).
-            value: 1
-      - name: ETF
-        description: External trigger filter
-        bitOffset: 8
-        bitWidth: 4
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No filter, sampling is done at fless thansub>DTSless than/sub>
-            value: 0
-          - name: B_0x1
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>tim_ker_ckless than/sub>, N = 2
-            value: 1
-          - name: B_0x2
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>tim_ker_ckless than/sub>, N = 4
-            value: 2
-          - name: B_0x3
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>tim_ker_ckless than/sub>, N = 8
-            value: 3
-          - name: B_0x4
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/2, N = 6
-            value: 4
-          - name: B_0x5
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/2, N = 8
-            value: 5
-          - name: B_0x6
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/4, N = 6
-            value: 6
-          - name: B_0x7
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/4, N = 8
-            value: 7
-          - name: B_0x8
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/8, N = 6
-            value: 8
-          - name: B_0x9
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/8, N = 8
-            value: 9
-          - name: B_0xA
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/16, N = 5
-            value: 10
-          - name: B_0xB
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/16, N = 6
-            value: 11
-          - name: B_0xC
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/16, N = 8
-            value: 12
-          - name: B_0xD
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/32, N = 5
-            value: 13
-          - name: B_0xE
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/32, N = 6
-            value: 14
-          - name: B_0xF
-            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/32, N = 8
-            value: 15
-      - name: ETPS
-        description: External trigger prescaler
-        bitOffset: 12
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Prescaler OFF
-            value: 0
-          - name: B_0x1
-            description: tim_etrp frequency divided by 2
-            value: 1
-          - name: B_0x2
-            description: tim_etrp frequency divided by 4
-            value: 2
-          - name: B_0x3
-            description: tim_etrp frequency divided by 8
-            value: 3
-      - name: ECE
-        description: External clock enable
-        bitOffset: 14
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: External clock mode 2 disabled
-            value: 0
-          - name: B_0x1
-            description: External clock mode 2 enabled.
-            value: 1
-      - name: ETP
-        description: External trigger polarity
-        bitOffset: 15
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: tim_etr_in is non-inverted, active at high level or rising edge
-            value: 0
-          - name: B_0x1
-            description: tim_etr_in is inverted, active at low level or falling edge
             value: 1
       - name: SMS_1
         description: SMS[3]
@@ -431,26 +330,14 @@ registers:
           - name: B_0x1
             description: SMS[3:0] preload is enabled
             value: 1
-      - name: SMSPS
-        description: SMS preload source
-        bitOffset: 25
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: The transfer is triggered by the Timer's Update event
-            value: 0
-          - name: B_0x1
-            description: The transfer is triggered by the Index event
-            value: 1
-  - name: TIM2_DIER
-    displayName: TIM2_DIER
-    description: TIM2 DMA/Interrupt enable register
+  - name: DIER
+    displayName: DIER
+    description: TIM15 DMA/interrupt enable register
     addressOffset: 12
-    size: 32
+    size: 16
     access: read-write
     resetValue: 0
-    resetMask: 4294967295
+    resetMask: 65535
     fields:
       - name: UIE
         description: Update interrupt enable
@@ -459,10 +346,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Update interrupt disabled.
+            description: Update interrupt disabled
             value: 0
           - name: B_0x1
-            description: Update interrupt enabled.
+            description: Update interrupt enabled
             value: 1
       - name: CC1IE
         description: Capture/Compare 1 interrupt enable
@@ -471,10 +358,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: CC1 interrupt disabled.
+            description: CC1 interrupt disabled
             value: 0
           - name: B_0x1
-            description: CC1 interrupt enabled.
+            description: CC1 interrupt enabled
             value: 1
       - name: CC2IE
         description: Capture/Compare 2 interrupt enable
@@ -483,34 +370,22 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: CC2 interrupt disabled.
+            description: CC2 interrupt disabled
             value: 0
           - name: B_0x1
-            description: CC2 interrupt enabled.
+            description: CC2 interrupt enabled
             value: 1
-      - name: CC3IE
-        description: Capture/Compare 3 interrupt enable
-        bitOffset: 3
+      - name: COMIE
+        description: COM interrupt enable
+        bitOffset: 5
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: CC3 interrupt disabled.
+            description: COM interrupt disabled
             value: 0
           - name: B_0x1
-            description: CC3 interrupt enabled.
-            value: 1
-      - name: CC4IE
-        description: Capture/Compare 4 interrupt enable
-        bitOffset: 4
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: CC4 interrupt disabled.
-            value: 0
-          - name: B_0x1
-            description: CC4 interrupt enabled.
+            description: COM interrupt enabled
             value: 1
       - name: TIE
         description: Trigger interrupt enable
@@ -519,10 +394,22 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Trigger interrupt disabled.
+            description: Trigger interrupt disabled
             value: 0
           - name: B_0x1
-            description: Trigger interrupt enabled.
+            description: Trigger interrupt enabled
+            value: 1
+      - name: BIE
+        description: Break interrupt enable
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Break interrupt disabled
+            value: 0
+          - name: B_0x1
+            description: Break interrupt enabled
             value: 1
       - name: UDE
         description: Update DMA request enable
@@ -531,10 +418,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Update DMA request disabled.
+            description: Update DMA request disabled
             value: 0
           - name: B_0x1
-            description: Update DMA request enabled.
+            description: Update DMA request enabled
             value: 1
       - name: CC1DE
         description: Capture/Compare 1 DMA request enable
@@ -543,46 +430,22 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: CC1 DMA request disabled.
+            description: CC1 DMA request disabled
             value: 0
           - name: B_0x1
-            description: CC1 DMA request enabled.
+            description: CC1 DMA request enabled
             value: 1
-      - name: CC2DE
-        description: Capture/Compare 2 DMA request enable
-        bitOffset: 10
+      - name: COMDE
+        description: COM DMA request enable
+        bitOffset: 13
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: CC2 DMA request disabled.
+            description: COM DMA request disabled
             value: 0
           - name: B_0x1
-            description: CC2 DMA request enabled.
-            value: 1
-      - name: CC3DE
-        description: Capture/Compare 3 DMA request enable
-        bitOffset: 11
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: CC3 DMA request disabled.
-            value: 0
-          - name: B_0x1
-            description: CC3 DMA request enabled.
-            value: 1
-      - name: CC4DE
-        description: Capture/Compare 4 DMA request enable
-        bitOffset: 12
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: CC4 DMA request disabled.
-            value: 0
-          - name: B_0x1
-            description: CC4 DMA request enabled.
+            description: COM DMA request enabled
             value: 1
       - name: TDE
         description: Trigger DMA request enable
@@ -591,67 +454,19 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Trigger DMA request disabled.
+            description: Trigger DMA request disabled
             value: 0
           - name: B_0x1
-            description: Trigger DMA request enabled.
+            description: Trigger DMA request enabled
             value: 1
-      - name: IDxIE
-        description: Index interrupt enable
-        bitOffset: 20
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Index interrupt disabled
-            value: 0
-          - name: B_0x1
-            description: Index interrupt enabled
-            value: 1
-      - name: DIRIE
-        description: Direction change interrupt enable
-        bitOffset: 21
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Direction change interrupt disabled
-            value: 0
-          - name: B_0x1
-            description: Direction change interrupt enabled
-            value: 1
-      - name: IERRIE
-        description: Index error interrupt enable
-        bitOffset: 22
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Index error interrupt disabled
-            value: 0
-          - name: B_0x1
-            description: Index error interrupt enabled
-            value: 1
-      - name: TERRIE
-        description: Transition error interrupt enable
-        bitOffset: 23
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Transition error interrupt disabled
-            value: 0
-          - name: B_0x1
-            description: Transition error interrupt enabled
-            value: 1
-  - name: TIM2_SR
-    displayName: TIM2_SR
-    description: TIM2 status register
+  - name: SR
+    displayName: SR
+    description: TIM15 status register
     addressOffset: 16
-    size: 32
+    size: 16
     access: read-write
     resetValue: 0
-    resetMask: 4294967295
+    resetMask: 65535
     fields:
       - name: UIF
         description: Update interrupt flag
@@ -660,13 +475,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: No update occurred
+            description: No update occurred.
             value: 0
           - name: B_0x1
             description: Update interrupt pending.
             value: 1
       - name: CC1IF
-        description: Capture/compare 1 interrupt flag
+        description: Capture/Compare 1 interrupt flag
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -682,16 +497,18 @@ registers:
         bitOffset: 2
         bitWidth: 1
         access: read-write
-      - name: CC3IF
-        description: Capture/Compare 3 interrupt flag
-        bitOffset: 3
+      - name: COMIF
+        description: COM interrupt flag
+        bitOffset: 5
         bitWidth: 1
         access: read-write
-      - name: CC4IF
-        description: Capture/Compare 4 interrupt flag
-        bitOffset: 4
-        bitWidth: 1
-        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No COM event occurred
+            value: 0
+          - name: B_0x1
+            description: COM interrupt pending
+            value: 1
       - name: TIF
         description: Trigger interrupt flag
         bitOffset: 6
@@ -699,10 +516,22 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: No trigger event occurred.
+            description: No trigger event occurred
             value: 0
           - name: B_0x1
-            description: Trigger interrupt pending.
+            description: Trigger interrupt pending
+            value: 1
+      - name: BIF
+        description: Break interrupt flag
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No break event occurred
+            value: 0
+          - name: B_0x1
+            description: An active level has been detected on the break input
             value: 1
       - name: CC1OF
         description: Capture/Compare 1 overcapture flag
@@ -711,80 +540,22 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: No overcapture has been detected.
+            description: No overcapture has been detected
             value: 0
           - name: B_0x1
-            description: The counter value has been captured in TIMx_CCR1 register while CC1IF flag was already set
+            description: The counter value has been captured in TIM15_CCR1 register while CC1IF flag was already set
             value: 1
       - name: CC2OF
-        description: Capture/compare 2 overcapture flag
+        description: Capture/Compare 2 overcapture flag
         bitOffset: 10
         bitWidth: 1
         access: read-write
-      - name: CC3OF
-        description: Capture/Compare 3 overcapture flag
-        bitOffset: 11
-        bitWidth: 1
-        access: read-write
-      - name: CC4OF
-        description: Capture/Compare 4 overcapture flag
-        bitOffset: 12
-        bitWidth: 1
-        access: read-write
-      - name: IDxF
-        description: Index interrupt flag
-        bitOffset: 20
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No index event occurred.
-            value: 0
-          - name: B_0x1
-            description: An index event has occurred
-            value: 1
-      - name: DIRF
-        description: Direction change interrupt flag
-        bitOffset: 21
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No direction change
-            value: 0
-          - name: B_0x1
-            description: Direction change
-            value: 1
-      - name: IERRF
-        description: Index error interrupt flag
-        bitOffset: 22
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No index error has been detected.
-            value: 0
-          - name: B_0x1
-            description: An index error has been detected
-            value: 1
-      - name: TERRF
-        description: Transition error interrupt flag
-        bitOffset: 23
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No encoder transition error has been detected.
-            value: 0
-          - name: B_0x1
-            description: An encoder transition error has been detected
-            value: 1
-  - name: TIM2_EGR
-    displayName: TIM2_EGR
-    description: TIM2 event generation register
+  - name: EGR
+    displayName: EGR
+    description: TIM15 event generation register
     addressOffset: 20
     size: 16
-    access: write-only
+    access: read-write
     resetValue: 0
     resetMask: 65535
     fields:
@@ -798,10 +569,10 @@ registers:
             description: No action
             value: 0
           - name: B_0x1
-            description: Re-initialize the counter and generates an update of the registers.
+            description: Reinitialize the counter and generates an update of the registers.
             value: 1
       - name: CC1G
-        description: Capture/compare 1 generation
+        description: Capture/Compare 1 generation
         bitOffset: 1
         bitWidth: 1
         access: write-only
@@ -809,24 +580,23 @@ registers:
           - name: B_0x0
             description: No action
             value: 0
-          - name: B_0x1
-            description: 'A capture/compare event is generated on channel 1:'
-            value: 1
       - name: CC2G
-        description: Capture/compare 2 generation
+        description: Capture/Compare 2 generation
         bitOffset: 2
         bitWidth: 1
         access: write-only
-      - name: CC3G
-        description: Capture/compare 3 generation
-        bitOffset: 3
+      - name: COMG
+        description: Capture/Compare control update generation
+        bitOffset: 5
         bitWidth: 1
-        access: write-only
-      - name: CC4G
-        description: Capture/compare 4 generation
-        bitOffset: 4
-        bitWidth: 1
-        access: write-only
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No action
+            value: 0
+          - name: B_0x1
+            description: When the CCPC bit is set, it is possible to update the CCxE, CCxNE and OCxM bits
+            value: 1
       - name: TG
         description: Trigger generation
         bitOffset: 6
@@ -837,11 +607,23 @@ registers:
             description: No action
             value: 0
           - name: B_0x1
-            description: The TIF flag is set in TIMx_SR register.
+            description: The TIF flag is set in TIM15_SR register.
             value: 1
-  - name: TIM2_CCMR1
-    displayName: TIM2_CCMR1
-    description: TIM2 capture/compare mode register 1
+      - name: BG
+        description: Break generation
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No action
+            value: 0
+          - name: B_0x1
+            description: A break event is generated.
+            value: 1
+  - name: CCMR1
+    displayName: CCMR1
+    description: TIM15 capture/compare mode register 1
     addressOffset: 24
     size: 32
     access: read-write
@@ -939,19 +721,19 @@ registers:
             description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/32, N = 8
             value: 15
       - name: CC2S
-        description: Capture/compare 2 selection
+        description: Capture/Compare 2 selection
         bitOffset: 8
         bitWidth: 2
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: CC2 channel is configured as output.
+            description: CC2 channel is configured as output
             value: 0
           - name: B_0x1
-            description: CC2 channel is configured as input, tim_ic2 is mapped on tim_ti2.
+            description: CC2 channel is configured as input, tim_ic2 is mapped on tim_ti2
             value: 1
           - name: B_0x2
-            description: CC2 channel is configured as input, tim_ic2 is mapped on tim_ti1.
+            description: CC2 channel is configured as input, tim_ic2 is mapped on tim_ti1
             value: 2
           - name: B_0x3
             description: CC2 channel is configured as input, tim_ic2 is mapped on tim_trc.
@@ -966,10 +748,10 @@ registers:
         bitOffset: 12
         bitWidth: 4
         access: read-write
-  - name: TIM2_CCMR1_ALTERNATE1
-    displayName: TIM2_CCMR1_ALTERNATE1
-    description: TIM2 capture/compare mode register 1
-    alternateRegister: TIM2_CCMR1
+  - name: CCMR1_ALTERNATE1
+    displayName: CCMR1_ALTERNATE1
+    description: TIM15 capture/compare mode register 1
+    alternateRegister: TIM15_CCMR1
     addressOffset: 24
     size: 32
     access: read-write
@@ -995,7 +777,7 @@ registers:
             description: CC1 channel is configured as input, tim_ic1 is mapped on tim_trc.
             value: 3
       - name: OC1FE
-        description: Output compare 1 fast enable
+        description: Output Compare 1 fast enable
         bitOffset: 2
         bitWidth: 1
         access: read-write
@@ -1007,16 +789,16 @@ registers:
             description: An active edge on the trigger input acts like a compare match on CC1 output.
             value: 1
       - name: OC1PE
-        description: Output compare 1 preload enable
+        description: Output Compare 1 preload enable
         bitOffset: 3
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Preload register on TIMx_CCR1 disabled.
+            description: Preload register on TIM15_CCR1 disabled.
             value: 0
           - name: B_0x1
-            description: Preload register on TIMx_CCR1 enabled.
+            description: Preload register on TIM15_CCR1 enabled.
             value: 1
       - name: OC1M
         description: 'OC1M[2:0]: Output compare 1 mode'
@@ -1025,7 +807,7 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Frozen-The comparison between the output compare register TIMx_CCR1 and the counter TIMx_CNT has no effect on the outputs.
+            description: Frozen-The comparison between the output compare register TIM15_CCR1 and the counter TIM15_CNT has no effect on the outputs.
             value: 0
           - name: B_0x1
             description: Set channel 1 to active level on match.
@@ -1034,7 +816,7 @@ registers:
             description: Set channel 1 to inactive level on match.
             value: 2
           - name: B_0x3
-            description: Toggle-tim_oc1ref toggles when TIMx_CNT = TIMx_CCR1.
+            description: Toggle-tim_oc1ref toggles when TIM15_CNT = TIM15_CCR1.
             value: 3
           - name: B_0x4
             description: Force inactive level-tim_oc1ref is forced low.
@@ -1043,10 +825,10 @@ registers:
             description: Force active level-tim_oc1ref is forced high.
             value: 5
           - name: B_0x6
-            description: PWM mode 1-In up-counting, channel 1 is active as long as TIMx_CNTless thanTIMx_CCR1 else inactive.
+            description: PWM mode 1-Channel 1 is active as long as TIM15_CNTless thanTIM15_CCR1 else inactive.
             value: 6
           - name: B_0x7
-            description: PWM mode 2-In up-counting, channel 1 is inactive as long as TIMx_CNTless thanTIMx_CCR1 else active.
+            description: PWM mode 2-Channel 1 is inactive as long as TIM15_CNTless thanTIM15_CCR1 else active.
             value: 7
       - name: OC1CE
         description: Output compare 1 clear enable
@@ -1055,10 +837,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: tim_oc1ref is not affected by the tim_ocref_clr_int input
+            description: tim_oc1ref is not affected by the tim_ocref_clr_int input.
             value: 0
           - name: B_0x1
-            description: tim_oc1ref is cleared as soon as a High level is detected on tim_ocref_clr_int input
+            description: tim_oc1ref is cleared as soon as a High level is detected on tim_ocref_clr_int input.
             value: 1
       - name: CC2S
         description: Capture/Compare 2 selection
@@ -1067,13 +849,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: CC2 channel is configured as output
+            description: CC2 channel is configured as output.
             value: 0
           - name: B_0x1
-            description: CC2 channel is configured as input, tim_ic2 is mapped on tim_ti2
+            description: CC2 channel is configured as input, tim_ic2 is mapped on tim_ti2.
             value: 1
           - name: B_0x2
-            description: CC2 channel is configured as input, tim_ic2 is mapped on tim_ti1
+            description: C2 channel is configured as input, tim_ic2 is mapped on tim_ti1.
             value: 2
           - name: B_0x3
             description: CC2 channel is configured as input, tim_ic2 is mapped on tim_trc.
@@ -1108,195 +890,9 @@ registers:
         bitOffset: 24
         bitWidth: 1
         access: read-write
-  - name: TIM2_CCMR2
-    displayName: TIM2_CCMR2
-    description: TIM2 capture/compare mode register 2
-    addressOffset: 28
-    size: 32
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: CC3S
-        description: Capture/Compare 3 selection
-        bitOffset: 0
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: CC3 channel is configured as output
-            value: 0
-          - name: B_0x1
-            description: CC3 channel is configured as input, tim_ic3 is mapped on tim_ti3
-            value: 1
-          - name: B_0x2
-            description: CC3 channel is configured as input, tim_ic3 is mapped on tim_ti4
-            value: 2
-          - name: B_0x3
-            description: CC3 channel is configured as input, tim_ic3 is mapped on tim_trc.
-            value: 3
-      - name: IC3PSC
-        description: Input capture 3 prescaler
-        bitOffset: 2
-        bitWidth: 2
-        access: read-write
-      - name: IC3F
-        description: Input capture 3 filter
-        bitOffset: 4
-        bitWidth: 4
-        access: read-write
-      - name: CC4S
-        description: Capture/Compare 4 selection
-        bitOffset: 8
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: CC4 channel is configured as output
-            value: 0
-          - name: B_0x1
-            description: CC4 channel is configured as input, tim_ic4 is mapped on tim_ti4
-            value: 1
-          - name: B_0x2
-            description: CC4 channel is configured as input, tim_ic4 is mapped on tim_ti3
-            value: 2
-          - name: B_0x3
-            description: CC4 channel is configured as input, tim_ic4 is mapped on tim_trc.
-            value: 3
-      - name: IC4PSC
-        description: Input capture 4 prescaler
-        bitOffset: 10
-        bitWidth: 2
-        access: read-write
-      - name: IC4F
-        description: Input capture 4 filter
-        bitOffset: 12
-        bitWidth: 4
-        access: read-write
-  - name: TIM2_CCMR2_ALTERNATE1
-    displayName: TIM2_CCMR2_ALTERNATE1
-    description: TIM2 capture/compare mode register 2
-    alternateRegister: TIM2_CCMR2
-    addressOffset: 28
-    size: 32
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: CC3S
-        description: Capture/Compare 3 selection
-        bitOffset: 0
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: CC3 channel is configured as output
-            value: 0
-          - name: B_0x1
-            description: CC3 channel is configured as input, tim_ic3 is mapped on tim_ti3
-            value: 1
-          - name: B_0x2
-            description: CC3 channel is configured as input, tim_ic3 is mapped on tim_ti4
-            value: 2
-          - name: B_0x3
-            description: CC3 channel is configured as input, tim_ic3 is mapped on tim_trc.
-            value: 3
-      - name: OC3FE
-        description: Output compare 3 fast enable
-        bitOffset: 2
-        bitWidth: 1
-        access: read-write
-      - name: OC3PE
-        description: Output compare 3 preload enable
-        bitOffset: 3
-        bitWidth: 1
-        access: read-write
-      - name: OC3M
-        description: 'OC3M[2:0]: Output compare 3 mode'
-        bitOffset: 4
-        bitWidth: 3
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Frozen-The comparison between the output compare register TIMx_CCR3 and the counter TIMx_CNT has no effect on the outputs.
-            value: 0
-          - name: B_0x1
-            description: Set channel 3 to active level on match.
-            value: 1
-          - name: B_0x2
-            description: Set channel 3 to inactive level on match.
-            value: 2
-          - name: B_0x3
-            description: Toggle-tim_oc3ref toggles when TIMx_CNT = TIMx_CCR3.
-            value: 3
-          - name: B_0x4
-            description: Force inactive level-tim_oc3ref is forced low.
-            value: 4
-          - name: B_0x5
-            description: Force active level-tim_oc3ref is forced high.
-            value: 5
-          - name: B_0x6
-            description: PWM mode 1-In up-counting, channel 3 is active as long as TIMx_CNTless thanTIMx_CCR3 else inactive.
-            value: 6
-          - name: B_0x7
-            description: PWM mode 2-In up-counting, channel 3 is inactive as long as TIMx_CNTless thanTIMx_CCR3 else active.
-            value: 7
-      - name: OC3CE
-        description: Output compare 3 clear enable
-        bitOffset: 7
-        bitWidth: 1
-        access: read-write
-      - name: CC4S
-        description: Capture/Compare 4 selection
-        bitOffset: 8
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: CC4 channel is configured as output
-            value: 0
-          - name: B_0x1
-            description: CC4 channel is configured as input, tim_ic4 is mapped on tim_ti4
-            value: 1
-          - name: B_0x2
-            description: CC4 channel is configured as input, tim_ic4 is mapped on tim_ti3
-            value: 2
-          - name: B_0x3
-            description: CC4 channel is configured as input, tim_ic4 is mapped on tim_trc.
-            value: 3
-      - name: OC4FE
-        description: Output compare 4 fast enable
-        bitOffset: 10
-        bitWidth: 1
-        access: read-write
-      - name: OC4PE
-        description: Output compare 4 preload enable
-        bitOffset: 11
-        bitWidth: 1
-        access: read-write
-      - name: OC4M
-        description: 'OC4M[2:0]: Output compare 4 mode'
-        bitOffset: 12
-        bitWidth: 3
-        access: read-write
-      - name: OC4CE
-        description: Output compare 4 clear enable
-        bitOffset: 15
-        bitWidth: 1
-        access: read-write
-      - name: OC3M_1
-        description: OC3M[3]
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-      - name: OC4M_1
-        description: OC4M[3]
-        bitOffset: 24
-        bitWidth: 1
-        access: read-write
-  - name: TIM2_CCER
-    displayName: TIM2_CCER
-    description: TIM2 capture/compare enable register
+  - name: CCER
+    displayName: CCER
+    description: TIM15 capture/compare enable register
     addressOffset: 32
     size: 16
     access: read-write
@@ -1304,19 +900,19 @@ registers:
     resetMask: 65535
     fields:
       - name: CC1E
-        description: Capture/Compare 1 output enable.
+        description: Capture/Compare 1 output enable
         bitOffset: 0
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Capture mode disabled / OC1 is not active
+            description: Capture mode disabled / OC1 is not active (see below)
             value: 0
           - name: B_0x1
             description: Capture mode enabled / OC1 signal is output on the corresponding output pin
             value: 1
       - name: CC1P
-        description: Capture/Compare 1 output Polarity.
+        description: Capture/Compare 1 output polarity
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -1327,59 +923,48 @@ registers:
           - name: B_0x1
             description: OC1 active low (output mode) / Edge sensitivity selection (input mode, see below)
             value: 1
+      - name: CC1NE
+        description: Capture/Compare 1 complementary output enable
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Off-tim_oc1n is not active.
+            value: 0
+          - name: B_0x1
+            description: On-tim_oc1n signal is output on the corresponding output pin depending on MOE, OSSI, OSSR, OIS1, OIS1N and CC1E bits.
+            value: 1
       - name: CC1NP
-        description: Capture/Compare 1 output Polarity.
+        description: Capture/Compare 1 complementary output polarity
         bitOffset: 3
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_oc1n active high
+            value: 0
+          - name: B_0x1
+            description: tim_oc1n active low
+            value: 1
       - name: CC2E
-        description: Capture/Compare 2 output enable.
+        description: Capture/Compare 2 output enable
         bitOffset: 4
         bitWidth: 1
         access: read-write
       - name: CC2P
-        description: Capture/Compare 2 output Polarity.
+        description: Capture/Compare 2 output polarity
         bitOffset: 5
         bitWidth: 1
         access: read-write
       - name: CC2NP
-        description: Capture/Compare 2 output Polarity.
+        description: Capture/Compare 2 complementary output polarity
         bitOffset: 7
         bitWidth: 1
         access: read-write
-      - name: CC3E
-        description: Capture/Compare 3 output enable.
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-      - name: CC3P
-        description: Capture/Compare 3 output Polarity.
-        bitOffset: 9
-        bitWidth: 1
-        access: read-write
-      - name: CC3NP
-        description: Capture/Compare 3 output Polarity.
-        bitOffset: 11
-        bitWidth: 1
-        access: read-write
-      - name: CC4E
-        description: Capture/Compare 4 output enable.
-        bitOffset: 12
-        bitWidth: 1
-        access: read-write
-      - name: CC4P
-        description: Capture/Compare 4 output Polarity.
-        bitOffset: 13
-        bitWidth: 1
-        access: read-write
-      - name: CC4NP
-        description: Capture/Compare 4 output Polarity.
-        bitOffset: 15
-        bitWidth: 1
-        access: read-write
-  - name: TIM2_CNT
-    displayName: TIM2_CNT
-    description: TIM2 counter
+  - name: CNT
+    displayName: CNT
+    description: TIM15 counter
     addressOffset: 36
     size: 32
     access: read-write
@@ -1387,18 +972,18 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CNT
-        description: Least significant part of counter value
+        description: Counter value
         bitOffset: 0
-        bitWidth: 31
+        bitWidth: 16
         access: read-write
-      - name: UIFCPY_CNT
-        description: Value depends on IUFREMAP in TIMx_CR1.
+      - name: UIFCPY
+        description: UIF Copy
         bitOffset: 31
         bitWidth: 1
-        access: read-write
-  - name: TIM2_PSC
-    displayName: TIM2_PSC
-    description: TIM2 prescaler
+        access: read-only
+  - name: PSC
+    displayName: PSC
+    description: TIM15 prescaler
     addressOffset: 40
     size: 16
     access: read-write
@@ -1410,23 +995,37 @@ registers:
         bitOffset: 0
         bitWidth: 16
         access: read-write
-  - name: TIM2_ARR
-    displayName: TIM2_ARR
-    description: TIM2 autoreload register
+  - name: ARR
+    displayName: ARR
+    description: TIM15 autoreload register
     addressOffset: 44
     size: 32
     access: read-write
-    resetValue: 4294967295
+    resetValue: 65535
     resetMask: 4294967295
     fields:
       - name: ARR
-        description: Autoreload value
+        description: Auto-reload value
         bitOffset: 0
-        bitWidth: 32
+        bitWidth: 20
         access: read-write
-  - name: TIM2_CCR1
-    displayName: TIM2_CCR1
-    description: TIM2 capture/compare register 1
+  - name: RCR
+    displayName: RCR
+    description: TIM15 repetition counter register
+    addressOffset: 48
+    size: 16
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: REP
+        description: Repetition counter reload value
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: CCR1
+    displayName: CCR1
+    description: TIM15 capture/compare register 1
     addressOffset: 52
     size: 32
     access: read-write
@@ -1436,11 +1035,11 @@ registers:
       - name: CCR1
         description: Capture/compare 1 value
         bitOffset: 0
-        bitWidth: 32
+        bitWidth: 20
         access: read-write
-  - name: TIM2_CCR2
-    displayName: TIM2_CCR2
-    description: TIM2 capture/compare register 2
+  - name: CCR2
+    displayName: CCR2
+    description: TIM15 capture/compare register 2
     addressOffset: 56
     size: 32
     access: read-write
@@ -1450,130 +1049,228 @@ registers:
       - name: CCR2
         description: Capture/compare 2 value
         bitOffset: 0
-        bitWidth: 32
+        bitWidth: 20
         access: read-write
-  - name: TIM2_CCR3
-    displayName: TIM2_CCR3
-    description: TIM2 capture/compare register 3
-    addressOffset: 60
+  - name: BDTR
+    displayName: BDTR
+    description: TIM15 break and dead-time register
+    addressOffset: 68
     size: 32
     access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
-      - name: CCR3
-        description: Capture/compare 3 value
+      - name: DTG
+        description: Dead-time generator setup
         bitOffset: 0
-        bitWidth: 32
-        access: read-write
-  - name: TIM2_CCR4
-    displayName: TIM2_CCR4
-    description: TIM2 capture/compare register 4
-    addressOffset: 64
-    size: 32
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: CCR4
-        description: Capture/compare 4 value
-        bitOffset: 0
-        bitWidth: 32
-        access: read-write
-  - name: TIM2_ECR
-    displayName: TIM2_ECR
-    description: TIM2 timer encoder control register
-    addressOffset: 88
-    size: 32
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: IE
-        description: Index enable
-        bitOffset: 0
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Index disabled
-            value: 0
-          - name: B_0x1
-            description: Index enabled
-            value: 1
-      - name: IDIR
-        description: Index direction
-        bitOffset: 1
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Index resets the counter whatever the direction
-            value: 0
-          - name: B_0x1
-            description: Index resets the counter when up-counting only
-            value: 1
-          - name: B_0x2
-            description: Index resets the counter when down-counting only
-            value: 2
-      - name: IBLK
-        description: Index blanking
-        bitOffset: 3
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Index always active
-            value: 0
-          - name: B_0x1
-            description: Index disabled hen tim_ti3 input is active, as per CC3P bit field
-            value: 1
-          - name: B_0x2
-            description: Index disabled when tim_ti4 input is active, as per CC4P bit field
-            value: 2
-      - name: FIDx
-        description: First index
-        bitOffset: 5
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Index is always active
-            value: 0
-          - name: B_0x1
-            description: the first Index only resets the counter
-            value: 1
-      - name: IPOS
-        description: Index positioning
-        bitOffset: 6
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Index resets the counter when AB = 00
-            value: 0
-          - name: B_0x1
-            description: Index resets the counter when AB = 01
-            value: 1
-          - name: B_0x2
-            description: Index resets the counter when AB = 10
-            value: 2
-          - name: B_0x3
-            description: Index resets the counter when AB = 11
-            value: 3
-      - name: PW
-        description: Pulse width
-        bitOffset: 16
         bitWidth: 8
         access: read-write
-      - name: PWPRSC
-        description: Pulse width prescaler
-        bitOffset: 24
-        bitWidth: 3
+      - name: LOCK
+        description: Lock configuration
+        bitOffset: 8
+        bitWidth: 2
         access: read-write
-  - name: TIM2_TISEL
-    displayName: TIM2_TISEL
-    description: TIM2 timer input selection register
+        enumeratedValues:
+          - name: B_0x0
+            description: LOCK OFF-No bit is write protected
+            value: 0
+          - name: B_0x1
+            description: LOCK Level 1 = DTG bits in TIM15_BDTR register, OISx and OISxN bits in TIM15_CR2 register and BKBID/BKE/BKP/AOE bits in TIM15_BDTR register can no longer be written
+            value: 1
+          - name: B_0x2
+            description: LOCK Level 2 = LOCK Level 1 + CC Polarity bits (CCxP/CCxNP bits in TIM15_CCER register, as long as the related channel is configured in output through the CCxS bits) as well as OSSR and OSSI bits can no longer be written.
+            value: 2
+          - name: B_0x3
+            description: OCK Level 3 = LOCK Level 2 + CC Control bits (OCxM and OCxPE bits in TIM15_CCMRx registers, as long as the related channel is configured in output through the CCxS bits) can no longer be written.
+            value: 3
+      - name: OSSI
+        description: Off-state selection for Idle mode
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: When inactive, tim_ocx/tim_ocxn outputs are disabled (tim_ocx/tim_ocxn enable output signal = 0)
+            value: 0
+          - name: B_0x1
+            description: When inactive, tim_ocx/tim_ocxn outputs are forced first with their idle level as soon as CCxE = 1 or CCxNE = 1.
+            value: 1
+      - name: OSSR
+        description: Off-state selection for Run mode
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: When inactive, tim_ocx/tim_ocxn outputs are disabled (the timer releases the output control which is taken over by the GPIO, which forces a Hi-Z state)
+            value: 0
+          - name: B_0x1
+            description: When inactive, tim_ocx/tim_ocxn outputs are enabled with their inactive level as soon as CCxE = 1 or CCxNE = 1 (the output is still controlled by the timer).
+            value: 1
+      - name: BKE
+        description: Break enable
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Break inputs (tim_brk and tim_sys_brk clock failure event) disabled
+            value: 0
+      - name: BKP
+        description: Break polarity
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Break input tim_brk is active low
+            value: 0
+          - name: B_0x1
+            description: Break input tim_brk is active high
+            value: 1
+      - name: AOE
+        description: Automatic output enable
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: MOE can be set only by software
+            value: 0
+          - name: B_0x1
+            description: MOE can be set by software or automatically at the next update event (if the break input is not be active)
+            value: 1
+      - name: MOE
+        description: Main output enable
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_ocx and tim_ocxn outputs are disabled or forced to idle state depending on the OSSI bit.
+            value: 0
+          - name: B_0x1
+            description: tim_ocx and tim_ocxn outputs are enabled if their respective enable bits are set (CCxE, CCxNE in TIM15_CCER register)
+            value: 1
+      - name: BKF
+        description: Break filter
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No filter, tim_brk acts asynchronously
+            value: 0
+          - name: B_0x1
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>tim_ker_ckless than/sub>, N = 2
+            value: 1
+          - name: B_0x2
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>tim_ker_ckless than/sub>, N = 4
+            value: 2
+          - name: B_0x3
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>tim_ker_ckless than/sub>, N = 8
+            value: 3
+          - name: B_0x4
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/2, N = 6
+            value: 4
+          - name: B_0x5
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/2, N = 8
+            value: 5
+          - name: B_0x6
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/4, N = 6
+            value: 6
+          - name: B_0x7
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/4, N = 8
+            value: 7
+          - name: B_0x8
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/8, N = 6
+            value: 8
+          - name: B_0x9
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/8, N = 8
+            value: 9
+          - name: B_0xA
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/16, N = 5
+            value: 10
+          - name: B_0xB
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/16, N = 6
+            value: 11
+          - name: B_0xC
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/16, N = 8
+            value: 12
+          - name: B_0xD
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/32, N = 5
+            value: 13
+          - name: B_0xE
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/32, N = 6
+            value: 14
+          - name: B_0xF
+            description: fless thansub>SAMPLINGless than/sub> = fless thansub>DTSless than/sub>/32, N = 8
+            value: 15
+      - name: BKDSRM
+        description: Break disarm
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Break input tim_brk is armed
+            value: 0
+          - name: B_0x1
+            description: Break input tim_brk is disarmed
+            value: 1
+      - name: BKBID
+        description: Break bidirectional
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Break input tim_brk in input mode
+            value: 0
+          - name: B_0x1
+            description: Break input tim_brk in bidirectional mode
+            value: 1
+  - name: DTR2
+    displayName: DTR2
+    description: TIM15 timer deadtime register 2
+    addressOffset: 84
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DTGF
+        description: Dead-time falling edge generator setup
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: DTAE
+        description: Deadtime asymmetric enable
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Deadtime on rising and falling edges are identical, and defined with DTG[7:0] register
+            value: 0
+          - name: B_0x1
+            description: Deadtime on rising edge is defined with DTG[7:0] register and deadtime on falling edge is defined with DTGF[7:0] bits.
+            value: 1
+      - name: DTPE
+        description: Deadtime preload enable
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Deadtime value is not preloaded
+            value: 0
+          - name: B_0x1
+            description: Deadtime value preload is enabled
+            value: 1
+  - name: TISEL
+    displayName: TISEL
+    description: TIM15 input selection register
     addressOffset: 92
     size: 32
     access: read-write
@@ -1581,13 +1278,13 @@ registers:
     resetMask: 4294967295
     fields:
       - name: TI1SEL
-        description: Selects tim_ti1[15:0] input
+        description: selects tim_ti1_in[15:0] input
         bitOffset: 0
         bitWidth: 4
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: 'tim_ti1_in0: TIMx_CH1'
+            description: TIM15_CH1 input (tim_ti1_in0)
             value: 0
           - name: B_0x1
             description: tim_ti1_in1
@@ -1596,13 +1293,13 @@ registers:
             description: tim_ti1_in15
             value: 15
       - name: TI2SEL
-        description: Selects tim_ti2[15:0] input
+        description: selects tim_ti2_in[15:0] input
         bitOffset: 8
         bitWidth: 4
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: 'tim_ti2_in0: TIMx_CH2'
+            description: TIM15_CH2 input (tim_ti2_in0)
             value: 0
           - name: B_0x1
             description: tim_ti2_in1
@@ -1610,63 +1307,186 @@ registers:
           - name: B_0xF
             description: tim_ti2_in15
             value: 15
-      - name: TI3SEL
-        description: Selects tim_ti3[15:0] input
-        bitOffset: 16
-        bitWidth: 4
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: 'tim_ti3_in0: TIMx_CH3'
-            value: 0
-          - name: B_0x1
-            description: tim_ti3_in1
-            value: 1
-          - name: B_0xF
-            description: tim_ti3_in15
-            value: 15
-      - name: TI4SEL
-        description: Selects tim_ti4[15:0] input
-        bitOffset: 24
-        bitWidth: 4
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: 'tim_ti4_in0: TIMx_CH4'
-            value: 0
-          - name: B_0x1
-            description: tim_ti4_in1
-            value: 1
-          - name: B_0xF
-            description: tim_ti4_in15
-            value: 15
-  - name: TIM2_AF1
-    displayName: TIM2_AF1
-    description: TIM2 alternate function register 1
+  - name: AF1
+    displayName: AF1
+    description: TIM15 alternate function register 1
     addressOffset: 96
     size: 32
     access: read-write
-    resetValue: 0
+    resetValue: 1
     resetMask: 4294967295
     fields:
-      - name: ETRSEL
-        description: etr_in source selection
-        bitOffset: 14
-        bitWidth: 4
+      - name: BKINE
+        description: TIMx_BKIN input enable
+        bitOffset: 0
+        bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: 'tim_etr0: TIMx_ETR input'
+            description: TIMx_BKIN input disabled
             value: 0
           - name: B_0x1
-            description: tim_etr1
+            description: TIMx_BKIN input enabled
             value: 1
-          - name: B_0xF
-            description: tim_etr15
-            value: 15
-  - name: TIM2_AF2
-    displayName: TIM2_AF2
-    description: TIM2 alternate function register 2
+      - name: BKCMP1E
+        description: tim_brk_cmp1 enable
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp1 input disabled
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp1 input enabled
+            value: 1
+      - name: BKCMP2E
+        description: tim_brk_cmp2 enable
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp2 input disabled
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp2 input enabled
+            value: 1
+      - name: BKCMP3E
+        description: tim_brk_cmp3 enable
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp3 input disabled
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp3 input enabled
+            value: 1
+      - name: BKCMP4E
+        description: tim_brk_cmp4 enable
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp4 input disabled
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp4 input enabled
+            value: 1
+      - name: BKCMP5E
+        description: tim_brk_cmp5 enable
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp5 input disabled
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp5 input enabled
+            value: 1
+      - name: BKCMP6E
+        description: tim_brk_cmp6 enable
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp6 input disabled
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp6 input enabled
+            value: 1
+      - name: BKCMP7E
+        description: tim_brk_cmp7 enable
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp7 input disabled
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp7 input enabled
+            value: 1
+      - name: BKCMP8E
+        description: tim_brk_cmp8 enable
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp8 input disabled
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp8 input enabled
+            value: 1
+      - name: BKINP
+        description: TIMx_BKIN input polarity
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: TIMx_BKIN input is active high
+            value: 0
+          - name: B_0x1
+            description: TIMx_BKIN input is active low
+            value: 1
+      - name: BKCMP1P
+        description: tim_brk_cmp1 input polarity
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp1 input is active high
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp1 input is active low
+            value: 1
+      - name: BKCMP2P
+        description: tim_brk_cmp2 input polarity
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp2 input is active high
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp2 input is active low
+            value: 1
+      - name: BKCMP3P
+        description: tim_brk_cmp3 input polarity
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp3 input is active high
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp3 input is active low
+            value: 1
+      - name: BKCMP4P
+        description: tim_brk_cmp4 input polarity
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: tim_brk_cmp4 input is active high
+            value: 0
+          - name: B_0x1
+            description: tim_brk_cmp4 input is active low
+            value: 1
+  - name: AF2
+    displayName: AF2
+    description: TIM15 alternate function register 2
     addressOffset: 100
     size: 32
     access: read-write
@@ -1685,12 +1505,27 @@ registers:
           - name: B_0x1
             description: tim_ocref_clr1
             value: 1
+          - name: B_0x2
+            description: tim_ocref_clr2
+            value: 2
+          - name: B_0x3
+            description: tim_ocref_clr3
+            value: 3
+          - name: B_0x4
+            description: tim_ocref_clr4
+            value: 4
+          - name: B_0x5
+            description: tim_ocref_clr5
+            value: 5
+          - name: B_0x6
+            description: tim_ocref_clr6
+            value: 6
           - name: B_0x7
             description: tim_ocref_clr7
             value: 7
-  - name: TIM2_DCR
-    displayName: TIM2_DCR
-    description: TIM2 DMA control register
+  - name: DCR
+    displayName: DCR
+    description: TIM15 DMA control register
     addressOffset: 988
     size: 32
     access: read-write
@@ -1704,13 +1539,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: TIMx_CR1,
+            description: TIM15_CR1,
             value: 0
           - name: B_0x1
-            description: TIMx_CR2,
+            description: TIM15_CR2,
             value: 1
           - name: B_0x2
-            description: TIMx_SMCR,
+            description: TIM15_SMCR,
             value: 2
       - name: DBL
         description: DMA burst length
@@ -1719,17 +1554,17 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: 1 transfer
+            description: 1 transfer,
             value: 0
           - name: B_0x1
-            description: 2 transfers
+            description: 2 transfers,
             value: 1
           - name: B_0x2
-            description: 3 transfers
+            description: 3 transfers,
             value: 2
-          - name: B_0x1A
-            description: 26 transfers
-            value: 26
+          - name: B_0x11
+            description: 18 transfers.
+            value: 17
       - name: DBSS
         description: DMA burst source selection
         bitOffset: 16
@@ -1742,24 +1577,15 @@ registers:
           - name: B_0x2
             description: CC1
             value: 2
-          - name: B_0x3
-            description: CC2
-            value: 3
-          - name: B_0x4
-            description: CC3
-            value: 4
-          - name: B_0x5
-            description: CC4
-            value: 5
           - name: B_0x6
             description: COM
             value: 6
           - name: B_0x7
             description: Trigger
             value: 7
-  - name: TIM2_DMAR
-    displayName: TIM2_DMAR
-    description: TIM2 DMA address for full transfer
+  - name: DMAR
+    displayName: DMAR
+    description: TIM15 DMA address for full transfer
     addressOffset: 992
     size: 32
     access: read-write
@@ -1775,3 +1601,6 @@ addressBlocks:
   - offset: 0
     size: 996
     usage: registers
+interrupts:
+  - name: INTR
+    description: TIM15 global interrupt
