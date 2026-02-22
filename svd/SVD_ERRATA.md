@@ -422,3 +422,16 @@ has the correct name. All RMs consistently use MCKDIV.
 
 **addressBlock.size:** All F4 SAI SVDs report 1024; correct is 68
 (BDR@0x40 + 4 = 68 bytes).
+
+### FMPI2C
+
+**STM32F413 (SVD v1.1):** Poor field names throughout (ADDRE instead of ADDRIE,
+TCDMAEN instead of TXDMAEN, SADD1_7 instead of SADD7_1, etc.) and descriptions
+that just repeat the field name. STM32F446 SVD has proper names and descriptions.
+
+**STM32F446 (SVD v1.5):** TXDR register marked `access: read-only` — should be
+write-only (it's a transmit data register). ISR register marked read-only at
+register level, but TXE and TXIS bits are actually read-write per RM0390.
+
+**addressBlock.size:** STM32F446 reports 1024, STM32F413 reports 45; correct is 44
+(TXDR@0x28 + 4 = 44 bytes).
