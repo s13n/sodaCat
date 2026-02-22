@@ -1,6 +1,15 @@
 name: GpTimer
 description: General-purpose timers
 groupName: TIM
+params:
+  width:
+    type: int
+    default: 16
+    description: Counter width in bits
+  channels:
+    type: int
+    default: 4
+    description: Number of capture/compare channels
 registers:
   - name: CR1
     displayName: CR1
@@ -26,6 +35,14 @@ registers:
         description: One-pulse mode
         bitOffset: 3
         bitWidth: 1
+      - name: DIR
+        description: Direction
+        bitOffset: 4
+        bitWidth: 1
+      - name: CMS
+        description: "Center-aligned mode\n              selection"
+        bitOffset: 5
+        bitWidth: 2
       - name: ARPE
         description: Auto-reload preload enable
         bitOffset: 7
@@ -36,24 +53,48 @@ registers:
         bitWidth: 2
   - name: CR2
     displayName: CR2
-    description: TIM10 control register 2
+    description: control register 2
     addressOffset: 4
     size: 32
     access: read-write
     resetValue: 0
     fields:
+      - name: CCDS
+        description: "Capture/compare DMA\n              selection"
+        bitOffset: 3
+        bitWidth: 1
       - name: MMS
         description: Master mode selection
         bitOffset: 4
         bitWidth: 3
+      - name: TI1S
+        description: TI1 selection
+        bitOffset: 7
+        bitWidth: 1
   - name: SMCR
     displayName: SMCR
-    description: "TIM10 slave mode control\n          register"
+    description: slave mode control register
     addressOffset: 8
     size: 32
     access: read-write
     resetValue: 0
     fields:
+      - name: SMS
+        description: Slave mode selection
+        bitOffset: 0
+        bitWidth: 3
+      - name: OCCS
+        description: OCREF clear selection
+        bitOffset: 3
+        bitWidth: 1
+      - name: TS
+        description: Trigger selection
+        bitOffset: 4
+        bitWidth: 3
+      - name: MSM
+        description: Master/Slave mode
+        bitOffset: 7
+        bitWidth: 1
       - name: ETF
         description: External trigger filter
         bitOffset: 8
@@ -86,6 +127,46 @@ registers:
         description: "Capture/Compare 1 interrupt\n              enable"
         bitOffset: 1
         bitWidth: 1
+      - name: CC2IE
+        description: "Capture/Compare 2 interrupt\n              enable"
+        bitOffset: 2
+        bitWidth: 1
+      - name: CC3IE
+        description: "Capture/Compare 3 interrupt\n              enable"
+        bitOffset: 3
+        bitWidth: 1
+      - name: CC4IE
+        description: "Capture/Compare 4 interrupt\n              enable"
+        bitOffset: 4
+        bitWidth: 1
+      - name: TIE
+        description: Trigger interrupt enable
+        bitOffset: 6
+        bitWidth: 1
+      - name: UDE
+        description: Update DMA request enable
+        bitOffset: 8
+        bitWidth: 1
+      - name: CC1DE
+        description: "Capture/Compare 1 DMA request\n              enable"
+        bitOffset: 9
+        bitWidth: 1
+      - name: CC2DE
+        description: "Capture/Compare 2 DMA request\n              enable"
+        bitOffset: 10
+        bitWidth: 1
+      - name: CC3DE
+        description: "Capture/Compare 3 DMA request\n              enable"
+        bitOffset: 11
+        bitWidth: 1
+      - name: CC4DE
+        description: "Capture/Compare 4 DMA request\n              enable"
+        bitOffset: 12
+        bitWidth: 1
+      - name: TDE
+        description: Trigger DMA request enable
+        bitOffset: 14
+        bitWidth: 1
   - name: SR
     displayName: SR
     description: status register
@@ -102,16 +183,44 @@ registers:
         description: "Capture/Compare 1 interrupt\n              flag"
         bitOffset: 1
         bitWidth: 1
+      - name: CC2IF
+        description: "Capture/Compare 2 interrupt\n              flag"
+        bitOffset: 2
+        bitWidth: 1
+      - name: CC3IF
+        description: "Capture/Compare 3 interrupt\n              flag"
+        bitOffset: 3
+        bitWidth: 1
+      - name: CC4IF
+        description: "Capture/Compare 4 interrupt\n              flag"
+        bitOffset: 4
+        bitWidth: 1
+      - name: TIF
+        description: Trigger interrupt flag
+        bitOffset: 6
+        bitWidth: 1
       - name: CC1OF
         description: "Capture/compare 1 overcapture\n              flag"
         bitOffset: 9
+        bitWidth: 1
+      - name: CC2OF
+        description: "Capture/compare 2 overcapture\n              flag"
+        bitOffset: 10
+        bitWidth: 1
+      - name: CC3OF
+        description: "Capture/compare 3 overcapture\n              flag"
+        bitOffset: 11
+        bitWidth: 1
+      - name: CC4OF
+        description: "Capture/compare 1 overcapture\n              flag"
+        bitOffset: 12
         bitWidth: 1
   - name: EGR
     displayName: EGR
     description: event generation register
     addressOffset: 20
     size: 32
-    access: write-only
+    access: read-write
     resetValue: 0
     fields:
       - name: UG
@@ -119,12 +228,28 @@ registers:
         bitOffset: 0
         bitWidth: 1
       - name: CC1G
-        description: "Capture/Compare 1\n              generation"
+        description: "Capture/compare 1\n              generation"
         bitOffset: 1
+        bitWidth: 1
+      - name: CC2G
+        description: "Capture/compare 2\n              generation"
+        bitOffset: 2
+        bitWidth: 1
+      - name: CC3G
+        description: "Capture/compare 3\n              generation"
+        bitOffset: 3
+        bitWidth: 1
+      - name: CC4G
+        description: "Capture/compare 4\n              generation"
+        bitOffset: 4
+        bitWidth: 1
+      - name: TG
+        description: Trigger generation
+        bitOffset: 6
         bitWidth: 1
   - name: CCMR1_Output
     displayName: CCMR1_Output
-    description: capture/compare mode register
+    description: "capture/compare mode register\n          1"
     addressOffset: 24
     size: 32
     access: read-write
@@ -150,6 +275,26 @@ registers:
         description: "Output compare 1 clear\n              enable"
         bitOffset: 7
         bitWidth: 1
+      - name: CC2S
+        description: "Capture/Compare 2\n              selection"
+        bitOffset: 8
+        bitWidth: 1
+      - name: OC2FE
+        description: "Output compare 2 fast\n              enable"
+        bitOffset: 10
+        bitWidth: 1
+      - name: OC2PE
+        description: "Output compare 2 preload\n              enable"
+        bitOffset: 11
+        bitWidth: 1
+      - name: OC2M
+        description: Output compare 2 mode
+        bitOffset: 12
+        bitWidth: 3
+      - name: OC2CE
+        description: "Output compare 2 clear\n              enable"
+        bitOffset: 15
+        bitWidth: 1
   - name: CCMR1_Input
     displayName: CCMR1_Input
     description: "capture/compare mode register 1 (input\n          mode)"
@@ -163,13 +308,106 @@ registers:
         description: "Capture/Compare 1\n              selection"
         bitOffset: 0
         bitWidth: 2
-      - name: IC1PSC
+      - name: ICPCS
         description: Input capture 1 prescaler
         bitOffset: 2
         bitWidth: 2
       - name: IC1F
         description: Input capture 1 filter
         bitOffset: 4
+        bitWidth: 4
+      - name: CC2S
+        description: "Capture/Compare 2\n              selection"
+        bitOffset: 8
+        bitWidth: 2
+      - name: IC2PCS
+        description: Input capture 2 prescaler
+        bitOffset: 10
+        bitWidth: 2
+      - name: IC2F
+        description: Input capture 2 filter
+        bitOffset: 12
+        bitWidth: 4
+  - name: CCMR2_Output
+    displayName: CCMR2_Output
+    description: "capture/compare mode register\n          2"
+    addressOffset: 28
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CC3S
+        description: "Capture/Compare 3\n              selection"
+        bitOffset: 0
+        bitWidth: 2
+      - name: OC3FE
+        description: "Output compare 3 fast\n              enable"
+        bitOffset: 2
+        bitWidth: 1
+      - name: OC3PE
+        description: "Output compare 3 preload\n              enable"
+        bitOffset: 3
+        bitWidth: 1
+      - name: OC3M
+        description: Output compare 3 mode
+        bitOffset: 4
+        bitWidth: 3
+      - name: OC3CE
+        description: "Output compare 3 clear\n              enable"
+        bitOffset: 7
+        bitWidth: 1
+      - name: CC4S
+        description: "Capture/Compare 4\n              selection"
+        bitOffset: 8
+        bitWidth: 1
+      - name: OC4FE
+        description: "Output compare 4 fast\n              enable"
+        bitOffset: 10
+        bitWidth: 1
+      - name: OC4PE
+        description: "Output compare 4 preload\n              enable"
+        bitOffset: 11
+        bitWidth: 1
+      - name: OC4M
+        description: Output compare 4 mode
+        bitOffset: 12
+        bitWidth: 3
+      - name: OC4CE
+        description: "Output compare 4 clear\n              enable"
+        bitOffset: 15
+        bitWidth: 1
+  - name: CCMR2_Input
+    displayName: CCMR2_Input
+    description: "capture/compare mode register 2 (input\n          mode)"
+    alternateRegister: CCMR2_Output
+    addressOffset: 28
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CC3S
+        description: "Capture/compare 3\n              selection"
+        bitOffset: 0
+        bitWidth: 2
+      - name: IC3PSC
+        description: Input capture 3 prescaler
+        bitOffset: 2
+        bitWidth: 2
+      - name: IC3F
+        description: Input capture 3 filter
+        bitOffset: 4
+        bitWidth: 4
+      - name: CC4S
+        description: "Capture/Compare 4\n              selection"
+        bitOffset: 8
+        bitWidth: 2
+      - name: IC4PSC
+        description: Input capture 4 prescaler
+        bitOffset: 10
+        bitWidth: 2
+      - name: IC4F
+        description: Input capture 4 filter
+        bitOffset: 12
         bitWidth: 4
   - name: CCER
     displayName: CCER
@@ -191,6 +429,42 @@ registers:
         description: "Capture/Compare 1 complementary output\n              Polarity"
         bitOffset: 3
         bitWidth: 1
+      - name: CC2E
+        description: "Capture/Compare 2 output\n              enable"
+        bitOffset: 4
+        bitWidth: 1
+      - name: CC2P
+        description: "Capture/Compare 2 output\n              Polarity"
+        bitOffset: 5
+        bitWidth: 1
+      - name: CC2NP
+        description: "Capture/Compare 2 output\n              Polarity"
+        bitOffset: 7
+        bitWidth: 1
+      - name: CC3E
+        description: "Capture/Compare 3 output\n              enable"
+        bitOffset: 8
+        bitWidth: 1
+      - name: CC3P
+        description: "Capture/Compare 3 output\n              Polarity"
+        bitOffset: 9
+        bitWidth: 1
+      - name: CC3NP
+        description: "Capture/Compare 3 output\n              Polarity"
+        bitOffset: 11
+        bitWidth: 1
+      - name: CC4E
+        description: "Capture/Compare 4 output\n              enable"
+        bitOffset: 12
+        bitWidth: 1
+      - name: CC4P
+        description: "Capture/Compare 4 output\n              Polarity"
+        bitOffset: 13
+        bitWidth: 1
+      - name: CC4NP
+        description: "Capture/Compare 4 output\n              Polarity"
+        bitOffset: 15
+        bitWidth: 1
   - name: CNT
     displayName: CNT
     description: counter
@@ -200,7 +474,7 @@ registers:
     resetValue: 0
     fields:
       - name: CNT
-        description: TIM10 counter
+        description: TIM2 counter
         bitOffset: 0
         bitWidth: 16
   - name: PSC
@@ -212,7 +486,7 @@ registers:
     resetValue: 0
     fields:
       - name: PSC
-        description: TIM9 prescaler
+        description: TIM2 prescaler
         bitOffset: 0
         bitWidth: 16
   - name: ARR
@@ -241,7 +515,7 @@ registers:
         bitWidth: 16
   - name: CCR2
     displayName: CCR2
-    description: "TIM10 capture/compare register\n          2"
+    description: capture/compare register 1
     addressOffset: 56
     size: 32
     access: read-write
@@ -251,26 +525,58 @@ registers:
         description: Capture/Compare 2 value
         bitOffset: 0
         bitWidth: 16
-  - name: OR
-    displayName: OR
-    description: option register
-    addressOffset: 80
+  - name: CCR3
+    displayName: CCR3
+    description: capture/compare register 1
+    addressOffset: 60
     size: 32
     access: read-write
     resetValue: 0
     fields:
-      - name: TI1_RMP
-        description: Timer 10 input 1 remap
+      - name: CCR1
+        description: Capture/Compare 1 value
         bitOffset: 0
-        bitWidth: 2
-      - name: ETR_RMP
-        description: Timer10 ETR remap
-        bitOffset: 2
-        bitWidth: 1
-      - name: TI1_RMP_RI
-        description: "Timer10 Input 1 remap for Routing\n              Interface (RI)"
-        bitOffset: 3
-        bitWidth: 1
+        bitWidth: 16
+  - name: CCR4
+    displayName: CCR4
+    description: capture/compare register 1
+    addressOffset: 64
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CCR4
+        description: Capture/Compare 4 value
+        bitOffset: 0
+        bitWidth: 16
+  - name: DCR
+    displayName: DCR
+    description: DMA control register
+    addressOffset: 72
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: DBA
+        description: DMA base address
+        bitOffset: 0
+        bitWidth: 5
+      - name: DBL
+        description: DMA burst length
+        bitOffset: 8
+        bitWidth: 5
+  - name: DMAR
+    displayName: DMAR
+    description: DMA address for full transfer
+    addressOffset: 76
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: DMAB
+        description: "DMA register for burst\n              accesses"
+        bitOffset: 0
+        bitWidth: 16
 addressBlocks:
   - offset: 0
     size: 1024
