@@ -445,6 +445,18 @@ read-write in different monitors across different SVDs. No SVD gets all correct.
 | CH1-7 CFGR1  | CKOUTDIV, CKOUTSRC, DFSDMEN | Duplicated from CH0 | CH0CFGR1-only per RM0455 |
 
 
+## ST STM32H7 — PWR
+
+### PWR_CR3 USB33DEN — STM32H723 (SVD v1.2), STM32H745_CM4 (SVD v1.9)
+
+| Register | Field     | Bug                  | RM0468/RM0399 says |
+|----------|-----------|----------------------|--------------------|
+| CR3      | USB33DEN  | access: write-only   | read-write         |
+
+**Note:** STM32H743 SVD (v2.2) has USB33DEN correctly as read-write.
+The H7A3 SVD also has it correctly as read-write.
+
+
 ## ST STM32L0 — ADC (needs re-verification)
 
 > **Caveat:** Identified during L0 ADC work but not yet verified against the RM

@@ -1,6 +1,11 @@
 name: PWR
 description: PWR
 groupName: PWR
+params:
+  has_smps:
+    type: bool
+    default: true
+    description: Has SMPS step-down converter (false for H742/H753 which use SCUEN instead of SDEN)
 registers:
   - name: CR1
     displayName: CR1
@@ -110,6 +115,53 @@ registers:
         access: read-only
   - name: CR3
     displayName: CR3
+    description: "Reset only by POR only, not reset by wakeup\n          from Standby mode and RESET pad. The lower byte of this\n          register is written once after POR and shall be written\n          before changing VOS level or ck_sys clock frequency. No\n          limitation applies to the upper bytes.Programming data\n          corresponding to an invalid combination of SDLEVEL,\n          SDEXTHP, SDEN, LDOEN and BYPASS bits (see Table9) will be\n          ignored: data will not be written, the written-once\n          mechanism will lock the register and any further write\n          access will be ignored. The default supply configuration\n          will be kept and the ACTVOSRDY bit in PWR control status\n          register 1 (PWR_CSR1) will go on indicating invalid\n          voltage levels. The system shall be power cycled before\n          writing a new value."
+    addressOffset: 12
+    size: 32
+    resetValue: 6
+    fields:
+      - name: BYPASS
+        description: "Power management unit\n              bypass"
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: LDOEN
+        description: "Low drop-out regulator\n              enable"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: SDEN
+        description: SD converter Enable
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: VBE
+        description: VBAT charging enable
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: VBRS
+        description: "VBAT charging resistor\n              selection"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: USB33DEN
+        description: "VDD33USB voltage level detector\n              enable."
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: USBREGEN
+        description: USB regulator enable.
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: USB33RDY
+        description: USB supply ready.
+        bitOffset: 26
+        bitWidth: 1
+        access: read-only
+  - name: CR3_SCUEN
+    displayName: CR3_SCUEN
     description: "Reset only by POR only, not reset by wakeup\n          from Standby mode and RESET pad. The lower byte of this\n          register is written once after POR and shall be written\n          before changing VOS level or ck_sys clock frequency. No\n          limitation applies to the upper bytes.Programming data\n          corresponding to an invalid combination of SDLEVEL,\n          SDEXTHP, SDEN, LDOEN and BYPASS bits (see Table9) will be\n          ignored: data will not be written, the written-once\n          mechanism will lock the register and any further write\n          access will be ignored. The default supply configuration\n          will be kept and the ACTVOSRDY bit in PWR control status\n          register 1 (PWR_CSR1) will go on indicating invalid\n          voltage levels. The system shall be power cycled before\n          writing a new value."
     addressOffset: 12
     size: 32

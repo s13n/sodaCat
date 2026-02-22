@@ -409,16 +409,29 @@ blocks:
     from: STM32H723.PSSI
     instances: [PSSI]
   PWR:
+    from: STM32H723.PWR
     instances: [PWR]
+    params:
+      has_smps:
+        type: bool
+        default: true
+        description: Has SMPS step-down converter (false for H742/H753 which use SCUEN instead of SDEN)
+    transforms:
+      # H723/H745 SVDs: USB33DEN marked write-only, RM says read-write
+      - type: patchFields
+        register: CR3
+        fields:
+          - {name: USB33DEN, access: read-write}
+      # H742/H753 has no SMPS — bit 2 is SCUEN (Supply Config Update Enable) not SDEN
+      - type: cloneRegister
+        source: CR3
+        name: CR3_SCUEN
+        renameFields:
+          - {pattern: '^SDEN$', replacement: SCUEN}
     variants:
-      H73x:
-        from: STM32H723.PWR
-      H742_H753:
-        from: STM32H743.PWR
-      H745_H757:
-        from: STM32H745_CM4.PWR
       H7A3_B:
         from: STM32H7A3.PWR
+        transforms: []
   QUADSPI:
     from: STM32H742.QUADSPI
     instances: [QUADSPI]
@@ -563,6 +576,7 @@ chip_params:
   H742_H753:
     _all:
       DFSDM: {has_dlyr: false}
+      PWR: {has_smps: false}
       RAMECC3: {monitors: 2}
   H745_H757:
     _all:
