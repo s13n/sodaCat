@@ -57,7 +57,40 @@ def load_family_config(family_code):
             entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
         blocks_config[block_type] = entry
 
-    return families, blocks_config
+    chip_params = {}
+    for sf_key, sf_val in (config.get('chip_params') or {}).items():
+        chip_params[sf_key] = {k: dict(v) for k, v in sf_val.items()}
+
+    return families, blocks_config, chip_params
+
+
+def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
+    """Resolve a parameter value using the subfamily-keyed chip_params structure.
+
+    Resolution order:
+    1. Per-subfamily, per-chip, instance name
+    2. Per-subfamily, per-chip, block name
+    3. Per-subfamily, _all, instance name
+    4. Per-subfamily, _all, block name
+    5. Family _all, _all, instance name
+    6. Family _all, _all, block name
+    7. Param default from block declaration
+    """
+    for sf_key in (subfamily, '_all'):
+        sf = chip_params.get(sf_key)
+        if not sf:
+            continue
+        chip_keys = [chip, '_all'] if sf_key != '_all' else ['_all']
+        for chip_key in chip_keys:
+            chip_section = sf.get(chip_key)
+            if not chip_section:
+                continue
+            for target_key in (instance, block_type):
+                if target_key and target_key in chip_section:
+                    params = chip_section[target_key]
+                    if param_name in params:
+                        return params[param_name]
+    return default
 
 
 def _resolve_block_config(block_cfg, subfamily_name):
@@ -249,7 +282,7 @@ def main():
         print(f"Error: {zip_path} not found")
         sys.exit(1)
 
-    families, blocks_config = load_family_config(family_code)
+    families, blocks_config, chip_params = load_family_config(family_code)
 
     print(f"Extracting STM32{family_code} models from {zip_path}")
     print(f"Output directory: {output_dir}\n")

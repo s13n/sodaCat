@@ -95,9 +95,11 @@ A single `extractors/generate_stm32_models.py` script handles all 17 STM32 famil
 
 - `families`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
 - `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides
-- `chip_params` (optional): per-chip parameter overrides for values declared in block `params`
+- `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
 
-Parameter declarations use `{type, default?, description?}`. Permissible types: `int`, `bool`, `string`. Parameters in `chip_params` can be keyed by block name (applies to all instances) or instance name (applies to a specific instance).
+Parameter declarations use `{type, default?, description?}`. Permissible types: `int`, `bool`, `string`.
+
+The `chip_params` section is always keyed by subfamily (or `_all` for family-wide), then by chip name (or `_all` for subfamily-wide), then by block name or instance name. Resolution order: per-chip instance → per-chip block → subfamily `_all` instance → subfamily `_all` block → family `_all._all` instance → family `_all._all` block → param default.
 
 Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: blocks **without** `variants` are written to the family base directory (shared); subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** in `variants` share the base-directory model using the top-level config. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
 
