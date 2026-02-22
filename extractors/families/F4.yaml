@@ -360,16 +360,17 @@ blocks:
     transforms:
       - {type: patchAddressBlock, size: 160}
   SAI:
+    from: STM32F446.SAI1
     instances: [SAI, SAI1, SAI2]
-    variants:
-      F4x5_F4x7_F42x_F43x:
-        from: STM32F429.SAI
-      F413_F423:
-        from: STM32F413.SAI
-      F446:
-        from: STM32F446.SAI1
-      F469_F479:
-        from: STM32F469.SAI
+    params:
+      has_gcr:
+        type: bool
+        default: false
+        description: Global configuration register (inter-SAI synchronization)
+    transforms:
+      - {type: renameFields, register: ACR1, pattern: '^MCJDIV$', replacement: MCKDIV}
+      - {type: renameFields, register: BCR1, pattern: '^MCJDIV$', replacement: MCKDIV}
+      - {type: patchAddressBlock, size: 68}
   SDIO:
     from: STM32F401.SDIO
     instances: [SDIO]
@@ -453,6 +454,7 @@ chip_params:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
       ADC_Common: {multi: true}
+      SAI: {has_gcr: true}
   F469_F479:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}

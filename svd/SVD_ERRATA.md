@@ -407,3 +407,18 @@ SVDs have them correctly.
 | STM32F429  | 1024    | 160     | |
 | STM32F446  | 1024    | 160     | |
 | STM32F469  | 1024    | 160     | |
+
+### SAI
+
+**STM32F469 (SVD v1.4):** SAI has a spurious GCR (Global Configuration Register)
+at offset 0x00 with a SYNCOUT field. RM0386 Rev 6 explicitly removed SAI_GCR
+(noted in revision history for Rev 4). The F469 has only one SAI instance, so
+inter-SAI synchronization is not applicable. Only the F446 (RM0390) genuinely
+has SAI_GCR with SYNCIN[1:0] and SYNCOUT[1:0].
+
+**MCJDIV field name typo:** The SAI_xCR1.MCKDIV field (Master ClocK DIVider) is
+misspelled as "MCJDIV" in STM32F429, STM32F413, and STM32F446 SVDs. STM32F469
+has the correct name. All RMs consistently use MCKDIV.
+
+**addressBlock.size:** All F4 SAI SVDs report 1024; correct is 68
+(BDR@0x40 + 4 = 68 bytes).
