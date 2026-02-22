@@ -47,26 +47,15 @@ blocks:
     interrupts:
       ADC: INTR
   ADC_Common:
+    from: STM32F405.ADC_Common
     instances: [ADC_Common, C_ADC]
-    interrupts:
-      FPU: INTR
-    variants:
-      F401:
-        from: STM32F401.ADC_Common
-      F410:
-        from: STM32F410.ADC_Common
-      F411:
-        from: STM32F411.ADC_Common
-      F4x5_F4x7_F42x_F43x:
-        from: STM32F429.C_ADC
-      F412:
-        from: STM32F412.ADC_Common
-      F413_F423:
-        from: STM32F413.ADC_Common
-      F446:
-        from: STM32F446.C_ADC
-      F469_F479:
-        from: STM32F469.C_ADC
+    params:
+      multi:
+        type: bool
+        default: false
+        description: Multi-ADC mode support (MULT field in CCR, CDR register)
+    transforms:
+      - {type: patchAddressBlock, size: 12}
   AES:
     from: STM32F413.AES
     instances: [AES]
@@ -468,6 +457,9 @@ chip_params:
       TIM12: {channels: 2}
       TIM13: {channels: 1}
       TIM14: {channels: 1}
+  F4x5_F4x7_F42x_F43x:
+    _all:
+      ADC_Common: {multi: true}
   F412:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
@@ -477,6 +469,8 @@ chip_params:
   F446:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
+      ADC_Common: {multi: true}
   F469_F479:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
+      ADC_Common: {multi: true}

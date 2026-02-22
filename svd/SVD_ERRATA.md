@@ -345,3 +345,18 @@ F4x5/F42x/F43x). Multiple SVDs are missing one or both of these fields.
 
 SVD versions: STM32F401 v2.2, STM32F411 v2.3, STM32F412 v1.4, STM32F413 v1.1,
 STM32F429 v1.6, STM32F446 v1.5, STM32F469 v1.4.
+
+### ADC_Common
+
+**addressBlock.size bugs:**
+
+| SVD file   | Reports | Correct | Notes |
+|------------|---------|---------|-------|
+| STM32F405  | 13      | 12      | Multi-ADC: CSR@0 + CCR@4 + CDR@8 = 12 bytes |
+| STM32F413  | 9       | 8       | Single-ADC: CSR@0 + CCR@4 = 8 bytes (no CDR) |
+| STM32F469  | 1024    | 12      | Multi-ADC |
+
+**STM32F413 (SVD v1.1):** ADC_Common has a spurious FPU interrupt mapped to it.
+The FPU interrupt is a separate Cortex-M4 feature and has nothing to do with ADC.
+No F4 ADC_Common peripheral has its own interrupt — ADC interrupts are routed
+through the individual ADC blocks.
