@@ -61,6 +61,38 @@ despite F74x hardware being single-bank only.
 | CSR1     | ODRDY     | Access read-write            | Read-only                    |
 | CSR1     | ODSWRDY   | Access read-write            | Read-only                    |
 
+### BasicTimer (TIM6/TIM7)
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register | Field     | Bug                          | All three RMs say            |
+|----------|-----------|------------------------------|------------------------------|
+| CNT      | UIFCPY    | Missing                      | Bit 31, read-only UIF copy   |
+
+### CRC
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register | Field     | Bug                          | All three RMs say            |
+|----------|-----------|------------------------------|------------------------------|
+| CR       | CR        | Single 1-bit field (typo "regidter") | Four fields: RESET, POLYSIZE, REV_IN, REV_OUT |
+
+### I2C
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register | Field     | Bug                          | All three RMs say            |
+|----------|-----------|------------------------------|------------------------------|
+| CR1      | WUPEN     | Present at bit 18            | Bit 18 reserved (no wakeup from Stop on F7) |
+
+### IWDG
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register | Field     | Bug                          | All three RMs say            |
+|----------|-----------|------------------------------|------------------------------|
+| SR       | WVU       | Missing                      | Bit 2, window value update status |
+
 ### AES / CRYP naming
 
 **STM32F722 (SVD v1.4), STM32F723 (SVD v1.4), STM32F732 (SVD v1.4), STM32F733 (SVD v1.4):**
