@@ -352,6 +352,56 @@ absent in RM0433/RM0399.
 | FLTxCR1      | JEXTSEL    | 3-bit width                  | 5-bit (JEXTSEL[4:0])        |
 | FLT1-3       | (name)     | FLT1CHGR (missing J)        | FLT1JCHGR                   |
 
+
+## ST STM32H7 — CAN_CCU
+
+References:
+- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
+- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3
+
+All RMs describe CAN_CCU as a 6-register Clock Calibration Unit (CREL, CCFG, CSTAT,
+CWD, IR, IE) at offset 0x800 within the FDCAN address block.
+
+### CAN_CCU — STM32H7A3 (SVD v1.4)
+
+| Register     | Field      | Bug                                           | RM0455 says                  |
+|--------------|------------|-----------------------------------------------|------------------------------|
+| (all)        | (content)  | Contains 64 FDCAN registers instead of 6 CCU registers | 6-register CCU (CREL, CCFG, CSTAT, CWD, IR, IE) |
+| (all)        | (desc)     | Description says "FDCAN1"                     | Clock Calibration Unit       |
+
+## ST STM32H7 — RAMECC
+
+References:
+- RM0433 Rev.8 — STM32H742/H743/H750/H753
+- RM0399 Rev.5 — STM32H745/H747/H755/H757
+- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
+- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3
+
+All four RMs describe identical RAMECC register structure with regular 0x20 stride per
+monitor: MxCR (+0x00), MxSR (+0x04), MxFAR (+0x08), MxFDRL (+0x0C), MxFDRH (+0x10),
+MxFECR (+0x14). Access: CR/SR are read-write, FAR/FDRL/FDRH/FECR are read-only.
+
+### RAMECC — All H7 SVDs (H723, H743, H745_CM4, H7A3)
+
+| Register     | Field      | Bug                                      | RMs say                      |
+|--------------|------------|------------------------------------------|------------------------------|
+| M2FECR       | (offset)   | addressOffset 0x058                      | 0x054 (+0x14 from M2 base)  |
+| M3FECR       | (offset)   | addressOffset 0x07C                      | 0x074 (+0x14 from M3 base)  |
+| M4FECR       | (offset)   | addressOffset 0x090 (collides with M4FDRH) | 0x094 (+0x14 from M4 base) |
+
+### RAMECC — Access attribute bugs (all H7 SVDs, various monitors)
+
+Scattered access bugs — registers that should be read-only are randomly marked
+read-write in different monitors across different SVDs. No SVD gets all correct.
+
+| SVD          | Incorrect read-write registers                              |
+|--------------|--------------------------------------------------------------|
+| H743         | M1FECR, M2FDRH, M2FECR, M5FAR                             |
+| H723         | M1FAR, M1FDRL, M1FECR, M2FDRH, M2FECR (+ M3-M5 CR/SR read-only bug) |
+| H745_CM4     | M1FAR, M1FDRL, M1FECR, M2FDRH, M2FECR, M3FAR, M4FDRL, M5FAR (+ M3-M5 CR/SR read-only bug) |
+| H7A3         | M2FDRH, M1FECR, M2FECR (+ M3CR/M3SR read-write — coincidentally correct) |
+
+
 ### DFSDM — STM32H7A3 (SVD v3.4)
 
 | Register     | Field      | Bug                          | RM0455 says                  |

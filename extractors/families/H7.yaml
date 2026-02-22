@@ -79,16 +79,8 @@ blocks:
     interrupts:
       TIM6_DAC: INTR
   CAN_CCU:
+    from: STM32H723.CAN_CCU
     instances: [CAN_CCU]
-    variants:
-      H73x:
-        from: STM32H723.CAN_CCU
-      H742_H753:
-        from: STM32H743.CAN_CCU
-      H745_H757:
-        from: STM32H745_CM4.CAN_CCU
-      H7A3_B:
-        from: STM32H7A3.CAN_CCU
   CEC:
     from: STM32H723.CEC
     instances: [CEC]
@@ -426,18 +418,26 @@ blocks:
     interrupts:
       QUADSPI: INTR
   RAMECC:
+    from: STM32H743.RAMECC1
     instances: [RAMECC, RAMECC1, RAMECC2, RAMECC3]
     interrupts:
       ECC_DIAG_IT: INTR
-    variants:
-      H73x:
-        from: STM32H723.RAMECC1
-      H742_H753:
-        from: STM32H743.RAMECC1
-      H745_H757:
-        from: STM32H745_CM4.RAMECC1
-      H7A3_B:
-        from: STM32H7A3.RAMECC
+    params:
+      monitors:
+        type: int
+        default: 5
+        description: Number of ECC monitoring units in this RAMECC instance
+    transforms:
+      # All H7 SVDs: M2FECR/M3FECR/M4FECR at wrong offsets (RM says regular 0x20 stride)
+      # All H7 SVDs: scattered access bugs on FAR/FDRH/FECR (RM says all read-only)
+      - type: patchRegisters
+        registers:
+          - {name: M1FECR, access: read-only}
+          - {name: M2FDRH, access: read-only}
+          - {name: M2FECR, addressOffset: 84, access: read-only}
+          - {name: M3FECR, addressOffset: 116}
+          - {name: M4FECR, addressOffset: 148, alternateRegister: null}
+          - {name: M5FAR, access: read-only}
   RCC:
     instances: [RCC]
     interrupts:
@@ -556,9 +556,16 @@ chip_params:
   H742_H753:
     _all:
       DFSDM: {has_dlyr: false}
+      RAMECC3: {monitors: 2}
   H745_H757:
     _all:
       DFSDM: {has_dlyr: false}
+      RAMECC3: {monitors: 2}
+  H73x:
+    _all:
+      RAMECC2: {monitors: 3}
+      RAMECC3: {monitors: 2}
   H7A3_B:
     _all:
       DFSDM: {filters: 8}
+      RAMECC: {monitors: 3}

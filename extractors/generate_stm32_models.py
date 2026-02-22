@@ -187,7 +187,11 @@ def _patch_registers(registers, reg_patches):
 
         if props:
             if existing:
-                existing.update(props)
+                for k, v in props.items():
+                    if v is None:
+                        existing.pop(k, None)
+                    else:
+                        existing[k] = v
             else:
                 registers.append(dict(patch))
         else:
