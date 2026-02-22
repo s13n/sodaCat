@@ -379,3 +379,31 @@ F446, F469) have FLTR per their respective RMs.
 
 **STM32F413 (SVD v1.1):** I2C addressBlock.size = 41 (should be 40: registers
 span CR1@0x00 through FLTR@0x24, i.e. 0x24 + 4 = 40 bytes).
+
+### RTC
+
+**TSTR register (offset 0x30) — wrong fields in F429/F446/F469 SVDs:**
+These SVDs populate RTC_TSTR with tamper-related fields (TAMP1E, TAMP1TRG,
+TAMPIE, TAMP1INSEL, TSINSEL, ALARMOUTTYPE) instead of the correct BCD timestamp
+time fields (SU, ST, MNU, MNT, HU, HT, PM). The tamper fields are a subset of
+TAFCR (offset 0x40). All RMs (RM0090, RM0390, RM0386) confirm TSTR contains
+BCD time fields.
+
+**CR register — missing BYPSHAD and COSEL in F429/F446/F469 SVDs:**
+RTC_CR bit 5 (BYPSHAD, bypass shadow registers) and bit 19 (COSEL, calibration
+output selection) are documented in all F4 reference manuals but missing from
+the STM32F429, STM32F446, and STM32F469 SVDs. The F401/F410/F411/F412/F413
+SVDs have them correctly.
+
+**addressBlock.size bugs:**
+
+| SVD file   | Reports | Correct | Notes |
+|------------|---------|---------|-------|
+| STM32F401  | 1024    | 160     | BKP19R@0x9C + 4 = 160 bytes |
+| STM32F410  | 1024    | 160     | |
+| STM32F411  | 1024    | 160     | |
+| STM32F412  | 1024    | 160     | |
+| STM32F413  | 161     | 160     | Off by one |
+| STM32F429  | 1024    | 160     | |
+| STM32F446  | 1024    | 160     | |
+| STM32F469  | 1024    | 160     | |
