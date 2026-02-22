@@ -412,13 +412,39 @@ blocks:
       F72x_F73x:
         from: STM32F722.SYSCFG
   USART:
-    from: STM32F745.UART4
+    from: STM32F767.USART6
     instances: [UART4, UART5, UART7, UART8, USART1, USART2, USART3, USART6]
     interrupts:
       UART4: INTR
-    variants:
-      F72x_F73x:
-        from: STM32F722.UART4
+    params:
+      has_stop_mode_wakeup:
+        type: bool
+        default: false
+        description: USART wakeup from Stop mode (UESM, WUS, WUFIE, UCESM, WUF, REACK, WUCF)
+      has_tcbgt:
+        type: bool
+        default: false
+        description: Transmission complete before guard time (TCBGTIE, TCBGT, TCBGTCF)
+    transforms:
+      - type: patchFields
+        register: CR3
+        fields:
+          - {name: UCESM, description: USART clock enable in Stop mode, bitOffset: 23, bitWidth: 1}
+          - {name: TCBGTIE, description: Transmission complete before guard time interrupt enable, bitOffset: 24, bitWidth: 1}
+      - type: patchFields
+        register: ISR
+        fields:
+          - {name: TCBGT, description: Transmission complete before guard time completion, bitOffset: 25, bitWidth: 1}
+      - type: patchFields
+        register: ICR
+        fields:
+          - {name: TCBGTCF, description: Transmission complete before guard time clear flag, bitOffset: 7, bitWidth: 1}
+      - type: patchFields
+        register: BRR
+        fields:
+          - {name: DIV_Fraction}
+          - {name: DIV_Mantissa}
+          - {name: BRR, description: USART baud rate, bitOffset: 0, bitWidth: 16}
   USBPHYC:
     from: STM32F730.USBPHYC
     instances: [USBPHYC]
@@ -442,18 +468,23 @@ chip_params:
   STM32F722:
     DMA: {channel_count: 8}
     Flash: {has_pcrop: true}
+    USART: {has_tcbgt: true}
   STM32F723:
     DMA: {channel_count: 8}
     Flash: {has_pcrop: true}
+    USART: {has_tcbgt: true}
   STM32F730:
     DMA: {channel_count: 8}
     Flash: {has_pcrop: true}
+    USART: {has_tcbgt: true}
   STM32F732:
     DMA: {channel_count: 8}
     Flash: {has_pcrop: true}
+    USART: {has_tcbgt: true}
   STM32F733:
     DMA: {channel_count: 8}
     Flash: {has_pcrop: true}
+    USART: {has_tcbgt: true}
   STM32F745:
     DMA: {channel_count: 8}
   STM32F746:
@@ -466,27 +497,34 @@ chip_params:
     DMA: {channel_count: 16}
     Flash: {has_dual_bank: true}
     PWR: {has_eiwup: false}
+    USART: {has_stop_mode_wakeup: true, has_tcbgt: true}
   STM32F767:
     DMA: {channel_count: 16}
     Flash: {has_dual_bank: true}
     PWR: {has_eiwup: false}
+    USART: {has_stop_mode_wakeup: true, has_tcbgt: true}
   STM32F768:
     DMA: {channel_count: 16}
     Flash: {has_dual_bank: true}
     PWR: {has_eiwup: false}
+    USART: {has_stop_mode_wakeup: true, has_tcbgt: true}
   STM32F769:
     DMA: {channel_count: 16}
     Flash: {has_dual_bank: true}
     PWR: {has_eiwup: false}
+    USART: {has_stop_mode_wakeup: true, has_tcbgt: true}
   STM32F777:
     DMA: {channel_count: 16}
     Flash: {has_dual_bank: true}
     PWR: {has_eiwup: false}
+    USART: {has_stop_mode_wakeup: true, has_tcbgt: true}
   STM32F778:
     DMA: {channel_count: 16}
     Flash: {has_dual_bank: true}
     PWR: {has_eiwup: false}
+    USART: {has_stop_mode_wakeup: true, has_tcbgt: true}
   STM32F779:
     DMA: {channel_count: 16}
     Flash: {has_dual_bank: true}
+    USART: {has_stop_mode_wakeup: true, has_tcbgt: true}
     PWR: {has_eiwup: false}

@@ -101,6 +101,39 @@ despite F74x hardware being single-bank only.
 |----------|-----------|------------------------------|------------------------------|
 | BRR      | (entire)  | Register present at offset 0x28 | No BRR register in GPIO (register map ends at AFRH, offset 0x24) |
 
+### USART
+
+**STM32F745 (SVD v1.6):**
+
+| Register | Field        | Bug                          | RM0385 says                  |
+|----------|--------------|------------------------------|------------------------------|
+| CR1      | UESM         | Present at bit 1             | Bit 1 reserved               |
+| CR3      | WUS          | Present at bits 20-21        | Bits 20-21 reserved          |
+| CR3      | WUFIE        | Present at bit 22            | Bit 22 reserved              |
+| ISR      | WUF          | Present at bit 20            | Bit 20 reserved              |
+| ISR      | REACK        | Present at bit 22            | Bit 22 reserved              |
+| ICR      | WUCF         | Present at bit 20            | Bit 20 reserved              |
+| BRR      | DIV_Fraction | Split into Fraction+Mantissa | Single BRR[15:0] field       |
+
+Note: The F745 SVD has stop-mode wakeup fields copied from the F767, despite
+F74x not supporting USART wakeup from Stop mode per RM0385.
+
+**STM32F767 (SVD v1.6):**
+
+| Register | Field        | Bug                          | RM0410 says                  |
+|----------|--------------|------------------------------|------------------------------|
+| CR3      | UCESM        | Missing                      | Bit 23, USART clock enable in Stop mode |
+| CR3      | TCBGTIE      | Missing                      | Bit 24, TX complete before guard time IE |
+| ISR      | TCBGT        | Missing                      | Bit 25, TX complete before guard time |
+| ICR      | TCBGTCF      | Missing                      | Bit 7, TCBGT clear flag      |
+| BRR      | DIV_Fraction | Split into Fraction+Mantissa | Single BRR[15:0] field       |
+
+**STM32F722 (SVD v1.4):**
+
+| Register | Field        | Bug                          | RM0431 says                  |
+|----------|--------------|------------------------------|------------------------------|
+| ISR      | RWU          | Missing                      | Bit 19, receiver wakeup from mute mode |
+
 ### AES / CRYP naming
 
 **STM32F722 (SVD v1.4), STM32F723 (SVD v1.4), STM32F732 (SVD v1.4), STM32F733 (SVD v1.4):**

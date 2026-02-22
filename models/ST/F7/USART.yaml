@@ -1,6 +1,15 @@
 name: USART
 description: "Universal synchronous asynchronous receiver\n      transmitter"
 groupName: USART
+params:
+  has_stop_mode_wakeup:
+    type: bool
+    default: false
+    description: USART wakeup from Stop mode (UESM, WUS, WUFIE, UCESM, WUF, REACK, WUCF)
+  has_tcbgt:
+    type: bool
+    default: false
+    description: Transmission complete before guard time (TCBGTIE, TCBGT, TCBGTCF)
 registers:
   - name: CR1
     displayName: CR1
@@ -298,6 +307,14 @@ registers:
         description: "Wakeup from Stop mode interrupt\n              enable"
         bitOffset: 22
         bitWidth: 1
+      - name: UCESM
+        description: USART clock enable in Stop mode
+        bitOffset: 23
+        bitWidth: 1
+      - name: TCBGTIE
+        description: Transmission complete before guard time interrupt enable
+        bitOffset: 24
+        bitWidth: 1
   - name: BRR
     displayName: BRR
     description: Baud rate register
@@ -306,14 +323,10 @@ registers:
     access: read-write
     resetValue: 0
     fields:
-      - name: DIV_Fraction
-        description: DIV_Fraction
+      - name: BRR
+        description: USART baud rate
         bitOffset: 0
-        bitWidth: 4
-      - name: DIV_Mantissa
-        description: DIV_Mantissa
-        bitOffset: 4
-        bitWidth: 12
+        bitWidth: 16
   - name: GTPR
     displayName: GTPR
     description: "Guard time and prescaler\n          register"
@@ -470,6 +483,10 @@ registers:
         description: REACK
         bitOffset: 22
         bitWidth: 1
+      - name: TCBGT
+        description: Transmission complete before guard time completion
+        bitOffset: 25
+        bitWidth: 1
   - name: ICR
     displayName: ICR
     description: Interrupt flag clear register
@@ -526,6 +543,10 @@ registers:
         description: "Wakeup from Stop mode clear\n              flag"
         bitOffset: 20
         bitWidth: 1
+      - name: TCBGTCF
+        description: Transmission complete before guard time clear flag
+        bitOffset: 7
+        bitWidth: 1
   - name: RDR
     displayName: RDR
     description: Receive data register
@@ -554,3 +575,6 @@ addressBlocks:
   - offset: 0
     size: 1024
     usage: registers
+interrupts:
+  - name: INTR
+    description: UART4 global interrupt
