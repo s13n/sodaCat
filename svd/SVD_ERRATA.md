@@ -149,6 +149,25 @@ all three RMs. The write timing registers should have BUSTURN instead.
 |----------|-----------|------------------------------|------------------------------|
 | BRR      | (entire)  | Register present at offset 0x28 | No BRR register in GPIO (register map ends at AFRH, offset 0x24) |
 
+### SDMMC
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register | Field     | Bug                          | All three RMs say            |
+|----------|-----------|------------------------------|------------------------------|
+| CMD      | ENCMDcompl | Present at bit 12           | Bit 12 reserved (CE-ATA removed in SDMMC IP) |
+| CMD      | nIEN       | Present at bit 13           | Bit 13 reserved              |
+| CMD      | CE_ATACMD  | Present at bit 14           | Bit 14 reserved              |
+| STA      | STBITERR   | Present at bit 9            | Bit 9 reserved               |
+| STA      | CEATAEND   | Present at bit 23           | Bit 23 reserved              |
+| ICR      | STBITERRC  | Present at bit 9            | Bit 9 reserved               |
+| ICR      | CEATAENDC  | Present at bit 23           | Bit 23 reserved              |
+| MASK     | STBITERRIE | Present at bit 9            | Bit 9 reserved               |
+| MASK     | CEATAENDIE | Present at bit 23           | Bit 23 reserved              |
+
+Note: These CE-ATA fields are vestiges of the older SDIO IP (STM32F1/F2/F4). The F7 SDMMC
+peripheral dropped CE-ATA support entirely; all three RMs mark these bits as reserved.
+
 ### USART
 
 **STM32F745 (SVD v1.6):**
