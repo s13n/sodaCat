@@ -246,25 +246,31 @@ blocks:
         fields:
           - {name: DEVLNSTS, description: Device line status, bitOffset: 22, bitWidth: 2}
   OTG_FS_GLOBAL:
+    from: STM32F412.OTG_FS_GLOBAL
     instances: [OTG_FS_GLOBAL]
     interrupts:
       OTG_FS_WKUP: WKUP
       OTG_FS: INTR
+    params:
+      has_bcd:
+        type: bool
+        default: true
+        description: Battery charging detection (BCD fields in GCCFG)
+    transforms:
+      - {type: patchAddressBlock, size: 280}
     variants:
       F401:
-        from: STM32F401.OTG_FS_GLOBAL
+        from: STM32F429.OTG_FS_GLOBAL
+        transforms:
+          - {type: patchAddressBlock, size: 272}
       F411:
-        from: STM32F411.OTG_FS_GLOBAL
+        from: STM32F429.OTG_FS_GLOBAL
+        transforms:
+          - {type: patchAddressBlock, size: 272}
       F4x5_F4x7_F42x_F43x:
         from: STM32F429.OTG_FS_GLOBAL
-      F412:
-        from: STM32F412.OTG_FS_GLOBAL
-      F413_F423:
-        from: STM32F413.OTG_FS_GLOBAL
-      F446:
-        from: STM32F446.OTG_FS_GLOBAL
-      F469_F479:
-        from: STM32F469.OTG_FS_GLOBAL
+        transforms:
+          - {type: patchAddressBlock, size: 272}
   OTG_FS_HOST:
     from: STM32F401.OTG_FS_HOST
     instances: [OTG_FS_HOST]
@@ -453,9 +459,11 @@ chip_params:
   F446:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
+      OTG_FS_GLOBAL: {has_bcd: false}
       ADC_Common: {multi: true}
       SAI: {has_gcr: true}
   F469_F479:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
+      OTG_FS_GLOBAL: {has_bcd: false}
       ADC_Common: {multi: true}

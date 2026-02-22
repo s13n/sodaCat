@@ -453,3 +453,66 @@ be "AHB master timer" per RM0090 Section 11.3.9.
 
 **STM32F469 (SVD v1.4):** APLHA field name typo (should be ALPHA) in DMA2D_OCOLR,
 DMA2D_FGCLUT, and DMA2D_BGCLUT registers.
+
+### OTG_FS_GLOBAL
+
+The OTG_FS GCCFG register has three distinct layouts across the F4 family,
+corresponding to different generations of the DWC2 USB OTG IP:
+
+1. **Old VBUS** (F401, F411, F4x5/F42x/F43x): PWRDWN, NOVBUSSENS, VBUSASEN, VBUSBSEN, SOFOUTEN
+2. **BCD** (F412, F413): PWRDWN + VBDEN + battery charging detection fields (DCDET, PDET, SDET, PS2DET, BCDEN, DCDEN, PDEN, SDEN)
+3. **Minimal** (F446, F469): PWRDWN + VBDEN only (BCD subset without detection hardware)
+
+**F446/F469 SVDs report wrong GCCFG layout:**
+
+| SVD file   | GCCFG fields reported    | RM says                    |
+|------------|--------------------------|----------------------------|
+| STM32F446  | Old VBUS (PWRDWN, VBUSASEN, VBUSBSEN, SOFOUTEN) | Minimal: PWRDWN + VBDEN only (RM0390) |
+| STM32F469  | Old VBUS (PWRDWN, VBUSASEN, VBUSBSEN, SOFOUTEN) | Minimal: PWRDWN + VBDEN only (RM0386) |
+
+These SVDs have the old-VBUS GCCFG fields copied from the F4x5/F42x generation,
+despite their hardware using the newer DWC2 IP with VBUS detection enable (VBDEN)
+instead of separate VBUSASEN/VBUSBSEN controls.
+
+**Missing NOVBUSSENS (bit 21) in old-VBUS SVDs:**
+
+| SVD file   | Has NOVBUSSENS? | RM says |
+|------------|-----------------|---------|
+| STM32F401  | Missing         | Present (RM0368) |
+| STM32F411  | Missing         | Present (RM0383) |
+| STM32F429  | Missing         | Present (RM0090) |
+
+All three RMs document NOVBUSSENS at bit 21 of GCCFG (No VBUS sensing enable).
+
+**Missing GLPMCFG register (offset 0x054, Global LPM Configuration):**
+
+| SVD file   | Has GLPMCFG? | RM says |
+|------------|--------------|---------|
+| STM32F412  | Missing      | Present (RM0402) |
+| STM32F413  | Missing      | Present (RM0430) |
+| STM32F446  | Missing      | Present (RM0390) |
+| STM32F469  | Missing      | Present (RM0386) |
+
+The LPM configuration register exists on all F4 chips with BCD or minimal GCCFG
+layouts. Older chips (F401, F411, F4x5/F42x) do not have this register.
+
+**Missing DIEPTXF registers in F412 SVD:**
+
+| SVD file   | DIEPTXF count | RM says |
+|------------|---------------|---------|
+| STM32F412  | 3 (DIEPTXF1-3) | 5 (DIEPTXF1-5, RM0402) |
+
+The F412 SVD only defines 3 device IN endpoint FIFO registers despite RM0402
+documenting 5. The F413 and F469 SVDs correctly have all 5.
+
+**addressBlock.size bugs:**
+
+| SVD file   | Reports | Correct | Notes |
+|------------|---------|---------|-------|
+| STM32F401  | 1024    | 272     | DIEPTXF3@0x10C + 4 = 0x110 = 272 |
+| STM32F411  | 1024    | 272     | Same as F401 |
+| STM32F429  | 1024    | 272     | Same as F401 |
+| STM32F412  | 273     | 280     | DIEPTXF5@0x114 + 4 = 0x118 = 280 |
+| STM32F413  | 273     | 280     | Same as F412 |
+| STM32F446  | 1024    | 280     | Same as F412 (5 DIEPTXF per RM0390) |
+| STM32F469  | 1024    | 280     | Same as F412 (5 DIEPTXF per RM0386) |
