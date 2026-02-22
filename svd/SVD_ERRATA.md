@@ -360,3 +360,22 @@ STM32F429 v1.6, STM32F446 v1.5, STM32F469 v1.4.
 The FPU interrupt is a separate Cortex-M4 feature and has nothing to do with ADC.
 No F4 ADC_Common peripheral has its own interrupt — ADC interrupts are routed
 through the individual ADC blocks.
+
+### I2C
+
+The I2C FLTR register (digital/analog noise filter, offset 0x24) is missing from
+several SVD files despite being documented in their reference manuals.
+
+| SVD file   | Has FLTR? | RM says |
+|------------|-----------|---------|
+| STM32F401  | Missing   | Present (RM0368) |
+| STM32F410  | Missing   | Present (RM0401) |
+| STM32F411  | Missing   | Present (RM0383) |
+| STM32F412  | Missing   | Present (RM0402) |
+
+Per RM0090, the FLTR register is available on STM32F42xxx/F43xxx only — not on
+STM32F405/F407/F415/F417. All other subfamilies (F401, F410, F411, F412, F413,
+F446, F469) have FLTR per their respective RMs.
+
+**STM32F413 (SVD v1.1):** I2C addressBlock.size = 41 (should be 40: registers
+span CR1@0x00 through FLTR@0x24, i.e. 0x24 + 4 = 40 bytes).
