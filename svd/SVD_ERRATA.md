@@ -195,6 +195,24 @@ Mode Plus enable bits that RM0410 documents for F76x/F77x.
 Note: The F722 SVD correctly omits I2C4_FMP for the F72x/F73x subfamily (RM0431 shows bit 3
 as reserved). However, the unified superset model includes it from RM0410.
 
+### USB OTG
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Block          | Issue                                    | F722 SVD has                        |
+|----------------|------------------------------------------|-------------------------------------|
+| OTG_HS_DEVICE  | Missing DIEPDMA0 (only has DIEPDMA1-7)   | DIEPDMA0-15 (all 16 IN endpoints)   |
+| OTG_HS_DEVICE  | Missing all DOEPDMA registers            | DOEPDMA0-15 (all 16 OUT endpoints)  |
+| OTG_HS_DEVICE  | addressBlock size 1024                   | 1280 (covers extended DMA regs)     |
+| OTG_FS_HOST    | Missing OTG_FS_WKUP interrupt            | Present                             |
+| OTG_HS_HOST    | Missing OTG_FS interrupt                 | Present                             |
+
+Note: The F745/F767 SVD OTG_HS_DEVICE peripheral is incomplete — it only lists 7 of the 16
+IN-endpoint DMA address registers (DIEPDMA1-7, missing DIEPDMA0) and omits all 16 OUT-endpoint
+DMA address registers (DOEPDMA0-15). The F722 SVD has the complete set. The OTG FS/HS HOST
+blocks are also missing their interrupt entries in the F745/F767 SVDs. All F7 subfamilies use
+the same DWC2 OTG IP, so the F722 description is the correct superset.
+
 ### USART
 
 **STM32F745 (SVD v1.6):**
