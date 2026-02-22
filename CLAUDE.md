@@ -97,6 +97,8 @@ A single `extractors/generate_stm32_models.py` script handles all 17 STM32 famil
 - `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides
 - `chip_params` (optional): per-chip parameter overrides for values declared in block `params`
 
+Parameter declarations use `{type, default?, description?}`. Permissible types: `int`, `bool`, `string`. Parameters in `chip_params` can be keyed by block name (applies to all instances) or instance name (applies to a specific instance).
+
 Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: blocks **without** `variants` are written to the family base directory (shared); subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** in `variants` share the base-directory model using the top-level config. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
 
 Two-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement.
