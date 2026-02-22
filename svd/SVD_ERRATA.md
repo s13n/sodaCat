@@ -93,6 +93,14 @@ despite F74x hardware being single-bank only.
 |----------|-----------|------------------------------|------------------------------|
 | SR       | WVU       | Missing                      | Bit 2, window value update status |
 
+### GPIO
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register | Field     | Bug                          | All three RMs say            |
+|----------|-----------|------------------------------|------------------------------|
+| BRR      | (entire)  | Register present at offset 0x28 | No BRR register in GPIO (register map ends at AFRH, offset 0x24) |
+
 ### AES / CRYP naming
 
 **STM32F722 (SVD v1.4), STM32F723 (SVD v1.4), STM32F732 (SVD v1.4), STM32F733 (SVD v1.4):**
