@@ -1,6 +1,15 @@
 name: Flash
 description: FLASH
 groupName: FLASH
+params:
+  has_pcrop:
+    type: bool
+    default: false
+    description: PCROP protection support (RDERR, RDERRIE, OPTCR2)
+  has_dual_bank:
+    type: bool
+    default: false
+    description: Dual-bank Flash support (MER2, nDBOOT, nDBANK)
 registers:
   - name: ACR
     displayName: ACR
@@ -46,7 +55,7 @@ registers:
     access: write-only
     resetValue: 0
     fields:
-      - name: OPTKEY
+      - name: OPTKEYR
         description: Option byte key
         bitOffset: 0
         bitWidth: 32
@@ -82,7 +91,7 @@ registers:
         bitOffset: 6
         bitWidth: 1
         access: read-write
-      - name: PGSERR
+      - name: ERSERR
         description: Programming sequence error
         bitOffset: 7
         bitWidth: 1
@@ -92,6 +101,11 @@ registers:
         bitOffset: 16
         bitWidth: 1
         access: read-only
+      - name: RDERR
+        description: PCROP protection error
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
   - name: CR
     displayName: CR
     description: Control register
@@ -120,7 +134,7 @@ registers:
         description: Program size
         bitOffset: 8
         bitWidth: 2
-      - name: MER1
+      - name: MER2
         description: "Mass Erase of sectors 12 to\n              23"
         bitOffset: 15
         bitWidth: 1
@@ -139,6 +153,10 @@ registers:
       - name: LOCK
         description: Lock
         bitOffset: 31
+        bitWidth: 1
+      - name: RDERRIE
+        description: PCROP error interrupt enable
+        bitOffset: 26
         bitWidth: 1
   - name: OPTCR
     displayName: OPTCR
@@ -216,6 +234,16 @@ registers:
         description: "Boot base address when Boot pin\n              =1"
         bitOffset: 16
         bitWidth: 16
+  - name: OPTCR2
+    displayName: OPTCR2
+    description: Flash option control register 2
+    addressOffset: 28
+    size: 32
+    access: read-write
+    resetValue: 2147483903
+    fields:
+      - {name: PCROPi, description: PCROP protection per sector, bitOffset: 0, bitWidth: 8}
+      - {name: PCROP_RDP, description: PCROP zone preserved when RDP level decreased, bitOffset: 31, bitWidth: 1}
 addressBlocks:
   - offset: 0
     size: 1024

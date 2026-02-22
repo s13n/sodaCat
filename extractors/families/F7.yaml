@@ -206,16 +206,37 @@ blocks:
       F72x_F73x:
         from: STM32F722.FMC
   Flash:
+    from: STM32F767.FLASH
     instances: [FLASH, Flash]
     interrupts:
       FLASH: INTR
-    variants:
-      F72x_F73x:
-        from: STM32F722.FLASH
-      F74x_F75x:
-        from: STM32F745.FLASH
-      F76x_F77x:
-        from: STM32F767.FLASH
+    params:
+      has_pcrop: {type: bool, default: false, description: "PCROP protection support (RDERR, RDERRIE, OPTCR2)"}
+      has_dual_bank: {type: bool, default: false, description: "Dual-bank Flash support (MER2, nDBOOT, nDBANK)"}
+    transforms:
+      - {type: renameFields, register: SR, pattern: '^PGSERR$', replacement: ERSERR}
+      - {type: renameFields, register: OPTKEYR, pattern: '^OPTKEY$', replacement: OPTKEYR}
+      - {type: renameFields, register: CR, pattern: '^MER1$', replacement: MER2}
+      - type: patchFields
+        register: SR
+        fields:
+          - {name: RDERR, description: PCROP protection error, bitOffset: 8, bitWidth: 1, access: read-write}
+      - type: patchFields
+        register: CR
+        fields:
+          - {name: RDERRIE, description: PCROP error interrupt enable, bitOffset: 26, bitWidth: 1}
+      - type: patchRegisters
+        registers:
+          - name: OPTCR2
+            displayName: OPTCR2
+            description: Flash option control register 2
+            addressOffset: 28
+            size: 32
+            access: read-write
+            resetValue: 2147483903
+            fields:
+              - {name: PCROPi, description: PCROP protection per sector, bitOffset: 0, bitWidth: 8}
+              - {name: PCROP_RDP, description: PCROP zone preserved when RDP level decreased, bitOffset: 31, bitWidth: 1}
   GPIO:
     from: STM32F745.GPIOD
     instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
@@ -437,14 +458,19 @@ blocks:
 chip_params:
   STM32F722:
     DMA: {channel_count: 8}
+    Flash: {has_pcrop: true}
   STM32F723:
     DMA: {channel_count: 8}
+    Flash: {has_pcrop: true}
   STM32F730:
     DMA: {channel_count: 8}
+    Flash: {has_pcrop: true}
   STM32F732:
     DMA: {channel_count: 8}
+    Flash: {has_pcrop: true}
   STM32F733:
     DMA: {channel_count: 8}
+    Flash: {has_pcrop: true}
   STM32F745:
     DMA: {channel_count: 8}
   STM32F746:
@@ -455,15 +481,22 @@ chip_params:
     DMA: {channel_count: 8}
   STM32F765:
     DMA: {channel_count: 16}
+    Flash: {has_dual_bank: true}
   STM32F767:
     DMA: {channel_count: 16}
+    Flash: {has_dual_bank: true}
   STM32F768:
     DMA: {channel_count: 16}
+    Flash: {has_dual_bank: true}
   STM32F769:
     DMA: {channel_count: 16}
+    Flash: {has_dual_bank: true}
   STM32F777:
     DMA: {channel_count: 16}
+    Flash: {has_dual_bank: true}
   STM32F778:
     DMA: {channel_count: 16}
+    Flash: {has_dual_bank: true}
   STM32F779:
     DMA: {channel_count: 16}
+    Flash: {has_dual_bank: true}
