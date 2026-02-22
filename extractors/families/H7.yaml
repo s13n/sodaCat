@@ -283,18 +283,25 @@ blocks:
       HRTIM1_FLT: FLT
       HRTIM1_MST: MST
   HSEM:
+    from: STM32H743.HSEM
     instances: [HSEM]
     interrupts:
       HSEM0: INTR
+    params:
+      semaphores:
+        type: int
+        default: 32
+        description: Number of hardware semaphores (16 or 32)
+    transforms:
+      # All H7 SVDs except H745: MASTERID field is 8-bit, RM says 4-bit at [11:8]
+      - {type: patchFields, register_pattern: '^R\d+$', fields: [{name: MASTERID, bitWidth: 4}]}
+      - {type: patchFields, register_pattern: '^RLR\d+$', fields: [{name: MASTERID, bitWidth: 4}]}
+      - {type: patchFields, register: CR, fields: [{name: MASTERID, bitWidth: 4}]}
+      # All H7 SVDs except H745: CR is read-write, RM says write-only
+      - {type: patchRegisters, registers: [{name: CR, access: write-only}]}
     variants:
-      H73x:
-        from: STM32H723.HSEM
-      H742_H753:
-        from: STM32H743.HSEM
       H745_H757:
         from: STM32H745_CM4.HSEM
-      H7A3_B:
-        from: STM32H7A3.HSEM
   I2C:
     from: STM32H723.I2C1
     instances: [I2C1, I2C2, I2C3, I2C4, I2C5]
@@ -569,3 +576,4 @@ chip_params:
     _all:
       DFSDM: {filters: 8}
       RAMECC: {monitors: 3}
+      HSEM: {semaphores: 16}

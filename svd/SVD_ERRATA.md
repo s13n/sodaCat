@@ -369,6 +369,42 @@ CWD, IR, IE) at offset 0x800 within the FDCAN address block.
 | (all)        | (content)  | Contains 64 FDCAN registers instead of 6 CCU registers | 6-register CCU (CREL, CCFG, CSTAT, CWD, IR, IE) |
 | (all)        | (desc)     | Description says "FDCAN1"                     | Clock Calibration Unit       |
 
+## ST STM32H7 — HSEM
+
+References:
+- RM0433 Rev.8 — STM32H742/H743/H750/H753
+- RM0399 Rev.5 — STM32H745/H747/H755/H757 (dual-core: COREID naming, C1/C2 interrupt regs)
+- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
+- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3 (16 semaphores, not 32)
+
+All four RMs define MASTERID (or COREID on H745) as 4-bit at [11:8] in Rx, RLRx,
+and CR registers, with bits [15:12] reserved. CR is write-only in all RMs.
+
+### HSEM — STM32H743, STM32H723, STM32H7A3 (MASTERID width bug)
+
+| Register     | Field      | Bug                          | RMs say                      |
+|--------------|------------|------------------------------|------------------------------|
+| R0-R31       | MASTERID   | 8-bit at [15:8]              | 4-bit at [11:8], [15:12] reserved |
+| RLR0-RLR31   | MASTERID   | 8-bit at [15:8]              | 4-bit at [11:8], [15:12] reserved |
+| CR           | MASTERID   | 8-bit (H743, H7A3 only)     | 4-bit at [11:8]              |
+| CR           | (access)   | read-write                   | write-only                   |
+
+### HSEM — STM32H723 (naming bugs)
+
+| Register     | Field      | Bug                          | RM0468 says                  |
+|--------------|------------|------------------------------|------------------------------|
+| (interrupts) | (name)     | C1IER/C1ICR/C1ISR/C1MISR    | IER/ICR/ISR/MISR (single-core) |
+| CR           | (name)     | COREID                       | MASTERID                     |
+
+### HSEM — STM32H7A3 (semaphore count bug)
+
+| Register     | Field      | Bug                          | RM0455 says                  |
+|--------------|------------|------------------------------|------------------------------|
+| R16-R31      | (presence) | Present in SVD               | Only 16 semaphores (R0-R15)  |
+| RLR16-RLR31  | (presence) | Present in SVD               | Only 16 semaphores (RLR0-RLR15) |
+| IER/ICR/ISR/MISR | ISEM16-31 | Present in SVD           | Only ISE[15:0], bits [31:16] reserved |
+
+
 ## ST STM32H7 — RAMECC
 
 References:

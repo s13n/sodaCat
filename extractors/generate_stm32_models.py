@@ -216,7 +216,16 @@ def _apply_transforms(block_data, transforms):
             elif reg is None:
                 print(f"  WARNING: renameFields: register '{t['register']}' not found")
         elif typ == 'patchFields':
-            _patch_fields(block_data.get('registers', []), t['register'], t['fields'])
+            if 'register_pattern' in t:
+                matched = False
+                for r in block_data.get('registers', []):
+                    if re.match(t['register_pattern'], r.get('name', '')):
+                        _patch_fields(block_data.get('registers', []), r['name'], t['fields'])
+                        matched = True
+                if not matched:
+                    print(f"  WARNING: patchFields: no registers match pattern '{t['register_pattern']}'")
+            else:
+                _patch_fields(block_data.get('registers', []), t['register'], t['fields'])
         elif typ == 'patchRegisters':
             _patch_registers(block_data.get('registers', []), t['registers'])
         elif typ == 'cloneRegister':
