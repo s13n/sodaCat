@@ -304,3 +304,44 @@ should not have it. Per the RM, only L0x3 devices have the VLCD pin connected
 to an ADC input channel. The bit appears inverted across subfamilies in the
 SVD files (present where it shouldn't be, or absent where it should be).
 SVD versions: STM32L0x0 v1.3, STM32L0x1 v1.6, STM32L0x2 v1.7, STM32L0x3 v1.7.
+
+
+## ST STM32F4
+
+References:
+- RM0368 Rev.6 — STM32F401
+- RM0383 Rev.4 — STM32F411
+- RM0090 Rev.21 — STM32F405/407/415/417/427/429/437/439
+- RM0402 Rev.7 — STM32F412
+- RM0430 Rev.9 — STM32F413/F423
+- RM0390 Rev.9 — STM32F446
+- RM0386 Rev.6 — STM32F469/F479
+
+### OTG_FS_DEVICE
+
+The DWC2 USB OTG IP on F412, F413, F446, and F469 includes Link Power Management
+(LPM) support with two additional fields not present on older parts (F401, F411,
+F4x5/F42x/F43x). Multiple SVDs are missing one or both of these fields.
+
+**ERRATIM** (bit 15 of OTG_FS_DCFG, erratic error interrupt mask):
+
+| SVD file   | Has field? | RM says    |
+|------------|------------|------------|
+| STM32F412  | Missing    | Present (RM0402) |
+| STM32F413  | Missing    | Present (RM0430) |
+| STM32F446  | Present    | Present (RM0390) |
+| STM32F469  | Missing    | Present (RM0386) |
+
+**DEVLNSTS** (bits 23:22 of OTG_FS_DSTS, device line status):
+
+| SVD file   | Has field? | RM says    |
+|------------|------------|------------|
+| STM32F412  | Missing    | Present (RM0402) |
+| STM32F413  | Present    | Present (RM0430) |
+| STM32F446  | Missing    | Present (RM0390) |
+| STM32F469  | Missing    | Present (RM0386) |
+
+**STM32F413 (SVD):** OTG_FS_DEVICE addressBlock.size = 885 (should be 1024).
+
+SVD versions: STM32F401 v2.2, STM32F411 v2.3, STM32F412 v1.4, STM32F413 v1.1,
+STM32F429 v1.6, STM32F446 v1.5, STM32F469 v1.4.

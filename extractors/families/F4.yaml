@@ -249,24 +249,24 @@ blocks:
       LCD_TFT: INTR
       LCD_TFT_1: ERROR
   OTG_FS_DEVICE:
+    from: STM32F401.OTG_FS_DEVICE
     instances: [OTG_FS_DEVICE]
     interrupts:
       OTG_FS: INTR
-    variants:
-      F401:
-        from: STM32F401.OTG_FS_DEVICE
-      F411:
-        from: STM32F411.OTG_FS_DEVICE
-      F4x5_F4x7_F42x_F43x:
-        from: STM32F429.OTG_FS_DEVICE
-      F412:
-        from: STM32F412.OTG_FS_DEVICE
-      F413_F423:
-        from: STM32F413.OTG_FS_DEVICE
-      F446:
-        from: STM32F446.OTG_FS_DEVICE
-      F469_F479:
-        from: STM32F469.OTG_FS_DEVICE
+    params:
+      has_lpm:
+        type: bool
+        default: false
+        description: Link Power Management support (ERRATIM in DCFG, DEVLNSTS in DSTS)
+    transforms:
+      - type: patchFields
+        register: FS_DCFG
+        fields:
+          - {name: ERRATIM, description: Erratic error interrupt mask, bitOffset: 15, bitWidth: 1}
+      - type: patchFields
+        register: FS_DSTS
+        fields:
+          - {name: DEVLNSTS, description: Device line status, bitOffset: 22, bitWidth: 2}
   OTG_FS_GLOBAL:
     instances: [OTG_FS_GLOBAL]
     interrupts:
@@ -468,3 +468,15 @@ chip_params:
       TIM12: {channels: 2}
       TIM13: {channels: 1}
       TIM14: {channels: 1}
+  F412:
+    _all:
+      OTG_FS_DEVICE: {has_lpm: true}
+  F413_F423:
+    _all:
+      OTG_FS_DEVICE: {has_lpm: true}
+  F446:
+    _all:
+      OTG_FS_DEVICE: {has_lpm: true}
+  F469_F479:
+    _all:
+      OTG_FS_DEVICE: {has_lpm: true}
