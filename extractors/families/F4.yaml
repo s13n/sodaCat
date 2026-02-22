@@ -308,24 +308,45 @@ blocks:
     interrupts:
       OTG_HS_WKUP: INTR
   PWR:
+    from: STM32F446.PWR
     instances: [PWR]
-    variants:
-      F401:
-        from: STM32F401.PWR
-      F410:
-        from: STM32F410.PWR
-      F411:
-        from: STM32F411.PWR
-      F4x5_F4x7_F42x_F43x:
-        from: STM32F429.PWR
-      F412:
-        from: STM32F412.PWR
-      F413_F423:
-        from: STM32F413.PWR
-      F446:
-        from: STM32F446.PWR
-      F469_F479:
-        from: STM32F469.PWR
+    params:
+      power_mode:
+        type: string
+        description: "Power mode capability: none (F405/407), lvds (low-voltage deepsleep), overdrive"
+      has_fmssr:
+        type: bool
+        default: false
+        description: Flash Memory Stop / Flash Interface Stop while System Run
+      wakeup_pins:
+        type: int
+        default: 1
+        description: Number of WKUP pins (1, 2, or 3)
+    transforms:
+      # Fix EWUP naming to numbered convention (RM uses EWUP1 on multi-pin chips)
+      - {type: renameFields, register: CSR, pattern: '^EWUP$', replacement: EWUP1}
+      # Add EWUP3 (bit 6) for 3-pin chips (F410/F412/F413)
+      - type: patchFields
+        register: CSR
+        fields:
+          - {name: EWUP3, description: Enable WKUP3 pin, bitOffset: 6, bitWidth: 1, access: read-write}
+      # Clone CR → CR_LVDS (non-OD variant): remove OD-only fields
+      - type: cloneRegister
+        source: CR
+        name: CR_LVDS
+        removeFields: [ODEN, ODSWEN, UDEN]
+      # Set CR_LVDS resetValue to 0x8000 (VOS=0b10, Scale 2)
+      - {type: patchRegisters, registers: [{name: CR_LVDS, resetValue: 32768}]}
+      # Rename CR fields to OD names (CR becomes the OD variant)
+      - {type: renameFields, register: CR, pattern: LPLVDS, replacement: LPUDS}
+      - {type: renameFields, register: CR, pattern: MRLVDS, replacement: MRUDS}
+      # Clone CSR → CSR_LVDS (non-OD variant): remove OD status fields
+      - type: cloneRegister
+        source: CSR
+        name: CSR_LVDS
+        removeFields: [ODRDY, ODSWRDY, UDRDY]
+      # Fix addressBlock size (2 registers × 4 bytes = 8)
+      - {type: patchAddressBlock, size: 8}
   QUADSPI:
     from: STM32F412.QUADSPI
     instances: [QUADSPI]
@@ -439,31 +460,49 @@ chip_params:
       TIM12: {channels: 2}
       TIM13: {channels: 1}
       TIM14: {channels: 1}
+  F401:
+    _all:
+      PWR: {power_mode: lvds}
+  F410:
+    _all:
+      PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
+  F411:
+    _all:
+      PWR: {power_mode: lvds, has_fmssr: true}
   F4x5_F4x7_F42x_F43x:
     STM32F405:
       I2C: {has_noise_filter: false}
+      PWR: {power_mode: none}
     STM32F407:
       I2C: {has_noise_filter: false}
+      PWR: {power_mode: none}
     STM32F415:
       I2C: {has_noise_filter: false}
+      PWR: {power_mode: none}
     STM32F417:
       I2C: {has_noise_filter: false}
+      PWR: {power_mode: none}
     _all:
       ADC_Common: {multi: true}
+      PWR: {power_mode: overdrive}
   F412:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
+      PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
   F413_F423:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
+      PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
   F446:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
       OTG_FS_GLOBAL: {has_bcd: false}
       ADC_Common: {multi: true}
       SAI: {has_gcr: true}
+      PWR: {power_mode: overdrive, has_fmssr: true, wakeup_pins: 2}
   F469_F479:
     _all:
       OTG_FS_DEVICE: {has_lpm: true}
       OTG_FS_GLOBAL: {has_bcd: false}
       ADC_Common: {multi: true}
+      PWR: {power_mode: overdrive}

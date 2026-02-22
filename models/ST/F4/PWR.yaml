@@ -1,6 +1,18 @@
 name: PWR
 description: Power control
 groupName: PWR
+params:
+  power_mode:
+    type: string
+    description: 'Power mode capability: none (F405/407), lvds (low-voltage deepsleep), overdrive'
+  has_fmssr:
+    type: bool
+    default: false
+    description: Flash Memory Stop / Flash Interface Stop while System Run
+  wakeup_pins:
+    type: int
+    default: 1
+    description: Number of WKUP pins (1, 2, or 3)
 registers:
   - name: CR
     displayName: CR
@@ -9,6 +21,82 @@ registers:
     size: 32
     access: read-write
     resetValue: 49152
+    fields:
+      - name: LPDS
+        description: Low-power deep sleep
+        bitOffset: 0
+        bitWidth: 1
+      - name: PDDS
+        description: Power down deepsleep
+        bitOffset: 1
+        bitWidth: 1
+      - name: CWUF
+        description: Clear wakeup flag
+        bitOffset: 2
+        bitWidth: 1
+      - name: CSBF
+        description: Clear standby flag
+        bitOffset: 3
+        bitWidth: 1
+      - name: PVDE
+        description: "Power voltage detector\n              enable"
+        bitOffset: 4
+        bitWidth: 1
+      - name: PLS
+        description: PVD level selection
+        bitOffset: 5
+        bitWidth: 3
+      - name: DBP
+        description: "Disable backup domain write\n              protection"
+        bitOffset: 8
+        bitWidth: 1
+      - name: FPDS
+        description: "Flash power down in Stop\n              mode"
+        bitOffset: 9
+        bitWidth: 1
+      - name: LPUDS
+        description: "Low-Power Regulator Low Voltage in\n              deepsleep"
+        bitOffset: 10
+        bitWidth: 1
+      - name: MRUDS
+        description: "Main regulator low voltage in deepsleep\n              mode"
+        bitOffset: 11
+        bitWidth: 1
+      - name: ADCDC1
+        description: ADCDC1
+        bitOffset: 13
+        bitWidth: 1
+      - name: VOS
+        description: "Regulator voltage scaling output\n              selection"
+        bitOffset: 14
+        bitWidth: 2
+      - name: ODEN
+        description: Over-drive enable
+        bitOffset: 16
+        bitWidth: 1
+      - name: ODSWEN
+        description: "Over-drive switching\n              enabled"
+        bitOffset: 17
+        bitWidth: 1
+      - name: UDEN
+        description: "Under-drive enable in stop\n              mode"
+        bitOffset: 18
+        bitWidth: 2
+      - name: FMSSR
+        description: "Flash Memory Stop while System\n              Run"
+        bitOffset: 20
+        bitWidth: 1
+      - name: FISSR
+        description: "Flash Interface Stop while System\n              Run"
+        bitOffset: 21
+        bitWidth: 1
+  - name: CR_LVDS
+    displayName: CR_LVDS
+    description: power control register
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 32768
     fields:
       - name: LPDS
         description: Low-power deep sleep
@@ -58,18 +146,6 @@ registers:
         description: "Regulator voltage scaling output\n              selection"
         bitOffset: 14
         bitWidth: 2
-      - name: ODEN
-        description: Over-drive enable
-        bitOffset: 16
-        bitWidth: 1
-      - name: ODSWEN
-        description: "Over-drive switching\n              enabled"
-        bitOffset: 17
-        bitWidth: 1
-      - name: UDEN
-        description: "Under-drive enable in stop\n              mode"
-        bitOffset: 18
-        bitWidth: 2
       - name: FMSSR
         description: "Flash Memory Stop while System\n              Run"
         bitOffset: 20
@@ -110,7 +186,7 @@ registers:
         bitOffset: 7
         bitWidth: 1
         access: read-write
-      - name: EWUP
+      - name: EWUP1
         description: Enable WKUP pin
         bitOffset: 8
         bitWidth: 1
@@ -140,7 +216,64 @@ registers:
         bitOffset: 18
         bitWidth: 2
         access: read-write
+      - name: EWUP3
+        description: Enable WKUP3 pin
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+  - name: CSR_LVDS
+    displayName: CSR_LVDS
+    description: power control/status register
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    fields:
+      - name: WUF
+        description: Wakeup flag
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: SBF
+        description: Standby flag
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: PVDO
+        description: PVD output
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: BRR
+        description: Backup regulator ready
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: EWUP2
+        description: Enable WKUP2 pin
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: EWUP1
+        description: Enable WKUP pin
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: BRE
+        description: Backup regulator enable
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: VOSRDY
+        description: "Regulator voltage scaling output\n              selection ready bit"
+        bitOffset: 14
+        bitWidth: 1
+        access: read-only
+      - name: EWUP3
+        description: Enable WKUP3 pin
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
 addressBlocks:
   - offset: 0
-    size: 1024
+    size: 8
     usage: registers

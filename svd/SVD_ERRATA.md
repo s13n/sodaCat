@@ -516,3 +516,96 @@ documenting 5. The F413 and F469 SVDs correctly have all 5.
 | STM32F413  | 273     | 280     | Same as F412 |
 | STM32F446  | 1024    | 280     | Same as F412 (5 DIEPTXF per RM0390) |
 | STM32F469  | 1024    | 280     | Same as F412 (5 DIEPTXF per RM0386) |
+
+### PWR
+
+The F4 PWR peripheral has three distinct power mode configurations across
+subfamilies, affecting CR bits 10-11 and 16-19:
+
+1. **None** (F405/407/415/417 per RM0090§5.4): bits 10-11 and 16-19 reserved, VOS is 1-bit
+2. **LVDS** (F401/F411/F410/F412/F413): LPLVDS/MRLVDS at bits 10-11, 16-19 reserved
+3. **Overdrive** (F42x/F43x/F446/F469): LPUDS/MRUDS at bits 10-11, ODEN/ODSWEN/UDEN at 16-19
+
+**Missing LPLVDS/MRLVDS (bits 10-11 of CR):**
+
+| SVD file   | Has fields? | RM says |
+|------------|-------------|---------|
+| STM32F401  | Missing     | Present: LPLVDS/MRLVDS (RM0368) |
+| STM32F411  | Missing     | Present: LPLVDS/MRLVDS (RM0383) |
+| STM32F410  | Missing     | Present: LPLVDS/MRLVDS (RM0401) |
+| STM32F412  | Missing     | Present: LPLVDS/MRLVDS (RM0402) |
+| STM32F413  | Missing     | Present: LPLVDS/MRLVDS (RM0430) |
+
+All five non-OD SVDs are missing the low-power regulator fields at bits 10-11.
+
+**Wrong field names at bits 10-11 (LPLVDS/MRLVDS instead of LPUDS/MRUDS):**
+
+| SVD file   | Reports     | RM says |
+|------------|-------------|---------|
+| STM32F429  | LPLVDS/MRLVDS | LPUDS/MRUDS (RM0090§5.5) |
+| STM32F446  | LPLVDS/MRLVDS | LPUDS/MRUDS (RM0390) |
+| STM32F469  | LPLVDS/MRLVDS | LPUDS/MRUDS (RM0386) |
+
+The OD SVDs use the non-OD naming convention (Low Voltage Deep Sleep) instead of
+the correct under-drive naming (Under-Drive Stop) from their respective RMs.
+
+**Missing ADCDC1 (bit 13 of CR):**
+
+| SVD file   | Has ADCDC1? | RM says |
+|------------|-------------|---------|
+| STM32F429  | Missing     | Present (RM0090§5.5) |
+| STM32F469  | Missing     | Present (RM0386) |
+
+Both RMs document ADCDC1 at bit 13 (see AN4073). The F446 SVD correctly has it.
+
+**Missing FMSSR/FISSR (bits 20-21 of CR):**
+
+| SVD file   | Has fields? | RM says |
+|------------|-------------|---------|
+| STM32F411  | Missing     | Present (RM0383) |
+| STM32F410  | Missing     | Present (RM0401) |
+| STM32F412  | Missing     | Present (RM0402) |
+| STM32F413  | Missing     | Present (RM0430) |
+
+Flash Memory Stop / Flash Interface Stop while System Run. Also present on
+F446 (RM0390, correctly in SVD). Not present on F401, F4x5/F42x, F469.
+
+**Wrong CR resetValue:**
+
+| SVD file   | Reports | Correct | Notes |
+|------------|---------|---------|-------|
+| STM32F401  | 0       | 0x8000  | VOS=0b10 (Scale 2), RM0368 |
+| STM32F411  | 0       | 0x8000  | Same, RM0383 |
+| STM32F410  | 0       | 0x8000  | Same, RM0401 |
+| STM32F412  | 0       | 0x8000  | Same, RM0402 |
+| STM32F413  | 0       | 0x8000  | Same, RM0430 |
+
+All non-OD SVDs report CR reset as 0 instead of 0x8000 (VOS[1:0]=0b10).
+The OD SVDs (F429, F446, F469) correctly report 0xC000 (VOS[1:0]=0b11).
+
+**Wrong VOSRDY access (CSR bit 14):**
+
+| SVD file   | Reports    | RM says |
+|------------|------------|---------|
+| STM32F401  | read-write | read-only (RM0368) |
+| STM32F411  | read-write | read-only (RM0383) |
+| STM32F410  | read-write | read-only (RM0401) |
+| STM32F412  | read-write | read-only (RM0402) |
+| STM32F413  | read-write | read-only (RM0430) |
+| STM32F429  | read-write | read-only (RM0090) |
+| STM32F469  | read-write | read-only (RM0386) |
+
+All SVDs except F446 mark VOSRDY as read-write. All RMs confirm it is read-only.
+
+**addressBlock.size bugs:**
+
+| SVD file   | Reports | Correct | Notes |
+|------------|---------|---------|-------|
+| STM32F401  | 1024    | 8       | CR@0x00 + CSR@0x04 = 8 bytes |
+| STM32F411  | 1024    | 8       | Same |
+| STM32F410  | 1024    | 8       | Same |
+| STM32F412  | 1024    | 8       | Same |
+| STM32F413  | 9       | 8       | Off by one |
+| STM32F429  | 1024    | 8       | Same |
+| STM32F446  | 1024    | 8       | Same |
+| STM32F469  | 1024    | 8       | Same |

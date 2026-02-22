@@ -215,6 +215,27 @@ def _apply_transforms(block_data, transforms):
             _patch_fields(block_data.get('registers', []), t['register'], t['fields'])
         elif typ == 'patchRegisters':
             _patch_registers(block_data.get('registers', []), t['registers'])
+        elif typ == 'cloneRegister':
+            regs = block_data.get('registers', [])
+            src = next((r for r in regs if r.get('name') == t['source']), None)
+            if src is None:
+                print(f"  WARNING: cloneRegister: source '{t['source']}' not found")
+            else:
+                clone = copy.deepcopy(src)
+                clone['name'] = t['name']
+                clone['displayName'] = t['name']
+                # Remove specified fields
+                if 'removeFields' in t and clone.get('fields'):
+                    remove_set = set(t['removeFields'])
+                    clone['fields'] = [f for f in clone['fields']
+                                       if f.get('name') not in remove_set]
+                # Rename fields in the clone
+                for rf in t.get('renameFields', []):
+                    renameEntries(clone.get('fields', []), 'name',
+                                  rf['pattern'], rf['replacement'])
+                # Insert clone right after the source register
+                idx = regs.index(src)
+                regs.insert(idx + 1, clone)
         elif typ == 'patchAddressBlock':
             for ab in block_data.get('addressBlocks', []):
                 for k, v in t.items():
