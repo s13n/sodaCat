@@ -435,3 +435,21 @@ register level, but TXE and TXIS bits are actually read-write per RM0390.
 
 **addressBlock.size:** STM32F446 reports 1024, STM32F413 reports 45; correct is 44
 (TXDR@0x28 + 4 = 44 bytes).
+
+### DMA2D
+
+**STM32F427 (SVD v1.3):** DMA2D_FGPFCCR has spurious CSS (bits 18:2), AI (bit 20),
+and RBS (bit 21) fields. DMA2D_BGPFCCR and DMA2D_OPFCCR also have spurious AI and
+RBS fields. These fields do not exist on the F4 DMA2D IP — they were added in later
+revisions (H7). Both RM0090 and RM0386 confirm bits 18–23 are reserved in FGPFCCR
+and BGPFCCR, and bits 3–31 are reserved in OPFCCR.
+
+**STM32F427 (SVD v1.3):** Missing FGCLUT (offset 0x400, 256×32-bit entries) and
+BGCLUT (offset 0x800, 256×32-bit entries) color lookup table registers. Both are
+documented in RM0090 Section 11.5.24–25.
+
+**STM32F427 (SVD v1.3):** DMA2D_AMTCR description says "AXI master timer" — should
+be "AHB master timer" per RM0090 Section 11.3.9.
+
+**STM32F469 (SVD v1.4):** APLHA field name typo (should be ALPHA) in DMA2D_OCOLR,
+DMA2D_FGCLUT, and DMA2D_BGCLUT registers.
