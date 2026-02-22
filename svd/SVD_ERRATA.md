@@ -77,6 +77,29 @@ despite F74x hardware being single-bank only.
 |----------|-----------|------------------------------|------------------------------|
 | CR       | CR        | Single 1-bit field (typo "regidter") | Four fields: RESET, POLYSIZE, REV_IN, REV_OUT |
 
+### EXTI
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register  | Field     | Bug                          | All three RMs say            |
+|-----------|-----------|------------------------------|------------------------------|
+| IMR       | MR0-MR22  | Named MRx, stops at line 22  | Named IMx, 24 lines (0-23)  |
+| EMR       | MR0-MR22  | Named MRx, stops at line 22  | Named EMx, 24 lines (0-23)  |
+| RTSR      | TR0-TR22  | Stops at line 22             | 24 lines (TR0-TR23)         |
+| FTSR      | TR0-TR22  | Stops at line 22             | 24 lines (TR0-TR23)         |
+| SWIER     | SWIER0-22 | Stops at line 22             | 24 lines (SWIER0-SWIER23)   |
+| PR        | PR0-PR22  | Stops at line 22             | 24 lines (PR0-PR23)         |
+
+Note: All EXTI registers are missing line 23. All three RMs document 24 EXTI lines
+(0-23). The F745/F767 SVD also uses the older MRx naming for IMR/EMR fields instead
+of the RM-standard IMx/EMx naming.
+
+**STM32F722 (SVD v1.4):**
+
+| Register | Field     | Bug                          | RM0431 says                  |
+|----------|-----------|------------------------------|------------------------------|
+| IMR      | MI9       | Typo (MI9 instead of IM9)    | Field is IM9                 |
+
 ### I2C
 
 **STM32F745, STM32F767 (SVD v1.6):**
@@ -92,6 +115,31 @@ despite F74x hardware being single-bank only.
 | Register | Field     | Bug                          | All three RMs say            |
 |----------|-----------|------------------------------|------------------------------|
 | SR       | WVU       | Missing                      | Bit 2, window value update status |
+
+### FMC
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register | Field     | Bug                          | All three RMs say            |
+|----------|-----------|------------------------------|------------------------------|
+| BCR1     | CPSIZE    | Missing                      | Bits 18:16, CRAM page size   |
+| BCR1     | WFDIS     | Missing                      | Bit 21, Write FIFO Disable   |
+| BCR2-4   | WRAPMOD   | Present at bit 10            | Bit 10 reserved (legacy field removed in F7) |
+| BCR2-4   | CPSIZE    | Missing                      | Bits 18:16, CRAM page size   |
+| BWTR1-4  | BUSTURN   | Missing                      | Bits 19:16, Bus turnaround phase duration |
+| BWTR1-4  | CLKDIV    | Present at bits 23:20        | Bits 27:20 reserved (CLKDIV is in BTRx only) |
+| BWTR1-4  | DATLAT    | Present at bits 27:24        | Bits 27:20 reserved (DATLAT is in BTRx only) |
+| SDCR2    | RPIPE     | Present at bits 14:13        | Bits 14:13 reserved (RPIPE is in SDCR1 only) |
+
+Note: The F745/F767 SVD BWTRx registers have CLKDIV and DATLAT fields copied from
+BTRx (read timing), but these fields only exist in the read timing registers per
+all three RMs. The write timing registers should have BUSTURN instead.
+
+**STM32F722 (SVD v1.4):**
+
+| Register | Field     | Bug                          | RM0431 says                  |
+|----------|-----------|------------------------------|------------------------------|
+| SDSR     | RE        | Missing                      | Bit 0, Refresh error flag (read-only) |
 
 ### GPIO
 

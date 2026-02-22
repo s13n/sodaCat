@@ -159,7 +159,7 @@ blocks:
     interrupts:
       DSIHOST: INTR
   EXTI:
-    from: STM32F745.EXTI
+    from: STM32F722.EXTI
     instances: [EXTI]
     interrupts:
       TAMP_STAMP: TAMP_STAMP
@@ -167,9 +167,8 @@ blocks:
       EXTI1: INTR1
       EXTI2: INTR2
       EXTI3: INTR3
-    variants:
-      F72x_F73x:
-        from: STM32F722.EXTI
+    transforms:
+      - {type: renameFields, register: IMR, pattern: '^MI9$', replacement: IM9}
   Ethernet_DMA:
     from: STM32F745.Ethernet_DMA
     instances: [Ethernet_DMA]
@@ -189,13 +188,15 @@ blocks:
     from: STM32F745.Ethernet_PTP
     instances: [Ethernet_PTP]
   FMC:
-    from: STM32F745.FMC
+    from: STM32F722.FMC
     instances: [FMC]
     interrupts:
       FSMC: INTR
-    variants:
-      F72x_F73x:
-        from: STM32F722.FMC
+    transforms:
+      - type: patchFields
+        register: SDSR
+        fields:
+          - {name: RE, description: Refresh error flag, bitOffset: 0, bitWidth: 1, access: read-only}
   Flash:
     from: STM32F767.FLASH
     instances: [FLASH, Flash]
