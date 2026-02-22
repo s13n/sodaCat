@@ -168,6 +168,33 @@ all three RMs. The write timing registers should have BUSTURN instead.
 Note: These CE-ATA fields are vestiges of the older SDIO IP (STM32F1/F2/F4). The F7 SDMMC
 peripheral dropped CE-ATA support entirely; all three RMs mark these bits as reserved.
 
+### SYSCFG
+
+**STM32F745, STM32F767 (SVD v1.6):**
+
+| Register | Field      | Bug                          | RM says                      |
+|----------|------------|------------------------------|------------------------------|
+| MEMRMP   | MEM_MODE   | 3-bit field at bits 2:0      | RM0385/RM0410: bit 0 is MEM_BOOT (1-bit, read-only) |
+| MEMRMP   | FB_MODE    | Present at bit 8             | RM0385: bit 8 reserved; RM0410: bit 8 is SWP_FB     |
+| MEMRMP   | (name)     | Named MEMRM                  | All three RMs: MEMRMP        |
+| PMC      | I2C1-4_FMP | Missing (bits 0-3)           | RM0410: present (F76x/F77x); RM0385: reserved (F74x/F75x) |
+| PMC      | PB6-9_FMP  | Missing (bits 4-7)           | RM0410: present (F76x/F77x); RM0385: reserved (F74x/F75x) |
+
+Note: The F745/F767 SVD MEMRMP register has the old F4-style MEM_MODE field (3-bit memory
+mapping selection) instead of the F7's MEM_BOOT (1-bit boot address indicator). The FB_MODE
+field at bit 8 does not exist on F74x/F75x (RM0385 marks bit 8 reserved); on F76x/F77x the
+field exists but is named SWP_FB (flash bank swap). The PMC register is missing all I2C Fast
+Mode Plus enable bits that RM0410 documents for F76x/F77x.
+
+**STM32F722 (SVD v1.4):**
+
+| Register | Field      | Bug                          | RM0431 says                  |
+|----------|------------|------------------------------|------------------------------|
+| PMC      | I2C4_FMP   | Missing (bit 3)              | RM0410: present on F76x/F77x (not on F72x/F73x per RM0431) |
+
+Note: The F722 SVD correctly omits I2C4_FMP for the F72x/F73x subfamily (RM0431 shows bit 3
+as reserved). However, the unified superset model includes it from RM0410.
+
 ### USART
 
 **STM32F745 (SVD v1.6):**

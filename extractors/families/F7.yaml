@@ -418,11 +418,43 @@ blocks:
     interrupts:
       SPI1: INTR
   SYSCFG:
-    from: STM32F745.SYSCFG
+    from: STM32F722.SYSCFG
     instances: [SYSCFG]
-    variants:
-      F72x_F73x:
-        from: STM32F722.SYSCFG
+    transforms:
+      # F722 MEMRMP is correct (MEM_BOOT + SWP_FMC), add SWP_FB for F76x
+      - type: patchFields
+        register: MEMRMP
+        fields:
+          - name: SWP_FB
+            description: Flash Bank swap
+            bitOffset: 8
+            bitWidth: 1
+      # F722 PMC has I2C1-3_FMP + PBx_FMP + ADCDC2(16:3); add I2C4_FMP,
+      # split ADCDC2 into individual fields, add MII_RMII_SEL
+      - type: patchFields
+        register: PMC
+        fields:
+          - name: ADCDC2
+          - name: I2C4_FMP
+            description: I2C4 Fast Mode Plus Enable
+            bitOffset: 3
+            bitWidth: 1
+          - name: ADC1DC2
+            description: ADC1DC2
+            bitOffset: 16
+            bitWidth: 1
+          - name: ADC2DC2
+            description: ADC2DC2
+            bitOffset: 17
+            bitWidth: 1
+          - name: ADC3DC2
+            description: ADC3DC2
+            bitOffset: 18
+            bitWidth: 1
+          - name: MII_RMII_SEL
+            description: Ethernet PHY interface selection
+            bitOffset: 23
+            bitWidth: 1
   USART:
     from: STM32F767.USART6
     instances: [UART4, UART5, UART7, UART8, USART1, USART2, USART3, USART6]
