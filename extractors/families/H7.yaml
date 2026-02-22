@@ -62,6 +62,7 @@ blocks:
       TIM1_TRG_COM: TRG_COM
       TIM_CC: CC
   BDMA:
+    from: STM32H723.BDMA
     instances: [BDMA, BDMA1, BDMA2]
     interrupts:
       BDMA_CH0: CH0
@@ -72,15 +73,6 @@ blocks:
       BDMA_CH5: CH5
       BDMA_CH6: CH6
       BDMA_CH7: CH7
-    variants:
-      H73x:
-        from: STM32H723.BDMA
-      H742_H753:
-        from: STM32H743.BDMA
-      H745_H757:
-        from: STM32H745_CM4.BDMA
-      H7A3_B:
-        from: STM32H7A3.BDMA1
   BasicTimer:
     from: STM32H723.TIM6
     instances: [TIM6, TIM7]
@@ -147,23 +139,32 @@ blocks:
     interrupts:
       DCMI: INTR
   DFSDM:
+    from: STM32H7A3.DFSDM1
     instances: [DFSDM, DFSDM1, DFSDM2]
     interrupts:
       DFSDM1_FLT0: FLT0
       DFSDM1_FLT1: FLT1
       DFSDM1_FLT2: FLT2
       DFSDM1_FLT3: FLT3
+    params:
+      filters:
+        type: int
+        default: 4
+        description: Number of digital filter units (4 or 8)
+      has_dlyr:
+        type: bool
+        default: true
+        description: CHyDLYR delay register present
     transforms:
       - {type: renameRegisters, pattern: '^DFSDM\d+_', replacement: ''}
-    variants:
-      H73x:
-        from: STM32H723.DFSDM
-      H742_H753:
-        from: STM32H743.DFSDM
-      H745_H757:
-        from: STM32H745_CM4.DFSDM
-      H7A3_B:
-        from: STM32H7A3.DFSDM1
+      # H7A3 SVD bug: CKOUTDIV/CKOUTSRC/DFSDMEN duplicated in CH1-CH7 (CH0-only per RM)
+      - {type: patchFields, register: CH1CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH2CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH3CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH4CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH5CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH6CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH7CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
   DMA:
     from: STM32H723.DMA1
     instances: [DMA1, DMA2, DMA2D, DMAMUX1, DMAMUX2]
@@ -379,6 +380,7 @@ blocks:
       OTG_HS_WKUP: WKUP
       OTG_HS: INTR
   OTG_HS_GLOBAL:
+    from: STM32H723.OTG1_HS_GLOBAL
     instances: [OTG1_HS_GLOBAL, OTG2_HS_GLOBAL]
     interrupts:
       OTG_HS: INTR
@@ -387,15 +389,11 @@ blocks:
       OTG_HS_EP1_OUT: EP1_OUT
     transforms:
       - {type: renameRegisters, pattern: '^OTG_HS_', replacement: ''}
-    variants:
-      H73x:
-        from: STM32H723.OTG1_HS_GLOBAL
-      H742_H753:
-        from: STM32H743.OTG1_HS_GLOBAL
-      H745_H757:
-        from: STM32H745_CM4.OTG1_HS_GLOBAL
-      H7A3_B:
-        from: STM32H7A3.OTG1_HS_GLOBAL
+      # H723 SVD bug: DIEPTXF7 at 0x12C, should be 0x11C per RM0468
+      - {type: patchRegisters, registers: [{name: DIEPTXF7, addressOffset: 284}]}
+      # H723 SVD bug: STSPHST is 4-bit in SVD, should be 1-bit per RM0468
+      - {type: patchFields, register: GRXSTSR_Device, fields: [{name: STSPHST, bitWidth: 1}]}
+      - {type: patchFields, register: GRXSTSP_Device, fields: [{name: STSPHST, bitWidth: 1}]}
   OTG_HS_HOST:
     from: STM32H723.OTG1_HS_HOST
     instances: [OTG1_HS_HOST, OTG2_HS_HOST]
@@ -555,3 +553,12 @@ chip_params:
       TIM15: {channels: 2}
       TIM16: {channels: 1}
       TIM17: {channels: 1}
+  H742_H753:
+    _all:
+      DFSDM: {has_dlyr: false}
+  H745_H757:
+    _all:
+      DFSDM: {has_dlyr: false}
+  H7A3_B:
+    _all:
+      DFSDM: {filters: 8}

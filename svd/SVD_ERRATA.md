@@ -289,6 +289,76 @@ References:
 | CFGR     | BOOST     | Wrong width                  | 2-bit (BOOST[1:0])          |
 
 
+## ST STM32H7 — OTG_HS_GLOBAL
+
+References:
+- RM0433 Rev.8 — STM32H742/H743/H750/H753
+- RM0399 Rev.5 — STM32H745/H747/H755/H757
+- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
+- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3
+
+All four RMs describe identical OTG HS register sets. SVD differences are documentation bugs.
+
+### OTG_HS_GLOBAL — STM32H723 (SVD v2.1)
+
+| Register       | Field    | Bug                          | RM0468 says                  |
+|----------------|----------|------------------------------|------------------------------|
+| DIEPTXF7       | (offset) | addressOffset 0x12C          | 0x11C (0x104 + 0x04×6)      |
+| GRXSTSR_Device | STSPHST  | 4-bit width (bits 27:30)     | 1-bit (bit 27 only)         |
+| GRXSTSP_Device | STSPHST  | 4-bit width (bits 27:30)     | 1-bit (bit 27 only)         |
+
+### OTG_HS_GLOBAL — STM32H743 (SVD v2.4), STM32H745 (SVD v1.7), STM32H7A3 (SVD v3.4)
+
+| Register       | Field          | Bug                          | RMs say                      |
+|----------------|----------------|------------------------------|------------------------------|
+| GOTGCTL        | bits 2-7       | Missing VBVALOEN/VAL, AVALOEN/VAL, BVALOEN/VAL | Present in all RMs |
+| GOTGCTL        | bits 20-21     | Missing OTGVER, CURMOD       | Present in all RMs           |
+| GINTSTS        | LPMINT (bit 27)| Missing                      | Present in all RMs           |
+| GINTSTS        | RSTDET (bit 23)| Missing                      | Present in all RMs           |
+| GINTSTS        | bit 7 name     | BOUTNAKEFF                   | GONAKEFF                     |
+| GINTSTS        | bit 31 name    | WKUINT                       | WKUPINT                      |
+| GRXSTSR_Device | STSPHST        | Missing                      | 1-bit at bit 27              |
+| GRXSTSP_Device | STSPHST        | Missing                      | 1-bit at bit 27              |
+| GOTGINT        | IDCHNG (bit 20)| Present (phantom field)      | Not documented (reserved)    |
+
+Note: H743 SVD has GOTGCTL bits 2-7 and 20-21 correct; only H745 and H7A3 are missing those.
+
+
+## ST STM32H7 — DFSDM
+
+References:
+- RM0433 Rev.8 — STM32H742/H743/H750/H753
+- RM0399 Rev.5 — STM32H745/H747/H755/H757
+- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
+- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3
+
+All four RMs use by-channel register layout (CH0CFGR1 at 0x00, CH1CFGR1 at 0x20, etc.)
+with 0x20 stride per channel. CKOUTDIV/CKOUTSRC/DFSDMEN are CH0CFGR1-only.
+Filter count: 4 (RM0433/RM0399/RM0468), 8 (RM0455). CHyDLYR: present in RM0468/RM0455,
+absent in RM0433/RM0399.
+
+### DFSDM — STM32H743 (SVD v2.4)
+
+| Register     | Field      | Bug                                      | RM0433 says                  |
+|--------------|------------|------------------------------------------|------------------------------|
+| (all)        | (layout)   | By-type layout (CHCFG0R1-CHCFG7R1, then CHCFG0R2-CHCFG7R2) | By-channel (CH0CFGR1, CH0CFGR2, ..., CH1CFGR1, ...) |
+| (all)        | (naming)   | Filter regs unnamed (bare CR1, CR2, ISR) | Named FLT0CR1, FLT1CR1, etc. |
+| CH1-7 CFGR1  | CKOUTDIV etc. | All channels have global fields       | CH0CFGR1-only per RM0433     |
+
+### DFSDM — STM32H723 (SVD v2.1), STM32H745_CM4 (SVD v1.7)
+
+| Register     | Field      | Bug                          | RMs say                      |
+|--------------|------------|------------------------------|------------------------------|
+| FLTxCR1      | JEXTSEL    | 3-bit width                  | 5-bit (JEXTSEL[4:0])        |
+| FLT1-3       | (name)     | FLT1CHGR (missing J)        | FLT1JCHGR                   |
+
+### DFSDM — STM32H7A3 (SVD v3.4)
+
+| Register     | Field      | Bug                          | RM0455 says                  |
+|--------------|------------|------------------------------|------------------------------|
+| CH1-7 CFGR1  | CKOUTDIV, CKOUTSRC, DFSDMEN | Duplicated from CH0 | CH0CFGR1-only per RM0455 |
+
+
 ## ST STM32L0 — ADC (needs re-verification)
 
 > **Caveat:** Identified during L0 ADC work but not yet verified against the RM
