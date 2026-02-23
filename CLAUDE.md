@@ -104,7 +104,7 @@ Each family entry has up to three keys:
 - `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides. A block may use `uses: <shared_block_name>` instead of `from:` to reference a cross-family shared model; `from` triggers SVD extraction while `uses` references the shared model. Defaults from `shared_blocks` are inherited and can be overridden.
 - `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
 
-Parameter declarations use `{type, default?, description?}`. Permissible types: `int`, `bool`, `string`.
+Parameter declarations are arrays of `{name, type, default?, description?}`. Permissible types: `int`, `bool`, `string`.
 
 The `chip_params` section is always keyed by subfamily (or `_all` for family-wide), then by chip name (or `_all` for subfamily-wide), then by block name or instance name. Resolution order: per-chip instance → per-chip block → subfamily `_all` instance → subfamily `_all` block → family `_all._all` instance → family `_all._all` block → param default.
 
