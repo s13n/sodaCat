@@ -302,16 +302,14 @@ def _apply_transforms(block_data, transforms):
 
 
 def _strip_instance_prefix(block_data, instance_name, block_type):
-    """Auto-strip instance/block-type prefix from register names.
+    """Auto-strip instance/block-type prefix from register names and descriptions.
 
     For each register, if its name starts with the instance name or
     block type (optionally followed by '_'), strip that prefix.
+    Also strips from description (space separator) and alternateRegister
+    (underscore separator). The block-level description is also cleaned.
     Prefixes are tried longest-first so 'GPIOA_' is preferred over 'GPIO_'.
     """
-    registers = block_data.get('registers', [])
-    if not registers:
-        return
-
     # Build candidate prefixes (with '_' separator), longest first
     base = re.sub(r'\d+$', '', instance_name)  # e.g., ADC1 -> ADC
     candidates = set()
@@ -319,6 +317,25 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
         candidates.add(name + '_')
     # Sort longest-first so we prefer the most specific match
     candidates = sorted(candidates, key=len, reverse=True)
+
+    # Description candidates: same roots but with space separator
+    desc_candidates = sorted(
+        {name + ' ' for name in (instance_name, base, block_type)},
+        key=len, reverse=True)
+
+    # Strip instance prefix from block-level description
+    block_desc = block_data.get('description', '')
+    if block_desc:
+        for prefix in desc_candidates:
+            if block_desc.startswith(prefix):
+                stripped = block_desc[len(prefix):]
+                if stripped:
+                    block_data['description'] = stripped[0].upper() + stripped[1:]
+                break
+
+    registers = block_data.get('registers', [])
+    if not registers:
+        return
 
     for reg in registers:
         rname = reg.get('name', '')
@@ -329,6 +346,24 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
                 if dn.startswith(prefix):
                     reg['displayName'] = dn[len(prefix):]
                 break  # first matching prefix wins
+
+        # Strip instance prefix from alternateRegister
+        alt = reg.get('alternateRegister', '')
+        if alt:
+            for prefix in candidates:
+                if alt.startswith(prefix):
+                    reg['alternateRegister'] = alt[len(prefix):]
+                    break
+
+        # Strip instance prefix from description (space separator)
+        desc = reg.get('description', '')
+        if desc:
+            for prefix in desc_candidates:
+                if desc.startswith(prefix):
+                    stripped = desc[len(prefix):]
+                    if stripped:
+                        reg['description'] = stripped[0].upper() + stripped[1:]
+                    break
 
 
 def _inject_params(block_data, params):
