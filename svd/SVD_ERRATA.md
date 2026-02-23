@@ -267,29 +267,33 @@ References:
 - RM0468 Rev.3 — STM32H723 / STM32H725 / STM32H730 / STM32H733 / STM32H735
 - RM0455 Rev.9 — STM32H7A3 / STM32H7B0 / STM32H7B3
 
-### ADC (needs re-verification)
-
-> **Caveat:** These bugs were identified by cross-comparing SVD files during H7 ADC
-> unification. The H723 SVD was chosen as the source because it appeared most
-> accurate, but the individual bugs below have not yet been verified against RMs
-> with specific page references. To be revisited.
+### ADC
 
 **STM32H743 (SVD v2.4):**
 
-| Register | Field     | Bug                          | H723 SVD (v2.1) has          |
+| Register | Field     | Bug                          | RM0433 says                  |
 |----------|-----------|------------------------------|------------------------------|
-| HTR1     | (name)    | Named "LHTR1"               | "HTR1"                       |
-| various  | (resets)  | Wrong reset values           | Different reset values       |
-| CFGR     | BOOST     | 1-bit width                  | 2-bit (BOOST[1:0])          |
-| DR       | RDATA     | 16-bit width                 | 32-bit                       |
+| HTR1     | (name)    | Named "LHTR1"               | ADC_HTR1 (p.1019)           |
+| CFGR     | BOOST     | 1-bit at bit 8               | 2-bit BOOST[1:0] at [9:8] (rev V, p.1007) |
+| DR       | RDATA     | 16-bit width                 | 32-bit RDATA[31:0] (p.1024) |
+| CR       | (reset)   | 0x00000000                   | 0x20000000 (DEEPPWD=1, p.1001) |
+| CFGR     | (reset)   | 0x00000000                   | 0x80000000 (JQDIS=1, p.1010) |
+| HTR1     | (reset)   | 0x0FFF0000                   | 0x03FFFFFF (p.1019)          |
+
+Note: RM0433 documents two silicon revisions for the ADC_CR register. The 1-bit BOOST
+matches the earlier revision Y definition; the current revision V uses 2-bit BOOST[1:0],
+consistent with RM0468 and RM0455. The H743 SVD appears based on revision Y. The reset
+value bugs stem from ADC1 being `derivedFrom` ADC3, which is a simpler 12-bit ADC with
+different defaults.
 
 **STM32H7A3 (SVD v3.4):**
 
-| Register | Field     | Bug                          | H723 SVD (v2.1) has          |
+| Register | Field     | Bug                          | RM0455 says                  |
 |----------|-----------|------------------------------|------------------------------|
-| HTR1     | (name)    | Named "LHTR1"               | "HTR1"                       |
-| CFGR     | RES       | Wrong width                  | 3-bit (RES[2:0])            |
-| CFGR     | BOOST     | Wrong width                  | 2-bit (BOOST[1:0])          |
+| HTR1     | (name)    | Named "LHTR1"               | ADC_HTR1 (p.1027)           |
+| CFGR     | RES       | 2-bit at [3:2]               | 3-bit RES[2:0] at [4:2] (p.1021) |
+| CFGR     | BOOST     | 1-bit at bit 8               | 2-bit BOOST[1:0] at [9:8] (p.1015) |
+| DR       | RDATA     | 16-bit width                 | 32-bit RDATA[31:0] (p.1032) |
 
 ### OTG_HS_GLOBAL
 
@@ -461,18 +465,42 @@ All H7 SVDs misattribute the reset interrupt to the WWDG peripheral instead of E
 
 ## ST STM32L0
 
-Reference:
-- RM0376 — STM32L0x2 / STM32L0x3
+References:
+- RM0451 Rev.3 — STM32L0x0
+- RM0377 Rev.10 — STM32L0x1
+- RM0376 Rev.7 — STM32L0x2
+- RM0367 Rev.8 — STM32L0x3
 
-### ADC_Common (needs re-verification)
+### ADC_Common (CCR)
 
-> **Caveat:** Identified during L0 ADC work but not yet verified against the RM
-> with specific page references. To be revisited.
+The ADC_CCR register bits 22-25 differ across L0 subfamilies. The correct layout per
+each RM:
 
-The VLCDEN bit (VLCD channel enable) is present in some L0 SVD files that
-should not have it. Per the RM, only L0x3 devices have the VLCD pin connected
-to an ADC input channel. The bit appears inverted across subfamilies in the
-SVD files (present where it shouldn't be, or absent where it should be).
+| Bit | L0x0 (RM0451 p.299) | L0x1 (RM0377 p.326) | L0x2 (RM0376 p.346) | L0x3 (RM0367 p.349) |
+|-----|----------------------|----------------------|----------------------|----------------------|
+| 25  | LFMEN                | LFMEN                | LFMEN                | LFMEN                |
+| 24  | Reserved             | Reserved             | Reserved             | **VLCDEN**           |
+| 23  | Reserved             | TSEN                 | TSEN                 | TSEN                 |
+| 22  | VREFEN               | VREFEN               | VREFEN               | VREFEN               |
+
+VLCDEN enables VLCD pin voltage measurement through an internal bridge divider connected
+to ADC1_IN16 (RM0367 Section 14.10, p.334). Only L0x3 devices have an LCD controller
+with a VLCD pin.
+
+**VLCDEN inversion bug:** The SVD files have VLCDEN present in exactly the wrong
+subfamilies and absent from the right one:
+
+| SVD file   | Has VLCDEN? | RM says    |
+|------------|-------------|------------|
+| STM32L0x0  | Yes (BUG)   | Reserved (RM0451 p.299) |
+| STM32L0x1  | Yes (BUG)   | Reserved (RM0377 p.326) |
+| STM32L0x2  | No          | Reserved (RM0376 p.346) — correct |
+| STM32L0x3  | No (BUG)    | VLCDEN at bit 24 (RM0367 p.349) |
+
+**TSEN in L0x0 bug:** The L0x0 SVD includes TSEN at bit 23, but RM0451 shows bit 23
+as reserved. The term "temperature sensor" does not appear in RM0451 — the L0x0 has
+no temperature sensor.
+
 SVD versions: STM32L0x0 v1.3, STM32L0x1 v1.6, STM32L0x2 v1.7, STM32L0x3 v1.7.
 
 
