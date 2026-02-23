@@ -38,7 +38,7 @@ def _parse_block_cfg(block_cfg):
     if block_cfg.get('transforms') is not None:
         entry['transforms'] = [dict(t) for t in block_cfg['transforms']]
     if block_cfg.get('params') is not None:
-        entry['params'] = {k: dict(v) for k, v in block_cfg['params'].items()}
+        entry['params'] = [dict(p) for p in block_cfg['params']]
     if block_cfg.get('variants') is not None:
         entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
     return entry
@@ -338,10 +338,10 @@ def _inject_params(block_data, params):
     ordered = {}
     for k, v in block_data.items():
         if k == 'registers' and 'params' not in ordered:
-            ordered['params'] = dict(params)
+            ordered['params'] = list(params)
         ordered[k] = v
     if 'params' not in ordered:
-        ordered['params'] = dict(params)
+        ordered['params'] = list(params)
     return ordered
 
 

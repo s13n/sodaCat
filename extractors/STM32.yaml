@@ -3,10 +3,7 @@ shared_blocks:
     from: STM32L412.WWDG
     interrupts: {WWDG: INTR}
     params:
-      cfr_version:
-        type: int
-        default: 1
-        description: 'CFR register layout: 1 = v1 (2-bit WDGTB at [8:7]), 2 = v2 (3-bit WDGTB at [13:11])'
+      - {name: cfr_version, type: int, default: 1, description: 'CFR register layout: 1 = v1 (2-bit WDGTB at [8:7]), 2 = v2 (3-bit WDGTB at [13:11])'}
     transforms:
       # Clone CFR -> CFR_V2: newer WWDG IP with 3-bit prescaler at bits [13:11]
       - type: cloneRegister
@@ -22,18 +19,18 @@ shared_blocks:
     interrupts:
       TIM2: {name: INTR, description: Global interrupt}
     params:
-      width: {type: int, default: 16, description: Counter width in bits}
-      channels: {type: int, default: 4, description: Number of capture/compare channels}
-      has_centerPWM: {type: bool, default: true, description: Center-aligned PWM (CMS/DIR in CR1)}
-      encoder: {type: int, default: 0, description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'}
-      has_xor_input: {type: bool, default: true, description: TI1S XOR (Hall sensor)}
-      has_etr: {type: bool, default: true, description: External trigger input (ETF/ETPS/ECE/ETP)}
-      has_dma_burst: {type: bool, default: true, description: DMA burst (DCR/DMAR)}
-      has_complementary: {type: bool, default: false, description: Complementary output (BDTR/RCR)}
-      has_dither: {type: bool, default: false, description: Dithering (DITHEN in CR1)}
-      sms_preload: {type: int, default: 0, description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'}
-      has_uifremap: {type: bool, default: false, description: UIF remap (UIFREMAP in CR1)}
-      has_extended_ocm: {type: bool, default: false, description: Extended OC mode (OC1M_3 etc.)}
+      - {name: width, type: int, default: 16, description: Counter width in bits}
+      - {name: channels, type: int, default: 4, description: Number of capture/compare channels}
+      - {name: has_centerPWM, type: bool, default: true, description: Center-aligned PWM (CMS/DIR in CR1)}
+      - {name: encoder, type: int, default: 0, description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'}
+      - {name: has_xor_input, type: bool, default: true, description: TI1S XOR (Hall sensor)}
+      - {name: has_etr, type: bool, default: true, description: External trigger input (ETF/ETPS/ECE/ETP)}
+      - {name: has_dma_burst, type: bool, default: true, description: DMA burst (DCR/DMAR)}
+      - {name: has_complementary, type: bool, default: false, description: Complementary output (BDTR/RCR)}
+      - {name: has_dither, type: bool, default: false, description: Dithering (DITHEN in CR1)}
+      - {name: sms_preload, type: int, default: 0, description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'}
+      - {name: has_uifremap, type: bool, default: false, description: UIF remap (UIFREMAP in CR1)}
+      - {name: has_extended_ocm, type: bool, default: false, description: Extended OC mode (OC1M_3 etc.)}
     transforms:
       # N6 SVD naming normalization
       - {type: renameRegisters, pattern: ^CCMR(\d+)_INPUT$, replacement: CCMR\1_Input}
@@ -76,10 +73,7 @@ families:
         interrupts:
           ADC: INTR
         params:
-          ext_channels:
-            type: int
-            default: 19
-            description: Number of external input channels
+          - {name: ext_channels, type: int, default: 19, description: Number of external input channels}
       AdvCtrlTimer:
         from: STM32C071.TIM1
         instances: [TIM1]
@@ -102,20 +96,14 @@ families:
           DMA1_Channel1: Channel1
           DMA1_Channel2_3: Channel2_3
         params:
-          channels:
-            type: int
-            default: 5
-            description: Number of DMA channels
+          - {name: channels, type: int, default: 5, description: Number of DMA channels}
       DMAMUX:
         from: STM32C071.DMAMUX
         instances: [DMAMUX]
         interrupts:
           DMAMUX_DMA1_Channel4_5: INTR
         params:
-          channels:
-            type: int
-            default: 5
-            description: Number of DMA request multiplexer channels
+          - {name: channels, type: int, default: 5, description: Number of DMA request multiplexer channels}
       EXTI:
         from: STM32C071.EXTI
         instances: [EXTI]
@@ -136,9 +124,7 @@ families:
         interrupts:
           FLASH: INTR
         params:
-          pages:
-            type: int
-            description: Number of flash memory pages
+          - {name: pages, type: int, description: Number of flash memory pages}
       GPIO:
         from: STM32C011.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOF]
@@ -512,14 +498,8 @@ families:
         interrupts:
           UART4_EXTI34: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32F373.USB
         instances: [USB, USB_FS]
@@ -608,10 +588,7 @@ families:
         from: STM32F405.ADC_Common
         instances: [ADC_Common, C_ADC]
         params:
-          multi:
-            type: bool
-            default: false
-            description: Multi-ADC mode support (MULT field in CCR, CDR register)
+          - {name: multi, type: bool, default: false, description: 'Multi-ADC mode support (MULT field in CCR, CDR register)'}
         transforms:
           - {type: patchAddressBlock, size: 12}
       AES:
@@ -757,10 +734,7 @@ families:
           I2C1_EV: EV
           I2C1_ER: ER
         params:
-          has_noise_filter:
-            type: bool
-            default: true
-            description: Digital and analog noise filter (FLTR register)
+          - {name: has_noise_filter, type: bool, default: true, description: Digital and analog noise filter (FLTR register)}
       IWDG:
         from: STM32F401.IWDG
         instances: [IWDG]
@@ -779,10 +753,7 @@ families:
         interrupts:
           OTG_FS: INTR
         params:
-          has_lpm:
-            type: bool
-            default: false
-            description: Link Power Management support (ERRATIM in DCFG, DEVLNSTS in DSTS)
+          - {name: has_lpm, type: bool, default: false, description: 'Link Power Management support (ERRATIM in DCFG, DEVLNSTS in DSTS)'}
         transforms:
           - type: patchFields
             register: FS_DCFG
@@ -799,10 +770,7 @@ families:
           OTG_FS_WKUP: WKUP
           OTG_FS: INTR
         params:
-          has_bcd:
-            type: bool
-            default: true
-            description: Battery charging detection (BCD fields in GCCFG)
+          - {name: has_bcd, type: bool, default: true, description: Battery charging detection (BCD fields in GCCFG)}
         transforms:
           - {type: patchAddressBlock, size: 280}
         variants:
@@ -858,17 +826,9 @@ families:
         from: STM32F446.PWR
         instances: [PWR]
         params:
-          power_mode:
-            type: string
-            description: 'Power mode capability: none (F405/407), lvds (low-voltage deepsleep), overdrive'
-          has_fmssr:
-            type: bool
-            default: false
-            description: Flash Memory Stop / Flash Interface Stop while System Run
-          wakeup_pins:
-            type: int
-            default: 1
-            description: Number of WKUP pins (1, 2, or 3)
+          - {name: power_mode, type: string, description: 'Power mode capability: none (F405/407), lvds (low-voltage deepsleep), overdrive'}
+          - {name: has_fmssr, type: bool, default: false, description: Flash Memory Stop / Flash Interface Stop while System Run}
+          - {name: wakeup_pins, type: int, default: 1, description: 'Number of WKUP pins (1, 2, or 3)'}
         transforms:
       # Fix EWUP naming to numbered convention (RM uses EWUP1 on multi-pin chips)
           - {type: renameFields, register: CSR, pattern: ^EWUP$, replacement: EWUP1}
@@ -937,10 +897,7 @@ families:
         from: STM32F446.SAI1
         instances: [SAI, SAI1, SAI2]
         params:
-          has_gcr:
-            type: bool
-            default: false
-            description: Global configuration register (inter-SAI synchronization)
+          - {name: has_gcr, type: bool, default: false, description: Global configuration register (inter-SAI synchronization)}
         transforms:
           - {type: renameFields, register: ACR1, pattern: ^MCJDIV$, replacement: MCKDIV}
           - {type: renameFields, register: BCR1, pattern: ^MCJDIV$, replacement: MCKDIV}
@@ -969,14 +926,8 @@ families:
         interrupts:
           UART5: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       WWDG:
         uses: WWDG
         instances: [WWDG]
@@ -1194,7 +1145,7 @@ families:
           DMA1_Stream6: Stream6
           DMA1_Stream7: Stream7
         params:
-          channel_count: {type: int, description: Number of DMA request channels per stream}
+          - {name: channel_count, type: int, description: Number of DMA request channels per stream}
         transforms:
           - {type: patchFields, register: S0CR, fields: [{name: CHSEL, bitWidth: 4}]}
           - {type: patchFields, register: S1CR, fields: [{name: CHSEL, bitWidth: 4}]}
@@ -1259,8 +1210,8 @@ families:
         interrupts:
           FLASH: INTR
         params:
-          has_pcrop: {type: bool, default: false, description: 'PCROP protection support (RDERR, RDERRIE, OPTCR2)'}
-          has_dual_bank: {type: bool, default: false, description: 'Dual-bank Flash support (MER2, nDBOOT, nDBANK)'}
+          - {name: has_pcrop, type: bool, default: false, description: 'PCROP protection support (RDERR, RDERRIE, OPTCR2)'}
+          - {name: has_dual_bank, type: bool, default: false, description: 'Dual-bank Flash support (MER2, nDBOOT, nDBANK)'}
         transforms:
           - {type: renameFields, register: SR, pattern: ^PGSERR$, replacement: ERSERR}
           - {type: renameFields, register: OPTKEYR, pattern: ^OPTKEY$, replacement: OPTKEYR}
@@ -1387,7 +1338,7 @@ families:
         interrupts:
           PVD: INTR
         params:
-          has_eiwup: {type: bool, default: true, description: Internal wakeup line gated by EIWUP bit (false = always enabled)}
+          - {name: has_eiwup, type: bool, default: true, description: Internal wakeup line gated by EIWUP bit (false = always enabled)}
         transforms:
           - type: patchFields
             register: CSR1
@@ -1486,22 +1437,10 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_stop_mode_wakeup:
-            type: bool
-            default: false
-            description: USART wakeup from Stop mode (UESM, WUS, WUFIE, UCESM, WUF, REACK, WUCF)
-          has_tcbgt:
-            type: bool
-            default: false
-            description: Transmission complete before guard time (TCBGTIE, TCBGT, TCBGTCF)
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_stop_mode_wakeup, type: bool, default: false, description: 'USART wakeup from Stop mode (UESM, WUS, WUFIE, UCESM, WUF, REACK, WUCF)'}
+          - {name: has_tcbgt, type: bool, default: false, description: 'Transmission complete before guard time (TCBGTIE, TCBGT, TCBGTCF)'}
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
         transforms:
           - type: patchFields
             register: CR3
@@ -1537,14 +1476,8 @@ families:
           CAN1_RX1: RX1
           CAN1_SCE: SCE
         params:
-          linked_to_slave:
-            type: string
-            default: ''
-            description: Instance name of slave CAN sharing this master's filter banks
-          linked_to_master:
-            type: string
-            default: ''
-            description: Instance name of master CAN whose filter banks this slave uses
+          - {name: linked_to_slave, type: string, default: '', description: Instance name of slave CAN sharing this master's filter banks}
+          - {name: linked_to_master, type: string, default: '', description: Instance name of master CAN whose filter banks this slave uses}
     chip_params:
       _all:
         _all:
@@ -1879,17 +1812,9 @@ families:
         interrupts:
           FLASH: INTR
         params:
-          pages:
-            type: int
-            description: Number of flash memory pages
-          dual_bank:
-            type: bool
-            default: false
-            description: Dual-bank flash organization supported
-          pb4_pupen:
-            type: bool
-            default: false
-            description: PB4 pull-up enable bit present in PWR_PUCRB
+          - {name: pages, type: int, description: Number of flash memory pages}
+          - {name: dual_bank, type: bool, default: false, description: Dual-bank flash organization supported}
+          - {name: pb4_pupen, type: bool, default: false, description: PB4 pull-up enable bit present in PWR_PUCRB}
       GPIO:
         from: STM32G431.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG]
@@ -1987,14 +1912,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32G431.USB_FS_device
         instances: [USB_FS_device]
@@ -2389,14 +2308,8 @@ families:
         interrupts:
           UART12: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32H503.USB
         instances: [USB]
@@ -2593,14 +2506,8 @@ families:
           DFSDM1_FLT2: FLT2
           DFSDM1_FLT3: FLT3
         params:
-          filters:
-            type: int
-            default: 4
-            description: Number of digital filter units (4 or 8)
-          has_dlyr:
-            type: bool
-            default: true
-            description: CHyDLYR delay register present
+          - {name: filters, type: int, default: 4, description: Number of digital filter units (4 or 8)}
+          - {name: has_dlyr, type: bool, default: true, description: CHyDLYR delay register present}
         transforms:
           - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
       # H7A3 SVD bug: CKOUTDIV/CKOUTSRC/DFSDMEN duplicated in CH1-CH7 (CH0-only per RM)
@@ -2734,10 +2641,7 @@ families:
         interrupts:
           HSEM0: INTR
         params:
-          semaphores:
-            type: int
-            default: 32
-            description: Number of hardware semaphores (16 or 32)
+          - {name: semaphores, type: int, default: 32, description: Number of hardware semaphores (16 or 32)}
         transforms:
       # All H7 SVDs except H745: MASTERID field is 8-bit, RM says 4-bit at [11:8]
           - {type: patchFields, register_pattern: ^R\d+$, fields: [{name: MASTERID, bitWidth: 4}]}
@@ -2795,10 +2699,7 @@ families:
         interrupts:
           OCTOSPI1: INTR
         params:
-          has_extended_csht:
-            type: bool
-            default: false
-            description: Extended chip-select high time (6-bit CSHT instead of 3-bit)
+          - {name: has_extended_csht, type: bool, default: false, description: Extended chip-select high time (6-bit CSHT instead of 3-bit)}
       OPAMP:
         from: STM32H723.OPAMP
         instances: [OPAMP]
@@ -2854,10 +2755,7 @@ families:
         from: STM32H723.PWR
         instances: [PWR]
         params:
-          has_smps:
-            type: bool
-            default: true
-            description: Has SMPS step-down converter (false for H742/H753 which use SCUEN instead of SDEN)
+          - {name: has_smps, type: bool, default: true, description: Has SMPS step-down converter (false for H742/H753 which use SCUEN instead of SDEN)}
         transforms:
       # H723/H745 SVDs: USB33DEN marked write-only, RM says read-write
           - type: patchFields
@@ -2885,10 +2783,7 @@ families:
         interrupts:
           ECC_DIAG_IT: INTR
         params:
-          monitors:
-            type: int
-            default: 5
-            description: Number of ECC monitoring units in this RAMECC instance
+          - {name: monitors, type: int, default: 5, description: Number of ECC monitoring units in this RAMECC instance}
         transforms:
       # All H7 SVDs: M2FECR/M3FECR/M4FECR at wrong offsets (RM says regular 0x20 stride)
       # All H7 SVDs: scattered access bugs on FAR/FDRH/FECR (RM says all read-only)
@@ -2970,14 +2865,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       VREFBUF:
         from: STM32H723.VREFBUF
         instances: [VREFBUF]
@@ -3051,10 +2940,7 @@ families:
         from: STM32L0x0.ADC
         instances: [ADC]
         params:
-          vlcd_channel:
-            type: bool
-            default: false
-            description: VLCD pin connected to ADC input channel for LCD voltage measurement
+          - {name: vlcd_channel, type: bool, default: false, description: VLCD pin connected to ADC input channel for LCD voltage measurement}
       AES:
         from: STM32L0x1.AES
         instances: [AES]
@@ -3328,14 +3214,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32L100.USB
         instances: [USB]
@@ -3589,14 +3469,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32L412.USB_FS
         instances: [USB_FS]
@@ -3906,14 +3780,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       VREFBUF:
         from: STM32L4P5.VREFBUF
         instances: [VREFBUF]
@@ -4169,14 +4037,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32L552.USB
         instances: [USB]
@@ -4529,14 +4391,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       VENC:
         from: STM32N645.VENC
         instances: [VENC]
@@ -4969,14 +4825,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32U375.USB
         instances: [USB]
@@ -5349,14 +5199,8 @@ families:
         interrupts:
           UART4: INTR
         params:
-          has_synchronous:
-            type: bool
-            default: true
-            description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-          has_smartcard:
-            type: bool
-            default: true
-            description: Smartcard mode support (SCEN, NACK, SCARCNT)
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       VREFBUF:
         from: STM32U535.VREFBUF
         instances: [VREFBUF]
