@@ -17,6 +17,44 @@ shared_blocks:
         register: CFR_V2
         fields:
           - {name: WDGTB, description: Timer base, bitOffset: 11, bitWidth: 3}
+  GpTimer:
+    from: STM32N645.TIM2
+    interrupts:
+      TIM2: {name: INTR, description: Global interrupt}
+    params:
+      width: {type: int, default: 16, description: Counter width in bits}
+      channels: {type: int, default: 4, description: Number of capture/compare channels}
+      has_centerPWM: {type: bool, default: true, description: Center-aligned PWM (CMS/DIR in CR1)}
+      encoder: {type: int, default: 0, description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'}
+      has_xor_input: {type: bool, default: true, description: TI1S XOR (Hall sensor)}
+      has_etr: {type: bool, default: true, description: External trigger input (ETF/ETPS/ECE/ETP)}
+      has_dma_burst: {type: bool, default: true, description: DMA burst (DCR/DMAR)}
+      has_complementary: {type: bool, default: false, description: Complementary output (BDTR/RCR)}
+      has_dither: {type: bool, default: false, description: Dithering (DITHEN in CR1)}
+      sms_preload: {type: int, default: 0, description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'}
+      has_uifremap: {type: bool, default: false, description: UIF remap (UIFREMAP in CR1)}
+      has_extended_ocm: {type: bool, default: false, description: Extended OC mode (OC1M_3 etc.)}
+    transforms:
+      # N6 SVD naming normalization
+      - {type: renameRegisters, pattern: ^CCMR(\d+)_INPUT$, replacement: CCMR\1_Input}
+      - {type: renameRegisters, pattern: ^CCMR(\d+)_OUTPUT$, replacement: CCMR\1_Output}
+      - {type: renameFields, register: SMCR, pattern: ^SMS_1$, replacement: SMS_3}
+      - {type: renameFields, register: SMCR, pattern: ^TS_1$, replacement: TS_4_3}
+      - {type: renameFields, register: CCMR1_Output, pattern: OC(\d)M_1$, replacement: 'OC\1M_3'}
+      - {type: renameFields, register: CCMR2_Output, pattern: OC(\d)M_1$, replacement: 'OC\1M_3'}
+      - {type: renameFields, register: CR2, pattern: ^MMS_1$, replacement: MMS_3}
+      # Clone DCR/DMAR at Gen1-3 offset (0x48/0x4c)
+      - {type: cloneRegister, source: DCR, name: DCR_V1}
+      - {type: cloneRegister, source: DMAR, name: DMAR_V1}
+      - {type: patchRegisters, registers: [{name: DCR_V1, addressOffset: 72}]}
+      - {type: patchRegisters, registers: [{name: DMAR_V1, addressOffset: 76}]}
+      # Remove DBSS from DCR_V1 (Gen1-3 don't have it)
+      - {type: patchFields, register: DCR_V1, fields: [name: DBSS]}
+      # Clone TISEL at Gen3 offset (0x68)
+      - {type: cloneRegister, source: TISEL, name: TISEL_V1}
+      - {type: patchRegisters, registers: [{name: TISEL_V1, addressOffset: 104}]}
+      # Ensure addressBlock covers all registers
+      - {type: patchAddressBlock, size: 996}
 families:
   C0:
     subfamilies:
@@ -105,27 +143,8 @@ families:
         from: STM32C011.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOF]
       GpTimer:
-        from: STM32C071.TIM2
+        uses: GpTimer
         instances: [TIM14, TIM15, TIM16, TIM17, TIM2, TIM3]
-        interrupts:
-          TIM14: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
-          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE1$', replacement: 'CCMR\1_Output'}
-          - {type: renameRegisters, pattern: '^CNT_ALTERNATE1$', replacement: CNT_V2}
-          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
-          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       I2C:
         from: STM32C031.I2C
         instances: [I2C, I2C1, I2C2]
@@ -172,11 +191,12 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          TIM2: {width: 32}
-          TIM14: {channels: 1}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM3: {encoder: 1}
       C0xx:
         STM32C011:
           ADC: {ext_channels: 13}
@@ -362,29 +382,8 @@ families:
         from: STM32F301.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
       GpTimer:
+        uses: GpTimer
         instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM19, TIM2, TIM3, TIM4, TIM5]
-        interrupts:
-          TIM12: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        variants:
-          F301:
-            from: STM32F301.TIM2
-          F302:
-            from: STM32F302.TIM2
-          F303:
-            from: STM32F303.TIM2
-          F37x:
-            from: STM32F373.TIM2
-          F334:
-            from: STM32F3x4.TIM2
       HRTIM_Common:
         from: STM32F3x4.HRTIM_Common
         instances: [HRTIM_Common]
@@ -545,14 +544,17 @@ families:
         _all:
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM12: {channels: 2}
-          TIM13: {channels: 1}
-          TIM14: {channels: 1}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM5: {width: 32, encoder: 1}
+          TIM12: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM13: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
+          TIM19: {encoder: 1}
   F4:
     subfamilies:
       F401:
@@ -741,22 +743,8 @@ families:
         from: STM32F401.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
       GpTimer:
-        from: STM32F401.TIM2
+        uses: GpTimer
         instances: [TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM9]
-        interrupts:
-          TIM1_UP_TIM10: UP
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameFields, register: CCMR1_Input, pattern: '^ICPCS$', replacement: IC1PSC}
-          - {type: renameFields, register: CCMR1_Input, pattern: '^IC2PCS$', replacement: IC2PSC}
       HASH:
         from: STM32F405.HASH
         instances: [HASH]
@@ -1009,14 +997,16 @@ families:
           UART7: {has_synchronous: false, has_smartcard: false}
           UART8: {has_synchronous: false, has_smartcard: false}
           UART9: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM9: {channels: 2}
-          TIM10: {channels: 1}
-          TIM11: {channels: 1}
-          TIM12: {channels: 2}
-          TIM13: {channels: 1}
-          TIM14: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM5: {width: 32, encoder: 1}
+          TIM9: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM10: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM11: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM12: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM13: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
       F401:
         _all:
           PWR: {power_mode: lvds}
@@ -1299,30 +1289,8 @@ families:
         from: STM32F722.GPIOH
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
       GpTimer:
-        from: STM32F722.TIM2
+        uses: GpTimer
         instances: [TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM9]
-        interrupts:
-          TIM5: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-          has_uifremap:
-            type: bool
-            default: false
-            description: UIF status bit remapping (CR1 bit 11)
-          has_extended_ocm:
-            type: bool
-            default: false
-            description: Extended output compare mode bits (OCxM_3 in CCMR1/CCMR2)
-        transforms:
-          - {type: renameFields, register: CCMR1_Input, pattern: '^ICPCS$', replacement: IC1PSC}
-          - {type: renameFields, register: CCMR1_Input, pattern: '^IC2PCS$', replacement: IC2PSC}
       HASH:
         from: STM32F745.HASH
         instances: [HASH]
@@ -1584,14 +1552,16 @@ families:
           UART5: {has_synchronous: false, has_smartcard: false}
           UART7: {has_synchronous: false, has_smartcard: false}
           UART8: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM9: {channels: 2}
-          TIM10: {channels: 1}
-          TIM11: {channels: 1}
-          TIM12: {channels: 2}
-          TIM13: {channels: 1}
-          TIM14: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM5: {width: 32, encoder: 1}
+          TIM9: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM10: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM11: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM12: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM13: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
@@ -1707,19 +1677,8 @@ families:
         from: STM32G030.GPIOB
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF]
       GpTimer:
-        from: STM32G030.TIM2
+        uses: GpTimer
         instances: [TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4]
-        interrupts:
-          TIM14: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
       I2C:
         from: STM32G030.I2C1
         instances: [I2C1, I2C2, I2C3]
@@ -1793,11 +1752,13 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          TIM2: {width: 32}
-          TIM14: {channels: 1}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
   G4:
     subfamilies:
       G4xx:
@@ -1933,26 +1894,8 @@ families:
         from: STM32G431.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG]
       GpTimer:
-        from: STM32G431.TIM2
+        uses: GpTimer
         instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
-        interrupts:
-          TIM2: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
-          - {type: renameRegisters, pattern: '^CCMR(\d)_Alternate$', replacement: 'CCMR\1_Output'}
-          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
-          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HRTIM_Common:
         from: STM32G474.HRTIM_Common
         instances: [HRTIM_Common]
@@ -2071,11 +2014,14 @@ families:
           WWDG: {cfr_version: 2}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 2, sms_preload: 2}
+          TIM5: {width: 32, encoder: 1, sms_preload: 2}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          GpTimer: {has_dither: true}
+          TIM3: {encoder: 2, sms_preload: 2}
+          TIM4: {encoder: 1, sms_preload: 2}
       G4xx:
         STM32G431:
           Flash: {pages: 64}
@@ -2279,26 +2225,8 @@ families:
         from: STM32H503.GPIOA
         instances: [GPIOA, GPIOA_S, GPIOB, GPIOB_S, GPIOC, GPIOC_S, GPIOD, GPIOD_S, GPIOE, GPIOE_S, GPIOF, GPIOF_S, GPIOG, GPIOG_S, GPIOH, GPIOH_S, GPIOI]
       GpTimer:
-        from: STM32H533.TIM2
+        uses: GpTimer
         instances: [TIM12, TIM13, TIM14, TIM15, TIM15_S, TIM16, TIM17, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM6_S, TIM7_S, TIM8_S]
-        interrupts:
-          TIM12: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
-          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE1$', replacement: 'CCMR\1_Output'}
-          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
-          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32H503.HASH
         instances: [HASH]
@@ -2507,19 +2435,22 @@ families:
           UART7: {has_synchronous: false, has_smartcard: false}
           UART8: {has_synchronous: false, has_smartcard: false}
           UART9: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
+          TIM2: {width: 32, encoder: 3, sms_preload: 2}
           TIM2_S: {width: 32}
-          TIM5: {width: 32}
+          TIM5: {width: 32, encoder: 3, sms_preload: 2}
           TIM5_S: {width: 32}
           TIM6_S: {channels: 0}
           TIM7_S: {channels: 0}
-          TIM12: {channels: 2}
-          TIM13: {channels: 1}
-          TIM14: {channels: 1}
-          TIM15: {channels: 2}
+          TIM12: {channels: 2, has_centerPWM: false, has_etr: false, has_dma_burst: false, encoder: 3}
+          TIM13: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
           TIM15_S: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          GpTimer: {has_dither: true}
+          TIM3: {encoder: 3, sms_preload: 2}
+          TIM4: {encoder: 3, sms_preload: 2}
   H7:
     subfamilies:
       H73x:
@@ -2770,22 +2701,8 @@ families:
         from: STM32H723.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
       GpTimer:
-        from: STM32H723.TIM2
+        uses: GpTimer
         instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
-        interrupts:
-          TIM15: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameFields, register: CCMR1_Input, pattern: '^ICPCS$', replacement: IC1PSC}
-          - {type: renameFields, register: CCMR1_Input, pattern: '^IC2PCS$', replacement: IC2PSC}
         variants:
           H73x:
             instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM23, TIM24, TIM3, TIM4, TIM5]
@@ -3077,14 +2994,16 @@ families:
           UART7: {has_synchronous: false, has_smartcard: false}
           UART8: {has_synchronous: false, has_smartcard: false}
           UART9: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM12: {channels: 2}
-          TIM13: {channels: 1}
-          TIM14: {channels: 1}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM5: {width: 32, encoder: 1}
+          TIM12: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM13: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
       H742_H753:
         _all:
           DFSDM: {has_dlyr: false}
@@ -3096,8 +3015,8 @@ families:
           RAMECC3: {monitors: 2}
       H73x:
         _all:
-          TIM23: {width: 32}
-          TIM24: {width: 32}
+          TIM23: {width: 32, encoder: 1}
+          TIM24: {width: 32, encoder: 1}
           RAMECC2: {monitors: 3}
           RAMECC3: {monitors: 2}
       H7A3_B:
@@ -3177,19 +3096,8 @@ families:
         from: STM32L0x0.GPIOB
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOH]
       GpTimer:
-        from: STM32L0x0.TIM2
+        uses: GpTimer
         instances: [TIM2, TIM21, TIM22, TIM3]
-        interrupts:
-          TIM2: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
       I2C:
         from: STM32L0x0.I2C1
         instances: [I2C1, I2C2, I2C3]
@@ -3278,9 +3186,10 @@ families:
     chip_params:
       _all:
         _all:
-          TIM2: {width: 32}
-          TIM21: {channels: 2}
-          TIM22: {channels: 2}
+          TIM2: {width: 32, encoder: 1}
+          TIM21: {channels: 2, has_xor_input: false, has_dma_burst: false}
+          TIM22: {channels: 2, has_xor_input: false, has_dma_burst: false}
+          TIM3: {encoder: 1}
       L0x3:
         _all:
           ADC: {vlcd_channel: true}
@@ -3362,22 +3271,8 @@ families:
         from: STM32L100.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
       GpTimer:
-        from: STM32L151.TIM2
+        uses: GpTimer
         instances: [TIM10, TIM11, TIM2, TIM3, TIM4, TIM5, TIM9]
-        interrupts:
-          TIM11: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameFields, register: CCMR1_Input, pattern: '^ICPCS$', replacement: IC1PSC}
-          - {type: renameFields, register: CCMR1_Input, pattern: '^IC2PCS$', replacement: IC2PSC}
       I2C:
         from: STM32L100.I2C1
         instances: [I2C1, I2C2]
@@ -3457,11 +3352,13 @@ families:
         _all:
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM9: {channels: 2}
-          TIM10: {channels: 1}
-          TIM11: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM5: {width: 32, encoder: 1}
+          TIM9: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM10: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM11: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
   L4:
     subfamilies:
       L41x_L42x:
@@ -3590,22 +3487,8 @@ families:
         from: STM32L412.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI]
       GpTimer:
-        from: STM32L431.TIM2
+        uses: GpTimer
         instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
-        interrupts:
-          TIM1_BRK_TIM15: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32L486.HASH
         instances: [HASH]
@@ -3738,11 +3621,13 @@ families:
         _all:
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM5: {width: 32, encoder: 1}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
   L4P:
     subfamilies:
       L4Px_L4Qx:
@@ -3899,27 +3784,8 @@ families:
         from: STM32L4P5.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI]
       GpTimer:
-        from: STM32L4P5.TIM2
+        uses: GpTimer
         instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
-        interrupts:
-          TIM2: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
-          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE$', replacement: 'CCMR\1_Output'}
-          - {type: renameRegisters, pattern: '^CNT_ALTERNATE$', replacement: CNT_V2}
-          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
-          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32L4P5.HASH
         instances: [HASH]
@@ -4067,11 +3933,13 @@ families:
         _all:
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM5: {width: 32, encoder: 1}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
   L5:
     subfamilies:
       L55x_L56x:
@@ -4197,23 +4065,8 @@ families:
         from: STM32L552.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
       GpTimer:
-        from: STM32L552.TIM2
+        uses: GpTimer
         instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
-        interrupts:
-          TIM15: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameFields, register: SMCR, pattern: '^SMS_bit3$', replacement: SMS_3}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32L552.HASH
         instances: [HASH]
@@ -4340,11 +4193,13 @@ families:
         _all:
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM5: {width: 32}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM5: {width: 32, encoder: 1}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM3: {encoder: 1}
+          TIM4: {encoder: 1}
   N6:
     subfamilies:
       N6xx:
@@ -4506,26 +4361,8 @@ families:
         from: STM32N645.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPION, GPIOO, GPIOP, GPIOQ]
       GpTimer:
-        from: STM32N645.TIM2
+        uses: GpTimer
         instances: [TIM10, TIM11, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM9]
-        interrupts:
-          TIM10: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameRegisters, pattern: '^CCMR(\d)_INPUT$', replacement: 'CCMR\1_Input'}
-          - {type: renameRegisters, pattern: '^CCMR(\d)_OUTPUT$', replacement: 'CCMR\1_Output'}
-          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
-          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32N645.HASH
         instances: [HASH]
@@ -4729,19 +4566,20 @@ families:
           UART7: {has_synchronous: false, has_smartcard: false}
           UART8: {has_synchronous: false, has_smartcard: false}
           UART9: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM3: {width: 32}
-          TIM4: {width: 32}
-          TIM5: {width: 32}
-          TIM9: {channels: 2}
-          TIM10: {channels: 1}
-          TIM11: {channels: 1}
-          TIM12: {channels: 2}
-          TIM13: {channels: 1}
-          TIM14: {channels: 1}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 3, sms_preload: 2}
+          TIM3: {width: 32, encoder: 3, sms_preload: 2}
+          TIM4: {width: 32, encoder: 3, sms_preload: 2}
+          TIM5: {width: 32, encoder: 3, sms_preload: 2}
+          TIM9: {channels: 2, has_centerPWM: false, has_etr: false, has_dma_burst: false}
+          TIM10: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM11: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM12: {channels: 2, has_centerPWM: false, has_etr: false, has_dma_burst: false}
+          TIM13: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          GpTimer: {has_dither: true}
   U0:
     subfamilies:
       U0xx:
@@ -4818,27 +4656,8 @@ families:
         from: STM32U031.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF]
       GpTimer:
-        from: STM32U031.TIM2
+        uses: GpTimer
         instances: [TIM15, TIM16, TIM2, TIM3]
-        interrupts:
-          TIM15_LPTIM3: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
-          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE1$', replacement: 'CCMR\1_Output'}
-          - {type: renameRegisters, pattern: '^CNT_ALTERNATE1$', replacement: CNT_V2}
-          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
-          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       I2C:
         from: STM32U031.I2C1
         instances: [I2C1, I2C2, I2C3]
@@ -4913,9 +4732,10 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          TIM2: {width: 32}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
+          TIM2: {width: 32, encoder: 1}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM3: {encoder: 1}
   U3:
     subfamilies:
       U3xx:
@@ -5036,26 +4856,8 @@ families:
         from: STM32U375.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOG, GPIOH]
       GpTimer:
-        from: STM32U375.TIM2
+        uses: GpTimer
         instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4]
-        interrupts:
-          TIM15: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
-          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE1$', replacement: 'CCMR\1_Output'}
-          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
-          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32U375.HASH
         instances: [HASH]
@@ -5192,12 +4994,13 @@ families:
           WWDG: {cfr_version: 2}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM3: {width: 32}
-          TIM4: {width: 32}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 3, sms_preload: 2}
+          TIM3: {width: 32, encoder: 3, sms_preload: 2}
+          TIM4: {width: 32, encoder: 3, sms_preload: 2}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          GpTimer: {has_dither: true}
   U5:
     subfamilies:
       U5xx:
@@ -5372,24 +5175,8 @@ families:
         from: STM32U535.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ]
       GpTimer:
-        from: STM32U5Fx.TIM2
+        uses: GpTimer
         instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
-        interrupts:
-          TIM15: INTR
-        params:
-          width:
-            type: int
-            default: 16
-            description: Counter width in bits
-          channels:
-            type: int
-            default: 4
-            description: Number of capture/compare channels
-        transforms:
-          - {type: renameFields, register: SMCR, pattern: '^SMS_bit3$', replacement: SMS_3}
-          - {type: renameFields, register: SMCR, pattern: '^TS_2_0$', replacement: TS}
-          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
-          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32U5Fx.HASH
         instances: [HASH]
@@ -5582,10 +5369,11 @@ families:
           WWDG: {cfr_version: 2}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
-          TIM2: {width: 32}
-          TIM3: {width: 32}
-          TIM4: {width: 32}
-          TIM5: {width: 32}
-          TIM15: {channels: 2}
-          TIM16: {channels: 1}
-          TIM17: {channels: 1}
+          TIM2: {width: 32, encoder: 2, sms_preload: 2}
+          TIM3: {width: 32, encoder: 1, sms_preload: 2}
+          TIM4: {width: 32, encoder: 1, sms_preload: 2}
+          TIM5: {width: 32, encoder: 1, sms_preload: 2}
+          TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
+          TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM17: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          GpTimer: {has_dither: true}

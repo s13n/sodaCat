@@ -262,6 +262,8 @@ def _applyInterruptMapping(interrupts, interrupt_map):
     """Apply data-driven interrupt name mapping from blocks config.
 
     interrupt_map maps raw SVD interrupt names to canonical block-level names.
+    Values can be a string (canonical name) or a dict with 'name' and optional
+    'description' (overrides SVD description).
     Interrupts not in the map are dropped (this handles filtering of
     shared/misattributed vectors).
     """
@@ -271,13 +273,22 @@ def _applyInterruptMapping(interrupts, interrupt_map):
     mapped = []
     seen = set()
     for intr in interrupts:
-        canonical = interrupt_map.get(intr['name'])
-        if canonical is not None and canonical not in seen:
-            seen.add(canonical)
-            new_intr = {'name': canonical}
-            if 'description' in intr:
-                new_intr['description'] = intr['description']
-            mapped.append(new_intr)
+        mapping = interrupt_map.get(intr['name'])
+        if mapping is not None:
+            if isinstance(mapping, dict):
+                canonical = mapping['name']
+                desc_override = mapping.get('description')
+            else:
+                canonical = mapping
+                desc_override = None
+            if canonical not in seen:
+                seen.add(canonical)
+                new_intr = {'name': canonical}
+                if desc_override:
+                    new_intr['description'] = desc_override
+                elif 'description' in intr:
+                    new_intr['description'] = intr['description']
+                mapped.append(new_intr)
     return mapped
 
 def processChip(svd_root, chip_name, blocks_config):

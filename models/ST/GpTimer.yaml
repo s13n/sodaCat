@@ -11,6 +11,46 @@ params:
     type: int
     default: 4
     description: Number of capture/compare channels
+  has_centerPWM:
+    type: bool
+    default: true
+    description: Center-aligned PWM (CMS/DIR in CR1)
+  encoder:
+    type: int
+    default: 0
+    description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'
+  has_xor_input:
+    type: bool
+    default: true
+    description: TI1S XOR (Hall sensor)
+  has_etr:
+    type: bool
+    default: true
+    description: External trigger input (ETF/ETPS/ECE/ETP)
+  has_dma_burst:
+    type: bool
+    default: true
+    description: DMA burst (DCR/DMAR)
+  has_complementary:
+    type: bool
+    default: false
+    description: Complementary output (BDTR/RCR)
+  has_dither:
+    type: bool
+    default: false
+    description: Dithering (DITHEN in CR1)
+  sms_preload:
+    type: int
+    default: 0
+    description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'
+  has_uifremap:
+    type: bool
+    default: false
+    description: UIF remap (UIFREMAP in CR1)
+  has_extended_ocm:
+    type: bool
+    default: false
+    description: Extended OC mode (OC1M_3 etc.)
 registers:
   - name: CR1
     displayName: CR1
@@ -211,7 +251,7 @@ registers:
           - name: B_0x1
             description: 'The tim_ti1_in[15:0], tim_ti2_in[15:0] and tim_ti3_in[15:0] multiplexers outputs are XORed and connected to the tim_ti1 input. See also Section 53.3.29: Interfacing with Hall sensors on page 2562.'
             value: 1
-      - name: MMS_1
+      - name: MMS_3
         description: MMS[3]
         bitOffset: 25
         bitWidth: 1
@@ -1605,6 +1645,74 @@ registers:
           - name: B_0xF
             description: tim_ti4_in15
             value: 15
+  - name: TISEL_V1
+    displayName: TISEL_V1
+    description: TIM2 timer input selection register
+    addressOffset: 104
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: TI1SEL
+        description: Selects tim_ti1[15:0] input
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 'tim_ti1_in0: TIMx_CH1'
+            value: 0
+          - name: B_0x1
+            description: tim_ti1_in1
+            value: 1
+          - name: B_0xF
+            description: tim_ti1_in15
+            value: 15
+      - name: TI2SEL
+        description: Selects tim_ti2[15:0] input
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 'tim_ti2_in0: TIMx_CH2'
+            value: 0
+          - name: B_0x1
+            description: tim_ti2_in1
+            value: 1
+          - name: B_0xF
+            description: tim_ti2_in15
+            value: 15
+      - name: TI3SEL
+        description: Selects tim_ti3[15:0] input
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 'tim_ti3_in0: TIMx_CH3'
+            value: 0
+          - name: B_0x1
+            description: tim_ti3_in1
+            value: 1
+          - name: B_0xF
+            description: tim_ti3_in15
+            value: 15
+      - name: TI4SEL
+        description: Selects tim_ti4[15:0] input
+        bitOffset: 24
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 'tim_ti4_in0: TIMx_CH4'
+            value: 0
+          - name: B_0x1
+            description: tim_ti4_in1
+            value: 1
+          - name: B_0xF
+            description: tim_ti4_in15
+            value: 15
   - name: AF1
     displayName: AF1
     description: TIM2 alternate function register 1
@@ -1719,10 +1827,64 @@ registers:
           - name: B_0x7
             description: Trigger
             value: 7
+  - name: DCR_V1
+    displayName: DCR_V1
+    description: TIM2 DMA control register
+    addressOffset: 72
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DBA
+        description: DMA base address
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: TIMx_CR1,
+            value: 0
+          - name: B_0x1
+            description: TIMx_CR2,
+            value: 1
+          - name: B_0x2
+            description: TIMx_SMCR,
+            value: 2
+      - name: DBL
+        description: DMA burst length
+        bitOffset: 8
+        bitWidth: 5
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 transfer
+            value: 0
+          - name: B_0x1
+            description: 2 transfers
+            value: 1
+          - name: B_0x2
+            description: 3 transfers
+            value: 2
+          - name: B_0x1A
+            description: 26 transfers
+            value: 26
   - name: DMAR
     displayName: DMAR
     description: TIM2 DMA address for full transfer
     addressOffset: 992
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DMAB
+        description: DMA register for burst accesses
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: DMAR_V1
+    displayName: DMAR_V1
+    description: TIM2 DMA address for full transfer
+    addressOffset: 76
     size: 32
     resetValue: 0
     resetMask: 4294967295
@@ -1738,4 +1900,4 @@ addressBlocks:
     usage: registers
 interrupts:
   - name: INTR
-    description: TIM10 Global interrupt
+    description: Global interrupt
