@@ -64,12 +64,12 @@ non-default value.
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (1)       | Y     |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
 
 ### F3
 
@@ -78,32 +78,32 @@ F30x/F302/F303/F334 have TIM15–17).
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl | Notes |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|-------|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |       |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |       |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |       |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | F37x  |
-| TIM12    | (N)     | 2   | N         | (0)     | N   | N   | N         | (N)   | F37x  |
-| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   | F37x  |
-| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   | F37x  |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     | F30x+ |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | F30x+ |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | F30x+ |
-| TIM19    | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | F37x  |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |       |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |       |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |       |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   | F37x  |
+| TIM12    | (N)     | 2   | N         | (0)     | N   | N   | 0         | (N)   | F37x  |
+| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   | F37x  |
+| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   | F37x  |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (1)       | Y     | F30x+ |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     | F30x+ |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     | F30x+ |
+| TIM19    | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   | F37x  |
 
 ### F4
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM9     | (N)     | 2   | N         | (0)     | N   | N   | N         |
-| TIM10    | (N)     | 1   | N         | (0)     | N   | N   | N         |
-| TIM11    | (N)     | 1   | N         | (0)     | N   | N   | N         |
-| TIM12    | (N)     | 2   | N         | (0)     | N   | N   | N         |
-| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | N         |
-| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | N         |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM9     | (N)     | 2   | N         | (0)     | N   | N   | 0         |
+| TIM10    | (N)     | 1   | N         | (0)     | N   | N   | 0         |
+| TIM11    | (N)     | 1   | N         | (0)     | N   | N   | 0         |
+| TIM12    | (N)     | 2   | N         | (0)     | N   | N   | 0         |
+| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | 0         |
+| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | 0         |
 
 ### F7
 
@@ -112,16 +112,16 @@ F7 has per-subfamily param differences: F72x_F73x has `has_uifremap` and
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | uifremap* | ext_ocm* |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:---------:|:--------:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | Y         | Y        |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | Y         | Y        |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | Y         | Y        |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | Y         | Y        |
-| TIM9     | (N)     | 2   | N         | (0)     | N   | N   | N         | Y         | Y        |
-| TIM10    | (N)     | 1   | N         | (0)     | N   | N   | N         | Y         | Y        |
-| TIM11    | (N)     | 1   | N         | (0)     | N   | N   | N         | Y         | Y        |
-| TIM12    | (N)     | 2   | N         | (0)     | N   | N   | N         | Y         | Y        |
-| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | N         | Y         | Y        |
-| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | N         | Y         | Y        |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | Y         | Y        |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | Y         | Y        |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | Y         | Y        |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | Y         | Y        |
+| TIM9     | (N)     | 2   | N         | (0)     | N   | N   | 0         | Y         | Y        |
+| TIM10    | (N)     | 1   | N         | (0)     | N   | N   | 0         | Y         | Y        |
+| TIM11    | (N)     | 1   | N         | (0)     | N   | N   | 0         | Y         | Y        |
+| TIM12    | (N)     | 2   | N         | (0)     | N   | N   | 0         | Y         | Y        |
+| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | 0         | Y         | Y        |
+| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | 0         | Y         | Y        |
 
 *F72x_F73x only; F74x_F75x and F76x_F77x use defaults (false).
 
@@ -129,40 +129,40 @@ F7 has per-subfamily param differences: F72x_F73x has `has_uifremap` and
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (1)       | Y     |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
 
 ### G4
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl | dither | sms_pre |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|:------:|:-------:|
-| TIM2     | Y       | (4) | (Y)       | 2       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM3     | (N)     | (4) | (Y)       | 2       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     | Y      | (0)     |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
+| TIM2     | Y       | (4) | (Y)       | 2       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM3     | (N)     | (4) | (Y)       | 2       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | 2         | Y     | Y      | (0)     |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
 
 ### H5
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl | dither | sms_pre |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|:------:|:-------:|
-| TIM2     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM3     | (N)     | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM4     | (N)     | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM5     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM12    | (N)     | 2   | N         | 3       | Y   | N   | N         | (N)   | Y      | (0)     |
-| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   | Y      | (0)     |
-| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   | Y      | (0)     |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     | Y      | 1       |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
+| TIM2     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM3     | (N)     | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM4     | (N)     | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM5     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM12    | (N)     | 2   | N         | 3       | Y   | N   | 0         | (N)   | Y      | (0)     |
+| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   | Y      | (0)     |
+| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   | Y      | (0)     |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | 2         | Y     | Y      | 1       |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
 
 ### H7
 
@@ -172,125 +172,125 @@ TIM2–TIM5 and TIM12–TIM17 only.
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl | Notes |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|-------|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |       |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |       |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |       |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |       |
-| TIM12    | (N)     | 2   | N         | (0)     | N   | N   | N         | (N)   |       |
-| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   |       |
-| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   |       |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     |       |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |       |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |       |
-| TIM23    | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | H73x  |
-| TIM24    | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | H73x  |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |       |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |       |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |       |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |       |
+| TIM12    | (N)     | 2   | N         | (0)     | N   | N   | 0         | (N)   |       |
+| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   |       |
+| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   |       |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (1)       | Y     |       |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |       |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |       |
+| TIM23    | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   | H73x  |
+| TIM24    | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   | H73x  |
 
 ### L0
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM21    | (N)     | 2   | (Y)       | (0)     | N   | (Y) | N         |
-| TIM22    | (N)     | 2   | (Y)       | (0)     | N   | (Y) | N         |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM21    | (N)     | 2   | (Y)       | (0)     | N   | (Y) | 0         |
+| TIM22    | (N)     | 2   | (Y)       | (0)     | N   | (Y) | 0         |
 
 ### L1
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       |
-| TIM9     | (N)     | 2   | N         | (0)     | N   | N   | N         |
-| TIM10    | (N)     | 1   | N         | (0)     | N   | N   | N         |
-| TIM11    | (N)     | 1   | N         | (0)     | N   | N   | N         |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       |
+| TIM9     | (N)     | 2   | N         | (0)     | N   | N   | 0         |
+| TIM10    | (N)     | 1   | N         | (0)     | N   | N   | 0         |
+| TIM11    | (N)     | 1   | N         | (0)     | N   | N   | 0         |
 
 ### L4
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (1)       | Y     |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
 
 ### L4P
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (1)       | Y     |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
 
 ### L5
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM4     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (1)       | Y     |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
 
 ### N6
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl | dither | sms_pre |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|:------:|:-------:|
-| TIM2     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM3     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM4     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM5     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM9     | (N)     | 2   | N         | (0)     | Y   | N   | N         | (N)   | Y      | (0)     |
-| TIM10    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   | Y      | (0)     |
-| TIM11    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   | Y      | (0)     |
-| TIM12    | (N)     | 2   | N         | (0)     | Y   | N   | N         | (N)   | Y      | (0)     |
-| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   | Y      | (0)     |
-| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | N         | (N)   | Y      | (0)     |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     | Y      | 1       |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
+| TIM2     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM3     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM4     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM5     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM9     | (N)     | 2   | N         | (0)     | Y   | N   | 0         | (N)   | Y      | (0)     |
+| TIM10    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   | Y      | (0)     |
+| TIM11    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   | Y      | (0)     |
+| TIM12    | (N)     | 2   | N         | (0)     | Y   | N   | 0         | (N)   | Y      | (0)     |
+| TIM13    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   | Y      | (0)     |
+| TIM14    | (N)     | 1   | N         | (0)     | N   | N   | 0         | (N)   | Y      | (0)     |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | 2         | Y     | Y      | 1       |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
 
 ### U0
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|
-| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     |
+| TIM2     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM3     | (N)     | (4) | (Y)       | 1       | (Y) | (Y) | (1)       | (N)   |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (1)       | Y     |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (1)       | Y     |
 
 ### U3
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl | dither | sms_pre |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|:------:|:-------:|
-| TIM2     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM3     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM4     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     | Y      | 1       |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
+| TIM2     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM3     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM4     | Y       | (4) | (Y)       | 3       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | 2         | Y     | Y      | 1       |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
 
 ### U5
 
 | Instance | width32 | ch  | centerPWM | encoder | xor | etr | dma_burst | compl | dither | sms_pre |
 |----------|:-------:|:---:|:---------:|:-------:|:---:|:---:|:---------:|:-----:|:------:|:-------:|
-| TIM2     | Y       | (4) | (Y)       | 2       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM3     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM4     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | (Y)       | (N)   | Y      | 2       |
-| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | (Y)       | Y     | Y      | (0)     |
-| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
-| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | (Y)       | Y     | Y      | (0)     |
+| TIM2     | Y       | (4) | (Y)       | 2       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM3     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM4     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM5     | Y       | (4) | (Y)       | 1       | (Y) | (Y) | 2         | (N)   | Y      | 2       |
+| TIM15    | (N)     | 2   | N         | (0)     | (Y) | N   | 2         | Y     | Y      | (0)     |
+| TIM16    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
+| TIM17    | (N)     | 1   | N         | (0)     | N   | N   | 2         | Y     | Y      | (0)     |
 
 ### Parameter legend
 
@@ -302,7 +302,7 @@ TIM2–TIM5 and TIM12–TIM17 only.
 | encoder | `encoder` | 0 |
 | xor | `has_xor_input` | true |
 | etr | `has_etr` | true |
-| dma_burst | `has_dma_burst` | true |
+| dma_burst | `dma_burst` | 1 |
 | compl | `has_complementary` | false |
 | dither | `has_dither` | false |
 | sms_pre | `sms_preload` | 0 |
@@ -402,7 +402,7 @@ on all other families.
 |---|---|
 | **Type** | bool |
 | **Default** | false |
-| **Families** | Not yet in config; applies to Gen4 (G4, H5, N6, U3, U5) |
+| **Families** | Gen4 (G4, H5, N6, U3, U5) |
 
 Enables sigma-delta dithering that adds 4 fractional bits to ARR and CCRx,
 allowing finer PWM frequency/duty-cycle control than the integer counter permits.
@@ -473,29 +473,29 @@ Instances without: TIM2, TIM3, TIM4, TIM5, TIM9–TIM14, TIM19, TIM21/22, TIM23/
 Families without TIM15/16/17 in GpTimer (F4, F7, L0, L1) have no complementary
 instances — the parameter is unused in those families.
 
-### `has_dma_burst` — DMA burst transfer support
+### `dma_burst` — DMA burst transfer support
 
 | | |
 |---|---|
-| **Type** | bool |
-| **Default** | true |
+| **Type** | int (enum) |
+| **Default** | 1 |
+| **Values** | 0, 1, 2 |
 | **Families** | All 17 |
 
-Enables DMA burst mode, which allows a single DMA request to transfer a
-contiguous block of timer registers in one burst. Also gates the per-channel
-and trigger DMA request enable fields in DIER.
+Enables DMA burst mode and selects the register variant. DMA burst allows a
+single DMA request to transfer a contiguous block of timer registers in one
+burst. Also gates the per-channel and trigger DMA request enable fields in DIER.
 
-| Condition | Register/field effect |
-|-----------|---------------------|
-| true | **DCR** register: DMA burst base address and burst length |
-| true | **DMAR** register: DMA burst access data port |
-| true | DIER: UDE, CC1DE, CC2DE, CC3DE, CC4DE, TDE (DMA request enables) |
+| Value | Name | Register/field effect |
+|-------|------|---------------------|
+| 0 | none | No DCR/DMAR registers; no UDE, CCxDE, TDE fields in DIER |
+| 1 | v1 | **DCR_V1** @0x48, **DMAR_V1** @0x4C (Gen1–3 layout). DIER: UDE, CC1DE–CC4DE, TDE. |
+| 2 | v2 | **DCR** @0x3DC, **DMAR** @0x3E0 (Gen4 layout, adds DCR.DBSS field). DIER: UDE, CC1DE–CC4DE, TDE. |
 
-DCR/DMAR offset is family-level (not per-instance): 0x48/0x4c on Gen1–Gen3
-(C0, F3, F4, F7, G0, H7, L0, L1, L4, L4P, L5, U0), 0x3dc/0x3e0 on Gen4
-(G4, H5, N6, U3, U5).
+Family-level assignment: Gen1–3 (C0, F3, F4, F7, G0, H7, L0, L1, L4, L4P, L5, U0)
+use v1 (default); Gen4 (G4, H5, N6, U3, U5) use v2.
 
-Instances with `has_dma_burst`: TIM2, TIM3, TIM4, TIM5, TIM15, TIM16, TIM17,
+Instances with DMA burst: TIM2, TIM3, TIM4, TIM5, TIM15, TIM16, TIM17,
 TIM19 (F3), TIM23/TIM24 (H7 H73x).
 Instances without: TIM9, TIM10, TIM11, TIM12, TIM13, TIM14, TIM21/TIM22 (L0).
 
