@@ -52,8 +52,8 @@ function(stm32_add_family)
     set(STM32${FAM_CODE}_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/${FAM_ZIP}" CACHE PATH
         "Path to ${FAM_DISPLAY} SVD archive")
 
-    # Family config file (YAML with subfamily/chip mapping and name_map)
-    set(_family_config "${CMAKE_SOURCE_DIR}/extractors/families/${FAM_CODE}.yaml")
+    # Family config file (consolidated YAML with all family definitions)
+    set(_family_config "${CMAKE_SOURCE_DIR}/extractors/STM32.yaml")
 
     # Create extraction target
     set(_target "stm32${FAM_ID}-models")

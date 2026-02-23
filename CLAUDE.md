@@ -47,7 +47,7 @@ cmake --build . --target rebuild-stm32h7-models
 
 ### Directory roles
 
-- `extractors/` — Python scripts that convert SVD → YAML. The unified `generate_stm32_models.py` handles all STM32 families; per-family config lives in `families/<CODE>.yaml`.
+- `extractors/` — Python scripts that convert SVD → YAML. The unified `generate_stm32_models.py` handles all STM32 families; consolidated config lives in `STM32.yaml`.
 - `generators/cxx/` — Python scripts that convert YAML → C++20 headers. Also contains `hwreg.hpp` (the HwReg template).
 - `tools/` — Shared libraries: `svd.py` (parser), `transform.py` (register/field transforms), `compare_peripherals.py` (similarity analysis).
 - `cmake/` — One `stm32XX-extraction.cmake` module per family, plus `sodaCat.cmake` (the `generate_header()` macro).
@@ -91,9 +91,14 @@ They use `string.Template` for code emission and produce `HwReg<T>`-based regist
 
 ### Family generator
 
-A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. Per-family configuration lives in YAML files under `extractors/families/<CODE>.yaml` with these top-level keys:
+A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. All family configuration lives in a single consolidated file `extractors/STM32.yaml` with two top-level keys:
 
-- `families`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
+- `shared_blocks`: cross-family shared block definitions (reserved for future use)
+- `families`: per-family configuration, keyed by family code (C0, F3, ..., U5)
+
+Each family entry has up to three keys:
+
+- `subfamilies`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
 - `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides
 - `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
 

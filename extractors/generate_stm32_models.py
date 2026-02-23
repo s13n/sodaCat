@@ -26,19 +26,23 @@ from transform import renameEntries
 
 def load_family_config(family_code):
     """Load the YAML config for a given family code."""
-    config_dir = Path(__file__).parent / 'families'
-    config_file = config_dir / f'{family_code}.yaml'
+    config_file = Path(__file__).parent / 'STM32.yaml'
 
     if not config_file.exists():
-        print(f"Error: Family config {config_file} not found")
+        print(f"Error: Config {config_file} not found")
         sys.exit(1)
 
     yaml = YAML()
     with open(config_file, 'r') as f:
-        config = yaml.load(f)
+        full_config = yaml.load(f)
+
+    config = full_config['families'].get(family_code)
+    if not config:
+        print(f"Error: Family '{family_code}' not found in {config_file}")
+        sys.exit(1)
 
     families = {}
-    for name, info in config['families'].items():
+    for name, info in config['subfamilies'].items():
         families[name] = {'chips': list(info['chips'])}
 
     blocks_config = {}
