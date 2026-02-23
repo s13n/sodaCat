@@ -105,8 +105,8 @@ def _resolve_block_config(block_cfg, subfamily_name):
     return resolved
 
 
-def _select_block_data(block_families, families, families_present, block_cfg):
-    """Select the best block data entry for a shared block, preferring the 'from' chip."""
+def _select_block_entry(block_families, families, families_present, block_cfg):
+    """Select the best block entry for a shared block, preferring the 'from' chip."""
     source = block_cfg.get('from', '')
     source_chip = source.split('.')[0] if '.' in source else ''
 
@@ -116,14 +116,14 @@ def _select_block_data(block_families, families, families_present, block_cfg):
             if fam in families_present:
                 for entry in block_families[fam]:
                     if entry['chip'] == source_chip:
-                        return entry['data']
+                        return entry
 
     # Fallback: first chip in declaration order
     first_family = next(f for f in families if f in families_present)
-    return block_families[first_family][0]['data']
+    return block_families[first_family][0]
 
 
-def _select_subfamily_data(entries, block_cfg):
+def _select_subfamily_entry(entries, block_cfg):
     """Select the best entry within a subfamily, preferring the 'from' chip."""
     source = block_cfg.get('from', '')
     source_chip = source.split('.')[0] if '.' in source else ''
@@ -131,9 +131,9 @@ def _select_subfamily_data(entries, block_cfg):
     if source_chip:
         for entry in entries:
             if entry['chip'] == source_chip:
-                return entry['data']
+                return entry
 
-    return entries[0]['data']
+    return entries[0]
 
 
 def _patch_fields(registers, reg_name, field_patches):
@@ -303,6 +303,21 @@ def _inject_params(block_data, params):
     return ordered
 
 
+def _inject_source(block_data, entry):
+    """Insert source attribution into block_data before params/registers."""
+    chip = entry.get('chip', '')
+    version = entry.get('svd_version', '')
+    source = f"{chip} SVD v{version}" if version else f"{chip} SVD"
+    ordered = {}
+    for k, v in block_data.items():
+        if k in ('params', 'registers') and 'source' not in ordered:
+            ordered['source'] = source
+        ordered[k] = v
+    if 'source' not in ordered:
+        ordered['source'] = source
+    return ordered
+
+
 def main():
     if len(sys.argv) < 4:
         print("Usage: generate_stm32_models.py <family_code> <zip_path> <output_dir>")
@@ -349,7 +364,8 @@ def main():
 
                     try:
                         root = svd.parse(temp_svd)
-                        blocks, _, _ = svd.processChip(root, chip_name, effective_blocks)
+                        blocks, _, chip_device = svd.processChip(root, chip_name, effective_blocks)
+                        svd_version = chip_device.get('version', '') if chip_device else ''
 
                         # Auto-strip instance prefixes from register names
                         for bn, bd in blocks.items():
@@ -361,7 +377,8 @@ def main():
                         for block_name, block_data in blocks.items():
                             all_blocks[block_name][family_name].append({
                                 'data': block_data,
-                                'chip': chip_name
+                                'chip': chip_name,
+                                'svd_version': svd_version
                             })
                     finally:
                         os.unlink(temp_svd)
@@ -396,26 +413,30 @@ def main():
                 family_dir.mkdir(parents=True, exist_ok=True)
 
                 resolved = _resolve_block_config(block_cfg, fam_name)
-                block_data = _select_subfamily_data(
+                entry = _select_subfamily_entry(
                     block_families[fam_name], resolved)
+                block_data = entry['data']
                 transforms = resolved.get('transforms')
                 if transforms:
                     block_data = copy.deepcopy(block_data)
                     _apply_transforms(block_data, transforms)
                 block_data = _inject_params(block_data, block_cfg.get('params'))
+                block_data = _inject_source(block_data, entry)
                 svd.dumpModel(block_data, family_dir / block_name)
 
         # Non-variant subfamilies -> shared placement in base dir
         default_present = {f for f in families_present if f not in variants}
         if default_present:
             common_count += 1
-            block_data = _select_block_data(
+            entry = _select_block_entry(
                 block_families, families, default_present, block_cfg)
+            block_data = entry['data']
             transforms = block_cfg.get('transforms')
             if transforms:
                 block_data = copy.deepcopy(block_data)
                 _apply_transforms(block_data, transforms)
             block_data = _inject_params(block_data, block_cfg.get('params'))
+            block_data = _inject_source(block_data, entry)
             svd.dumpModel(block_data, common_blocks_dir / block_name)
             print(f"  + {block_name:20} -> {family_code} (shared)")
 
