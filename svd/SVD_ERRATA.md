@@ -457,6 +457,18 @@ read-write in different monitors across different SVDs. No SVD gets all correct.
 The H7A3 SVD also has it correctly as read-write.
 
 
+## ST STM32H7 — OCTOSPI
+
+### OCTOSPI — STM32H7A3 (SVD v3.4)
+
+| Register | Field             | Bug                              | RM0455 says                    |
+|----------|-------------------|----------------------------------|--------------------------------|
+| DCR1     | DLYBYP            | missing                          | present at bit 3               |
+| DCR1     | MTYP              | bitWidth: 2                      | 3-bit (`MTYP[2:0]`)           |
+| DCR4     | REFRESH           | bitWidth: 16                     | 32-bit (`REFRESH[31:0]`)       |
+| WCCR     | IMODE/IDTR/ISIZE  | wrong offsets and widths         | same layout as RM0468 (H723)   |
+
+
 ## ST STM32L0 — ADC (needs re-verification)
 
 > **Caveat:** Identified during L0 ADC work but not yet verified against the RM
