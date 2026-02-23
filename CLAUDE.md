@@ -56,19 +56,21 @@ cmake --build . --target rebuild-stm32h7-models
 - `schemas/` — JSON Schema (Draft 7) for peripheral and clock-tree model validation.
 - `tasks/` — AI agent task descriptions for writing parsers and generators.
 
-### Model directory organization (three-tier)
+### Model directory organization (four-tier)
 
 ```
-models/ST/<Family>/
-├── GPIO.yaml              # Blocks identical across ALL subfamilies
-├── <Subfamily_A>/         # Blocks that differ for this subfamily
-│   ├── RCC.yaml
-│   └── STM32xxxx.yaml    # Chip-level model
-└── <Subfamily_B>/
-    └── ...
+models/ST/
+├── WWDG.yaml              # Cross-family shared blocks (identical across families)
+├── <Family>/
+│   ├── GPIO.yaml          # Blocks identical across ALL subfamilies in this family
+│   ├── <Subfamily_A>/     # Blocks that differ for this subfamily
+│   │   ├── RCC.yaml
+│   │   └── STM32xxxx.yaml # Chip-level model
+│   └── <Subfamily_B>/
+│       └── ...
 ```
 
-Model placement is config-driven via the `variants` key — see "Family generator" below for the full partial-variants rule.
+Model placement is config-driven: cross-family shared blocks (defined in `shared_blocks`) go to the top level; family blocks use the `variants` key for within-family placement — see "Family generator" below.
 
 ### CMake integration
 
@@ -93,13 +95,13 @@ They use `string.Template` for code emission and produce `HwReg<T>`-based regist
 
 A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. All family configuration lives in a single consolidated file `extractors/STM32.yaml` with two top-level keys:
 
-- `shared_blocks`: cross-family shared block definitions (reserved for future use)
+- `shared_blocks`: cross-family shared block definitions — blocks whose register map is identical across multiple families. Each entry has the same keys as a family block (`from`, `interrupts`, `transforms`, `params`) except `instances`, which is inherently per-family and must be specified in each family's block entry. Shared models are written to `models/ST/` (top level), not under a family directory.
 - `families`: per-family configuration, keyed by family code (C0, F3, ..., U5)
 
 Each family entry has up to three keys:
 
 - `subfamilies`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
-- `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides
+- `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides. A block may use `uses: <shared_block_name>` instead of `from:` to reference a cross-family shared model; `from` triggers SVD extraction while `uses` references the shared model. Defaults from `shared_blocks` are inherited and can be overridden.
 - `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
 
 Parameter declarations use `{type, default?, description?}`. Permissible types: `int`, `bool`, `string`.

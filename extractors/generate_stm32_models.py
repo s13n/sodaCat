@@ -24,6 +24,26 @@ import svd
 from transform import renameEntries
 
 
+def _parse_block_cfg(block_cfg):
+    """Parse a block config dict from YAML into a plain dict."""
+    entry = {}
+    if block_cfg.get('from'):
+        entry['from'] = block_cfg['from']
+    if block_cfg.get('uses'):
+        entry['uses'] = block_cfg['uses']
+    if block_cfg.get('instances') is not None:
+        entry['instances'] = list(block_cfg['instances'])
+    if block_cfg.get('interrupts') is not None:
+        entry['interrupts'] = dict(block_cfg['interrupts'])
+    if block_cfg.get('transforms') is not None:
+        entry['transforms'] = [dict(t) for t in block_cfg['transforms']]
+    if block_cfg.get('params') is not None:
+        entry['params'] = {k: dict(v) for k, v in block_cfg['params'].items()}
+    if block_cfg.get('variants') is not None:
+        entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
+    return entry
+
+
 def load_family_config(family_code):
     """Load the YAML config for a given family code."""
     config_file = Path(__file__).parent / 'STM32.yaml'
@@ -47,25 +67,17 @@ def load_family_config(family_code):
 
     blocks_config = {}
     for block_type, block_cfg in (config.get('blocks') or {}).items():
-        entry = {
-            'from': block_cfg.get('from', ''),
-            'instances': list(block_cfg.get('instances', [])),
-        }
-        if block_cfg.get('interrupts') is not None:
-            entry['interrupts'] = dict(block_cfg['interrupts'])
-        if block_cfg.get('transforms') is not None:
-            entry['transforms'] = [dict(t) for t in block_cfg['transforms']]
-        if block_cfg.get('params') is not None:
-            entry['params'] = {k: dict(v) for k, v in block_cfg['params'].items()}
-        if block_cfg.get('variants') is not None:
-            entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
-        blocks_config[block_type] = entry
+        blocks_config[block_type] = _parse_block_cfg(block_cfg)
+
+    shared_blocks_config = {}
+    for block_type, block_cfg in (full_config.get('shared_blocks') or {}).items():
+        shared_blocks_config[block_type] = _parse_block_cfg(block_cfg)
 
     chip_params = {}
     for sf_key, sf_val in (config.get('chip_params') or {}).items():
         chip_params[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
-    return families, blocks_config, chip_params
+    return families, blocks_config, chip_params, shared_blocks_config
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -104,8 +116,34 @@ def _resolve_block_config(block_cfg, subfamily_name):
         return block_cfg
 
     resolved = dict(block_cfg)
-    resolved.update(variants[subfamily_name])
+    variant = variants[subfamily_name]
+    resolved.update(variant)
     del resolved['variants']
+    # Enforce from/uses mutual exclusivity based on variant's intent
+    if 'from' in variant:
+        resolved.pop('uses', None)
+    elif 'uses' in variant:
+        resolved.pop('from', None)
+    return resolved
+
+
+def _resolve_uses_config(family_block_cfg, shared_blocks_config):
+    """Merge shared block defaults with family block overrides for a uses: block.
+
+    Returns a new config dict with shared defaults overlaid by family overrides.
+    The 'uses' key is removed from the result; 'from' is carried from the shared block.
+    """
+    uses_name = family_block_cfg.get('uses')
+    if not uses_name:
+        return family_block_cfg
+    shared = shared_blocks_config.get(uses_name)
+    if not shared:
+        print(f"Error: shared block '{uses_name}' not found in shared_blocks")
+        sys.exit(1)
+    resolved = dict(shared)
+    for k, v in family_block_cfg.items():
+        if k != 'uses':
+            resolved[k] = v
     return resolved
 
 
@@ -335,10 +373,24 @@ def main():
         print(f"Error: {zip_path} not found")
         sys.exit(1)
 
-    families, blocks_config, chip_params = load_family_config(family_code)
+    families, blocks_config, chip_params, shared_blocks = load_family_config(family_code)
+
+    # Determine which shared blocks this family is responsible for generating
+    family_chips = set()
+    for fi in families.values():
+        family_chips.update(fi['chips'])
+    my_shared_blocks = {}
+    for bn, bc in shared_blocks.items():
+        from_spec = bc.get('from', '')
+        from_chip = from_spec.split('.')[0] if '.' in from_spec else ''
+        if from_chip in family_chips:
+            my_shared_blocks[bn] = bc
 
     print(f"Extracting STM32{family_code} models from {zip_path}")
-    print(f"Output directory: {output_dir}\n")
+    print(f"Output directory: {output_dir}")
+    if my_shared_blocks:
+        print(f"Shared blocks to generate: {', '.join(sorted(my_shared_blocks))}")
+    print()
 
     # ==========================================================================
     # PASS 1: Collect blocks from all subfamilies
@@ -353,10 +405,15 @@ def main():
         print(f"\nProcessing {family_name} family...")
 
         # Resolve block configs for this subfamily (applies variant overrides)
-        effective_blocks = {
-            bt: _resolve_block_config(bc, family_name)
-            for bt, bc in blocks_config.items()
-        }
+        # Exclude blocks with 'uses:' (they reference shared models, no extraction)
+        # Exception: owned shared blocks — resolve uses to get from + instances
+        effective_blocks = {}
+        for bt, bc in blocks_config.items():
+            resolved = _resolve_block_config(bc, family_name)
+            if 'uses' not in resolved:
+                effective_blocks[bt] = resolved
+            elif bt in my_shared_blocks:
+                effective_blocks[bt] = _resolve_uses_config(resolved, shared_blocks)
 
         for chip_name in family_info['chips']:
             try:
@@ -400,11 +457,31 @@ def main():
     common_blocks_dir = output_dir / family_code
     common_blocks_dir.mkdir(parents=True, exist_ok=True)
 
+    shared_count = 0
     common_count = 0
     family_specific_count = 0
 
     for block_name in sorted(all_blocks.keys()):
         block_families = all_blocks[block_name]
+
+        # Cross-family shared blocks -> top-level placement
+        if block_name in my_shared_blocks:
+            shared_count += 1
+            shared_cfg = my_shared_blocks[block_name]
+            families_present = set(block_families.keys())
+            entry = _select_block_entry(
+                block_families, families, families_present, shared_cfg)
+            block_data = entry['data']
+            transforms = shared_cfg.get('transforms')
+            if transforms:
+                block_data = copy.deepcopy(block_data)
+                _apply_transforms(block_data, transforms)
+            block_data = _inject_params(block_data, shared_cfg.get('params'))
+            block_data = _inject_source(block_data, entry)
+            svd.dumpModel(block_data, output_dir / block_name)
+            print(f"  * {block_name:20} -> top-level (cross-family shared)")
+            continue
+
         block_cfg = blocks_config.get(block_name, {})
         families_present = set(block_families.keys())
         variants = block_cfg.get('variants') or {}
@@ -449,6 +526,8 @@ def main():
     # ==========================================================================
     print(f"\n{'='*60}")
     print(f"Generation Summary:")
+    if shared_count:
+        print(f"  Cross-family shared blocks:    {shared_count}")
     print(f"  Common blocks ({family_code}):     {common_count}")
     print(f"  Family-specific blocks:        {family_specific_count}")
     print(f"  Total block types processed:   {len(all_blocks)}")
