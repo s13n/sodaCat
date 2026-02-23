@@ -2,6 +2,21 @@ shared_blocks:
   WWDG:
     from: STM32L412.WWDG
     interrupts: {WWDG: INTR}
+    params:
+      cfr_version:
+        type: int
+        default: 1
+        description: 'CFR register layout: 1 = v1 (2-bit WDGTB at [8:7]), 2 = v2 (3-bit WDGTB at [13:11])'
+    transforms:
+      # Clone CFR -> CFR_V2: newer WWDG IP with 3-bit prescaler at bits [13:11]
+      - type: cloneRegister
+        source: CFR
+        name: CFR_V2
+        removeFields: [WDGTB]
+      - type: patchFields
+        register: CFR_V2
+        fields:
+          - {name: WDGTB, description: Timer base, bitOffset: 11, bitWidth: 3}
 families:
   C0:
     subfamilies:
@@ -143,13 +158,12 @@ families:
         interrupts:
           USB: INTR
       WWDG:
-        from: STM32C011.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           TIM2: {width: 32}
           TIM14: {channels: 1}
           TIM15: {channels: 2}
@@ -507,10 +521,9 @@ families:
           USB_LP: LP
           USB_WAKEUP: WAKEUP
       WWDG:
-        from: STM32F301.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG_IRQ: INTR
+        interrupts: {WWDG_IRQ: INTR}
       bxCAN:
         from: STM32F302.CAN
         instances: [CAN]
@@ -966,10 +979,8 @@ families:
             default: true
             description: Smartcard mode support (SCEN, NACK, SCARCNT)
       WWDG:
-        from: STM32F401.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
       bxCAN:
         from: STM32F405.CAN1
         instances: [CAN1, CAN2, CAN3]
@@ -1533,10 +1544,8 @@ families:
         from: STM32F730.USBPHYC
         instances: [USBPHYC]
       WWDG:
-        from: STM32F722.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
       bxCAN:
         from: STM32F745.CAN1
         instances: [CAN1, CAN2, CAN3]
@@ -1764,13 +1773,12 @@ families:
         from: STM32G030.VREFBUF
         instances: [VREFBUF]
       WWDG:
-        from: STM32G030.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           TIM2: {width: 32}
           TIM14: {channels: 1}
           TIM15: {channels: 2}
@@ -2034,13 +2042,12 @@ families:
         from: STM32G431.VREFBUF
         instances: [VREFBUF]
       WWDG:
-        from: STM32G431.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
           TIM2: {width: 32}
@@ -2455,16 +2462,15 @@ families:
         from: STM32H523.VREFBUF_S
         instances: [VREFBUF_S]
       WWDG:
-        from: STM32H503.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
       WWDG_S:
         from: STM32H523.WWDG_S
         instances: [WWDG_S]
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           UART12: {has_synchronous: false, has_smartcard: false}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART4_S: {has_synchronous: false, has_smartcard: false}
@@ -3025,15 +3031,13 @@ families:
         from: STM32H723.VREFBUF
         instances: [VREFBUF]
       WWDG:
-        from: STM32H723.WWDG1
+        uses: WWDG
         instances: [WWDG, WWDG1, WWDG2]
-        interrupts:
-          WWDG: INTR
-          WWDG1: INTR
-          WWDG2: INTR
+        interrupts: {WWDG: INTR, WWDG1: INTR, WWDG2: INTR}
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
           UART7: {has_synchronous: false, has_smartcard: false}
@@ -3235,10 +3239,8 @@ families:
         interrupts:
           USB: INTR
       WWDG:
-        from: STM32L0x0.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
     chip_params:
       _all:
         _all:
@@ -3410,8 +3412,9 @@ families:
           USB_LP: LP
           USB_FS_WKUP: FS_WKUP
       WWDG:
-        from: STM32L100.WWDG
+        uses: WWDG
         instances: [WWDG]
+        interrupts: {}
     chip_params:
       _all:
         _all:
@@ -4646,11 +4649,9 @@ families:
         from: STM32N645.VREFBUF
         instances: [VREFBUF]
       WWDG:
-        from: STM32N645.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WDGLS_EARLY: WDGLS_EARLY
-          WWDG_EARLY: EARLY
+        interrupts: {WDGLS_EARLY: WDGLS_EARLY, WWDG_EARLY: EARLY}
       XSPI:
         from: STM32N645.XSPI1
         instances: [XSPI1, XSPI2, XSPI3]
@@ -4662,6 +4663,7 @@ families:
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
           UART7: {has_synchronous: false, has_smartcard: false}
@@ -4836,13 +4838,12 @@ families:
         from: STM32U031.VREFBUF
         instances: [VREFBUF]
       WWDG:
-        from: STM32U031.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           TIM2: {width: 32}
           TIM15: {channels: 2}
           TIM16: {channels: 1}
@@ -5107,13 +5108,12 @@ families:
         from: STM32U375.VREFBUF
         instances: [VREFBUF]
       WWDG:
-        from: STM32U375.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
           TIM2: {width: 32}
@@ -5491,13 +5491,12 @@ families:
         from: STM32U535.VREFBUF
         instances: [VREFBUF]
       WWDG:
-        from: STM32U535.WWDG
+        uses: WWDG
         instances: [WWDG]
-        interrupts:
-          WWDG: INTR
     chip_params:
       _all:
         _all:
+          WWDG: {cfr_version: 2}
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
           TIM2: {width: 32}

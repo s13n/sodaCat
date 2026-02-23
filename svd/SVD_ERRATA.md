@@ -440,6 +440,19 @@ The H7A3 SVD also has it correctly as read-write.
 | DCR4     | REFRESH           | bitWidth: 16                     | 32-bit (`REFRESH[31:0]`)       |
 | WCCR     | IMODE/IDTR/ISIZE  | wrong offsets and widths         | same layout as RM0468 (H723)   |
 
+### WWDG
+
+**All H7 SVDs — WDGTB width bug:**
+
+| Register | Field  | Bug               | RMs say                        |
+|----------|--------|-------------------|--------------------------------|
+| CFR      | WDGTB  | 2-bit at [12:11]  | 3-bit WDGTB[2:0] at [13:11]   |
+
+All four RMs (RM0433, RM0399, RM0468, RM0455) document WDGTB as a 3-bit field
+supporting 8 prescaler values (div 1 through div 128). The H7 SVDs incorrectly
+declare it as 2-bit, matching the older WWDG IP (F3/F4/F7/L0-L5) which has a
+genuinely different 2-bit WDGTB at bits [8:7].
+
 ### WWDG / EXTI
 
 The WWDG reset output signal (`wwdg_out_rst`) is routed through EXTI to the NVIC,
