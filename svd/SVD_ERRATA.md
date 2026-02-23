@@ -469,6 +469,31 @@ The H7A3 SVD also has it correctly as read-write.
 | WCCR     | IMODE/IDTR/ISIZE  | wrong offsets and widths         | same layout as RM0468 (H723)   |
 
 
+## ST STM32H7 — WWDG / EXTI
+
+### WWDG reset interrupt misattributed to WWDG peripheral
+
+The WWDG reset output signal (`wwdg_out_rst`) is routed through EXTI to the NVIC,
+not directly from the WWDG peripheral. RM0399 Section 21.1 confirms:
+
+- EXTI line 82: WWDG1 reset (configurable, CPU2 only)
+- EXTI line 84: WWDG2 reset (configurable, CPU1 only)
+
+This is a cross-core notification mechanism on dual-core H745/H757: each core's
+WWDG reset is delivered as an EXTI interrupt to the *other* core at vector 143.
+
+All H7 SVDs misattribute the reset interrupt to the WWDG peripheral instead of EXTI:
+
+| SVD file       | Peripheral | Interrupt name | Vector |
+|----------------|------------|----------------|--------|
+| STM32H743 v2.4 | WWDG       | WWDG1_RST      | 143    |
+| STM32H745_CM4  | WWDG1      | WWDG1_RST      | 143    |
+| STM32H745_CM7  | WWDG2      | WWDG2_RST      | 143    |
+| STM32H7A3 v3.4 | WWDG       | WWDG1_RST      | 143    |
+
+**TODO:** Add `patchInterrupts` transform support to inject these as EXTI interrupts.
+
+
 ## ST STM32L0 — ADC (needs re-verification)
 
 > **Caveat:** Identified during L0 ADC work but not yet verified against the RM
