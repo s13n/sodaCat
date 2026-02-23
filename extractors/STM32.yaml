@@ -118,6 +118,14 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
+          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE1$', replacement: 'CCMR\1_Output'}
+          - {type: renameRegisters, pattern: '^CNT_ALTERNATE1$', replacement: CNT_V2}
+          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
+          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       I2C:
         from: STM32C031.I2C
         instances: [I2C, I2C1, I2C2]
@@ -746,6 +754,9 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameFields, register: CCMR1_Input, pattern: '^ICPCS$', replacement: IC1PSC}
+          - {type: renameFields, register: CCMR1_Input, pattern: '^IC2PCS$', replacement: IC2PSC}
       HASH:
         from: STM32F405.HASH
         instances: [HASH]
@@ -1309,6 +1320,9 @@ families:
             type: bool
             default: false
             description: Extended output compare mode bits (OCxM_3 in CCMR1/CCMR2)
+        transforms:
+          - {type: renameFields, register: CCMR1_Input, pattern: '^ICPCS$', replacement: IC1PSC}
+          - {type: renameFields, register: CCMR1_Input, pattern: '^IC2PCS$', replacement: IC2PSC}
       HASH:
         from: STM32F745.HASH
         instances: [HASH]
@@ -1932,6 +1946,13 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
+          - {type: renameRegisters, pattern: '^CCMR(\d)_Alternate$', replacement: 'CCMR\1_Output'}
+          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
+          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HRTIM_Common:
         from: STM32G474.HRTIM_Common
         instances: [HRTIM_Common]
@@ -2271,6 +2292,13 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
+          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE1$', replacement: 'CCMR\1_Output'}
+          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
+          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32H503.HASH
         instances: [HASH]
@@ -2743,7 +2771,7 @@ families:
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
       GpTimer:
         from: STM32H723.TIM2
-        instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM23, TIM24, TIM3, TIM4, TIM5]
+        instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
         interrupts:
           TIM15: INTR
         params:
@@ -2755,6 +2783,12 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameFields, register: CCMR1_Input, pattern: '^ICPCS$', replacement: IC1PSC}
+          - {type: renameFields, register: CCMR1_Input, pattern: '^IC2PCS$', replacement: IC2PSC}
+        variants:
+          H73x:
+            instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM23, TIM24, TIM3, TIM4, TIM5]
       HASH:
         from: STM32H753.HASH
         instances: [HASH]
@@ -3045,8 +3079,6 @@ families:
           UART9: {has_synchronous: false, has_smartcard: false}
           TIM2: {width: 32}
           TIM5: {width: 32}
-          TIM23: {width: 32}
-          TIM24: {width: 32}
           TIM12: {channels: 2}
           TIM13: {channels: 1}
           TIM14: {channels: 1}
@@ -3064,6 +3096,8 @@ families:
           RAMECC3: {monitors: 2}
       H73x:
         _all:
+          TIM23: {width: 32}
+          TIM24: {width: 32}
           RAMECC2: {monitors: 3}
           RAMECC3: {monitors: 2}
       H7A3_B:
@@ -3341,6 +3375,9 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameFields, register: CCMR1_Input, pattern: '^ICPCS$', replacement: IC1PSC}
+          - {type: renameFields, register: CCMR1_Input, pattern: '^IC2PCS$', replacement: IC2PSC}
       I2C:
         from: STM32L100.I2C1
         instances: [I2C1, I2C2]
@@ -3566,6 +3603,9 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32L486.HASH
         instances: [HASH]
@@ -3872,6 +3912,14 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
+          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE$', replacement: 'CCMR\1_Output'}
+          - {type: renameRegisters, pattern: '^CNT_ALTERNATE$', replacement: CNT_V2}
+          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
+          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32L4P5.HASH
         instances: [HASH]
@@ -4162,6 +4210,10 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameFields, register: SMCR, pattern: '^SMS_bit3$', replacement: SMS_3}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32L552.HASH
         instances: [HASH]
@@ -4328,9 +4380,10 @@ families:
           TIM1_CC: CC
       BasicTimer:
         from: STM32N645.TIM6
-        instances: [TIM6, TIM7]
+        instances: [TIM6, TIM7, TIM18]
         interrupts:
           TIM6: INTR
+          TIM18: INTR
       CRC:
         from: STM32N645.CRC
         instances: [CRC]
@@ -4454,7 +4507,7 @@ families:
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPION, GPIOO, GPIOP, GPIOQ]
       GpTimer:
         from: STM32N645.TIM2
-        instances: [TIM10, TIM11, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM18, TIM2, TIM3, TIM4, TIM5, TIM9]
+        instances: [TIM10, TIM11, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM9]
         interrupts:
           TIM10: INTR
         params:
@@ -4466,6 +4519,13 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameRegisters, pattern: '^CCMR(\d)_INPUT$', replacement: 'CCMR\1_Input'}
+          - {type: renameRegisters, pattern: '^CCMR(\d)_OUTPUT$', replacement: 'CCMR\1_Output'}
+          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
+          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32N645.HASH
         instances: [HASH]
@@ -4670,6 +4730,8 @@ families:
           UART8: {has_synchronous: false, has_smartcard: false}
           UART9: {has_synchronous: false, has_smartcard: false}
           TIM2: {width: 32}
+          TIM3: {width: 32}
+          TIM4: {width: 32}
           TIM5: {width: 32}
           TIM9: {channels: 2}
           TIM10: {channels: 1}
@@ -4680,7 +4742,6 @@ families:
           TIM15: {channels: 2}
           TIM16: {channels: 1}
           TIM17: {channels: 1}
-          TIM18: {channels: 1}
   U0:
     subfamilies:
       U0xx:
@@ -4770,6 +4831,14 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
+          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE1$', replacement: 'CCMR\1_Output'}
+          - {type: renameRegisters, pattern: '^CNT_ALTERNATE1$', replacement: CNT_V2}
+          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
+          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       I2C:
         from: STM32U031.I2C1
         instances: [I2C1, I2C2, I2C3]
@@ -4980,6 +5049,13 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameRegisters, pattern: '^CCMR(\d)$', replacement: 'CCMR\1_Input'}
+          - {type: renameRegisters, pattern: '^CCMR(\d)_ALTERNATE1$', replacement: 'CCMR\1_Output'}
+          - {type: renameFields, register: SMCR, pattern: '^SMS_1$', replacement: SMS_3}
+          - {type: renameFields, register: SMCR, pattern: '^TS_1$', replacement: 'TS_4_3'}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_1$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32U375.HASH
         instances: [HASH]
@@ -5117,6 +5193,8 @@ families:
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
           TIM2: {width: 32}
+          TIM3: {width: 32}
+          TIM4: {width: 32}
           TIM15: {channels: 2}
           TIM16: {channels: 1}
           TIM17: {channels: 1}
@@ -5307,6 +5385,11 @@ families:
             type: int
             default: 4
             description: Number of capture/compare channels
+        transforms:
+          - {type: renameFields, register: SMCR, pattern: '^SMS_bit3$', replacement: SMS_3}
+          - {type: renameFields, register: SMCR, pattern: '^TS_2_0$', replacement: TS}
+          - {type: renameFields, register: CCMR1_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
+          - {type: renameFields, register: CCMR2_Output, pattern: 'OC(\d)M_bit3$', replacement: 'OC\1M_3'}
       HASH:
         from: STM32U5Fx.HASH
         instances: [HASH]
@@ -5500,6 +5583,8 @@ families:
           UART4: {has_synchronous: false, has_smartcard: false}
           UART5: {has_synchronous: false, has_smartcard: false}
           TIM2: {width: 32}
+          TIM3: {width: 32}
+          TIM4: {width: 32}
           TIM5: {width: 32}
           TIM15: {channels: 2}
           TIM16: {channels: 1}

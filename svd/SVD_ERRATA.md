@@ -820,3 +820,57 @@ All SVDs except F446 mark VOSRDY as read-write. All RMs confirm it is read-only.
 | STM32F429  | 1024    | 8       | Same |
 | STM32F446  | 1024    | 8       | Same |
 | STM32F469  | 1024    | 8       | Same |
+
+
+## Cross-family: GpTimer (TIM2/TIM3/TIM4/TIM5)
+
+### CCMR1_Input — IC1PSC/IC2PSC field name typo
+
+The CCMR1_Input register has input capture prescaler fields for channels 1 and 2.
+Multiple SVDs misspell these as `ICPCS` and `IC2PCS` (missing the channel number
+in IC1PSC, swapped letters in IC2PSC).
+
+| Family | SVD files affected | ICPCS→IC1PSC | IC2PCS→IC2PSC |
+|--------|-------------------|--------------|---------------|
+| F4     | All (F401–F469)   | Yes          | Yes           |
+| F7     | All (F722–F767)   | Yes          | Yes           |
+| H7     | All (H723–H7A3)  | Yes          | Yes           |
+| L1     | All (L100–L162)   | Yes          | Yes           |
+
+All reference manuals consistently use IC1PSC and IC2PSC.
+
+### CCMR register naming inconsistencies
+
+The CCMR1/CCMR2 registers exist at the same offset with two views: Input capture
+mode and Output compare mode. SVDs represent these as overlapping registers with
+different naming conventions across generations:
+
+| Convention | Families | Input view | Output view |
+|-----------|----------|------------|-------------|
+| `_Output`/`_Input` | F3, F4, F7, G0, H7, L0, L1, L4, L5, U5 | CCMR1_Input | CCMR1_Output |
+| bare/`_ALTERNATE1` | C0, H5, U0, U3 | CCMR1 | CCMR1_ALTERNATE1 |
+| bare/`_ALTERNATE` | L4P | CCMR1 | CCMR1_ALTERNATE |
+| bare/`_Alternate` | G4 | CCMR1 | CCMR1_Alternate |
+| `_INPUT`/`_OUTPUT` | N6 | CCMR1_INPUT | CCMR1_OUTPUT |
+
+This is an SVD convention inconsistency rather than a hardware bug. All RMs use
+the same register names (CCMR1, CCMR2) with mode-dependent field descriptions.
+Transforms normalize all variants to `_Output`/`_Input` convention.
+
+### Extended field naming inconsistencies
+
+Several timer control fields gained extra high bits in Gen2+ timer IP (SMS[3],
+TS[4:3], OC1M[3], etc.). SVDs use different naming for these extension bits:
+
+| Convention | Families | SMS ext | TS ext | OCxM ext |
+|-----------|----------|---------|--------|----------|
+| `_3` (canonical) | F3*, F7, G0, H7 | SMS_3 | TS_4_3 | OC1M_3 |
+| `_1` | C0, H5, U0, U3, L4P, G4, N6 | SMS_1 | TS_1 | OC1M_1 |
+| `_bit3` | L4, L5, U5 | SMS_bit3 | — | OC1M_bit3 |
+
+*F3 F37x subfamily has Gen1 timer IP with no extended fields.
+
+Transforms normalize all variants to the `_3` convention (e.g., SMS_3, TS_4_3, OC1M_3).
+
+Additionally, U5 has `TS_2_0` for the base TS field (should be just `TS`), renamed
+by transform.
