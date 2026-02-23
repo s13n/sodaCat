@@ -259,17 +259,20 @@ The real CRYP crypto processor (a completely different, much larger peripheral)
 exists only on F74x and F76x devices.
 
 
-## ST STM32H7 — ADC (needs re-verification)
+## ST STM32H7
+
+References:
+- RM0433 Rev.8 — STM32H742 / STM32H743 / STM32H750 / STM32H753
+- RM0399 Rev.5 — STM32H745 / STM32H747 / STM32H755 / STM32H757
+- RM0468 Rev.3 — STM32H723 / STM32H725 / STM32H730 / STM32H733 / STM32H735
+- RM0455 Rev.9 — STM32H7A3 / STM32H7B0 / STM32H7B3
+
+### ADC (needs re-verification)
 
 > **Caveat:** These bugs were identified by cross-comparing SVD files during H7 ADC
 > unification. The H723 SVD was chosen as the source because it appeared most
 > accurate, but the individual bugs below have not yet been verified against RMs
 > with specific page references. To be revisited.
-
-References:
-- RM0433 — STM32H742 / STM32H743 / STM32H750 / STM32H753
-- RM0468 — STM32H723 / STM32H725 / STM32H730 / STM32H733 / STM32H735
-- RM0455 — STM32H7A3 / STM32H7B3 / STM32H7B0
 
 **STM32H743 (SVD v2.4):**
 
@@ -288,18 +291,11 @@ References:
 | CFGR     | RES       | Wrong width                  | 3-bit (RES[2:0])            |
 | CFGR     | BOOST     | Wrong width                  | 2-bit (BOOST[1:0])          |
 
-
-## ST STM32H7 — OTG_HS_GLOBAL
-
-References:
-- RM0433 Rev.8 — STM32H742/H743/H750/H753
-- RM0399 Rev.5 — STM32H745/H747/H755/H757
-- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
-- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3
+### OTG_HS_GLOBAL
 
 All four RMs describe identical OTG HS register sets. SVD differences are documentation bugs.
 
-### OTG_HS_GLOBAL — STM32H723 (SVD v2.1)
+**STM32H723 (SVD v2.1):**
 
 | Register       | Field    | Bug                          | RM0468 says                  |
 |----------------|----------|------------------------------|------------------------------|
@@ -307,7 +303,7 @@ All four RMs describe identical OTG HS register sets. SVD differences are docume
 | GRXSTSR_Device | STSPHST  | 4-bit width (bits 27:30)     | 1-bit (bit 27 only)         |
 | GRXSTSP_Device | STSPHST  | 4-bit width (bits 27:30)     | 1-bit (bit 27 only)         |
 
-### OTG_HS_GLOBAL — STM32H743 (SVD v2.4), STM32H745 (SVD v1.7), STM32H7A3 (SVD v3.4)
+**STM32H743 (SVD v2.4), STM32H745 (SVD v1.7), STM32H7A3 (SVD v3.4):**
 
 | Register       | Field          | Bug                          | RMs say                      |
 |----------------|----------------|------------------------------|------------------------------|
@@ -323,21 +319,14 @@ All four RMs describe identical OTG HS register sets. SVD differences are docume
 
 Note: H743 SVD has GOTGCTL bits 2-7 and 20-21 correct; only H745 and H7A3 are missing those.
 
-
-## ST STM32H7 — DFSDM
-
-References:
-- RM0433 Rev.8 — STM32H742/H743/H750/H753
-- RM0399 Rev.5 — STM32H745/H747/H755/H757
-- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
-- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3
+### DFSDM
 
 All four RMs use by-channel register layout (CH0CFGR1 at 0x00, CH1CFGR1 at 0x20, etc.)
 with 0x20 stride per channel. CKOUTDIV/CKOUTSRC/DFSDMEN are CH0CFGR1-only.
 Filter count: 4 (RM0433/RM0399/RM0468), 8 (RM0455). CHyDLYR: present in RM0468/RM0455,
 absent in RM0433/RM0399.
 
-### DFSDM — STM32H743 (SVD v2.4)
+**STM32H743 (SVD v2.4):**
 
 | Register     | Field      | Bug                                      | RM0433 says                  |
 |--------------|------------|------------------------------------------|------------------------------|
@@ -345,42 +334,37 @@ absent in RM0433/RM0399.
 | (all)        | (naming)   | Filter regs unnamed (bare CR1, CR2, ISR) | Named FLT0CR1, FLT1CR1, etc. |
 | CH1-7 CFGR1  | CKOUTDIV etc. | All channels have global fields       | CH0CFGR1-only per RM0433     |
 
-### DFSDM — STM32H723 (SVD v2.1), STM32H745_CM4 (SVD v1.7)
+**STM32H723 (SVD v2.1), STM32H745_CM4 (SVD v1.7):**
 
 | Register     | Field      | Bug                          | RMs say                      |
 |--------------|------------|------------------------------|------------------------------|
 | FLTxCR1      | JEXTSEL    | 3-bit width                  | 5-bit (JEXTSEL[4:0])        |
 | FLT1-3       | (name)     | FLT1CHGR (missing J)        | FLT1JCHGR                   |
 
+**STM32H7A3 (SVD v3.4):**
 
-## ST STM32H7 — CAN_CCU
+| Register     | Field      | Bug                          | RM0455 says                  |
+|--------------|------------|------------------------------|------------------------------|
+| CH1-7 CFGR1  | CKOUTDIV, CKOUTSRC, DFSDMEN | Duplicated from CH0 | CH0CFGR1-only per RM0455 |
 
-References:
-- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
-- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3
+### CAN_CCU
 
 All RMs describe CAN_CCU as a 6-register Clock Calibration Unit (CREL, CCFG, CSTAT,
 CWD, IR, IE) at offset 0x800 within the FDCAN address block.
 
-### CAN_CCU — STM32H7A3 (SVD v1.4)
+**STM32H7A3 (SVD v1.4):**
 
 | Register     | Field      | Bug                                           | RM0455 says                  |
 |--------------|------------|-----------------------------------------------|------------------------------|
 | (all)        | (content)  | Contains 64 FDCAN registers instead of 6 CCU registers | 6-register CCU (CREL, CCFG, CSTAT, CWD, IR, IE) |
 | (all)        | (desc)     | Description says "FDCAN1"                     | Clock Calibration Unit       |
 
-## ST STM32H7 — HSEM
-
-References:
-- RM0433 Rev.8 — STM32H742/H743/H750/H753
-- RM0399 Rev.5 — STM32H745/H747/H755/H757 (dual-core: COREID naming, C1/C2 interrupt regs)
-- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
-- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3 (16 semaphores, not 32)
+### HSEM
 
 All four RMs define MASTERID (or COREID on H745) as 4-bit at [11:8] in Rx, RLRx,
 and CR registers, with bits [15:12] reserved. CR is write-only in all RMs.
 
-### HSEM — STM32H743, STM32H723, STM32H7A3 (MASTERID width bug)
+**STM32H743, STM32H723, STM32H7A3 — MASTERID width bug:**
 
 | Register     | Field      | Bug                          | RMs say                      |
 |--------------|------------|------------------------------|------------------------------|
@@ -389,14 +373,14 @@ and CR registers, with bits [15:12] reserved. CR is write-only in all RMs.
 | CR           | MASTERID   | 8-bit (H743, H7A3 only)     | 4-bit at [11:8]              |
 | CR           | (access)   | read-write                   | write-only                   |
 
-### HSEM — STM32H723 (naming bugs)
+**STM32H723 — naming bugs:**
 
 | Register     | Field      | Bug                          | RM0468 says                  |
 |--------------|------------|------------------------------|------------------------------|
 | (interrupts) | (name)     | C1IER/C1ICR/C1ISR/C1MISR    | IER/ICR/ISR/MISR (single-core) |
 | CR           | (name)     | COREID                       | MASTERID                     |
 
-### HSEM — STM32H7A3 (semaphore count bug)
+**STM32H7A3 — semaphore count bug:**
 
 | Register     | Field      | Bug                          | RM0455 says                  |
 |--------------|------------|------------------------------|------------------------------|
@@ -404,20 +388,13 @@ and CR registers, with bits [15:12] reserved. CR is write-only in all RMs.
 | RLR16-RLR31  | (presence) | Present in SVD               | Only 16 semaphores (RLR0-RLR15) |
 | IER/ICR/ISR/MISR | ISEM16-31 | Present in SVD           | Only ISE[15:0], bits [31:16] reserved |
 
-
-## ST STM32H7 — RAMECC
-
-References:
-- RM0433 Rev.8 — STM32H742/H743/H750/H753
-- RM0399 Rev.5 — STM32H745/H747/H755/H757
-- RM0468 Rev.3 — STM32H723/H725/H730/H733/H735
-- RM0455 Rev.9 — STM32H7A3/H7B0/H7B3
+### RAMECC
 
 All four RMs describe identical RAMECC register structure with regular 0x20 stride per
 monitor: MxCR (+0x00), MxSR (+0x04), MxFAR (+0x08), MxFDRL (+0x0C), MxFDRH (+0x10),
 MxFECR (+0x14). Access: CR/SR are read-write, FAR/FDRL/FDRH/FECR are read-only.
 
-### RAMECC — All H7 SVDs (H723, H743, H745_CM4, H7A3)
+**All H7 SVDs (H723, H743, H745_CM4, H7A3) — offset bugs:**
 
 | Register     | Field      | Bug                                      | RMs say                      |
 |--------------|------------|------------------------------------------|------------------------------|
@@ -425,7 +402,7 @@ MxFECR (+0x14). Access: CR/SR are read-write, FAR/FDRL/FDRH/FECR are read-only.
 | M3FECR       | (offset)   | addressOffset 0x07C                      | 0x074 (+0x14 from M3 base)  |
 | M4FECR       | (offset)   | addressOffset 0x090 (collides with M4FDRH) | 0x094 (+0x14 from M4 base) |
 
-### RAMECC — Access attribute bugs (all H7 SVDs, various monitors)
+**Access attribute bugs (all H7 SVDs, various monitors):**
 
 Scattered access bugs — registers that should be read-only are randomly marked
 read-write in different monitors across different SVDs. No SVD gets all correct.
@@ -437,29 +414,20 @@ read-write in different monitors across different SVDs. No SVD gets all correct.
 | H745_CM4     | M1FAR, M1FDRL, M1FECR, M2FDRH, M2FECR, M3FAR, M4FDRL, M5FAR (+ M3-M5 CR/SR read-only bug) |
 | H7A3         | M2FDRH, M1FECR, M2FECR (+ M3CR/M3SR read-write — coincidentally correct) |
 
+### PWR
 
-### DFSDM — STM32H7A3 (SVD v3.4)
-
-| Register     | Field      | Bug                          | RM0455 says                  |
-|--------------|------------|------------------------------|------------------------------|
-| CH1-7 CFGR1  | CKOUTDIV, CKOUTSRC, DFSDMEN | Duplicated from CH0 | CH0CFGR1-only per RM0455 |
-
-
-## ST STM32H7 — PWR
-
-### PWR_CR3 USB33DEN — STM32H723 (SVD v1.2), STM32H745_CM4 (SVD v1.9)
+**STM32H723 (SVD v1.2), STM32H745_CM4 (SVD v1.9) — CR3 USB33DEN:**
 
 | Register | Field     | Bug                  | RM0468/RM0399 says |
 |----------|-----------|----------------------|--------------------|
 | CR3      | USB33DEN  | access: write-only   | read-write         |
 
-**Note:** STM32H743 SVD (v2.2) has USB33DEN correctly as read-write.
+Note: STM32H743 SVD (v2.2) has USB33DEN correctly as read-write.
 The H7A3 SVD also has it correctly as read-write.
 
+### OCTOSPI
 
-## ST STM32H7 — OCTOSPI
-
-### OCTOSPI — STM32H7A3 (SVD v3.4)
+**STM32H7A3 (SVD v3.4):**
 
 | Register | Field             | Bug                              | RM0455 says                    |
 |----------|-------------------|----------------------------------|--------------------------------|
@@ -468,10 +436,7 @@ The H7A3 SVD also has it correctly as read-write.
 | DCR4     | REFRESH           | bitWidth: 16                     | 32-bit (`REFRESH[31:0]`)       |
 | WCCR     | IMODE/IDTR/ISIZE  | wrong offsets and widths         | same layout as RM0468 (H723)   |
 
-
-## ST STM32H7 — WWDG / EXTI
-
-### WWDG reset interrupt misattributed to WWDG peripheral
+### WWDG / EXTI
 
 The WWDG reset output signal (`wwdg_out_rst`) is routed through EXTI to the NVIC,
 not directly from the WWDG peripheral. RM0399 Section 21.1 confirms:
@@ -494,15 +459,15 @@ All H7 SVDs misattribute the reset interrupt to the WWDG peripheral instead of E
 **TODO:** Add `patchInterrupts` transform support to inject these as EXTI interrupts.
 
 
-## ST STM32L0 — ADC (needs re-verification)
-
-> **Caveat:** Identified during L0 ADC work but not yet verified against the RM
-> with specific page references. To be revisited.
+## ST STM32L0
 
 Reference:
 - RM0376 — STM32L0x2 / STM32L0x3
 
-### ADC_Common (CCR)
+### ADC_Common (needs re-verification)
+
+> **Caveat:** Identified during L0 ADC work but not yet verified against the RM
+> with specific page references. To be revisited.
 
 The VLCDEN bit (VLCD channel enable) is present in some L0 SVD files that
 should not have it. Per the RM, only L0x3 devices have the VLCD pin connected
