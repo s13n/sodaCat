@@ -31,7 +31,7 @@ go to the base directory; blocks with `variants` go to subfamily directories.
 
 All 17 STM32 families use a single unified extractor
 (`extractors/generate_stm32_models.py`) with consolidated YAML configuration in
-`extractors/STM32.yaml`. Subfamilies are aligned with ST reference manual
+`svd/ST/STM32.yaml`. Subfamilies are aligned with ST reference manual
 boundaries so each subfamily corresponds to exactly one RM.
 
 ### CMake Integration

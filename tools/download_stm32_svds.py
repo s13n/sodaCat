@@ -2,11 +2,11 @@
 """Check for updated STM32 SVD zip archives and download changes.
 
 Usage:
-    python3 download_stm32_svds.py <svd_dir> [--dry-run]
+    python3 download_stm32_svds.py <svd_dir> <config_yaml> [--dry-run]
 
 Queries ST's SVD metadata API to get current version numbers, compares
-against locally recorded versions (in versions.json), and downloads
-updated archives directly from st.com when versions differ.
+against versions recorded in svd/ST/STM32.yaml, and downloads updated archives
+directly from st.com when versions differ.
 
 Phase 1 (cheap):  Fetch ~14 KB JSON metadata, compare version strings.
 Phase 2 (on-demand): Download only the archives whose version changed.
@@ -20,6 +20,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+
+from ruamel.yaml import YAML
 
 ST_SVD_INDEX_URL = ("https://www.st.com/bin/st/selectors/cxst/en."
                     "cxst-cad-grid.html/CL1734.cad_models_and_symbols.svd.json")
@@ -39,8 +41,6 @@ _ST_HEADERS = {
     'Connection': 'keep-alive',
 }
 
-VERSIONS_FILE = "versions.json"
-
 
 def _curl_fetch(url, dest):
     """Download url to dest using curl with ST-required headers.
@@ -59,7 +59,7 @@ def _curl_fetch(url, dest):
 
 
 def _fetch_index():
-    """Fetch ST's SVD metadata index. Returns list of (family, version, url, date)."""
+    """Fetch ST's SVD metadata index. Returns list of entry dicts."""
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
         tmp_path = tmp.name
     try:
@@ -90,35 +90,52 @@ def _fetch_index():
     return entries, None
 
 
-def _load_versions(svd_dir):
-    """Load locally recorded versions from versions.json."""
-    path = os.path.join(svd_dir, VERSIONS_FILE)
-    if os.path.exists(path):
-        with open(path) as f:
-            return json.load(f)
-    return {}
+def _load_config(config_path):
+    """Load STM32.yaml and build zip_filename -> family_code lookup."""
+    yaml = YAML()
+    yaml.width = 4096
+    with open(config_path) as f:
+        config = yaml.load(f)
+
+    zip_to_code = {}
+    for code, family in config.get('families', {}).items():
+        svd = family.get('svd', {})
+        zip_name = svd.get('zip')
+        if zip_name:
+            zip_to_code[zip_name] = code
+
+    return config, zip_to_code
 
 
-def _save_versions(svd_dir, versions):
-    """Save version records to versions.json."""
-    path = os.path.join(svd_dir, VERSIONS_FILE)
-    with open(path, "w") as f:
-        json.dump(versions, f, indent=2, sort_keys=True)
-        f.write("\n")
+def _save_config(config_path, config):
+    """Write back STM32.yaml preserving comments and formatting."""
+    yaml = YAML()
+    yaml.width = 4096
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    with open(config_path, 'w') as f:
+        yaml.dump(config, f)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("svd_dir", help="Directory containing STM32 SVD zip files")
+    parser.add_argument("config_yaml", help="Path to STM32.yaml config file")
     parser.add_argument("--dry-run", action="store_true",
                         help="Check for updates without downloading")
     args = parser.parse_args()
 
     svd_dir = os.path.abspath(args.svd_dir)
+    config_path = os.path.abspath(args.config_yaml)
+
     if not os.path.isdir(svd_dir):
         print(f"Error: {svd_dir} is not a directory", file=sys.stderr)
         return 1
+    if not os.path.isfile(config_path):
+        print(f"Error: {config_path} not found", file=sys.stderr)
+        return 1
+
+    config, zip_to_code = _load_config(config_path)
 
     # Phase 1: Fetch metadata
     print("Fetching SVD index from st.com...")
@@ -128,44 +145,49 @@ def main():
         return 1
     print(f"Found {len(entries)} SVD archives on st.com\n")
 
-    local_versions = _load_versions(svd_dir)
-
-    # Match remote entries against local files
+    # Match remote entries against registered families
     updated = 0
     unchanged = 0
-    available = 0
+    new_downloads = 0
+    unregistered = 0
     failed = 0
 
     mode = " (dry run)" if args.dry_run else ""
     for entry in sorted(entries, key=lambda e: e["family"]):
         filename = entry["filename"]
-        local_path = os.path.join(svd_dir, filename)
-        has_local = os.path.exists(local_path)
         remote_ver = entry["version"]
-        local_ver = local_versions.get(filename, {}).get("version")
+        family_code = zip_to_code.get(filename)
 
         sys.stdout.write(f"  {entry['family']:<12s} {filename:<28s} ")
         sys.stdout.flush()
 
-        if not has_local:
-            print(f"v{remote_ver} ({entry['date']})  -- not local, skipped")
-            available += 1
+        if family_code is None:
+            print(f"v{remote_ver} ({entry['date']})  -- not registered")
+            unregistered += 1
             continue
 
-        if local_ver == remote_ver:
+        family_cfg = config['families'][family_code]
+        svd_cfg = family_cfg.get('svd', {})
+        local_ver = svd_cfg.get('version')
+        local_path = os.path.join(svd_dir, filename)
+        has_local = os.path.exists(local_path)
+
+        if has_local and local_ver == remote_ver:
             print(f"v{remote_ver}  up to date")
             unchanged += 1
             continue
 
-        # Version differs (or no local version recorded)
-        old_label = f"v{local_ver}" if local_ver else "unknown"
-        print(f"{old_label} -> v{remote_ver} ({entry['date']}){mode}")
+        if not has_local:
+            print(f"v{remote_ver} ({entry['date']})  -- new download{mode}")
+        else:
+            old_label = f"v{local_ver}" if local_ver else "unknown"
+            print(f"{old_label} -> v{remote_ver} ({entry['date']}){mode}")
 
         if args.dry_run:
             updated += 1
             continue
 
-        # Phase 2: Download the updated archive
+        # Phase 2: Download the archive
         with tempfile.NamedTemporaryFile(dir=svd_dir, suffix=".tmp", delete=False) as tmp:
             tmp_path = tmp.name
         try:
@@ -176,18 +198,21 @@ def main():
                 continue
             shutil.move(tmp_path, local_path)
             tmp_path = None
-            local_versions[filename] = {"version": remote_ver, "date": entry["date"]}
-            print(f"    downloaded")
+            svd_cfg['version'] = remote_ver
+            svd_cfg['date'] = entry["date"]
+            if not has_local:
+                new_downloads += 1
             updated += 1
+            print(f"    downloaded")
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
-    if not args.dry_run:
-        _save_versions(svd_dir, local_versions)
+    if not args.dry_run and (updated or new_downloads):
+        _save_config(config_path, config)
 
     print(f"\nSummary: {updated} updated, {unchanged} unchanged,"
-          f" {failed} failed, {available} not local"
+          f" {failed} failed, {unregistered} not registered"
           f" (out of {len(entries)} remote archives)")
 
     if updated and not args.dry_run:
@@ -195,9 +220,8 @@ def main():
         print("  1. Rebuild models:    cmake --build <dir>")
         print("  2. Audit transforms:  cmake --build <dir> --target audit-stm32-models")
         print("     (detects transforms that became no-ops due to SVD fixes)")
-    if available:
-        print(f"\n{available} archive(s) available on st.com not present locally."
-              " Download manually if needed.")
+    if unregistered:
+        print(f"\n{unregistered} archive(s) on st.com not registered in STM32.yaml.")
     return 1 if failed else 0
 
 

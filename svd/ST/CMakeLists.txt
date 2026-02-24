@@ -6,150 +6,26 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/stm32-extraction.cmake)
 # ============================================================================
 # STM32 Family Registrations
 # ============================================================================
-# Each call creates two targets:
-#   stm32<id>-models         - Extract YAML models from the SVD archive
-#   rebuild-stm32<id>-models - Force re-extraction
+# Each call creates targets: stm32<id>-models, rebuild-stm32<id>-models,
+# audit-stm32<id>-models.  ZIP filenames must match svd.zip in ./STM32.yaml.
 
-stm32_add_family(ID c0 CODE C0 DISPLAY "STM32C0"
-    ZIP stm32c0-svd.zip
-    SUBFAMILIES
-        "C01x_C03x:STM32C011,STM32C031"
-        "C05x_C07x:STM32C051,STM32C071"
-        "C09x:STM32C091,STM32C092"
-)
-
-stm32_add_family(ID f3 CODE F3 DISPLAY "STM32F3"
-    ZIP stm32f3-svd.zip
-    SUBFAMILIES
-        "F301:STM32F301"
-        "F302:STM32F302"
-        "F303:STM32F303,STM32F3x8"
-        "F37x:STM32F373"
-        "F334:STM32F3x4"
-)
-
-stm32_add_family(ID f4 CODE F4 DISPLAY "STM32F4"
-    ZIP stm32f4-svd.zip
-    SUBFAMILIES
-        "F401:STM32F401"
-        "F410:STM32F410"
-        "F411:STM32F411"
-        "F4x5_F4x7_F42x_F43x:STM32F405,STM32F407,STM32F415,STM32F417,STM32F427,STM32F429,STM32F437,STM32F439"
-        "F412:STM32F412"
-        "F413_F423:STM32F413,STM32F423"
-        "F446:STM32F446"
-        "F469_F479:STM32F469,STM32F479"
-)
-
-stm32_add_family(ID f7 CODE F7 DISPLAY "STM32F7"
-    ZIP stm32f7-svd.zip
-    SUBFAMILIES
-        "F72x_F73x:STM32F722,STM32F723,STM32F730,STM32F732,STM32F733"
-        "F74x_F75x:STM32F745,STM32F746,STM32F750,STM32F756"
-        "F76x_F77x:STM32F765,STM32F767,STM32F768,STM32F769,STM32F777,STM32F778,STM32F779"
-)
-
-stm32_add_family(ID g0 CODE G0 DISPLAY "STM32G0"
-    ZIP stm32g0-svd.zip
-    SUBFAMILIES
-        "G03x_G04x:STM32G030,STM32G031,STM32G041"
-        "G05x_G06x:STM32G050,STM32G051,STM32G061"
-        "G07x_G08x:STM32G070,STM32G071,STM32G081"
-        "G0Bx_G0Cx:STM32G0B0,STM32G0B1,STM32G0C1"
-)
-
-stm32_add_family(ID g4 CODE G4 DISPLAY "STM32G4"
-    ZIP stm32g4_svd.zip
-    SUBFAMILIES
-        "G43x_G44x:STM32G431,STM32G441,STM32GBK1CBT6"
-        "G47x_G48x:STM32G471,STM32G473,STM32G474,STM32G483,STM32G484"
-        "G49x_G4Ax:STM32G491,STM32G4A1"
-)
-
-stm32_add_family(ID h5 CODE H5 DISPLAY "STM32H5"
-    ZIP stm32h5-svd.zip
-    SUBFAMILIES
-        "H503:STM32H503"
-        "H52x_H53x:STM32H523,STM32H533"
-        "H56x_H57x:STM32H562,STM32H563,STM32H573"
-)
-
-stm32_add_family(ID h7 CODE H7 DISPLAY "STM32H7"
-    ZIP stm32h7-svd.zip
-    SUBFAMILIES
-        "H73x:STM32H723,STM32H725,STM32H730,STM32H733,STM32H735,STM32H73x"
-        "H742_H753:STM32H742,STM32H743,STM32H750,STM32H753"
-        "H745_H757:STM32H745_CM4,STM32H745_CM7,STM32H747_CM4,STM32H747_CM7,STM32H755_CM4,STM32H755_CM7,STM32H757_CM4,STM32H757_CM7"
-        "H7A3_B:STM32H7A3,STM32H7B0,STM32H7B3"
-)
-
-stm32_add_family(ID l0 CODE L0 DISPLAY "STM32L0"
-    ZIP stm32l0-svd.zip
-    SUBFAMILIES
-        "L0x0_L0x1:STM32L0x0,STM32L0x1"
-        "L0x2_L0x3:STM32L052,STM32L053,STM32L062,STM32L063,STM32L0x2,STM32L0x3"
-)
-
-stm32_add_family(ID l1 CODE L1 DISPLAY "STM32L1"
-    ZIP stm32l1_svd.zip
-    SUBFAMILIES
-        "L10x:STM32L100"
-        "L15x_L16x:STM32L151,STM32L152,STM32L162"
-)
-
-stm32_add_family(ID l4 CODE L4 DISPLAY "STM32L4"
-    ZIP stm32l4_svd.zip
-    SUBFAMILIES
-        "L41x_L42x:STM32L412,STM32L422"
-        "L43x_L44x:STM32L431,STM32L432,STM32L433,STM32L442,STM32L443"
-        "L45x_L46x:STM32L451,STM32L452,STM32L462"
-        "L47x_L48x:STM32L471,STM32L475,STM32L476,STM32L486"
-        "L49x_L4Ax:STM32L496,STM32L4A6"
-)
-
-stm32_add_family(ID l4plus CODE L4P DISPLAY "STM32L4+"
-    ZIP stm32l4plus-svd.zip
-    SUBFAMILIES
-        "L4Px_L4Qx:STM32L4P5,STM32L4Q5"
-        "L4Rx_L4Sx:STM32L4R5,STM32L4R7,STM32L4R9,STM32L4S5,STM32L4S7,STM32L4S9"
-)
-
-stm32_add_family(ID l5 CODE L5 DISPLAY "STM32L5"
-    ZIP stm32l5-svd.zip
-    SUBFAMILIES
-        "L55x:STM32L552"
-        "L56x:STM32L562"
-)
-
-stm32_add_family(ID n6 CODE N6 DISPLAY "STM32N6"
-    ZIP stm32n6-svd.zip
-    SUBFAMILIES
-        "N64x:STM32N645,STM32N647"
-        "N65x:STM32N655,STM32N657"
-)
-
-stm32_add_family(ID u0 CODE U0 DISPLAY "STM32U0"
-    ZIP stm32u0-svd.zip
-    SUBFAMILIES
-        "U03x:STM32U031"
-        "U07x_U08x:STM32U073,STM32U083"
-)
-
-stm32_add_family(ID u3 CODE U3 DISPLAY "STM32U3"
-    ZIP stm32u3-svd.zip
-    SUBFAMILIES
-        "U37x:STM32U375"
-        "U38x:STM32U385"
-)
-
-stm32_add_family(ID u5 CODE U5 DISPLAY "STM32U5"
-    ZIP stm32u5_svd.zip
-    SUBFAMILIES
-        "U53x_U54x:STM32U535,STM32U545"
-        "U57x_U58x:STM32U575,STM32U585"
-        "U59x_U5Ax:STM32U595,STM32U599,STM32U5A5,STM32U5A9"
-        "U5Fx_U5Gx:STM32U5Fx,STM32U5Gx"
-)
+stm32_add_family(ID c0     CODE C0  DISPLAY "STM32C0"  ZIP stm32c0-svd.zip)
+stm32_add_family(ID f3     CODE F3  DISPLAY "STM32F3"  ZIP stm32f3-svd.zip)
+stm32_add_family(ID f4     CODE F4  DISPLAY "STM32F4"  ZIP stm32f4-svd.zip)
+stm32_add_family(ID f7     CODE F7  DISPLAY "STM32F7"  ZIP stm32f7-svd.zip)
+stm32_add_family(ID g0     CODE G0  DISPLAY "STM32G0"  ZIP stm32g0-svd.zip)
+stm32_add_family(ID g4     CODE G4  DISPLAY "STM32G4"  ZIP stm32g4_svd.zip)
+stm32_add_family(ID h5     CODE H5  DISPLAY "STM32H5"  ZIP stm32h5-svd.zip)
+stm32_add_family(ID h7     CODE H7  DISPLAY "STM32H7"  ZIP stm32h7-svd.zip)
+stm32_add_family(ID l0     CODE L0  DISPLAY "STM32L0"  ZIP stm32l0-svd.zip)
+stm32_add_family(ID l1     CODE L1  DISPLAY "STM32L1"  ZIP stm32l1_svd.zip)
+stm32_add_family(ID l4     CODE L4  DISPLAY "STM32L4"  ZIP stm32l4_svd.zip)
+stm32_add_family(ID l4plus CODE L4P DISPLAY "STM32L4+" ZIP stm32l4plus-svd.zip)
+stm32_add_family(ID l5     CODE L5  DISPLAY "STM32L5"  ZIP stm32l5-svd.zip)
+stm32_add_family(ID n6     CODE N6  DISPLAY "STM32N6"  ZIP stm32n6-svd.zip)
+stm32_add_family(ID u0     CODE U0  DISPLAY "STM32U0"  ZIP stm32u0-svd.zip)
+stm32_add_family(ID u3     CODE U3  DISPLAY "STM32U3"  ZIP stm32u3-svd.zip)
+stm32_add_family(ID u5     CODE U5  DISPLAY "STM32U5"  ZIP stm32u5_svd.zip)
 
 # ============================================================================
 # Summary
@@ -174,15 +50,16 @@ endforeach()
 # ============================================================================
 # Usage: cmake --build <build_dir> --target check-stm32-svds  (read-only check)
 #        cmake --build <build_dir> --target update-stm32-svds  (download updates)
+set(_stm32_config "${CMAKE_CURRENT_SOURCE_DIR}/STM32.yaml")
 add_custom_target(check-stm32-svds
     COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/download_stm32_svds.py
-            ${CMAKE_CURRENT_SOURCE_DIR} --dry-run
+            ${CMAKE_CURRENT_SOURCE_DIR} ${_stm32_config} --dry-run
     COMMENT "Checking ST website for SVD updates (no downloads)..."
 )
 add_custom_target(update-stm32-svds
     COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/download_stm32_svds.py
-            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR} ${_stm32_config}
     COMMENT "Downloading SVD updates from ST website..."
 )

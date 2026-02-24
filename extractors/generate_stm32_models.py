@@ -45,10 +45,8 @@ def _parse_block_cfg(block_cfg):
     return entry
 
 
-def load_family_config(family_code):
+def load_family_config(family_code, config_file):
     """Load the YAML config for a given family code."""
-    config_file = Path(__file__).parent / 'STM32.yaml'
-
     if not config_file.exists():
         print(f"Error: Config {config_file} not found")
         sys.exit(1)
@@ -581,7 +579,8 @@ def main():
         print(f"Error: {zip_path} not found")
         sys.exit(1)
 
-    families, blocks_config, chip_params, shared_blocks = load_family_config(family_code)
+    config_file = zip_path.parent / 'STM32.yaml'
+    families, blocks_config, chip_params, shared_blocks = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
     family_chips = set()
@@ -769,7 +768,7 @@ def main():
                         for line in details:
                             print(f"    {line}")
             print(f"\nTotal: {len(noops)} no-op, {len(partials)} partially obsolete")
-            print("Review these in extractors/STM32.yaml and svd/ST/SVD_ERRATA.md")
+            print(f"Review these in {config_file} and svd/ST/SVD_ERRATA.md")
         else:
             print(f"\nAUDIT: All transforms are active (no no-ops detected)")
 

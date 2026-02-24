@@ -3,7 +3,7 @@
 **Goal**
 Take a peripheral block type that exists across multiple STM32 families and
 produce a single parameterized YAML model in `models/ST/`, referenced by all
-families via `uses:` in `extractors/STM32.yaml`.
+families via `uses:` in `svd/ST/STM32.yaml`.
 
 **When to use this task**
 The block should meet most of these criteria:
@@ -304,7 +304,7 @@ These patterns emerged during the GpTimer work and apply to future blocks:
 ## Reference
 
 - Existing shared blocks: `WWDG`, `GpTimer` (in `shared_blocks` section of
-  `extractors/STM32.yaml`)
+  `svd/ST/STM32.yaml`)
 - Comparison document format: `GpTimer_comparison.md`
 - SVD errata log: `svd/ST/SVD_ERRATA.md`
 - Generator: `extractors/generate_stm32_models.py`

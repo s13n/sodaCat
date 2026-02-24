@@ -47,12 +47,12 @@ cmake --build . --target rebuild-stm32h7-models
 
 ### Directory roles
 
-- `extractors/` — Python scripts that convert SVD → YAML. The unified `generate_stm32_models.py` handles all STM32 families; consolidated config lives in `STM32.yaml`.
+- `extractors/` — Python scripts that convert SVD → YAML. The unified `generate_stm32_models.py` handles all STM32 families.
 - `generators/cxx/` — Python scripts that convert YAML → C++20 headers. Also contains `hwreg.hpp` (the HwReg template).
 - `tools/` — Shared libraries: `svd.py` (parser), `transform.py` (register/field transforms), `compare_peripherals.py` (similarity analysis).
 - `cmake/` — One `stm32XX-extraction.cmake` module per family, plus `sodaCat.cmake` (the `generate_header()` macro).
 - `models/` — Generated YAML organized as `models/<Vendor>/<Family>/`. The `ST/H7/H757/` directory contains manually maintained reference models.
-- `svd/` — Vendor SVD files, organized by vendor. `svd/ST/` contains STM32 zip archives and their `CMakeLists.txt` with family registrations; other vendors' loose `.svd` files are in `svd/` directly.
+- `svd/` — Vendor SVD files, organized by vendor. `svd/ST/` contains STM32 zip archives, the consolidated `STM32.yaml` config, and `CMakeLists.txt` with family registrations; other vendors' loose `.svd` files are in `svd/` directly.
 - `schemas/` — JSON Schema (Draft 7) for peripheral and clock-tree model validation.
 - `tasks/` — AI agent task descriptions for writing parsers and generators.
 
@@ -75,10 +75,8 @@ Model placement is config-driven: cross-family shared blocks (defined in `shared
 ### CMake integration
 
 The unified `cmake/stm32-extraction.cmake` module provides:
-- `stm32_add_family()` — registers a family and creates extraction/rebuild targets
-- `stm32_block_path()` — resolves to common or subfamily dir
-- `stm32_chip_path()` — resolves chip model path
-- `stm32_subfamily_chips()` — gets the list of chips in a subfamily
+- `stm32_add_family()` — registers a family and creates extraction/rebuild/audit targets
+- `stm32_print_families()` — prints a summary of all registered families
 
 The `generate_header()` macro in `sodaCat.cmake` wires YAML → C++ generation as CMake custom commands with proper dependency tracking.
 
@@ -93,13 +91,14 @@ They use `string.Template` for code emission and produce `HwReg<T>`-based regist
 
 ### Family generator
 
-A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. All family configuration lives in a single consolidated file `extractors/STM32.yaml` with two top-level keys:
+A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. All family configuration lives in a single consolidated file `svd/ST/STM32.yaml` with two top-level keys:
 
 - `shared_blocks`: cross-family shared block definitions — blocks whose register map is identical across multiple families. Each entry has the same keys as a family block (`from`, `interrupts`, `transforms`, `params`) except `instances`, which is inherently per-family and must be specified in each family's block entry. Shared models are written to `models/ST/` (top level), not under a family directory.
 - `families`: per-family configuration, keyed by family code (C0, F3, ..., U5)
 
-Each family entry has up to three keys:
+Each family entry has up to four keys:
 
+- `svd`: SVD archive metadata — `{zip, version, date}`. The `zip` filename must match the `ZIP` arg in `svd/ST/CMakeLists.txt`. The `version` and `date` fields are updated automatically by `tools/download_stm32_svds.py` when new SVD archives are downloaded.
 - `subfamilies`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
 - `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides. A block may use `uses: <shared_block_name>` instead of `from:` to reference a cross-family shared model; `from` triggers SVD extraction while `uses` references the shared model. Defaults from `shared_blocks` are inherited and can be overridden.
 - `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
