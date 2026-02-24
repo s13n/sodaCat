@@ -409,7 +409,7 @@ def dumpPeripheral(device:dict, name:str, filename:Path, comment:str):
     per['resetMask'] = per.get('resetMask', device['resetMask'])
     dumpModel(per, filename, comment)
 
-def dumpDevice(device:dict, filename:Path, header:str):
+def dumpDevice(device:dict, filename:Path, header:str=''):
     """ write a YAML file for the entire device """
     file = open(str(filename) + ".yaml", "w")
     if header:

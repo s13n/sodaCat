@@ -932,8 +932,10 @@ def main():
                 }
 
             # Assemble chip model
+            source = f"{chip_name} SVD v{svd_version}" if svd_version else f"{chip_name} SVD"
             chip_model = {
                 'name': device_meta.get('name', chip_name),
+                'source': source,
                 'cpu': device_meta.get('cpu', {}),
                 'interruptOffset': interrupt_offset,
                 'interrupts': dict(sorted(interrupt_table.items())),
@@ -943,8 +945,7 @@ def main():
             # Write chip model
             subfamily_dir = output_dir / family_code / subfamily_name
             subfamily_dir.mkdir(parents=True, exist_ok=True)
-            header = f"# Source: {chip_name}.svd v{svd_version}\n"
-            svd.dumpDevice(chip_model, subfamily_dir / chip_name, header)
+            svd.dumpDevice(chip_model, subfamily_dir / chip_name)
             chip_model_count += 1
 
     print(f"\n  Chip models generated: {chip_model_count}")
