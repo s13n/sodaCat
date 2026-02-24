@@ -2,13 +2,14 @@
 """
 Generic extractor: generate YAML models for any STM32 family.
 
-Usage: generate_stm32_models.py <family_code> <zip_path> <output_dir>
+Usage: generate_stm32_models.py <family_code> <zip_path> <output_dir> [--audit]
 
 The family_code selects a YAML config from families/<family_code>.yaml,
 which provides the subfamily-to-chip mapping and the block definitions
 (source instances, interrupt mappings) for that family.
 """
 
+import argparse
 import copy
 import re
 import sys
@@ -178,6 +179,66 @@ def _select_subfamily_entry(entries, block_cfg):
     return entries[0]
 
 
+def _describe_transform(t):
+    """Return a one-line human-readable summary of a transform."""
+    typ = t['type']
+    if typ == 'renameRegisters':
+        return f"renameRegisters: /{t['pattern']}/ -> '{t['replacement']}'"
+    elif typ == 'renameFields':
+        return f"renameFields: {t['register']}: /{t['pattern']}/ -> '{t['replacement']}'"
+    elif typ == 'patchFields':
+        reg = t.get('register') or t.get('register_pattern', '?')
+        names = [f['name'] for f in t.get('fields', [])]
+        return f"patchFields: {reg}: {', '.join(names)}"
+    elif typ == 'patchRegisters':
+        names = [r['name'] for r in t.get('registers', [])]
+        return f"patchRegisters: {', '.join(names)}"
+    elif typ == 'patchAddressBlock':
+        props = {k: v for k, v in t.items() if k != 'type'}
+        return f"patchAddressBlock: {props}"
+    elif typ == 'cloneRegister':
+        return f"cloneRegister: {t['source']} -> {t['name']}"
+    else:
+        return f"{typ}: {t}"
+
+
+def _audit_patch_properties(existing, props):
+    """Audit a patch merge: which non-description properties still differ?
+
+    Returns (fixed_props, needed_props) where:
+      fixed_props = list of (key, value) already matching in SVD
+      needed_props = list of (key, old_value, new_value) still differing
+    Description properties are ignored (SVD descriptions are always accepted).
+    """
+    fixed = []
+    needed = []
+    for k, v in props.items():
+        if k == 'description':
+            continue
+        if v is None:
+            # Removal: still needed if key exists
+            if k in existing:
+                needed.append((k, existing[k], None))
+            else:
+                fixed.append((k, None))
+        else:
+            old = existing.get(k)
+            if old == v:
+                fixed.append((k, v))
+            else:
+                needed.append((k, old, v))
+    return fixed, needed
+
+
+def _audit_rename(entries, key, pattern):
+    """Check if a rename pattern matches any entries.
+
+    Returns list of entry values that match the pattern.
+    """
+    pat = re.compile(pattern)
+    return [e[key] for e in entries if key in e and pat.search(e[key])]
+
+
 def _patch_fields(registers, reg_name, field_patches):
     """Patch fields in a named register.
 
@@ -243,10 +304,21 @@ def _patch_registers(registers, reg_patches):
                 print(f"  WARNING: patchRegisters: register '{name}' not found")
 
 
-def _apply_transforms(block_data, transforms):
-    """Apply a list of transforms to extracted block data (in-place)."""
+def _apply_transforms(block_data, transforms, audit=False, block_name=''):
+    """Apply a list of transforms to extracted block data (in-place).
+
+    When audit=True, returns a list of findings: (block_name, category, description, details).
+    Categories: 'noop' (safe to remove), 'partial' (some properties fixed), 'active'.
+    """
+    findings = []
     for t in transforms:
         typ = t['type']
+
+        # Tier 1: snapshot before transform (skip cloneRegister — always structural)
+        snapshot = None
+        if audit and typ != 'cloneRegister':
+            snapshot = copy.deepcopy(block_data)
+
         if typ == 'renameRegisters':
             renameEntries(block_data.get('registers', []), 'name', t['pattern'], t['replacement'])
             renameEntries(block_data.get('registers', []), 'displayName', t['pattern'], t['replacement'])
@@ -299,6 +371,102 @@ def _apply_transforms(block_data, transforms):
                 break  # patch first (typically only) address block
         else:
             print(f"  WARNING: unknown transform type '{typ}'")
+
+        # Audit: compare snapshot to current state
+        if audit and snapshot is not None:
+            desc = _describe_transform(t)
+            if snapshot == block_data:
+                # Tier 1: complete no-op
+                findings.append((block_name, 'noop', desc, None))
+            else:
+                # Tier 2: check per-property details for patch transforms
+                details = _audit_transform_details(snapshot, block_data, t)
+                if details:
+                    findings.append((block_name, 'partial', desc, details))
+
+    return findings
+
+
+def _audit_transform_details(before, after, t):
+    """Tier 2: for patch transforms, check which properties are fixed vs still needed.
+
+    Returns a list of detail strings, or None if no tier-2 info applies.
+    """
+    typ = t['type']
+
+    if typ == 'patchRegisters':
+        details = []
+        has_fixed = False
+        before_regs = {r.get('name'): r for r in before.get('registers', [])}
+        for patch in t.get('registers', []):
+            name = patch['name']
+            props = {k: v for k, v in patch.items() if k != 'name'}
+            if not props:
+                continue  # removal — not a property patch
+            existing = before_regs.get(name)
+            if existing is None:
+                continue  # new register added — always needed
+            fixed, needed = _audit_patch_properties(existing, props)
+            if fixed and not needed:
+                has_fixed = True
+                details.append(f"  {name}: all non-description properties already correct [FIXED IN SVD]")
+            elif fixed:
+                has_fixed = True
+                for k, v in fixed:
+                    details.append(f"  {name}.{k}: already {v!r} [FIXED IN SVD]")
+                for k, old, new in needed:
+                    details.append(f"  {name}.{k}: {old!r} -> {new!r} (still needed)")
+        return details if has_fixed else None
+
+    if typ == 'patchFields':
+        details = []
+        has_fixed = False
+        # Find the register(s) in the before state
+        for reg in before.get('registers', []):
+            if reg.get('name') == t.get('register') or \
+               (t.get('register_pattern') and re.match(t['register_pattern'], reg.get('name', ''))):
+                before_fields = {f.get('name'): f for f in reg.get('fields', [])}
+                rn = reg.get('name', t.get('register', '?'))
+                for patch in t.get('fields', []):
+                    fname = patch['name']
+                    props = {k: v for k, v in patch.items() if k != 'name'}
+                    if not props:
+                        continue  # removal
+                    existing = before_fields.get(fname)
+                    if existing is None:
+                        continue  # new field added
+                    fixed, needed = _audit_patch_properties(existing, props)
+                    if fixed and not needed:
+                        has_fixed = True
+                        details.append(f"  {rn}.{fname}: all non-description properties already correct [FIXED IN SVD]")
+                    elif fixed:
+                        has_fixed = True
+                        for k, v in fixed:
+                            details.append(f"  {rn}.{fname}.{k}: already {v!r} [FIXED IN SVD]")
+                        for k, old, new in needed:
+                            details.append(f"  {rn}.{fname}.{k}: {old!r} -> {new!r} (still needed)")
+        return details if has_fixed else None
+
+    if typ == 'patchAddressBlock':
+        details = []
+        has_fixed = False
+        before_ab = next(iter(before.get('addressBlocks', [])), {})
+        for k, v in t.items():
+            if k == 'type':
+                continue
+            old = before_ab.get(k)
+            if old == v:
+                has_fixed = True
+                details.append(f"  addressBlock.{k}: already {v!r} [FIXED IN SVD]")
+            else:
+                details.append(f"  addressBlock.{k}: {old!r} -> {v!r} (still needed)")
+        return details if has_fixed else None
+
+    if typ in ('renameRegisters', 'renameFields'):
+        # For renames that had an effect, no per-property breakdown needed
+        return None
+
+    return None
 
 
 def _strip_instance_prefix(block_data, instance_name, block_type):
@@ -396,13 +564,18 @@ def _inject_source(block_data, entry):
 
 
 def main():
-    if len(sys.argv) < 4:
-        print("Usage: generate_stm32_models.py <family_code> <zip_path> <output_dir>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description='Generate YAML models for an STM32 family from SVD files.')
+    parser.add_argument('family_code', help='Family code (e.g. H7, F4, C0)')
+    parser.add_argument('zip_path', type=Path, help='Path to SVD zip archive')
+    parser.add_argument('output_dir', type=Path, help='Output directory for models')
+    parser.add_argument('--audit', action='store_true',
+                        help='Report transforms that had no effect (SVD may be fixed)')
+    args = parser.parse_args()
 
-    family_code = sys.argv[1]
-    zip_path = Path(sys.argv[2])
-    output_dir = Path(sys.argv[3])
+    family_code = args.family_code
+    zip_path = args.zip_path
+    output_dir = args.output_dir
 
     if not zip_path.exists():
         print(f"Error: {zip_path} not found")
@@ -495,6 +668,7 @@ def main():
     shared_count = 0
     common_count = 0
     family_specific_count = 0
+    all_findings = []
 
     for block_name in sorted(all_blocks.keys()):
         block_families = all_blocks[block_name]
@@ -510,7 +684,9 @@ def main():
             transforms = shared_cfg.get('transforms')
             if transforms:
                 block_data = copy.deepcopy(block_data)
-                _apply_transforms(block_data, transforms)
+                all_findings.extend(_apply_transforms(
+                    block_data, transforms, audit=args.audit,
+                    block_name=f"{block_name} (shared)"))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, entry)
             svd.dumpModel(block_data, output_dir / block_name)
@@ -535,7 +711,9 @@ def main():
                 transforms = resolved.get('transforms')
                 if transforms:
                     block_data = copy.deepcopy(block_data)
-                    _apply_transforms(block_data, transforms)
+                    all_findings.extend(_apply_transforms(
+                        block_data, transforms, audit=args.audit,
+                        block_name=f"{block_name} ({fam_name})"))
                 block_data = _inject_params(block_data, block_cfg.get('params'))
                 block_data = _inject_source(block_data, entry)
                 svd.dumpModel(block_data, family_dir / block_name)
@@ -550,7 +728,9 @@ def main():
             transforms = block_cfg.get('transforms')
             if transforms:
                 block_data = copy.deepcopy(block_data)
-                _apply_transforms(block_data, transforms)
+                all_findings.extend(_apply_transforms(
+                    block_data, transforms, audit=args.audit,
+                    block_name=block_name))
             block_data = _inject_params(block_data, block_cfg.get('params'))
             block_data = _inject_source(block_data, entry)
             svd.dumpModel(block_data, common_blocks_dir / block_name)
@@ -567,6 +747,31 @@ def main():
     print(f"  Family-specific blocks:        {family_specific_count}")
     print(f"  Total block types processed:   {len(all_blocks)}")
     print(f"{'='*60}")
+
+    # Audit summary
+    if args.audit:
+        noops = [(b, d, det) for b, cat, d, det in all_findings if cat == 'noop']
+        partials = [(b, d, det) for b, cat, d, det in all_findings if cat == 'partial']
+        if noops or partials:
+            print(f"\nAUDIT: Transform health report")
+            print(f"{'='*60}")
+            if noops:
+                print("NO-OP (safe to remove):")
+                for block_name, desc, _ in noops:
+                    print(f"  {block_name}: {desc}")
+            if partials:
+                if noops:
+                    print()
+                print("PARTIALLY OBSOLETE (review needed):")
+                for block_name, desc, details in partials:
+                    print(f"  {block_name}: {desc}")
+                    if details:
+                        for line in details:
+                            print(f"    {line}")
+            print(f"\nTotal: {len(noops)} no-op, {len(partials)} partially obsolete")
+            print("Review these in extractors/STM32.yaml and svd/ST/SVD_ERRATA.md")
+        else:
+            print(f"\nAUDIT: All transforms are active (no no-ops detected)")
 
 
 if __name__ == '__main__':

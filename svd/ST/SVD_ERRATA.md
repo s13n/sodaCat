@@ -2,6 +2,11 @@
 
 Known bugs in vendor SVD files, verified against reference manuals.
 
+When a bug is fixed in an SVD update, annotate the entry with **Fixed in SVD
+vX.Y** and remove the corresponding transform from `extractors/STM32.yaml`.
+Use `cmake --build <dir> --target audit-stm32-models` to detect transforms
+that have become no-ops after an SVD update.
+
 
 ## ST STM32F7
 

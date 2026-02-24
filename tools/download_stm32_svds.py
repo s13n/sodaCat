@@ -191,7 +191,10 @@ def main():
           f" (out of {len(entries)} remote archives)")
 
     if updated and not args.dry_run:
-        print("\nRe-run model extraction for updated families to regenerate YAML models.")
+        print("\nNext steps:")
+        print("  1. Rebuild models:    cmake --build <dir>")
+        print("  2. Audit transforms:  cmake --build <dir> --target audit-stm32-models")
+        print("     (detects transforms that became no-ops due to SVD fixes)")
     if available:
         print(f"\n{available} archive(s) available on st.com not present locally."
               " Download manually if needed.")

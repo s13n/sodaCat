@@ -79,6 +79,15 @@ function(stm32_add_family)
         COMMENT "Force rebuild of ${FAM_DISPLAY} family models"
     )
 
+    # Audit target: check transforms for no-ops (SVD bugs potentially fixed)
+    add_custom_target(audit-${_target}
+        COMMAND ${Python3_EXECUTABLE} ${STM32_GENERATOR}
+                ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
+                --audit
+        COMMENT "Auditing ${FAM_DISPLAY} transforms for no-ops..."
+        VERBATIM
+    )
+
     # Register in global list
     set(_ids "${_STM32_FAMILY_IDS}")
     list(APPEND _ids "${FAM_ID}")

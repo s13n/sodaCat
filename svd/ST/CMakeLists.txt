@@ -157,12 +157,32 @@ stm32_add_family(ID u5 CODE U5 DISPLAY "STM32U5"
 stm32_print_families()
 
 # ============================================================================
+# Transform Audit (not built by default)
+# ============================================================================
+# Usage: cmake --build <build_dir> --target audit-stm32-models
+#        cmake --build <build_dir> --target audit-stm32h7-models  (single family)
+# Detects transforms that became no-ops due to SVD fixes.
+add_custom_target(audit-stm32-models
+    COMMENT "Auditing all STM32 transforms for no-ops..."
+)
+foreach(_id IN LISTS _STM32_FAMILY_IDS)
+    add_dependencies(audit-stm32-models audit-stm32${_id}-models)
+endforeach()
+
+# ============================================================================
 # SVD Update Check (not built by default)
 # ============================================================================
-# Usage: cmake --build <build_dir> --target update-stm32-svds
+# Usage: cmake --build <build_dir> --target check-stm32-svds  (read-only check)
+#        cmake --build <build_dir> --target update-stm32-svds  (download updates)
+add_custom_target(check-stm32-svds
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/download_stm32_svds.py
+            ${CMAKE_CURRENT_SOURCE_DIR} --dry-run
+    COMMENT "Checking ST website for SVD updates (no downloads)..."
+)
 add_custom_target(update-stm32-svds
     COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/download_stm32_svds.py
             ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Checking ST website for SVD updates..."
+    COMMENT "Downloading SVD updates from ST website..."
 )
