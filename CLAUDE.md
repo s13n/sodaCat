@@ -52,7 +52,7 @@ cmake --build . --target rebuild-stm32h7-models
 - `tools/` — Shared libraries: `svd.py` (parser), `transform.py` (register/field transforms), `compare_peripherals.py` (similarity analysis).
 - `cmake/` — One `stm32XX-extraction.cmake` module per family, plus `sodaCat.cmake` (the `generate_header()` macro).
 - `models/` — Generated YAML organized as `models/<Vendor>/<Family>/`. The `ST/H7/H757/` directory contains manually maintained reference models.
-- `svd/` — Vendor SVD files and `CMakeLists.txt` that wires up all extraction targets. STM32 zip archives live in `svd/ST/`; other vendors' loose `.svd` files are in `svd/` directly.
+- `svd/` — Vendor SVD files, organized by vendor. `svd/ST/` contains STM32 zip archives and their `CMakeLists.txt` with family registrations; other vendors' loose `.svd` files are in `svd/` directly.
 - `schemas/` — JSON Schema (Draft 7) for peripheral and clock-tree model validation.
 - `tasks/` — AI agent task descriptions for writing parsers and generators.
 

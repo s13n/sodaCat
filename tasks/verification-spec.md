@@ -123,7 +123,7 @@ When a new family is released (e.g. STM32V8):
    family blocks. Near-matches may become new shared blocks with params
 5. **Config skeleton**: generate initial `STM32.yaml` family entry with
    subfamilies, blocks, and interrupt mappings
-6. **CMake registration**: add `stm32_add_family()` call to `svd/CMakeLists.txt`
+6. **CMake registration**: add `stm32_add_family()` call to `svd/ST/CMakeLists.txt`
 7. **Build & verify**: extract models, run verification conditions 1-11
 8. **Reference manual alignment**: verify `from` sources and interrupt names
    against the new family's reference manual
