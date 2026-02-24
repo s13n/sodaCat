@@ -7,7 +7,7 @@ Usage: python3 convert_to_blocks.py [family_code ...]
        python3 convert_to_blocks.py           # converts all families
        python3 convert_to_blocks.py C0 H7     # converts specific families
 
-Reads: extractors/families/<CODE>.yaml (old format) + svd/<zip> (for interrupt data)
+Reads: extractors/families/<CODE>.yaml (old format) + svd/ST/<zip> (for interrupt data)
 Writes: extractors/families/<CODE>.yaml (new format, overwrites)
 """
 
@@ -278,7 +278,7 @@ def build_interrupt_mapping(interrupts_list, instance_name, block_type):
 def convert_family(family_code, base_dir):
     """Convert one family config from old to new format."""
     config_file = base_dir / 'extractors' / 'families' / f'{family_code}.yaml'
-    zip_file = base_dir / 'svd' / ZIP_NAMES[family_code]
+    zip_file = base_dir / 'svd' / 'ST' / ZIP_NAMES[family_code]
 
     if not zip_file.exists():
         print(f"  SKIP {family_code}: {zip_file} not found")

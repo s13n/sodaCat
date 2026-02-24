@@ -31,7 +31,7 @@ set(_STM32_FAMILY_IDS "" CACHE INTERNAL "")
 #     ID <id>                    # Lowercase ID for target names (e.g. "c0", "l4plus")
 #     CODE <code>                # Directory name under models/ST/ (e.g. "C0", "L4P")
 #     DISPLAY <name>             # Display name for messages (e.g. "STM32C0", "STM32L4+")
-#     ZIP <filename>             # SVD zip filename in svd/ directory
+#     ZIP <filename>             # SVD zip filename in svd/ST/ directory
 #     SUBFAMILIES <def>...       # Subfamily defs, each "Name:Chip1,Chip2,..."
 # )
 function(stm32_add_family)
@@ -49,7 +49,7 @@ function(stm32_add_family)
     set(_STM32_${FAM_ID}_SUBFAMILIES "${FAM_SUBFAMILIES}" CACHE INTERNAL "")
 
     # User-overridable SVD zip path
-    set(STM32${FAM_CODE}_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/${FAM_ZIP}" CACHE PATH
+    set(STM32${FAM_CODE}_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/ST/${FAM_ZIP}" CACHE PATH
         "Path to ${FAM_DISPLAY} SVD archive")
 
     # Family config file (consolidated YAML with all family definitions)

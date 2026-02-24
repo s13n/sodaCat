@@ -47,7 +47,7 @@ For each difference found, classify it as one of:
 
 | Category | Action |
 |----------|--------|
-| **SVD bug** (RM contradicts SVD) | Fix with a `transforms:` entry; document in `svd/SVD_ERRATA.md` |
+| **SVD bug** (RM contradicts SVD) | Fix with a `transforms:` entry; document in `svd/ST/SVD_ERRATA.md` |
 | **Generation difference** (newer IP adds fields/registers) | Candidate for a boolean or enum parameter |
 | **Instance difference** (some instances lack registers) | Candidate for an instance-level parameter |
 | **Cosmetic** (description wording, enum value names) | Ignore -- use the superset source's text |
@@ -256,7 +256,7 @@ These patterns emerged during the GpTimer work and apply to future blocks:
 
 3. **SVDs lie; RMs are ground truth.** Always verify SVD register layouts
    against the reference manual, especially for fields that control optional
-   features. Document SVD bugs in `svd/SVD_ERRATA.md`.
+   features. Document SVD bugs in `svd/ST/SVD_ERRATA.md`.
 
 4. **Defaults matter.** Choosing the right default for each parameter
    dramatically reduces the amount of `chip_params` config needed. Pick the
@@ -306,7 +306,7 @@ These patterns emerged during the GpTimer work and apply to future blocks:
 - Existing shared blocks: `WWDG`, `GpTimer` (in `shared_blocks` section of
   `extractors/STM32.yaml`)
 - Comparison document format: `GpTimer_comparison.md`
-- SVD errata log: `svd/SVD_ERRATA.md`
+- SVD errata log: `svd/ST/SVD_ERRATA.md`
 - Generator: `extractors/generate_stm32_models.py`
 - Schema: `schemas/peripheral.schema.yaml`
 

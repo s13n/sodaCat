@@ -113,7 +113,7 @@ When ST adds a new chip to an existing family (e.g. STM32H725 added to H7):
 
 When a new family is released (e.g. STM32V8):
 
-1. **SVD acquisition**: download the SVD zip, add to `svd/` with standard naming
+1. **SVD acquisition**: download the SVD zip, add to `svd/ST/` with standard naming
 2. **Initial scan**: extract all peripherals from all chips in the zip, catalog
    block types and instance counts
 3. **Shared block matching**: compare each peripheral against existing shared

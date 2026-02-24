@@ -52,7 +52,7 @@ cmake --build . --target rebuild-stm32h7-models
 - `tools/` — Shared libraries: `svd.py` (parser), `transform.py` (register/field transforms), `compare_peripherals.py` (similarity analysis).
 - `cmake/` — One `stm32XX-extraction.cmake` module per family, plus `sodaCat.cmake` (the `generate_header()` macro).
 - `models/` — Generated YAML organized as `models/<Vendor>/<Family>/`. The `ST/H7/H757/` directory contains manually maintained reference models.
-- `svd/` — Vendor SVD zip archives and `CMakeLists.txt` that wires up all extraction targets.
+- `svd/` — Vendor SVD files and `CMakeLists.txt` that wires up all extraction targets. STM32 zip archives live in `svd/ST/`; other vendors' loose `.svd` files are in `svd/` directly.
 - `schemas/` — JSON Schema (Draft 7) for peripheral and clock-tree model validation.
 - `tasks/` — AI agent task descriptions for writing parsers and generators.
 
@@ -144,5 +144,5 @@ A GitHub Actions workflow validates clock-tree specs: `tools/validate_clock_spec
 - The `test/CMakeLists.txt` references models via paths relative to `SODACAT_LOCAL_DIR` (defaults to `${CMAKE_SOURCE_DIR}/models`)
 - CMake extraction targets use stamp files (`<target>.stamp`) to avoid redundant re-extraction
 - Cache variables like `STM32XX_GENERATOR` persist in CMakeCache.txt — after moving files, a stale cache may need `cmake .. -DSTM32XX_GENERATOR=<new_path>` or a clean reconfigure
-- SVD zip naming: most are `stm32<family>-svd.zip`; exceptions use underscores: `stm32g4_svd.zip`, `stm32l1_svd.zip`, `stm32l4_svd.zip`, `stm32l4plus-svd.zip`, `stm32u5_svd.zip`
+- SVD zip naming: STM32 zips live in `svd/ST/`; most are `stm32<family>-svd.zip`; exceptions use underscores: `stm32g4_svd.zip`, `stm32l1_svd.zip`, `stm32l4_svd.zip`, `stm32l4plus-svd.zip`, `stm32u5_svd.zip`
 - Interrupt mapping is data-driven via `interrupts` in family config — SVD interrupt names not listed are dropped (acts as filter)
