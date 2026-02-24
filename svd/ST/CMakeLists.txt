@@ -155,3 +155,14 @@ stm32_add_family(ID u5 CODE U5 DISPLAY "STM32U5"
 # Summary
 # ============================================================================
 stm32_print_families()
+
+# ============================================================================
+# SVD Update Check (not built by default)
+# ============================================================================
+# Usage: cmake --build <build_dir> --target update-stm32-svds
+add_custom_target(update-stm32-svds
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/download_stm32_svds.py
+            ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Checking ST website for SVD updates..."
+)
