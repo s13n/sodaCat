@@ -24,13 +24,20 @@ EXPORT constexpr struct $ns::integration::${model} i_$name = {$params$ints$init}
     def createParameters(self, instance):
         params = ''
         for i in instance.get('parameters', []):
-            params += self.instanceParamTemplate.substitute(i)
+            v = i['value']
+            if isinstance(v, bool):
+                params += f"\n\t.{i['name']} = {'true' if v else 'false'},"
+            else:
+                params += self.instanceParamTemplate.substitute(i)
         return params
         
     def createInterrupts(self, instance):
         ints = ''
-        for i in instance.get('interrupts', []):
-            ints += self.instanceIntTemplate.substitute(i)
+        seen = set()
+        for i in sorted(instance.get('interrupts', []), key=lambda x: x.get('name', '')):
+            if i['name'] not in seen:
+                seen.add(i['name'])
+                ints += self.instanceIntTemplate.substitute(i)
         return ints
         
     def createIntegration(self, instances, namespace, namespaces):

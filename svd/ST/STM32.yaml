@@ -106,6 +106,17 @@ shared_blocks:
               - {name: TRIGSEL, description: Trigger selection, bitOffset: 19, bitWidth: 4}
       - type: patchAddressBlock
         size: 1024
+  OPAMP:
+    # LPOTR-type OPAMP: L4, L4+, L5, U0, U5 share this model
+    # H7/H5 use HSOTR-type (different CSR layout); G4/L1 are distinct IPs; U3 has different VM_SEL width
+    from: STM32U535.OPAMP
+    params:
+      - {name: single, type: bool, default: false, description: "Single operational amplifier (no second amplifier registers)"}
+    transforms:
+      - {type: renameRegisters, pattern: '^OPAMP1_', replacement: ''}
+      - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
+      # U5/L5 SVD typo: OPAMP2_CRS instead of OPAMP2_CSR
+      - {type: renameRegisters, pattern: '^CRS', replacement: CSR}
 families:
   C0:
     svd:
@@ -789,6 +800,14 @@ families:
         instances: [HASH]
         interrupts:
           HASH_RNG: INTR
+        transforms:
+          - type: patchRegisters
+            registers:
+              - {name: HR0, newName: HRA0}
+              - {name: HR1, newName: HRA1}
+              - {name: HR2, newName: HRA2}
+              - {name: HR3, newName: HRA3}
+              - {name: HR4, newName: HRA4}
       I2C:
         from: STM32F429.I2C1
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -1310,6 +1329,14 @@ families:
       HASH:
         from: STM32F745.HASH
         instances: [HASH]
+        transforms:
+          - type: patchRegisters
+            registers:
+              - {name: HR0, newName: HRA0}
+              - {name: HR1, newName: HRA1}
+              - {name: HR2, newName: HRA2}
+              - {name: HR3, newName: HRA3}
+              - {name: HR4, newName: HRA4}
       I2C:
         from: STM32F722.I2C1
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -2650,13 +2677,10 @@ families:
           H73x:
             instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM23, TIM24, TIM3, TIM4, TIM5]
       HASH:
-        from: STM32H753.HASH
+        from: STM32H730.HASH
         instances: [HASH]
         interrupts:
           HASH_RNG: INTR
-        variants:
-          H73x:
-            from: STM32H730.HASH
       HRTIM_Common:
         from: STM32H742.HRTIM_Common
         instances: [HRTIM_Common]
@@ -2679,15 +2703,17 @@ families:
         params:
           - {name: semaphores, type: int, default: 32, description: Number of hardware semaphores (16 or 32)}
         transforms:
-      # All H7 SVDs except H745: MASTERID field is 8-bit, RM says 4-bit at [11:8]
-          - {type: patchFields, register_pattern: ^R\d+$, fields: [{name: MASTERID, bitWidth: 4}]}
-          - {type: patchFields, register_pattern: ^RLR\d+$, fields: [{name: MASTERID, bitWidth: 4}]}
-          - {type: patchFields, register: CR, fields: [{name: MASTERID, bitWidth: 4}]}
-      # All H7 SVDs except H745: CR is read-write, RM says write-only
+      # MASTERID (RM0433): 4-bit at [11:8]; H743 SVD has 8-bit — narrow to 4
+      # H745 SVD uses COREID (RM0399 name) at correct 4-bit width — no fix needed
+          - {type: patchFields, register_pattern: ^R\d+$, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
+          - {type: patchFields, register_pattern: ^RLR\d+$, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
+          - {type: patchFields, register: CR, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
+      # H743 SVD: CR is read-write, RM says write-only
           - {type: patchRegisters, registers: [{name: CR, access: write-only}]}
         variants:
           H745_H757:
             from: STM32H745_CM4.HSEM
+            transforms: []
       I2C:
         from: STM32H723.I2C1
         instances: [I2C1, I2C2, I2C3, I2C4, I2C5]
@@ -2738,7 +2764,8 @@ families:
         from: STM32H723.OPAMP
         instances: [OPAMP]
         transforms:
-          - {type: renameRegisters, pattern: ^OPAMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^OPAMP1_', replacement: ''}
+          - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
       OTFDEC:
         from: STM32H725.OTFDEC1
         instances: [OTFDEC1, OTFDEC2]
@@ -3410,6 +3437,14 @@ families:
       HASH:
         from: STM32L486.HASH
         instances: [HASH]
+        transforms:
+          - type: patchRegisters
+            registers:
+              - {name: HR0, newName: HRA0}
+              - {name: HR1, newName: HRA1}
+              - {name: HR2, newName: HRA2}
+              - {name: HR3, newName: HRA3}
+              - {name: HR4, newName: HRA4}
       I2C:
         from: STM32L412.I2C1
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -3433,10 +3468,8 @@ families:
         uses: LPUART
         instances: [LPUART1]
       OPAMP:
-        from: STM32L412.OPAMP
+        uses: OPAMP
         instances: [OPAMP]
-        transforms:
-          - {type: renameRegisters, pattern: ^OPAMP\d+_, replacement: ''}
       OTG_FS_DEVICE:
         from: STM32L471.OTG_FS_DEVICE
         instances: [OTG_FS_DEVICE]
@@ -3702,6 +3735,14 @@ families:
       HASH:
         from: STM32L4P5.HASH
         instances: [HASH]
+        transforms:
+          - type: patchRegisters
+            registers:
+              - {name: HR0, newName: HRA0}
+              - {name: HR1, newName: HRA1}
+              - {name: HR2, newName: HRA2}
+              - {name: HR3, newName: HRA3}
+              - {name: HR4, newName: HRA4}
       I2C:
         from: STM32L4P5.I2C1
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -3735,10 +3776,8 @@ families:
           L4Rx_L4Sx:
             from: STM32L4R5.OCTOSPI1
       OPAMP:
-        from: STM32L4P5.OPAMP
+        uses: OPAMP
         instances: [OPAMP]
-        transforms:
-          - {type: renameRegisters, pattern: ^OPAMP\d+_, replacement: ''}
       OTG_FS_DEVICE:
         from: STM32L4P5.OTG_FS_DEVICE
         instances: [OTG_FS_DEVICE]
@@ -4000,10 +4039,8 @@ families:
         interrupts:
           OCTOSPI1: INTR
       OPAMP:
-        from: STM32L552.OPAMP
+        uses: OPAMP
         instances: [OPAMP]
-        transforms:
-          - {type: renameRegisters, pattern: ^OPAMP\d+_, replacement: ''}
       OTFDEC:
         from: STM32L562.OTFDEC1
         instances: [OTFDEC1]
@@ -4565,7 +4602,7 @@ families:
         uses: LPUART
         instances: [LPUART1, LPUART2, LPUART3]
       OPAMP:
-        from: STM32U031.OPAMP
+        uses: OPAMP
         instances: [OPAMP]
       PWR:
         from: STM32U031.PWR
@@ -4617,6 +4654,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          OPAMP: {single: true}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
           TIM2: {width32: true,encoder: 1}
@@ -4788,7 +4826,10 @@ families:
         from: STM32U375.OPAMP
         instances: [OPAMP]
         transforms:
-          - {type: renameRegisters, pattern: ^OPAMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^OPAMP1_', replacement: ''}
+          - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
+          # U3 SVD typo: OPAMP2_CRS instead of OPAMP2_CSR
+          - {type: renameRegisters, pattern: '^CRS', replacement: CSR}
       PKA:
         from: STM32U385.PKA
         instances: [PKA]
@@ -5133,10 +5174,8 @@ families:
         interrupts:
           OCTOSPI1: INTR
       OPAMP:
-        from: STM32U535.OPAMP
+        uses: OPAMP
         instances: [OPAMP]
-        transforms:
-          - {type: renameRegisters, pattern: ^OPAMP\d+_, replacement: ''}
       OTFDEC:
         from: STM32U5Gx.OTFDEC1
         instances: [OTFDEC1, OTFDEC2]

@@ -480,6 +480,26 @@ All H7 SVDs misattribute the reset interrupt to the WWDG peripheral instead of E
 
 **TODO:** Add `patchInterrupts` transform support to inject these as EXTI interrupts.
 
+### HASH
+
+**All families with HASH: F4, F7, H7 (except H730), L4, L4+**
+
+The aliased digest registers at offset 0x00C–0x01C are named `HR0`–`HR4` (no instance
+prefix), while the full digest registers at 0x310–0x32C are named `HASH_HR0`–`HASH_HR7`.
+After instance-prefix stripping, both sets become `HR0`–`HR4`, causing name collisions.
+
+The `HRA` (aliased) naming was introduced in newer reference manuals (RM0385 for F7,
+RM0432 for L4+, RM0433/RM0399 for H7) to distinguish the two sets. The older F4 RM0090
+uses `HASH_HR0` for both offsets and notes the mapping is "duplicated in two region".
+The STM32H730 SVD (v1.8) is the only SVD that uses the correct `HASH_HRA0`–`HASH_HRA4`
+naming natively.
+
+**Fix:** H7 HASH uses STM32H730 as source (correct HRA naming). F4, F7, L4, and L4+
+use `patchRegisters` with `newName` transforms to rename `HR0`–`HR4` → `HRA0`–`HRA4`
+at the aliased offsets. For F4 (RM0090), this is a forward-port of the newer naming
+convention despite the RM not using it — the collision is real and the HRA naming is
+the established fix across all later IP revisions.
+
 
 ## ST STM32L0
 

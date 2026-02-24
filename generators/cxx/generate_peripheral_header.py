@@ -170,13 +170,17 @@ $postfix"""))
             type = (f'HwPtr<struct {per['name']}_::{per['name']} volatile> ') if block['usage'] == 'registers' else 'std::span<std::byte> '
             blocks += self.addressTemplate.substitute(block, type=type)
         ints = ''
-        for int in per.get('interrupts', []):
+        for int in sorted(per.get('interrupts', []), key=lambda i: i.get('name', '')):
             desc = int.get('description', '')
             ints += self.interruptTemplate.substitute(int, description=desc)
         params = ''
-        for par in per.get('parameters', []):
+        for par in per.get('parameters', per.get('params', [])):
             desc = par.get('description', '')
-            params += self.parameterTemplate.substitute(par, description=desc)
+            if 'bits' in par:
+                params += self.parameterTemplate.substitute(par, description=desc)
+            else:
+                ptype = {'bool': 'bool', 'string': 'const char*'}.get(par.get('type', 'int'), 'uint32_t')
+                params += f'\t{ptype} {par["name"]};\t//!< {desc}\n'
         return blocks, ints, params
             
     def formatPeripheral(self, per:dict, prefix:str, postfix:str):

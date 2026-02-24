@@ -341,13 +341,30 @@ def processChip(svd_root, chip_name, blocks_config):
                 block_data['name'] = block_type
                 blocks[block_type] = block_data
 
-        # Apply interrupt mapping using collected interrupts from all instances
+        # Inject canonical interrupt declarations from config mapping.
+        # The mapping values define the interrupt types this block supports,
+        # regardless of which SVD chip provided the source registers.
         for block_type, block_data in blocks.items():
             block_cfg = blocks_config[block_type]
             interrupt_map = block_cfg.get('interrupts')
             if interrupt_map:
-                intrs = _applyInterruptMapping(
-                    block_raw_interrupts.get(block_type, []), interrupt_map)
+                seen = set()
+                intrs = []
+                # First: add interrupts matched from SVD data (preserves descriptions)
+                for mapped in _applyInterruptMapping(
+                        block_raw_interrupts.get(block_type, []), interrupt_map):
+                    seen.add(mapped['name'])
+                    intrs.append(mapped)
+                # Then: add any canonical names from the mapping that SVD didn't provide
+                for raw_name, mapping in interrupt_map.items():
+                    canonical = mapping['name'] if isinstance(mapping, dict) else mapping
+                    desc = mapping.get('description', '') if isinstance(mapping, dict) else ''
+                    if canonical not in seen:
+                        seen.add(canonical)
+                        entry = {'name': canonical}
+                        if desc:
+                            entry['description'] = desc
+                        intrs.append(entry)
                 if intrs:
                     block_data['interrupts'] = intrs
 

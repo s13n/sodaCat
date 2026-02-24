@@ -283,11 +283,14 @@ def _patch_registers(registers, reg_patches):
     """
     for patch in reg_patches:
         name = patch['name']
-        props = {k: v for k, v in patch.items() if k != 'name'}
+        props = {k: v for k, v in patch.items() if k not in ('name', 'newName')}
         existing = next((r for r in registers if r.get('name') == name), None)
 
-        if props:
+        if props or 'newName' in patch:
             if existing:
+                if 'newName' in patch:
+                    existing['name'] = patch['newName']
+                    existing['displayName'] = patch['newName']
                 for k, v in props.items():
                     if v is None:
                         existing.pop(k, None)
@@ -383,6 +386,8 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     findings.append((block_name, 'partial', desc, details))
 
     return findings
+
+
 
 
 def _audit_transform_details(before, after, t):
@@ -815,6 +820,7 @@ def main():
                     block_name=f"{block_name} (shared)"))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, entry)
+
             svd.dumpModel(block_data, output_dir / block_name)
             print(f"  * {block_name:20} -> top-level (cross-family shared)")
             continue
@@ -842,6 +848,7 @@ def main():
                         block_name=f"{block_name} ({fam_name})"))
                 block_data = _inject_params(block_data, block_cfg.get('params'))
                 block_data = _inject_source(block_data, entry)
+    
                 svd.dumpModel(block_data, family_dir / block_name)
 
         # Non-variant subfamilies -> shared placement in base dir
@@ -859,6 +866,7 @@ def main():
                     block_name=block_name))
             block_data = _inject_params(block_data, block_cfg.get('params'))
             block_data = _inject_source(block_data, entry)
+
             svd.dumpModel(block_data, common_blocks_dir / block_name)
             print(f"  + {block_name:20} -> {family_code} (shared)")
 
