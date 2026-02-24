@@ -106,9 +106,9 @@ shared_blocks:
               - {name: TRIGSEL, description: Trigger selection, bitOffset: 19, bitWidth: 4}
       - type: patchAddressBlock
         size: 1024
-  OPAMP:
+  LPOPAMP:
     # LPOTR-type OPAMP: L4, L4+, L5, U0, U5 share this model
-    # H7/H5 use HSOTR-type (different CSR layout); G4/L1 are distinct IPs; U3 has different VM_SEL width
+    # HSOTR-type families use HSOPAMP; G4/L1 are distinct IPs; U3 has different VM_SEL width
     from: STM32U535.OPAMP
     params:
       - {name: single, type: bool, default: false, description: "Single operational amplifier (no second amplifier registers)"}
@@ -117,6 +117,22 @@ shared_blocks:
       - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
       # U5/L5 SVD typo: OPAMP2_CRS instead of OPAMP2_CSR
       - {type: renameRegisters, pattern: '^CRS', replacement: CSR}
+  HSOPAMP:
+    # HSOTR-type OPAMP: H7 and H5 share this model
+    # LPOTR-type families use LPOPAMP; G4/L1 are distinct IPs; U3 has different VM_SEL width
+    from: STM32H723.OPAMP
+    params:
+      - {name: single, type: bool, default: false, description: "Single operational amplifier (no second amplifier registers)"}
+    transforms:
+      - {type: renameRegisters, pattern: '^OPAMP1_', replacement: ''}
+      - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
+      # SVD bug: HSOTR fields named TRIMLP* instead of TRIMHS* (confirmed in all H7 RMs)
+      - {type: renameFields, register: HSOTR, pattern: '^TRIMLP', replacement: TRIMHS}
+      - {type: renameFields, register: HSOTR2, pattern: '^TRIMLP', replacement: TRIMHS}
+      # SVD bug: CSR2 missing VP_SEL field (present in RM0468, RM0399, RM0433, RM0455)
+      - {type: patchFields, register: CSR2, fields: [{name: VP_SEL, description: "Non inverted input selection", bitOffset: 2, bitWidth: 2}]}
+      # SVD bug: OR register missing (all reserved, present in all H7/H5 RMs at offset 0x0C)
+      - {type: patchRegisters, registers: [{name: OR, displayName: OR, description: "OPAMP option register", addressOffset: 12, size: 32, access: read-write, resetValue: 0}]}
 families:
   C0:
     svd:
@@ -2265,7 +2281,7 @@ families:
         from: STM32H523.OCTOSPI_S
         instances: [OCTOSPI_S]
       OPAMP:
-        from: STM32H503.OPAMP1
+        uses: HSOPAMP
         instances: [OPAMP1]
       OTFDEC:
         from: STM32H533.OTFDEC
@@ -2399,6 +2415,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          OPAMP: {single: true}
           UART12: {synchronous: 0}
           UART4: {synchronous: 0}
           UART4_S: {synchronous: 0}
@@ -2761,11 +2778,8 @@ families:
         params:
           - {name: has_extended_csht, type: bool, default: false, description: Extended chip-select high time (6-bit CSHT instead of 3-bit)}
       OPAMP:
-        from: STM32H723.OPAMP
+        uses: HSOPAMP
         instances: [OPAMP]
-        transforms:
-          - {type: renameRegisters, pattern: '^OPAMP1_', replacement: ''}
-          - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
       OTFDEC:
         from: STM32H725.OTFDEC1
         instances: [OTFDEC1, OTFDEC2]
@@ -3468,7 +3482,7 @@ families:
         uses: LPUART
         instances: [LPUART1]
       OPAMP:
-        uses: OPAMP
+        uses: LPOPAMP
         instances: [OPAMP]
       OTG_FS_DEVICE:
         from: STM32L471.OTG_FS_DEVICE
@@ -3776,7 +3790,7 @@ families:
           L4Rx_L4Sx:
             from: STM32L4R5.OCTOSPI1
       OPAMP:
-        uses: OPAMP
+        uses: LPOPAMP
         instances: [OPAMP]
       OTG_FS_DEVICE:
         from: STM32L4P5.OTG_FS_DEVICE
@@ -4039,7 +4053,7 @@ families:
         interrupts:
           OCTOSPI1: INTR
       OPAMP:
-        uses: OPAMP
+        uses: LPOPAMP
         instances: [OPAMP]
       OTFDEC:
         from: STM32L562.OTFDEC1
@@ -4602,7 +4616,7 @@ families:
         uses: LPUART
         instances: [LPUART1, LPUART2, LPUART3]
       OPAMP:
-        uses: OPAMP
+        uses: LPOPAMP
         instances: [OPAMP]
       PWR:
         from: STM32U031.PWR
@@ -5174,7 +5188,7 @@ families:
         interrupts:
           OCTOSPI1: INTR
       OPAMP:
-        uses: OPAMP
+        uses: LPOPAMP
         instances: [OPAMP]
       OTFDEC:
         from: STM32U5Gx.OTFDEC1

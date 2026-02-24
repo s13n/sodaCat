@@ -501,6 +501,29 @@ convention despite the RM not using it — the collision is real and the HRA nam
 the established fix across all later IP revisions.
 
 
+### OPAMP
+
+All four H7 RMs (RM0433, RM0399, RM0468, RM0455) describe identical OPAMP register
+structure: CSR, OTR, HSOTR (with TRIMHSOFFSETN/P fields), OR, plus duplicates for
+OPAMP2 (CSR2 with VP_SEL, OTR2, HSOTR2).
+
+**All H7 SVDs (STM32H723 v2.1, STM32H743 v2.4, STM32H745_CM4 v1.7, STM32H7A3 v3.4):**
+
+| Register | Field          | Bug                          | RMs say                      |
+|----------|----------------|------------------------------|------------------------------|
+| HSOTR    | TRIMLPOFFSETN  | Named "TRIMLP" (low-power)   | TRIMHSOFFSETN (high-speed)   |
+| HSOTR    | TRIMLPOFFSETP  | Named "TRIMLP" (low-power)   | TRIMHSOFFSETP (high-speed)   |
+| HSOTR2   | TRIMLPOFFSETN  | Named "TRIMLP" (low-power)   | TRIMHSOFFSETN (high-speed)   |
+| HSOTR2   | TRIMLPOFFSETP  | Named "TRIMLP" (low-power)   | TRIMHSOFFSETP (high-speed)   |
+| CSR2     | VP_SEL         | Missing                      | 2-bit at [3:2]               |
+| OR       | (register)     | Missing entirely             | Present at offset 0x0C (all reserved) |
+
+Note: The HSOTR register description also says "low-power mode" instead of
+"high-speed mode" — consistent with the field naming bug. The HSOTR fields
+are copy-pasted from the LPOTR-type OPAMP IP (L4/L5/U5) but the HSOTR-type
+IP uses genuinely different trim registers for high-speed mode.
+
+
 ## ST STM32L0
 
 References:
@@ -899,3 +922,17 @@ Transforms normalize all variants to the `_3` convention (e.g., SMS_3, TS_4_3, O
 
 Additionally, U5 has `TS_2_0` for the base TS field (should be just `TS`), renamed
 by transform.
+
+
+## Cross-family: OPAMP CRS typo
+
+**STM32L552 (SVD v1.3), STM32U375 (SVD v1.0), STM32U535 (SVD v1.5):**
+
+| Register     | Bug                      | Should be |
+|--------------|--------------------------|-----------|
+| OPAMP2_CRS   | Typo — "CRS" not "CSR"  | OPAMP2_CSR |
+
+All three L5, U3, and U5 SVDs spell the second OPAMP's control/status register
+as `OPAMP2_CRS` instead of `OPAMP2_CSR`. After instance-prefix stripping and
+suffix renaming, this becomes `CRS2` instead of `CSR2`. Fixed by renameRegisters
+transform in the shared LPOPAMP block definition and the U3 family OPAMP block.

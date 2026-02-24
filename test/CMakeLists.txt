@@ -73,7 +73,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/LPTIM 
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/LTDC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/MDIOS .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/MDMA .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/OPAMP .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/HSOPAMP .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/OTG_HS_DEVICE .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/OTG_HS_GLOBAL .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/OTG_HS_HOST .hpp)

@@ -704,6 +704,14 @@ def main():
         if from_chip in family_chips:
             my_shared_blocks[bn] = bc
 
+    # Map family block types to owned shared block names
+    # (block type key in blocks_config may differ from shared block name)
+    owned_shared_mapping = {}  # block_type -> shared_block_name
+    for bt, bc in blocks_config.items():
+        uses_name = bc.get('uses')
+        if uses_name and uses_name in my_shared_blocks:
+            owned_shared_mapping[bt] = uses_name
+
     print(f"Extracting STM32{family_code} models from {zip_path}")
     print(f"Output directory: {output_dir}")
     if my_shared_blocks:
@@ -731,7 +739,7 @@ def main():
             resolved = _resolve_block_config(bc, family_name)
             if 'uses' not in resolved:
                 effective_blocks[bt] = resolved
-            elif bt in my_shared_blocks:
+            elif resolved.get('uses') in my_shared_blocks:
                 effective_blocks[bt] = _resolve_uses_config(resolved, shared_blocks)
 
         for chip_name in family_info['chips']:
@@ -805,9 +813,12 @@ def main():
         block_families = all_blocks[block_name]
 
         # Cross-family shared blocks -> top-level placement
-        if block_name in my_shared_blocks:
+        # Block type may differ from shared block name (e.g. OPAMP -> HSOPAMP)
+        shared_name = owned_shared_mapping.get(block_name) or (
+            block_name if block_name in my_shared_blocks else None)
+        if shared_name:
             shared_count += 1
-            shared_cfg = my_shared_blocks[block_name]
+            shared_cfg = my_shared_blocks[shared_name]
             families_present = set(block_families.keys())
             entry = _select_block_entry(
                 block_families, families, families_present, shared_cfg)
@@ -817,12 +828,13 @@ def main():
                 block_data = copy.deepcopy(block_data)
                 all_findings.extend(_apply_transforms(
                     block_data, transforms, audit=args.audit,
-                    block_name=f"{block_name} (shared)"))
+                    block_name=f"{shared_name} (shared)"))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, entry)
+            block_data['name'] = shared_name
 
-            svd.dumpModel(block_data, output_dir / block_name)
-            print(f"  * {block_name:20} -> top-level (cross-family shared)")
+            svd.dumpModel(block_data, output_dir / shared_name)
+            print(f"  * {shared_name:20} -> top-level (cross-family shared)")
             continue
 
         block_cfg = blocks_config.get(block_name, {})
@@ -884,6 +896,14 @@ def main():
     for subfamily_name, subfamily_info in families.items():
         instance_to_block = _build_instance_to_block(blocks_config, subfamily_name)
 
+        # Determine model file names per block type for this subfamily
+        # (shared block name for uses: blocks, block type name otherwise)
+        block_model_names = {}
+        for bt, bc in blocks_config.items():
+            resolved = _resolve_block_config(bc, subfamily_name)
+            uses = resolved.get('uses')
+            block_model_names[bt] = uses if uses else bt
+
         for chip_name in subfamily_info['chips']:
             summary = chip_summaries.get(subfamily_name, {}).get(chip_name)
             if not summary:
@@ -934,7 +954,7 @@ def main():
 
                 instances[inst_name] = {
                     'baseAddress': periph['baseAddress'],
-                    'model': block_type,
+                    'model': block_model_names.get(block_type, block_type),
                     'interrupts': mapped_intrs,
                     'parameters': params_list,
                 }
