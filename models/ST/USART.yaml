@@ -1,23 +1,30 @@
 name: USART
-description: USART1 address block description
+description: Universal synchronous/asynchronous receiver transmitter
 groupName: USART
-source: STM32U375 SVD v1.0
+source: STM32N645 SVD v1.0
 params:
-  - name: has_synchronous
+  - name: synchronous
+    type: int
+    default: 3
+    description: 'Synchronous/smartcard capability: 0=none, 1=synchronous only, 2=sync+smartcard, 3=sync+smartcard+TCBGT'
+  - name: has_fifo
     type: bool
     default: true
-    description: Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)
-  - name: has_smartcard
+    description: FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR; TXFECF in ICR). Also implies PRESC register and SPI slave fields (SLVEN, DIS_NSS, UDR, UDRCF).
+  - name: has_wakeup
     type: bool
     default: true
-    description: Smartcard mode support (SCEN, NACK, SCARCNT)
+    description: Wakeup from Stop mode interrupt flag selection (WUS/WUFIE in CR3; WUF in ISR; WUCF in ICR)
+  - name: has_autocr
+    type: bool
+    default: false
+    description: Autonomous mode (AUTOCR register at 0x30)
 registers:
-  - name: CR1
-    displayName: CR1
-    description: Control register 1
+  - name: CR1_FIFO_ENABLED
+    displayName: CR1_FIFO_ENABLED
+    description: Control register 1 [alternate]
     addressOffset: 0
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -40,10 +47,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: USART not functional in low-power mode.
+            description: USART not able to wake up the MCU from low-power mode.
             value: 0
           - name: B_0x1
-            description: USART functional in low-power mode.
+            description: USART able to wake up the MCU from low-power mode.
             value: 1
       - name: RE
         description: Receiver enable
@@ -81,8 +88,8 @@ registers:
           - name: B_0x1
             description: USART interrupt generated whenever IDLE=1 in the USART_ISR register
             value: 1
-      - name: RxFNEIE
-        description: RxFIFO not empty interrupt enable
+      - name: RXFNEIE
+        description: RXFIFO not empty interrupt enable
         bitOffset: 5
         bitWidth: 1
         access: read-write
@@ -91,7 +98,7 @@ registers:
             description: Interrupt inhibited
             value: 0
           - name: B_0x1
-            description: USART interrupt generated whenever ORE=1 or RxFNE=1 in the USART_ISR register
+            description: USART interrupt generated whenever ORE=1 or RXFNE=1 in the USART_ISR register
             value: 1
       - name: TCIE
         description: Transmission complete interrupt enable
@@ -105,8 +112,8 @@ registers:
           - name: B_0x1
             description: USART interrupt generated whenever TC=1 in the USART_ISR register
             value: 1
-      - name: TxFNFIE
-        description: TxFIFO not full interrupt enable
+      - name: TXFNFIE
+        description: TXFIFO not full interrupt enable
         bitOffset: 7
         bitWidth: 1
         access: read-write
@@ -115,7 +122,7 @@ registers:
             description: Interrupt inhibited
             value: 0
           - name: B_0x1
-            description: USART interrupt generated whenever TxFNF =1 in the USART_ISR register
+            description: USART interrupt generated whenever TXFNF =1 in the USART_ISR register
             value: 1
       - name: PEIE
         description: PE interrupt enable
@@ -154,7 +161,7 @@ registers:
             description: Parity control enabled
             value: 1
       - name: WAKE
-        description: Receiver wake-up method
+        description: Receiver wakeup method
         bitOffset: 11
         bitWidth: 1
         access: read-write
@@ -177,10 +184,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Receiver in active mode permanently
+            description: Receiver in Active mode permanently
             value: 0
           - name: B_0x1
-            description: Receiver can switch between mute mode and active mode.
+            description: Receiver can switch between Mute mode and Active mode.
             value: 1
       - name: CMIE
         description: Character match interrupt enable
@@ -229,7 +236,7 @@ registers:
             description: USART interrupt generated when the RTOF bit is set in the USART_ISR register.
             value: 1
       - name: EOBIE
-        description: End of block interrupt enable
+        description: End of Block interrupt enable
         bitOffset: 27
         bitWidth: 1
         access: read-write
@@ -257,8 +264,8 @@ registers:
           - name: B_0x1
             description: FIFO mode is enabled.
             value: 1
-      - name: TxFEIE
-        description: TxFIFO empty interrupt enable
+      - name: TXFEIE
+        description: TXFIFO empty interrupt enable
         bitOffset: 30
         bitWidth: 1
         access: read-write
@@ -267,10 +274,10 @@ registers:
             description: Interrupt inhibited
             value: 0
           - name: B_0x1
-            description: USART interrupt generated when TxFE=1 in the USART_ISR register
+            description: USART interrupt generated when TXFE=1 in the USART_ISR register
             value: 1
-      - name: RxFFIE
-        description: RxFIFO Full interrupt enable
+      - name: RXFFIE
+        description: RXFIFO Full interrupt enable
         bitOffset: 31
         bitWidth: 1
         access: read-write
@@ -279,15 +286,14 @@ registers:
             description: Interrupt inhibited
             value: 0
           - name: B_0x1
-            description: USART interrupt generated when RxFF=1 in the USART_ISR register
+            description: USART interrupt generated when RXFF=1 in the USART_ISR register
             value: 1
-  - name: CR1_ALTERNATE1
-    displayName: CR1_ALTERNATE1
-    description: Control register 1
-    alternateRegister: CR1
+  - name: CR1_FIFO_DISABLED
+    displayName: CR1_FIFO_DISABLED
+    description: Control register 1 [alternate]
+    alternateRegister: CR1_FIFO_ENABLED
     addressOffset: 0
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -310,10 +316,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: USART not functional in low-power mode.
+            description: USART not able to wake up the MCU from low-power mode.
             value: 0
           - name: B_0x1
-            description: USART functional in low-power mode.
+            description: USART able to wake up the MCU from low-power mode.
             value: 1
       - name: RE
         description: Receiver enable
@@ -351,7 +357,7 @@ registers:
           - name: B_0x1
             description: USART interrupt generated whenever IDLE=1 in the USART_ISR register
             value: 1
-      - name: RxNEIE
+      - name: RXNEIE
         description: Receive data register not empty
         bitOffset: 5
         bitWidth: 1
@@ -361,7 +367,7 @@ registers:
             description: Interrupt inhibited
             value: 0
           - name: B_0x1
-            description: USART interrupt generated whenever ORE=1 or RxNE=1 in the USART_ISR register
+            description: USART interrupt generated whenever ORE=1 or RXNE=1 in the USART_ISR register
             value: 1
       - name: TCIE
         description: Transmission complete interrupt enable
@@ -375,7 +381,7 @@ registers:
           - name: B_0x1
             description: USART interrupt generated whenever TC=1 in the USART_ISR register
             value: 1
-      - name: TxEIE
+      - name: TXEIE
         description: Transmit data register empty
         bitOffset: 7
         bitWidth: 1
@@ -385,7 +391,7 @@ registers:
             description: Interrupt inhibited
             value: 0
           - name: B_0x1
-            description: USART interrupt generated whenever TxE =1 in the USART_ISR register
+            description: USART interrupt generated whenever TXE =1 in the USART_ISR register
             value: 1
       - name: PEIE
         description: PE interrupt enable
@@ -424,7 +430,7 @@ registers:
             description: Parity control enabled
             value: 1
       - name: WAKE
-        description: Receiver wake-up method
+        description: Receiver wakeup method
         bitOffset: 11
         bitWidth: 1
         access: read-write
@@ -447,10 +453,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Receiver in active mode permanently
+            description: Receiver in Active mode permanently
             value: 0
           - name: B_0x1
-            description: Receiver can switch between mute mode and active mode.
+            description: Receiver can switch between Mute mode and Active mode.
             value: 1
       - name: CMIE
         description: Character match interrupt enable
@@ -499,7 +505,7 @@ registers:
             description: USART interrupt generated when the RTOF bit is set in the USART_ISR register.
             value: 1
       - name: EOBIE
-        description: End of block interrupt enable
+        description: End of Block interrupt enable
         bitOffset: 27
         bitWidth: 1
         access: read-write
@@ -532,12 +538,11 @@ registers:
     description: Control register 2
     addressOffset: 4
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SLVEN
-        description: Synchronous slave mode enable
+        description: Synchronous Slave mode enable
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -561,7 +566,7 @@ registers:
             description: SPI slave is always selected and NSS input pin is ignored.
             value: 1
       - name: ADDM7
-        description: 7-bit address detection/4-bit address detection
+        description: 7-bit Address Detection/4-bit Address Detection
         bitOffset: 4
         bitWidth: 1
         access: read-write
@@ -645,7 +650,7 @@ registers:
             description: CK pin enabled
             value: 1
       - name: STOP
-        description: Stop bits
+        description: stop bits
         bitOffset: 12
         bitWidth: 2
         access: read-write
@@ -654,13 +659,13 @@ registers:
             description: 1 stop bit
             value: 0
           - name: B_0x1
-            description: '0.'
+            description: 0.5 stop bit.
             value: 1
           - name: B_0x2
             description: 2 stop bits
             value: 2
           - name: B_0x3
-            description: '1.'
+            description: 1.5 stop bits
             value: 3
       - name: LINEN
         description: LIN mode enable
@@ -675,40 +680,40 @@ registers:
             description: LIN mode enabled
             value: 1
       - name: SWAP
-        description: Swap Tx/Rx pins
+        description: Swap TX/RX pins
         bitOffset: 15
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Tx/Rx pins are used as defined in standard pinout
+            description: TX/RX pins are used as defined in standard pinout
             value: 0
           - name: B_0x1
-            description: The Tx and Rx pins functions are swapped.
+            description: The TX and RX pins functions are swapped. This enables to work in the case of a cross-wired connection to another UART.
             value: 1
-      - name: RxINV
-        description: Rx pin active level inversion
+      - name: RXINV
+        description: RX pin active level inversion
         bitOffset: 16
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Rx pin signal works using the standard logic levels (Vless thansub>DDless than/sub>=1/idle, Gnd=0/mark)
+            description: RX pin signal works using the standard logic levels (V less than sub>DD less than /sub> =1/idle, Gnd=0/mark)
             value: 0
           - name: B_0x1
-            description: Rx pin signal values are inverted.
+            description: RX pin signal values are inverted. ((V less than sub>DD less than /sub> =0/mark, Gnd=1/idle).
             value: 1
-      - name: TxINV
-        description: Tx pin active level inversion
+      - name: TXINV
+        description: TX pin active level inversion
         bitOffset: 17
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Tx pin signal works using the standard logic levels (Vless thansub>DDless than/sub>=1/idle, Gnd=0/mark)
+            description: TX pin signal works using the standard logic levels (V less than sub>DD less than /sub> =1/idle, Gnd=0/mark)
             value: 0
           - name: B_0x1
-            description: Tx pin signal values are inverted.
+            description: TX pin signal values are inverted. ((V less than sub>DD less than /sub> =0/mark, Gnd=1/idle).
             value: 1
       - name: DATAINV
         description: Binary data inversion
@@ -717,10 +722,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Logical data from the data register are send/received in positive/direct logic.
+            description: Logical data from the data register are send/received in positive/direct logic. (1=H, 0=L)
             value: 0
           - name: B_0x1
-            description: Logical data from the data register are send/received in negative/inverse logic.
+            description: Logical data from the data register are send/received in negative/inverse logic. (1=L, 0=H). The parity bit is also inverted.
             value: 1
       - name: MSBFIRST
         description: Most significant bit first
@@ -786,7 +791,6 @@ registers:
     description: Control register 3
     addressOffset: 8
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -896,7 +900,7 @@ registers:
             description: RTS hardware flow control disabled
             value: 0
           - name: B_0x1
-            description: RTS output enabled, data is only requested when there is space in the receive buffer.
+            description: RTS output enabled, data is only requested when there is space in the receive buffer. The transmission of data is expected to cease after the current character has been transmitted. The RTS output is deasserted (pulled to 0) when data can be received.
             value: 1
       - name: CTSE
         description: CTS enable
@@ -908,7 +912,7 @@ registers:
             description: CTS hardware flow control disabled
             value: 0
           - name: B_0x1
-            description: CTS mode enabled, data is only transmitted when the CTS input is deasserted (tied to 0).
+            description: CTS mode enabled, data is only transmitted when the CTS input is deasserted (tied to 0). If the CTS input is asserted while data is being transmitted, then the transmission is completed before stopping.If data is written into the data register while CTS is asserted, the transmission is postponed until CTS is deasserted.
             value: 1
       - name: CTSIE
         description: CTS interrupt enable
@@ -944,19 +948,19 @@ registers:
             description: Overrun Error Flag, ORE, is set when received data is not read before receiving new data.
             value: 0
           - name: B_0x1
-            description: Overrun functionality is disabled.
+            description: Overrun functionality is disabled. If new data is received while the RXNE flag is still set
             value: 1
       - name: DDRE
-        description: DMA Disable on reception Error
+        description: DMA Disable on Reception Error
         bitOffset: 13
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: DMA is not disabled in case of reception error.
+            description: DMA is not disabled in case of reception error. The corresponding error flag is set but RXNE is kept 0 preventing from overrun. As a consequence, the DMA request is not asserted, so the erroneous data is not transferred (no DMA request), but next correct received data is transferred. (used for Smartcard mode)
             value: 0
           - name: B_0x1
-            description: DMA is disabled following a reception error.
+            description: DMA is disabled following a reception error. The corresponding error flag is set, as well as RXNE. The DMA request is masked until the error flag is cleared. This means that the software must first disable the DMA request (DMAR = 0) or clear RXNE(RXFNE is case FIFO mode is enabled) before clearing the error flag.
             value: 1
       - name: DEM
         description: Driver enable mode
@@ -968,7 +972,7 @@ registers:
             description: DE function is disabled.
             value: 0
           - name: B_0x1
-            description: DE function is enabled.
+            description: DE function is enabled. The DE signal is output on the RTS pin.
             value: 1
       - name: DEP
         description: Driver enable polarity selection
@@ -989,10 +993,40 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: retransmission disabled-No automatic retransmission in transmission mode.
+            description: retransmission disabled - No automatic retransmission in Transmission mode.
             value: 0
-      - name: TxFTIE
-        description: TxFIFO threshold interrupt enable
+      - name: WUS0
+        description: Wakeup from low-power mode interrupt flag selection
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: WUF active on address match (as defined by ADD[7:0] and ADDM7)
+            value: 0
+      - name: WUS1
+        description: Wakeup from low-power mode interrupt flag selection
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: WUF active on address match (as defined by ADD[7:0] and ADDM7)
+            value: 0
+      - name: WUFIE
+        description: Wakeup from low-power mode interrupt enable
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt inhibited
+            value: 0
+          - name: B_0x1
+            description: USART interrupt generated whenever WUF=1 in the USART_ISR register
+            value: 1
+      - name: TXFTIE
+        description: TXFIFO threshold interrupt enable
         bitOffset: 23
         bitWidth: 1
         access: read-write
@@ -1001,7 +1035,7 @@ registers:
             description: Interrupt inhibited
             value: 0
           - name: B_0x1
-            description: USART interrupt generated when TxFIFO reaches the threshold programmed in TxFTCFG[2:0].
+            description: USART interrupt generated when TXFIFO reaches the threshold programmed in TXFTCFG.
             value: 1
       - name: TCBGTIE
         description: Transmission Complete before guard time, interrupt enable
@@ -1015,7 +1049,7 @@ registers:
           - name: B_0x1
             description: USART interrupt generated whenever TCBGT=1 in the USART_ISR register
             value: 1
-      - name: RxFTCFG
+      - name: RXFTCFG
         description: Receive FIFO threshold configuration
         bitOffset: 25
         bitWidth: 3
@@ -1033,14 +1067,8 @@ registers:
           - name: B_0x3
             description: Receive FIFO reaches 3/4 of its depth
             value: 3
-          - name: B_0x4
-            description: Receive FIFO reaches 7/8 of its depth
-            value: 4
-          - name: B_0x5
-            description: Receive FIFO becomes full
-            value: 5
-      - name: RxFTIE
-        description: RxFIFO threshold interrupt enable
+      - name: RXFTIE
+        description: RXFIFO threshold interrupt enable
         bitOffset: 28
         bitWidth: 1
         access: read-write
@@ -1049,261 +1077,37 @@ registers:
             description: Interrupt inhibited
             value: 0
           - name: B_0x1
-            description: USART interrupt generated when Receive FIFO reaches the threshold programmed in RxFTCFG[2:0].
+            description: USART interrupt generated when Receive FIFO reaches the threshold programmed in RXFTCFG.
             value: 1
-      - name: TxFTCFG
-        description: TxFIFO threshold configuration
+      - name: TXFTCFG
+        description: TXFIFO threshold configuration
         bitOffset: 29
         bitWidth: 3
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: TxFIFO reaches 1/8 of its depth
+            description: TXFIFO reaches 1/8 of its depth
             value: 0
           - name: B_0x1
-            description: TxFIFO reaches 1/4 of its depth
+            description: TXFIFO reaches 1/4 of its depth
             value: 1
           - name: B_0x2
-            description: TxFIFO reaches 1/2 of its depth
+            description: TXFIFO reaches 1/2 of its depth
             value: 2
           - name: B_0x3
-            description: TxFIFO reaches 3/4 of its depth
+            description: TXFIFO reaches 3/4 of its depth
             value: 3
           - name: B_0x4
-            description: TxFIFO reaches 7/8 of its depth
+            description: TXFIFO reaches 7/8 of its depth
             value: 4
           - name: B_0x5
-            description: TxFIFO becomes empty
+            description: TXFIFO becomes empty
             value: 5
-  - name: CR3_ALTERNATE1
-    displayName: CR3_ALTERNATE1
-    description: Control register 3
-    alternateRegister: CR3
-    addressOffset: 8
-    size: 32
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: EIE
-        description: Error interrupt enable
-        bitOffset: 0
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt inhibited
-            value: 0
-          - name: B_0x1
-            description: interrupt generated when FE=1 or ORE=1 or NE=1 or UDR = 1 (in SPI slave mode) in the USART_ISR register.
-            value: 1
-      - name: IREN
-        description: IrDA mode enable
-        bitOffset: 1
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: IrDA disabled
-            value: 0
-          - name: B_0x1
-            description: IrDA enabled
-            value: 1
-      - name: IRLP
-        description: IrDA low-power
-        bitOffset: 2
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Normal mode
-            value: 0
-          - name: B_0x1
-            description: Low-power mode
-            value: 1
-      - name: HDSEL
-        description: Half-duplex selection
-        bitOffset: 3
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Half-duplex mode is not selected
-            value: 0
-          - name: B_0x1
-            description: Half-duplex mode is selected
-            value: 1
-      - name: NACK
-        description: Smartcard NACK enable
-        bitOffset: 4
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: NACK transmission in case of parity error is disabled
-            value: 0
-          - name: B_0x1
-            description: NACK transmission during parity error is enabled
-            value: 1
-      - name: SCEN
-        description: Smartcard mode enable
-        bitOffset: 5
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Smartcard mode disabled
-            value: 0
-          - name: B_0x1
-            description: Smartcard mode enabled
-            value: 1
-      - name: DMAR
-        description: DMA enable receiver
-        bitOffset: 6
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x1
-            description: DMA mode is enabled for reception
-            value: 1
-          - name: B_0x0
-            description: DMA mode is disabled for reception
-            value: 0
-      - name: DMAT
-        description: DMA enable transmitter
-        bitOffset: 7
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x1
-            description: DMA mode is enabled for transmission
-            value: 1
-          - name: B_0x0
-            description: DMA mode is disabled for transmission
-            value: 0
-      - name: RTSE
-        description: RTS enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: RTS hardware flow control disabled
-            value: 0
-          - name: B_0x1
-            description: RTS output enabled, data is only requested when there is space in the receive buffer.
-            value: 1
-      - name: CTSE
-        description: CTS enable
-        bitOffset: 9
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: CTS hardware flow control disabled
-            value: 0
-          - name: B_0x1
-            description: CTS mode enabled, data is only transmitted when the CTS input is deasserted (tied to 0).
-            value: 1
-      - name: CTSIE
-        description: CTS interrupt enable
-        bitOffset: 10
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt is inhibited
-            value: 0
-          - name: B_0x1
-            description: An interrupt is generated whenever CTSIF = 1 in the USART_ISR register
-            value: 1
-      - name: ONEBIT
-        description: One sample bit method enable
-        bitOffset: 11
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Three sample bit method
-            value: 0
-          - name: B_0x1
-            description: One sample bit method
-            value: 1
-      - name: OVRDIS
-        description: Overrun Disable
-        bitOffset: 12
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Overrun Error Flag, ORE, is set when received data is not read before receiving new data.
-            value: 0
-          - name: B_0x1
-            description: Overrun functionality is disabled.
-            value: 1
-      - name: DDRE
-        description: DMA Disable on reception Error
-        bitOffset: 13
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA is not disabled in case of reception error.
-            value: 0
-          - name: B_0x1
-            description: DMA is disabled following a reception error.
-            value: 1
-      - name: DEM
-        description: Driver enable mode
-        bitOffset: 14
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DE function is disabled.
-            value: 0
-          - name: B_0x1
-            description: DE function is enabled.
-            value: 1
-      - name: DEP
-        description: Driver enable polarity selection
-        bitOffset: 15
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DE signal is active high.
-            value: 0
-          - name: B_0x1
-            description: DE signal is active low.
-            value: 1
-      - name: SCARCNT
-        description: Smartcard auto-retry count
-        bitOffset: 17
-        bitWidth: 3
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: retransmission disabled-No automatic retransmission in transmission mode.
-            value: 0
-      - name: TCBGTIE
-        description: Transmission Complete before guard time, interrupt enable
-        bitOffset: 24
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt inhibited
-            value: 0
-          - name: B_0x1
-            description: USART interrupt generated whenever TCBGT=1 in the USART_ISR register
-            value: 1
   - name: BRR
     displayName: BRR
     description: Baud rate register
     addressOffset: 12
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1317,7 +1121,6 @@ registers:
     description: Guard time and prescaler register
     addressOffset: 16
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1346,7 +1149,6 @@ registers:
     description: Receiver timeout register
     addressOffset: 20
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1365,7 +1167,6 @@ registers:
     description: Request register
     addressOffset: 24
     size: 32
-    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1384,22 +1185,21 @@ registers:
         bitOffset: 2
         bitWidth: 1
         access: write-only
-      - name: RxFRQ
+      - name: RXFRQ
         description: Receive data flush request
         bitOffset: 3
         bitWidth: 1
         access: write-only
-      - name: TxFRQ
+      - name: TXFRQ
         description: Transmit data flush request
         bitOffset: 4
         bitWidth: 1
         access: write-only
-  - name: ISR
-    displayName: ISR
-    description: Interrupt and status register
+  - name: ISR_FIFO_ENABLED
+    displayName: ISR_FIFO_ENABLED
+    description: Interrupt and status register [alternate]
     addressOffset: 28
     size: 32
-    access: read-only
     resetValue: 192
     resetMask: 4027580415
     fields:
@@ -1463,8 +1263,8 @@ registers:
           - name: B_0x1
             description: Idle line is detected
             value: 1
-      - name: RxFNE
-        description: RxFIFO not empty
+      - name: RXFNE
+        description: RXFIFO not empty
         bitOffset: 5
         bitWidth: 1
         access: read-only
@@ -1480,8 +1280,8 @@ registers:
         bitOffset: 6
         bitWidth: 1
         access: read-only
-      - name: TxFNF
-        description: TxFIFO not full
+      - name: TXFNF
+        description: TXFIFO not full
         bitOffset: 7
         bitWidth: 1
         access: read-only
@@ -1547,10 +1347,10 @@ registers:
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: End of block not reached
+            description: End of Block not reached
             value: 0
           - name: B_0x1
-            description: End of block (number of characters) reached
+            description: End of Block (number of characters) reached
             value: 1
       - name: UDR
         description: SPI slave underrun error flag
@@ -1584,7 +1384,7 @@ registers:
             description: USART is idle (no reception)
             value: 0
           - name: B_0x1
-            description: Reception ongoing
+            description: Reception on going
             value: 1
       - name: CMF
         description: Character match flag
@@ -1611,17 +1411,22 @@ registers:
             description: Break character transmitted
             value: 1
       - name: RWU
-        description: Receiver wake-up from mute mode
+        description: Receiver wakeup from Mute mode
         bitOffset: 19
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: Receiver in active mode
+            description: Receiver in Active mode
             value: 0
           - name: B_0x1
-            description: Receiver in mute mode
+            description: Receiver in Mute mode
             value: 1
+      - name: WUF
+        description: Wakeup from low-power mode flag
+        bitOffset: 20
+        bitWidth: 1
+        access: read-only
       - name: TEACK
         description: Transmit enable acknowledge flag
         bitOffset: 21
@@ -1632,29 +1437,29 @@ registers:
         bitOffset: 22
         bitWidth: 1
         access: read-only
-      - name: TxFE
-        description: TxFIFO Empty
+      - name: TXFE
+        description: TXFIFO Empty
         bitOffset: 23
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: TxFIFO not empty.
+            description: TXFIFO not empty.
             value: 0
           - name: B_0x1
-            description: TxFIFO empty.
+            description: TXFIFO empty.
             value: 1
-      - name: RxFF
-        description: RxFIFO Full
+      - name: RXFF
+        description: RXFIFO Full
         bitOffset: 24
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: RxFIFO not full.
+            description: RXFIFO not full.
             value: 0
           - name: B_0x1
-            description: RxFIFO Full.
+            description: RXFIFO Full.
             value: 1
       - name: TCBGT
         description: Transmission complete before guard time flag
@@ -1663,13 +1468,13 @@ registers:
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: Transmission has not completed, or transmission has completed unsuccessfully (that is, a NACK is received from the card)
+            description: Transmission is not complete or transmission is complete unsuccessfully (i.e. a NACK is received from the card)
             value: 0
           - name: B_0x1
-            description: Transmission has completed successfully (before Guard time completion and there is no NACK from the smart card).
+            description: Transmission is complete successfully (before Guard time completion and there is no NACK from the smart card).
             value: 1
-      - name: RxFT
-        description: RxFIFO threshold flag
+      - name: RXFT
+        description: RXFIFO threshold flag
         bitOffset: 26
         bitWidth: 1
         access: read-only
@@ -1680,25 +1485,24 @@ registers:
           - name: B_0x1
             description: Receive FIFO reached the programmed threshold.
             value: 1
-      - name: TxFT
-        description: TxFIFO threshold flag
+      - name: TXFT
+        description: TXFIFO threshold flag
         bitOffset: 27
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: TxFIFO does not reach the programmed threshold.
+            description: TXFIFO does not reach the programmed threshold.
             value: 0
           - name: B_0x1
-            description: TxFIFO reached the programmed threshold.
+            description: TXFIFO reached the programmed threshold.
             value: 1
-  - name: ISR_ALTERNATE1
-    displayName: ISR_ALTERNATE1
-    description: Interrupt and status register
-    alternateRegister: ISR
+  - name: ISR_FIFO_DISABLED
+    displayName: ISR_FIFO_DISABLED
+    description: Interrupt and status register [alternate]
+    alternateRegister: ISR_FIFO_ENABLED
     addressOffset: 28
     size: 32
-    access: read-only
     resetValue: 192
     resetMask: 4027580415
     fields:
@@ -1759,7 +1563,7 @@ registers:
           - name: B_0x1
             description: Idle line is detected
             value: 1
-      - name: RxNE
+      - name: RXNE
         description: Read data register not empty
         bitOffset: 5
         bitWidth: 1
@@ -1776,7 +1580,7 @@ registers:
         bitOffset: 6
         bitWidth: 1
         access: read-only
-      - name: TxE
+      - name: TXE
         description: Transmit data register empty
         bitOffset: 7
         bitWidth: 1
@@ -1786,7 +1590,7 @@ registers:
             description: Data register full
             value: 0
           - name: B_0x1
-            description: Data register empty
+            description: Data register full
             value: 1
       - name: LBDF
         description: LIN break detection flag
@@ -1843,10 +1647,10 @@ registers:
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: End of block not reached
+            description: End of Block not reached
             value: 0
           - name: B_0x1
-            description: End of block (number of characters) reached
+            description: End of Block (number of characters) reached
             value: 1
       - name: UDR
         description: SPI slave underrun error flag
@@ -1880,7 +1684,7 @@ registers:
             description: USART is idle (no reception)
             value: 0
           - name: B_0x1
-            description: Reception ongoing
+            description: Reception on going
             value: 1
       - name: CMF
         description: Character match flag
@@ -1907,17 +1711,22 @@ registers:
             description: Break character transmitted
             value: 1
       - name: RWU
-        description: Receiver wake-up from mute mode
+        description: Receiver wakeup from Mute mode
         bitOffset: 19
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: Receiver in active mode
+            description: Receiver in Active mode
             value: 0
           - name: B_0x1
-            description: Receiver in mute mode
+            description: Receiver in Mute mode
             value: 1
+      - name: WUF
+        description: Wakeup from low-power mode flag
+        bitOffset: 20
+        bitWidth: 1
+        access: read-only
       - name: TEACK
         description: Transmit enable acknowledge flag
         bitOffset: 21
@@ -1935,17 +1744,16 @@ registers:
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: Transmission has not completed or transmission has completed unsuccessfully (that is, a NACK is received from the card)
+            description: Transmission is not complete or transmission is complete unsuccessfully (i.e. a NACK is received from the card)
             value: 0
           - name: B_0x1
-            description: Transmission has not completed successfully (before Guard time completion and there is no NACK from the smart card).
+            description: Transmission is complete successfully (before Guard time completion and there is no NACK from the smart card).
             value: 1
   - name: ICR
     displayName: ICR
     description: Interrupt flag clear register
     addressOffset: 32
     size: 32
-    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1974,8 +1782,8 @@ registers:
         bitOffset: 4
         bitWidth: 1
         access: write-only
-      - name: TxFECF
-        description: TxFIFO empty clear flag
+      - name: TXFECF
+        description: TXFIFO empty clear flag
         bitOffset: 5
         bitWidth: 1
         access: write-only
@@ -2019,12 +1827,16 @@ registers:
         bitOffset: 17
         bitWidth: 1
         access: write-only
+      - name: WUCF
+        description: Wakeup from low-power mode clear flag
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
   - name: RDR
     displayName: RDR
     description: Receive data register
     addressOffset: 36
     size: 32
-    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -2038,7 +1850,6 @@ registers:
     description: Transmit data register
     addressOffset: 40
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -2052,7 +1863,6 @@ registers:
     description: Prescaler register
     addressOffset: 44
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -2099,74 +1909,23 @@ registers:
             description: input clock divided by 256
             value: 11
   - name: AUTOCR
-    displayName: AUTOCR
     description: Autonomous mode control register
+    displayName: AUTOCR
     addressOffset: 48
     size: 32
     access: read-write
     resetValue: 2147483648
-    resetMask: 4294967295
     fields:
-      - name: TDN
-        description: TDN transmission data number
-        bitOffset: 0
-        bitWidth: 16
-        access: read-write
-      - name: TRIGPOL
-        description: Trigger polarity bit
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Trigger active on rising edge
-            value: 0
-          - name: B_0x1
-            description: Trigger active on falling edge
-            value: 1
-      - name: TRIGEN
-        description: Trigger enable bit
-        bitOffset: 17
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Trigger disabled
-            value: 0
-          - name: B_0x1
-            description: Trigger enabled
-            value: 1
-      - name: IDLEDIS
-        description: Idle frame transmission disable bit after enabling the transmitter
-        bitOffset: 18
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Idle frame sent after enabling the transmitter (TE = 1 in USART_CR1)
-            value: 0
-          - name: B_0x1
-            description: Idle frame not sent after enabling the transmitter
-            value: 1
-      - name: TRIGSEL
-        description: Trigger selection bits
-        bitOffset: 19
-        bitWidth: 4
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: usart_trg0 selected
-            value: 0
-          - name: B_0x1
-            description: usart_trg1 selected
-            value: 1
-          - name: B_0xF
-            description: usart_trg15 selected
-            value: 15
+      - {name: TDN, description: Transmit data number, bitOffset: 0, bitWidth: 16}
+      - {name: TRIGPOL, description: Trigger polarity, bitOffset: 16, bitWidth: 1}
+      - {name: TRIGEN, description: Trigger enable, bitOffset: 17, bitWidth: 1}
+      - {name: IDLEDIS, description: Idle disable, bitOffset: 18, bitWidth: 1}
+      - {name: TRIGSEL, description: Trigger selection, bitOffset: 19, bitWidth: 4}
+      - {name: TECLREN, description: Transfer complete clear enable, bitOffset: 31, bitWidth: 1}
 addressBlocks:
   - offset: 0
-    size: 52
+    size: 1024
     usage: registers
 interrupts:
   - name: INTR
-    description: USART4 global interrupt
+    description: Global interrupt

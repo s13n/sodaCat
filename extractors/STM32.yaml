@@ -52,6 +52,33 @@ shared_blocks:
       - {type: patchRegisters, registers: [{name: TISEL_V1, addressOffset: 104}]}
       # Ensure addressBlock covers all registers
       - {type: patchAddressBlock, size: 996}
+  USART:
+    from: STM32N645.USART1
+    interrupts:
+      USART1: {name: INTR, description: Global interrupt}
+    params:
+      - {name: synchronous, type: int, default: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous only, 2=sync+smartcard, 3=sync+smartcard+TCBGT'}
+      - {name: has_fifo, type: bool, default: true, description: 'FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR; TXFECF in ICR). Also implies PRESC register and SPI slave fields (SLVEN, DIS_NSS, UDR, UDRCF).'}
+      - {name: has_wakeup, type: bool, default: true, description: 'Wakeup from Stop mode interrupt flag selection (WUS/WUFIE in CR3; WUF in ISR; WUCF in ICR)'}
+      - {name: has_autocr, type: bool, default: false, description: 'Autonomous mode (AUTOCR register at 0x30)'}
+    transforms:
+      # Add AUTOCR register for autonomous mode (U3/U5 only)
+      - type: patchRegisters
+        registers:
+          - name: AUTOCR
+            description: Autonomous mode control register
+            displayName: AUTOCR
+            addressOffset: 48
+            size: 32
+            access: read-write
+            resetValue: 2147483648
+            fields:
+              - {name: TDN, description: Transmit data number, bitOffset: 0, bitWidth: 16}
+              - {name: TRIGPOL, description: Trigger polarity, bitOffset: 16, bitWidth: 1}
+              - {name: TRIGEN, description: Trigger enable, bitOffset: 17, bitWidth: 1}
+              - {name: IDLEDIS, description: Idle disable, bitOffset: 18, bitWidth: 1}
+              - {name: TRIGSEL, description: Trigger selection, bitOffset: 19, bitWidth: 4}
+              - {name: TECLREN, description: Transfer complete clear enable, bitOffset: 31, bitWidth: 1}
 families:
   C0:
     subfamilies:
@@ -161,10 +188,8 @@ families:
         from: STM32C071.SYSCFG
         instances: [SYSCFG]
       USART:
-        from: STM32C071.USART1
+        uses: USART
         instances: [USART1, USART2, USART3, USART4]
-        interrupts:
-          USART1: INTR
       USB:
         from: STM32C071.USB
         instances: [USB]
@@ -177,6 +202,9 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          USART2: {synchronous: 1, has_fifo: false, has_wakeup: false}
+          USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
+          USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
           TIM2: {width32: true,encoder: 1}
           TIM14: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
           TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
@@ -493,13 +521,8 @@ families:
           F334:
             from: STM32F3x4.TSC
       USART:
-        from: STM32F302.UART4
+        uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
-        interrupts:
-          UART4_EXTI34: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32F373.USB
         instances: [USB, USB_FS]
@@ -510,7 +533,6 @@ families:
       WWDG:
         uses: WWDG
         instances: [WWDG]
-        interrupts: {WWDG_IRQ: INTR}
       bxCAN:
         from: STM32F302.CAN
         instances: [CAN]
@@ -522,8 +544,9 @@ families:
     chip_params:
       _all:
         _all:
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
+          USART: {has_fifo: false, synchronous: 2}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
           TIM5: {width32: true,encoder: 1}
           TIM12: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
@@ -926,8 +949,7 @@ families:
         interrupts:
           UART5: INTR
         params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
+          - {name: synchronous, type: int, default: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
       WWDG:
         uses: WWDG
         instances: [WWDG]
@@ -942,12 +964,12 @@ families:
     chip_params:
       _all:
         _all:
-          UART10: {has_synchronous: false, has_smartcard: false}
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
-          UART7: {has_synchronous: false, has_smartcard: false}
-          UART8: {has_synchronous: false, has_smartcard: false}
-          UART9: {has_synchronous: false, has_smartcard: false}
+          UART10: {synchronous: 0}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
+          UART7: {synchronous: 0}
+          UART8: {synchronous: 0}
+          UART9: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
           TIM5: {width32: true,encoder: 1}
           TIM9: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
@@ -1432,35 +1454,8 @@ families:
                 bitOffset: 23
                 bitWidth: 1
       USART:
-        from: STM32F767.USART6
+        uses: USART
         instances: [UART4, UART5, UART7, UART8, USART1, USART2, USART3, USART6]
-        interrupts:
-          UART4: INTR
-        params:
-          - {name: has_stop_mode_wakeup, type: bool, default: false, description: 'USART wakeup from Stop mode (UESM, WUS, WUFIE, UCESM, WUF, REACK, WUCF)'}
-          - {name: has_tcbgt, type: bool, default: false, description: 'Transmission complete before guard time (TCBGTIE, TCBGT, TCBGTCF)'}
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
-        transforms:
-          - type: patchFields
-            register: CR3
-            fields:
-              - {name: UCESM, description: USART clock enable in Stop mode, bitOffset: 23, bitWidth: 1}
-              - {name: TCBGTIE, description: Transmission complete before guard time interrupt enable, bitOffset: 24, bitWidth: 1}
-          - type: patchFields
-            register: ISR
-            fields:
-              - {name: TCBGT, description: Transmission complete before guard time completion, bitOffset: 25, bitWidth: 1}
-          - type: patchFields
-            register: ICR
-            fields:
-              - {name: TCBGTCF, description: Transmission complete before guard time clear flag, bitOffset: 7, bitWidth: 1}
-          - type: patchFields
-            register: BRR
-            fields:
-              - {name: DIV_Fraction}
-              - {name: DIV_Mantissa}
-              - {name: BRR, description: USART baud rate, bitOffset: 0, bitWidth: 16}
       USBPHYC:
         from: STM32F730.USBPHYC
         instances: [USBPHYC]
@@ -1481,10 +1476,11 @@ families:
     chip_params:
       _all:
         _all:
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
-          UART7: {has_synchronous: false, has_smartcard: false}
-          UART8: {has_synchronous: false, has_smartcard: false}
+          USART: {has_fifo: false}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
+          UART7: {synchronous: 0}
+          UART8: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
           TIM5: {width32: true,encoder: 1}
           TIM9: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
@@ -1499,11 +1495,11 @@ families:
         _all:
           DMA: {channel_count: 8}
           Flash: {has_pcrop: true}
-          USART: {has_tcbgt: true}
           GpTimer: {has_uifremap: true, has_extended_ocm: true}
       F74x_F75x:
         _all:
           DMA: {channel_count: 8}
+          USART: {synchronous: 2}
           CAN1: {linked_to_slave: CAN2}
           CAN2: {linked_to_master: CAN1}
       F76x_F77x:
@@ -1511,7 +1507,6 @@ families:
           DMA: {channel_count: 16}
           Flash: {has_dual_bank: true}
           PWR: {has_eiwup: false}
-          USART: {has_stop_mode_wakeup: true, has_tcbgt: true}
           CAN1: {linked_to_slave: CAN2}
           CAN2: {linked_to_master: CAN1}
   G0:
@@ -1668,10 +1663,8 @@ families:
         interrupts:
           UCPD1_UCPD2: INTR
       USART:
-        from: STM32G030.USART1
+        uses: USART
         instances: [USART1, USART2, USART3, USART4, USART5, USART6]
-        interrupts:
-          USART1: INTR
       USB:
         from: STM32G0B0.USB
         instances: [USB]
@@ -1907,13 +1900,8 @@ families:
         interrupts:
           UCPD1: INTR
       USART:
-        from: STM32G431.UART4
+        uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
-        interrupts:
-          UART4: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32G431.USB_FS_device
         instances: [USB_FS_device]
@@ -1931,8 +1919,8 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 2, sms_preload: 2}
           TIM5: {width32: true,encoder: 1, sms_preload: 2}
           TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
@@ -2303,13 +2291,8 @@ families:
         interrupts:
           UCPD1: INTR
       USART:
-        from: STM32H562.UART12
+        uses: USART
         instances: [UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART8, UART9, USART, USART1, USART10, USART11, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
-        interrupts:
-          UART12: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32H503.USB
         instances: [USB]
@@ -2340,14 +2323,14 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          UART12: {has_synchronous: false, has_smartcard: false}
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART4_S: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
-          UART5_S: {has_synchronous: false, has_smartcard: false}
-          UART7: {has_synchronous: false, has_smartcard: false}
-          UART8: {has_synchronous: false, has_smartcard: false}
-          UART9: {has_synchronous: false, has_smartcard: false}
+          UART12: {synchronous: 0}
+          UART4: {synchronous: 0}
+          UART4_S: {synchronous: 0}
+          UART5: {synchronous: 0}
+          UART5_S: {synchronous: 0}
+          UART7: {synchronous: 0}
+          UART8: {synchronous: 0}
+          UART9: {synchronous: 0}
           TIM2: {width32: true,encoder: 3, sms_preload: 2}
           TIM2_S: {width32: true}
           TIM5: {width32: true,encoder: 3, sms_preload: 2}
@@ -2860,29 +2843,23 @@ families:
         from: STM32H7A3.TT_FDCAN
         instances: [TT_FDCAN]
       USART:
-        from: STM32H723.UART4
+        uses: USART
         instances: [UART4, UART5, UART7, UART8, UART9, USART1, USART10, USART2, USART3, USART6, USART9]
-        interrupts:
-          UART4: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       VREFBUF:
         from: STM32H723.VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
         instances: [WWDG, WWDG1, WWDG2]
-        interrupts: {WWDG: INTR, WWDG1: INTR, WWDG2: INTR}
     chip_params:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
-          UART7: {has_synchronous: false, has_smartcard: false}
-          UART8: {has_synchronous: false, has_smartcard: false}
-          UART9: {has_synchronous: false, has_smartcard: false}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
+          UART7: {synchronous: 0}
+          UART8: {synchronous: 0}
+          UART9: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
           TIM5: {width32: true,encoder: 1}
           TIM12: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
@@ -3057,10 +3034,8 @@ families:
         interrupts:
           TSC: INTR
       USART:
-        from: STM32L0x1.USART1
+        uses: USART
         instances: [USART1, USART2, USART4, USART5]
-        interrupts:
-          USART1: INTR
       USB:
         from: STM32L052.USB_FS
         instances: [USB_FS]
@@ -3072,6 +3047,7 @@ families:
     chip_params:
       _all:
         _all:
+          USART: {has_fifo: false, synchronous: 2}
           TIM2: {width32: true,encoder: 1}
           TIM21: {channels: 2, has_xor_input: false, dma_burst: 0}
           TIM22: {channels: 2, has_xor_input: false, dma_burst: 0}
@@ -3214,8 +3190,7 @@ families:
         interrupts:
           UART4: INTR
         params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
+          - {name: synchronous, type: int, default: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
       USB:
         from: STM32L100.USB
         instances: [USB]
@@ -3226,12 +3201,11 @@ families:
       WWDG:
         uses: WWDG
         instances: [WWDG]
-        interrupts: {}
     chip_params:
       _all:
         _all:
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
           TIM5: {width32: true,encoder: 1}
           TIM9: {channels: 2, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
@@ -3464,13 +3438,8 @@ families:
         interrupts:
           TSC: INTR
       USART:
-        from: STM32L431.UART4
+        uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
-        interrupts:
-          UART4: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32L412.USB_FS
         instances: [USB_FS]
@@ -3493,8 +3462,9 @@ families:
     chip_params:
       _all:
         _all:
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
+          USART: {has_fifo: false, synchronous: 2}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
           TIM5: {width32: true,encoder: 1}
           TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
@@ -3775,13 +3745,8 @@ families:
         interrupts:
           TSC: INTR
       USART:
-        from: STM32L4P5.UART4
+        uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
-        interrupts:
-          UART4: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       VREFBUF:
         from: STM32L4P5.VREFBUF
         instances: [VREFBUF]
@@ -3799,8 +3764,8 @@ families:
     chip_params:
       _all:
         _all:
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
           TIM5: {width32: true,encoder: 1}
           TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
@@ -4032,13 +3997,8 @@ families:
         interrupts:
           UCPD1: INTR
       USART:
-        from: STM32L552.UART4
+        uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
-        interrupts:
-          UART4: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32L552.USB
         instances: [USB]
@@ -4053,8 +4013,8 @@ families:
     chip_params:
       _all:
         _all:
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
           TIM5: {width32: true,encoder: 1}
           TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
@@ -4386,13 +4346,10 @@ families:
         interrupts:
           UCPD: INTR
       USART:
-        from: STM32N645.UART4
+        uses: USART
         instances: [UART4, UART5, UART7, UART8, UART9, USART1, USART10, USART2, USART3, USART6]
         interrupts:
-          UART4: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
+          UART4: {name: INTR, description: Global interrupt}
       VENC:
         from: STM32N645.VENC
         instances: [VENC]
@@ -4404,7 +4361,6 @@ families:
       WWDG:
         uses: WWDG
         instances: [WWDG]
-        interrupts: {WDGLS_EARLY: WDGLS_EARLY, WWDG_EARLY: EARLY}
       XSPI:
         from: STM32N645.XSPI1
         instances: [XSPI1, XSPI2, XSPI3]
@@ -4417,11 +4373,11 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
-          UART7: {has_synchronous: false, has_smartcard: false}
-          UART8: {has_synchronous: false, has_smartcard: false}
-          UART9: {has_synchronous: false, has_smartcard: false}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
+          UART7: {synchronous: 0}
+          UART8: {synchronous: 0}
+          UART9: {synchronous: 0}
           TIM2: {width32: true,encoder: 3, sms_preload: 2}
           TIM3: {width32: true,encoder: 3, sms_preload: 2}
           TIM4: {width32: true,encoder: 3, sms_preload: 2}
@@ -4569,10 +4525,8 @@ families:
         interrupts:
           TSC: INTR
       USART:
-        from: STM32U031.USART1
+        uses: USART
         instances: [USART1, USART2, USART3, USART4]
-        interrupts:
-          USART1: INTR
       USB:
         from: STM32U073.USB
         instances: [USB]
@@ -4588,6 +4542,8 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
+          USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
           TIM2: {width32: true,encoder: 1}
           TIM15: {channels: 2, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {channels: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
@@ -4820,13 +4776,8 @@ families:
         interrupts:
           TSC: INTR
       USART:
-        from: STM32U375.UART4
+        uses: USART
         instances: [UART4, UART5, USART1, USART3]
-        interrupts:
-          UART4: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       USB:
         from: STM32U375.USB
         instances: [USB]
@@ -4842,8 +4793,9 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
+          USART: {has_wakeup: false, has_autocr: true}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 3, sms_preload: 2}
           TIM3: {width32: true,encoder: 3, sms_preload: 2}
           TIM4: {width32: true,encoder: 3, sms_preload: 2}
@@ -5194,13 +5146,8 @@ families:
         interrupts:
           UCPD1: INTR
       USART:
-        from: STM32U535.UART4
+        uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3, USART6]
-        interrupts:
-          UART4: INTR
-        params:
-          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode support (CLKEN, CPOL, CPHA, LBCL)'}
-          - {name: has_smartcard, type: bool, default: true, description: 'Smartcard mode support (SCEN, NACK, SCARCNT)'}
       VREFBUF:
         from: STM32U535.VREFBUF
         instances: [VREFBUF]
@@ -5211,8 +5158,9 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          UART4: {has_synchronous: false, has_smartcard: false}
-          UART5: {has_synchronous: false, has_smartcard: false}
+          USART: {has_wakeup: false, has_autocr: true}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 2, sms_preload: 2}
           TIM3: {width32: true,encoder: 1, sms_preload: 2}
           TIM4: {width32: true,encoder: 1, sms_preload: 2}

@@ -75,6 +75,10 @@ Pick the SVD chip that has the **cleanest, most complete** register set:
 - Prefer chips with fewer known SVD bugs
 - Verify against the reference manual -- the SVD is the starting point, not the
   truth
+- **Use the original peripheral, not a derivedFrom alias.** For example, prefer
+  `USART1` over `UART4` — even when UART4 inherits identical registers via
+  derivedFrom, it may lack features (synchronous mode, smartcard) in the actual
+  hardware. The original is both more correct and self-documenting.
 
 The source goes into `shared_blocks.<BlockType>.from: <Chip>.<Instance>`.
 
@@ -136,16 +140,31 @@ BlockType:
   instances: [INST1, INST2, ...]
   interrupts: { ... }
 
-# After (shared reference):
+# After (shared reference) — non-owning families:
 BlockType:
   uses: BlockType
   instances: [INST1, INST2, ...]
-  interrupts: { ... }
 ```
 
-Keep each family's `instances:` and `interrupts:` -- these are inherently
-per-family. Family-specific transforms are no longer needed if the shared
-model's transforms cover everything.
+Non-owning families only need `uses:` and `instances:`. The `interrupts:` key
+is **not needed** — extraction is skipped for `uses:` blocks, so the interrupt
+mapping has no effect. Remove it to avoid dead config.
+
+The **owning family** (the one whose chip is in the shared block's `from:`)
+does need `interrupts:` because it performs the actual extraction. If the SVD
+interrupt description contains an instance name (e.g. "UART4 Global interrupt"),
+use the dict form to override it with a generic description:
+
+```yaml
+# After (shared reference) — owning family only:
+BlockType:
+  uses: BlockType
+  instances: [INST1, INST2, ...]
+  interrupts:
+    UART4: {name: INTR, description: Global interrupt}
+```
+
+This prevents instance-specific text from leaking into the shared model.
 
 ### 3.3 Add `chip_params` for non-default values
 
@@ -259,6 +278,26 @@ These patterns emerged during the GpTimer work and apply to future blocks:
    `params` declaration defines the schema (name, type, default). The values
    come from `chip_params` resolution. A param with a `default` only needs
    `chip_params` entries for instances that differ.
+
+9. **Use the original peripheral, not a derivedFrom alias.** When picking the
+   source instance in `from:`, choose the peripheral that *defines* the
+   register set in the SVD, not a derivedFrom copy. For example, prefer
+   `USART1` over `UART4` even if they have identical registers — `UART4` is
+   typically a derivedFrom alias that lacks synchronous/smartcard fields in
+   the hardware. Using the original is both more correct and self-documenting.
+
+10. **Interrupt descriptions must be generic.** The shared model's interrupt
+    `description:` field must not contain instance-specific names (e.g.
+    "UART4 Global interrupt"). Replace with a generic description (e.g.
+    "Global interrupt") since the model is shared across many instances and
+    families. Use the dict form `{name: INTR, description: Global interrupt}`
+    in the owning family's `interrupts:` mapping, and check the generated model
+    output after generation.
+
+11. **Non-owning families don't need `interrupts:`.** For families with `uses:`
+    that aren't the owning family, extraction is skipped entirely — the
+    `interrupts:` mapping has no effect. Only `uses:` and `instances:` are
+    needed. Remove `interrupts:` to avoid dead config.
 
 ---
 
