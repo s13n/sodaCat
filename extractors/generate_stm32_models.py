@@ -561,6 +561,112 @@ def _inject_source(block_data, entry):
     return ordered
 
 
+def _build_canonical_interrupts(blocks_config, shared_blocks):
+    """Build a dict of block_type -> set of canonical interrupt names.
+
+    Sources names from interrupt mappings in both family and shared block configs.
+    For blocks with 'uses:', inherits from the referenced shared block.
+    """
+    result = defaultdict(set)
+    for bt, bc in blocks_config.items():
+        interrupt_map = bc.get('interrupts') or {}
+        if not interrupt_map and bc.get('uses'):
+            shared = shared_blocks.get(bc['uses'], {})
+            interrupt_map = shared.get('interrupts') or {}
+        # Also check variants for interrupt overrides
+        for variant_cfg in (bc.get('variants') or {}).values():
+            for raw, mapping in (variant_cfg.get('interrupts') or {}).items():
+                canonical = mapping['name'] if isinstance(mapping, dict) else mapping
+                result[bt].add(canonical)
+        for raw, mapping in interrupt_map.items():
+            canonical = mapping['name'] if isinstance(mapping, dict) else mapping
+            result[bt].add(canonical)
+    for bt, bc in shared_blocks.items():
+        for raw, mapping in (bc.get('interrupts') or {}).items():
+            canonical = mapping['name'] if isinstance(mapping, dict) else mapping
+            result[bt].add(canonical)
+    return result
+
+
+def _resolve_interrupt_name(raw_name, instance_name, canonical_names):
+    """Map a raw SVD interrupt name to a canonical block-level name.
+
+    Algorithm:
+    1. Direct match against canonical names
+    2. Strip instance-name prefix (INSTANCE_ or BASEn_), then exact match
+    3. After stripping, progressively remove trailing _SUFFIX segments
+       (handles shared vectors like TIM8_BRK_TIM12 -> BRK)
+    Returns the canonical name, or None if no match.
+    """
+    if not canonical_names:
+        return None
+
+    # 1. Direct match
+    if raw_name in canonical_names:
+        return raw_name
+
+    # 2. Strip instance prefix (same logic as register prefix stripping)
+    base = re.sub(r'\d+$', '', instance_name)  # e.g., I2C1 -> I2C
+    prefixes = sorted(
+        {instance_name + '_', base + '_'},
+        key=len, reverse=True)
+
+    for prefix in prefixes:
+        if raw_name.startswith(prefix):
+            stripped = raw_name[len(prefix):]
+
+            # 3. Exact match after stripping
+            if stripped in canonical_names:
+                return stripped
+
+            # 4. Progressive suffix removal (rightmost _WORD segments)
+            parts = stripped.split('_')
+            for i in range(len(parts) - 1, 0, -1):
+                candidate = '_'.join(parts[:i])
+                if candidate in canonical_names:
+                    return candidate
+            break  # Only try the best-matching prefix
+
+    # 5. Instance-name-as-interrupt: raw name matches instance or base name,
+    #    and the block has exactly one canonical interrupt (common for
+    #    single-interrupt peripherals like TIM3 -> INTR, USART1 -> INTR)
+    if len(canonical_names) == 1:
+        raw_base = re.sub(r'\d+$', '', raw_name)
+        if raw_name == instance_name or raw_name == base \
+                or raw_base == base or raw_base == instance_name:
+            return next(iter(canonical_names))
+
+    return None
+
+
+def _build_instance_to_block(blocks_config, subfamily_name):
+    """Build instance_name -> block_type mapping for a subfamily.
+
+    Applies variant overrides to get the correct instance list.
+    """
+    mapping = {}
+    for bt, bc in blocks_config.items():
+        resolved = _resolve_block_config(bc, subfamily_name)
+        for inst in resolved.get('instances', []):
+            mapping[inst] = bt
+    return mapping
+
+
+def _get_param_decls(block_type, blocks_config, shared_blocks, subfamily_name):
+    """Get parameter declarations for a block type, handling uses: and variants."""
+    bc = blocks_config.get(block_type, {})
+    resolved = _resolve_block_config(bc, subfamily_name)
+    params = resolved.get('params')
+    if params:
+        return params
+    # Check shared block
+    uses = resolved.get('uses') or bc.get('uses')
+    if uses:
+        shared = shared_blocks.get(uses, {})
+        return shared.get('params') or []
+    return []
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Generate YAML models for an STM32 family from SVD files.')
@@ -607,6 +713,7 @@ def main():
     print(f"{'='*60}")
 
     all_blocks = defaultdict(lambda: defaultdict(list))
+    chip_summaries = defaultdict(dict)  # subfamily -> chip_name -> summary
 
     for family_name, family_info in families.items():
         print(f"\nProcessing {family_name} family...")
@@ -648,6 +755,26 @@ def main():
                                 'chip': chip_name,
                                 'svd_version': svd_version
                             })
+
+                        # Save lightweight chip summary for Pass 3 (chip model generation)
+                        if chip_device:
+                            periph_summary = {}
+                            for periph in chip_device.get('peripherals', []):
+                                periph_summary[periph['name']] = {
+                                    'baseAddress': periph.get('baseAddress'),
+                                    'interrupts': [
+                                        {'name': i['name'], 'value': i['value']}
+                                        for i in periph.get('interrupts', [])
+                                    ]
+                                }
+                            chip_summaries[family_name][chip_name] = {
+                                'device_meta': {
+                                    'name': chip_device.get('name'),
+                                    'version': chip_device.get('version'),
+                                    'cpu': chip_device.get('cpu'),
+                                },
+                                'peripherals': periph_summary
+                            }
                     finally:
                         os.unlink(temp_svd)
 
@@ -736,6 +863,98 @@ def main():
             print(f"  + {block_name:20} -> {family_code} (shared)")
 
     # ==========================================================================
+    # PASS 3: Generate chip models
+    # ==========================================================================
+    print(f"\n{'='*60}")
+    print("PASS 3: Generating chip models")
+    print(f"{'='*60}")
+
+    canonical_interrupts = _build_canonical_interrupts(blocks_config, shared_blocks)
+    chip_model_count = 0
+    unmatched_interrupts = defaultdict(set)  # block_type -> set of unmatched raw names
+
+    for subfamily_name, subfamily_info in families.items():
+        instance_to_block = _build_instance_to_block(blocks_config, subfamily_name)
+
+        for chip_name in subfamily_info['chips']:
+            summary = chip_summaries.get(subfamily_name, {}).get(chip_name)
+            if not summary:
+                continue
+
+            device_meta = summary['device_meta']
+            svd_version = device_meta.get('version', '?')
+
+            # Build instances and interrupt table
+            instances = {}
+            interrupt_table = defaultdict(list)
+            interrupt_offset = 16  # Cortex-M: 16 system exceptions before IRQs
+
+            for inst_name, periph in summary['peripherals'].items():
+                block_type = instance_to_block.get(inst_name)
+                if not block_type:
+                    continue  # Unmodeled peripheral
+
+                canonical_names = canonical_interrupts.get(block_type, set())
+
+                # Map interrupts
+                mapped_intrs = []
+                for raw_intr in periph.get('interrupts', []):
+                    canonical = _resolve_interrupt_name(
+                        raw_intr['name'], inst_name, canonical_names)
+                    if canonical:
+                        mapped_intrs.append({
+                            'name': canonical, 'value': raw_intr['value']
+                        })
+                        vec = raw_intr['value'] + interrupt_offset
+                        entry = f"{inst_name}.{canonical}"
+                        if entry not in interrupt_table[vec]:
+                            interrupt_table[vec].append(entry)
+                    else:
+                        unmatched_interrupts[block_type].add(raw_intr['name'])
+
+                # Resolve parameters
+                params_list = []
+                param_decls = _get_param_decls(
+                    block_type, blocks_config, shared_blocks, subfamily_name)
+                for param in param_decls:
+                    value = _resolve_chip_param(
+                        chip_params, subfamily_name, chip_name,
+                        inst_name, block_type, param['name'],
+                        default=param.get('default'))
+                    if value is not None:
+                        params_list.append({'name': param['name'], 'value': value})
+
+                instances[inst_name] = {
+                    'baseAddress': periph['baseAddress'],
+                    'model': block_type,
+                    'interrupts': mapped_intrs,
+                    'parameters': params_list,
+                }
+
+            # Assemble chip model
+            chip_model = {
+                'name': device_meta.get('name', chip_name),
+                'cpu': device_meta.get('cpu', {}),
+                'interruptOffset': interrupt_offset,
+                'interrupts': dict(sorted(interrupt_table.items())),
+                'instances': dict(sorted(instances.items())),
+            }
+
+            # Write chip model
+            subfamily_dir = output_dir / family_code / subfamily_name
+            subfamily_dir.mkdir(parents=True, exist_ok=True)
+            header = f"# Source: {chip_name}.svd v{svd_version}\n"
+            svd.dumpDevice(chip_model, subfamily_dir / chip_name, header)
+            chip_model_count += 1
+
+    print(f"\n  Chip models generated: {chip_model_count}")
+    if unmatched_interrupts:
+        print(f"\n  Unmatched interrupts (raw SVD names not resolved to canonical):")
+        for bt in sorted(unmatched_interrupts):
+            names = sorted(unmatched_interrupts[bt])
+            print(f"    {bt}: {', '.join(names)}")
+
+    # ==========================================================================
     # Summary
     # ==========================================================================
     print(f"\n{'='*60}")
@@ -745,6 +964,7 @@ def main():
     print(f"  Common blocks ({family_code}):     {common_count}")
     print(f"  Family-specific blocks:        {family_specific_count}")
     print(f"  Total block types processed:   {len(all_blocks)}")
+    print(f"  Chip models generated:         {chip_model_count}")
     print(f"{'='*60}")
 
     # Audit summary
