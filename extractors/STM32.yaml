@@ -79,6 +79,33 @@ shared_blocks:
               - {name: IDLEDIS, description: Idle disable, bitOffset: 18, bitWidth: 1}
               - {name: TRIGSEL, description: Trigger selection, bitOffset: 19, bitWidth: 4}
               - {name: TECLREN, description: Transfer complete clear enable, bitOffset: 31, bitWidth: 1}
+  LPUART:
+    from: STM32N645.LPUART1
+    interrupts:
+      LPUART1: {name: INTR, description: Global interrupt}
+    params:
+      - {name: has_fifo, type: bool, default: true, description: 'FIFO mode (FIFOEN/TXFEIE/RXFFIE in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR). Also implies PRESC register and TXFRQ in RQR.'}
+      - {name: has_wakeup, type: bool, default: true, description: 'Wakeup from Stop mode (WUS/WUFIE in CR3; WUF in ISR; WUCF in ICR)'}
+      - {name: has_autocr, type: bool, default: false, description: 'Autonomous mode (AUTOCR register at 0x30)'}
+    transforms:
+      # Add AUTOCR register for autonomous mode (U3/U5 only)
+      - type: patchRegisters
+        registers:
+          - name: AUTOCR
+            description: Autonomous mode control register
+            displayName: AUTOCR
+            addressOffset: 48
+            size: 32
+            access: read-write
+            resetValue: 2147483648
+            fields:
+              - {name: TDN, description: Transmit data number, bitOffset: 0, bitWidth: 16}
+              - {name: TRIGPOL, description: Trigger polarity, bitOffset: 16, bitWidth: 1}
+              - {name: TRIGEN, description: Trigger enable, bitOffset: 17, bitWidth: 1}
+              - {name: IDLEDIS, description: Idle disable, bitOffset: 18, bitWidth: 1}
+              - {name: TRIGSEL, description: Trigger selection, bitOffset: 19, bitWidth: 4}
+      - type: patchAddressBlock
+        size: 1024
 families:
   C0:
     subfamilies:
@@ -1619,10 +1646,8 @@ families:
         from: STM32G031.LPTIM1
         instances: [LPTIM1, LPTIM2]
       LPUART:
-        from: STM32G031.LPUART
+        uses: LPUART
         instances: [LPUART, LPUART1, LPUART2]
-        interrupts:
-          USART3_USART4_LPUART1: INTR
       PWR:
         from: STM32G030.PWR
         instances: [PWR]
@@ -1844,10 +1869,8 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32G431.LPUART1
+        uses: LPUART
         instances: [LPUART1]
-        interrupts:
-          LPUART: INTR
       OPAMP:
         from: STM32G431.OPAMP
         instances: [OPAMP]
@@ -2176,10 +2199,8 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32H503.LPUART
+        uses: LPUART
         instances: [LPUART, LPUART_S]
-        interrupts:
-          LPUART1: INTR
       OCTOSPI:
         from: STM32H523.OCTOSPI
         instances: [OCTOSPI]
@@ -2655,10 +2676,8 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32H723.LPUART1
+        uses: LPUART
         instances: [LPUART1]
-        interrupts:
-          LPUART: INTR
       LTDC:
         from: STM32H723.LTDC
         instances: [LTDC]
@@ -2978,7 +2997,7 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32L0x0.LPUART1
+        uses: LPUART
         instances: [LPUART1, LPUSART1]
       PWR:
         instances: [PWR]
@@ -3048,6 +3067,7 @@ families:
       _all:
         _all:
           USART: {has_fifo: false, synchronous: 2}
+          LPUART: {has_fifo: false}
           TIM2: {width32: true,encoder: 1}
           TIM21: {channels: 2, has_xor_input: false, dma_burst: 0}
           TIM22: {channels: 2, has_xor_input: false, dma_burst: 0}
@@ -3366,7 +3386,7 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32L412.LPUART1
+        uses: LPUART
         instances: [LPUART1]
       OPAMP:
         from: STM32L412.OPAMP
@@ -3463,6 +3483,7 @@ families:
       _all:
         _all:
           USART: {has_fifo: false, synchronous: 2}
+          LPUART: {has_fifo: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 1}
@@ -3648,10 +3669,8 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32L4P5.LPUART1
+        uses: LPUART
         instances: [LPUART1]
-        interrupts:
-          LPUART1: INTR
       LTDC:
         from: STM32L4P5.LTCD
         instances: [LTCD]
@@ -3921,10 +3940,8 @@ families:
           LPTIM1: INTR
           LPTIM2: INTR2
       LPUART:
-        from: STM32L552.LPUART1
+        uses: LPUART
         instances: [LPUART1]
-        interrupts:
-          LPUART1: INTR
       OCTOSPI:
         from: STM32L552.OCTOSPI1
         instances: [OCTOSPI1]
@@ -4242,10 +4259,8 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32N645.LPUART1
+        uses: LPUART
         instances: [LPUART1]
-        interrupts:
-          LPUART1: INTR
       LTDC:
         from: STM32N645.LTDC
         instances: [LTDC]
@@ -4487,7 +4502,7 @@ families:
         from: STM32U031.LPTIM1
         instances: [LPTIM1, LPTIM2, LPTIM3]
       LPUART:
-        from: STM32U031.LPUART1
+        uses: LPUART
         instances: [LPUART1, LPUART2, LPUART3]
       OPAMP:
         from: STM32U031.OPAMP
@@ -4698,10 +4713,8 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32U375.LPUART
+        uses: LPUART
         instances: [LPUART]
-        interrupts:
-          LPUART1: INTR
       OCTOSPI:
         from: STM32U375.OCTOSPI
         instances: [OCTOSPI]
@@ -4794,6 +4807,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           USART: {has_wakeup: false, has_autocr: true}
+          LPUART: {has_wakeup: false, has_autocr: true}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 3, sms_preload: 2}
@@ -5027,10 +5041,8 @@ families:
         interrupts:
           LPTIM1: INTR
       LPUART:
-        from: STM32U5Fx.LPUART1
+        uses: LPUART
         instances: [LPUART1]
-        interrupts:
-          LPUART1: INTR
       LTDC:
         from: STM32U599.LTDC
         instances: [LTDC]
@@ -5159,6 +5171,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           USART: {has_wakeup: false, has_autocr: true}
+          LPUART: {has_wakeup: false, has_autocr: true}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true,encoder: 2, sms_preload: 2}
