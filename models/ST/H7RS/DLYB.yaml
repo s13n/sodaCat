@@ -1,0 +1,76 @@
+name: DLYB
+description: Register block
+groupName: DLYB
+source: STM32H7S SVD v1.3
+registers:
+  - name: CR
+    displayName: CR
+    description: Control register
+    addressOffset: 0
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DEN
+        description: Delay block enable bit
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: DLYB disabled.
+            value: 0
+          - name: B_0x1
+            description: DLYB enabled.
+            value: 1
+      - name: SEN
+        description: Sampler length enable bit
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Sampler length and register access to UNIT[6:0] and SEL[3:0] disabled, output clock enabled.
+            value: 0
+          - name: B_0x1
+            description: Sampler length and register access to UNIT[6:0] and SEL[3:0] enabled, output clock disabled.
+            value: 1
+  - name: CFGR
+    displayName: CFGR
+    description: Configuration register
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SEL
+        description: "Phase for the output clock.\nThese bits can only be written when SEN = 1. \nOutput clock phase = input clock + SEL[3:0] x unit delay"
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: UNIT
+        description: "Delay of a unit delay cell.\nThese bits can only be written when SEN = 1.\nUnit delay = initial delay + UNIT[6:0] x delay step"
+        bitOffset: 8
+        bitWidth: 7
+        access: read-write
+      - name: LNG
+        description: "Delay line length value\nThese bits reflect the 12 unit delay values sampled at the rising edge of the input clock.\nThe value is only valid when LNGF = 1."
+        bitOffset: 16
+        bitWidth: 12
+        access: read-only
+      - name: LNGF
+        description: "Length valid flag\nThis flag indicates when the delay line length value contained in LNG[11:0] is valid after UNIT[6:0] bits changed."
+        bitOffset: 31
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Length value in LNG is not valid.
+            value: 0
+          - name: B_0x1
+            description: Length value in LNG is valid.
+            value: 1
+addressBlocks:
+  - offset: 0
+    size: 1024
+    usage: registers

@@ -1,0 +1,1492 @@
+name: DCMIPP
+description: Digital camera interface pixel pipeline
+source: STM32H7S SVD v1.3
+registers:
+  - name: IPGR1
+    displayName: IPGR1
+    description: IP-Plug global register 1
+    addressOffset: 0
+    size: 32
+    resetValue: 2
+    resetMask: 4294967295
+    fields:
+      - name: MEMORYPAGE
+        description: 'Memory page size, as power of 2 of 64-byte units:'
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 64 bytes
+            value: 0
+          - name: B_0x1
+            description: 128 bytes
+            value: 1
+      - name: QOS_MODE
+        description: "Quality of service\nSet of functions enabling to build and configure an architecture able to meet bandwidth and latency requirements."
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+  - name: IPGR2
+    displayName: IPGR2
+    description: IP-Plug global register 2
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PSTART
+        description: "Request to lock the IP-Plug, to allow reconfiguration.\nPSTART must be reset to 0 after configuration is completed, to restart the IP-Plug."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No lock requested, IP-Plug runs on demand by background HW.
+            value: 0
+          - name: B_0x1
+            description: 'Lock requested: IP-Plug freezes shortly (see IDLE bit when lock is active).'
+            value: 1
+  - name: IPGR3
+    displayName: IPGR3
+    description: IP-Plug global register 3
+    addressOffset: 8
+    size: 32
+    resetValue: 1
+    resetMask: 4294967295
+    fields:
+      - name: IDLE
+        description: "Status of IP-Plug\nIDLE is set some time after a request by setting PSTART at 1, and reset by resetting PSTART at 0."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: IP-Plug is running (on demand by background HW)
+            value: 0
+          - name: B_0x1
+            description: IP-Plug is currently locked and can be reconfigured
+            value: 1
+  - name: IPGR8
+    displayName: IPGR8
+    description: IP-Plug identification register
+    addressOffset: 28
+    size: 32
+    resetValue: 2852389652
+    resetMask: 4294967295
+    fields:
+      - name: DID
+        description: Division identifier (0x14)
+        bitOffset: 0
+        bitWidth: 6
+        access: read-only
+      - name: REVID
+        description: Revision identifier (0x03)
+        bitOffset: 8
+        bitWidth: 5
+        access: read-only
+      - name: ARCHIID
+        description: Architecture identifier (0x04)
+        bitOffset: 16
+        bitWidth: 5
+        access: read-only
+      - name: IPPID
+        description: IP identifier (0xAA)
+        bitOffset: 24
+        bitWidth: 8
+        access: read-only
+  - name: IPC1R1
+    displayName: IPC1R1
+    description: IP-Plug Clientx register 1
+    addressOffset: 32
+    size: 32
+    resetValue: 3
+    resetMask: 4294967295
+    fields:
+      - name: TRAFFIC
+        description: "Burst size as power of 2 of 8-byte units\nOther values: Reserved"
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bytes
+            value: 0
+          - name: B_0x1
+            description: 16 bytes
+            value: 1
+      - name: OTR
+        description: "Maximum outstanding transactions\n...\nOther values are not allowed."
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disabled. No outstanding transaction limitation (except via FIFO size)
+            value: 0
+          - name: B_0x1
+            description: Maximum two outstanding transactions ongoing.
+            value: 1
+  - name: IPC1R2
+    displayName: IPC1R2
+    description: IP-Plug Clientx register 2
+    addressOffset: 36
+    size: 32
+    resetValue: 65536
+    resetMask: 4294967295
+    fields:
+      - name: SVCMAPPING
+        description: Non-user, must be kept at reset value.
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: WLRU
+        description: "Ratio for WLRU[3:0] arbitration\nA client gets a portion of the total bandwidth = Ratio(client) / Sum(all ratio)\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Ratio part = 1
+            value: 0
+          - name: B_0x1
+            description: Ratio part = 2
+            value: 1
+  - name: IPC1R3
+    displayName: IPC1R3
+    description: IP-Plug Clientx register 3
+    addressOffset: 40
+    size: 32
+    resetValue: 2031616
+    resetMask: 4294967295
+    fields:
+      - name: DPREGSTART
+        description: Start word (AXI width = 64 bits) of the FIFO of Clientx.
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: DPREGEND
+        description: "End word (AXI width = 64 bits) of the FIFO of Clientx.\nThe addressed word is included in the FIFO, so that next DPREGSTART is DPREGEND + 1."
+        bitOffset: 16
+        bitWidth: 5
+        access: read-write
+  - name: PRCR
+    displayName: PRCR
+    description: Parallel interface control register
+    addressOffset: 260
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ESS
+        description: "Embedded synchronization select\nValid only for 8-bit parallel data. HSPOL/VSPOL are ignored when this bit is set."
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Hardware synchronization data capture (frame/line start/stop) is synchronized with the HSYNC/VSYNC signals.
+            value: 0
+          - name: B_0x1
+            description: Embedded synchronization data capture is synchronized with synchronization codes embedded in the data flow.
+            value: 1
+      - name: PCKPOL
+        description: "Pixel clock polarity\nThis bit configures the capture edge of the pixel clock"
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Falling edge active
+            value: 0
+          - name: B_0x1
+            description: Rising edge active
+            value: 1
+      - name: HSPOL
+        description: "Horizontal synchronization polarity\nThis bit indicates the level on the HSYNC pin when the data are not valid on the parallel interface."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: HSYNC active low
+            value: 0
+          - name: B_0x1
+            description: HSYNC active high
+            value: 1
+      - name: VSPOL
+        description: "Vertical synchronization polarity\nThis bit indicates the level on the VSYNC pin when the data are not valid on the parallel interface."
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: VSYNC active low
+            value: 0
+          - name: B_0x1
+            description: VSYNC active high
+            value: 1
+      - name: EDM
+        description: "Extended data mode\nOther values: Reserved."
+        bitOffset: 10
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures 8-bit data on every pixel clock
+            value: 0
+          - name: B_0x1
+            description: Interface captures 10-bit data on every pixel clock
+            value: 1
+          - name: B_0x2
+            description: Interface captures 12-bit data on every pixel clock
+            value: 2
+          - name: B_0x3
+            description: Interface captures 14-bit data on every pixel clock
+            value: 3
+          - name: B_0x4
+            description: Interface captures 16-bit data on every pixel clock
+            value: 4
+      - name: ENABLE
+        description: "Parallel interface enable\nThe parallel interface configuration registers must be correctly programmed before enabling this bit."
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Parallel interface disabled to lower power consumption
+            value: 0
+          - name: B_0x1
+            description: Parallel interface enabled
+            value: 1
+      - name: FORMAT
+        description: "Other values: data are captured and output as-is only through the data/dump pipeline (for example JPEG or byte input format).\nThe monochrome Y input is inserted in the pipe as YUV pixels, with the U and V components set to neutral, to represent a grey color."
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x1E
+            description: YUV422
+            value: 30
+          - name: B_0x22
+            description: RGB565
+            value: 34
+          - name: B_0x24
+            description: RGB888 (= YUV444)
+            value: 36
+          - name: B_0x2A
+            description: RAW8
+            value: 42
+          - name: B_0x2B
+            description: RAW10
+            value: 43
+          - name: B_0x2C
+            description: RAW12
+            value: 44
+          - name: B_0x2D
+            description: RAW14
+            value: 45
+          - name: B_0x4A
+            description: monochrome 8-bit
+            value: 74
+          - name: B_0x4B
+            description: monochrome 10-bit
+            value: 75
+          - name: B_0x4C
+            description: monochrome 12-bit
+            value: 76
+          - name: B_0x4D
+            description: monochrome 14-bit
+            value: 77
+          - name: B_0x5A
+            description: byte stream (JPEG, compressed video)
+            value: 90
+      - name: SWAPCYCLES
+        description: "Swap data (cycle 0 vs. cycle 1) for pixels received on two cycles\nThe swap must not be activated by software for pixels received in one or three cycles."
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Default
+            value: 0
+          - name: B_0x1
+            description: 'Swap active: the data of cycle 1 is used before the data of cycle 0.'
+            value: 1
+      - name: SWAPBITS
+        description: Swap LSB vs. MSB within each received component
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: As received
+            value: 0
+          - name: B_0x1
+            description: Swapped MSB vs. LSB
+            value: 1
+  - name: PRESCR
+    displayName: PRESCR
+    description: Parallel interface embedded synchronization code register
+    addressOffset: 264
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FSC
+        description: "Frame start delimiter code\nThis byte specifies the code of the frame start delimiter. The code consists of four bytes in the form of 0xFF, 0x00, 0x00, FSC.\nIf FSC is programmed to 0xFF, no frame start delimiter is detected, but the first occurrence of LSC after an FEC code is interpreted as the start of frame delimiter."
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: LSC
+        description: "Line start delimiter code\nThis byte specifies the code of the line start delimiter. The code consists of four bytes in the form of 0xFF, 0x00, 0x00, LSC."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: LEC
+        description: "Line end delimiter code\nThis byte specifies the code of the line end delimiter. The code consists of four bytes in the form of 0xFF, 0x00, 0x00, LEC."
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: FEC
+        description: "Frame end delimiter code\nThis byte specifies the code of the frame end delimiter. The code consists of four bytes in the form of 0xFF, 0x00, 0x00, FEC.\nIf FEC is programmed to 0xFF, all the unused codes (0xFF00 00XY) are interpreted as frame end delimiters."
+        bitOffset: 24
+        bitWidth: 8
+        access: read-write
+  - name: PRESUR
+    displayName: PRESUR
+    description: Parallel interface embedded synchronization unmask register
+    addressOffset: 268
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FSU
+        description: "Frame start delimiter unmask\nThis byte specifies the mask to be applied to the code of the frame start delimiter."
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The corresponding bit in the FSC byte in DCMIPP_ESCR is masked while comparing the frame start delimiter with the received data
+            value: 0
+          - name: B_0x1
+            description: The corresponding bit in the FSC byte in DCMIPP_ESCR is compared while comparing the frame start delimiter with the received data
+            value: 1
+      - name: LSU
+        description: "Line start delimiter unmask\nThis byte specifies the mask to be applied to the code of the line start delimiter."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The corresponding bit in the LSC byte in DCMIPP_ESCR is masked while comparing the line start delimiter with the received data
+            value: 0
+          - name: B_0x1
+            description: The corresponding bit in the LSC byte in DCMIPP_ESCR is compared while comparing the line start delimiter with the received data
+            value: 1
+      - name: LEU
+        description: "Line end delimiter unmask\nThis byte specifies the mask to be applied to the code of the line end delimiter."
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The corresponding bit in the LEC byte in DCMIPP_ESCR is masked while comparing the line end delimiter with the received data
+            value: 0
+          - name: B_0x1
+            description: The corresponding bit in the LEC byte in DCMIPP_ESCR is compared while comparing the line end delimiter with the received data
+            value: 1
+      - name: FEU
+        description: "Frame end delimiter unmask\nThis byte specifies the mask to be applied to the code of the frame end delimiter."
+        bitOffset: 24
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The corresponding bit in the FEC byte in DCMIPP_ESCR is masked while comparing the frame end delimiter with the received data.
+            value: 0
+          - name: B_0x1
+            description: The corresponding bit in the FEC byte in DCMIPP_ESCR is compared while comparing the frame end delimiter with the received data
+            value: 1
+  - name: PRIER
+    displayName: PRIER
+    description: Parallel interface interrupt enable register
+    addressOffset: 500
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ERRIE
+        description: "Synchronization error interrupt enable\nThis bit is available only in embedded synchronization mode."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated if the embedded synchronization codes are not received in the correct order.
+            value: 1
+  - name: PRSR
+    displayName: PRSR
+    description: Parallel interface status register
+    addressOffset: 504
+    size: 32
+    resetValue: 196608
+    resetMask: 4294967295
+    fields:
+      - name: ERRF
+        description: "Synchronization error raw interrupt status\nThis bit is valid only in the embedded synchronization mode. It is cleared by writing a 1 to the CERRF bit in DCMIPP_PRFCR.\nThis bit is available only in embedded synchronization mode."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No synchronization error detected
+            value: 0
+          - name: B_0x1
+            description: Embedded synchronization characters are not received in the correct order.
+            value: 1
+      - name: HSYNC
+        description: "This bit gives the state of the HSYNC pin with the correct programmed polarity if ENABLE bit is set into the DCMIPP_PRCR register and if the pixel clock is received. It is set during the blanking period whatever the polarity selected in HPOL bit, and cleared otherwise.\nWhen embedded synchronization codes are used:\nIn case of embedded synchronization, this bit is meaningful only if the CAPTURE bit in DCMIPP_CR is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Active line
+            value: 0
+          - name: B_0x1
+            description: Synchronization between lines
+            value: 1
+      - name: VSYNC
+        description: "This bit gives the state of the VSYNC pin with the correct programmed polarity if ENABLE bit is set into the DCMIPP_PRCR register and if the pixel clock is received. It is set during the blanking period whatever the polarity selected in VPOL bit, and cleared otherwise.\nWhen embedded synchronization codes are used:\nIn case of embedded synchronization, this bit is meaningful only if the CAPTURE bit in DCMIPP_CR is set."
+        bitOffset: 17
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Active frame
+            value: 0
+          - name: B_0x1
+            description: Synchronization between frames
+            value: 1
+  - name: PRFCR
+    displayName: PRFCR
+    description: Parallel interface interrupt clear register
+    addressOffset: 508
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CERRF
+        description: "Synchronization error interrupt status clear\nWriting a 1 into this bit clears the ERRF bit in DCMIPP_PRSR.\nThis bit is available only in embedded synchronization mode."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+  - name: CMCR
+    displayName: CMCR
+    description: Common configuration register
+    addressOffset: 516
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CFC
+        description: "Clear frame counter\nWhen this bit is set, the frame counter associated to a pipe is cleared. It resets DCMIPP_CMFRCR register. This bit is always read at 0."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+  - name: CMFRCR
+    displayName: CMFRCR
+    description: Common frame counter register
+    addressOffset: 520
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FRMCNT
+        description: "Frame counter, read-only, loops around.\nIncremented following VSYNC detection mapped to the pipe configured into bits PSFC[1:0] of the DCMIPP_CMCR register. The counter is cleared using the CRC bit in the DCMIPP_CMCR register."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: CMIER
+    displayName: CMIER
+    description: Common interrupt enable register
+    addressOffset: 1008
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ATXERRIE
+        description: AXI transfer error interrupt enable for IP-Plug
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated
+            value: 1
+      - name: PRERRIE
+        description: Limit interrupt enable for the parallel Interface
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated
+            value: 1
+      - name: P0LINEIE
+        description: Multi-line capture complete interrupt enable for Pipe0
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated
+            value: 1
+      - name: P0FRAMEIE
+        description: Frame capture complete interrupt enable for Pipe0
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated
+            value: 1
+      - name: P0VSYNCIE
+        description: Vertical sync interrupt enable for Pipe0
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated
+            value: 1
+      - name: P0LIMITIE
+        description: Limit interrupt enable for Pipe0
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated
+            value: 1
+      - name: P0OVRIE
+        description: Overrun interrupt enable for Pipe0
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated
+            value: 1
+  - name: CMSR1
+    displayName: CMSR1
+    description: Common status register 1
+    addressOffset: 1012
+    size: 32
+    resetValue: 3
+    resetMask: 4294967295
+    fields:
+      - name: PRHSYNC
+        description: "This bit gives the state of the HSYNC pin with the correct programmed polarity on the parallel interface if ENABLE bit is set into the DCMIPP_PRCR register and if the pixel clock is received. It is set during the blanking period whatever the polarity selected in HPOL bit of the DCMIPP_PRCR register, and cleared otherwise.\nWhen embedded synchronization codes are used the meaning of this bit is the following:\nIn case of embedded synchronization, this bit is meaningful only if the CAPTURE bit in the DCMIPP_PRCR register is set."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Active line
+            value: 0
+          - name: B_0x1
+            description: Synchronization between lines
+            value: 1
+      - name: PRVSYNC
+        description: "This bit gives the state of the VSYNC pin with the correct programmed polarity on the parallel interface if ENABLE bit is set into the DCMIPP_PRCR register and if the pixel clock is received. It is set during the blanking period whatever the polarity selected in VPOL bit of the DCMIPP_PRCR register, and cleared otherwise.\nWhen embedded synchronization codes are used, the meaning of this bit is the following:\nIn case of embedded synchronization, this bit is meaningful only if the CAPTURE bit in the DCMIPP_PRCR register is set."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Active frame
+            value: 0
+          - name: B_0x1
+            description: Synchronization between frames
+            value: 1
+      - name: P0CPTACT
+        description: Active frame capture (active from start-of-frame to frame complete) for Pipe0
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No capture currently active
+            value: 0
+          - name: B_0x1
+            description: Capture currently active
+            value: 1
+  - name: CMSR2
+    displayName: CMSR2
+    description: Common status register 2
+    addressOffset: 1016
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ATXERRF
+        description: "AXI transfer error interrupt status flag for the IP-Plug.\nThis bit is cleared by writing a 1 to CATXERRF bit in the DCMIPP_CMFCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No AXI transfer error detected
+            value: 0
+          - name: B_0x1
+            description: AXI transfer error occurred on an AXI client. This bit signals an error on a client without any specific hardware action, the software must handle the situation (normally used when debugging software application code).
+            value: 1
+      - name: PRERRF
+        description: "Synchronization error raw interrupt status for the parallel interface.\nThis bit is valid only in the embedded synchronization mode. It is cleared by writing a 1 to the CPRERRF bit in the DCMIPP_CMFCR register.\nThis bit is available only in embedded synchronization mode."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No synchronization error detected
+            value: 0
+          - name: B_0x1
+            description: Embedded synchronization characters are not received in the correct order.
+            value: 1
+      - name: P0LINEF
+        description: "Multi-line capture completed raw interrupt status for Pipe0\nThis bit is set when one/more lines have been completed. The periodicity of LINEF event is configured by LINEMULT bits into DCMIPP_P0PPCR register. When reaching end of frame, this event is triggered out to allow software action even if the LINEMULT value set is not a multiple of the total lines frame.\nIn the case of embedded synchronization, this bit is set only if the CAPTURE bit in the DCMIPP_CR register is set. It is cleared by writing a 1 to the CP0LINEF bit in the DCMIPP_CMFCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+      - name: P0FRAMEF
+        description: "Frame capture completed raw interrupt status for Pipe0\nThis bit is set when all data of a frame or window have been captured.\nIn case of a cropped window, this bit is set at the end of line of the last line in the crop, even if the captured frame is empty (for example window cropped outside the frame).\nThis bit is cleared by writing a 1 to the CP0FRAMEF bit in the DCMIPP_CMFCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No capture or ongoing capture
+            value: 0
+          - name: B_0x1
+            description: All data of a frame have been captured
+            value: 1
+      - name: P0VSYNCF
+        description: "VSYNC raw interrupt status for Pipe0\nThis bit is set when the VSYNC signal changes from the inactive state to the active state.\nIn the case of embedded synchronization, this bit is set only if the CAPTURE bit is set in DCMIPP_CR. It is cleared by writing a 1 to the CP0VSYNCF bit in the DCMIPP_CMFCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+      - name: P0LIMITF
+        description: "Limit raw interrupt status for Pipe0\nThis bit is set when the data counter DCMIPP_P0DCCNT reaches its maximum value DCMIPP_P0DCLIMIT.\nIt is cleared by writing a 1 to the CP0LIMITF bit in the DCMIPP_CMFCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: read-only
+      - name: P0OVRF
+        description: "Overrun raw interrupt status for Pipe0\nThis bit is cleared by writing a 1 to the CP0OVRF bit in the DCMIPP_CMFCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No data buffer overrun occurred
+            value: 0
+          - name: B_0x1
+            description: A data buffer overrun occurred and this frame data are corrupted
+            value: 1
+  - name: CMFCR
+    displayName: CMFCR
+    description: Common interrupt clear register
+    addressOffset: 1020
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CATXERRF
+        description: "AXI transfer error interrupt status clear\nWriting a 1 into this bit clears the ATXERRF bit in the DCMIPP_CMSR2 register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: CPRERRF
+        description: "Synchronization error interrupt status clear\nWriting a 1 into this bit clears the PRERRF bit in the DCMIPP_CMSR2 register.\nThis bit is available only in embedded synchronization mode."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: CP0LINEF
+        description: "Multi-line capture complete interrupt status clear\nWriting a 1 into this bit clears P0LINEF in the DCMIPP_CMSR2 register"
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: CP0FRAMEF
+        description: "Frame capture complete interrupt status clear\nWriting a 1 into this bit clears the P0FRAMEF bit in the DCMIPP_CMSR2 register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: CP0VSYNCF
+        description: "Vertical synchronization interrupt status clear\nWriting a 1 into this bit clears the P0VSYNCF bit in the DCMIPP_CMSR2 register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: CP0LIMITF
+        description: "limit interrupt status clear\nWriting a 1 into this bit clears P0LIMITF in the DCMIPP_CMSR2 register"
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: CP0OVRF
+        description: "Overrun interrupt status clear\nWriting a 1 into this bit clears the P0OVRF bit in the DCMIPP_CMSR2 register"
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+  - name: P0FSCR
+    displayName: P0FSCR
+    description: Pipe0 flow selection configuration register
+    addressOffset: 1028
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PIPEN
+        description: "Activation of PipeN\nNote: This bit is not shadowed, differently from all other bits in this register."
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Pipe disabled
+            value: 0
+          - name: B_0x1
+            description: Pipe enabled, can start capturing with CPTMODE, CPTREQ, CPTACK
+            value: 1
+  - name: P0FCTCR
+    displayName: P0FCTCR
+    description: Pipe0 flow control configuration register
+    addressOffset: 1280
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FRATE
+        description: "Frame capture rate control\nThese bits define the frequency of frame capture. They are meaningful only in Continuous grab mode, ignored in Snapshot mode."
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: All frames are captured
+            value: 0
+          - name: B_0x1
+            description: One out of two frames captured (50% bandwidth reduction)
+            value: 1
+          - name: B_0x2
+            description: One out of four frames captured (75% bandwidth reduction)
+            value: 2
+          - name: B_0x3
+            description: One out of eight frames captured (87% bandwidth reduction)
+            value: 3
+      - name: CPTMODE
+        description: Capture mode
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Continuous grab mode - The received data are transferred into the destination memory through the AXI master.
+            value: 0
+          - name: B_0x1
+            description: Snapshot mode (single frame) - Once activated, the interface waits for the start of frame, and then transfers a single frame through the AXI master. At the end of the frame, the CPTACT bit is automatically reset.
+            value: 1
+      - name: CPTREQ
+        description: "Capture requested\nWhen PIPEN = 1 and when the CPTREQ is set to 1 the pipe waits for the first VSync, and automatically starts a capture and sets CPTACT = 1 to mention it.\nIn Snapshot mode the CPTREQ bit is automatically cleared at the start of the first received frame.\nIn Continuous grab mode, the capture remains active and CPTREQ = 1 until the software clears CPTREQ: the capture stops and CPTACT is reset at the end of the ongoing frame.\nThe DCMI and pipe configuration registers must be correctly programmed before enabling this bit."
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Capture not requested for next frame
+            value: 0
+          - name: B_0x1
+            description: Capture requested for next frame
+            value: 1
+  - name: P0SCSTR
+    displayName: P0SCSTR
+    description: Pipe0 stat/crop start register
+    addressOffset: 1284
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: HSTART
+        description: Horizontal start, from 0 to 4094 words wide
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: VSTART
+        description: Vertical start, from 0 to 4094 pixels high
+        bitOffset: 16
+        bitWidth: 12
+        access: read-write
+  - name: P0SCSZR
+    displayName: P0SCSZR
+    description: Pipe0 stat/crop size register
+    addressOffset: 1288
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: HSIZE
+        description: "Horizontal size, from 0 to 4094 word wide (data 32-bit)\nIf the value is maintained at 0 when enabling the crop by means of ENABLE bit, the crop operation is not performed on horizontal direction."
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: VSIZE
+        description: "Vertical size, from 0 to 4094 pixels high\nIf the value is maintained at 0 when enabling the crop by means of ENABLE bit, the crop operation is not performed on vertical direction."
+        bitOffset: 16
+        bitWidth: 12
+        access: read-write
+      - name: POSNEG
+        description: This bit is set and cleared by software. It has a meaning only if ENABLE bit is set.
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Positive area, the rectangle defined by VSIZE, HSIZE, and VSTART, HSTART
+            value: 0
+          - name: B_0x1
+            description: Negative area, the area excluding the rectangle defined by VSIZE, HSIZE, and VSTART, HSTART
+            value: 1
+      - name: ENABLE
+        description: "This bit is set and cleared by software.\nif POSNEG = 0, the data inside the rectangle area are transmitted (it can correspond to a statistical data removal, or as a crop feature in a data valid image area).\nif POSNEG = 1, the data outside of the rectangle area are transmitted (it can correspond to a statistical data extraction, rejecting all data inside the window).\nThis bit must be kept cleared if the input format is JPEG, to avoid unpredictable behavior of the pipe."
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Bypass. All the data are computed, if the statistic data are sent within the frame, they are sent to the processing pipe as pixels data.
+            value: 0
+          - name: B_0x1
+            description: Enable. Depending on bit POSNEG value, the rectangle defined by VSIZE, HSIZE, VSTART and HSTART can be used to extract or to remove some data (statistical extraction or removal, or basic 2D crop features).
+            value: 1
+  - name: P0DCCNTR
+    displayName: P0DCCNTR
+    description: Pipe0 dump counter register
+    addressOffset: 1456
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CNT
+        description: "Number of data dumped during the frame.\nThe size of the data is expressed in bytes. It counts only the data selected by means of the CROP 2D function. The counter saturates at 0x3FFFFFF. Granularity is 32-bit for all the formats except for the byte stream formats (for example JPEG) having byte granularity."
+        bitOffset: 0
+        bitWidth: 26
+        access: read-only
+  - name: P0DCLMTR
+    displayName: P0DCLMTR
+    description: Pipe0 dump limit register
+    addressOffset: 1460
+    size: 32
+    resetValue: 16777215
+    resetMask: 4294967295
+    fields:
+      - name: LIMIT
+        description: Maximum number of 32-bit data that can be dumped during a frame, after the crop 2D operation.
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+      - name: ENABLE
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disabled, no check on the amount of 32-bit words transmitted
+            value: 0
+          - name: B_0x1
+            description: Enabled, check done versus limit
+            value: 1
+  - name: P0PPCR
+    displayName: P0PPCR
+    description: Pipe0 pixel packer configuration register
+    addressOffset: 1472
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PAD
+        description: 'Pad mode for monochrome and raw Bayer 10/12/14 bpp: MSB vs. LSB alignment.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Aligns on LSB (and pads null bits on MSB), for backward compatibility with former DCMI.
+            value: 0
+          - name: B_0x1
+            description: Aligns on MSB (and pads null bits on LSB), for better ease of software or GPU.
+            value: 1
+      - name: BSM
+        description: "Byte select mode\nModes 10 and 11 work only with EDM [2:0] = 000 into the DCMIPP_PRCR register."
+        bitOffset: 7
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures all received data
+            value: 0
+          - name: B_0x1
+            description: Interface captures 1 data out of 2
+            value: 1
+          - name: B_0x2
+            description: Interface captures one byte out of four
+            value: 2
+          - name: B_0x3
+            description: Interface captures two bytes out of four
+            value: 3
+      - name: OEBS
+        description: "Odd/even byte select (byte select start)\nThis bit works in conjunction with BSM field (BSM different from 00)"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures the first data (byte or double byte) from the frame/line start, the second one is dropped
+            value: 0
+          - name: B_0x1
+            description: Interface captures the second data (byte or double byte) from the frame/line start, the first one is dropped
+            value: 1
+      - name: LSM
+        description: Line select mode
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures all received lines
+            value: 0
+          - name: B_0x1
+            description: Interface captures one line out of two
+            value: 1
+      - name: OELS
+        description: "Odd/even line select (line select start)\nThis bit works in conjunction with LSM field (LSM = 1)."
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures first line after the frame start, second one is dropped
+            value: 0
+          - name: B_0x1
+            description: Interface captures second line from the frame start, first one is dropped
+            value: 1
+      - name: LINEMULT
+        description: Amount of capture completed lines for LINE event and interrupt
+        bitOffset: 13
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Event after one line
+            value: 0
+          - name: B_0x1
+            description: Event after two lines
+            value: 1
+          - name: B_0x2
+            description: Event after four lines
+            value: 2
+          - name: B_0x3
+            description: Event after eight lines
+            value: 3
+          - name: B_0x4
+            description: Event after sixteen lines
+            value: 4
+          - name: B_0x5
+            description: Event after 32 lines
+            value: 5
+          - name: B_0x6
+            description: Event after 64 lines
+            value: 6
+          - name: B_0x7
+            description: Event after 128 lines
+            value: 7
+      - name: DBM
+        description: "Double buffer mode\nThis bit is set and cleared by software."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No double buffer mode activated. Pipe0 always dumps to memory address set by DCMIPP_P0PPM0AR1.
+            value: 0
+          - name: B_0x1
+            description: Double buffer mode activated. Dump address location switches from DCMIPP_P0PPM0AR1 to DCMIPP_P0PPM0AR2 alternatively on each frame.
+            value: 1
+  - name: P0PPM0AR1
+    displayName: P0PPM0AR1
+    description: Pipe0 pixel packer Memory0 address register 1
+    addressOffset: 1476
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: M0A
+        description: "Memory0 address\nBase address of memory area 0, to whom data are written. It is assumed to be a multiple of 16, hence its bits 3:0 are always at 0x0."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: P0PPM0AR2
+    displayName: P0PPM0AR2
+    description: Pipe0 pixel packer Memory0 address register 2
+    addressOffset: 1480
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: M0A
+        description: "Memory0 address\nBase address of memory area 0, to whom data are written. It is assumed to be a multiple of 16, hence its bits 3:0 are always at 0x0."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: P0IER
+    displayName: P0IER
+    description: Pipe0 interrupt enable register
+    addressOffset: 1524
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LINEIE
+        description: Multi-line capture completed interrupt enable
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation when the line is received
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated after the full capture of a group of lines (or last line reached)
+            value: 1
+      - name: FRAMEIE
+        description: Frame capture completed interrupt enable
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated after the full capture of a cropped frame
+            value: 1
+      - name: VSYNCIE
+        description: VSYNC interrupt enable
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated on each VSYNC (captured or not)
+            value: 1
+      - name: LIMITIE
+        description: Limit interrupt enable
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation when the limit is reached
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated when the limit is reached
+            value: 1
+      - name: OVRIE
+        description: Overrun interrupt enable
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt generation
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated if the AXI master is unable to transfer the last data before new data (32-bit) are received.
+            value: 1
+  - name: P0SR
+    displayName: P0SR
+    description: Pipe0 status register
+    addressOffset: 1528
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LINEF
+        description: "Multi-line capture completed raw interrupt status\nThis bit is set when one/more lines have been completed. For the JPEG mode, this bit is raised at the end of the frame.\nThe periodicity of LINEF event is configured by LINEMULT bits into DCMIPP_P0PPCR register. When reaching end of frame, this event is triggered out to allow software action even if the LINEMULT value set is not a multiple of the total lines frame.\nIn case of embedded synchronization, this bit is set only if the CAPTURE bit in the DCMIPP_CR register is set. It is cleared by writing a 1 to the CLINEF bit in the DCMIPP_P0FCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: FRAMEF
+        description: "Frame capture completed raw interrupt status\nThis bit is set when all data of a frame or window have been captured. In case of a cropped window, this bit is set at the end of line of the last line in the crop. It is set even if the captured frame is empty (for example window cropped outside the frame).\nThis bit is cleared by writing a 1 to the CFRAMEF bit in DCMIPP_P0FCR."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No capture or ongoing capture
+            value: 0
+          - name: B_0x1
+            description: All data of a frame have been captured
+            value: 1
+      - name: VSYNCF
+        description: "VSYNC raw interrupt status\nThis bit is set when the VSYNC signal changes from the inactive state to the active state. In case of embedded synchronization, this bit is set only if the CAPTURE bit is set in DCMIPP_CR.\nIt is cleared by writing a 1 to the CVSYNCF bit in the DCMIPP_P0FCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: LIMITF
+        description: "Limit raw interrupt status\nThis bit is set when the data counter DCMIPP_PxDCCNTR reaches its maximum value DCMIPP_PxDCLIMITR.\nIt is cleared by writing a 1 to the CLIMITF bit in the DCMIPP_P0FCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: OVRF
+        description: "Overrun raw interrupt status\nThis bit is cleared by writing a 1 to the COVRF bit in the DCMIPP_P0FCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No data buffer overrun occurred
+            value: 0
+          - name: B_0x1
+            description: A data buffer overrun occurred and this frame data are corrupted
+            value: 1
+      - name: CPTACT
+        description: "Capture immediate status\nThis bit is automatically reset at the end of frame capture complete event (after all the data of that frame have been captured and the IP-Plug has started to emit the last burst on the AXI, usually before the next VSync)."
+        bitOffset: 23
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Capture currently inactive
+            value: 0
+          - name: B_0x1
+            description: Capture currently active
+            value: 1
+  - name: P0FCR
+    displayName: P0FCR
+    description: Pipe0 interrupt clear register
+    addressOffset: 1532
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CLINEF
+        description: "Multi-line capture complete interrupt status clear\nWriting a 1 into this bit clears LINEF in the DCMIPP_P0SR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: CFRAMEF
+        description: "Frame capture complete interrupt status clear\nWriting a 1 into this bit clears the FRAMEF bit in the DCMIPP_P0SR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: CVSYNCF
+        description: "Vertical synchronization interrupt status clear\nWriting a 1 into this bit clears the VSYNCF bit in the DCMIPP_P0SR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: CLIMITF
+        description: "limit interrupt status clear\nWriting a 1 into this bit clears LIMITF in the DCMIPP_P0SR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: COVRF
+        description: "Overrun interrupt status clear\nWriting a 1 into this bit clears the OVRF bit in the DCMIPP_P0SR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+  - name: P0CFCTCR
+    displayName: P0CFCTCR
+    description: Pipe0 current flow control configuration register
+    addressOffset: 1792
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FRATE
+        description: "Frame capture rate control\nThese bits define the frequency of frame capture. They are meaningful only in Continuous grab mode, ignored in Snapshot mode."
+        bitOffset: 0
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: All frames are captured
+            value: 0
+          - name: B_0x1
+            description: One out of two frames captured (50% bandwidth reduction)
+            value: 1
+          - name: B_0x2
+            description: One out of four frames captured (75% bandwidth reduction)
+            value: 2
+          - name: B_0x3
+            description: One out of eight frames captured (87% bandwidth reduction)
+            value: 3
+      - name: CPTMODE
+        description: Capture mode
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Continuous grab mode - The received data are transferred into the destination memory through the AXI master.
+            value: 0
+          - name: B_0x1
+            description: Snapshot mode (single frame) - Once activated, the interface waits for the start of frame, and then transfers a single frame through the AXI master. At the end of the frame the CPTACT bit is automatically reset.
+            value: 1
+      - name: CPTREQ
+        description: "Capture requested\nWhen PIPEN = 1, and when the CPTREQ is set to 1 the pipe waits for the first VSync, and automatically starts a capture and sets CPTACT = 1 to mention it.\nIn Snapshot mode the CPTREQ bit is automatically cleared at the start of the first frame received.\nIn continuous grab mode the capture remains active and CPTREQ = 1, until the software clears CPTREQ: the capture stops and CPTACT is reset at the end of the ongoing frame.\nThe DCMI and pipe configuration registers must be correctly programmed before enabling this bit."
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Capture not requested for next frame.
+            value: 0
+          - name: B_0x1
+            description: Capture requested for next frame.
+            value: 1
+  - name: P0CSCSTR
+    displayName: P0CSCSTR
+    description: Pipe0 current stat/crop start register
+    addressOffset: 1796
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: HSTART
+        description: Current horizontal start, from 0 to 4094 words wide
+        bitOffset: 0
+        bitWidth: 12
+        access: read-only
+      - name: VSTART
+        description: Current vertical start, from 0 to 4094 pixels high
+        bitOffset: 16
+        bitWidth: 12
+        access: read-only
+  - name: P0CSCSZR
+    displayName: P0CSCSZR
+    description: Pipe0 current stat/crop size register
+    addressOffset: 1800
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: HSIZE
+        description: "Current horizontal size, from 0 to 4094 word wide (data 32-bit).\nIf the value is maintained at 0 when enabling the crop by means of the ENABLE bit, the value is forced internally at 0xFFE, which is the maximum value."
+        bitOffset: 0
+        bitWidth: 12
+        access: read-only
+      - name: VSIZE
+        description: "Current vertical size, from 0 to 4094 pixels high.\nIf the value is maintained at 0 when enabling the crop by means of the ENABLE bit, the value is forced internally at 0xFFE which is the maximum value."
+        bitOffset: 16
+        bitWidth: 12
+        access: read-only
+      - name: POSNEG
+        description: "Current value of the POSNEG bit\nThis bit has a meaning only if ENABLE bit is set."
+        bitOffset: 30
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Positive area. The rectangle defined by VSIZE,HSIZE, and VSTART, HSTART is the active area.
+            value: 0
+          - name: B_0x1
+            description: Negative area. The active area is the area excluding the rectangle defined by VSIZE, HSIZE, and VSTART, HSTART.
+            value: 1
+      - name: ENABLE
+        description: "Current value of the ENABLE bit\nif POSNEG = 0, the data inside the rectangle area are transmitted (can correspond to a statistical data removal, or as a crop feature in a data valid image area).\nif POSNEG = 1, the data outside of the rectangle area are transmitted (can correspond to a statistical data extraction, rejecting all data inside the window)"
+        bitOffset: 31
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Bypass. All data are computed, if the statistics data are sent within the frame, they are sent to the processing pipe as pixels data.
+            value: 0
+          - name: B_0x1
+            description: 'Enable: Depending on bit POSNEG value, the rectangle defined by the VSIZE, HSIZE, VSTART, HSTART can be used to extract or to remove certain amount of data (statistical extraction or removal, or basic 2D crop features)'
+            value: 1
+  - name: P0CPPCR
+    displayName: P0CPPCR
+    description: Pipe0 current pixel packer configuration register
+    addressOffset: 1984
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PAD
+        description: 'Current Pad mode for monochrome and raw Bayer 10/12/14 bpp: MSB vs. LSB alignment'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Aligns on LSB (and pads null bits on MSB), for backward compatibility with former DCMI
+            value: 0
+          - name: B_0x1
+            description: Aligns on MSB (and pads null bits on LSB), for better ease of software or GPU
+            value: 1
+      - name: BSM
+        description: "Current Byte select mode\nModes 10 and 11 work only with EDM [2:0] = 000 into the DCMIPP_PRCR register."
+        bitOffset: 7
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures all received data
+            value: 0
+          - name: B_0x1
+            description: Interface captures one data out of two
+            value: 1
+          - name: B_0x2
+            description: Interface captures one byte out of four
+            value: 2
+          - name: B_0x3
+            description: Interface captures two bytes out of four
+            value: 3
+      - name: OEBS
+        description: "Current odd/even byte select (byte select start)\nThis bit works in conjunction with BSM field (BSM different from 00)"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures the first data (byte or double byte) from the frame/line start, the second one is dropped
+            value: 0
+          - name: B_0x1
+            description: Interface captures the second data (byte or double byte) from the frame/line start, the first one is dropped
+            value: 1
+      - name: LSM
+        description: Current Line select mode
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures all received lines
+            value: 0
+          - name: B_0x1
+            description: Interface captures one line out of two
+            value: 1
+      - name: OELS
+        description: "Current odd/even line select (ine select start)\nThis bit works in conjunction with LSM field (LSM = 1)"
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Interface captures the first line after the frame start, the second one is dropped
+            value: 0
+          - name: B_0x1
+            description: Interface captures the second line from the frame start, the first one is dropped
+            value: 1
+      - name: LINEMULT
+        description: Current amount of capture completed lines for LINE event and interrupt
+        bitOffset: 13
+        bitWidth: 3
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Event after every line
+            value: 0
+          - name: B_0x1
+            description: Event after two lines
+            value: 1
+          - name: B_0x2
+            description: Event after four lines
+            value: 2
+          - name: B_0x3
+            description: Event after eight lines
+            value: 3
+          - name: B_0x4
+            description: Event after sixteen lines
+            value: 4
+          - name: B_0x5
+            description: Event after 32 lines
+            value: 5
+          - name: B_0x6
+            description: Event after 64 lines
+            value: 6
+          - name: B_0x7
+            description: Event after 128 lines
+            value: 7
+      - name: DBM
+        description: Double buffer mode
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No double buffer mode activated. Pipe0 is always dump to memory address set by DCMIPP_P0PPM0AR1 register
+            value: 0
+          - name: B_0x1
+            description: Double buffer mode activated. Dump address location switches from DCMIPP_P0PPM0AR1 register to DCMIPP_P0PPM0AR2 register alternatively on each frame.
+            value: 1
+  - name: P0CPPM0AR1
+    displayName: P0CPPM0AR1
+    description: Pipe0 current pixel packer Memory0 address register 1
+    addressOffset: 1988
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: M0A
+        description: "Memory0 address\nBase address of the current memory area 0, to whom data are written. It is assumed to be a multiple of 16, hence its bits 3:0 are always at 0x0."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: P0CPPM0AR2
+    displayName: P0CPPM0AR2
+    description: Pipe0 current pixel packer Memory0 address register 2
+    addressOffset: 1992
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: M0A
+        description: "Memory0 address\nBase address of the current memory area 0, to whom data are written. It is assumed to be a multiple of 16, hence its bits 3:0 are always at 0x0."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+addressBlocks:
+  - offset: 0
+    size: 4096
+    usage: registers
+interrupts:
+  - name: INTR
+    description: DCMIPP global interrupt

@@ -1,0 +1,1198 @@
+name: SBS
+description: System configuration, boot and security
+groupName: SBS
+source: STM32H7S SVD v1.3
+registers:
+  - name: BOOTSR
+    displayName: BOOTSR
+    description: Boot status register
+    addressOffset: 0
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: INITVTOR
+        description: "initial vector for Cortex-M7\nThis register includes the physical boot address used by the Cortex-M7 after reset"
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HDPLCR
+    displayName: HDPLCR
+    description: Hide protection control register
+    addressOffset: 16
+    size: 32
+    resetValue: 180
+    resetMask: 4294967295
+    fields:
+      - name: INCR_HDPL
+        description: "increment HDPL\nWrite 0x6A to increment device HDPL by one.\nAfter a write, the register value reverts to its default value (0xB4)."
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: HDPLSR
+    displayName: HDPLSR
+    description: Hide protection status register
+    addressOffset: 20
+    size: 32
+    resetValue: 0
+    resetMask: 4294967040
+    fields:
+      - name: HDPL
+        description: "hide protection level\nThis bitfield returns the current HDPL of the device.\n0x6F and other codes: HDPL3, corresponding to non-boot application.\nNote: The device state (open/close) is defined in FLASH_NVSTATER register of the embedded Flash memory."
+        bitOffset: 0
+        bitWidth: 8
+        access: read-only
+        enumeratedValues:
+          - name: B_0xB4
+            description: HDPL0, corresponding to ST-RSS (default when device is close)
+            value: 180
+          - name: B_0x51
+            description: HDPL1
+            value: 81
+          - name: B_0x8A
+            description: HDPL2
+            value: 138
+  - name: DBGCR
+    displayName: DBGCR
+    description: Debug control register
+    addressOffset: 32
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: AP_UNLOCK
+        description: "access port unlock\nWrite 0xB4 to this bitfield to open the device access port."
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: DBG_UNLOCK
+        description: "debug unlock\nWrite 0xB4 to this bitfield to open the debug when HDPL in SBS_HDPLSR equals to DBG_AUTH_HDPL in this register."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: DBG_AUTH_HDPL
+        description: "authenticated debug hide protection level\nWriting to this bitfield defines at which HDPL the authenticated debug opens.\nNote: Writing any other values is ignored. Reading any other value means the authenticated debug always fails."
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x51
+            description: HDPL1
+            value: 81
+          - name: B_0x8A
+            description: HDPL2
+            value: 138
+          - name: B_0x6F
+            description: HDPL3
+            value: 111
+  - name: DBGLOCKR
+    displayName: DBGLOCKR
+    description: Debug lock register
+    addressOffset: 36
+    size: 32
+    resetValue: 180
+    resetMask: 4294967295
+    fields:
+      - name: DBGCFG_LOCK
+        description: "debug configuration lock\nReading this bitfield returns 0x6A if the bitfield value is different from 0xB4.\nOther: Writes to SBS_DBGCR ignored\nNote: 0xC3 is the recommended value to lock the debug configuration using this bitfield."
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0xB4
+            description: Writes to SBS_DBGCR allowed (default)
+            value: 180
+  - name: RSSCMDR
+    displayName: RSSCMDR
+    description: RSS command register
+    addressOffset: 52
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RSSCMD
+        description: "RSS command\nThe application can use this bitfield to pass on a command to the RSS, executed at the next reset."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: PMCR
+    displayName: PMCR
+    description: Product mode and configuration register
+    addressOffset: 256
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FMPLUS_PB6
+        description: Fast-mode Plus on PB(6)
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Fast-mode Plus mode disabled on PB(6)
+            value: 0
+          - name: B_0x1
+            description: Fast-mode Plus mode enabled on PB(6)
+            value: 1
+      - name: FMPLUS_PB7
+        description: Fast-mode Plus on PB(7)
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Fast-mode Plus mode disabled on PB(7)
+            value: 0
+          - name: B_0x1
+            description: Fast mode plus mode enabled on PB(7)
+            value: 1
+      - name: FMPLUS_PB8
+        description: Fast-mode Plus on PB(8)
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Fast-mode Plus mode disabled on PB(8)
+            value: 0
+          - name: B_0x1
+            description: Fast-mode Plus mode enabled on PB(8)
+            value: 1
+      - name: FMPLUS_PB9
+        description: Fast-mode Plus on PB(9)
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: I2C Fast-mode Plus mode disabled on PB(9)
+            value: 0
+          - name: B_0x1
+            description: Fast-mode Plus mode enabled on PB(9)
+            value: 1
+      - name: BOOSTEN
+        description: "booster enable\nSet this bit to reduce the THD of the analog switches when the supply voltage is below 2.7 V. guaranteeing the same performance as with the full voltage range. To avoid current consumption due to booster activation when V<sub>DDA</sub> < 2.7 V and V<sub>DD</sub> > 2.7 V, V<sub>DD</sub> can be selected as supply voltage for analog switches by setting BOOSTVDDSEL bit in SBS_PMCR. In this case, the BOOSTEN bit must be cleared to avoid unwanted power consumption."
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Booster disabled
+            value: 0
+          - name: B_0x1
+            description: Booster enabled
+            value: 1
+      - name: BOOSTVDDSEL
+        description: "booster V<sub>DD</sub> selection\nThis bit selects the analog switch supply voltage, between V<sub>DD</sub>, V<sub>DDA</sub> and booster.\nTo avoid current consumption due to booster activation when V<sub>DDA</sub> < 2.7 V and V<sub>DD</sub> > 2.7 V, V<sub>DD</sub> can be selected as supply voltage for analog switches. In this case, the BOOSTEN bit must be cleared to avoid unwanted power consumption.\nWhen both V<sub>DD and </sub>V<sub>DDA</sub> are below 2.7 V, the booster is still needed to obtain full AC performances from the I/O analog switches."
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: V<sub>DDA</sub> selected as analog switch booster voltage supply (when BOOSTEN bit is cleared)
+            value: 0
+          - name: B_0x1
+            description: V<sub>DD</sub> selected as analog switch booster voltage supply
+            value: 1
+      - name: ETH_PHYSEL
+        description: "Ethernet PHY interface selection\nOther: reserved"
+        bitOffset: 21
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: GMII or MII
+            value: 0
+          - name: B_0x4
+            description: RMII
+            value: 4
+      - name: AXIRAM_WS
+        description: "AXIRAM wait state\nSet this bit to add one wait state to all AXIRAMs when ECC = 0. When ECC = 1 there is one wait state by default."
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No wait state added when accessing any AXIRAM with ECC = 0
+            value: 0
+          - name: B_0x1
+            description: One wait state added when accessing any AXIRAM with ECC = 0. In this case, Fmax = 500 MHz is not guaranteed. (TBC)
+            value: 1
+  - name: FPUIMR
+    displayName: FPUIMR
+    description: FPU interrupt mask register
+    addressOffset: 260
+    size: 32
+    resetValue: 31
+    resetMask: 4294967295
+    fields:
+      - name: FPU_IE
+        description: "FPU interrupt enable\nSet and cleared by software to enable the Cortex-M7 FPU interrupts\nxxxxx1: Invalid operation interrupt enabled (xxxxx0 to disable)\nxxxx1x: Divide-by-zero interrupt enabled (xxxx0x to disable)\nxxx1xx: Underflow interrupt enabled (xxx0xx to disable)\nxx1xxx: Overflow interrupt enabled (xx0xxx to disable)\nx1xxxx: Input denormal interrupt enabled (x0xxxx to disable)\n1xxxxx: Inexact interrupt enabled (0xxxxx to disable), disabled by default"
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: MESR
+    displayName: MESR
+    description: Memory erase status register
+    addressOffset: 264
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MEF
+        description: "memory erase flag\nThis bit is set by hardware when BKPRAM and PKA SRAM erase is ongoing after a POWER ON reset or one tamper event (see Section 50: Tamper and backup registers (TAMP) for details). This bit is cleared when the erase is done."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Automatic erase of BKPRAM and PKA RAM memories ongoing
+            value: 0
+          - name: B_0x1
+            description: Automatic erase of BKPRAM and PKA RAM memories done
+            value: 1
+  - name: CCCSR
+    displayName: CCCSR
+    description: I/O compensation cell control and status register
+    addressOffset: 272
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: COMP_EN
+        description: "Compensation cell enable\nSet this bit to enable the compensation cell."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Compensation cell disabled
+            value: 0
+          - name: B_0x1
+            description: Compensation cell enabled
+            value: 1
+      - name: COMP_CODESEL
+        description: "Compensation cell code selection\nThis bit selects the code to be applied for the I/O compensation cell."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Code from the cell (available in the SBS_CCVALR)
+            value: 0
+          - name: B_0x1
+            description: Code from the SBS software value register (SBS_CCSWVALR)
+            value: 1
+      - name: OCTO1_COMP_EN
+        description: "XSPIM_P1 compensation cell enable\nSet this bit to enable the XSPIM_P1 compensation cell."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: XSPIM_P1 compensation cell disabled
+            value: 0
+          - name: B_0x1
+            description: XSPIM_P1 compensation cell enabled
+            value: 1
+      - name: OCTO1_COMP_CODESEL
+        description: "XSPIM_P1 compensation cell code selection\nThis bit selects the code to be applied for the XSPIM_P1 I/O compensation cell."
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Code from the cell (available in the SBS_CCVALR)
+            value: 0
+          - name: B_0x1
+            description: Code from the SBS software value register (SBS_CCSWVALR)
+            value: 1
+      - name: OCTO2_COMP_EN
+        description: "XSPIM_P2 compensation cell enable\nSet this bit to enable the XSPIM_P2 compensation cell."
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: XSPIM_P2 compensation cell disabled
+            value: 0
+          - name: B_0x1
+            description: XSPIM_P2 compensation cell enabled
+            value: 1
+      - name: OCTO2_COMP_CODESEL
+        description: "XSPIM_P2 compensation cell code selection\nThis bit selects the code to be applied for the XSPIM_P2 I/O compensation cell."
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Code from the cell (available in the SBS_CCVALR)
+            value: 0
+          - name: B_0x1
+            description: Code from the SBS software value register (SBS_CCSWVALR)
+            value: 1
+      - name: COMP_RDY
+        description: "Compensation cell ready\nThis bit provides the status of the compensation cell."
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: I/O compensation cell not ready
+            value: 0
+          - name: B_0x1
+            description: I/O compensation cell ready. The code value provided by the cell can be used.
+            value: 1
+      - name: OCTO1_COMP_RDY
+        description: "XSPIM_P1 compensation cell ready\nThis bit provides the status of the XSPIM_P1 compensation cell."
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: XSPIM_P1 I/O compensation cell not ready
+            value: 0
+          - name: B_0x1
+            description: XSPIM_P1 I/O compensation cell ready. The code value provided by the cell can be used.
+            value: 1
+      - name: OCTO2_COMP_RDY
+        description: "XSPIM_P2 compensation cell ready\nThis bit provides the status of the XSPIM_P2 compensation cell."
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: XSPIM_P2 I/O compensation cell not ready
+            value: 0
+          - name: B_0x1
+            description: XSPIM_P2 I/O compensation cell ready. The code value provided by the cell can be used.
+            value: 1
+      - name: IOHSLV
+        description: "I/O high speed at low voltage\nWhen this bit is set, the speed of the I/Os is optimized when the device voltage is low.\nThis bit is active only if VDDIO_HSLV user option bit is set in FLASH. It must be used only if the device supply voltage is below 2.7 V. Setting this bit when V<sub>DD</sub> is higher than 2.7 V may be destructive."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No I/O speed optimization when device voltage is low
+            value: 0
+          - name: B_0x1
+            description: I/O speed optimized when device voltage is low, if VDDIO_HSLV user option is set (no effect otherwise)
+            value: 1
+      - name: OCTO1_IOHSLV
+        description: "XSPIM_P1 I/O high speed at low voltage \nWhen this bit is set, the speed of the XSPIM_P1 I/Os is optimized when the device voltage is low.\nThis bit is active only if OCTO1_HSLV user option bit is set in FLASH. This bit must be used only if the device supply voltage is below 2.7 V. Setting this bit when V<sub>DD</sub> is higher than 2.7 V may be destructive."
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No XSPIM_P1 I/O speed optimization when device voltage is low
+            value: 0
+          - name: B_0x1
+            description: XSPIM_P1 I/O speed optimized when device voltage is low, if OCTO1_HSLV user option is set (no effect otherwise)
+            value: 1
+      - name: OCTO2_IOHSLV
+        description: "XSPIM_P2 I/O high speed at low voltage \nWhen this bit is set, the speed of the XSPIM_P2 I/Os is optimized when the device voltage is low.\nThis bit is active only if OCTO2_HSLV user option bit is set in FLASH. This bit must be used only if the device supply voltage is below 2.7 V. Setting this bit when V<sub>DD</sub> is higher than 2.7 V may be destructive."
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No XSPIM_P2 I/O speed optimization when device voltage is low
+            value: 0
+          - name: B_0x1
+            description: XSPIM_P2 I/O speed optimized when device voltage is low, if OCTO2_HSLV user option is set (no effect otherwise)
+            value: 1
+  - name: CCVALR
+    displayName: CCVALR
+    description: Compensation cell for I/Os value register
+    addressOffset: 276
+    size: 32
+    resetValue: 136
+    resetMask: 4294967295
+    fields:
+      - name: NSRC
+        description: "NMOS transistors slew-rate compensation\nThis bitfield returns the NMOS transistors slew-rate compensation value computed by the cell. It is interpreted to compensate the NMOS transistors slew rate in the functional range if COMP_CODESEL = 0 in SBS_CCCSR register."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-only
+      - name: PSRC
+        description: "PMOS transistors slew-rate compensation\nThis bitfield returns the PMOS transistors slew-rate compensation value computed by the cell. It is interpreted to compensate the PMOS transistors slew rate in the functional range if COMP_CODESEL = 0 in SBS_CCCSR register."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-only
+      - name: OCTO1_NSRC
+        description: "XSPIM_P1 NMOS transistors slew-rate compensation\nThis bitfield returns the NMOS transistors slew-rate compensation value computed by the cell. It is interpreted by XSPIM_P1 to compensate the NMOS transistors slew rate in the functional range if OCTO1_COMP_CODESEL = 0 in SBS_CCCSR register."
+        bitOffset: 8
+        bitWidth: 4
+        access: read-only
+      - name: OCTO1_PSRC
+        description: "XSPIM_P1 PMOS transistors slew-rate compensation\nThis bitfield returns the PMOS transistors slew-rate compensation value computed by the cell. It is interpreted by XSPIM_P1 to compensate the PMOS transistors slew rate in the functional range if OCTO1_COMP_CODESEL = 0 in SBS_CCCSR register."
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+      - name: OCTO2_NSRC
+        description: "XSPIM_P2 NMOS transistors slew-rate compensation\nThis bitfield returns the NMOS transistors slew-rate compensation value computed by the cell. It is interpreted by XSPIM_P2 to compensate the NMOS transistors slew rate in the functional range if OCTO2_COMP_CODESEL = 0 in SBS_CCCSR register."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-only
+      - name: OCTO2_PSRC
+        description: "XSPIM_P2 PMOS transistors slew-rate compensation\nThis bitfield returns the PMOS transistors slew-rate compensation value computed by the cell. It is interpreted by XSPIM_P2 to compensate the PMOS transistors slew rate in the functional range if OCTO2_COMP_CODESEL = 0 in SBS_CCCSR register."
+        bitOffset: 20
+        bitWidth: 4
+        access: read-only
+  - name: CCSWVALR
+    displayName: CCSWVALR
+    description: Compensation cell for I/Os software value register
+    addressOffset: 280
+    size: 32
+    resetValue: 136
+    resetMask: 4294967295
+    fields:
+      - name: SW_NSRC
+        description: "Software NMOS transistors slew-rate compensation\nThis bitfield returns the NMOS transistors slew-rate compensation value computed by the cell. It is interpreted to compensate the NMOS transistors slew rate in the functional range if COMP_CODESEL = 1 in SBS_CCCSR register."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: SW_PSRC
+        description: "Software PMOS transistors slew-rate compensation\nThis bitfield returns the PMOS transistors slew-rate compensation value computed by the cell. It is interpreted to compensate the PMOS transistors slew rate in the functional range if COMP_CODESEL = 1 in SBS_CCCSR register."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+      - name: OCTO1_SW_NSRC
+        description: "XSPIM_P1 software NMOS transistors slew-rate compensation\nThis bitfield returns the NMOS transistors slew -ate compensation value computed by the cell. It is interpreted by XSPIM_P1 to compensate the NMOS transistors slew rate in the functional range if OCTO1_COMP_CODESEL = 1 in SBS_CCCSR register."
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: OCTO1_SW_PSRC
+        description: "XSPIM_P1 software PMOS transistors slew-rate compensation\nThis bitfield returns the PMOS transistors slew-rate compensation value computed by the cell. It is interpreted by XSPIM_P1 to compensate the PMOS transistors slew rate in the functional range if OCTO1_COMP_CODESEL = 1 in SBS_CCCSR register."
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+      - name: OCTO2_SW_NSRC
+        description: "XSPIM_P2 software NMOS transistors slew-rate compensation\nThis bitfield returns the NMOS transistors slew-rate compensation value computed by the cell. It is interpreted by XSPIM_P2 to compensate the NMOS transistors slew rate in the functional range if OCTO2_COMP_CODESEL = 1 in SBS_CCCSR register."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+      - name: OCTO2_SW_PSRC
+        description: "XSPIM_P2 software PMOS transistors slew-rate compensation\nThis bitfield returns the PMOS transistors slew-rate compensation value computed by the cell. It is interpreted by XSPIM_P2 to compensate the PMOS transistors slew rate in the functional range if OCTO2_COMP_CODESEL = 1 in SBS_CCCSR register."
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+  - name: BKLOCKR
+    displayName: BKLOCKR
+    description: Break lockup register
+    addressOffset: 288
+    size: 32
+    resetValue: 136
+    resetMask: 4294967295
+    fields:
+      - name: PVD_BL
+        description: "PVD break lock\nThis bit is set by SW and cleared only by a system reset. it can be used to enable and lock the connection to TIM1/8/15/16/17Break input as well as the PVDE and PLS[2:0] bitfields in the PWR_CR1 register.\nOnce set, this bit is cleared only by a system reset."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: PVD interrupt disconnected from TIM1/8/15/16/17 break inputs. PVDE and PLS[2:0] bitfields can be programmed by the application.
+            value: 0
+          - name: B_0x1
+            description: PVD output connected to TIM1/8/15/16/17 break input. PVDE and PLS[2:0] bits are read only.
+            value: 1
+      - name: FLASHECC_BL
+        description: "Flash ECC error break lock\nSet this bit to enable and lock the connection between embedded flash memory ECC double error detection flag and break inputs of TIM1/15/16/17 peripherals.\nOnce set, this bit is cleared only by a system reset."
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FLASH ECC double error detection flag disconnected from TIM1/15/16/17 break inputs
+            value: 0
+          - name: B_0x1
+            description: FLASH ECC double error detection flag connected to TIM1/15/16/17 break inputs
+            value: 1
+      - name: CM7LCKUP_BL
+        description: "Cortex-M7 lockup break lock\nSet this bit to enable and lock the connection between the Cortex-M7 lockup (HardFault) output and break inputs of TIM1/15/16/17 peripherals.\nOnce set, this bit is cleared only by a system reset."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Cortex-M7 lockup output disconnected from TIM1/15/16/17 break inputs
+            value: 0
+          - name: B_0x1
+            description: Cortex-M7 lockup output connected to TIM1/15/16/17 break inputs
+            value: 1
+      - name: BKRAMECC_BL
+        description: "Backup RAM ECC error break lock\nSet this bit to enable and lock the connection between backup RAM ECC double error detection flag and break inputs of TIM1/15/16/17 peripherals.\nOnce set, this bit is cleared only by a system reset."
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Backup RAM ECC double error detection flag disconnected from TIM1/15/16/17 break inputs.
+            value: 0
+          - name: B_0x1
+            description: Backup RAM ECC double error detection flag connected to TIM1/15/16/17 break inputs.
+            value: 1
+      - name: DTCMECC_BL
+        description: "DTCM ECC error break lock\nSet this bit to enable and lock the connection between DTCM ECC double error detection flag and break inputs of TIM1/15/16/17 peripherals.\nOnce set, this bit is cleared only by a system reset.\nNote: The DTCM0 and DTCM1 are Ored to give DTCMECC"
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: DTCM ECC double error detection flag disconnected from TIM1/15/16/17 break inputs
+            value: 0
+          - name: B_0x1
+            description: DTCM ECC double error detection flag connected to TIM1/15/16/17 break inputs
+            value: 1
+      - name: ITCMECC_BL
+        description: "ITCM ECC error break lock\nSet this bit to enable and lock the connection between ITCM ECC double error detection flag and break inputs of TIM1/15/16/17 peripherals.\nOnce set, this bit is cleared only by a system reset."
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ITCM ECC double error detection flag disconnected from TIM1/15/16/17 break inputs
+            value: 0
+          - name: B_0x1
+            description: ITCM ECC double error detection flag connected to TIM1/15/16/17 break inputs
+            value: 1
+      - name: ARAM3ECC_BL
+        description: "AXIRAM3 ECC error break lock\nSet this bit to enable and lock the connection between AXIRAM3 ECC double error detection flag and break inputs of TIM1/15/16/17 peripherals.\nOnce set this bit is cleared only by a system reset."
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: AXIRAM3 ECC double error detection flag disconnected from TIM1/15/16/17 break inputs
+            value: 0
+          - name: B_0x1
+            description: AXIRAM3 ECC double error detection flag connected to TIM1/15/16/17 break inputs
+            value: 1
+      - name: ARAM1ECC_BL
+        description: "AXIRAM1 ECC error break lock\nSet this bit to enable and lock the connection between AXIRAM1 ECC double error detection flag and break inputs of TIM1/15/16/17 peripherals.\nOnce set, this bit is cleared only by a system reset."
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: AXIRAM1 ECC double error detection flag disconnected from TIM1/5/16/17 break inputs
+            value: 0
+          - name: B_0x1
+            description: AXIRAM1 ECC double error detection flag connected to TIM1/15/16/17 break inputs
+            value: 1
+  - name: EXTICR0
+    displayName: EXTICR0
+    description: External interrupt configuration register 0
+    addressOffset: 304
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PC_EXTI0
+        description: "Port configuration EXTI {0 * 4 + i}\nThis bitfield selects the source input to the EXTI input {0 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 0
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI1
+        description: "Port configuration EXTI {0 * 4 + i}\nThis bitfield selects the source input to the EXTI input {0 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 4
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI2
+        description: "Port configuration EXTI {0 * 4 + i}\nThis bitfield selects the source input to the EXTI input {0 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 8
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI3
+        description: "Port configuration EXTI {0 * 4 + i}\nThis bitfield selects the source input to the EXTI input {0 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+  - name: EXTICR1
+    displayName: EXTICR1
+    description: External interrupt configuration register 1
+    addressOffset: 308
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PC_EXTI4
+        description: "Port configuration EXTI {1 * 4 + i}\nThis bitfield selects the source input to the EXTI input {1 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 0
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI5
+        description: "Port configuration EXTI {1 * 4 + i}\nThis bitfield selects the source input to the EXTI input {1 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 4
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI6
+        description: "Port configuration EXTI {1 * 4 + i}\nThis bitfield selects the source input to the EXTI input {1 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 8
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI7
+        description: "Port configuration EXTI {1 * 4 + i}\nThis bitfield selects the source input to the EXTI input {1 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+  - name: EXTICR2
+    displayName: EXTICR2
+    description: External interrupt configuration register 2
+    addressOffset: 312
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PC_EXTI8
+        description: "Port configuration EXTI {2 * 4 + i}\nThis bitfield selects the source input to the EXTI input {2 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 0
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI9
+        description: "Port configuration EXTI {2 * 4 + i}\nThis bitfield selects the source input to the EXTI input {2 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 4
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI10
+        description: "Port configuration EXTI {2 * 4 + i}\nThis bitfield selects the source input to the EXTI input {2 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 8
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI11
+        description: "Port configuration EXTI {2 * 4 + i}\nThis bitfield selects the source input to the EXTI input {2 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+  - name: EXTICR3
+    displayName: EXTICR3
+    description: External interrupt configuration register 3
+    addressOffset: 316
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PC_EXTI12
+        description: "Port configuration EXTI {3 * 4 + i}\nThis bitfield selects the source input to the EXTI input {3 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 0
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI13
+        description: "Port configuration EXTI {3 * 4 + i}\nThis bitfield selects the source input to the EXTI input {3 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 4
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI14
+        description: "Port configuration EXTI {3 * 4 + i}\nThis bitfield selects the source input to the EXTI input {3 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 8
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+      - name: PC_EXTI15
+        description: "Port configuration EXTI {3 * 4 + i}\nThis bitfield selects the source input to the EXTI input {3 * 4 + i} used for external interrupt/ event detection.\nOthers: reserved"
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+        enumeratedValues:
+          - name: B_0x00
+            description: PA[x*4+i] pin
+            value: 0
+          - name: B_0x01
+            description: PB[x*4+i] pin
+            value: 1
+          - name: B_0x02
+            description: PC[x*4+i] pin
+            value: 2
+          - name: B_0x03
+            description: PD[x*4+i] pin
+            value: 3
+          - name: B_0x04
+            description: PE[x*4+i] pin
+            value: 4
+          - name: B_0x05
+            description: PF[x*4+i] pin
+            value: 5
+          - name: B_0x06
+            description: PG[x*4+i] pin
+            value: 6
+          - name: B_0x07
+            description: PH[x*4+i] pin
+            value: 7
+          - name: B_0x08
+            description: PM[x*4+i] pin
+            value: 8
+          - name: B_0x09
+            description: PN[x*4+i] pin
+            value: 9
+addressBlocks:
+  - offset: 0
+    size: 320
+    usage: registers

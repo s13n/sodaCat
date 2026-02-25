@@ -1,0 +1,1050 @@
+name: MDIOS
+description: Management data input/output
+groupName: MDIOS
+source: STM32H7S SVD v1.3
+registers:
+  - name: CR
+    displayName: CR
+    description: Configuration register
+    addressOffset: 0
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: EN
+        description: peripheral enable
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: MDIOS is disabled.
+            value: 0
+          - name: B_0x1
+            description: MDIOS is enabled and monitoring the MDIO bus (MDC/MDIO).
+            value: 1
+      - name: WRIE
+        description: "register write interrupt enable\nNote: When this bit is set, an interrupt is generated if any of the read flags (WRF[31:0] in the MDIOS_WRFR register) is set."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt is disabled.
+            value: 0
+          - name: B_0x1
+            description: Interrupt is enabled.
+            value: 1
+      - name: RDIE
+        description: "register read interrupt enable\nNote: When this bit is set, an interrupt is generated if any of the read flags (RDF[31:0] in the MDIOS_RDFR register) is set."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt is disabled.
+            value: 0
+          - name: B_0x1
+            description: Interrupt is enabled.
+            value: 1
+      - name: EIE
+        description: "error interrupt enable\nNote: When this bit is set, an interrupt is generated if any of the error flags (PERF, SERF, or TERF in the MDIOS_SR register) is set."
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt is disabled.
+            value: 0
+          - name: B_0x1
+            description: Interrupt is enabled.
+            value: 1
+      - name: DPC
+        description: "disable preamble check\nNote: When this bit is set, the application must be sure that no frame is currently in progress when the MDIOS is enabled. Otherwise, the MDIOS can become desynchronized with the master.\nNote: This bit cannot be changed unless EN = 0 (though it can be changed at the same time that EN is being set)."
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: MDIO master must give preamble before each frame.
+            value: 0
+          - name: B_0x1
+            description: MDIO master can send each frame without a preceding preamble, and the MDIOS does not signal a preamble error.
+            value: 1
+      - name: PORT_ADDRESS
+        description: "slave address\nCan be written only when the peripheral is disabled (EN = 0).\nIf the address given by the MDIO master matches PORT_ADRESS[4:0], then the MDIOS\nservices the frame. Otherwise the frame is ignored."
+        bitOffset: 8
+        bitWidth: 5
+        access: read-write
+  - name: WRFR
+    displayName: WRFR
+    description: Write flag register
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WRF
+        description: "write flags for MDIOS registers 0 to 31.\nEach bit is set by hardware when the MDIO master performs a write to the corresponding MDIOS register. An interrupt is generated if WRIE (in MDIOS_CR) is set.\nEach bit is cleared by software by writing 1 to the corresponding CWRF bit in the MDIOS_CWRFR register.\nFor WRFx:"
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: MDIOS register x is not written by the MDIO master.
+            value: 0
+          - name: B_0x1
+            description: MDIOS register x is written by the MDIO master and the data is available in DIN[15:0] in the MDIOS_DINRx register.
+            value: 1
+  - name: CWRFR
+    displayName: CWRFR
+    description: Clear write flag register
+    addressOffset: 8
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CWRF
+        description: "clear the write flag\nWriting 1 to CWRFx clears the WRFx bit in the MDIOS_WRF register."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: RDFR
+    displayName: RDFR
+    description: Read flag register
+    addressOffset: 12
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RDF
+        description: "read flags for MDIOS registers 0 to 31.\nEach bit is set by hardware when the MDIO master performs a read from the corresponding MDIOS register. An interrupt is generated if RDIE (in MDIOS_CR) is set.\nEach bit is cleared by software by writing 1 to the corresponding CRDF bit in the MDIOS_CRDFR register.\nFor RDFx:"
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: MDIOS register x is not read by the MDIO master.
+            value: 0
+          - name: B_0x1
+            description: MDIOS register x is read by the MDIO master.
+            value: 1
+  - name: CRDFR
+    displayName: CRDFR
+    description: Clear read flag register
+    addressOffset: 16
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRDF
+        description: "clear the read flag\nWriting 1 to CRDFx clears the RDFx bit in the MDIOS_RDF register."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: SR
+    displayName: SR
+    description: Status register
+    addressOffset: 20
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PERF
+        description: "preamble error flag\nNote: Writing 1 to CPERF (MDIOS_CLRFR) clears this bit.\nNote: This bit is not set if DPC (disable preamble check, MDIOS_CR[7]) is set."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No preamble error has occurred.
+            value: 0
+          - name: B_0x1
+            description: A preamble error has occurred.
+            value: 1
+      - name: SERF
+        description: "start error flag\nNote: Writing 1 to CSERF (MDIOS_CLRFR) clears this bit."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No start error has occurred.
+            value: 0
+          - name: B_0x1
+            description: A start error has occurred.
+            value: 1
+      - name: TERF
+        description: "turnaround error flag\nNote: Writing 1 to CTERF (MDIOS_CLRFR) clears this bit."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No turnaround error has occurred.
+            value: 0
+          - name: B_0x1
+            description: A turnaround error has occurred.
+            value: 1
+  - name: CLRFR
+    displayName: CLRFR
+    description: Clear flag register
+    addressOffset: 24
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CPERF
+        description: "clear the preamble error flag\nWriting 1 to this bit clears the PERF flag (in MDIOS_SR)."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CSERF
+        description: "clear the start error flag\nWriting 1 to this bit clears the SERF flag (in MDIOS_SR).\nWhen DPC = 1 (MDIOS_CR[7]), the SERF flag must be cleared only when there is not a frame already in progress."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: CTERF
+        description: "clear the turnaround error flag\nWriting 1 to this bit clears the TERF flag (in MDIOS_SR).\nWhen DPC = 1 (MDIOS_CR[7]), the TERF flag must be cleared only when there is not a frame already in progress."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+  - name: DINR0
+    displayName: DINR0
+    description: Input data register 0
+    addressOffset: 256
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR1
+    displayName: DINR1
+    description: Input data register 1
+    addressOffset: 260
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR2
+    displayName: DINR2
+    description: Input data register 2
+    addressOffset: 264
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR3
+    displayName: DINR3
+    description: Input data register 3
+    addressOffset: 268
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR4
+    displayName: DINR4
+    description: Input data register 4
+    addressOffset: 272
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR5
+    displayName: DINR5
+    description: Input data register 5
+    addressOffset: 276
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR6
+    displayName: DINR6
+    description: Input data register 6
+    addressOffset: 280
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR7
+    displayName: DINR7
+    description: Input data register 7
+    addressOffset: 284
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR8
+    displayName: DINR8
+    description: Input data register 8
+    addressOffset: 288
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR9
+    displayName: DINR9
+    description: Input data register 9
+    addressOffset: 292
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR10
+    displayName: DINR10
+    description: Input data register 10
+    addressOffset: 296
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR11
+    displayName: DINR11
+    description: Input data register 11
+    addressOffset: 300
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR12
+    displayName: DINR12
+    description: Input data register 12
+    addressOffset: 304
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR13
+    displayName: DINR13
+    description: Input data register 13
+    addressOffset: 308
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR14
+    displayName: DINR14
+    description: Input data register 14
+    addressOffset: 312
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR15
+    displayName: DINR15
+    description: Input data register 15
+    addressOffset: 316
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR16
+    displayName: DINR16
+    description: Input data register 16
+    addressOffset: 320
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR17
+    displayName: DINR17
+    description: Input data register 17
+    addressOffset: 324
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR18
+    displayName: DINR18
+    description: Input data register 18
+    addressOffset: 328
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR19
+    displayName: DINR19
+    description: Input data register 19
+    addressOffset: 332
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR20
+    displayName: DINR20
+    description: Input data register 20
+    addressOffset: 336
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR21
+    displayName: DINR21
+    description: Input data register 21
+    addressOffset: 340
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR22
+    displayName: DINR22
+    description: Input data register 22
+    addressOffset: 344
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR23
+    displayName: DINR23
+    description: Input data register 23
+    addressOffset: 348
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR24
+    displayName: DINR24
+    description: Input data register 24
+    addressOffset: 352
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR25
+    displayName: DINR25
+    description: Input data register 25
+    addressOffset: 356
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR26
+    displayName: DINR26
+    description: Input data register 26
+    addressOffset: 360
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR27
+    displayName: DINR27
+    description: Input data register 27
+    addressOffset: 364
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR28
+    displayName: DINR28
+    description: Input data register 28
+    addressOffset: 368
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR29
+    displayName: DINR29
+    description: Input data register 29
+    addressOffset: 372
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR30
+    displayName: DINR30
+    description: Input data register 30
+    addressOffset: 376
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DINR31
+    displayName: DINR31
+    description: Input data register 31
+    addressOffset: 380
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIN
+        description: "input data received from MDIO master during write frames\nThis field is written by hardware with the 16-bit data received in a write frame which is addressed to MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+  - name: DOUTR0
+    displayName: DOUTR0
+    description: Output data register 0
+    addressOffset: 384
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR1
+    displayName: DOUTR1
+    description: Output data register 1
+    addressOffset: 388
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR2
+    displayName: DOUTR2
+    description: Output data register 2
+    addressOffset: 392
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR3
+    displayName: DOUTR3
+    description: Output data register 3
+    addressOffset: 396
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR4
+    displayName: DOUTR4
+    description: Output data register 4
+    addressOffset: 400
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR5
+    displayName: DOUTR5
+    description: Output data register 5
+    addressOffset: 404
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR6
+    displayName: DOUTR6
+    description: Output data register 6
+    addressOffset: 408
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR7
+    displayName: DOUTR7
+    description: Output data register 7
+    addressOffset: 412
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR8
+    displayName: DOUTR8
+    description: Output data register 8
+    addressOffset: 416
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR9
+    displayName: DOUTR9
+    description: Output data register 9
+    addressOffset: 420
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR10
+    displayName: DOUTR10
+    description: Output data register 10
+    addressOffset: 424
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR11
+    displayName: DOUTR11
+    description: Output data register 11
+    addressOffset: 428
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR12
+    displayName: DOUTR12
+    description: Output data register 12
+    addressOffset: 432
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR13
+    displayName: DOUTR13
+    description: Output data register 13
+    addressOffset: 436
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR14
+    displayName: DOUTR14
+    description: Output data register 14
+    addressOffset: 440
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR15
+    displayName: DOUTR15
+    description: Output data register 15
+    addressOffset: 444
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR16
+    displayName: DOUTR16
+    description: Output data register 16
+    addressOffset: 448
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR17
+    displayName: DOUTR17
+    description: Output data register 17
+    addressOffset: 452
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR18
+    displayName: DOUTR18
+    description: Output data register 18
+    addressOffset: 456
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR19
+    displayName: DOUTR19
+    description: Output data register 19
+    addressOffset: 460
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR20
+    displayName: DOUTR20
+    description: Output data register 20
+    addressOffset: 464
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR21
+    displayName: DOUTR21
+    description: Output data register 21
+    addressOffset: 468
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR22
+    displayName: DOUTR22
+    description: Output data register 22
+    addressOffset: 472
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR23
+    displayName: DOUTR23
+    description: Output data register 23
+    addressOffset: 476
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR24
+    displayName: DOUTR24
+    description: Output data register 24
+    addressOffset: 480
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR25
+    displayName: DOUTR25
+    description: Output data register 25
+    addressOffset: 484
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR26
+    displayName: DOUTR26
+    description: Output data register 26
+    addressOffset: 488
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR27
+    displayName: DOUTR27
+    description: Output data register 27
+    addressOffset: 492
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR28
+    displayName: DOUTR28
+    description: Output data register 28
+    addressOffset: 496
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR29
+    displayName: DOUTR29
+    description: Output data register 29
+    addressOffset: 500
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR30
+    displayName: DOUTR30
+    description: Output data register 30
+    addressOffset: 504
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DOUTR31
+    displayName: DOUTR31
+    description: Output data register 31
+    addressOffset: 508
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DOUT
+        description: "output data sent to MDIO Master during read frames\nThis field is written by software. These 16 bits are serially output on the MDIO bus during read frames which address the MDIOS register x."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 1024
+    usage: registers
+interrupts:
+  - name: INTR
+    description: MDIOS global interrupt

@@ -1,0 +1,2900 @@
+name: FMC
+description: Flexible memory controller
+source: STM32H7S SVD v1.3
+registers:
+  - name: BCR1
+    displayName: BCR1
+    description: SRAM/NOR-flash chip-select control registers for bank 1
+    addressOffset: 0
+    size: 32
+    resetValue: 12507
+    resetMask: 4294967295
+    fields:
+      - name: MBKEN
+        description: "Memory bank enable bit\nThis bit enables the memory bank. After reset Bank1 is enabled, all others are disabled. Accessing a disabled bank causes an ERROR on AXI bus."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding memory bank is disabled
+            value: 0
+          - name: B_0x1
+            description: Corresponding memory bank is enabled
+            value: 1
+      - name: MUXEN
+        description: "Address/data multiplexing enable bit\nWhen this bit is set, the address and data values are multiplexed on the data bus, valid only with NOR and PSRAM memories:"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Address/Data non-multiplexed
+            value: 0
+          - name: B_0x1
+            description: Address/Data multiplexed on databus (default after reset)
+            value: 1
+      - name: MTYP
+        description: "Memory type\nThese bits define the type of external memory attached to the corresponding memory bank:"
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: SRAM (default after reset for Bank 2...4)
+            value: 0
+          - name: B_0x1
+            description: PSRAM (CRAM)
+            value: 1
+          - name: B_0x2
+            description: NOR flash/OneNAND flash (default after reset for Bank 1)
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: MWID
+        description: "Memory data bus width\nDefines the external memory device width, valid for all type of memories."
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 16 bits (default after reset)
+            value: 1
+          - name: B_0x2
+            description: 32 bits
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: FACCEN
+        description: "Flash access enable\nThis bit enables NOR flash memory access operations."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding NOR flash memory access is disabled
+            value: 0
+          - name: B_0x1
+            description: Corresponding NOR flash memory access is enabled (default after reset)
+            value: 1
+      - name: BURSTEN
+        description: "Burst enable bit\nThis bit enables/disables synchronous accesses during read operations. It is valid only for synchronous memories operating in Burst mode:"
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Burst mode disabled (default after reset). Read accesses are performed in Asynchronous mode
+            value: 0
+          - name: B_0x1
+            description: Burst mode enable. Read accesses are performed in Synchronous mode.
+            value: 1
+      - name: WAITPOL
+        description: "Wait signal polarity bit\nThis bit defines the polarity of the wait signal from memory used for either in Synchronous or Asynchronous mode:"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT active low (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT active high.
+            value: 1
+      - name: WAITCFG
+        description: "Wait timing configuration\nThe NWAIT signal indicates whether the data from the memory are valid or if a wait state must be inserted when accessing the memory in Synchronous mode. This configuration bit determines if NWAIT is asserted by the memory one clock cycle before the wait state or during the wait state:"
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is active one data cycle before wait state (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is active during wait state (not used for PSRAM).
+            value: 1
+      - name: WREN
+        description: "Write enable bit\nThis bit indicates whether write operations are enabled/disabled in the bank by the FMC:"
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write operations are disabled in the bank by the FMC, an AXI slave error is reported
+            value: 0
+          - name: B_0x1
+            description: Write operations are enabled for the bank by the FMC (default after reset).
+            value: 1
+      - name: WAITEN
+        description: "Wait enable bit\nThis bit enables/disables wait-state insertion via the NWAIT signal when accessing the memory in Synchronous mode."
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is disabled (its level not taken into account, no wait state inserted after the programmed flash latency period)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is enabled (its level is taken into account after the programmed latency period to insert wait states if asserted) (default after reset)
+            value: 1
+      - name: EXTMOD
+        description: "Extended mode enable.\nThis bit enables the FMC to program the write timings for asynchronous accesses inside the FMC_BWTR register, thus resulting in different timings for read and write operations.\nNote: When the Extended mode is disabled, the FMC can operate in Mode1 or Mode2 as follows:\nMode 1 is the default mode when the SRAM/PSRAM memory type is selected (MTYP =0x0 or 0x01)\nMode 2 is the default mode when the NOR memory type is selected (MTYP = 0x10)."
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: values inside FMC_BWTR register are not taken into account (default after reset)
+            value: 0
+          - name: B_0x1
+            description: values inside FMC_BWTR register are taken into account
+            value: 1
+      - name: ASYNCWAIT
+        description: "Wait signal during asynchronous transfers\nThis bit enables/disables the FMC to use the wait signal even during an asynchronous protocol."
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is not taken in to account when running an asynchronous protocol (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is taken in to account when running an asynchronous protocol
+            value: 1
+      - name: CPSIZE
+        description: "CRAM Page Size\nThese are used for Cellular RAM 1.5 which does not allow burst access to cross the address boundaries between pages. When these bits are configured, the FMC splits automatically the burst access when the memory page size is reached (refer to memory datasheet for page size).\nOther configuration: reserved."
+        bitOffset: 16
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No burst split when crossing page boundary (default after reset).
+            value: 0
+          - name: B_0x1
+            description: 128 bytes
+            value: 1
+          - name: B_0x2
+            description: 256 bytes
+            value: 2
+          - name: B_0x4
+            description: 1024 bytes
+            value: 4
+      - name: CBURSTRW
+        description: "Write burst enable\nFor PSRAM (CRAM) operating in Burst mode, the bit enables synchronous accesses during write operations. The enable bit for synchronous read accesses is the BURSTEN bit in the FMC_BCRx register."
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write operations are always performed in Asynchronous mode
+            value: 0
+          - name: B_0x1
+            description: Write operations are performed in Synchronous mode.
+            value: 1
+      - name: CCLKEN
+        description: "Continuous Clock Enable\nThis bit enables the FMC_CLK clock output to external memory devices.\nNote: The CCLKEN bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register. Bank 1 must be configured in Synchronous mode to generate the FMC_CLK continuous clock.\nNote: If CCLKEN bit is set, the FMC_CLK clock ratio is specified by CLKDIV value in the FMC_BTR1 register. CLKDIV in FMC_BWTR1 is dont care.\nNote: If the Synchronous mode is used and CCLKEN bit is set, the synchronous memories connected to other banks than Bank 1 are clocked by the same clock (the CLKDIV value in the FMC_BTR2..4 and FMC_BWTR2..4 registers for other banks has no effect.)"
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The FMC_CLK is only generated during the synchronous memory access (read/write transaction). The FMC_CLK clock ratio is specified by the programmed CLKDIV value in the FMC_BCRx register (default after reset).
+            value: 0
+          - name: B_0x1
+            description: The FMC_CLK is generated continuously during asynchronous and synchronous access. The FMC_CLK clock is activated when the CCLKEN is set.
+            value: 1
+      - name: WFDIS
+        description: "Write FIFO Disable\nThis bit disables the Write FIFO used by the FMC.\nNote: The WFDIS bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write FIFO enabled (Default after reset)
+            value: 0
+          - name: B_0x1
+            description: Write FIFO disabled
+            value: 1
+      - name: BMAP
+        description: "FMC bank mapping\nThese bits allow different remap or swap of the FMC NOR/PSRAM and SDRAM banks (refer to Table 144).\nNote: The BMAP bits of the FMC_BCR2..4 registers are dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Default mapping (refer to Figure 108 and Table 144).
+            value: 0
+          - name: B_0x1
+            description: NOR/PSRAM bank and SDRAM bank 1 are swapped.
+            value: 1
+          - name: B_0x2
+            description: FIELD Reserved
+            value: 2
+          - name: B_0x3
+            description: Reserved.
+            value: 3
+      - name: FMCEN
+        description: "FMC Enable\nThis bit enables/disables the FMC.\nNote: The FMCEN bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disable the FMC
+            value: 0
+          - name: B_0x1
+            description: Enable the FMC
+            value: 1
+  - name: BTR1
+    displayName: BTR1
+    description: SRAM/NOR-flash chip-select timing registers for bank 1
+    addressOffset: 4
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: ADDSET
+        description: "Address setup phase duration\nThese bits are written by software to define the duration of the address setup phase (refer to Figure 109 to Figure 121), used in SRAMs, ROMs and asynchronous NOR flash:\n...\nFor each access mode address setup phase duration, please refer to the respective figure (refer to Figure 109 to Figure 121).\nNote: In synchronous accesses, this value is dont care.\nNote: In Muxed mode or mode D, the minimum value for ADDSET is 1.\nNote: In mode 1 and PSRAM memory, the minimum value for ADDSET is 1."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ADDSET phase duration = 0   fmc_ker_ck clock cycle
+            value: 0
+          - name: B_0xF
+            description: ADDSET phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: ADDHLD
+        description: "Address-hold phase duration\nThese bits are written by software to define the duration of the address hold phase (refer to Figure 109 to Figure 121), used in mode D or multiplexed accesses:\n...\nFor each access mode address-hold phase duration, please refer to the respective figure (Figure 109 to Figure 121).\nNote: In synchronous accesses, this value is not used, the address hold phase is always 1 memory clock period duration."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: ADDHLD phase duration =1   fmc_ker_ck clock cycle
+            value: 1
+          - name: B_0x2
+            description: ADDHLD phase duration = 2   fmc_ker_ck clock cycle
+            value: 2
+          - name: B_0xF
+            description: ADDHLD phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: DATAST
+        description: "Data-phase duration\nThese bits are written by software to define the duration of the data phase (refer to Figure 109 to Figure 121), used in asynchronous accesses:\n...\nFor each memory type and access mode data-phase duration, please refer to the respective figure (Figure 109 to Figure 121).\nExample: Mode1, write access, DATAST = 1: Data-phase duration = DATAST+1 = 1 x fmc_ker_ck clock cycles.\nNote: In synchronous accesses, this value is dont care."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: DATAST phase duration = 1   fmc_ker_ck clock cycles
+            value: 1
+          - name: B_0x2
+            description: DATAST phase duration = 2   fmc_ker_ck clock cycles
+            value: 2
+          - name: B_0xFF
+            description: DATAST phase duration = 255   fmc_ker_ck clock cycles (default value after reset)
+            value: 255
+      - name: BUSTURN
+        description: "Bus turnaround phase duration\nThese bits are written by software to add a delay at the end of a write-to-read (and read-to-write) transaction. This delay allows to match the minimum time between consecutive transactions (t<sub>EHEL</sub> from NEx high to NEx low) and the maximum time needed by the memory to free the data bus after a read access (t<sub>EHQZ</sub>). The programmed bus turnaround delay is inserted between an asynchronous read (muxed or mode D) or write transaction and any other asynchronous /synchronous read or write to or from a static bank. The bank can be the same or different in case of read, in case of write the bank can be different except for muxed or mode D.\nIn some cases, whatever the programmed BUSTURN values, the bus turnaround delay is fixed\nas follows:\nThe bus turnaround delay is not inserted between two consecutive asynchronous write transfers to the same static memory bank except for muxed and D modes.\nThere is a bus turnaround delay of 1 FMC clock cycle between:\nTwo consecutive asynchronous read transfers to the same static memory bank except for muxed and D modes. \nAn asynchronous read to an asynchronous or synchronous write to any static bank or dynamic bank except for muxed and D modes.\nAn asynchronous (modes 1, 2, A, B or C) read and a read from another static bank.\nThere is a bus turnaround delay of 2 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to the same bank.\nA synchronous write (burst or single) access and an asynchronous write or read transfer to or from static memory bank (the bank can be the same or different for the case of read.\nTwo consecutive synchronous reads (burst or single) followed by any synchronous/asynchronous read or write from/to another static memory bank.\nThere is a bus turnaround delay of 3 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to different static bank.\nA synchronous write (burst or single) access and a synchronous read from the same or a different bank.\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: BUSTURN phase duration = 0 fmc_ker_ck clock cycle added
+            value: 0
+          - name: B_0xF
+            description: BUSTURN phase duration = 15 x fmc_ker_ck clock cycles added (default value after reset)
+            value: 15
+      - name: CLKDIV
+        description: "Clock divide ratio (for FMC_CLK signal)\nThese bits define the period of FMC_CLK clock output signal, expressed in number of fmc_ker_ck cycles:\nIn asynchronous NOR flash, SRAM or PSRAM accesses, this value is dont care.\nNote: Refer to Section 23.7.5: Synchronous transactions for FMC_CLK divider ratio formula)"
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FMC_CLK period = 1 x fmc_ker_ck period
+            value: 0
+          - name: B_0x1
+            description: FMC_CLK period = 2   fmc_ker_ck periods
+            value: 1
+          - name: B_0x2
+            description: FMC_CLK period = 3   fmc_ker_ck periods
+            value: 2
+          - name: B_0xF
+            description: FMC_CLK period = 16   fmc_ker_ck periods (default value after reset)
+            value: 15
+      - name: DATLAT
+        description: "(see note below bit descriptions): Data latency for synchronous memory\nFor synchronous access with read/write Burst mode enabled (BURSTEN / CBURSTRW bits set), these bits define the number of memory clock cycles (+2) to issue to the memory before reading/writing the first data:\nThis timing parameter is not expressed in fmc_ker_ck periods, but in FMC_CLK periods.\nFor asynchronous access, this value is don't care."
+        bitOffset: 24
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Data latency of 2 FMC_CLK clock cycles for first burst access
+            value: 0
+          - name: B_0xF
+            description: Data latency of 17 FMC_CLK clock cycles for first burst access (default value after reset)
+            value: 15
+      - name: ACCMOD
+        description: "Access mode\nThese bits specify the Asynchronous access modes as shown in the timing diagrams. They are taken into account only when the EXTMOD bit in the FMC_BCRx register is 1."
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: access mode A
+            value: 0
+          - name: B_0x1
+            description: access mode B
+            value: 1
+          - name: B_0x2
+            description: access mode C
+            value: 2
+          - name: B_0x3
+            description: access mode D
+            value: 3
+  - name: BCR2
+    displayName: BCR2
+    description: SRAM/NOR-flash chip-select control registers for bank 2
+    addressOffset: 8
+    size: 32
+    resetValue: 12498
+    resetMask: 4294967295
+    fields:
+      - name: MBKEN
+        description: "Memory bank enable bit\nThis bit enables the memory bank. After reset Bank1 is enabled, all others are disabled. Accessing a disabled bank causes an ERROR on AXI bus."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding memory bank is disabled
+            value: 0
+          - name: B_0x1
+            description: Corresponding memory bank is enabled
+            value: 1
+      - name: MUXEN
+        description: "Address/data multiplexing enable bit\nWhen this bit is set, the address and data values are multiplexed on the data bus, valid only with NOR and PSRAM memories:"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Address/Data non-multiplexed
+            value: 0
+          - name: B_0x1
+            description: Address/Data multiplexed on databus (default after reset)
+            value: 1
+      - name: MTYP
+        description: "Memory type\nThese bits define the type of external memory attached to the corresponding memory bank:"
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: SRAM (default after reset for Bank 2...4)
+            value: 0
+          - name: B_0x1
+            description: PSRAM (CRAM)
+            value: 1
+          - name: B_0x2
+            description: NOR flash/OneNAND flash (default after reset for Bank 1)
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: MWID
+        description: "Memory data bus width\nDefines the external memory device width, valid for all type of memories."
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 16 bits (default after reset)
+            value: 1
+          - name: B_0x2
+            description: 32 bits
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: FACCEN
+        description: "Flash access enable\nThis bit enables NOR flash memory access operations."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding NOR flash memory access is disabled
+            value: 0
+          - name: B_0x1
+            description: Corresponding NOR flash memory access is enabled (default after reset)
+            value: 1
+      - name: BURSTEN
+        description: "Burst enable bit\nThis bit enables/disables synchronous accesses during read operations. It is valid only for synchronous memories operating in Burst mode:"
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Burst mode disabled (default after reset). Read accesses are performed in Asynchronous mode
+            value: 0
+          - name: B_0x1
+            description: Burst mode enable. Read accesses are performed in Synchronous mode.
+            value: 1
+      - name: WAITPOL
+        description: "Wait signal polarity bit\nThis bit defines the polarity of the wait signal from memory used for either in Synchronous or Asynchronous mode:"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT active low (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT active high.
+            value: 1
+      - name: WAITCFG
+        description: "Wait timing configuration\nThe NWAIT signal indicates whether the data from the memory are valid or if a wait state must be inserted when accessing the memory in Synchronous mode. This configuration bit determines if NWAIT is asserted by the memory one clock cycle before the wait state or during the wait state:"
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is active one data cycle before wait state (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is active during wait state (not used for PSRAM).
+            value: 1
+      - name: WREN
+        description: "Write enable bit\nThis bit indicates whether write operations are enabled/disabled in the bank by the FMC:"
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write operations are disabled in the bank by the FMC, an AXI slave error is reported
+            value: 0
+          - name: B_0x1
+            description: Write operations are enabled for the bank by the FMC (default after reset).
+            value: 1
+      - name: WAITEN
+        description: "Wait enable bit\nThis bit enables/disables wait-state insertion via the NWAIT signal when accessing the memory in Synchronous mode."
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is disabled (its level not taken into account, no wait state inserted after the programmed flash latency period)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is enabled (its level is taken into account after the programmed latency period to insert wait states if asserted) (default after reset)
+            value: 1
+      - name: EXTMOD
+        description: "Extended mode enable.\nThis bit enables the FMC to program the write timings for asynchronous accesses inside the FMC_BWTR register, thus resulting in different timings for read and write operations.\nNote: When the Extended mode is disabled, the FMC can operate in Mode1 or Mode2 as follows:\nMode 1 is the default mode when the SRAM/PSRAM memory type is selected (MTYP =0x0 or 0x01)\nMode 2 is the default mode when the NOR memory type is selected (MTYP = 0x10)."
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: values inside FMC_BWTR register are not taken into account (default after reset)
+            value: 0
+          - name: B_0x1
+            description: values inside FMC_BWTR register are taken into account
+            value: 1
+      - name: ASYNCWAIT
+        description: "Wait signal during asynchronous transfers\nThis bit enables/disables the FMC to use the wait signal even during an asynchronous protocol."
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is not taken in to account when running an asynchronous protocol (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is taken in to account when running an asynchronous protocol
+            value: 1
+      - name: CPSIZE
+        description: "CRAM Page Size\nThese are used for Cellular RAM 1.5 which does not allow burst access to cross the address boundaries between pages. When these bits are configured, the FMC splits automatically the burst access when the memory page size is reached (refer to memory datasheet for page size).\nOther configuration: reserved."
+        bitOffset: 16
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No burst split when crossing page boundary (default after reset).
+            value: 0
+          - name: B_0x1
+            description: 128 bytes
+            value: 1
+          - name: B_0x2
+            description: 256 bytes
+            value: 2
+          - name: B_0x4
+            description: 1024 bytes
+            value: 4
+      - name: CBURSTRW
+        description: "Write burst enable\nFor PSRAM (CRAM) operating in Burst mode, the bit enables synchronous accesses during write operations. The enable bit for synchronous read accesses is the BURSTEN bit in the FMC_BCRx register."
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write operations are always performed in Asynchronous mode
+            value: 0
+          - name: B_0x1
+            description: Write operations are performed in Synchronous mode.
+            value: 1
+      - name: CCLKEN
+        description: "Continuous Clock Enable\nThis bit enables the FMC_CLK clock output to external memory devices.\nNote: The CCLKEN bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register. Bank 1 must be configured in Synchronous mode to generate the FMC_CLK continuous clock.\nNote: If CCLKEN bit is set, the FMC_CLK clock ratio is specified by CLKDIV value in the FMC_BTR1 register. CLKDIV in FMC_BWTR1 is dont care.\nNote: If the Synchronous mode is used and CCLKEN bit is set, the synchronous memories connected to other banks than Bank 1 are clocked by the same clock (the CLKDIV value in the FMC_BTR2..4 and FMC_BWTR2..4 registers for other banks has no effect.)"
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The FMC_CLK is only generated during the synchronous memory access (read/write transaction). The FMC_CLK clock ratio is specified by the programmed CLKDIV value in the FMC_BCRx register (default after reset).
+            value: 0
+          - name: B_0x1
+            description: The FMC_CLK is generated continuously during asynchronous and synchronous access. The FMC_CLK clock is activated when the CCLKEN is set.
+            value: 1
+      - name: WFDIS
+        description: "Write FIFO Disable\nThis bit disables the Write FIFO used by the FMC.\nNote: The WFDIS bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write FIFO enabled (Default after reset)
+            value: 0
+          - name: B_0x1
+            description: Write FIFO disabled
+            value: 1
+      - name: BMAP
+        description: "FMC bank mapping\nThese bits allow different remap or swap of the FMC NOR/PSRAM and SDRAM banks (refer to Table 144).\nNote: The BMAP bits of the FMC_BCR2..4 registers are dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Default mapping (refer to Figure 108 and Table 144).
+            value: 0
+          - name: B_0x1
+            description: NOR/PSRAM bank and SDRAM bank 1 are swapped.
+            value: 1
+          - name: B_0x2
+            description: FIELD Reserved
+            value: 2
+          - name: B_0x3
+            description: Reserved.
+            value: 3
+      - name: FMCEN
+        description: "FMC Enable\nThis bit enables/disables the FMC.\nNote: The FMCEN bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disable the FMC
+            value: 0
+          - name: B_0x1
+            description: Enable the FMC
+            value: 1
+  - name: BTR2
+    displayName: BTR2
+    description: SRAM/NOR-flash chip-select timing registers for bank 2
+    addressOffset: 12
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: ADDSET
+        description: "Address setup phase duration\nThese bits are written by software to define the duration of the address setup phase (refer to Figure 109 to Figure 121), used in SRAMs, ROMs and asynchronous NOR flash:\n...\nFor each access mode address setup phase duration, please refer to the respective figure (refer to Figure 109 to Figure 121).\nNote: In synchronous accesses, this value is dont care.\nNote: In Muxed mode or mode D, the minimum value for ADDSET is 1.\nNote: In mode 1 and PSRAM memory, the minimum value for ADDSET is 1."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ADDSET phase duration = 0   fmc_ker_ck clock cycle
+            value: 0
+          - name: B_0xF
+            description: ADDSET phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: ADDHLD
+        description: "Address-hold phase duration\nThese bits are written by software to define the duration of the address hold phase (refer to Figure 109 to Figure 121), used in mode D or multiplexed accesses:\n...\nFor each access mode address-hold phase duration, please refer to the respective figure (Figure 109 to Figure 121).\nNote: In synchronous accesses, this value is not used, the address hold phase is always 1 memory clock period duration."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: ADDHLD phase duration =1   fmc_ker_ck clock cycle
+            value: 1
+          - name: B_0x2
+            description: ADDHLD phase duration = 2   fmc_ker_ck clock cycle
+            value: 2
+          - name: B_0xF
+            description: ADDHLD phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: DATAST
+        description: "Data-phase duration\nThese bits are written by software to define the duration of the data phase (refer to Figure 109 to Figure 121), used in asynchronous accesses:\n...\nFor each memory type and access mode data-phase duration, please refer to the respective figure (Figure 109 to Figure 121).\nExample: Mode1, write access, DATAST = 1: Data-phase duration = DATAST+1 = 1 x fmc_ker_ck clock cycles.\nNote: In synchronous accesses, this value is dont care."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: DATAST phase duration = 1   fmc_ker_ck clock cycles
+            value: 1
+          - name: B_0x2
+            description: DATAST phase duration = 2   fmc_ker_ck clock cycles
+            value: 2
+          - name: B_0xFF
+            description: DATAST phase duration = 255   fmc_ker_ck clock cycles (default value after reset)
+            value: 255
+      - name: BUSTURN
+        description: "Bus turnaround phase duration\nThese bits are written by software to add a delay at the end of a write-to-read (and read-to-write) transaction. This delay allows to match the minimum time between consecutive transactions (t<sub>EHEL</sub> from NEx high to NEx low) and the maximum time needed by the memory to free the data bus after a read access (t<sub>EHQZ</sub>). The programmed bus turnaround delay is inserted between an asynchronous read (muxed or mode D) or write transaction and any other asynchronous /synchronous read or write to or from a static bank. The bank can be the same or different in case of read, in case of write the bank can be different except for muxed or mode D.\nIn some cases, whatever the programmed BUSTURN values, the bus turnaround delay is fixed\nas follows:\nThe bus turnaround delay is not inserted between two consecutive asynchronous write transfers to the same static memory bank except for muxed and D modes.\nThere is a bus turnaround delay of 1 FMC clock cycle between:\nTwo consecutive asynchronous read transfers to the same static memory bank except for muxed and D modes. \nAn asynchronous read to an asynchronous or synchronous write to any static bank or dynamic bank except for muxed and D modes.\nAn asynchronous (modes 1, 2, A, B or C) read and a read from another static bank.\nThere is a bus turnaround delay of 2 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to the same bank.\nA synchronous write (burst or single) access and an asynchronous write or read transfer to or from static memory bank (the bank can be the same or different for the case of read.\nTwo consecutive synchronous reads (burst or single) followed by any synchronous/asynchronous read or write from/to another static memory bank.\nThere is a bus turnaround delay of 3 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to different static bank.\nA synchronous write (burst or single) access and a synchronous read from the same or a different bank.\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: BUSTURN phase duration = 0 fmc_ker_ck clock cycle added
+            value: 0
+          - name: B_0xF
+            description: BUSTURN phase duration = 15 x fmc_ker_ck clock cycles added (default value after reset)
+            value: 15
+      - name: CLKDIV
+        description: "Clock divide ratio (for FMC_CLK signal)\nThese bits define the period of FMC_CLK clock output signal, expressed in number of fmc_ker_ck cycles:\nIn asynchronous NOR flash, SRAM or PSRAM accesses, this value is dont care.\nNote: Refer to Section 23.7.5: Synchronous transactions for FMC_CLK divider ratio formula)"
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FMC_CLK period = 1 x fmc_ker_ck period
+            value: 0
+          - name: B_0x1
+            description: FMC_CLK period = 2   fmc_ker_ck periods
+            value: 1
+          - name: B_0x2
+            description: FMC_CLK period = 3   fmc_ker_ck periods
+            value: 2
+          - name: B_0xF
+            description: FMC_CLK period = 16   fmc_ker_ck periods (default value after reset)
+            value: 15
+      - name: DATLAT
+        description: "(see note below bit descriptions): Data latency for synchronous memory\nFor synchronous access with read/write Burst mode enabled (BURSTEN / CBURSTRW bits set), these bits define the number of memory clock cycles (+2) to issue to the memory before reading/writing the first data:\nThis timing parameter is not expressed in fmc_ker_ck periods, but in FMC_CLK periods.\nFor asynchronous access, this value is don't care."
+        bitOffset: 24
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Data latency of 2 FMC_CLK clock cycles for first burst access
+            value: 0
+          - name: B_0xF
+            description: Data latency of 17 FMC_CLK clock cycles for first burst access (default value after reset)
+            value: 15
+      - name: ACCMOD
+        description: "Access mode\nThese bits specify the Asynchronous access modes as shown in the timing diagrams. They are taken into account only when the EXTMOD bit in the FMC_BCRx register is 1."
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: access mode A
+            value: 0
+          - name: B_0x1
+            description: access mode B
+            value: 1
+          - name: B_0x2
+            description: access mode C
+            value: 2
+          - name: B_0x3
+            description: access mode D
+            value: 3
+  - name: BCR3
+    displayName: BCR3
+    description: SRAM/NOR-flash chip-select control registers for bank 3
+    addressOffset: 16
+    size: 32
+    resetValue: 12498
+    resetMask: 4294967295
+    fields:
+      - name: MBKEN
+        description: "Memory bank enable bit\nThis bit enables the memory bank. After reset Bank1 is enabled, all others are disabled. Accessing a disabled bank causes an ERROR on AXI bus."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding memory bank is disabled
+            value: 0
+          - name: B_0x1
+            description: Corresponding memory bank is enabled
+            value: 1
+      - name: MUXEN
+        description: "Address/data multiplexing enable bit\nWhen this bit is set, the address and data values are multiplexed on the data bus, valid only with NOR and PSRAM memories:"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Address/Data non-multiplexed
+            value: 0
+          - name: B_0x1
+            description: Address/Data multiplexed on databus (default after reset)
+            value: 1
+      - name: MTYP
+        description: "Memory type\nThese bits define the type of external memory attached to the corresponding memory bank:"
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: SRAM (default after reset for Bank 2...4)
+            value: 0
+          - name: B_0x1
+            description: PSRAM (CRAM)
+            value: 1
+          - name: B_0x2
+            description: NOR flash/OneNAND flash (default after reset for Bank 1)
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: MWID
+        description: "Memory data bus width\nDefines the external memory device width, valid for all type of memories."
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 16 bits (default after reset)
+            value: 1
+          - name: B_0x2
+            description: 32 bits
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: FACCEN
+        description: "Flash access enable\nThis bit enables NOR flash memory access operations."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding NOR flash memory access is disabled
+            value: 0
+          - name: B_0x1
+            description: Corresponding NOR flash memory access is enabled (default after reset)
+            value: 1
+      - name: BURSTEN
+        description: "Burst enable bit\nThis bit enables/disables synchronous accesses during read operations. It is valid only for synchronous memories operating in Burst mode:"
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Burst mode disabled (default after reset). Read accesses are performed in Asynchronous mode
+            value: 0
+          - name: B_0x1
+            description: Burst mode enable. Read accesses are performed in Synchronous mode.
+            value: 1
+      - name: WAITPOL
+        description: "Wait signal polarity bit\nThis bit defines the polarity of the wait signal from memory used for either in Synchronous or Asynchronous mode:"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT active low (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT active high.
+            value: 1
+      - name: WAITCFG
+        description: "Wait timing configuration\nThe NWAIT signal indicates whether the data from the memory are valid or if a wait state must be inserted when accessing the memory in Synchronous mode. This configuration bit determines if NWAIT is asserted by the memory one clock cycle before the wait state or during the wait state:"
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is active one data cycle before wait state (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is active during wait state (not used for PSRAM).
+            value: 1
+      - name: WREN
+        description: "Write enable bit\nThis bit indicates whether write operations are enabled/disabled in the bank by the FMC:"
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write operations are disabled in the bank by the FMC, an AXI slave error is reported
+            value: 0
+          - name: B_0x1
+            description: Write operations are enabled for the bank by the FMC (default after reset).
+            value: 1
+      - name: WAITEN
+        description: "Wait enable bit\nThis bit enables/disables wait-state insertion via the NWAIT signal when accessing the memory in Synchronous mode."
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is disabled (its level not taken into account, no wait state inserted after the programmed flash latency period)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is enabled (its level is taken into account after the programmed latency period to insert wait states if asserted) (default after reset)
+            value: 1
+      - name: EXTMOD
+        description: "Extended mode enable.\nThis bit enables the FMC to program the write timings for asynchronous accesses inside the FMC_BWTR register, thus resulting in different timings for read and write operations.\nNote: When the Extended mode is disabled, the FMC can operate in Mode1 or Mode2 as follows:\nMode 1 is the default mode when the SRAM/PSRAM memory type is selected (MTYP =0x0 or 0x01)\nMode 2 is the default mode when the NOR memory type is selected (MTYP = 0x10)."
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: values inside FMC_BWTR register are not taken into account (default after reset)
+            value: 0
+          - name: B_0x1
+            description: values inside FMC_BWTR register are taken into account
+            value: 1
+      - name: ASYNCWAIT
+        description: "Wait signal during asynchronous transfers\nThis bit enables/disables the FMC to use the wait signal even during an asynchronous protocol."
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is not taken in to account when running an asynchronous protocol (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is taken in to account when running an asynchronous protocol
+            value: 1
+      - name: CPSIZE
+        description: "CRAM Page Size\nThese are used for Cellular RAM 1.5 which does not allow burst access to cross the address boundaries between pages. When these bits are configured, the FMC splits automatically the burst access when the memory page size is reached (refer to memory datasheet for page size).\nOther configuration: reserved."
+        bitOffset: 16
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No burst split when crossing page boundary (default after reset).
+            value: 0
+          - name: B_0x1
+            description: 128 bytes
+            value: 1
+          - name: B_0x2
+            description: 256 bytes
+            value: 2
+          - name: B_0x4
+            description: 1024 bytes
+            value: 4
+      - name: CBURSTRW
+        description: "Write burst enable\nFor PSRAM (CRAM) operating in Burst mode, the bit enables synchronous accesses during write operations. The enable bit for synchronous read accesses is the BURSTEN bit in the FMC_BCRx register."
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write operations are always performed in Asynchronous mode
+            value: 0
+          - name: B_0x1
+            description: Write operations are performed in Synchronous mode.
+            value: 1
+      - name: CCLKEN
+        description: "Continuous Clock Enable\nThis bit enables the FMC_CLK clock output to external memory devices.\nNote: The CCLKEN bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register. Bank 1 must be configured in Synchronous mode to generate the FMC_CLK continuous clock.\nNote: If CCLKEN bit is set, the FMC_CLK clock ratio is specified by CLKDIV value in the FMC_BTR1 register. CLKDIV in FMC_BWTR1 is dont care.\nNote: If the Synchronous mode is used and CCLKEN bit is set, the synchronous memories connected to other banks than Bank 1 are clocked by the same clock (the CLKDIV value in the FMC_BTR2..4 and FMC_BWTR2..4 registers for other banks has no effect.)"
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The FMC_CLK is only generated during the synchronous memory access (read/write transaction). The FMC_CLK clock ratio is specified by the programmed CLKDIV value in the FMC_BCRx register (default after reset).
+            value: 0
+          - name: B_0x1
+            description: The FMC_CLK is generated continuously during asynchronous and synchronous access. The FMC_CLK clock is activated when the CCLKEN is set.
+            value: 1
+      - name: WFDIS
+        description: "Write FIFO Disable\nThis bit disables the Write FIFO used by the FMC.\nNote: The WFDIS bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write FIFO enabled (Default after reset)
+            value: 0
+          - name: B_0x1
+            description: Write FIFO disabled
+            value: 1
+      - name: BMAP
+        description: "FMC bank mapping\nThese bits allow different remap or swap of the FMC NOR/PSRAM and SDRAM banks (refer to Table 144).\nNote: The BMAP bits of the FMC_BCR2..4 registers are dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Default mapping (refer to Figure 108 and Table 144).
+            value: 0
+          - name: B_0x1
+            description: NOR/PSRAM bank and SDRAM bank 1 are swapped.
+            value: 1
+          - name: B_0x2
+            description: FIELD Reserved
+            value: 2
+          - name: B_0x3
+            description: Reserved.
+            value: 3
+      - name: FMCEN
+        description: "FMC Enable\nThis bit enables/disables the FMC.\nNote: The FMCEN bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disable the FMC
+            value: 0
+          - name: B_0x1
+            description: Enable the FMC
+            value: 1
+  - name: BTR3
+    displayName: BTR3
+    description: SRAM/NOR-flash chip-select timing registers for bank 3
+    addressOffset: 20
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: ADDSET
+        description: "Address setup phase duration\nThese bits are written by software to define the duration of the address setup phase (refer to Figure 109 to Figure 121), used in SRAMs, ROMs and asynchronous NOR flash:\n...\nFor each access mode address setup phase duration, please refer to the respective figure (refer to Figure 109 to Figure 121).\nNote: In synchronous accesses, this value is dont care.\nNote: In Muxed mode or mode D, the minimum value for ADDSET is 1.\nNote: In mode 1 and PSRAM memory, the minimum value for ADDSET is 1."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ADDSET phase duration = 0   fmc_ker_ck clock cycle
+            value: 0
+          - name: B_0xF
+            description: ADDSET phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: ADDHLD
+        description: "Address-hold phase duration\nThese bits are written by software to define the duration of the address hold phase (refer to Figure 109 to Figure 121), used in mode D or multiplexed accesses:\n...\nFor each access mode address-hold phase duration, please refer to the respective figure (Figure 109 to Figure 121).\nNote: In synchronous accesses, this value is not used, the address hold phase is always 1 memory clock period duration."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: ADDHLD phase duration =1   fmc_ker_ck clock cycle
+            value: 1
+          - name: B_0x2
+            description: ADDHLD phase duration = 2   fmc_ker_ck clock cycle
+            value: 2
+          - name: B_0xF
+            description: ADDHLD phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: DATAST
+        description: "Data-phase duration\nThese bits are written by software to define the duration of the data phase (refer to Figure 109 to Figure 121), used in asynchronous accesses:\n...\nFor each memory type and access mode data-phase duration, please refer to the respective figure (Figure 109 to Figure 121).\nExample: Mode1, write access, DATAST = 1: Data-phase duration = DATAST+1 = 1 x fmc_ker_ck clock cycles.\nNote: In synchronous accesses, this value is dont care."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: DATAST phase duration = 1   fmc_ker_ck clock cycles
+            value: 1
+          - name: B_0x2
+            description: DATAST phase duration = 2   fmc_ker_ck clock cycles
+            value: 2
+          - name: B_0xFF
+            description: DATAST phase duration = 255   fmc_ker_ck clock cycles (default value after reset)
+            value: 255
+      - name: BUSTURN
+        description: "Bus turnaround phase duration\nThese bits are written by software to add a delay at the end of a write-to-read (and read-to-write) transaction. This delay allows to match the minimum time between consecutive transactions (t<sub>EHEL</sub> from NEx high to NEx low) and the maximum time needed by the memory to free the data bus after a read access (t<sub>EHQZ</sub>). The programmed bus turnaround delay is inserted between an asynchronous read (muxed or mode D) or write transaction and any other asynchronous /synchronous read or write to or from a static bank. The bank can be the same or different in case of read, in case of write the bank can be different except for muxed or mode D.\nIn some cases, whatever the programmed BUSTURN values, the bus turnaround delay is fixed\nas follows:\nThe bus turnaround delay is not inserted between two consecutive asynchronous write transfers to the same static memory bank except for muxed and D modes.\nThere is a bus turnaround delay of 1 FMC clock cycle between:\nTwo consecutive asynchronous read transfers to the same static memory bank except for muxed and D modes. \nAn asynchronous read to an asynchronous or synchronous write to any static bank or dynamic bank except for muxed and D modes.\nAn asynchronous (modes 1, 2, A, B or C) read and a read from another static bank.\nThere is a bus turnaround delay of 2 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to the same bank.\nA synchronous write (burst or single) access and an asynchronous write or read transfer to or from static memory bank (the bank can be the same or different for the case of read.\nTwo consecutive synchronous reads (burst or single) followed by any synchronous/asynchronous read or write from/to another static memory bank.\nThere is a bus turnaround delay of 3 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to different static bank.\nA synchronous write (burst or single) access and a synchronous read from the same or a different bank.\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: BUSTURN phase duration = 0 fmc_ker_ck clock cycle added
+            value: 0
+          - name: B_0xF
+            description: BUSTURN phase duration = 15 x fmc_ker_ck clock cycles added (default value after reset)
+            value: 15
+      - name: CLKDIV
+        description: "Clock divide ratio (for FMC_CLK signal)\nThese bits define the period of FMC_CLK clock output signal, expressed in number of fmc_ker_ck cycles:\nIn asynchronous NOR flash, SRAM or PSRAM accesses, this value is dont care.\nNote: Refer to Section 23.7.5: Synchronous transactions for FMC_CLK divider ratio formula)"
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FMC_CLK period = 1 x fmc_ker_ck period
+            value: 0
+          - name: B_0x1
+            description: FMC_CLK period = 2   fmc_ker_ck periods
+            value: 1
+          - name: B_0x2
+            description: FMC_CLK period = 3   fmc_ker_ck periods
+            value: 2
+          - name: B_0xF
+            description: FMC_CLK period = 16   fmc_ker_ck periods (default value after reset)
+            value: 15
+      - name: DATLAT
+        description: "(see note below bit descriptions): Data latency for synchronous memory\nFor synchronous access with read/write Burst mode enabled (BURSTEN / CBURSTRW bits set), these bits define the number of memory clock cycles (+2) to issue to the memory before reading/writing the first data:\nThis timing parameter is not expressed in fmc_ker_ck periods, but in FMC_CLK periods.\nFor asynchronous access, this value is don't care."
+        bitOffset: 24
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Data latency of 2 FMC_CLK clock cycles for first burst access
+            value: 0
+          - name: B_0xF
+            description: Data latency of 17 FMC_CLK clock cycles for first burst access (default value after reset)
+            value: 15
+      - name: ACCMOD
+        description: "Access mode\nThese bits specify the Asynchronous access modes as shown in the timing diagrams. They are taken into account only when the EXTMOD bit in the FMC_BCRx register is 1."
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: access mode A
+            value: 0
+          - name: B_0x1
+            description: access mode B
+            value: 1
+          - name: B_0x2
+            description: access mode C
+            value: 2
+          - name: B_0x3
+            description: access mode D
+            value: 3
+  - name: BCR4
+    displayName: BCR4
+    description: SRAM/NOR-flash chip-select control registers for bank 4
+    addressOffset: 24
+    size: 32
+    resetValue: 12498
+    resetMask: 4294967295
+    fields:
+      - name: MBKEN
+        description: "Memory bank enable bit\nThis bit enables the memory bank. After reset Bank1 is enabled, all others are disabled. Accessing a disabled bank causes an ERROR on AXI bus."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding memory bank is disabled
+            value: 0
+          - name: B_0x1
+            description: Corresponding memory bank is enabled
+            value: 1
+      - name: MUXEN
+        description: "Address/data multiplexing enable bit\nWhen this bit is set, the address and data values are multiplexed on the data bus, valid only with NOR and PSRAM memories:"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Address/Data non-multiplexed
+            value: 0
+          - name: B_0x1
+            description: Address/Data multiplexed on databus (default after reset)
+            value: 1
+      - name: MTYP
+        description: "Memory type\nThese bits define the type of external memory attached to the corresponding memory bank:"
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: SRAM (default after reset for Bank 2...4)
+            value: 0
+          - name: B_0x1
+            description: PSRAM (CRAM)
+            value: 1
+          - name: B_0x2
+            description: NOR flash/OneNAND flash (default after reset for Bank 1)
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: MWID
+        description: "Memory data bus width\nDefines the external memory device width, valid for all type of memories."
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 16 bits (default after reset)
+            value: 1
+          - name: B_0x2
+            description: 32 bits
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: FACCEN
+        description: "Flash access enable\nThis bit enables NOR flash memory access operations."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding NOR flash memory access is disabled
+            value: 0
+          - name: B_0x1
+            description: Corresponding NOR flash memory access is enabled (default after reset)
+            value: 1
+      - name: BURSTEN
+        description: "Burst enable bit\nThis bit enables/disables synchronous accesses during read operations. It is valid only for synchronous memories operating in Burst mode:"
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Burst mode disabled (default after reset). Read accesses are performed in Asynchronous mode
+            value: 0
+          - name: B_0x1
+            description: Burst mode enable. Read accesses are performed in Synchronous mode.
+            value: 1
+      - name: WAITPOL
+        description: "Wait signal polarity bit\nThis bit defines the polarity of the wait signal from memory used for either in Synchronous or Asynchronous mode:"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT active low (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT active high.
+            value: 1
+      - name: WAITCFG
+        description: "Wait timing configuration\nThe NWAIT signal indicates whether the data from the memory are valid or if a wait state must be inserted when accessing the memory in Synchronous mode. This configuration bit determines if NWAIT is asserted by the memory one clock cycle before the wait state or during the wait state:"
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is active one data cycle before wait state (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is active during wait state (not used for PSRAM).
+            value: 1
+      - name: WREN
+        description: "Write enable bit\nThis bit indicates whether write operations are enabled/disabled in the bank by the FMC:"
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write operations are disabled in the bank by the FMC, an AXI slave error is reported
+            value: 0
+          - name: B_0x1
+            description: Write operations are enabled for the bank by the FMC (default after reset).
+            value: 1
+      - name: WAITEN
+        description: "Wait enable bit\nThis bit enables/disables wait-state insertion via the NWAIT signal when accessing the memory in Synchronous mode."
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is disabled (its level not taken into account, no wait state inserted after the programmed flash latency period)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is enabled (its level is taken into account after the programmed latency period to insert wait states if asserted) (default after reset)
+            value: 1
+      - name: EXTMOD
+        description: "Extended mode enable.\nThis bit enables the FMC to program the write timings for asynchronous accesses inside the FMC_BWTR register, thus resulting in different timings for read and write operations.\nNote: When the Extended mode is disabled, the FMC can operate in Mode1 or Mode2 as follows:\nMode 1 is the default mode when the SRAM/PSRAM memory type is selected (MTYP =0x0 or 0x01)\nMode 2 is the default mode when the NOR memory type is selected (MTYP = 0x10)."
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: values inside FMC_BWTR register are not taken into account (default after reset)
+            value: 0
+          - name: B_0x1
+            description: values inside FMC_BWTR register are taken into account
+            value: 1
+      - name: ASYNCWAIT
+        description: "Wait signal during asynchronous transfers\nThis bit enables/disables the FMC to use the wait signal even during an asynchronous protocol."
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: NWAIT signal is not taken in to account when running an asynchronous protocol (default after reset)
+            value: 0
+          - name: B_0x1
+            description: NWAIT signal is taken in to account when running an asynchronous protocol
+            value: 1
+      - name: CPSIZE
+        description: "CRAM Page Size\nThese are used for Cellular RAM 1.5 which does not allow burst access to cross the address boundaries between pages. When these bits are configured, the FMC splits automatically the burst access when the memory page size is reached (refer to memory datasheet for page size).\nOther configuration: reserved."
+        bitOffset: 16
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No burst split when crossing page boundary (default after reset).
+            value: 0
+          - name: B_0x1
+            description: 128 bytes
+            value: 1
+          - name: B_0x2
+            description: 256 bytes
+            value: 2
+          - name: B_0x4
+            description: 1024 bytes
+            value: 4
+      - name: CBURSTRW
+        description: "Write burst enable\nFor PSRAM (CRAM) operating in Burst mode, the bit enables synchronous accesses during write operations. The enable bit for synchronous read accesses is the BURSTEN bit in the FMC_BCRx register."
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write operations are always performed in Asynchronous mode
+            value: 0
+          - name: B_0x1
+            description: Write operations are performed in Synchronous mode.
+            value: 1
+      - name: CCLKEN
+        description: "Continuous Clock Enable\nThis bit enables the FMC_CLK clock output to external memory devices.\nNote: The CCLKEN bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register. Bank 1 must be configured in Synchronous mode to generate the FMC_CLK continuous clock.\nNote: If CCLKEN bit is set, the FMC_CLK clock ratio is specified by CLKDIV value in the FMC_BTR1 register. CLKDIV in FMC_BWTR1 is dont care.\nNote: If the Synchronous mode is used and CCLKEN bit is set, the synchronous memories connected to other banks than Bank 1 are clocked by the same clock (the CLKDIV value in the FMC_BTR2..4 and FMC_BWTR2..4 registers for other banks has no effect.)"
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The FMC_CLK is only generated during the synchronous memory access (read/write transaction). The FMC_CLK clock ratio is specified by the programmed CLKDIV value in the FMC_BCRx register (default after reset).
+            value: 0
+          - name: B_0x1
+            description: The FMC_CLK is generated continuously during asynchronous and synchronous access. The FMC_CLK clock is activated when the CCLKEN is set.
+            value: 1
+      - name: WFDIS
+        description: "Write FIFO Disable\nThis bit disables the Write FIFO used by the FMC.\nNote: The WFDIS bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write FIFO enabled (Default after reset)
+            value: 0
+          - name: B_0x1
+            description: Write FIFO disabled
+            value: 1
+      - name: BMAP
+        description: "FMC bank mapping\nThese bits allow different remap or swap of the FMC NOR/PSRAM and SDRAM banks (refer to Table 144).\nNote: The BMAP bits of the FMC_BCR2..4 registers are dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Default mapping (refer to Figure 108 and Table 144).
+            value: 0
+          - name: B_0x1
+            description: NOR/PSRAM bank and SDRAM bank 1 are swapped.
+            value: 1
+          - name: B_0x2
+            description: FIELD Reserved
+            value: 2
+          - name: B_0x3
+            description: Reserved.
+            value: 3
+      - name: FMCEN
+        description: "FMC Enable\nThis bit enables/disables the FMC.\nNote: The FMCEN bit of the FMC_BCR2..4 registers is dont care. It is only enabled through the FMC_BCR1 register."
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Disable the FMC
+            value: 0
+          - name: B_0x1
+            description: Enable the FMC
+            value: 1
+  - name: BTR4
+    displayName: BTR4
+    description: SRAM/NOR-flash chip-select timing registers for bank 4
+    addressOffset: 28
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: ADDSET
+        description: "Address setup phase duration\nThese bits are written by software to define the duration of the address setup phase (refer to Figure 109 to Figure 121), used in SRAMs, ROMs and asynchronous NOR flash:\n...\nFor each access mode address setup phase duration, please refer to the respective figure (refer to Figure 109 to Figure 121).\nNote: In synchronous accesses, this value is dont care.\nNote: In Muxed mode or mode D, the minimum value for ADDSET is 1.\nNote: In mode 1 and PSRAM memory, the minimum value for ADDSET is 1."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ADDSET phase duration = 0   fmc_ker_ck clock cycle
+            value: 0
+          - name: B_0xF
+            description: ADDSET phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: ADDHLD
+        description: "Address-hold phase duration\nThese bits are written by software to define the duration of the address hold phase (refer to Figure 109 to Figure 121), used in mode D or multiplexed accesses:\n...\nFor each access mode address-hold phase duration, please refer to the respective figure (Figure 109 to Figure 121).\nNote: In synchronous accesses, this value is not used, the address hold phase is always 1 memory clock period duration."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: ADDHLD phase duration =1   fmc_ker_ck clock cycle
+            value: 1
+          - name: B_0x2
+            description: ADDHLD phase duration = 2   fmc_ker_ck clock cycle
+            value: 2
+          - name: B_0xF
+            description: ADDHLD phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: DATAST
+        description: "Data-phase duration\nThese bits are written by software to define the duration of the data phase (refer to Figure 109 to Figure 121), used in asynchronous accesses:\n...\nFor each memory type and access mode data-phase duration, please refer to the respective figure (Figure 109 to Figure 121).\nExample: Mode1, write access, DATAST = 1: Data-phase duration = DATAST+1 = 1 x fmc_ker_ck clock cycles.\nNote: In synchronous accesses, this value is dont care."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: DATAST phase duration = 1   fmc_ker_ck clock cycles
+            value: 1
+          - name: B_0x2
+            description: DATAST phase duration = 2   fmc_ker_ck clock cycles
+            value: 2
+          - name: B_0xFF
+            description: DATAST phase duration = 255   fmc_ker_ck clock cycles (default value after reset)
+            value: 255
+      - name: BUSTURN
+        description: "Bus turnaround phase duration\nThese bits are written by software to add a delay at the end of a write-to-read (and read-to-write) transaction. This delay allows to match the minimum time between consecutive transactions (t<sub>EHEL</sub> from NEx high to NEx low) and the maximum time needed by the memory to free the data bus after a read access (t<sub>EHQZ</sub>). The programmed bus turnaround delay is inserted between an asynchronous read (muxed or mode D) or write transaction and any other asynchronous /synchronous read or write to or from a static bank. The bank can be the same or different in case of read, in case of write the bank can be different except for muxed or mode D.\nIn some cases, whatever the programmed BUSTURN values, the bus turnaround delay is fixed\nas follows:\nThe bus turnaround delay is not inserted between two consecutive asynchronous write transfers to the same static memory bank except for muxed and D modes.\nThere is a bus turnaround delay of 1 FMC clock cycle between:\nTwo consecutive asynchronous read transfers to the same static memory bank except for muxed and D modes. \nAn asynchronous read to an asynchronous or synchronous write to any static bank or dynamic bank except for muxed and D modes.\nAn asynchronous (modes 1, 2, A, B or C) read and a read from another static bank.\nThere is a bus turnaround delay of 2 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to the same bank.\nA synchronous write (burst or single) access and an asynchronous write or read transfer to or from static memory bank (the bank can be the same or different for the case of read.\nTwo consecutive synchronous reads (burst or single) followed by any synchronous/asynchronous read or write from/to another static memory bank.\nThere is a bus turnaround delay of 3 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to different static bank.\nA synchronous write (burst or single) access and a synchronous read from the same or a different bank.\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: BUSTURN phase duration = 0 fmc_ker_ck clock cycle added
+            value: 0
+          - name: B_0xF
+            description: BUSTURN phase duration = 15 x fmc_ker_ck clock cycles added (default value after reset)
+            value: 15
+      - name: CLKDIV
+        description: "Clock divide ratio (for FMC_CLK signal)\nThese bits define the period of FMC_CLK clock output signal, expressed in number of fmc_ker_ck cycles:\nIn asynchronous NOR flash, SRAM or PSRAM accesses, this value is dont care.\nNote: Refer to Section 23.7.5: Synchronous transactions for FMC_CLK divider ratio formula)"
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FMC_CLK period = 1 x fmc_ker_ck period
+            value: 0
+          - name: B_0x1
+            description: FMC_CLK period = 2   fmc_ker_ck periods
+            value: 1
+          - name: B_0x2
+            description: FMC_CLK period = 3   fmc_ker_ck periods
+            value: 2
+          - name: B_0xF
+            description: FMC_CLK period = 16   fmc_ker_ck periods (default value after reset)
+            value: 15
+      - name: DATLAT
+        description: "(see note below bit descriptions): Data latency for synchronous memory\nFor synchronous access with read/write Burst mode enabled (BURSTEN / CBURSTRW bits set), these bits define the number of memory clock cycles (+2) to issue to the memory before reading/writing the first data:\nThis timing parameter is not expressed in fmc_ker_ck periods, but in FMC_CLK periods.\nFor asynchronous access, this value is don't care."
+        bitOffset: 24
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Data latency of 2 FMC_CLK clock cycles for first burst access
+            value: 0
+          - name: B_0xF
+            description: Data latency of 17 FMC_CLK clock cycles for first burst access (default value after reset)
+            value: 15
+      - name: ACCMOD
+        description: "Access mode\nThese bits specify the Asynchronous access modes as shown in the timing diagrams. They are taken into account only when the EXTMOD bit in the FMC_BCRx register is 1."
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: access mode A
+            value: 0
+          - name: B_0x1
+            description: access mode B
+            value: 1
+          - name: B_0x2
+            description: access mode C
+            value: 2
+          - name: B_0x3
+            description: access mode D
+            value: 3
+  - name: PCR
+    displayName: PCR
+    description: NAND flash control registers
+    addressOffset: 128
+    size: 32
+    resetValue: 24
+    resetMask: 4294967295
+    fields:
+      - name: PWAITEN
+        description: "Wait feature enable bit.\nThis bit enables the Wait feature for the NAND flash memory bank:"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: disabled
+            value: 0
+          - name: B_0x1
+            description: enabled
+            value: 1
+      - name: PBKEN
+        description: "NAND flash memory bank enable bit.\nThis bit enables the memory bank. Accessing a disabled memory bank causes an ERROR on AXI bus"
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Corresponding memory bank is disabled (default after reset)
+            value: 0
+          - name: B_0x1
+            description: Corresponding memory bank is enabled
+            value: 1
+      - name: PWID
+        description: "Data bus width.\nThese bits define the external memory device width."
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 16 bits (default after reset).
+            value: 1
+          - name: B_0x2
+            description: reserved.
+            value: 2
+          - name: B_0x3
+            description: reserved.
+            value: 3
+      - name: ECCEN
+        description: ECC computation logic enable bit
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ECC logic is disabled and reset (default after reset),
+            value: 0
+          - name: B_0x1
+            description: ECC logic is enabled.
+            value: 1
+      - name: TCLR
+        description: "CLE to RE delay.\nThese bits set time from CLE low to RE low in number of fmc_ker_ck clock cycles. The time is give by the following formula:\nt_clr = (TCLR + SET + 2)   t<sub>fmc_ker_ck</sub> where t<sub>fmc_ker_ck</sub> is the fmc_ker_ck clock period\nNote: Set is MEMSET or ATTSET according to the addressed space."
+        bitOffset: 9
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 x fmc_ker_ck cycle (default)
+            value: 0
+          - name: B_0xF
+            description: 16 x fmc_ker_ck cycles
+            value: 15
+      - name: TAR0
+        description: "ALE to RE delay.\nThese bits set time from ALE low to RE low in number of fmc_ker_ck clock cycles.\nTime is: t_ar = (TAR + SET + 2)   t<sub>fmc_ker_ck</sub> where t<sub>fmc_ker_ck</sub> is the FMC clock period\nNote: Set is MEMSET or ATTSET according to the addressed space."
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 x fmc_ker_ck cycle (default)
+            value: 0
+      - name: TAR1
+        description: "ALE to RE delay.\nThese bits set time from ALE low to RE low in number of fmc_ker_ck clock cycles.\nTime is: t_ar = (TAR + SET + 2)   t<sub>fmc_ker_ck</sub> where t<sub>fmc_ker_ck</sub> is the FMC clock period\nNote: Set is MEMSET or ATTSET according to the addressed space."
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 x fmc_ker_ck cycle (default)
+            value: 0
+      - name: TAR2
+        description: "ALE to RE delay.\nThese bits set time from ALE low to RE low in number of fmc_ker_ck clock cycles.\nTime is: t_ar = (TAR + SET + 2)   t<sub>fmc_ker_ck</sub> where t<sub>fmc_ker_ck</sub> is the FMC clock period\nNote: Set is MEMSET or ATTSET according to the addressed space."
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 x fmc_ker_ck cycle (default)
+            value: 0
+      - name: TAR3
+        description: "ALE to RE delay.\nThese bits set time from ALE low to RE low in number of fmc_ker_ck clock cycles.\nTime is: t_ar = (TAR + SET + 2)   t<sub>fmc_ker_ck</sub> where t<sub>fmc_ker_ck</sub> is the FMC clock period\nNote: Set is MEMSET or ATTSET according to the addressed space."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 x fmc_ker_ck cycle (default)
+            value: 0
+      - name: ECCPS
+        description: "ECC page size.\nThese bits define the page size for the extended ECC:"
+        bitOffset: 17
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 256 bytes
+            value: 0
+          - name: B_0x1
+            description: 512 bytes
+            value: 1
+          - name: B_0x2
+            description: 1024 bytes
+            value: 2
+          - name: B_0x3
+            description: 2048 bytes
+            value: 3
+          - name: B_0x4
+            description: 4096 bytes
+            value: 4
+          - name: B_0x5
+            description: 8192 bytes
+            value: 5
+  - name: SR
+    displayName: SR
+    description: FIFO status and interrupt register
+    addressOffset: 132
+    size: 32
+    resetValue: 64
+    resetMask: 4294967295
+    fields:
+      - name: IRS
+        description: "Interrupt rising edge status\nThe flag is set by hardware and reset by software.\nNote: If this bit is written by software to 1 it will be set."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt rising edge occurred
+            value: 0
+          - name: B_0x1
+            description: Interrupt rising edge occurred
+            value: 1
+      - name: ILS
+        description: "Interrupt high-level status\nThe flag is set by hardware and reset by software."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No Interrupt high-level occurred
+            value: 0
+          - name: B_0x1
+            description: Interrupt high-level occurred
+            value: 1
+      - name: IFS
+        description: "Interrupt falling edge status\nThe flag is set by hardware and reset by software.\nNote: If this bit is written by software to 1 it will be set."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt falling edge occurred
+            value: 0
+          - name: B_0x1
+            description: Interrupt falling edge occurred
+            value: 1
+      - name: IREN
+        description: Interrupt rising edge detection enable bit
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt rising edge detection request disabled
+            value: 0
+          - name: B_0x1
+            description: Interrupt rising edge detection request enabled
+            value: 1
+      - name: ILEN
+        description: Interrupt high-level detection enable bit
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt high-level detection request disabled
+            value: 0
+          - name: B_0x1
+            description: Interrupt high-level detection request enabled
+            value: 1
+      - name: IFEN
+        description: Interrupt falling edge detection enable bit
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt falling edge detection request disabled
+            value: 0
+          - name: B_0x1
+            description: Interrupt falling edge detection request enabled
+            value: 1
+      - name: FEMPT
+        description: "FIFO empty.\nRead-only bit that provides the status of the FIFO"
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: FIFO not empty
+            value: 0
+          - name: B_0x1
+            description: FIFO empty
+            value: 1
+  - name: PMEM
+    displayName: PMEM
+    description: Common memory space timing register
+    addressOffset: 136
+    size: 32
+    resetValue: 4244438268
+    resetMask: 4294967295
+    fields:
+      - name: MEMSET
+        description: "Common memory x setup time\nThese bits define the number of fmc_ker_ck (+1) clock cycles to set up the address before the command assertion (NWE, NOE), for NAND flash read or write access to common memory space:"
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: fmc_ker_ck cycles
+            value: 0
+          - name: B_0xFE
+            description: 255 x fmc_ker_ck cycles
+            value: 254
+          - name: B_0xFF
+            description: FIELD Reserved
+            value: 255
+      - name: MEMWAIT
+        description: "Common memory wait time\nThese bits define the minimum number of fmc_ker_ck (+1) clock cycles to assert the command (NWE, NOE), for NAND flash read or write access to common memory space. The duration of command assertion is extended if the wait signal (NWAIT) is active (low) at the end of the programmed value of fmc_ker_ck:"
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: x fmc_ker_ck cycles (+ wait cycle introduced by deasserting NWAIT)
+            value: 1
+          - name: B_0xFE
+            description: 255 x fmc_ker_ck cycles (+ wait cycle introduced by deasserting NWAIT)
+            value: 254
+          - name: B_0xFF
+            description: reserved.
+            value: 255
+      - name: MEMHOLD
+        description: "Common memory hold time\nThese bits define the number of fmc_ker_ck clock cycles for write accesses and fmc_ker_ck+1 clock cycles for read accesses during which the address is held (and data for write accesses) after the command is deasserted (NWE, NOE), for NAND flash read or write access to common memory space:"
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: reserved.
+            value: 0
+          - name: B_0x1
+            description: 1 fmc_ker_ck cycle for write access / 3 fmc_ker_ck cycle for read access
+            value: 1
+          - name: B_0xFE
+            description: 254 fmc_ker_ck cycles for write access / 257 fmc_ker_ck cycles for read access
+            value: 254
+          - name: B_0xFF
+            description: reserved.
+            value: 255
+      - name: MEMHIZ
+        description: "Common memory x data bus Hi-Z time\nThese bits define the number of fmc_ker_ck clock cycles during which the data bus is kept Hi-Z after the start of a NAND flash write access to common memory space. This is only valid for write transactions:"
+        bitOffset: 24
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 0 x fmc_ker_ck cycle
+            value: 0
+          - name: B_0xFE
+            description: 254 x fmc_ker_ck cycles
+            value: 254
+          - name: B_0xFF
+            description: reserved.
+            value: 255
+  - name: PATT
+    displayName: PATT
+    description: Attribute memory space timing registers
+    addressOffset: 140
+    size: 32
+    resetValue: 4244438268
+    resetMask: 4294967295
+    fields:
+      - name: ATTSET
+        description: "Attribute memory setup time\nThese bits define the number of fmc_ker_ck (+1) clock cycles to set up address before the command assertion (NWE, NOE), for NAND flash read or write access to attribute memory space:"
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 x fmc_ker_ck cycle
+            value: 0
+          - name: B_0xFE
+            description: 255 x fmc_ker_ck cycles
+            value: 254
+          - name: B_0xFF
+            description: reserved.
+            value: 255
+      - name: ATTWAIT
+        description: "Attribute memory wait time\nThese bits define the minimum number of x fmc_ker_ck (+1) clock cycles to assert the command (NWE, NOE), for NAND flash read or write access to attribute memory space. The duration for command assertion is extended if the wait signal (NWAIT) is active (low) at the end of the programmed value of fmc_ker_ck:"
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: 2 x fmc_ker_ck cycles (+ wait cycle introduced by deassertion of NWAIT)
+            value: 1
+          - name: B_0xFE
+            description: 255 x fmc_ker_ck cycles (+ wait cycle introduced by deasserting NWAIT)
+            value: 254
+          - name: B_0xFF
+            description: reserved.
+            value: 255
+      - name: ATTHOLD
+        description: "Attribute memory hold time\nThese bits define the number of fmc_ker_ck clock cycles during which the address is held (and data for write access) after the command deassertion (NWE, NOE), for NAND flash read or write access to attribute memory space:"
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: 1 x fmc_ker_ck cycle
+            value: 1
+          - name: B_0xFE
+            description: 254 x fmc_ker_ck cycles
+            value: 254
+          - name: B_0xFF
+            description: reserved.
+            value: 255
+      - name: ATTHIZ
+        description: "Attribute memory data bus Hi-Z time\nThese bits define the number of fmc_ker_ck clock cycles during which the data bus is kept in Hi-Z after the start of a NAND flash write access to attribute memory space on socket. Only valid for writ transaction:"
+        bitOffset: 24
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 0 x fmc_ker_ck cycle
+            value: 0
+          - name: B_0xFE
+            description: 254 x fmc_ker_ck cycles
+            value: 254
+          - name: B_0xFF
+            description: reserved.
+            value: 255
+  - name: ECCR
+    displayName: ECCR
+    description: ECC result registers
+    addressOffset: 148
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ECC
+        description: "ECC result\nThis field contains the value computed by the ECC computation logic. Table 184 describes the contents of these bitfields."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: BWTR1
+    displayName: BWTR1
+    description: SRAM/NOR-flash write timing registers for bank 1
+    addressOffset: 260
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: ADDSET
+        description: "Address setup phase duration.\nThese bits are written by software to define the duration of the address setup phase in fmc_ker_ck cycles (refer to Figure 109 to Figure 121), used in asynchronous accesses:\n...\nNote: In synchronous accesses, this value is not used, the address setup phase is always 1 flash clock period duration. In muxed mode, the minimum ADDSET value is 1."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ADDSET phase duration = 0   fmc_ker_ck clock cycle
+            value: 0
+          - name: B_0xF
+            description: ADDSET phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: ADDHLD
+        description: "Address-hold phase duration.\nThese bits are written by software to define the duration of the address hold phase (refer to Figure 109 to Figure 121), used in asynchronous multiplexed accesses:\n...\nNote: In synchronous NOR flash accesses, this value is not used, the address hold phase is always 1 flash clock period duration."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: ADDHLD phase duration = 1   fmc_ker_ck clock cycle
+            value: 1
+          - name: B_0x2
+            description: ADDHLD phase duration = 2   fmc_ker_ck clock cycle
+            value: 2
+          - name: B_0xF
+            description: ADDHLD phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: DATAST
+        description: "Data-phase duration.\nThese bits are written by software to define the duration of the data phase (refer to Figure 109 to Figure 121), used in asynchronous SRAM, PSRAM and NOR flash memory accesses:\n..."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: DATAST phase duration = 1   fmc_ker_ck clock cycles
+            value: 1
+          - name: B_0x2
+            description: DATAST phase duration = 2   fmc_ker_ck clock cycles
+            value: 2
+          - name: B_0xFF
+            description: DATAST phase duration = 255   fmc_ker_ck clock cycles (default value after reset)
+            value: 255
+      - name: BUSTURN
+        description: "Bus turnaround phase duration\nThese bits are written by software to add a delay at the end of a write transaction to match the minimum time between consecutive transactions (t<sub>EHEL</sub> from ENx high to ENx low):\n(BUSTRUN + 1) fmc_ker_ck period more or equal to t<sub>EHELmin</sub>.\nThe programmed bus turnaround delay is inserted between an asynchronous write transfer and any other asynchronous /synchronous read or write transfer to or from a static bank. The bank can be the same or different in case of read, in case of write the bank can be different expect for muxed or mode D.\nIn some cases, whatever the programmed BUSTURN values, the bus turnaround delay is fixed as\nfollows:\nThe bus turnaround delay is not inserted between two consecutive asynchronous write transfers to the same static memory bank except for muxed and D modes.\nThere is a bus turnaround delay of 2 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to the same bank.\nA synchronous write (burst or single) transfer and an asynchronous write or read transfer to or from static memory bank.\nThere is a bus turnaround delay of 3 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to different static bank.\nA synchronous write (burst or single) transfer and a synchronous read from the same or a different bank.\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: BUSTURN phase duration = 0 fmc_ker_ck clock cycle added
+            value: 0
+          - name: B_0xF
+            description: BUSTURN phase duration = 15 fmc_ker_ck clock cycles added (default value after reset)
+            value: 15
+      - name: ACCMOD
+        description: "Access mode.\nThese bits specify the asynchronous access modes as shown in the next timing diagrams.These bits are taken into account only when the EXTMOD bit in the FMC_BCRx register is 1."
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: access mode A
+            value: 0
+          - name: B_0x1
+            description: access mode B
+            value: 1
+          - name: B_0x2
+            description: access mode C
+            value: 2
+          - name: B_0x3
+            description: access mode D
+            value: 3
+  - name: BWTR2
+    displayName: BWTR2
+    description: SRAM/NOR-flash write timing registers for bank 2
+    addressOffset: 268
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: ADDSET
+        description: "Address setup phase duration.\nThese bits are written by software to define the duration of the address setup phase in fmc_ker_ck cycles (refer to Figure 109 to Figure 121), used in asynchronous accesses:\n...\nNote: In synchronous accesses, this value is not used, the address setup phase is always 1 flash clock period duration. In muxed mode, the minimum ADDSET value is 1."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ADDSET phase duration = 0   fmc_ker_ck clock cycle
+            value: 0
+          - name: B_0xF
+            description: ADDSET phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: ADDHLD
+        description: "Address-hold phase duration.\nThese bits are written by software to define the duration of the address hold phase (refer to Figure 109 to Figure 121), used in asynchronous multiplexed accesses:\n...\nNote: In synchronous NOR flash accesses, this value is not used, the address hold phase is always 1 flash clock period duration."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: ADDHLD phase duration = 1   fmc_ker_ck clock cycle
+            value: 1
+          - name: B_0x2
+            description: ADDHLD phase duration = 2   fmc_ker_ck clock cycle
+            value: 2
+          - name: B_0xF
+            description: ADDHLD phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: DATAST
+        description: "Data-phase duration.\nThese bits are written by software to define the duration of the data phase (refer to Figure 109 to Figure 121), used in asynchronous SRAM, PSRAM and NOR flash memory accesses:\n..."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: DATAST phase duration = 1   fmc_ker_ck clock cycles
+            value: 1
+          - name: B_0x2
+            description: DATAST phase duration = 2   fmc_ker_ck clock cycles
+            value: 2
+          - name: B_0xFF
+            description: DATAST phase duration = 255   fmc_ker_ck clock cycles (default value after reset)
+            value: 255
+      - name: BUSTURN
+        description: "Bus turnaround phase duration\nThese bits are written by software to add a delay at the end of a write transaction to match the minimum time between consecutive transactions (t<sub>EHEL</sub> from ENx high to ENx low):\n(BUSTRUN + 1) fmc_ker_ck period more or equal to t<sub>EHELmin</sub>.\nThe programmed bus turnaround delay is inserted between an asynchronous write transfer and any other asynchronous /synchronous read or write transfer to or from a static bank. The bank can be the same or different in case of read, in case of write the bank can be different expect for muxed or mode D.\nIn some cases, whatever the programmed BUSTURN values, the bus turnaround delay is fixed as\nfollows:\nThe bus turnaround delay is not inserted between two consecutive asynchronous write transfers to the same static memory bank except for muxed and D modes.\nThere is a bus turnaround delay of 2 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to the same bank.\nA synchronous write (burst or single) transfer and an asynchronous write or read transfer to or from static memory bank.\nThere is a bus turnaround delay of 3 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to different static bank.\nA synchronous write (burst or single) transfer and a synchronous read from the same or a different bank.\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: BUSTURN phase duration = 0 fmc_ker_ck clock cycle added
+            value: 0
+          - name: B_0xF
+            description: BUSTURN phase duration = 15 fmc_ker_ck clock cycles added (default value after reset)
+            value: 15
+      - name: ACCMOD
+        description: "Access mode.\nThese bits specify the asynchronous access modes as shown in the next timing diagrams.These bits are taken into account only when the EXTMOD bit in the FMC_BCRx register is 1."
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: access mode A
+            value: 0
+          - name: B_0x1
+            description: access mode B
+            value: 1
+          - name: B_0x2
+            description: access mode C
+            value: 2
+          - name: B_0x3
+            description: access mode D
+            value: 3
+  - name: BWTR3
+    displayName: BWTR3
+    description: SRAM/NOR-flash write timing registers for bank 3
+    addressOffset: 276
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: ADDSET
+        description: "Address setup phase duration.\nThese bits are written by software to define the duration of the address setup phase in fmc_ker_ck cycles (refer to Figure 109 to Figure 121), used in asynchronous accesses:\n...\nNote: In synchronous accesses, this value is not used, the address setup phase is always 1 flash clock period duration. In muxed mode, the minimum ADDSET value is 1."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ADDSET phase duration = 0   fmc_ker_ck clock cycle
+            value: 0
+          - name: B_0xF
+            description: ADDSET phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: ADDHLD
+        description: "Address-hold phase duration.\nThese bits are written by software to define the duration of the address hold phase (refer to Figure 109 to Figure 121), used in asynchronous multiplexed accesses:\n...\nNote: In synchronous NOR flash accesses, this value is not used, the address hold phase is always 1 flash clock period duration."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: ADDHLD phase duration = 1   fmc_ker_ck clock cycle
+            value: 1
+          - name: B_0x2
+            description: ADDHLD phase duration = 2   fmc_ker_ck clock cycle
+            value: 2
+          - name: B_0xF
+            description: ADDHLD phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: DATAST
+        description: "Data-phase duration.\nThese bits are written by software to define the duration of the data phase (refer to Figure 109 to Figure 121), used in asynchronous SRAM, PSRAM and NOR flash memory accesses:\n..."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: DATAST phase duration = 1   fmc_ker_ck clock cycles
+            value: 1
+          - name: B_0x2
+            description: DATAST phase duration = 2   fmc_ker_ck clock cycles
+            value: 2
+          - name: B_0xFF
+            description: DATAST phase duration = 255   fmc_ker_ck clock cycles (default value after reset)
+            value: 255
+      - name: BUSTURN
+        description: "Bus turnaround phase duration\nThese bits are written by software to add a delay at the end of a write transaction to match the minimum time between consecutive transactions (t<sub>EHEL</sub> from ENx high to ENx low):\n(BUSTRUN + 1) fmc_ker_ck period more or equal to t<sub>EHELmin</sub>.\nThe programmed bus turnaround delay is inserted between an asynchronous write transfer and any other asynchronous /synchronous read or write transfer to or from a static bank. The bank can be the same or different in case of read, in case of write the bank can be different expect for muxed or mode D.\nIn some cases, whatever the programmed BUSTURN values, the bus turnaround delay is fixed as\nfollows:\nThe bus turnaround delay is not inserted between two consecutive asynchronous write transfers to the same static memory bank except for muxed and D modes.\nThere is a bus turnaround delay of 2 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to the same bank.\nA synchronous write (burst or single) transfer and an asynchronous write or read transfer to or from static memory bank.\nThere is a bus turnaround delay of 3 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to different static bank.\nA synchronous write (burst or single) transfer and a synchronous read from the same or a different bank.\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: BUSTURN phase duration = 0 fmc_ker_ck clock cycle added
+            value: 0
+          - name: B_0xF
+            description: BUSTURN phase duration = 15 fmc_ker_ck clock cycles added (default value after reset)
+            value: 15
+      - name: ACCMOD
+        description: "Access mode.\nThese bits specify the asynchronous access modes as shown in the next timing diagrams.These bits are taken into account only when the EXTMOD bit in the FMC_BCRx register is 1."
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: access mode A
+            value: 0
+          - name: B_0x1
+            description: access mode B
+            value: 1
+          - name: B_0x2
+            description: access mode C
+            value: 2
+          - name: B_0x3
+            description: access mode D
+            value: 3
+  - name: BWTR4
+    displayName: BWTR4
+    description: SRAM/NOR-flash write timing registers for bank 4
+    addressOffset: 284
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: ADDSET
+        description: "Address setup phase duration.\nThese bits are written by software to define the duration of the address setup phase in fmc_ker_ck cycles (refer to Figure 109 to Figure 121), used in asynchronous accesses:\n...\nNote: In synchronous accesses, this value is not used, the address setup phase is always 1 flash clock period duration. In muxed mode, the minimum ADDSET value is 1."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: ADDSET phase duration = 0   fmc_ker_ck clock cycle
+            value: 0
+          - name: B_0xF
+            description: ADDSET phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: ADDHLD
+        description: "Address-hold phase duration.\nThese bits are written by software to define the duration of the address hold phase (refer to Figure 109 to Figure 121), used in asynchronous multiplexed accesses:\n...\nNote: In synchronous NOR flash accesses, this value is not used, the address hold phase is always 1 flash clock period duration."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: ADDHLD phase duration = 1   fmc_ker_ck clock cycle
+            value: 1
+          - name: B_0x2
+            description: ADDHLD phase duration = 2   fmc_ker_ck clock cycle
+            value: 2
+          - name: B_0xF
+            description: ADDHLD phase duration = 15   fmc_ker_ck clock cycles (default value after reset)
+            value: 15
+      - name: DATAST
+        description: "Data-phase duration.\nThese bits are written by software to define the duration of the data phase (refer to Figure 109 to Figure 121), used in asynchronous SRAM, PSRAM and NOR flash memory accesses:\n..."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: FIELD Reserved
+            value: 0
+          - name: B_0x1
+            description: DATAST phase duration = 1   fmc_ker_ck clock cycles
+            value: 1
+          - name: B_0x2
+            description: DATAST phase duration = 2   fmc_ker_ck clock cycles
+            value: 2
+          - name: B_0xFF
+            description: DATAST phase duration = 255   fmc_ker_ck clock cycles (default value after reset)
+            value: 255
+      - name: BUSTURN
+        description: "Bus turnaround phase duration\nThese bits are written by software to add a delay at the end of a write transaction to match the minimum time between consecutive transactions (t<sub>EHEL</sub> from ENx high to ENx low):\n(BUSTRUN + 1) fmc_ker_ck period more or equal to t<sub>EHELmin</sub>.\nThe programmed bus turnaround delay is inserted between an asynchronous write transfer and any other asynchronous /synchronous read or write transfer to or from a static bank. The bank can be the same or different in case of read, in case of write the bank can be different expect for muxed or mode D.\nIn some cases, whatever the programmed BUSTURN values, the bus turnaround delay is fixed as\nfollows:\nThe bus turnaround delay is not inserted between two consecutive asynchronous write transfers to the same static memory bank except for muxed and D modes.\nThere is a bus turnaround delay of 2 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to the same bank.\nA synchronous write (burst or single) transfer and an asynchronous write or read transfer to or from static memory bank.\nThere is a bus turnaround delay of 3 FMC clock cycle between:\nTwo consecutive synchronous writes (burst or single) to different static bank.\nA synchronous write (burst or single) transfer and a synchronous read from the same or a different bank.\n..."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: BUSTURN phase duration = 0 fmc_ker_ck clock cycle added
+            value: 0
+          - name: B_0xF
+            description: BUSTURN phase duration = 15 fmc_ker_ck clock cycles added (default value after reset)
+            value: 15
+      - name: ACCMOD
+        description: "Access mode.\nThese bits specify the asynchronous access modes as shown in the next timing diagrams.These bits are taken into account only when the EXTMOD bit in the FMC_BCRx register is 1."
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: access mode A
+            value: 0
+          - name: B_0x1
+            description: access mode B
+            value: 1
+          - name: B_0x2
+            description: access mode C
+            value: 2
+          - name: B_0x3
+            description: access mode D
+            value: 3
+  - name: SDCR1
+    displayName: SDCR1
+    description: SDRAM Control registers for SDRAM memory bank 1
+    addressOffset: 320
+    size: 32
+    resetValue: 720
+    resetMask: 4294967295
+    fields:
+      - name: NC
+        description: "Number of column address bits\nThese bits define the number of bits of a column address."
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 9 bits
+            value: 1
+          - name: B_0x2
+            description: 10 bits
+            value: 2
+          - name: B_0x3
+            description: 11 bits.
+            value: 3
+      - name: NR
+        description: "Number of row address bits\nThese bits define the number of bits of a row address."
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 11 bit
+            value: 0
+          - name: B_0x1
+            description: 12 bits
+            value: 1
+          - name: B_0x2
+            description: 13 bits
+            value: 2
+          - name: B_0x3
+            description: reserved.
+            value: 3
+      - name: MWID
+        description: "Memory data bus width.\nThese bits define the memory device width."
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 16 bits
+            value: 1
+          - name: B_0x2
+            description: 32 bits
+            value: 2
+          - name: B_0x3
+            description: reserved.
+            value: 3
+      - name: NB
+        description: "Number of internal banks\nThis bit sets the number of internal banks."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Two internal Banks
+            value: 0
+          - name: B_0x1
+            description: Four internal Banks
+            value: 1
+      - name: CAS
+        description: "CAS Latency\nThis bits sets the SDRAM CAS latency in number of memory clock cycles"
+        bitOffset: 7
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: reserved.
+            value: 0
+          - name: B_0x1
+            description: 1 cycle
+            value: 1
+          - name: B_0x2
+            description: 2 cycles
+            value: 2
+          - name: B_0x3
+            description: 3 cycles
+            value: 3
+      - name: WP
+        description: "Write protection\nThis bit enables Write mode access to the SDRAM bank."
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write accesses allowed
+            value: 0
+          - name: B_0x1
+            description: Write accesses ignored
+            value: 1
+      - name: SDCLK
+        description: "SDRAM clock configuration\nThese bits define the SDRAM clock period for both SDRAM banks and allow disabling the clock before changing the frequency. In this case the SDRAM must be re-initialized.\nNote: The corresponding bits in the FMC_SDCR2 register is read only."
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: SDCLK clock disabled
+            value: 0
+          - name: B_0x1
+            description: FIELD Reserved
+            value: 1
+          - name: B_0x2
+            description: SDCLK period = 2 x fmc_ker_ck periods
+            value: 2
+          - name: B_0x3
+            description: SDCLK period = 3 x fmc_ker_ck periods
+            value: 3
+      - name: RBURST
+        description: "Burst read \nThis bit enables Burst read mode. The SDRAM controller anticipates the next read commands during the CAS latency and stores data in the Read FIFO.\nNote: The corresponding bit in the FMC_SDCR2 register is read only."
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: single read requests are not managed as bursts
+            value: 0
+          - name: B_0x1
+            description: single read requests are always managed as bursts
+            value: 1
+      - name: RPIPE
+        description: "Read pipe\nThese bits define the delay, in fmc_ker_ck clock cycles, for reading data after CAS latency.\nNote: The corresponding bits in the FMC_SDCR2 register is read only."
+        bitOffset: 13
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No fmc_ker_ck clock cycle delay
+            value: 0
+          - name: B_0x1
+            description: One fmc_ker_ck clock cycle delay
+            value: 1
+          - name: B_0x2
+            description: Two fmc_ker_ck clock cycle delay
+            value: 2
+          - name: B_0x3
+            description: reserved.
+            value: 3
+  - name: SDCR2
+    displayName: SDCR2
+    description: SDRAM Control registers for SDRAM memory bank 2
+    addressOffset: 324
+    size: 32
+    resetValue: 720
+    resetMask: 4294967295
+    fields:
+      - name: NC
+        description: "Number of column address bits\nThese bits define the number of bits of a column address."
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 9 bits
+            value: 1
+          - name: B_0x2
+            description: 10 bits
+            value: 2
+          - name: B_0x3
+            description: 11 bits.
+            value: 3
+      - name: NR
+        description: "Number of row address bits\nThese bits define the number of bits of a row address."
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 11 bit
+            value: 0
+          - name: B_0x1
+            description: 12 bits
+            value: 1
+          - name: B_0x2
+            description: 13 bits
+            value: 2
+          - name: B_0x3
+            description: reserved.
+            value: 3
+      - name: MWID
+        description: "Memory data bus width.\nThese bits define the memory device width."
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 8 bits
+            value: 0
+          - name: B_0x1
+            description: 16 bits
+            value: 1
+          - name: B_0x2
+            description: 32 bits
+            value: 2
+          - name: B_0x3
+            description: reserved.
+            value: 3
+      - name: NB
+        description: "Number of internal banks\nThis bit sets the number of internal banks."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Two internal Banks
+            value: 0
+          - name: B_0x1
+            description: Four internal Banks
+            value: 1
+      - name: CAS
+        description: "CAS Latency\nThis bits sets the SDRAM CAS latency in number of memory clock cycles"
+        bitOffset: 7
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: reserved.
+            value: 0
+          - name: B_0x1
+            description: 1 cycle
+            value: 1
+          - name: B_0x2
+            description: 2 cycles
+            value: 2
+          - name: B_0x3
+            description: 3 cycles
+            value: 3
+      - name: WP
+        description: "Write protection\nThis bit enables Write mode access to the SDRAM bank."
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Write accesses allowed
+            value: 0
+          - name: B_0x1
+            description: Write accesses ignored
+            value: 1
+      - name: SDCLK
+        description: "SDRAM clock configuration\nThese bits define the SDRAM clock period for both SDRAM banks and allow disabling the clock before changing the frequency. In this case the SDRAM must be re-initialized.\nNote: The corresponding bits in the FMC_SDCR2 register is read only."
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: SDCLK clock disabled
+            value: 0
+          - name: B_0x1
+            description: FIELD Reserved
+            value: 1
+          - name: B_0x2
+            description: SDCLK period = 2 x fmc_ker_ck periods
+            value: 2
+          - name: B_0x3
+            description: SDCLK period = 3 x fmc_ker_ck periods
+            value: 3
+      - name: RBURST
+        description: "Burst read \nThis bit enables Burst read mode. The SDRAM controller anticipates the next read commands during the CAS latency and stores data in the Read FIFO.\nNote: The corresponding bit in the FMC_SDCR2 register is read only."
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: single read requests are not managed as bursts
+            value: 0
+          - name: B_0x1
+            description: single read requests are always managed as bursts
+            value: 1
+      - name: RPIPE
+        description: "Read pipe\nThese bits define the delay, in fmc_ker_ck clock cycles, for reading data after CAS latency.\nNote: The corresponding bits in the FMC_SDCR2 register is read only."
+        bitOffset: 13
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No fmc_ker_ck clock cycle delay
+            value: 0
+          - name: B_0x1
+            description: One fmc_ker_ck clock cycle delay
+            value: 1
+          - name: B_0x2
+            description: Two fmc_ker_ck clock cycle delay
+            value: 2
+          - name: B_0x3
+            description: reserved.
+            value: 3
+  - name: SDTR1
+    displayName: SDTR1
+    description: SDRAM Timing registers for SDRAM memory bank 1
+    addressOffset: 328
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: TMRD
+        description: "Load Mode Register to Active \nThese bits define the delay between a Load Mode Register command and an Active or Refresh command in number of memory clock cycles.\n...."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TXSR
+        description: "Exit Self-refresh delay\nThese bits define the delay from releasing the Self-refresh command to issuing the Activate command in number of memory clock cycles.\n....\nNote: If two SDRAM devices are used, the FMC_SDTR1 and FMC_SDTR2 must be programmed with the same TXSR timing corresponding to the slowest SDRAM device."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TRAS
+        description: "Self refresh time\nThese bits define the minimum Self-refresh period in number of memory clock cycles.\n...."
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TRC
+        description: "Row cycle delay\nThese bits define the delay between the Refresh command and the Activate command, as well as the delay between two consecutive Refresh commands. It is expressed in number of memory clock cycles. The TRC timing is only configured in the FMC_SDTR1 register. If two SDRAM devices are used, the TRC must be programmed with the timings of the slowest device.\n....\nNote: TRC must match the TRC and TRFC (Auto Refresh period) timings defined in the SDRAM device datasheet.\nNote: The corresponding bits in the FMC_SDTR2 register are dont care."
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TWR
+        description: "Recovery delay\nThese bits define the delay between a Write and a Precharge command in number of memory clock cycles.\n....\nNote: TWR must be programmed to match the write recovery time (t<sub>WR</sub>) defined in the SDRAM datasheet, and to guarantee that:\nNote: TWR   TRAS - TRCD and TWR  TRC - TRCD - TRP\nNote: Example: TRAS= 4 cycles, TRCD= 2 cycles. So, TWR >= 2 cycles. TWR must be programmed to 0x1.\nNote: If two SDRAM devices are used, the FMC_SDTR1 and FMC_SDTR2 must be programmed with the same TWR timing corresponding to the slowest SDRAM device.\nNote: If only one SDRAM device is used, the TWR timing must be kept at reset value (0xF) for the not used bank."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TRP
+        description: "Row precharge delay\nThese bits define the delay between a Precharge command and another command in number of memory clock cycles. The TRP timing is only configured in the FMC_SDTR1 register. If two SDRAM devices are used, the TRP must be programmed with the timing of the slowest device.\n....\nNote: The corresponding bits in the FMC_SDTR2 register are dont care."
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TRCD
+        description: "Row to column delay\nThese bits define the delay between the Activate command and a Read/Write command in number of memory clock cycles.\n...."
+        bitOffset: 24
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle.
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+  - name: SDTR2
+    displayName: SDTR2
+    description: SDRAM Timing registers for SDRAM memory bank 2
+    addressOffset: 332
+    size: 32
+    resetValue: 268435455
+    resetMask: 4294967295
+    fields:
+      - name: TMRD
+        description: "Load Mode Register to Active \nThese bits define the delay between a Load Mode Register command and an Active or Refresh command in number of memory clock cycles.\n...."
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TXSR
+        description: "Exit Self-refresh delay\nThese bits define the delay from releasing the Self-refresh command to issuing the Activate command in number of memory clock cycles.\n....\nNote: If two SDRAM devices are used, the FMC_SDTR1 and FMC_SDTR2 must be programmed with the same TXSR timing corresponding to the slowest SDRAM device."
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TRAS
+        description: "Self refresh time\nThese bits define the minimum Self-refresh period in number of memory clock cycles.\n...."
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TRC
+        description: "Row cycle delay\nThese bits define the delay between the Refresh command and the Activate command, as well as the delay between two consecutive Refresh commands. It is expressed in number of memory clock cycles. The TRC timing is only configured in the FMC_SDTR1 register. If two SDRAM devices are used, the TRC must be programmed with the timings of the slowest device.\n....\nNote: TRC must match the TRC and TRFC (Auto Refresh period) timings defined in the SDRAM device datasheet.\nNote: The corresponding bits in the FMC_SDTR2 register are dont care."
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TWR
+        description: "Recovery delay\nThese bits define the delay between a Write and a Precharge command in number of memory clock cycles.\n....\nNote: TWR must be programmed to match the write recovery time (t<sub>WR</sub>) defined in the SDRAM datasheet, and to guarantee that:\nNote: TWR   TRAS - TRCD and TWR  TRC - TRCD - TRP\nNote: Example: TRAS= 4 cycles, TRCD= 2 cycles. So, TWR >= 2 cycles. TWR must be programmed to 0x1.\nNote: If two SDRAM devices are used, the FMC_SDTR1 and FMC_SDTR2 must be programmed with the same TWR timing corresponding to the slowest SDRAM device.\nNote: If only one SDRAM device is used, the TWR timing must be kept at reset value (0xF) for the not used bank."
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TRP
+        description: "Row precharge delay\nThese bits define the delay between a Precharge command and another command in number of memory clock cycles. The TRP timing is only configured in the FMC_SDTR1 register. If two SDRAM devices are used, the TRP must be programmed with the timing of the slowest device.\n....\nNote: The corresponding bits in the FMC_SDTR2 register are dont care."
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+      - name: TRCD
+        description: "Row to column delay\nThese bits define the delay between the Activate command and a Read/Write command in number of memory clock cycles.\n...."
+        bitOffset: 24
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 cycle.
+            value: 0
+          - name: B_0x1
+            description: 2 cycles
+            value: 1
+          - name: B_0xF
+            description: 16 cycles
+            value: 15
+  - name: SDCMR
+    displayName: SDCMR
+    description: SDRAM Command mode register
+    addressOffset: 336
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MODE
+        description: "Command mode\nThese bits define the command issued to the SDRAM device.\nNote: When a command is issued, at least one Command Target Bank bit ( CTB1 or CTB2) must be set otherwise the command will be ignored.\nNote: If two SDRAM banks are used, the Auto-refresh and PALL command must be issued simultaneously to the two devices with CTB1 and CTB2 bits set otherwise the command will be ignored. \nNote: If only one SDRAM bank is used and a command is issued with its associated CTB bit set, the other CTB bit of the unused bank must be kept to 0."
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Normal Mode
+            value: 0
+          - name: B_0x1
+            description: Clock Configuration Enable
+            value: 1
+          - name: B_0x2
+            description: PALL (All Bank Precharge) command
+            value: 2
+          - name: B_0x3
+            description: Auto-refresh command
+            value: 3
+          - name: B_0x4
+            description: Load Mode Register
+            value: 4
+          - name: B_0x5
+            description: Self-refresh command
+            value: 5
+          - name: B_0x6
+            description: Power-down command
+            value: 6
+          - name: B_0x7
+            description: FIELD Reserved
+            value: 7
+      - name: CTB2
+        description: "Command Target Bank 2\nThis bit indicates whether the command will be issued to SDRAM Bank 2 or not."
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Command not issued to SDRAM Bank 2
+            value: 0
+          - name: B_0x1
+            description: Command issued to SDRAM Bank 2
+            value: 1
+      - name: CTB1
+        description: "Command Target Bank 1\nThis bit indicates whether the command will be issued to SDRAM Bank 1 or not."
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Command not issued to SDRAM Bank 1
+            value: 0
+          - name: B_0x1
+            description: Command issued to SDRAM Bank 1
+            value: 1
+      - name: NRFS
+        description: "Number of Auto-refresh\nThese bits define the number of consecutive Auto-refresh commands issued when MODE = 011.\n...."
+        bitOffset: 5
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 1 Auto-refresh cycle
+            value: 0
+          - name: B_0x1
+            description: 2 Auto-refresh cycles
+            value: 1
+          - name: B_0xE
+            description: 15 Auto-refresh cycles
+            value: 14
+          - name: B_0xF
+            description: 16 Auto-refresh cycles
+            value: 15
+      - name: MRD
+        description: "Mode Register definition\nThis 14-bit field defines the SDRAM Mode Register content. The Mode Register is programmed using the Load Mode Register command. The MRD[13:0] bits are also used to program the extended mode register for mobile SDRAM."
+        bitOffset: 9
+        bitWidth: 14
+        access: read-write
+  - name: SDRTR
+    displayName: SDRTR
+    description: SDRAM refresh timer register
+    addressOffset: 340
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRE
+        description: "Clear Refresh error flag\nThis bit is used to clear the Refresh Error Flag (RE) in the Status Register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+        enumeratedValues:
+          - name: B_0x0
+            description: no effect
+            value: 0
+          - name: B_0x1
+            description: Refresh Error flag is cleared
+            value: 1
+      - name: COUNT
+        description: "Refresh Timer Count\nThis 13-bit field defines the refresh rate of the SDRAM device. It is expressed in number of memory clock cycles. It must be set at least to 41 SDRAM clock cycles (0x29).\nRefresh rate = (COUNT + 1) x SDRAM frequency clock\nCOUNT = (SDRAM refresh period / Number of rows) - 20"
+        bitOffset: 1
+        bitWidth: 13
+        access: read-write
+      - name: REIE
+        description: RES Interrupt Enable
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt is disabled
+            value: 0
+          - name: B_0x1
+            description: An Interrupt is generated if RE = 1
+            value: 1
+  - name: SDSR
+    displayName: SDSR
+    description: SDRAM Status register
+    addressOffset: 344
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RE
+        description: "Refresh error flag\nAn interrupt is generated if REIE = 1 and RE = 1"
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No refresh error has been detected
+            value: 0
+          - name: B_0x1
+            description: A refresh error has been detected
+            value: 1
+      - name: MODES1
+        description: "Status Mode for Bank 1\nThese bits define the Status Mode of SDRAM Bank 1."
+        bitOffset: 1
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Normal Mode
+            value: 0
+          - name: B_0x1
+            description: Self-refresh mode
+            value: 1
+          - name: B_0x2
+            description: Power-down mode
+            value: 2
+      - name: MODES2
+        description: "Status Mode for Bank 2\nThese bits define the Status Mode of SDRAM Bank 2."
+        bitOffset: 3
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Normal Mode
+            value: 0
+          - name: B_0x1
+            description: Self-refresh mode
+            value: 1
+          - name: B_0x2
+            description: Power-down mode
+            value: 2
+addressBlocks:
+  - offset: 0
+    size: 348
+    usage: registers
+interrupts:
+  - name: INTR
+    description: FMC global interrupt

@@ -936,3 +936,42 @@ All three L5, U3, and U5 SVDs spell the second OPAMP's control/status register
 as `OPAMP2_CRS` instead of `OPAMP2_CSR`. After instance-prefix stripping and
 suffix renaming, this becomes `CRS2` instead of `CSR2`. Fixed by renameRegisters
 transform in the shared LPOPAMP block definition and the U3 family OPAMP block.
+
+
+## ST STM32H7RS
+
+References:
+- RM0477 Rev.8 — STM32H7Rx / STM32H7Sx
+
+### LPTIM (LPTIM1–LPTIM5)
+
+**STM32H7S (SVD v1.3):**
+
+LPTIM peripherals are severely incomplete — only ISR, ICR, and DIER alternate
+registers are present (3–6 registers depending on instance). Missing: CR, CMP,
+ARR, CNT, CFGR, CFGR2, and others documented in RM0477 chapter 46.
+
+No transform applied — the incomplete models are extracted as-is.
+
+### GPDMA interrupt misattribution
+
+**STM32H7S (SVD v1.3):**
+
+Three GPU-related interrupts are incorrectly attributed to the GPDMA peripheral:
+
+| Interrupt   | Vector | Actual source            |
+|-------------|--------|--------------------------|
+| GPU2D       | 149    | GPU2D (not GPDMA)        |
+| GPU2D_ER    | 150    | GPU2D error (not GPDMA)  |
+| TCACHE      | 151    | Texture cache (not GPDMA)|
+
+No transform needed — these are silently dropped by the interrupt filter since
+they don't match any GPDMA canonical interrupt name.
+
+### RAMCFG register prefix
+
+**STM32H7S (SVD v1.3):**
+
+RAMCFG peripheral registers use `RAMECC_` prefix instead of `RAMCFG_` (e.g.,
+`RAMECC_IER` instead of `RAMCFG_IER` or just `IER`). Fixed by renameRegisters
+transform: `'^RAMECC_' → ''`.

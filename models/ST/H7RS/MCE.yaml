@@ -1,0 +1,2285 @@
+name: MCE
+description: Memory cipher engine
+groupName: MCE
+source: STM32H7S SVD v1.3
+registers:
+  - name: CR
+    displayName: CR
+    description: Configuration register
+    addressOffset: 0
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: GLOCK
+        description: "Global lock\nLock the configuration of most MCE registers until next reset. This bit is cleared by default and once set it cannot be reset until MCE reset."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: MCE registers are writable
+            value: 0
+          - name: B_0x1
+            description: All writes to MCE registers are ignored, with the exception of MCE_IACR and MCE_IAIER registers.
+            value: 1
+      - name: MKLOCK
+        description: "Master keys lock\nLock the master key configurations until next reset. This bit is cleared by default and once set it cannot be reset until MCE reset.\nEffect of this bit depends on the number of master keys. See Section 35.3: MCE implementation for details."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to MCE_MKEYRx and MCE_FMKEYRx registers are allowed
+            value: 0
+          - name: B_0x1
+            description: Writes to MCE_MKEYRx and MCE_FMKEYRx registers are ignored until next MCE reset.
+            value: 1
+  - name: SR
+    displayName: SR
+    description: Status register
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MKVALID
+        description: Master key valid
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: A valid key has not been written in MCE_MKEYRx registers, or a valid unlocked master key has been erased by hardware (if bit was set before)
+            value: 0
+          - name: B_0x1
+            description: A valid key has been written in MCE_MKEYRx registers (write R0 -> R1 -> R2 -> R3 or the reverse)
+            value: 1
+      - name: FMKVALID
+        description: "Fast master key valid\nThis bit is reserved when fast master key is not present in the MCE instance. See Section 35.3: MCE implementation for detail."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: A valid key has not been written in MCE_FMKEYRx registers, or a valid unlocked fast master key has been erased by hardware (if bit was set before)
+            value: 0
+          - name: B_0x1
+            description: A valid key has been written in MCE_FMKEYRx registers (write R0 -> R1 -> R2 -> R3 or the reverse)
+            value: 1
+      - name: ENCDIS
+        description: "encryption disabled\nThis bit is set by hardware when the encryption feature is not functional.\nWhen ENCDIS is set application must reset MCE peripheral to be able to use the encryption feature again."
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: When ENC bit and BREN are set in MCE_REGCRx all allowed write accesses in region x are encrypted, and all allowed read requests are decrypted.
+            value: 0
+          - name: B_0x1
+            description: When ENC bit and BREN are set in any MCE_REGCRx all write accesses in region x are ignored, and all read requests return zero. All previously written key material are also erased.
+            value: 1
+  - name: IASR
+    displayName: IASR
+    description: Illegal access status register
+    addressOffset: 8
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAEF
+        description: "Configuration access error flag\nThis bit is set when an illegal access to any MCE configuration register is detected. Bit is cleared by setting corresponding bit in MCE_IACR register. No additional details on the error is available."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: IAEF
+        description: "Illegal access error flag\nThis bit is set when an illegal access is detected on the system bus. More details on the error can be found in MCE_IAESR and MCE_IADDR registers.\nThis bit is cleared by setting corresponding bit in MCE_IACR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+  - name: IACR
+    displayName: IACR
+    description: Illegal access clear register
+    addressOffset: 12
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAEF
+        description: "Configuration access error flag clear\nSet this bit to clear CAEF bit in MCE_IASR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: IAEF
+        description: "Illegal access error flag clear\nSet this bit to clear IAEF bit in MCE_IASR register. Clearing IAEF bit permits to capture new error information in MCE_IAESR and MCE_IADDR registers.\nNote that clearing this bit does not clear RISAB_IADDR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+  - name: IAIER
+    displayName: IAIER
+    description: Illegal access interrupt enable register
+    addressOffset: 16
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAEIE
+        description: Configuration access error interrupt enable
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt generation on configuration access errors is disabled
+            value: 0
+          - name: B_0x1
+            description: Interrupt generation when a configuration access error occurs (CAEF=1)
+            value: 1
+      - name: IAEIE
+        description: Illegal access error interrupt enable
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt generation on illegal access errors is disabled
+            value: 0
+          - name: B_0x1
+            description: Interrupt generation when an illegal access error occurs (IAEF=1)
+            value: 1
+  - name: PRIVCFGR
+    displayName: PRIVCFGR
+    description: Privileged configuration register
+    addressOffset: 28
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PRIV
+        description: Privileged configuration
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Privileged and unprivileged access are granted to MCE registers
+            value: 0
+          - name: B_0x1
+            description: Only privileged access are granted to MCE registers
+            value: 1
+  - name: IAESR
+    displayName: IAESR
+    description: Illegal access error status register
+    addressOffset: 32
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IAPRIV
+        description: "Illegal access privilege\nWhen IAEF bit is set in MCE_IASR register IAPRIV bit captures the privileged state of the master that issued the illegal access detected on the AXI system bus."
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Illegal access was unprivileged.
+            value: 0
+          - name: B_0x1
+            description: Illegal access was privileged.
+            value: 1
+      - name: IANRW
+        description: "Illegal access read/write\nWhen IAEF bit is set in MCE_IASR register IANRW bit captures the access type of the illegal access detected."
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Illegal access was a data read or an instruction fetch.
+            value: 0
+          - name: B_0x1
+            description: Illegal access was a data write.
+            value: 1
+  - name: IADDR
+    displayName: IADDR
+    description: Illegal address register
+    addressOffset: 36
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IADD
+        description: "Illegal address\nWhen IAEF bit is set in MCE_IASR register IADD bitfield captures the 32-bit bus address of the erroneous access. Additional information can be found in MCE_IAESR register."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: REGCR1
+    displayName: REGCR1
+    description: Region 1 configuration register
+    addressOffset: 64
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BREN
+        description: "Base region enable\nBREN cannot be set if BADDRSTART > BADDREND."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Region x is disabled. Access control of primary region (any-privilege, no encryption) applies to any access between this region start and end addresses.
+            value: 0
+          - name: B_0x1
+            description: Region x is enable. Access controls and encryption option defined in this region apply to any access between this region start and end addresses.
+            value: 1
+      - name: CTXID
+        description: "Context ID\nThis bitfield defines the cryptographic context used by the cipher engine assigned to this region. If ENC=00 bitfield CTXID is ignored. If BREN is set write to this bitfield is ignored.\nIf ENC=01 the key stored in MCE_CC1KEYR is used by the stream cipher. The nonce in MCE_CC1NRx registers and the version in MCE_CC1CR register are also used. \nIf ENC=01 the key stored in MCE_CC2KEYR is used by the stream cipher. The nonce in MCE_CC2NRx registers and the version in MCE_CC2CR register are also used."
+        bitOffset: 9
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If ENC=10 (resp. 11) the key stored in MCE_MKEYR (resp. MCE_FMKEYR) registers is used by the block cipher. If ENC=01 bypass mode is selected instead of stream cipher.
+            value: 0
+          - name: B_0x1
+            description: If ENC=10 or 11 the key stored in MCE_CC1KEYR is used by the block cipher.
+            value: 1
+          - name: B_0x2
+            description: If ENC=10 or 11 the key stored in MCE_CC2KEYR is used by the block cipher.
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: ENC
+        description: "Encrypted region\nThose bits are taken into account only if BREN is set and if the corresponding encryption feature is available in the MCE instance (see Section 35.3: MCE implementation). Write to those bits is ignored if BREN is set."
+        bitOffset: 14
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No effects
+            value: 0
+          - name: B_0x1
+            description: Stream cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the stream cipher, when CCEN bit is set in MCE_CCzCFGR (where CTXID=z).
+            value: 1
+          - name: B_0x2
+            description: Block cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the SCA resistant block cipher. If CTXID=0 and MKVALID=0 bypass mode is selected instead. If CTXID=z and CCEN bit is cleared in MCE_CCzCFGR bypass mode is also selected.
+            value: 2
+          - name: B_0x3
+            description: Fast block cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the fast block cipher. If CTXID=0 and FMKVALID=0 bypass mode is selected instead. If CTXID=z and CCEN bit is cleared in MCE_CCzCFGR bypass mode is also selected.
+            value: 3
+      - name: PRIV
+        description: "Privileged region\nThis bit is taken into account only if BREN is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Application can access to region x in privileged and unprivileged mode.
+            value: 0
+          - name: B_0x1
+            description: Application can access to region x in privileged mode only.
+            value: 1
+  - name: SADDR1
+    displayName: SADDR1
+    description: Start address for region 1 register
+    addressOffset: 68
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BADDSTART
+        description: "Region address start\nThis bitfield defines the absolute start address of the region x on 4 kBytes boundary (inclusive).\nBREN cannot be set if BADDRSTART > BADDREND.\nWhen MCE determines the region, the first 12 bits (LSB) and the last 4 bits (MSB) in this register are ignored, and when this register is accessed in read the 4 MSB bits and the 12 LSB bits return zeros (reference value in MCE)."
+        bitOffset: 12
+        bitWidth: 20
+        access: read-write
+  - name: EADDR1
+    displayName: EADDR1
+    description: End address for region 1 register
+    addressOffset: 72
+    size: 32
+    resetValue: 4095
+    resetMask: 4294967295
+    fields:
+      - name: BADDEND
+        description: "Region address end\nThis bitfield defines the absolute end address of the region x on 4 kBytes boundary (inclusive).\nBREN cannot be set if BADDRSTART > BADDREND.\nWhen MCE determines the region, the first 12 bits (LSB) and the last 4 bits (MSB) in this register are ignored, and when this register is accessed in read the 4 MSB bits return zeros and the 12 LSB bits return ones (reference value in MCE)."
+        bitOffset: 12
+        bitWidth: 20
+        access: read-write
+  - name: ATTR1
+    displayName: ATTR1
+    description: Attribute for region 1 register
+    addressOffset: 76
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WREN
+        description: "Write enable\nThis bit is taken into account only if BREN is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to region x are ignored. Reads are allowed.
+            value: 0
+          - name: B_0x1
+            description: Region x can be read and written. Restrictions linked to PRIV bit in MCE_REGCRx apply.
+            value: 1
+  - name: REGCR2
+    displayName: REGCR2
+    description: Region 2 configuration register
+    addressOffset: 80
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BREN
+        description: "Base region enable\nBREN cannot be set if BADDRSTART > BADDREND."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Region x is disabled. Access control of primary region (any-privilege, no encryption) applies to any access between this region start and end addresses.
+            value: 0
+          - name: B_0x1
+            description: Region x is enable. Access controls and encryption option defined in this region apply to any access between this region start and end addresses.
+            value: 1
+      - name: CTXID
+        description: "Context ID\nThis bitfield defines the cryptographic context used by the cipher engine assigned to this region. If ENC=00 bitfield CTXID is ignored. If BREN is set write to this bitfield is ignored.\nIf ENC=01 the key stored in MCE_CC1KEYR is used by the stream cipher. The nonce in MCE_CC1NRx registers and the version in MCE_CC1CR register are also used. \nIf ENC=01 the key stored in MCE_CC2KEYR is used by the stream cipher. The nonce in MCE_CC2NRx registers and the version in MCE_CC2CR register are also used."
+        bitOffset: 9
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If ENC=10 (resp. 11) the key stored in MCE_MKEYR (resp. MCE_FMKEYR) registers is used by the block cipher. If ENC=01 bypass mode is selected instead of stream cipher.
+            value: 0
+          - name: B_0x1
+            description: If ENC=10 or 11 the key stored in MCE_CC1KEYR is used by the block cipher.
+            value: 1
+          - name: B_0x2
+            description: If ENC=10 or 11 the key stored in MCE_CC2KEYR is used by the block cipher.
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: ENC
+        description: "Encrypted region\nThose bits are taken into account only if BREN is set and if the corresponding encryption feature is available in the MCE instance (see Section 35.3: MCE implementation). Write to those bits is ignored if BREN is set."
+        bitOffset: 14
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No effects
+            value: 0
+          - name: B_0x1
+            description: Stream cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the stream cipher, when CCEN bit is set in MCE_CCzCFGR (where CTXID=z).
+            value: 1
+          - name: B_0x2
+            description: Block cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the SCA resistant block cipher. If CTXID=0 and MKVALID=0 bypass mode is selected instead. If CTXID=z and CCEN bit is cleared in MCE_CCzCFGR bypass mode is also selected.
+            value: 2
+          - name: B_0x3
+            description: Fast block cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the fast block cipher. If CTXID=0 and FMKVALID=0 bypass mode is selected instead. If CTXID=z and CCEN bit is cleared in MCE_CCzCFGR bypass mode is also selected.
+            value: 3
+      - name: PRIV
+        description: "Privileged region\nThis bit is taken into account only if BREN is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Application can access to region x in privileged and unprivileged mode.
+            value: 0
+          - name: B_0x1
+            description: Application can access to region x in privileged mode only.
+            value: 1
+  - name: SADDR2
+    displayName: SADDR2
+    description: Start address for region 2 register
+    addressOffset: 84
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BADDSTART
+        description: "Region address start\nThis bitfield defines the absolute start address of the region x on 4 kBytes boundary (inclusive).\nBREN cannot be set if BADDRSTART > BADDREND.\nWhen MCE determines the region, the first 12 bits (LSB) and the last 4 bits (MSB) in this register are ignored, and when this register is accessed in read the 4 MSB bits and the 12 LSB bits return zeros (reference value in MCE)."
+        bitOffset: 12
+        bitWidth: 20
+        access: read-write
+  - name: EADDR2
+    displayName: EADDR2
+    description: End address for region 2 register
+    addressOffset: 88
+    size: 32
+    resetValue: 4095
+    resetMask: 4294967295
+    fields:
+      - name: BADDEND
+        description: "Region address end\nThis bitfield defines the absolute end address of the region x on 4 kBytes boundary (inclusive).\nBREN cannot be set if BADDRSTART > BADDREND.\nWhen MCE determines the region, the first 12 bits (LSB) and the last 4 bits (MSB) in this register are ignored, and when this register is accessed in read the 4 MSB bits return zeros and the 12 LSB bits return ones (reference value in MCE)."
+        bitOffset: 12
+        bitWidth: 20
+        access: read-write
+  - name: ATTR2
+    displayName: ATTR2
+    description: Attribute for region 2 register
+    addressOffset: 92
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WREN
+        description: "Write enable\nThis bit is taken into account only if BREN is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to region x are ignored. Reads are allowed.
+            value: 0
+          - name: B_0x1
+            description: Region x can be read and written. Restrictions linked to PRIV bit in MCE_REGCRx apply.
+            value: 1
+  - name: REGCR3
+    displayName: REGCR3
+    description: Region 3 configuration register
+    addressOffset: 96
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BREN
+        description: "Base region enable\nBREN cannot be set if BADDRSTART > BADDREND."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Region x is disabled. Access control of primary region (any-privilege, no encryption) applies to any access between this region start and end addresses.
+            value: 0
+          - name: B_0x1
+            description: Region x is enable. Access controls and encryption option defined in this region apply to any access between this region start and end addresses.
+            value: 1
+      - name: CTXID
+        description: "Context ID\nThis bitfield defines the cryptographic context used by the cipher engine assigned to this region. If ENC=00 bitfield CTXID is ignored. If BREN is set write to this bitfield is ignored.\nIf ENC=01 the key stored in MCE_CC1KEYR is used by the stream cipher. The nonce in MCE_CC1NRx registers and the version in MCE_CC1CR register are also used. \nIf ENC=01 the key stored in MCE_CC2KEYR is used by the stream cipher. The nonce in MCE_CC2NRx registers and the version in MCE_CC2CR register are also used."
+        bitOffset: 9
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If ENC=10 (resp. 11) the key stored in MCE_MKEYR (resp. MCE_FMKEYR) registers is used by the block cipher. If ENC=01 bypass mode is selected instead of stream cipher.
+            value: 0
+          - name: B_0x1
+            description: If ENC=10 or 11 the key stored in MCE_CC1KEYR is used by the block cipher.
+            value: 1
+          - name: B_0x2
+            description: If ENC=10 or 11 the key stored in MCE_CC2KEYR is used by the block cipher.
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: ENC
+        description: "Encrypted region\nThose bits are taken into account only if BREN is set and if the corresponding encryption feature is available in the MCE instance (see Section 35.3: MCE implementation). Write to those bits is ignored if BREN is set."
+        bitOffset: 14
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No effects
+            value: 0
+          - name: B_0x1
+            description: Stream cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the stream cipher, when CCEN bit is set in MCE_CCzCFGR (where CTXID=z).
+            value: 1
+          - name: B_0x2
+            description: Block cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the SCA resistant block cipher. If CTXID=0 and MKVALID=0 bypass mode is selected instead. If CTXID=z and CCEN bit is cleared in MCE_CCzCFGR bypass mode is also selected.
+            value: 2
+          - name: B_0x3
+            description: Fast block cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the fast block cipher. If CTXID=0 and FMKVALID=0 bypass mode is selected instead. If CTXID=z and CCEN bit is cleared in MCE_CCzCFGR bypass mode is also selected.
+            value: 3
+      - name: PRIV
+        description: "Privileged region\nThis bit is taken into account only if BREN is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Application can access to region x in privileged and unprivileged mode.
+            value: 0
+          - name: B_0x1
+            description: Application can access to region x in privileged mode only.
+            value: 1
+  - name: SADDR3
+    displayName: SADDR3
+    description: Start address for region 3 register
+    addressOffset: 100
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BADDSTART
+        description: "Region address start\nThis bitfield defines the absolute start address of the region x on 4 kBytes boundary (inclusive).\nBREN cannot be set if BADDRSTART > BADDREND.\nWhen MCE determines the region, the first 12 bits (LSB) and the last 4 bits (MSB) in this register are ignored, and when this register is accessed in read the 4 MSB bits and the 12 LSB bits return zeros (reference value in MCE)."
+        bitOffset: 12
+        bitWidth: 20
+        access: read-write
+  - name: EADDR3
+    displayName: EADDR3
+    description: End address for region 3 register
+    addressOffset: 104
+    size: 32
+    resetValue: 4095
+    resetMask: 4294967295
+    fields:
+      - name: BADDEND
+        description: "Region address end\nThis bitfield defines the absolute end address of the region x on 4 kBytes boundary (inclusive).\nBREN cannot be set if BADDRSTART > BADDREND.\nWhen MCE determines the region, the first 12 bits (LSB) and the last 4 bits (MSB) in this register are ignored, and when this register is accessed in read the 4 MSB bits return zeros and the 12 LSB bits return ones (reference value in MCE)."
+        bitOffset: 12
+        bitWidth: 20
+        access: read-write
+  - name: ATTR3
+    displayName: ATTR3
+    description: Attribute for region 3 register
+    addressOffset: 108
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WREN
+        description: "Write enable\nThis bit is taken into account only if BREN is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to region x are ignored. Reads are allowed.
+            value: 0
+          - name: B_0x1
+            description: Region x can be read and written. Restrictions linked to PRIV bit in MCE_REGCRx apply.
+            value: 1
+  - name: REGCR4
+    displayName: REGCR4
+    description: Region 4 configuration register
+    addressOffset: 112
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BREN
+        description: "Base region enable\nBREN cannot be set if BADDRSTART > BADDREND."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Region x is disabled. Access control of primary region (any-privilege, no encryption) applies to any access between this region start and end addresses.
+            value: 0
+          - name: B_0x1
+            description: Region x is enable. Access controls and encryption option defined in this region apply to any access between this region start and end addresses.
+            value: 1
+      - name: CTXID
+        description: "Context ID\nThis bitfield defines the cryptographic context used by the cipher engine assigned to this region. If ENC=00 bitfield CTXID is ignored. If BREN is set write to this bitfield is ignored.\nIf ENC=01 the key stored in MCE_CC1KEYR is used by the stream cipher. The nonce in MCE_CC1NRx registers and the version in MCE_CC1CR register are also used. \nIf ENC=01 the key stored in MCE_CC2KEYR is used by the stream cipher. The nonce in MCE_CC2NRx registers and the version in MCE_CC2CR register are also used."
+        bitOffset: 9
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If ENC=10 (resp. 11) the key stored in MCE_MKEYR (resp. MCE_FMKEYR) registers is used by the block cipher. If ENC=01 bypass mode is selected instead of stream cipher.
+            value: 0
+          - name: B_0x1
+            description: If ENC=10 or 11 the key stored in MCE_CC1KEYR is used by the block cipher.
+            value: 1
+          - name: B_0x2
+            description: If ENC=10 or 11 the key stored in MCE_CC2KEYR is used by the block cipher.
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: ENC
+        description: "Encrypted region\nThose bits are taken into account only if BREN is set and if the corresponding encryption feature is available in the MCE instance (see Section 35.3: MCE implementation). Write to those bits is ignored if BREN is set."
+        bitOffset: 14
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No effects
+            value: 0
+          - name: B_0x1
+            description: Stream cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the stream cipher, when CCEN bit is set in MCE_CCzCFGR (where CTXID=z).
+            value: 1
+          - name: B_0x2
+            description: Block cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the SCA resistant block cipher. If CTXID=0 and MKVALID=0 bypass mode is selected instead. If CTXID=z and CCEN bit is cleared in MCE_CCzCFGR bypass mode is also selected.
+            value: 2
+          - name: B_0x3
+            description: Fast block cipher - All allowed read (resp. write) requests are decrypted (resp. encrypted) using the fast block cipher. If CTXID=0 and FMKVALID=0 bypass mode is selected instead. If CTXID=z and CCEN bit is cleared in MCE_CCzCFGR bypass mode is also selected.
+            value: 3
+      - name: PRIV
+        description: "Privileged region\nThis bit is taken into account only if BREN is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Application can access to region x in privileged and unprivileged mode.
+            value: 0
+          - name: B_0x1
+            description: Application can access to region x in privileged mode only.
+            value: 1
+  - name: SADDR4
+    displayName: SADDR4
+    description: Start address for region 4 register
+    addressOffset: 116
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BADDSTART
+        description: "Region address start\nThis bitfield defines the absolute start address of the region x on 4 kBytes boundary (inclusive).\nBREN cannot be set if BADDRSTART > BADDREND.\nWhen MCE determines the region, the first 12 bits (LSB) and the last 4 bits (MSB) in this register are ignored, and when this register is accessed in read the 4 MSB bits and the 12 LSB bits return zeros (reference value in MCE)."
+        bitOffset: 12
+        bitWidth: 20
+        access: read-write
+  - name: EADDR4
+    displayName: EADDR4
+    description: End address for region 4 register
+    addressOffset: 120
+    size: 32
+    resetValue: 4095
+    resetMask: 4294967295
+    fields:
+      - name: BADDEND
+        description: "Region address end\nThis bitfield defines the absolute end address of the region x on 4 kBytes boundary (inclusive).\nBREN cannot be set if BADDRSTART > BADDREND.\nWhen MCE determines the region, the first 12 bits (LSB) and the last 4 bits (MSB) in this register are ignored, and when this register is accessed in read the 4 MSB bits return zeros and the 12 LSB bits return ones (reference value in MCE)."
+        bitOffset: 12
+        bitWidth: 20
+        access: read-write
+  - name: ATTR4
+    displayName: ATTR4
+    description: Attribute for region 4 register
+    addressOffset: 124
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WREN
+        description: "Write enable\nThis bit is taken into account only if BREN is set."
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to region x are ignored. Reads are allowed.
+            value: 0
+          - name: B_0x1
+            description: Region x can be read and written. Restrictions linked to PRIV bit in MCE_REGCRx apply.
+            value: 1
+  - name: MKEYR0
+    displayName: MKEYR0
+    description: Master key 0
+    addressOffset: 512
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MKEY0
+        description: "Master key bit 0\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: MKEY1
+        description: "Master key bit 1\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: MKEY2
+        description: "Master key bit 2\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: MKEY3
+        description: "Master key bit 3\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: MKEY4
+        description: "Master key bit 4\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: MKEY5
+        description: "Master key bit 5\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: MKEY6
+        description: "Master key bit 6\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: MKEY7
+        description: "Master key bit 7\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: MKEY8
+        description: "Master key bit 8\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: MKEY9
+        description: "Master key bit 9\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: MKEY10
+        description: "Master key bit 10\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: MKEY11
+        description: "Master key bit 11\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: MKEY12
+        description: "Master key bit 12\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: MKEY13
+        description: "Master key bit 13\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: MKEY14
+        description: "Master key bit 14\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: MKEY15
+        description: "Master key bit 15\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: MKEY16
+        description: "Master key bit 16\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: MKEY17
+        description: "Master key bit 17\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: MKEY18
+        description: "Master key bit 18\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: MKEY19
+        description: "Master key bit 19\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: MKEY20
+        description: "Master key bit 20\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: MKEY21
+        description: "Master key bit 21\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: MKEY22
+        description: "Master key bit 22\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: MKEY23
+        description: "Master key bit 23\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: MKEY24
+        description: "Master key bit 24\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: MKEY25
+        description: "Master key bit 25\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: MKEY26
+        description: "Master key bit 26\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: MKEY27
+        description: "Master key bit 27\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: MKEY28
+        description: "Master key bit 28\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: MKEY29
+        description: "Master key bit 29\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: MKEY30
+        description: "Master key bit 30\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: MKEY31
+        description: "Master key bit 31\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: MKEYR1
+    displayName: MKEYR1
+    description: Master key 1
+    addressOffset: 516
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MKEY32
+        description: "Master key bit 32\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: MKEY33
+        description: "Master key bit 33\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: MKEY34
+        description: "Master key bit 34\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: MKEY35
+        description: "Master key bit 35\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: MKEY36
+        description: "Master key bit 36\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: MKEY37
+        description: "Master key bit 37\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: MKEY38
+        description: "Master key bit 38\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: MKEY39
+        description: "Master key bit 39\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: MKEY40
+        description: "Master key bit 40\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: MKEY41
+        description: "Master key bit 41\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: MKEY42
+        description: "Master key bit 42\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: MKEY43
+        description: "Master key bit 43\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: MKEY44
+        description: "Master key bit 44\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: MKEY45
+        description: "Master key bit 45\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: MKEY46
+        description: "Master key bit 46\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: MKEY47
+        description: "Master key bit 47\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: MKEY48
+        description: "Master key bit 48\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: MKEY49
+        description: "Master key bit 49\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: MKEY50
+        description: "Master key bit 50\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: MKEY51
+        description: "Master key bit 51\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: MKEY52
+        description: "Master key bit 52\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: MKEY53
+        description: "Master key bit 53\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: MKEY54
+        description: "Master key bit 54\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: MKEY55
+        description: "Master key bit 55\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: MKEY56
+        description: "Master key bit 56\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: MKEY57
+        description: "Master key bit 57\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: MKEY58
+        description: "Master key bit 58\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: MKEY59
+        description: "Master key bit 59\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: MKEY60
+        description: "Master key bit 60\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: MKEY61
+        description: "Master key bit 61\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: MKEY62
+        description: "Master key bit 62\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: MKEY63
+        description: "Master key bit 63\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: MKEYR2
+    displayName: MKEYR2
+    description: Master key 2
+    addressOffset: 520
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MKEY64
+        description: "Master key bit 64\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: MKEY65
+        description: "Master key bit 65\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: MKEY66
+        description: "Master key bit 66\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: MKEY67
+        description: "Master key bit 67\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: MKEY68
+        description: "Master key bit 68\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: MKEY69
+        description: "Master key bit 69\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: MKEY70
+        description: "Master key bit 70\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: MKEY71
+        description: "Master key bit 71\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: MKEY72
+        description: "Master key bit 72\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: MKEY73
+        description: "Master key bit 73\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: MKEY74
+        description: "Master key bit 74\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: MKEY75
+        description: "Master key bit 75\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: MKEY76
+        description: "Master key bit 76\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: MKEY77
+        description: "Master key bit 77\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: MKEY78
+        description: "Master key bit 78\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: MKEY79
+        description: "Master key bit 79\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: MKEY80
+        description: "Master key bit 80\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: MKEY81
+        description: "Master key bit 81\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: MKEY82
+        description: "Master key bit 82\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: MKEY83
+        description: "Master key bit 83\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: MKEY84
+        description: "Master key bit 84\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: MKEY85
+        description: "Master key bit 85\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: MKEY86
+        description: "Master key bit 86\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: MKEY87
+        description: "Master key bit 87\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: MKEY88
+        description: "Master key bit 88\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: MKEY89
+        description: "Master key bit 89\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: MKEY90
+        description: "Master key bit 90\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: MKEY91
+        description: "Master key bit 91\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: MKEY92
+        description: "Master key bit 92\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: MKEY93
+        description: "Master key bit 93\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: MKEY94
+        description: "Master key bit 94\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: MKEY95
+        description: "Master key bit 95\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: MKEYR3
+    displayName: MKEYR3
+    description: Master key 3
+    addressOffset: 524
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MKEY96
+        description: "Master key bit 96\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: MKEY97
+        description: "Master key bit 97\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: MKEY98
+        description: "Master key bit 98\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: MKEY99
+        description: "Master key bit 99\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: MKEY100
+        description: "Master key bit 100\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: MKEY101
+        description: "Master key bit 101\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: MKEY102
+        description: "Master key bit 102\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: MKEY103
+        description: "Master key bit 103\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: MKEY104
+        description: "Master key bit 104\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: MKEY105
+        description: "Master key bit 105\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: MKEY106
+        description: "Master key bit 106\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: MKEY107
+        description: "Master key bit 107\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: MKEY108
+        description: "Master key bit 108\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: MKEY109
+        description: "Master key bit 109\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: MKEY110
+        description: "Master key bit 110\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: MKEY111
+        description: "Master key bit 111\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: MKEY112
+        description: "Master key bit 112\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: MKEY113
+        description: "Master key bit 113\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: MKEY114
+        description: "Master key bit 114\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: MKEY115
+        description: "Master key bit 115\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: MKEY116
+        description: "Master key bit 116\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: MKEY117
+        description: "Master key bit 117\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: MKEY118
+        description: "Master key bit 118\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: MKEY119
+        description: "Master key bit 119\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: MKEY120
+        description: "Master key bit 120\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: MKEY121
+        description: "Master key bit 121\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: MKEY122
+        description: "Master key bit 122\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: MKEY123
+        description: "Master key bit 123\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: MKEY124
+        description: "Master key bit 124\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: MKEY125
+        description: "Master key bit 125\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: MKEY126
+        description: "Master key bit 126\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: MKEY127
+        description: "Master key bit 127\nThis key is used by the MCE block cipher in normal, SCA resistant mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: FMKEYR0
+    displayName: FMKEYR0
+    description: Fast master key 0
+    addressOffset: 544
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FMKEY0
+        description: "Fast master key bit 0\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY1
+        description: "Fast master key bit 1\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY2
+        description: "Fast master key bit 2\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY3
+        description: "Fast master key bit 3\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY4
+        description: "Fast master key bit 4\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY5
+        description: "Fast master key bit 5\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY6
+        description: "Fast master key bit 6\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY7
+        description: "Fast master key bit 7\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY8
+        description: "Fast master key bit 8\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY9
+        description: "Fast master key bit 9\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY10
+        description: "Fast master key bit 10\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY11
+        description: "Fast master key bit 11\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY12
+        description: "Fast master key bit 12\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY13
+        description: "Fast master key bit 13\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY14
+        description: "Fast master key bit 14\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY15
+        description: "Fast master key bit 15\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY16
+        description: "Fast master key bit 16\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY17
+        description: "Fast master key bit 17\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY18
+        description: "Fast master key bit 18\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY19
+        description: "Fast master key bit 19\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY20
+        description: "Fast master key bit 20\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY21
+        description: "Fast master key bit 21\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY22
+        description: "Fast master key bit 22\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY23
+        description: "Fast master key bit 23\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY24
+        description: "Fast master key bit 24\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY25
+        description: "Fast master key bit 25\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY26
+        description: "Fast master key bit 26\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY27
+        description: "Fast master key bit 27\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY28
+        description: "Fast master key bit 28\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY29
+        description: "Fast master key bit 29\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY30
+        description: "Fast master key bit 30\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY31
+        description: "Fast master key bit 31\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: FMKEYR1
+    displayName: FMKEYR1
+    description: Fast master key 1
+    addressOffset: 548
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FMKEY32
+        description: "Fast master key bit 32\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY33
+        description: "Fast master key bit 33\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY34
+        description: "Fast master key bit 34\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY35
+        description: "Fast master key bit 35\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY36
+        description: "Fast master key bit 36\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY37
+        description: "Fast master key bit 37\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY38
+        description: "Fast master key bit 38\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY39
+        description: "Fast master key bit 39\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY40
+        description: "Fast master key bit 40\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY41
+        description: "Fast master key bit 41\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY42
+        description: "Fast master key bit 42\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY43
+        description: "Fast master key bit 43\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY44
+        description: "Fast master key bit 44\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY45
+        description: "Fast master key bit 45\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY46
+        description: "Fast master key bit 46\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY47
+        description: "Fast master key bit 47\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY48
+        description: "Fast master key bit 48\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY49
+        description: "Fast master key bit 49\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY50
+        description: "Fast master key bit 50\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY51
+        description: "Fast master key bit 51\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY52
+        description: "Fast master key bit 52\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY53
+        description: "Fast master key bit 53\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY54
+        description: "Fast master key bit 54\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY55
+        description: "Fast master key bit 55\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY56
+        description: "Fast master key bit 56\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY57
+        description: "Fast master key bit 57\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY58
+        description: "Fast master key bit 58\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY59
+        description: "Fast master key bit 59\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY60
+        description: "Fast master key bit 60\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY61
+        description: "Fast master key bit 61\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY62
+        description: "Fast master key bit 62\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY63
+        description: "Fast master key bit 63\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: FMKEYR2
+    displayName: FMKEYR2
+    description: Fast master key 2
+    addressOffset: 552
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FMKEY64
+        description: "Fast master key bit 64\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY65
+        description: "Fast master key bit 65\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY66
+        description: "Fast master key bit 66\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY67
+        description: "Fast master key bit 67\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY68
+        description: "Fast master key bit 68\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY69
+        description: "Fast master key bit 69\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY70
+        description: "Fast master key bit 70\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY71
+        description: "Fast master key bit 71\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY72
+        description: "Fast master key bit 72\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY73
+        description: "Fast master key bit 73\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY74
+        description: "Fast master key bit 74\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY75
+        description: "Fast master key bit 75\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY76
+        description: "Fast master key bit 76\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY77
+        description: "Fast master key bit 77\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY78
+        description: "Fast master key bit 78\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY79
+        description: "Fast master key bit 79\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY80
+        description: "Fast master key bit 80\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY81
+        description: "Fast master key bit 81\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY82
+        description: "Fast master key bit 82\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY83
+        description: "Fast master key bit 83\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY84
+        description: "Fast master key bit 84\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY85
+        description: "Fast master key bit 85\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY86
+        description: "Fast master key bit 86\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY87
+        description: "Fast master key bit 87\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY88
+        description: "Fast master key bit 88\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY89
+        description: "Fast master key bit 89\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY90
+        description: "Fast master key bit 90\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY91
+        description: "Fast master key bit 91\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY92
+        description: "Fast master key bit 92\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY93
+        description: "Fast master key bit 93\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY94
+        description: "Fast master key bit 94\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY95
+        description: "Fast master key bit 95\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: FMKEYR3
+    displayName: FMKEYR3
+    description: Fast master key 3
+    addressOffset: 556
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FMKEY96
+        description: "Fast master key bit 96\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY97
+        description: "Fast master key bit 97\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY98
+        description: "Fast master key bit 98\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY99
+        description: "Fast master key bit 99\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY100
+        description: "Fast master key bit 100\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY101
+        description: "Fast master key bit 101\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY102
+        description: "Fast master key bit 102\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY103
+        description: "Fast master key bit 103\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY104
+        description: "Fast master key bit 104\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY105
+        description: "Fast master key bit 105\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY106
+        description: "Fast master key bit 106\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY107
+        description: "Fast master key bit 107\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY108
+        description: "Fast master key bit 108\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY109
+        description: "Fast master key bit 109\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY110
+        description: "Fast master key bit 110\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY111
+        description: "Fast master key bit 111\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY112
+        description: "Fast master key bit 112\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY113
+        description: "Fast master key bit 113\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY114
+        description: "Fast master key bit 114\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY115
+        description: "Fast master key bit 115\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY116
+        description: "Fast master key bit 116\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY117
+        description: "Fast master key bit 117\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY118
+        description: "Fast master key bit 118\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY119
+        description: "Fast master key bit 119\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY120
+        description: "Fast master key bit 120\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY121
+        description: "Fast master key bit 121\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY122
+        description: "Fast master key bit 122\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY123
+        description: "Fast master key bit 123\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY124
+        description: "Fast master key bit 124\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY125
+        description: "Fast master key bit 125\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY126
+        description: "Fast master key bit 126\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: FMKEY127
+        description: "Fast master key bit 127\nThis key is used by the MCE block cipher in fast mode, if CTXID=0x0 in MCE_REGCR register."
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: CC1CFGR
+    displayName: CC1CFGR
+    description: Cipher context 1 configuration register
+    addressOffset: 576
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CCEN
+        description: Cipher context enable
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If an enabled region selects CTXID=z bypass mode is selected by MCE
+            value: 0
+          - name: B_0x1
+            description: If an enabled region selects CTXID=z with ENC=01 MCE selects with the stream cipher the information stored in MCE_CCzCFGR, MCE_CCzNR and MCE_CCzKEYR. If the enabled region selects ENC=10 or 11 instead MCE selects with the block cipher the key information stored in MCE_CCzKEYR.
+            value: 1
+      - name: CCLOCK
+        description: "Cipher context lock\nNote: This bit is set once. If this bit is set, it can only be cleared to 0 if MCE is reset. Setting this bit forces KEYLOCK bit to 1."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to MCE_CCzCFGR and MCE_CCzNR registers are allowed
+            value: 0
+          - name: B_0x1
+            description: Writes to MCE_CCzCFGR and MCE_CCzNR registers are ignored until next MCE reset.
+            value: 1
+      - name: KEYLOCK
+        description: "Key lock\nNote: This bit is set once. If this bit is set, it can only be cleared to 0 if MCE is reset."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to MCE_CCzKEYR registers are allowed
+            value: 0
+          - name: B_0x1
+            description: Writes to MCE_CCzKEYR registers are ignored until next MCE reset.
+            value: 1
+      - name: KEYCRC
+        description: "Key CRC\nWhen KEYLOCK=0, KEYCRC information is automatically computed by hardware while loading the key of this region in this exact sequence: KEYR0 then KEYR1 then KEYR2 then finally KEYR3 (all written once). A new KEYCRC computation starts as soon as a new valid sequence is initiated. KEYCRC bitfield reads as zero until a valid sequence is completed (after it return the computed CRC value).\nWhen GLOCK=1, KEYCRC bitfield always return the computed CRC value until the next reset.\nCRC computation is an 8-bit checksum using the standard CRC-8-CCITT algorithm X8 + X2 + X + 1 (according the convention).\nNote: CRC information is updated, and the key is usable by MCE, only after the last bit of the key has been written.\nWhen GLOCK=0 any write to MCE_CCxKEYR registers clears KEYCRC in MCE_CCxCFGR, and makes the cipher context key un-usable (bypass mode is selected instead). To be able to use the key again application must perform this sequence: write to KEYR0 then KEYR1 then KEYR2 then finally KEYR3 (all written once). As KEYLOCK=1 all those writes are ignored, so the correct key is used instead."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-only
+      - name: VERSION
+        description: "Version\nThis 16-bit bitfield must be correctly initialized before CCEN bit is set. Bitfield usage is defined in Section 35.4.6: MCE stream cipher encryption mode."
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CC1NR0
+    displayName: CC1NR0
+    description: Cipher context 1 nonce register 0
+    addressOffset: 580
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SCNONCE
+        description: "Stream cipher nonce, bits [31:0]\nThis register is used by stream cipher to compute keystream. It must be correctly initialize before CCEN bit is set in MCE_CCzCFGR register. Bitfield usage is defined in Section 35.4.6: MCE stream cipher encryption mode."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CC1NR1
+    displayName: CC1NR1
+    description: Cipher context 1 nonce register 1
+    addressOffset: 584
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SCNONCE
+        description: "Stream cipher nonce, bits [63:32]\nRefer to the MCE_CCzNR0 register for description of the SCNONCE[63:0] bitfield."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CC1KEYR0
+    displayName: CC1KEYR0
+    description: Cipher context 1 key register 0
+    addressOffset: 588
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: KEY
+        description: "cipher key, bits [31:0]\nThis register is used by the block or stream cipher of MCE when CTXID = z in encrypted region configuration register. KEY[127:0] must be correctly initialize before CCEN bit is set in MCE_CCzCFGR register."
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CC1KEYR1
+    displayName: CC1KEYR1
+    description: Cipher context 1 key register 1
+    addressOffset: 592
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: KEY
+        description: "cipher key, bits [63:32]\nRefer to the MCE_CCzKEYR0 register for description of the KEY[127:0] bitfield."
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CC1KEYR2
+    displayName: CC1KEYR2
+    description: Cipher context 1 key register 2
+    addressOffset: 596
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: KEY
+        description: "cipher key, bits [95:64]\nRefer to the MCE_CCzKEYR0 register for description of the KEY[127:0] bitfield."
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CC1KEYR3
+    displayName: CC1KEYR3
+    description: Cipher context 1 key register 3
+    addressOffset: 600
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: KEY
+        description: "cipher key, bits [127:96]\nRefer to the MCE_CCzKEYR0 register for description of the KEY[127:0] bitfield."
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CC2CFGR
+    displayName: CC2CFGR
+    description: Cipher context 2 configuration register
+    addressOffset: 624
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CCEN
+        description: Cipher context enable
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If an enabled region selects CTXID=z bypass mode is selected by MCE
+            value: 0
+          - name: B_0x1
+            description: If an enabled region selects CTXID=z with ENC=01 MCE selects with the stream cipher the information stored in MCE_CCzCFGR, MCE_CCzNR and MCE_CCzKEYR. If the enabled region selects ENC=10 or 11 instead MCE selects with the block cipher the key information stored in MCE_CCzKEYR.
+            value: 1
+      - name: CCLOCK
+        description: "Cipher context lock\nNote: This bit is set once. If this bit is set, it can only be cleared to 0 if MCE is reset. Setting this bit forces KEYLOCK bit to 1."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to MCE_CCzCFGR and MCE_CCzNR registers are allowed
+            value: 0
+          - name: B_0x1
+            description: Writes to MCE_CCzCFGR and MCE_CCzNR registers are ignored until next MCE reset.
+            value: 1
+      - name: KEYLOCK
+        description: "Key lock\nNote: This bit is set once. If this bit is set, it can only be cleared to 0 if MCE is reset."
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Writes to MCE_CCzKEYR registers are allowed
+            value: 0
+          - name: B_0x1
+            description: Writes to MCE_CCzKEYR registers are ignored until next MCE reset.
+            value: 1
+      - name: KEYCRC
+        description: "Key CRC\nWhen KEYLOCK=0, KEYCRC information is automatically computed by hardware while loading the key of this region in this exact sequence: KEYR0 then KEYR1 then KEYR2 then finally KEYR3 (all written once). A new KEYCRC computation starts as soon as a new valid sequence is initiated. KEYCRC bitfield reads as zero until a valid sequence is completed (after it return the computed CRC value).\nWhen GLOCK=1, KEYCRC bitfield always return the computed CRC value until the next reset.\nCRC computation is an 8-bit checksum using the standard CRC-8-CCITT algorithm X8 + X2 + X + 1 (according the convention).\nNote: CRC information is updated, and the key is usable by MCE, only after the last bit of the key has been written.\nWhen GLOCK=0 any write to MCE_CCxKEYR registers clears KEYCRC in MCE_CCxCFGR, and makes the cipher context key un-usable (bypass mode is selected instead). To be able to use the key again application must perform this sequence: write to KEYR0 then KEYR1 then KEYR2 then finally KEYR3 (all written once). As KEYLOCK=1 all those writes are ignored, so the correct key is used instead."
+        bitOffset: 8
+        bitWidth: 8
+        access: read-only
+      - name: VERSION
+        description: "Version\nThis 16-bit bitfield must be correctly initialized before CCEN bit is set. Bitfield usage is defined in Section 35.4.6: MCE stream cipher encryption mode."
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CC2NR0
+    displayName: CC2NR0
+    description: Cipher context 2 nonce register 0
+    addressOffset: 628
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SCNONCE
+        description: "Stream cipher nonce, bits [31:0]\nThis register is used by stream cipher to compute keystream. It must be correctly initialize before CCEN bit is set in MCE_CCzCFGR register. Bitfield usage is defined in Section 35.4.6: MCE stream cipher encryption mode."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CC2NR1
+    displayName: CC2NR1
+    description: Cipher context 2 nonce register 1
+    addressOffset: 632
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SCNONCE
+        description: "Stream cipher nonce, bits [63:32]\nRefer to the MCE_CCzNR0 register for description of the SCNONCE[63:0] bitfield."
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CC2KEYR0
+    displayName: CC2KEYR0
+    description: Cipher context 2 key register 0
+    addressOffset: 636
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: KEY
+        description: "cipher key, bits [31:0]\nThis register is used by the block or stream cipher of MCE when CTXID = z in encrypted region configuration register. KEY[127:0] must be correctly initialize before CCEN bit is set in MCE_CCzCFGR register."
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CC2KEYR1
+    displayName: CC2KEYR1
+    description: Cipher context 2 key register 1
+    addressOffset: 640
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: KEY
+        description: "cipher key, bits [63:32]\nRefer to the MCE_CCzKEYR0 register for description of the KEY[127:0] bitfield."
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CC2KEYR2
+    displayName: CC2KEYR2
+    description: Cipher context 2 key register 2
+    addressOffset: 644
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: KEY
+        description: "cipher key, bits [95:64]\nRefer to the MCE_CCzKEYR0 register for description of the KEY[127:0] bitfield."
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: CC2KEYR3
+    displayName: CC2KEYR3
+    description: Cipher context 2 key register 3
+    addressOffset: 648
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: KEY
+        description: "cipher key, bits [127:96]\nRefer to the MCE_CCzKEYR0 register for description of the KEY[127:0] bitfield."
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+addressBlocks:
+  - offset: 0
+    size: 1024
+    usage: registers
+interrupts:
+  - name: INTR
+    description: MCE1 global interrupt
