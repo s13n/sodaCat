@@ -145,3 +145,4 @@ A GitHub Actions workflow validates clock-tree specs: `tools/validate_clock_spec
 - Cache variables like `STM32XX_GENERATOR` persist in CMakeCache.txt — after moving files, a stale cache may need `cmake .. -DSTM32XX_GENERATOR=<new_path>` or a clean reconfigure
 - SVD zip naming: STM32 zips live in `svd/ST/`; most are `stm32<family>-svd.zip`; exceptions use underscores: `stm32g4_svd.zip`, `stm32l1_svd.zip`, `stm32l4_svd.zip`, `stm32l4plus-svd.zip`, `stm32u5_svd.zip`
 - Interrupt mapping is data-driven via `interrupts` in family config — SVD interrupt names not listed are dropped (acts as filter)
+- Reference manuals are pdf files, to be searched for first in the project root folder
