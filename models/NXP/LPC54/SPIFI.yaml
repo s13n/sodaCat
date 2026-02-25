@@ -1,0 +1,342 @@
+name: SPIFI
+description: LPC5411x SPI Flash Interface (SPIFI)
+groupName: SPIFI
+source: LPC54S018 SVD (MCUX_2.16.100)
+registers:
+  - name: CTRL
+    description: Control register
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 1074790399
+    resetMask: 4176478207
+    fields:
+      - name: TIMEOUT
+        description: This field contains the number of serial clock periods without the processor reading data in memory mode, which will cause the SPIFI hardware to terminate the command by driving the CS pin high and negating the CMD bit in the Status register. (This allows the flash memory to enter a lower-power state.) If the processor reads data from the flash region after a time-out, the command in the Memory Command Register is issued again.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CSHIGH
+        description: This field controls the minimum CS high time, expressed as a number of serial clock periods minus one.
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+      - name: D_PRFTCH_DIS
+        description: This bit allows conditioning of memory mode prefetches based on the AHB HPROT (instruction/data) access information. A 1 in this register means that the SPIFI will not attempt a speculative prefetch when it encounters data accesses.
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: INTEN
+        description: If this bit is 1 when a command ends, the SPIFI will assert its interrupt request output. See INTRQ in the status register for further details.
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: MODE3
+        description: SPI Mode 3 select.
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: SCK_LOW
+            description: SCK LOW. The SPIFI drives SCK low after the rising edge at which the last bit of each command is captured, and keeps it low while CS is HIGH.
+            value: 0
+          - name: SCK_HIGH
+            description: SCK HIGH. the SPIFI keeps SCK high after the rising edge for the last bit of each command and while CS is HIGH, and drives it low after it drives CS LOW. (Known serial flash devices can handle either mode, but some devices may require a particular mode for proper operation.) MODE3, RFCLK, and FBCLK should not all be 1, because in this case there is no final falling edge on SCK on which to sample the last data bit of the frame.
+            value: 1
+      - name: PRFTCH_DIS
+        description: Cache prefetching enable. The SPIFI includes an internal cache. A 1 in this bit disables prefetching of cache lines.
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: ENABLE
+            description: Enable. Cache prefetching enabled.
+            value: 0
+          - name: DISABLE
+            description: Disable. Disables prefetching of cache lines.
+            value: 1
+      - name: DUAL
+        description: Select dual protocol.
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: QUAD
+            description: Quad protocol. This protocol uses IO3:0.
+            value: 0
+          - name: DUAL
+            description: Dual protocol. This protocol uses IO1:0.
+            value: 1
+      - name: RFCLK
+        description: Select active clock edge for input data.
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: RISING_EDGE
+            description: Rising edge. Read data is sampled on rising edges on the clock, as in classic SPI operation.
+            value: 0
+          - name: FALLING_EDGE
+            description: Falling edge. Read data is sampled on falling edges of the clock, allowing a full serial clock of of time in order to maximize the serial clock frequency. MODE3, RFCLK, and FBCLK should not all be 1, because in this case there is no final falling edge on SCK on which to sample the last data bit of the frame.
+            value: 1
+      - name: FBCLK
+        description: Feedback clock select.
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: INTERNAL_CLOCK
+            description: Internal clock. The SPIFI samples read data using an internal clock.
+            value: 0
+          - name: FEEDBACK_CLOCK
+            description: Feedback clock. Read data is sampled using a feedback clock from the SCK pin. This allows slightly more time for each received bit. MODE3, RFCLK, and FBCLK should not all be 1, because in this case there is no final falling edge on SCK on which to sample the last data bit of the frame.
+            value: 1
+      - name: DMAEN
+        description: A 1 in this bit enables the DMA Request output from the SPIFI. Set this bit only when a DMA channel is used to transfer data in peripheral mode. Do not set this bit when a DMA channel is used for memory-to-memory transfers from the SPIFI memory area. DMAEN should only be used in Command mode.
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: CMD
+    description: Command register
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DATALEN
+        description: Except when the POLL bit in this register is 1, this field controls how many data bytes are in the command. 0 indicates that the command does not contain a data field.
+        bitOffset: 0
+        bitWidth: 14
+        access: read-write
+      - name: POLL
+        description: This bit should be written as 1 only with an opcode that a) contains an input data field, and b) causes the serial flash device to return byte status repetitively (e.g., a Read Status command). When this bit is 1, the SPIFI hardware continues to read bytes until the test specified by the DATALEN field is met. The hardware tests the bit in each status byte selected by DATALEN bits 2:0, until a bit is found that is equal to DATALEN bit 3. When the test succeeds, the SPIFI captures the byte that meets this test so that it can be read from the Data Register, and terminates the command by raising CS. The end-of-command interrupt can be enabled to inform software when this occurs
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: DOUT
+        description: 'If the DATALEN field is not zero, this bit controls the direction of the data:'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: INPUT
+            description: Input from serial flash.
+            value: 0
+          - name: OUTPUT
+            description: Output to serial flash.
+            value: 1
+      - name: INTLEN
+        description: This field controls how many intermediate bytes precede the data. (Each such byte may require 8 or 2 SCK cycles, depending on whether the intermediate field is in serial, 2-bit, or 4-bit format.) Intermediate bytes are output by the SPIFI, and include post-address control information, dummy and delay bytes. See the description of the Intermediate Data register for the contents of such bytes.
+        bitOffset: 16
+        bitWidth: 3
+        access: read-write
+      - name: FIELDFORM
+        description: This field controls how the fields of the command are sent.
+        bitOffset: 19
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: ALL_SERIAL
+            description: All serial. All fields of the command are serial.
+            value: 0
+          - name: QUAD_DUAL_DATA
+            description: Quad/dual data. Data field is quad/dual, other fields are serial.
+            value: 1
+          - name: SERIAL_OPCODE
+            description: Serial opcode. Opcode field is serial. Other fields are quad/dual.
+            value: 2
+          - name: ALL_QUAD_DUAL
+            description: All quad/dual. All fields of the command are in quad/dual format.
+            value: 3
+      - name: FRAMEFORM
+        description: This field controls the opcode and address fields.
+        bitOffset: 21
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: OPCODE
+            description: Opcode. Opcode only, no address.
+            value: 1
+          - name: OPCODE_1_BYTE
+            description: Opcode one byte. Opcode, least significant byte of address.
+            value: 2
+          - name: OPCODE_2_BYTES
+            description: Opcode two bytes. Opcode, two least significant bytes of address.
+            value: 3
+          - name: OPCODE_3_BYTES
+            description: Opcode three bytes. Opcode, three least significant bytes of address.
+            value: 4
+          - name: OPCODE_4_BYTES
+            description: Opcode four bytes. Opcode, 4 bytes of address.
+            value: 5
+          - name: NO_OPCODE_3_BYTES
+            description: No opcode three bytes. No opcode, 3 least significant bytes of address.
+            value: 6
+          - name: NO_OPCODE_4_BYTES
+            description: No opcode four bytes. No opcode, 4 bytes of address.
+            value: 7
+      - name: OPCODE
+        description: The opcode of the command (not used for some FRAMEFORM values).
+        bitOffset: 24
+        bitWidth: 8
+        access: read-write
+  - name: ADDR
+    description: Address register
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ADDRESS
+        description: Address.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: IDATA
+    description: Intermediate data register
+    addressOffset: 12
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IDATA
+        description: Value of intermediate bytes.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CLIMIT
+    description: Limit register
+    addressOffset: 16
+    size: 32
+    access: read-write
+    resetValue: 134217728
+    resetMask: 4294967295
+    fields:
+      - name: CLIMIT
+        description: Zero-based upper limit of cacheable memory
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: DATA
+    description: Data register
+    addressOffset: 20
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DATA
+        description: Input or output data
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: MCMD
+    description: Memory command register
+    addressOffset: 24
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294950912
+    fields:
+      - name: POLL
+        description: This bit should be written as 0.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: DOUT
+        description: This bit should be written as 0.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: INTLEN
+        description: This field controls how many intermediate bytes precede the data. (Each such byte may require 8 or 2 SCK cycles, depending on whether the intermediate field is in serial, 2-bit, or 4-bit format.) Intermediate bytes are output by the SPIFI, and include post-address control information, dummy and delay bytes. See the description of the Intermediate Data register for the contents of such bytes.
+        bitOffset: 16
+        bitWidth: 3
+        access: read-write
+      - name: FIELDFORM
+        description: This field controls how the fields of the command are sent.
+        bitOffset: 19
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: ALL_SERIAL
+            description: All serial. All fields of the command are serial.
+            value: 0
+          - name: QUAD_DUAL_DATA
+            description: Quad/dual data. Data field is quad/dual, other fields are serial.
+            value: 1
+          - name: SERIAL_OPCODE
+            description: Serial opcode. Opcode field is serial. Other fields are quad/dual.
+            value: 2
+          - name: ALL_QUAD_DUAL
+            description: All quad/dual. All fields of the command are in quad/dual format.
+            value: 3
+      - name: FRAMEFORM
+        description: This field controls the opcode and address fields.
+        bitOffset: 21
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: OPCODE
+            description: Opcode. Opcode only, no address.
+            value: 1
+          - name: OPCODE_1_BYTE
+            description: Opcode one byte. Opcode, least-significant byte of address.
+            value: 2
+          - name: OPCODE_2_BYTES
+            description: Opcode two bytes. Opcode, 2 least-significant bytes of address.
+            value: 3
+          - name: OPCODE_3_BYTES
+            description: Opcode three bytes. Opcode, 3 least-significant bytes of address.
+            value: 4
+          - name: OPCODE_4_BYTES
+            description: Opcode four bytes. Opcode, 4 bytes of address.
+            value: 5
+          - name: NO_OPCODE_3_BYTES
+            description: No opcode three bytes. No opcode, 3 least-significant bytes of address.
+            value: 6
+          - name: NO_OPCODE_4_BYTES
+            description: No opcode, 4 bytes of address.
+            value: 7
+      - name: OPCODE
+        description: The opcode of the command (not used for some FRAMEFORM values).
+        bitOffset: 24
+        bitWidth: 8
+        access: read-write
+  - name: STAT
+    description: Status register
+    addressOffset: 28
+    size: 32
+    access: read-write
+    resetValue: 33554432
+    resetMask: 4278190131
+    fields:
+      - name: MCINIT
+        description: This bit is set when software successfully writes the Memory Command register, and is cleared by Reset or by writing a 1 to the RESET bit in this register.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CMD
+        description: This bit is 1 when the Command register is written. It is cleared by a hardware reset, a write to the RESET bit in this register, or the deassertion of CS which indicates that the command has completed communication with the SPI Flash.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: RESET
+        description: Write a 1 to this bit to abort a current command or memory mode. This bit is cleared when the hardware is ready for a new command to be written to the Command register.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: INTRQ
+        description: This bit reflects the SPIFI interrupt request. Write a 1 to this bit to clear it. This bit is set when a CMD was previously 1 and has been cleared due to the deassertion of CS.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 32
+    usage: registers
+interrupts:
+  - name: INTR

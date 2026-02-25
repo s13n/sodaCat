@@ -1,0 +1,765 @@
+name: I2S
+description: LPC5411x I2S interface
+alternatePeripheral: FLEXCOMM6
+groupName: I2S
+headerStructName: I2S
+source: LPC54S018 SVD (MCUX_2.16.100)
+registers:
+  - dim: 3
+    dimIncrement: 32
+    name: SECCHANNEL[%s]
+    description: no description available
+    addressOffset: 0
+    registers:
+      - name: PCFG1
+        description: Configuration register 1 for channel pair
+        addressOffset: 3104
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 1025
+        fields:
+          - name: PAIRENABLE
+            description: Enable for this channel pair..
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+          - name: ONECHANNEL
+            description: Single channel mode.
+            bitOffset: 10
+            bitWidth: 1
+            access: read-write
+      - name: PCFG2
+        description: Configuration register 2 for channel pair
+        addressOffset: 3108
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 33488896
+        fields:
+          - name: POSITION
+            description: Data Position.
+            bitOffset: 16
+            bitWidth: 9
+            access: read-write
+      - name: PSTAT
+        description: Status register for channel pair
+        addressOffset: 3112
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 15
+        fields:
+          - name: BUSY
+            description: Busy status for this channel pair.
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+          - name: SLVFRMERR
+            description: Save Frame Error flag.
+            bitOffset: 1
+            bitWidth: 1
+            access: read-write
+          - name: LR
+            description: Left/Right indication.
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+          - name: DATAPAUSED
+            description: Data Paused status flag.
+            bitOffset: 3
+            bitWidth: 1
+            access: read-only
+  - name: CFG1
+    description: Configuration register 1 for the primary channel pair.
+    addressOffset: 3072
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 2047999
+    fields:
+      - name: MAINENABLE
+        description: Main enable for I 2S function in this Flexcomm
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: All I 2S channel pairs in this Flexcomm are disabled and the internal state machines, counters, and flags are reset. No other channel pairs can be enabled.
+            value: 0
+          - name: ENABLED
+            description: This I 2S channel pair is enabled. Other channel pairs in this Flexcomm may be enabled in their individual PAIRENABLE bits.
+            value: 1
+      - name: DATAPAUSE
+        description: Data flow Pause. Allows pausing data flow between the I2S serializer/deserializer and the FIFO. This could be done in order to change streams, or while restarting after a data underflow or overflow. When paused, FIFO operations can be done without corrupting data that is in the process of being sent or received. Once a data pause has been requested, the interface may need to complete sending data that was in progress before interrupting the flow of data. Software must check that the pause is actually in effect before taking action. This is done by monitoring the DATAPAUSED flag in the STAT register. When DATAPAUSE is cleared, data transfer will resume at the beginning of the next frame.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal operation, or resuming normal operation at the next frame if the I2S has already been paused.
+            value: 0
+          - name: PAUSE
+            description: A pause in the data flow is being requested. It is in effect when DATAPAUSED in STAT = 1.
+            value: 1
+      - name: PAIRCOUNT
+        description: Provides the number of I2S channel pairs in this Flexcomm This is a read-only field whose value may be different in other Flexcomms. 00 = there is 1 I2S channel pair in this Flexcomm. 01 = there are 2 I2S channel pairs in this Flexcomm. 10 = there are 3 I2S channel pairs in this Flexcomm. 11 = there are 4 I2S channel pairs in this Flexcomm.
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: PAIRS_1
+            description: 1 I2S channel pairs in this flexcomm
+            value: 0
+          - name: PAIRS_2
+            description: 2 I2S channel pairs in this flexcomm
+            value: 1
+          - name: PAIRS_3
+            description: 3 I2S channel pairs in this flexcomm
+            value: 2
+          - name: PAIRS_4
+            description: 4 I2S channel pairs in this flexcomm
+            value: 3
+      - name: MSTSLVCFG
+        description: Master / slave configuration selection, determining how SCK and WS are used by all channel pairs in this Flexcomm.
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: NORMAL_SLAVE_MODE
+            description: Normal slave mode, the default mode. SCK and WS are received from a master and used to transmit or receive data.
+            value: 0
+          - name: WS_SYNC_MASTER
+            description: WS synchronized master. WS is received from another master and used to synchronize the generation of SCK, when divided from the Flexcomm function clock.
+            value: 1
+          - name: MASTER_USING_SCK
+            description: Master using an existing SCK. SCK is received and used directly to generate WS, as well as transmitting or receiving data.
+            value: 2
+          - name: NORMAL_MASTER
+            description: Normal master mode. SCK and WS are generated so they can be sent to one or more slave devices.
+            value: 3
+      - name: MODE
+        description: Selects the basic I2S operating mode. Other configurations modify this to obtain all supported cases. See Formats and modes for examples.
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: CLASSIC_MODE
+            description: I2S mode a.k.a. 'classic' mode. WS has a 50% duty cycle, with (for each enabled channel pair) one piece of left channel data occurring during the first phase, and one pieces of right channel data occurring during the second phase. In this mode, the data region begins one clock after the leading WS edge for the frame. For a 50% WS duty cycle, FRAMELEN must define an even number of I2S clocks for the frame. If FRAMELEN defines an odd number of clocks per frame, the extra clock will occur on the right.
+            value: 0
+          - name: DSP_MODE_WS_50_DUTYCYCLE
+            description: DSP mode where WS has a 50% duty cycle. See remark for mode 0.
+            value: 1
+          - name: DSP_MODE_WS_1_CLOCK
+            description: DSP mode where WS has a one clock long pulse at the beginning of each data frame.
+            value: 2
+          - name: DSP_MODE_WS_1_DATA
+            description: DSP mode where WS has a one data slot long pulse at the beginning of each data frame.
+            value: 3
+      - name: RIGHTLOW
+        description: Right channel data is in the Low portion of FIFO data. Essentially, this swaps left and right channel data as it is transferred to or from the FIFO. This bit is not used if the data width is greater than 24 bits or if PDMDATA = 1. Note that if the ONECHANNEL field (bit 10 of this register) = 1, the one channel to be used is the nominally the left channel. POSITION can still place that data in the frame where right channel data is normally located. if all enabled channel pairs have ONECHANNEL = 1, then RIGHTLOW = 1 is not allowed.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: RIGHT_HIGH
+            description: The right channel is taken from the high part of the FIFO data. For example, when data is 16 bits, FIFO bits 31:16 are used for the right channel.
+            value: 0
+          - name: RIGHT_LOW
+            description: The right channel is taken from the low part of the FIFO data. For example, when data is 16 bits, FIFO bits 15:0 are used for the right channel.
+            value: 1
+      - name: LEFTJUST
+        description: Left Justify data.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: RIGHT_JUSTIFIED
+            description: Data is transferred between the FIFO and the I2S serializer/deserializer right justified, i.e. starting from bit 0 and continuing to the position defined by DATALEN. This would correspond to right justified data in the stream on the data bus.
+            value: 0
+          - name: LEFT_JUSTIFIED
+            description: Data is transferred between the FIFO and the I2S serializer/deserializer left justified, i.e. starting from the MSB of the FIFO entry and continuing for the number of bits defined by DATALEN. This would correspond to left justified data in the stream on the data bus.
+            value: 1
+      - name: ONECHANNEL
+        description: Single channel mode. Applies to both transmit and receive. This configuration bit applies only to the first I2S channel pair. Other channel pairs may select this mode independently in their separate CFG1 registers.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DUAL_CHANNEL
+            description: I2S data for this channel pair is treated as left and right channels.
+            value: 0
+          - name: SINGLE_CHANNEL
+            description: I2S data for this channel pair is treated as a single channel, functionally the left channel for this pair. In mode 0 only, the right side of the frame begins at POSITION = 0x100. This is because mode 0 makes a clear distinction between the left and right sides of the frame. When ONECHANNEL = 1, the single channel of data may be placed on the right by setting POSITION to 0x100 + the data position within the right side (e.g. 0x108 would place data starting at the 8th clock after the middle of the frame). In other modes, data for the single channel of data is placed at the clock defined by POSITION.
+            value: 1
+      - name: PDMDATA
+        description: PDM Data selection. This bit controls the data source for I2S transmit, and cannot be set in Rx mode. This bit only has an effect if the device the Flexcomm resides in includes a D-Mic subsystem. For the LPC5411x, this bit applies only to Flexcomm 7.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal operation, data is transferred to or from the Flexcomm FIFO.
+            value: 0
+          - name: DMIC_SUBSYSTEM
+            description: The data source is the D-Mic subsystem. When PDMDATA = 1, only the primary channel pair can be used in this Flexcomm. If ONECHANNEL = 1, only the PDM left data is used. the WS rate must match the Fs (sample rate) of the D-Mic decimator. A rate mismatch will at some point cause the I2S to overrun or underrun.
+            value: 1
+      - name: SCK_POL
+        description: SCK polarity.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: FALLING_EDGE
+            description: Data is launched on SCK falling edges and sampled on SCK rising edges (standard for I2S).
+            value: 0
+          - name: RISING_EDGE
+            description: Data is launched on SCK rising edges and sampled on SCK falling edges.
+            value: 1
+      - name: WS_POL
+        description: WS polarity.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NOT_INVERTED
+            description: Data frames begin at a falling edge of WS (standard for classic I2S).
+            value: 0
+          - name: INVERTED
+            description: WS is inverted, resulting in a data frame beginning at a rising edge of WS (standard for most 'non-classic' variations of I2S).
+            value: 1
+      - name: DATALEN
+        description: 'Data Length, minus 1 encoded, defines the number of data bits to be transmitted or received for all I2S channel pairs in this Flexcomm. Note that data is only driven to or received from SDA for the number of bits defined by DATALEN. DATALEN is also used in these ways by the I2S: Determines the size of data transfers between the FIFO and the I2S serializer/deserializer. See FIFO buffer configurations and usage In mode 1, 2, and 3, determines the location of right data following left data in the frame. In mode 3 (where WS has a one data slot long pulse at the beginning of each data frame) determines the duration of the WS pulse. Values: 0x00 to 0x02 = not supported 0x03 = data is 4 bits in length 0x04 = data is 5 bits in length 0x1F = data is 32 bits in length'
+        bitOffset: 16
+        bitWidth: 5
+        access: read-write
+  - name: CFG2
+    description: Configuration register 2 for the primary channel pair.
+    addressOffset: 3076
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 33489407
+    fields:
+      - name: FRAMELEN
+        description: Frame Length, minus 1 encoded, defines the number of clocks and data bits in the frames that this channel pair participates in. See Frame format. 0x000 to 0x002 = not supported 0x003 = frame is 4 bits in total length 0x004 = frame is 5 bits in total length 0x1FF = frame is 512 bits in total length if FRAMELEN is an defines an odd length frame (e.g. 33 clocks) in mode 0 or 1, the extra clock appears in the right half. When MODE = 3, FRAMELEN must be larger than DATALEN in order for the WS pulse to be generated correctly.
+        bitOffset: 0
+        bitWidth: 9
+        access: read-write
+      - name: POSITION
+        description: Data Position. Defines the location within the frame of the data for this channel pair. POSITION + DATALEN must be less than FRAMELEN. See Frame format. When MODE = 0, POSITION defines the location of data in both the left phase and right phase, starting one clock after the WS edge. In other modes, POSITION defines the location of data within the entire frame. ONECHANNEL = 1 while MODE = 0 is a special case, see the description of ONECHANNEL. The combination of DATALEN and the POSITION fields of all channel pairs must be made such that the channels do not overlap within the frame. 0x000 = data begins at bit position 0 (the first bit position) within the frame or WS phase. 0x001 = data begins at bit position 1 within the frame or WS phase. 0x002 = data begins at bit position 2 within the frame or WS phase.
+        bitOffset: 16
+        bitWidth: 9
+        access: read-write
+  - name: STAT
+    description: Status register for the primary channel pair.
+    addressOffset: 3080
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 13
+    fields:
+      - name: BUSY
+        description: Busy status for the primary channel pair. Other BUSY flags may be found in the STAT register for each channel pair.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: IDLE
+            description: The transmitter/receiver for channel pair is currently idle.
+            value: 0
+          - name: BUSY
+            description: The transmitter/receiver for channel pair is currently processing data.
+            value: 1
+      - name: SLVFRMERR
+        description: Slave Frame Error flag. This applies when at least one channel pair is operating as a slave. An error indicates that the incoming WS signal did not transition as expected due to a mismatch between FRAMELEN and the actual incoming I2S stream.
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+        enumeratedValues:
+          - name: NO_ERROR
+            description: No error has been recorded.
+            value: 0
+          - name: ERROR
+            description: An error has been recorded for some channel pair that is operating in slave mode. ERROR is cleared by writing a 1 to this bit position.
+            value: 1
+      - name: LR
+        description: Left/Right indication. This flag is considered to be a debugging aid and is not expected to be used by an I2S driver. Valid when one channel pair is busy. Indicates left or right data being processed for the currently busy channel pair.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: LEFT_CHANNEL
+            description: Left channel.
+            value: 0
+          - name: RIGHT_CHANNEL
+            description: Right channel.
+            value: 1
+      - name: DATAPAUSED
+        description: Data Paused status flag. Applies to all I2S channels
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: NOT_PAUSED
+            description: Data is not currently paused. A data pause may have been requested but is not yet in force, waiting for an allowed pause point. Refer to the description of the DATAPAUSE control bit in the CFG1 register.
+            value: 0
+          - name: PAUSED
+            description: A data pause has been requested and is now in force.
+            value: 1
+  - name: DIV
+    description: Clock divider, used by all channel pairs.
+    addressOffset: 3100
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4095
+    fields:
+      - name: DIV
+        description: This field controls how this I2S block uses the Flexcomm function clock. 0x000 = The Flexcomm function clock is used directly. 0x001 = The Flexcomm function clock is divided by 2. 0x002 = The Flexcomm function clock is divided by 3. 0xFFF = The Flexcomm function clock is divided by 4,096.
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+  - name: FIFOCFG
+    description: FIFO configuration and enable register.
+    addressOffset: 3584
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 520243
+    fields:
+      - name: ENABLETX
+        description: Enable the transmit FIFO.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: The transmit FIFO is not enabled.
+            value: 0
+          - name: ENABLED
+            description: The transmit FIFO is enabled.
+            value: 1
+      - name: ENABLERX
+        description: Enable the receive FIFO.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: The receive FIFO is not enabled.
+            value: 0
+          - name: ENABLED
+            description: The receive FIFO is enabled.
+            value: 1
+      - name: TXI2SE0
+        description: Transmit I2S empty 0. Determines the value sent by the I2S in transmit mode if the TX FIFO becomes empty. This value is sent repeatedly until the I2S is paused, the error is cleared, new data is provided, and the I2S is un-paused.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: LAST_VALUE
+            description: If the TX FIFO becomes empty, the last value is sent. This setting may be used when the data length is 24 bits or less, or when MONO = 1 for this channel pair.
+            value: 0
+          - name: ZERO
+            description: If the TX FIFO becomes empty, 0 is sent. Use if the data length is greater than 24 bits or if zero fill is preferred.
+            value: 1
+      - name: PACK48
+        description: Packing format for 48-bit data. This relates to how data is entered into or taken from the FIFO by software or DMA.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: BIT_24
+            description: 48-bit I2S FIFO entries are handled as all 24-bit values.
+            value: 0
+          - name: BIT_32_16
+            description: 48-bit I2S FIFO entries are handled as alternating 32-bit and 16-bit values.
+            value: 1
+      - name: SIZE
+        description: FIFO size configuration. This is a read-only field. 0x0 = FIFO is configured as 16 entries of 8 bits. 0x1, 0x2, 0x3 = not applicable to USART.
+        bitOffset: 4
+        bitWidth: 2
+        access: read-only
+      - name: DMATX
+        description: DMA configuration for transmit.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: DMA is not used for the transmit function.
+            value: 0
+          - name: ENABLED
+            description: Trigger DMA for the transmit function if the FIFO is not full. Generally, data interrupts would be disabled if DMA is enabled.
+            value: 1
+      - name: DMARX
+        description: DMA configuration for receive.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: DMA is not used for the receive function.
+            value: 0
+          - name: ENABLED
+            description: Trigger DMA for the receive function if the FIFO is not empty. Generally, data interrupts would be disabled if DMA is enabled.
+            value: 1
+      - name: WAKETX
+        description: Wake-up for transmit FIFO level. This allows the device to be woken from reduced power modes (up to power-down, as long as the peripheral function works in that power mode) without enabling the TXLVL interrupt. Only DMA wakes up, processes data, and goes back to sleep. The CPU will remain stopped until woken by another cause, such as DMA completion. See Hardware Wake-up control register.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Only enabled interrupts will wake up the device form reduced power modes.
+            value: 0
+          - name: ENABLED
+            description: A device wake-up for DMA will occur if the transmit FIFO level reaches the value specified by TXLVL in FIFOTRIG, even when the TXLVL interrupt is not enabled.
+            value: 1
+      - name: WAKERX
+        description: Wake-up for receive FIFO level. This allows the device to be woken from reduced power modes (up to power-down, as long as the peripheral function works in that power mode) without enabling the TXLVL interrupt. Only DMA wakes up, processes data, and goes back to sleep. The CPU will remain stopped until woken by another cause, such as DMA completion. See Hardware Wake-up control register.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Only enabled interrupts will wake up the device form reduced power modes.
+            value: 0
+          - name: ENABLED
+            description: A device wake-up for DMA will occur if the receive FIFO level reaches the value specified by RXLVL in FIFOTRIG, even when the RXLVL interrupt is not enabled.
+            value: 1
+      - name: EMPTYTX
+        description: Empty command for the transmit FIFO. When a 1 is written to this bit, the TX FIFO is emptied.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: EMPTYRX
+        description: Empty command for the receive FIFO. When a 1 is written to this bit, the RX FIFO is emptied.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+  - name: FIFOSTAT
+    description: FIFO status register.
+    addressOffset: 3588
+    size: 32
+    access: read-write
+    resetValue: 48
+    resetMask: 2039803
+    fields:
+      - name: TXERR
+        description: TX FIFO error. Will be set if a transmit FIFO error occurs. This could be an overflow caused by pushing data into a full FIFO, or by an underflow if the FIFO is empty when data is needed. Cleared by writing a 1 to this bit.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RXERR
+        description: RX FIFO error. Will be set if a receive FIFO overflow occurs, caused by software or DMA not emptying the FIFO fast enough. Cleared by writing a 1 to this bit.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: PERINT
+        description: Peripheral interrupt. When 1, this indicates that the peripheral function has asserted an interrupt. The details can be found by reading the peripheral's STAT register.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: TXEMPTY
+        description: Transmit FIFO empty. When 1, the transmit FIFO is empty. The peripheral may still be processing the last piece of data.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: TXNOTFULL
+        description: Transmit FIFO not full. When 1, the transmit FIFO is not full, so more data can be written. When 0, the transmit FIFO is full and another write would cause it to overflow.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+      - name: RXNOTEMPTY
+        description: Receive FIFO not empty. When 1, the receive FIFO is not empty, so data can be read. When 0, the receive FIFO is empty.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: RXFULL
+        description: Receive FIFO full. When 1, the receive FIFO is full. Data needs to be read out to prevent the peripheral from causing an overflow.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: TXLVL
+        description: Transmit FIFO current level. A 0 means the TX FIFO is currently empty, and the TXEMPTY and TXNOTFULL flags will be 1. Other values tell how much data is actually in the TX FIFO at the point where the read occurs. If the TX FIFO is full, the TXEMPTY and TXNOTFULL flags will be 0.
+        bitOffset: 8
+        bitWidth: 5
+        access: read-only
+      - name: RXLVL
+        description: Receive FIFO current level. A 0 means the RX FIFO is currently empty, and the RXFULL and RXNOTEMPTY flags will be 0. Other values tell how much data is actually in the RX FIFO at the point where the read occurs. If the RX FIFO is full, the RXFULL and RXNOTEMPTY flags will be 1.
+        bitOffset: 16
+        bitWidth: 5
+        access: read-only
+  - name: FIFOTRIG
+    description: FIFO trigger settings for interrupt and DMA request.
+    addressOffset: 3592
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 986883
+    fields:
+      - name: TXLVLENA
+        description: Transmit FIFO level trigger enable. This trigger will become an interrupt if enabled in FIFOINTENSET, or a DMA trigger if DMATX in FIFOCFG is set.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Transmit FIFO level does not generate a FIFO level trigger.
+            value: 0
+          - name: ENABLED
+            description: An trigger will be generated if the transmit FIFO level reaches the value specified by the TXLVL field in this register.
+            value: 1
+      - name: RXLVLENA
+        description: Receive FIFO level trigger enable. This trigger will become an interrupt if enabled in FIFOINTENSET, or a DMA trigger if DMARX in FIFOCFG is set.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: Receive FIFO level does not generate a FIFO level trigger.
+            value: 0
+          - name: ENABLED
+            description: An trigger will be generated if the receive FIFO level reaches the value specified by the RXLVL field in this register.
+            value: 1
+      - name: TXLVL
+        description: Transmit FIFO level trigger point. This field is used only when TXLVLENA = 1. If enabled to do so, the FIFO level can wake up the device just enough to perform DMA, then return to the reduced power mode. See Hardware Wake-up control register. 0 = trigger when the TX FIFO becomes empty. 1 = trigger when the TX FIFO level decreases to one entry. 15 = trigger when the TX FIFO level decreases to 15 entries (is no longer full).
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: RXLVL
+        description: Receive FIFO level trigger point. The RX FIFO level is checked when a new piece of data is received. This field is used only when RXLVLENA = 1. If enabled to do so, the FIFO level can wake up the device just enough to perform DMA, then return to the reduced power mode. See Hardware Wake-up control register. 0 = trigger when the RX FIFO has received one entry (is no longer empty). 1 = trigger when the RX FIFO has received two entries. 15 = trigger when the RX FIFO has received 16 entries (has become full).
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+  - name: FIFOINTENSET
+    description: FIFO interrupt enable set (enable) and read register.
+    addressOffset: 3600
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 15
+    fields:
+      - name: TXERR
+        description: Determines whether an interrupt occurs when a transmit error occurs, based on the TXERR flag in the FIFOSTAT register.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: No interrupt will be generated for a transmit error.
+            value: 0
+          - name: ENABLED
+            description: An interrupt will be generated when a transmit error occurs.
+            value: 1
+      - name: RXERR
+        description: Determines whether an interrupt occurs when a receive error occurs, based on the RXERR flag in the FIFOSTAT register.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: No interrupt will be generated for a receive error.
+            value: 0
+          - name: ENABLED
+            description: An interrupt will be generated when a receive error occurs.
+            value: 1
+      - name: TXLVL
+        description: Determines whether an interrupt occurs when a the transmit FIFO reaches the level specified by the TXLVL field in the FIFOTRIG register.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: No interrupt will be generated based on the TX FIFO level.
+            value: 0
+          - name: ENABLED
+            description: If TXLVLENA in the FIFOTRIG register = 1, an interrupt will be generated when the TX FIFO level decreases to the level specified by TXLVL in the FIFOTRIG register.
+            value: 1
+      - name: RXLVL
+        description: Determines whether an interrupt occurs when a the receive FIFO reaches the level specified by the TXLVL field in the FIFOTRIG register.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DISABLED
+            description: No interrupt will be generated based on the RX FIFO level.
+            value: 0
+          - name: ENABLED
+            description: If RXLVLENA in the FIFOTRIG register = 1, an interrupt will be generated when the when the RX FIFO level increases to the level specified by RXLVL in the FIFOTRIG register.
+            value: 1
+  - name: FIFOINTENCLR
+    description: FIFO interrupt enable clear (disable) and read register.
+    addressOffset: 3604
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 15
+    fields:
+      - name: TXERR
+        description: Writing one clears the corresponding bits in the FIFOINTENSET register.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RXERR
+        description: Writing one clears the corresponding bits in the FIFOINTENSET register.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TXLVL
+        description: Writing one clears the corresponding bits in the FIFOINTENSET register.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: RXLVL
+        description: Writing one clears the corresponding bits in the FIFOINTENSET register.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+  - name: FIFOINTSTAT
+    description: FIFO interrupt status register.
+    addressOffset: 3608
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 31
+    fields:
+      - name: TXERR
+        description: TX FIFO error.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: RXERR
+        description: RX FIFO error.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: TXLVL
+        description: Transmit FIFO level interrupt.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: RXLVL
+        description: Receive FIFO level interrupt.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: PERINT
+        description: Peripheral interrupt.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+  - name: FIFOWR
+    description: FIFO write data.
+    addressOffset: 3616
+    size: 32
+    access: write-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: TXDATA
+        description: Transmit data to the FIFO. The number of bits used depends on configuration details.
+        bitOffset: 0
+        bitWidth: 32
+        access: write-only
+  - name: FIFOWR48H
+    description: FIFO write data for upper data bits. May only be used if the I2S is configured for 2x 24-bit data and not using DMA.
+    addressOffset: 3620
+    size: 32
+    access: write-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: TXDATA
+        description: Transmit data to the FIFO. Whether this register is used and the number of bits used depends on configuration details.
+        bitOffset: 0
+        bitWidth: 24
+        access: write-only
+  - name: FIFORD
+    description: FIFO read data.
+    addressOffset: 3632
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: RXDATA
+        description: Received data from the FIFO. The number of bits used depends on configuration details.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: FIFORD48H
+    description: FIFO read data for upper data bits. May only be used if the I2S is configured for 2x 24-bit data and not using DMA.
+    addressOffset: 3636
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 16777215
+    fields:
+      - name: RXDATA
+        description: Received data from the FIFO. Whether this register is used and the number of bits used depends on configuration details.
+        bitOffset: 0
+        bitWidth: 24
+        access: read-only
+  - name: FIFORDNOPOP
+    description: FIFO data read with no FIFO pop.
+    addressOffset: 3648
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: RXDATA
+        description: Received data from the FIFO.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: FIFORD48HNOPOP
+    description: FIFO data read for upper data bits with no FIFO pop. May only be used if the I2S is configured for 2x 24-bit data and not using DMA.
+    addressOffset: 3652
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 16777215
+    fields:
+      - name: RXDATA
+        description: Received data from the FIFO. Whether this register is used and the number of bits used depends on configuration details.
+        bitOffset: 0
+        bitWidth: 24
+        access: read-only
+  - name: ID
+    description: Module identification
+    addressOffset: 7676
+    size: 32
+    access: read-only
+    resetValue: 3767533568
+    resetMask: 4294967295
+    fields:
+      - name: Aperture
+        description: 'Aperture: encoded as (aperture size/4K) -1, so 0x00 means a 4K aperture.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-only
+      - name: Minor_Rev
+        description: Minor revision of module implementation, starting at 0.
+        bitOffset: 8
+        bitWidth: 4
+        access: read-only
+      - name: Major_Rev
+        description: Major revision of module implementation, starting at 0.
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+      - name: ID
+        description: Unique module identifier for this IP block.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-only
+addressBlocks:
+  - offset: 0
+    size: 7680
+    usage: registers
+interrupts:
+  - name: FLEXCOMM

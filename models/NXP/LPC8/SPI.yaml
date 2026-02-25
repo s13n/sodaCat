@@ -1,12 +1,22 @@
-# Created from LPC865.svd
-
 name: SPI
 description: LPC84x Serial Peripheral Interfaces (SPI)
 groupName: SPI
 headerStructName: SPI
+source: LPC865 SVD (MCUX_2.16.100)
+params:
+  - name: rx_req
+    type: int
+    description: DMA receive channel
+  - name: tx_req
+    type: int
+    description: DMA transmit channel
+  - name: ssel_num
+    type: int
+    default: 4
+    description: Number of SSEL signals
 registers:
   - name: CFG
-    description: SPI Configuration register
+    description: Configuration register
     addressOffset: 0
     size: 32
     access: read-write
@@ -20,8 +30,7 @@ registers:
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: Disabled. The SPI is disabled and the internal state 
-              machine and counters are reset.
+            description: Disabled. The SPI is disabled and the internal state machine and counters are reset.
             value: 0
           - name: ENABLED
             description: Enabled. The SPI is enabled for operation.
@@ -33,12 +42,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: SLAVE_MODE
-            description: Slave mode. The SPI will operate in slave mode. SCK, 
-              MOSI, and the SSEL signals are inputs, MISO is an output.
+            description: Slave mode. The SPI will operate in slave mode. SCK, MOSI, and the SSEL signals are inputs, MISO is an output.
             value: 0
           - name: MASTER_MODE
-            description: Master mode. The SPI will operate in master mode. SCK, 
-              MOSI, and the SSEL signals are outputs, MISO is an input.
+            description: Master mode. The SPI will operate in master mode. SCK, MOSI, and the SSEL signals are outputs, MISO is an input.
             value: 1
       - name: LSBF
         description: LSB First mode enable.
@@ -47,12 +54,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: STANDARD
-            description: Standard. Data is transmitted and received in standard 
-              MSB first order.
+            description: Standard. Data is transmitted and received in standard MSB first order.
             value: 0
           - name: REVERSE
-            description: Reverse. Data is transmitted and received in reverse 
-              order (LSB first).
+            description: Reverse. Data is transmitted and received in reverse order (LSB first).
             value: 1
       - name: CPHA
         description: Clock Phase select.
@@ -61,14 +66,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: CHANGE
-            description: Change. The SPI captures serial data on the first clock
-              transition of the transfer (when the clock changes away from the 
-              rest state). Data is changed on the following edge.
+            description: Change. The SPI captures serial data on the first clock transition of the transfer (when the clock changes away from the rest state). Data is changed on the following edge.
             value: 0
           - name: CAPTURE
-            description: Capture. The SPI changes serial data on the first clock
-              transition of the transfer (when the clock changes away from the 
-              rest state). Data is captured on the following edge.
+            description: Capture. The SPI changes serial data on the first clock transition of the transfer (when the clock changes away from the rest state). Data is captured on the following edge.
             value: 1
       - name: CPOL
         description: Clock Polarity select.
@@ -77,17 +78,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: LOW
-            description: Low. The rest state of the clock (between transfers) is
-              low.
+            description: Low. The rest state of the clock (between transfers) is low.
             value: 0
           - name: HIGH
-            description: High. The rest state of the clock (between transfers) 
-              is high.
+            description: High. The rest state of the clock (between transfers) is high.
             value: 1
       - name: LOOP
-        description: Loopback mode enable. Loopback mode applies only to Master 
-          mode, and connects transmit and receive data connected together to 
-          allow simple software testing.
+        description: Loopback mode enable. Loopback mode applies only to Master mode, and connects transmit and receive data connected together to allow simple software testing.
         bitOffset: 7
         bitWidth: 1
         access: read-write
@@ -147,7 +144,7 @@ registers:
             description: High. The SSEL3 pin is active high.
             value: 1
   - name: DLY
-    description: SPI Delay register
+    description: Delay register
     addressOffset: 4
     size: 32
     access: read-write
@@ -155,45 +152,27 @@ registers:
     resetMask: 65535
     fields:
       - name: PRE_DELAY
-        description: Controls the amount of time between SSEL assertion and the 
-          beginning of a data transfer. There is always one SPI clock time 
-          between SSEL assertion and the first clock edge. This is not 
-          considered part of the pre-delay. 0x0 = No additional time is 
-          inserted. 0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times 
-          are inserted. 0xF = 15 SPI clock times are inserted.
+        description: Controls the amount of time between SSEL assertion and the beginning of a data transfer. There is always one SPI clock time between SSEL assertion and the first clock edge. This is not considered part of the pre-delay. 0x0 = No additional time is inserted. 0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times are inserted. 0xF = 15 SPI clock times are inserted.
         bitOffset: 0
         bitWidth: 4
         access: read-write
       - name: POST_DELAY
-        description: Controls the amount of time between the end of a data 
-          transfer and SSEL deassertion. 0x0 = No additional time is inserted. 
-          0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times are 
-          inserted. 0xF = 15 SPI clock times are inserted.
+        description: Controls the amount of time between the end of a data transfer and SSEL deassertion. 0x0 = No additional time is inserted. 0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times are inserted. 0xF = 15 SPI clock times are inserted.
         bitOffset: 4
         bitWidth: 4
         access: read-write
       - name: FRAME_DELAY
-        description: If the EOF flag is set, controls the minimum amount of time
-          between the current frame and the next frame (or SSEL deassertion if 
-          EOT). 0x0 = No additional time is inserted. 0x1 = 1 SPI clock time is 
-          inserted. 0x2 = 2 SPI clock times are inserted. 0xF = 15 SPI clock 
-          times are inserted.
+        description: If the EOF flag is set, controls the minimum amount of time between the current frame and the next frame (or SSEL deassertion if EOT). 0x0 = No additional time is inserted. 0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times are inserted. 0xF = 15 SPI clock times are inserted.
         bitOffset: 8
         bitWidth: 4
         access: read-write
       - name: TRANSFER_DELAY
-        description: Controls the minimum amount of time that the SSEL is 
-          deasserted between transfers. 0x0 = The minimum time that SSEL is 
-          deasserted is 1 SPI clock time. (Zero added time.) 0x1 = The minimum 
-          time that SSEL is deasserted is 2 SPI clock times. 0x2 = The minimum 
-          time that SSEL is deasserted is 3 SPI clock times. 0xF = The minimum 
-          time that SSEL is deasserted is 16 SPI clock times.
+        description: Controls the minimum amount of time that the SSEL is deasserted between transfers. 0x0 = The minimum time that SSEL is deasserted is 1 SPI clock time. (Zero added time.) 0x1 = The minimum time that SSEL is deasserted is 2 SPI clock times. 0x2 = The minimum time that SSEL is deasserted is 3 SPI clock times. 0xF = The minimum time that SSEL is deasserted is 16 SPI clock times.
         bitOffset: 12
         bitWidth: 4
         access: read-write
   - name: STAT
-    description: SPI Status. Some status flags can be cleared by writing a 1 to 
-      that bit position
+    description: Status. Some status flags can be cleared by writing a 1 to that bit position
     addressOffset: 8
     size: 32
     access: read-write
@@ -201,91 +180,52 @@ registers:
     resetMask: 511
     fields:
       - name: RXRDY
-        description: Receiver Ready flag. When 1, indicates that data is 
-          available to be read from the receiver buffer. Cleared after a read of
-          the RXDAT register.
+        description: Receiver Ready flag. When 1, indicates that data is available to be read from the receiver buffer. Cleared after a read of the RXDAT register.
         bitOffset: 0
         bitWidth: 1
         access: read-only
       - name: TXRDY
-        description: Transmitter Ready flag. When 1, this bit indicates that 
-          data may be written to the transmit buffer. Previous data may still be
-          in the process of being transmitted. Cleared when data is written to 
-          TXDAT or TXDATCTL until the data is moved to the transmit shift 
-          register.
+        description: Transmitter Ready flag. When 1, this bit indicates that data may be written to the transmit buffer. Previous data may still be in the process of being transmitted. Cleared when data is written to TXDAT or TXDATCTL until the data is moved to the transmit shift register.
         bitOffset: 1
         bitWidth: 1
         access: read-only
       - name: RXOV
-        description: Receiver Overrun interrupt flag. This flag applies only to 
-          slave mode (Master = 0). This flag is set when the beginning of a 
-          received character is detected while the receiver buffer is still in 
-          use. If this occurs, the receiver buffer contents are preserved, and 
-          the incoming data is lost. Data received by the SPI should be 
-          considered undefined if RxOv is set.
+        description: Receiver Overrun interrupt flag. This flag applies only to slave mode (Master = 0). This flag is set when the beginning of a received character is detected while the receiver buffer is still in use. If this occurs, the receiver buffer contents are preserved, and the incoming data is lost. Data received by the SPI should be considered undefined if RxOv is set.
         bitOffset: 2
         bitWidth: 1
         access: write-only
       - name: TXUR
-        description: Transmitter Underrun interrupt flag. This flag applies only
-          to slave mode (Master = 0). In this case, the transmitter must begin 
-          sending new data on the next input clock if the transmitter is idle. 
-          If that data is not available in the transmitter holding register at 
-          that point, there is no data to transmit and the TXUR flag is set. 
-          Data transmitted by the SPI should be considered undefined if TXUR is 
-          set.
+        description: Transmitter Underrun interrupt flag. This flag applies only to slave mode (Master = 0). In this case, the transmitter must begin sending new data on the next input clock if the transmitter is idle. If that data is not available in the transmitter holding register at that point, there is no data to transmit and the TXUR flag is set. Data transmitted by the SPI should be considered undefined if TXUR is set.
         bitOffset: 3
         bitWidth: 1
         access: write-only
       - name: SSA
-        description: Slave Select Assert. This flag is set whenever any slave 
-          select transitions from deasserted to asserted, in both master and 
-          slave modes. This allows determining when the SPI transmit/receive 
-          functions become busy, and allows waking up the device from reduced 
-          power modes when a slave mode access begins. This flag is cleared by 
-          software.
+        description: Slave Select Assert. This flag is set whenever any slave select transitions from deasserted to asserted, in both master and slave modes. This allows determining when the SPI transmit/receive functions become busy, and allows waking up the device from reduced power modes when a slave mode access begins. This flag is cleared by software.
         bitOffset: 4
         bitWidth: 1
         access: write-only
       - name: SSD
-        description: Slave Select Deassert. This flag is set whenever any 
-          asserted slave selects transition to deasserted, in both master and 
-          slave modes. This allows determining when the SPI transmit/receive 
-          functions become idle. This flag is cleared by software.
+        description: Slave Select Deassert. This flag is set whenever any asserted slave selects transition to deasserted, in both master and slave modes. This allows determining when the SPI transmit/receive functions become idle. This flag is cleared by software.
         bitOffset: 5
         bitWidth: 1
         access: write-only
       - name: STALLED
-        description: Stalled status flag. This indicates whether the SPI is 
-          currently in a stall condition.
+        description: Stalled status flag. This indicates whether the SPI is currently in a stall condition.
         bitOffset: 6
         bitWidth: 1
         access: read-only
       - name: ENDTRANSFER
-        description: End Transfer control bit. Software can set this bit to 
-          force an end to the current transfer when the transmitter finishes any
-          activity already in progress, as if the EOT flag had been set prior to
-          the last transmission. This capability is included to support cases 
-          where it is not known when transmit data is written that it will be 
-          the end of a transfer. The bit is cleared when the transmitter becomes
-          idle as the transfer comes to an end. Forcing an end of transfer in 
-          this manner causes any specified FRAME_DELAY and TRANSFER_DELAY to be 
-          inserted.
+        description: End Transfer control bit. Software can set this bit to force an end to the current transfer when the transmitter finishes any activity already in progress, as if the EOT flag had been set prior to the last transmission. This capability is included to support cases where it is not known when transmit data is written that it will be the end of a transfer. The bit is cleared when the transmitter becomes idle as the transfer comes to an end. Forcing an end of transfer in this manner causes any specified FRAME_DELAY and TRANSFER_DELAY to be inserted.
         bitOffset: 7
         bitWidth: 1
         access: read-write
       - name: MSTIDLE
-        description: Master idle status flag. This bit is 1 whenever the SPI 
-          master function is fully idle. This means that the transmit holding 
-          register is empty and the transmitter is not in the process of sending
-          data.
+        description: Master idle status flag. This bit is 1 whenever the SPI master function is fully idle. This means that the transmit holding register is empty and the transmitter is not in the process of sending data.
         bitOffset: 8
         bitWidth: 1
         access: read-only
   - name: INTENSET
-    description: SPI Interrupt Enable read and Set. A complete value may be read
-      from this register. Writing a 1 to any implemented bit position causes 
-      that bit to be set.
+    description: Interrupt Enable read and Set. A complete value may be read from this register. Writing a 1 to any implemented bit position causes that bit to be set.
     addressOffset: 12
     size: 32
     access: read-write
@@ -293,103 +233,79 @@ registers:
     resetMask: 319
     fields:
       - name: RXRDYEN
-        description: Determines whether an interrupt occurs when receiver data 
-          is available.
+        description: Determines whether an interrupt occurs when receiver data is available.
         bitOffset: 0
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: RXRDYEN_0
-            description: No interrupt will be generated when receiver data is 
-              available.
+            description: No interrupt will be generated when receiver data is available.
             value: 0
           - name: RXRDYEN_1
-            description: An interrupt will be generated when receiver data is 
-              available in the RXDAT register.
+            description: An interrupt will be generated when receiver data is available in the RXDAT register.
             value: 1
       - name: TXRDYEN
-        description: Determines whether an interrupt occurs when the transmitter
-          holding register is available.
+        description: Determines whether an interrupt occurs when the transmitter holding register is available.
         bitOffset: 1
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: TXRDYEN_0
-            description: No interrupt will be generated when the transmitter 
-              holding register is available.
+            description: No interrupt will be generated when the transmitter holding register is available.
             value: 0
           - name: TXRDYEN_1
-            description: An interrupt will be generated when data may be written
-              to TXDAT.
+            description: An interrupt will be generated when data may be written to TXDAT.
             value: 1
       - name: RXOVEN
-        description: Determines whether an interrupt occurs when a receiver 
-          overrun occurs. This happens in slave mode when there is a need for 
-          the receiver to move newly received data to the RXDAT register when it
-          is already in use. The interface prevents receiver overrun in Master 
-          mode by not allowing a new transmission to begin when a receiver 
-          overrun would otherwise occur.
+        description: Determines whether an interrupt occurs when a receiver overrun occurs. This happens in slave mode when there is a need for the receiver to move newly received data to the RXDAT register when it is already in use. The interface prevents receiver overrun in Master mode by not allowing a new transmission to begin when a receiver overrun would otherwise occur.
         bitOffset: 2
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: RXOVEN_0
-            description: No interrupt will be generated when a receiver overrun 
-              occurs.
+            description: No interrupt will be generated when a receiver overrun occurs.
             value: 0
           - name: RXOVEN_1
-            description: An interrupt will be generated if a receiver overrun 
-              occurs.
+            description: An interrupt will be generated if a receiver overrun occurs.
             value: 1
       - name: TXUREN
-        description: Determines whether an interrupt occurs when a transmitter 
-          underrun occurs. This happens in slave mode when there is a need to 
-          transmit data when none is available.
+        description: Determines whether an interrupt occurs when a transmitter underrun occurs. This happens in slave mode when there is a need to transmit data when none is available.
         bitOffset: 3
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: TXUREN_0
-            description: No interrupt will be generated when the transmitter 
-              underruns.
+            description: No interrupt will be generated when the transmitter underruns.
             value: 0
           - name: TXUREN_1
-            description: An interrupt will be generated if the transmitter 
-              underruns.
+            description: An interrupt will be generated if the transmitter underruns.
             value: 1
       - name: SSAEN
-        description: Determines whether an interrupt occurs when the Slave 
-          Select is asserted.
+        description: Determines whether an interrupt occurs when the Slave Select is asserted.
         bitOffset: 4
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: SSAEN_0
-            description: No interrupt will be generated when any Slave Select 
-              transitions from deasserted to asserted.
+            description: No interrupt will be generated when any Slave Select transitions from deasserted to asserted.
             value: 0
           - name: SSAEN_1
-            description: An interrupt will be generated when any Slave Select 
-              transitions from deasserted to asserted.
+            description: An interrupt will be generated when any Slave Select transitions from deasserted to asserted.
             value: 1
       - name: SSDEN
-        description: Determines whether an interrupt occurs when the Slave 
-          Select is deasserted.
+        description: Determines whether an interrupt occurs when the Slave Select is deasserted.
         bitOffset: 5
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: SSDEN_0
-            description: No interrupt will be generated when all asserted Slave 
-              Selects transition to deasserted.
+            description: No interrupt will be generated when all asserted Slave Selects transition to deasserted.
             value: 0
           - name: SSDEN_1
-            description: An interrupt will be generated when all asserted Slave 
-              Selects transition to deasserted.
+            description: An interrupt will be generated when all asserted Slave Selects transition to deasserted.
             value: 1
   - name: INTENCLR
-    description: SPI Interrupt Enable Clear. Writing a 1 to any implemented bit 
-      position causes the corresponding bit in INTENSET to be cleared.
+    description: Interrupt Enable Clear. Writing a 1 to any implemented bit position causes the corresponding bit in INTENSET to be cleared.
     addressOffset: 16
     size: 32
     access: write-only
@@ -397,43 +313,37 @@ registers:
     resetMask: 0
     fields:
       - name: RXRDYEN
-        description: Writing 1 clears the corresponding bits in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bits in the INTENSET register.
         bitOffset: 0
         bitWidth: 1
         access: write-only
       - name: TXRDYEN
-        description: Writing 1 clears the corresponding bits in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bits in the INTENSET register.
         bitOffset: 1
         bitWidth: 1
         access: write-only
       - name: RXOVEN
-        description: Writing 1 clears the corresponding bits in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bits in the INTENSET register.
         bitOffset: 2
         bitWidth: 1
         access: write-only
       - name: TXUREN
-        description: Writing 1 clears the corresponding bits in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bits in the INTENSET register.
         bitOffset: 3
         bitWidth: 1
         access: write-only
       - name: SSAEN
-        description: Writing 1 clears the corresponding bits in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bits in the INTENSET register.
         bitOffset: 4
         bitWidth: 1
         access: write-only
       - name: SSDEN
-        description: Writing 1 clears the corresponding bits in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bits in the INTENSET register.
         bitOffset: 5
         bitWidth: 1
         access: write-only
   - name: RXDAT
-    description: SPI Receive Data
+    description: Receive Data
     addressOffset: 20
     size: 32
     access: read-only
@@ -441,59 +351,37 @@ registers:
     resetMask: 0
     fields:
       - name: RXDAT
-        description: Receiver Data. This contains the next piece of received 
-          data. The number of bits that are used depends on the LEN setting in 
-          TXCTL / TXDATCTL.
+        description: Receiver Data. This contains the next piece of received data. The number of bits that are used depends on the LEN setting in TXCTL / TXDATCTL.
         bitOffset: 0
         bitWidth: 16
         access: read-only
       - name: RXSSEL0_N
-        description: Slave Select for receive. This field allows the state of 
-          the SSEL0 pin to be saved along with received data. The value will 
-          reflect the SSEL0 pin for both master and slave operation. A zero 
-          indicates that a slave select is active. The actual polarity of each 
-          slave select pin is configured by the related SPOL bit in CFG.
+        description: Slave Select for receive. This field allows the state of the SSEL0 pin to be saved along with received data. The value will reflect the SSEL0 pin for both master and slave operation. A zero indicates that a slave select is active. The actual polarity of each slave select pin is configured by the related SPOL bit in CFG.
         bitOffset: 16
         bitWidth: 1
         access: read-only
       - name: RXSSEL1_N
-        description: Slave Select for receive. This field allows the state of 
-          the SSEL1 pin to be saved along with received data. The value will 
-          reflect the SSEL1 pin for both master and slave operation. A zero 
-          indicates that a slave select is active. The actual polarity of each 
-          slave select pin is configured by the related SPOL bit in CFG.
+        description: Slave Select for receive. This field allows the state of the SSEL1 pin to be saved along with received data. The value will reflect the SSEL1 pin for both master and slave operation. A zero indicates that a slave select is active. The actual polarity of each slave select pin is configured by the related SPOL bit in CFG.
         bitOffset: 17
         bitWidth: 1
         access: read-only
       - name: RXSSEL2_N
-        description: Slave Select for receive. This field allows the state of 
-          the SSEL2 pin to be saved along with received data. The value will 
-          reflect the SSEL2 pin for both master and slave operation. A zero 
-          indicates that a slave select is active. The actual polarity of each 
-          slave select pin is configured by the related SPOL bit in CFG.
+        description: Slave Select for receive. This field allows the state of the SSEL2 pin to be saved along with received data. The value will reflect the SSEL2 pin for both master and slave operation. A zero indicates that a slave select is active. The actual polarity of each slave select pin is configured by the related SPOL bit in CFG.
         bitOffset: 18
         bitWidth: 1
         access: read-only
       - name: RXSSEL3_N
-        description: Slave Select for receive. This field allows the state of 
-          the SSEL3 pin to be saved along with received data. The value will 
-          reflect the SSEL3 pin for both master and slave operation. A zero 
-          indicates that a slave select is active. The actual polarity of each 
-          slave select pin is configured by the related SPOL bit in CFG.
+        description: Slave Select for receive. This field allows the state of the SSEL3 pin to be saved along with received data. The value will reflect the SSEL3 pin for both master and slave operation. A zero indicates that a slave select is active. The actual polarity of each slave select pin is configured by the related SPOL bit in CFG.
         bitOffset: 19
         bitWidth: 1
         access: read-only
       - name: SOT
-        description: Start of Transfer flag. This flag will be 1 if this is the 
-          first data after the SSELs went from deasserted to asserted (i.e., any
-          previous transfer has ended). This information can be used to identify
-          the first piece of data in cases where the transfer length is greater 
-          than 16 bit.
+        description: Start of Transfer flag. This flag will be 1 if this is the first data after the SSELs went from deasserted to asserted (i.e., any previous transfer has ended). This information can be used to identify the first piece of data in cases where the transfer length is greater than 16 bit.
         bitOffset: 20
         bitWidth: 1
         access: read-only
   - name: TXDATCTL
-    description: SPI Transmit Data with Control
+    description: Transmit Data with Control
     addressOffset: 24
     size: 32
     access: read-write
@@ -501,15 +389,12 @@ registers:
     resetMask: 260046847
     fields:
       - name: TXDAT
-        description: Transmit Data. This field provides from 1 to 16 bits of 
-          data to be transmitted.
+        description: Transmit Data. This field provides from 1 to 16 bits of data to be transmitted.
         bitOffset: 0
         bitWidth: 16
         access: read-write
       - name: TXSSEL0_N
-        description: 'Transmit Slave Select. This field asserts SSEL0 in master mode.
-          The output on the pin is active LOW by default. Remark: The active state
-          of the SSEL0 pin is configured by bits in the CFG register.'
+        description: 'Transmit Slave Select. This field asserts SSEL0 in master mode. The output on the pin is active LOW by default. Remark: The active state of the SSEL0 pin is configured by bits in the CFG register.'
         bitOffset: 16
         bitWidth: 1
         access: read-write
@@ -521,9 +406,7 @@ registers:
             description: SSEL0 not asserted.
             value: 1
       - name: TXSSEL1_N
-        description: 'Transmit Slave Select. This field asserts SSEL1 in master mode.
-          The output on the pin is active LOW by default. Remark: The active state
-          of the SSEL1 pin is configured by bits in the CFG register.'
+        description: 'Transmit Slave Select. This field asserts SSEL1 in master mode. The output on the pin is active LOW by default. Remark: The active state of the SSEL1 pin is configured by bits in the CFG register.'
         bitOffset: 17
         bitWidth: 1
         access: read-write
@@ -535,9 +418,7 @@ registers:
             description: SSEL1 not asserted.
             value: 1
       - name: TXSSEL2_N
-        description: 'Transmit Slave Select. This field asserts SSEL2 in master mode.
-          The output on the pin is active LOW by default. Remark: The active state
-          of the SSEL2 pin is configured by bits in the CFG register.'
+        description: 'Transmit Slave Select. This field asserts SSEL2 in master mode. The output on the pin is active LOW by default. Remark: The active state of the SSEL2 pin is configured by bits in the CFG register.'
         bitOffset: 18
         bitWidth: 1
         access: read-write
@@ -549,9 +430,7 @@ registers:
             description: SSEL2 not asserted.
             value: 1
       - name: TXSSEL3_N
-        description: 'Transmit Slave Select. This field asserts SSEL3 in master mode.
-          The output on the pin is active LOW by default. Remark: The active state
-          of the SSEL3 pin is configured by bits in the CFG register.'
+        description: 'Transmit Slave Select. This field asserts SSEL3 in master mode. The output on the pin is active LOW by default. Remark: The active state of the SSEL3 pin is configured by bits in the CFG register.'
         bitOffset: 19
         bitWidth: 1
         access: read-write
@@ -563,65 +442,43 @@ registers:
             description: SSEL3 not asserted.
             value: 1
       - name: EOT
-        description: End of Transfer. The asserted SSEL will be deasserted at 
-          the end of a transfer, and remain so for at least the time specified 
-          by the Transfer_delay value in the DLY register.
+        description: End of Transfer. The asserted SSEL will be deasserted at the end of a transfer, and remain so for at least the time specified by the Transfer_delay value in the DLY register.
         bitOffset: 20
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: SSEL_deasserted
-            description: This piece of data is not treated as the end of a 
-              transfer. SSEL will not be deasserted at the end of this data.
+            description: This piece of data is not treated as the end of a transfer. SSEL will not be deasserted at the end of this data.
             value: 0
           - name: SSEL_not_deasserted
-            description: This piece of data is treated as the end of a transfer.
-              SSEL will be deasserted at the end of this piece of data.
+            description: This piece of data is treated as the end of a transfer. SSEL will be deasserted at the end of this piece of data.
             value: 1
       - name: EOF
-        description: End of Frame. Between frames, a delay may be inserted, as 
-          defined by the FRAME_DELAY value in the DLY register. The end of a 
-          frame may not be particularly meaningful if the FRAME_DELAY value = 0.
-          This control can be used as part of the support for frame lengths 
-          greater than 16 bits.
+        description: End of Frame. Between frames, a delay may be inserted, as defined by the FRAME_DELAY value in the DLY register. The end of a frame may not be particularly meaningful if the FRAME_DELAY value = 0. This control can be used as part of the support for frame lengths greater than 16 bits.
         bitOffset: 21
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: Data_not_EOF
-            description: This piece of data transmitted is not treated as the 
-              end of a frame.
+            description: This piece of data transmitted is not treated as the end of a frame.
             value: 0
           - name: Data_EOF
-            description: This piece of data is treated as the end of a frame, 
-              causing the FRAME_DELAY time to be inserted before subsequent data
-              is transmitted.
+            description: This piece of data is treated as the end of a frame, causing the FRAME_DELAY time to be inserted before subsequent data is transmitted.
             value: 1
       - name: RXIGNORE
-        description: Receive Ignore. This allows data to be transmitted using 
-          the SPI without the need to read unneeded data from the 
-          receiver.Setting this bit simplifies the transmit process and can be 
-          used with the DMA.
+        description: Receive Ignore. This allows data to be transmitted using the SPI without the need to read unneeded data from the receiver.Setting this bit simplifies the transmit process and can be used with the DMA.
         bitOffset: 22
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: Read_received_data
-            description: Received data must be read in order to allow 
-              transmission to progress. In slave mode, an overrun error will 
-              occur if received data is not read before new data is received.
+            description: Received data must be read in order to allow transmission to progress. In slave mode, an overrun error will occur if received data is not read before new data is received.
             value: 0
           - name: Ignore_received_data
-            description: Received data is ignored, allowing transmission without
-              reading unneeded received data. No receiver flags are generated.
+            description: Received data is ignored, allowing transmission without reading unneeded received data. No receiver flags are generated.
             value: 1
       - name: LEN
-        description: Data Length. Specifies the data length from 1 to 16 bits. 
-          Note that transfer lengths greater than 16 bits are supported by 
-          implementing multiple sequential transmits. 0x0 = Data transfer is 1 
-          bit in length. 0x1 = Data transfer is 2 bits in length. 0x2 = Data 
-          transfer is 3 bits in length. ... 0xF = Data transfer is 16 bits in 
-          length.
+        description: Data Length. Specifies the data length from 1 to 16 bits. Note that transfer lengths greater than 16 bits are supported by implementing multiple sequential transmits. 0x0 = Data transfer is 1 bit in length. 0x1 = Data transfer is 2 bits in length. 0x2 = Data transfer is 3 bits in length. ... 0xF = Data transfer is 16 bits in length.
         bitOffset: 24
         bitWidth: 4
         access: read-write
@@ -675,7 +532,7 @@ registers:
             description: Data transfer is 15 bit in length.
             value: 15
   - name: TXDAT
-    description: SPI Transmit Data.
+    description: Transmit Data.
     addressOffset: 28
     size: 32
     access: read-write
@@ -683,13 +540,12 @@ registers:
     resetMask: 65535
     fields:
       - name: DATA
-        description: Transmit Data. This field provides from 4 to 16 bits of 
-          data to be transmitted.
+        description: Transmit Data. This field provides from 4 to 16 bits of data to be transmitted.
         bitOffset: 0
         bitWidth: 16
         access: read-write
   - name: TXCTL
-    description: SPI Transmit Control
+    description: Transmit Control
     addressOffset: 32
     size: 32
     access: read-write
@@ -737,7 +593,7 @@ registers:
         bitWidth: 4
         access: read-write
   - name: DIV
-    description: SPI clock Divider
+    description: Clock Divider
     addressOffset: 36
     size: 32
     access: read-write
@@ -745,16 +601,12 @@ registers:
     resetMask: 65535
     fields:
       - name: DIVVAL
-        description: Rate divider value. Specifies how the Flexcomm clock (FCLK)
-          is divided to produce the SPI clock rate in master mode. DIVVAL is -1 
-          encoded such that the value 0 results in FCLK/1, the value 1 results 
-          in FCLK/2, up to the maximum possible divide value of 0xFFFF, which 
-          results in FCLK/65536.
+        description: Rate divider value. Specifies how the Flexcomm clock (FCLK) is divided to produce the SPI clock rate in master mode. DIVVAL is -1 encoded such that the value 0 results in FCLK/1, the value 1 results in FCLK/2, up to the maximum possible divide value of 0xFFFF, which results in FCLK/65536.
         bitOffset: 0
         bitWidth: 16
         access: read-write
   - name: INTSTAT
-    description: SPI Interrupt Status
+    description: Interrupt Status
     addressOffset: 40
     size: 32
     access: read-write
@@ -796,28 +648,9 @@ registers:
         bitOffset: 8
         bitWidth: 1
         access: read-only
-interrupts:
-  - name: SPI
 addressBlocks:
   - offset: 0
     size: 44
     usage: registers
-clocks:
-  - name: base_clk
-  - name: busclk
-parameters:
-  - name: rx_req
-    bits: 5
-    min: 0
-    max: 31
-    description: DMA receive channel
-  - name: tx_req
-    bits: 5
-    min: 0
-    max: 31
-    description: DMA receive channel
-  - name: ssel_num
-    bits: 3
-    min: 0
-    max: 4
-    description: number of SSEL signals
+interrupts:
+  - name: SPI

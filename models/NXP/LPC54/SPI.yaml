@@ -1,13 +1,23 @@
-# Created from LPC54S018.svd
-
 name: SPI
 description: LPC5411x Serial Peripheral Interfaces (SPI)
 alternatePeripheral: FLEXCOMM0
 groupName: SPI
 headerStructName: SPI
+source: LPC54S018 SVD (MCUX_2.16.100)
+params:
+  - name: rx_req
+    type: int
+    description: DMA receive channel
+  - name: tx_req
+    type: int
+    description: DMA transmit channel
+  - name: ssel_num
+    type: int
+    default: 4
+    description: Number of SSEL signals
 registers:
   - name: CFG
-    description: SPI Configuration register
+    description: Configuration register
     addressOffset: 1024
     size: 32
     access: read-write
@@ -21,8 +31,7 @@ registers:
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: Disabled. The SPI is disabled and the internal state 
-              machine and counters are reset.
+            description: Disabled. The SPI is disabled and the internal state machine and counters are reset.
             value: 0
           - name: ENABLED
             description: Enabled. The SPI is enabled for operation.
@@ -34,12 +43,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: SLAVE_MODE
-            description: Slave mode. The SPI will operate in slave mode. SCK, 
-              MOSI, and the SSEL signals are inputs, MISO is an output.
+            description: Slave mode. The SPI will operate in slave mode. SCK, MOSI, and the SSEL signals are inputs, MISO is an output.
             value: 0
           - name: MASTER_MODE
-            description: Master mode. The SPI will operate in master mode. SCK, 
-              MOSI, and the SSEL signals are outputs, MISO is an input.
+            description: Master mode. The SPI will operate in master mode. SCK, MOSI, and the SSEL signals are outputs, MISO is an input.
             value: 1
       - name: LSBF
         description: LSB First mode enable.
@@ -48,12 +55,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: STANDARD
-            description: Standard. Data is transmitted and received in standard 
-              MSB first order.
+            description: Standard. Data is transmitted and received in standard MSB first order.
             value: 0
           - name: REVERSE
-            description: Reverse. Data is transmitted and received in reverse 
-              order (LSB first).
+            description: Reverse. Data is transmitted and received in reverse order (LSB first).
             value: 1
       - name: CPHA
         description: Clock Phase select.
@@ -62,14 +67,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: CHANGE
-            description: Change. The SPI captures serial data on the first clock
-              transition of the transfer (when the clock changes away from the 
-              rest state). Data is changed on the following edge.
+            description: Change. The SPI captures serial data on the first clock transition of the transfer (when the clock changes away from the rest state). Data is changed on the following edge.
             value: 0
           - name: CAPTURE
-            description: Capture. The SPI changes serial data on the first clock
-              transition of the transfer (when the clock changes away from the 
-              rest state). Data is captured on the following edge.
+            description: Capture. The SPI changes serial data on the first clock transition of the transfer (when the clock changes away from the rest state). Data is captured on the following edge.
             value: 1
       - name: CPOL
         description: Clock Polarity select.
@@ -78,17 +79,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: LOW
-            description: Low. The rest state of the clock (between transfers) is
-              low.
+            description: Low. The rest state of the clock (between transfers) is low.
             value: 0
           - name: HIGH
-            description: High. The rest state of the clock (between transfers) 
-              is high.
+            description: High. The rest state of the clock (between transfers) is high.
             value: 1
       - name: LOOP
-        description: Loopback mode enable. Loopback mode applies only to Master 
-          mode, and connects transmit and receive data connected together to 
-          allow simple software testing.
+        description: Loopback mode enable. Loopback mode applies only to Master mode, and connects transmit and receive data connected together to allow simple software testing.
         bitOffset: 7
         bitWidth: 1
         access: read-write
@@ -148,7 +145,7 @@ registers:
             description: High. The SSEL3 pin is active high.
             value: 1
   - name: DLY
-    description: SPI Delay register
+    description: Delay register
     addressOffset: 1028
     size: 32
     access: read-write
@@ -156,45 +153,27 @@ registers:
     resetMask: 65535
     fields:
       - name: PRE_DELAY
-        description: Controls the amount of time between SSEL assertion and the 
-          beginning of a data transfer. There is always one SPI clock time 
-          between SSEL assertion and the first clock edge. This is not 
-          considered part of the pre-delay. 0x0 = No additional time is 
-          inserted. 0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times 
-          are inserted. 0xF = 15 SPI clock times are inserted.
+        description: Controls the amount of time between SSEL assertion and the beginning of a data transfer. There is always one SPI clock time between SSEL assertion and the first clock edge. This is not considered part of the pre-delay. 0x0 = No additional time is inserted. 0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times are inserted. 0xF = 15 SPI clock times are inserted.
         bitOffset: 0
         bitWidth: 4
         access: read-write
       - name: POST_DELAY
-        description: Controls the amount of time between the end of a data 
-          transfer and SSEL deassertion. 0x0 = No additional time is inserted. 
-          0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times are 
-          inserted. 0xF = 15 SPI clock times are inserted.
+        description: Controls the amount of time between the end of a data transfer and SSEL deassertion. 0x0 = No additional time is inserted. 0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times are inserted. 0xF = 15 SPI clock times are inserted.
         bitOffset: 4
         bitWidth: 4
         access: read-write
       - name: FRAME_DELAY
-        description: If the EOF flag is set, controls the minimum amount of time
-          between the current frame and the next frame (or SSEL deassertion if 
-          EOT). 0x0 = No additional time is inserted. 0x1 = 1 SPI clock time is 
-          inserted. 0x2 = 2 SPI clock times are inserted. 0xF = 15 SPI clock 
-          times are inserted.
+        description: If the EOF flag is set, controls the minimum amount of time between the current frame and the next frame (or SSEL deassertion if EOT). 0x0 = No additional time is inserted. 0x1 = 1 SPI clock time is inserted. 0x2 = 2 SPI clock times are inserted. 0xF = 15 SPI clock times are inserted.
         bitOffset: 8
         bitWidth: 4
         access: read-write
       - name: TRANSFER_DELAY
-        description: Controls the minimum amount of time that the SSEL is 
-          deasserted between transfers. 0x0 = The minimum time that SSEL is 
-          deasserted is 1 SPI clock time. (Zero added time.) 0x1 = The minimum 
-          time that SSEL is deasserted is 2 SPI clock times. 0x2 = The minimum 
-          time that SSEL is deasserted is 3 SPI clock times. 0xF = The minimum 
-          time that SSEL is deasserted is 16 SPI clock times.
+        description: Controls the minimum amount of time that the SSEL is deasserted between transfers. 0x0 = The minimum time that SSEL is deasserted is 1 SPI clock time. (Zero added time.) 0x1 = The minimum time that SSEL is deasserted is 2 SPI clock times. 0x2 = The minimum time that SSEL is deasserted is 3 SPI clock times. 0xF = The minimum time that SSEL is deasserted is 16 SPI clock times.
         bitOffset: 12
         bitWidth: 4
         access: read-write
   - name: STAT
-    description: SPI Status. Some status flags can be cleared by writing a 1 to 
-      that bit position.
+    description: Status. Some status flags can be cleared by writing a 1 to that bit position.
     addressOffset: 1032
     size: 32
     access: read-write
@@ -202,54 +181,32 @@ registers:
     resetMask: 448
     fields:
       - name: SSA
-        description: Slave Select Assert. This flag is set whenever any slave 
-          select transitions from deasserted to asserted, in both master and 
-          slave modes. This allows determining when the SPI transmit/receive 
-          functions become busy, and allows waking up the device from reduced 
-          power modes when a slave mode access begins. This flag is cleared by 
-          software.
+        description: Slave Select Assert. This flag is set whenever any slave select transitions from deasserted to asserted, in both master and slave modes. This allows determining when the SPI transmit/receive functions become busy, and allows waking up the device from reduced power modes when a slave mode access begins. This flag is cleared by software.
         bitOffset: 4
         bitWidth: 1
         access: write-only
       - name: SSD
-        description: Slave Select Deassert. This flag is set whenever any 
-          asserted slave selects transition to deasserted, in both master and 
-          slave modes. This allows determining when the SPI transmit/receive 
-          functions become idle. This flag is cleared by software.
+        description: Slave Select Deassert. This flag is set whenever any asserted slave selects transition to deasserted, in both master and slave modes. This allows determining when the SPI transmit/receive functions become idle. This flag is cleared by software.
         bitOffset: 5
         bitWidth: 1
         access: write-only
       - name: STALLED
-        description: Stalled status flag. This indicates whether the SPI is 
-          currently in a stall condition.
+        description: Stalled status flag. This indicates whether the SPI is currently in a stall condition.
         bitOffset: 6
         bitWidth: 1
         access: read-only
       - name: ENDTRANSFER
-        description: End Transfer control bit. Software can set this bit to 
-          force an end to the current transfer when the transmitter finishes any
-          activity already in progress, as if the EOT flag had been set prior to
-          the last transmission. This capability is included to support cases 
-          where it is not known when transmit data is written that it will be 
-          the end of a transfer. The bit is cleared when the transmitter becomes
-          idle as the transfer comes to an end. Forcing an end of transfer in 
-          this manner causes any specified FRAME_DELAY and TRANSFER_DELAY to be 
-          inserted.
+        description: End Transfer control bit. Software can set this bit to force an end to the current transfer when the transmitter finishes any activity already in progress, as if the EOT flag had been set prior to the last transmission. This capability is included to support cases where it is not known when transmit data is written that it will be the end of a transfer. The bit is cleared when the transmitter becomes idle as the transfer comes to an end. Forcing an end of transfer in this manner causes any specified FRAME_DELAY and TRANSFER_DELAY to be inserted.
         bitOffset: 7
         bitWidth: 1
         access: read-write
       - name: MSTIDLE
-        description: Master idle status flag. This bit is 1 whenever the SPI 
-          master function is fully idle. This means that the transmit holding 
-          register is empty and the transmitter is not in the process of sending
-          data.
+        description: Master idle status flag. This bit is 1 whenever the SPI master function is fully idle. This means that the transmit holding register is empty and the transmitter is not in the process of sending data.
         bitOffset: 8
         bitWidth: 1
         access: read-only
   - name: INTENSET
-    description: SPI Interrupt Enable read and Set. A complete value may be read
-      from this register. Writing a 1 to any implemented bit position causes 
-      that bit to be set.
+    description: Interrupt Enable read and Set. A complete value may be read from this register. Writing a 1 to any implemented bit position causes that bit to be set.
     addressOffset: 1036
     size: 32
     access: read-write
@@ -257,34 +214,28 @@ registers:
     resetMask: 304
     fields:
       - name: SSAEN
-        description: Slave select assert interrupt enable. Determines whether an
-          interrupt occurs when the Slave Select is asserted.
+        description: Slave select assert interrupt enable. Determines whether an interrupt occurs when the Slave Select is asserted.
         bitOffset: 4
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: Disabled. No interrupt will be generated when any Slave
-              Select transitions from deasserted to asserted.
+            description: Disabled. No interrupt will be generated when any Slave Select transitions from deasserted to asserted.
             value: 0
           - name: ENABLED
-            description: Enabled. An interrupt will be generated when any Slave 
-              Select transitions from deasserted to asserted.
+            description: Enabled. An interrupt will be generated when any Slave Select transitions from deasserted to asserted.
             value: 1
       - name: SSDEN
-        description: Slave select deassert interrupt enable. Determines whether 
-          an interrupt occurs when the Slave Select is deasserted.
+        description: Slave select deassert interrupt enable. Determines whether an interrupt occurs when the Slave Select is deasserted.
         bitOffset: 5
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: Disabled. No interrupt will be generated when all 
-              asserted Slave Selects transition to deasserted.
+            description: Disabled. No interrupt will be generated when all asserted Slave Selects transition to deasserted.
             value: 0
           - name: ENABLED
-            description: Enabled. An interrupt will be generated when all 
-              asserted Slave Selects transition to deasserted.
+            description: Enabled. An interrupt will be generated when all asserted Slave Selects transition to deasserted.
             value: 1
       - name: MSTIDLEEN
         description: Master idle interrupt enable.
@@ -293,16 +244,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: No interrupt will be generated when the SPI master 
-              function is idle.
+            description: No interrupt will be generated when the SPI master function is idle.
             value: 0
           - name: ENABLED
-            description: An interrupt will be generated when the SPI master 
-              function is fully idle.
+            description: An interrupt will be generated when the SPI master function is fully idle.
             value: 1
   - name: INTENCLR
-    description: SPI Interrupt Enable Clear. Writing a 1 to any implemented bit 
-      position causes the corresponding bit in INTENSET to be cleared.
+    description: Interrupt Enable Clear. Writing a 1 to any implemented bit position causes the corresponding bit in INTENSET to be cleared.
     addressOffset: 1040
     size: 32
     access: write-only
@@ -310,25 +258,22 @@ registers:
     resetMask: 0
     fields:
       - name: SSAEN
-        description: Writing 1 clears the corresponding bit in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bit in the INTENSET register.
         bitOffset: 4
         bitWidth: 1
         access: write-only
       - name: SSDEN
-        description: Writing 1 clears the corresponding bit in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bit in the INTENSET register.
         bitOffset: 5
         bitWidth: 1
         access: write-only
       - name: MSTIDLE
-        description: Writing 1 clears the corresponding bit in the INTENSET 
-          register.
+        description: Writing 1 clears the corresponding bit in the INTENSET register.
         bitOffset: 8
         bitWidth: 1
         access: write-only
   - name: DIV
-    description: SPI clock Divider
+    description: Clock Divider
     addressOffset: 1060
     size: 32
     access: read-write
@@ -336,16 +281,12 @@ registers:
     resetMask: 65535
     fields:
       - name: DIVVAL
-        description: Rate divider value. Specifies how the Flexcomm clock (FCLK)
-          is divided to produce the SPI clock rate in master mode. DIVVAL is -1 
-          encoded such that the value 0 results in FCLK/1, the value 1 results 
-          in FCLK/2, up to the maximum possible divide value of 0xFFFF, which 
-          results in FCLK/65536.
+        description: Rate divider value. Specifies how the Flexcomm clock (FCLK) is divided to produce the SPI clock rate in master mode. DIVVAL is -1 encoded such that the value 0 results in FCLK/1, the value 1 results in FCLK/2, up to the maximum possible divide value of 0xFFFF, which results in FCLK/65536.
         bitOffset: 0
         bitWidth: 16
         access: read-write
   - name: INTSTAT
-    description: SPI Interrupt Status
+    description: Interrupt Status
     addressOffset: 1064
     size: 32
     access: read-only
@@ -400,9 +341,7 @@ registers:
             description: The receive FIFO is enabled.
             value: 1
       - name: SIZE
-        description: FIFO size configuration. This is a read-only field. 0x0 = 
-          FIFO is configured as 16 entries of 8 bits. 0x1, 0x2, 0x3 = not 
-          applicable to USART.
+        description: FIFO size configuration. This is a read-only field. 0x0 = FIFO is configured as 16 entries of 8 bits. 0x1, 0x2, 0x3 = not applicable to USART.
         bitOffset: 4
         bitWidth: 2
         access: read-only
@@ -416,9 +355,7 @@ registers:
             description: DMA is not used for the transmit function.
             value: 0
           - name: ENABLED
-            description: Trigger DMA for the transmit function if the FIFO is 
-              not full. Generally, data interrupts would be disabled if DMA is 
-              enabled.
+            description: Trigger DMA for the transmit function if the FIFO is not full. Generally, data interrupts would be disabled if DMA is enabled.
             value: 1
       - name: DMARX
         description: DMA configuration for receive.
@@ -430,59 +367,39 @@ registers:
             description: DMA is not used for the receive function.
             value: 0
           - name: ENABLED
-            description: Trigger DMA for the receive function if the FIFO is not
-              empty. Generally, data interrupts would be disabled if DMA is 
-              enabled.
+            description: Trigger DMA for the receive function if the FIFO is not empty. Generally, data interrupts would be disabled if DMA is enabled.
             value: 1
       - name: WAKETX
-        description: Wake-up for transmit FIFO level. This allows the device to 
-          be woken from reduced power modes (up to power-down, as long as the 
-          peripheral function works in that power mode) without enabling the 
-          TXLVL interrupt. Only DMA wakes up, processes data, and goes back to 
-          sleep. The CPU will remain stopped until woken by another cause, such 
-          as DMA completion. See Hardware Wake-up control register.
+        description: Wake-up for transmit FIFO level. This allows the device to be woken from reduced power modes (up to power-down, as long as the peripheral function works in that power mode) without enabling the TXLVL interrupt. Only DMA wakes up, processes data, and goes back to sleep. The CPU will remain stopped until woken by another cause, such as DMA completion. See Hardware Wake-up control register.
         bitOffset: 14
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: Only enabled interrupts will wake up the device form 
-              reduced power modes.
+            description: Only enabled interrupts will wake up the device form reduced power modes.
             value: 0
           - name: ENABLED
-            description: A device wake-up for DMA will occur if the transmit 
-              FIFO level reaches the value specified by TXLVL in FIFOTRIG, even 
-              when the TXLVL interrupt is not enabled.
+            description: A device wake-up for DMA will occur if the transmit FIFO level reaches the value specified by TXLVL in FIFOTRIG, even when the TXLVL interrupt is not enabled.
             value: 1
       - name: WAKERX
-        description: Wake-up for receive FIFO level. This allows the device to 
-          be woken from reduced power modes (up to power-down, as long as the 
-          peripheral function works in that power mode) without enabling the 
-          TXLVL interrupt. Only DMA wakes up, processes data, and goes back to 
-          sleep. The CPU will remain stopped until woken by another cause, such 
-          as DMA completion. See Hardware Wake-up control register.
+        description: Wake-up for receive FIFO level. This allows the device to be woken from reduced power modes (up to power-down, as long as the peripheral function works in that power mode) without enabling the TXLVL interrupt. Only DMA wakes up, processes data, and goes back to sleep. The CPU will remain stopped until woken by another cause, such as DMA completion. See Hardware Wake-up control register.
         bitOffset: 15
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: Only enabled interrupts will wake up the device form 
-              reduced power modes.
+            description: Only enabled interrupts will wake up the device form reduced power modes.
             value: 0
           - name: ENABLED
-            description: A device wake-up for DMA will occur if the receive FIFO
-              level reaches the value specified by RXLVL in FIFOTRIG, even when 
-              the RXLVL interrupt is not enabled.
+            description: A device wake-up for DMA will occur if the receive FIFO level reaches the value specified by RXLVL in FIFOTRIG, even when the RXLVL interrupt is not enabled.
             value: 1
       - name: EMPTYTX
-        description: Empty command for the transmit FIFO. When a 1 is written to
-          this bit, the TX FIFO is emptied.
+        description: Empty command for the transmit FIFO. When a 1 is written to this bit, the TX FIFO is emptied.
         bitOffset: 16
         bitWidth: 1
         access: read-write
       - name: EMPTYRX
-        description: Empty command for the receive FIFO. When a 1 is written to 
-          this bit, the RX FIFO is emptied.
+        description: Empty command for the receive FIFO. When a 1 is written to this bit, the RX FIFO is emptied.
         bitOffset: 17
         bitWidth: 1
         access: read-write
@@ -495,68 +412,47 @@ registers:
     resetMask: 2039803
     fields:
       - name: TXERR
-        description: TX FIFO error. Will be set if a transmit FIFO error occurs.
-          This could be an overflow caused by pushing data into a full FIFO, or 
-          by an underflow if the FIFO is empty when data is needed. Cleared by 
-          writing a 1 to this bit.
+        description: TX FIFO error. Will be set if a transmit FIFO error occurs. This could be an overflow caused by pushing data into a full FIFO, or by an underflow if the FIFO is empty when data is needed. Cleared by writing a 1 to this bit.
         bitOffset: 0
         bitWidth: 1
         access: read-write
       - name: RXERR
-        description: RX FIFO error. Will be set if a receive FIFO overflow 
-          occurs, caused by software or DMA not emptying the FIFO fast enough. 
-          Cleared by writing a 1 to this bit.
+        description: RX FIFO error. Will be set if a receive FIFO overflow occurs, caused by software or DMA not emptying the FIFO fast enough. Cleared by writing a 1 to this bit.
         bitOffset: 1
         bitWidth: 1
         access: read-write
       - name: PERINT
-        description: Peripheral interrupt. When 1, this indicates that the 
-          peripheral function has asserted an interrupt. The details can be 
-          found by reading the peripheral's STAT register.
+        description: Peripheral interrupt. When 1, this indicates that the peripheral function has asserted an interrupt. The details can be found by reading the peripheral's STAT register.
         bitOffset: 3
         bitWidth: 1
         access: read-only
       - name: TXEMPTY
-        description: Transmit FIFO empty. When 1, the transmit FIFO is empty. 
-          The peripheral may still be processing the last piece of data.
+        description: Transmit FIFO empty. When 1, the transmit FIFO is empty. The peripheral may still be processing the last piece of data.
         bitOffset: 4
         bitWidth: 1
         access: read-only
       - name: TXNOTFULL
-        description: Transmit FIFO not full. When 1, the transmit FIFO is not 
-          full, so more data can be written. When 0, the transmit FIFO is full 
-          and another write would cause it to overflow.
+        description: Transmit FIFO not full. When 1, the transmit FIFO is not full, so more data can be written. When 0, the transmit FIFO is full and another write would cause it to overflow.
         bitOffset: 5
         bitWidth: 1
         access: read-only
       - name: RXNOTEMPTY
-        description: Receive FIFO not empty. When 1, the receive FIFO is not 
-          empty, so data can be read. When 0, the receive FIFO is empty.
+        description: Receive FIFO not empty. When 1, the receive FIFO is not empty, so data can be read. When 0, the receive FIFO is empty.
         bitOffset: 6
         bitWidth: 1
         access: read-only
       - name: RXFULL
-        description: Receive FIFO full. When 1, the receive FIFO is full. Data 
-          needs to be read out to prevent the peripheral from causing an 
-          overflow.
+        description: Receive FIFO full. When 1, the receive FIFO is full. Data needs to be read out to prevent the peripheral from causing an overflow.
         bitOffset: 7
         bitWidth: 1
         access: read-only
       - name: TXLVL
-        description: Transmit FIFO current level. A 0 means the TX FIFO is 
-          currently empty, and the TXEMPTY and TXNOTFULL flags will be 1. Other 
-          values tell how much data is actually in the TX FIFO at the point 
-          where the read occurs. If the TX FIFO is full, the TXEMPTY and 
-          TXNOTFULL flags will be 0.
+        description: Transmit FIFO current level. A 0 means the TX FIFO is currently empty, and the TXEMPTY and TXNOTFULL flags will be 1. Other values tell how much data is actually in the TX FIFO at the point where the read occurs. If the TX FIFO is full, the TXEMPTY and TXNOTFULL flags will be 0.
         bitOffset: 8
         bitWidth: 5
         access: read-only
       - name: RXLVL
-        description: Receive FIFO current level. A 0 means the RX FIFO is 
-          currently empty, and the RXFULL and RXNOTEMPTY flags will be 0. Other 
-          values tell how much data is actually in the RX FIFO at the point 
-          where the read occurs. If the RX FIFO is full, the RXFULL and 
-          RXNOTEMPTY flags will be 1.
+        description: Receive FIFO current level. A 0 means the RX FIFO is currently empty, and the RXFULL and RXNOTEMPTY flags will be 0. Other values tell how much data is actually in the RX FIFO at the point where the read occurs. If the RX FIFO is full, the RXFULL and RXNOTEMPTY flags will be 1.
         bitOffset: 16
         bitWidth: 5
         access: read-only
@@ -569,57 +465,36 @@ registers:
     resetMask: 986883
     fields:
       - name: TXLVLENA
-        description: Transmit FIFO level trigger enable. This trigger will 
-          become an interrupt if enabled in FIFOINTENSET, or a DMA trigger if 
-          DMATX in FIFOCFG is set.
+        description: Transmit FIFO level trigger enable. This trigger will become an interrupt if enabled in FIFOINTENSET, or a DMA trigger if DMATX in FIFOCFG is set.
         bitOffset: 0
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: Transmit FIFO level does not generate a FIFO level 
-              trigger.
+            description: Transmit FIFO level does not generate a FIFO level trigger.
             value: 0
           - name: ENABLED
-            description: An trigger will be generated if the transmit FIFO level
-              reaches the value specified by the TXLVL field in this register.
+            description: An trigger will be generated if the transmit FIFO level reaches the value specified by the TXLVL field in this register.
             value: 1
       - name: RXLVLENA
-        description: Receive FIFO level trigger enable. This trigger will become
-          an interrupt if enabled in FIFOINTENSET, or a DMA trigger if DMARX in 
-          FIFOCFG is set.
+        description: Receive FIFO level trigger enable. This trigger will become an interrupt if enabled in FIFOINTENSET, or a DMA trigger if DMARX in FIFOCFG is set.
         bitOffset: 1
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: Receive FIFO level does not generate a FIFO level 
-              trigger.
+            description: Receive FIFO level does not generate a FIFO level trigger.
             value: 0
           - name: ENABLED
-            description: An trigger will be generated if the receive FIFO level 
-              reaches the value specified by the RXLVL field in this register.
+            description: An trigger will be generated if the receive FIFO level reaches the value specified by the RXLVL field in this register.
             value: 1
       - name: TXLVL
-        description: Transmit FIFO level trigger point. This field is used only 
-          when TXLVLENA = 1. If enabled to do so, the FIFO level can wake up the
-          device just enough to perform DMA, then return to the reduced power 
-          mode. See Hardware Wake-up control register. 0 = trigger when the TX 
-          FIFO becomes empty. 1 = trigger when the TX FIFO level decreases to 
-          one entry. 15 = trigger when the TX FIFO level decreases to 15 entries
-          (is no longer full).
+        description: Transmit FIFO level trigger point. This field is used only when TXLVLENA = 1. If enabled to do so, the FIFO level can wake up the device just enough to perform DMA, then return to the reduced power mode. See Hardware Wake-up control register. 0 = trigger when the TX FIFO becomes empty. 1 = trigger when the TX FIFO level decreases to one entry. 15 = trigger when the TX FIFO level decreases to 15 entries (is no longer full).
         bitOffset: 8
         bitWidth: 4
         access: read-write
       - name: RXLVL
-        description: Receive FIFO level trigger point. The RX FIFO level is 
-          checked when a new piece of data is received. This field is used only 
-          when RXLVLENA = 1. If enabled to do so, the FIFO level can wake up the
-          device just enough to perform DMA, then return to the reduced power 
-          mode. See Hardware Wake-up control register. 0 = trigger when the RX 
-          FIFO has received one entry (is no longer empty). 1 = trigger when the
-          RX FIFO has received two entries. 15 = trigger when the RX FIFO has 
-          received 16 entries (has become full).
+        description: Receive FIFO level trigger point. The RX FIFO level is checked when a new piece of data is received. This field is used only when RXLVLENA = 1. If enabled to do so, the FIFO level can wake up the device just enough to perform DMA, then return to the reduced power mode. See Hardware Wake-up control register. 0 = trigger when the RX FIFO has received one entry (is no longer empty). 1 = trigger when the RX FIFO has received two entries. 15 = trigger when the RX FIFO has received 16 entries (has become full).
         bitOffset: 16
         bitWidth: 4
         access: read-write
@@ -632,8 +507,7 @@ registers:
     resetMask: 15
     fields:
       - name: TXERR
-        description: Determines whether an interrupt occurs when a transmit 
-          error occurs, based on the TXERR flag in the FIFOSTAT register.
+        description: Determines whether an interrupt occurs when a transmit error occurs, based on the TXERR flag in the FIFOSTAT register.
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -642,12 +516,10 @@ registers:
             description: No interrupt will be generated for a transmit error.
             value: 0
           - name: ENABLED
-            description: An interrupt will be generated when a transmit error 
-              occurs.
+            description: An interrupt will be generated when a transmit error occurs.
             value: 1
       - name: RXERR
-        description: Determines whether an interrupt occurs when a receive error
-          occurs, based on the RXERR flag in the FIFOSTAT register.
+        description: Determines whether an interrupt occurs when a receive error occurs, based on the RXERR flag in the FIFOSTAT register.
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -656,42 +528,31 @@ registers:
             description: No interrupt will be generated for a receive error.
             value: 0
           - name: ENABLED
-            description: An interrupt will be generated when a receive error 
-              occurs.
+            description: An interrupt will be generated when a receive error occurs.
             value: 1
       - name: TXLVL
-        description: Determines whether an interrupt occurs when a the transmit 
-          FIFO reaches the level specified by the TXLVL field in the FIFOTRIG 
-          register.
+        description: Determines whether an interrupt occurs when a the transmit FIFO reaches the level specified by the TXLVL field in the FIFOTRIG register.
         bitOffset: 2
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: No interrupt will be generated based on the TX FIFO 
-              level.
+            description: No interrupt will be generated based on the TX FIFO level.
             value: 0
           - name: ENABLED
-            description: If TXLVLENA in the FIFOTRIG register = 1, an interrupt 
-              will be generated when the TX FIFO level decreases to the level 
-              specified by TXLVL in the FIFOTRIG register.
+            description: If TXLVLENA in the FIFOTRIG register = 1, an interrupt will be generated when the TX FIFO level decreases to the level specified by TXLVL in the FIFOTRIG register.
             value: 1
       - name: RXLVL
-        description: Determines whether an interrupt occurs when a the receive 
-          FIFO reaches the level specified by the TXLVL field in the FIFOTRIG 
-          register.
+        description: Determines whether an interrupt occurs when a the receive FIFO reaches the level specified by the TXLVL field in the FIFOTRIG register.
         bitOffset: 3
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: DISABLED
-            description: No interrupt will be generated based on the RX FIFO 
-              level.
+            description: No interrupt will be generated based on the RX FIFO level.
             value: 0
           - name: ENABLED
-            description: If RXLVLENA in the FIFOTRIG register = 1, an interrupt 
-              will be generated when the when the RX FIFO level increases to the
-              level specified by RXLVL in the FIFOTRIG register.
+            description: If RXLVLENA in the FIFOTRIG register = 1, an interrupt will be generated when the when the RX FIFO level increases to the level specified by RXLVL in the FIFOTRIG register.
             value: 1
   - name: FIFOINTENCLR
     description: FIFO interrupt enable clear (disable) and read register.
@@ -702,26 +563,22 @@ registers:
     resetMask: 15
     fields:
       - name: TXERR
-        description: Writing one clears the corresponding bits in the 
-          FIFOINTENSET register.
+        description: Writing one clears the corresponding bits in the FIFOINTENSET register.
         bitOffset: 0
         bitWidth: 1
         access: read-write
       - name: RXERR
-        description: Writing one clears the corresponding bits in the 
-          FIFOINTENSET register.
+        description: Writing one clears the corresponding bits in the FIFOINTENSET register.
         bitOffset: 1
         bitWidth: 1
         access: read-write
       - name: TXLVL
-        description: Writing one clears the corresponding bits in the 
-          FIFOINTENSET register.
+        description: Writing one clears the corresponding bits in the FIFOINTENSET register.
         bitOffset: 2
         bitWidth: 1
         access: read-write
       - name: RXLVL
-        description: Writing one clears the corresponding bits in the 
-          FIFOINTENSET register.
+        description: Writing one clears the corresponding bits in the FIFOINTENSET register.
         bitOffset: 3
         bitWidth: 1
         access: read-write
@@ -772,8 +629,7 @@ registers:
         bitWidth: 16
         access: write-only
       - name: TXSSEL0_N
-        description: Transmit slave select. This field asserts SSEL0 in master 
-          mode. The output on the pin is active LOW by default.
+        description: Transmit slave select. This field asserts SSEL0 in master mode. The output on the pin is active LOW by default.
         bitOffset: 16
         bitWidth: 1
         access: write-only
@@ -785,8 +641,7 @@ registers:
             description: SSEL0 not asserted.
             value: 1
       - name: TXSSEL1_N
-        description: Transmit slave select. This field asserts SSEL1 in master 
-          mode. The output on the pin is active LOW by default.
+        description: Transmit slave select. This field asserts SSEL1 in master mode. The output on the pin is active LOW by default.
         bitOffset: 17
         bitWidth: 1
         access: write-only
@@ -798,8 +653,7 @@ registers:
             description: SSEL1 not asserted.
             value: 1
       - name: TXSSEL2_N
-        description: Transmit slave select. This field asserts SSEL2 in master 
-          mode. The output on the pin is active LOW by default.
+        description: Transmit slave select. This field asserts SSEL2 in master mode. The output on the pin is active LOW by default.
         bitOffset: 18
         bitWidth: 1
         access: write-only
@@ -811,8 +665,7 @@ registers:
             description: SSEL2 not asserted.
             value: 1
       - name: TXSSEL3_N
-        description: Transmit slave select. This field asserts SSEL3 in master 
-          mode. The output on the pin is active LOW by default.
+        description: Transmit slave select. This field asserts SSEL3 in master mode. The output on the pin is active LOW by default.
         bitOffset: 19
         bitWidth: 1
         access: write-only
@@ -824,68 +677,43 @@ registers:
             description: SSEL3 not asserted.
             value: 1
       - name: EOT
-        description: End of transfer. The asserted SSEL will be deasserted at 
-          the end of a transfer and remain so far at least the time specified by
-          the Transfer_delay value in the DLY register.
+        description: End of transfer. The asserted SSEL will be deasserted at the end of a transfer and remain so far at least the time specified by the Transfer_delay value in the DLY register.
         bitOffset: 20
         bitWidth: 1
         access: write-only
         enumeratedValues:
           - name: NOT_DEASSERTED
-            description: SSEL not deasserted. This piece of data is not treated 
-              as the end of a transfer. SSEL will not be deasserted at the end 
-              of this data.
+            description: SSEL not deasserted. This piece of data is not treated as the end of a transfer. SSEL will not be deasserted at the end of this data.
             value: 0
           - name: DEASSERTED
-            description: SSEL deasserted. This piece of data is treated as the 
-              end of a transfer. SSEL will be deasserted at the end of this 
-              piece of data.
+            description: SSEL deasserted. This piece of data is treated as the end of a transfer. SSEL will be deasserted at the end of this piece of data.
             value: 1
       - name: EOF
-        description: End of frame. Between frames, a delay may be inserted, as 
-          defined by the Frame_delay value in the DLY register. The end of a 
-          frame may not be particularly meaningful if the Frame_delay value = 0.
-          This control can be used as part of the support for frame lengths 
-          greater than 16 bits.
+        description: End of frame. Between frames, a delay may be inserted, as defined by the Frame_delay value in the DLY register. The end of a frame may not be particularly meaningful if the Frame_delay value = 0. This control can be used as part of the support for frame lengths greater than 16 bits.
         bitOffset: 21
         bitWidth: 1
         access: write-only
         enumeratedValues:
           - name: NOT_EOF
-            description: Data not EOF. This piece of data transmitted is not 
-              treated as the end of a frame.
+            description: Data not EOF. This piece of data transmitted is not treated as the end of a frame.
             value: 0
           - name: EOF
-            description: Data EOF. This piece of data is treated as the end of a
-              frame, causing the Frame_delay time to be inserted before 
-              subsequent data is transmitted.
+            description: Data EOF. This piece of data is treated as the end of a frame, causing the Frame_delay time to be inserted before subsequent data is transmitted.
             value: 1
       - name: RXIGNORE
-        description: Receive Ignore. This allows data to be transmitted using 
-          the SPI without the need to read unneeded data from the receiver. 
-          Setting this bit simplifies the transmit process and can be used with 
-          the DMA.
+        description: Receive Ignore. This allows data to be transmitted using the SPI without the need to read unneeded data from the receiver. Setting this bit simplifies the transmit process and can be used with the DMA.
         bitOffset: 22
         bitWidth: 1
         access: write-only
         enumeratedValues:
           - name: READ
-            description: Read received data. Received data must be read in order
-              to allow transmission to progress. SPI transmit will halt when the
-              receive data FIFO is full. In slave mode, an overrun error will 
-              occur if received data is not read before new data is received.
+            description: Read received data. Received data must be read in order to allow transmission to progress. SPI transmit will halt when the receive data FIFO is full. In slave mode, an overrun error will occur if received data is not read before new data is received.
             value: 0
           - name: IGNORE
-            description: Ignore received data. Received data is ignored, 
-              allowing transmission without reading unneeded received data. No 
-              receiver flags are generated.
+            description: Ignore received data. Received data is ignored, allowing transmission without reading unneeded received data. No receiver flags are generated.
             value: 1
       - name: LEN
-        description: Data Length. Specifies the data length from 4 to 16 bits. 
-          Note that transfer lengths greater than 16 bits are supported by 
-          implementing multiple sequential transmits. 0x0-2 = Reserved. 0x3 = 
-          Data transfer is 4 bits in length. 0x4 = Data transfer is 5 bits in 
-          length. 0xF = Data transfer is 16 bits in length.
+        description: Data Length. Specifies the data length from 4 to 16 bits. Note that transfer lengths greater than 16 bits are supported by implementing multiple sequential transmits. 0x0-2 = Reserved. 0x3 = Data transfer is 4 bits in length. 0x4 = Data transfer is 5 bits in length. 0xF = Data transfer is 16 bits in length.
         bitOffset: 24
         bitWidth: 4
         access: write-only
@@ -903,47 +731,27 @@ registers:
         bitWidth: 16
         access: read-only
       - name: RXSSEL0_N
-        description: Slave Select for receive. This field allows the state of 
-          the SSEL0 pin to be saved along with received data. The value will 
-          reflect the SSEL0 pin for both master and slave operation. A zero 
-          indicates that a slave select is active. The actual polarity of each 
-          slave select pin is configured by the related SPOL bit in CFG.
+        description: Slave Select for receive. This field allows the state of the SSEL0 pin to be saved along with received data. The value will reflect the SSEL0 pin for both master and slave operation. A zero indicates that a slave select is active. The actual polarity of each slave select pin is configured by the related SPOL bit in CFG.
         bitOffset: 16
         bitWidth: 1
         access: read-only
       - name: RXSSEL1_N
-        description: Slave Select for receive. This field allows the state of 
-          the SSEL1 pin to be saved along with received data. The value will 
-          reflect the SSEL1 pin for both master and slave operation. A zero 
-          indicates that a slave select is active. The actual polarity of each 
-          slave select pin is configured by the related SPOL bit in CFG.
+        description: Slave Select for receive. This field allows the state of the SSEL1 pin to be saved along with received data. The value will reflect the SSEL1 pin for both master and slave operation. A zero indicates that a slave select is active. The actual polarity of each slave select pin is configured by the related SPOL bit in CFG.
         bitOffset: 17
         bitWidth: 1
         access: read-only
       - name: RXSSEL2_N
-        description: Slave Select for receive. This field allows the state of 
-          the SSEL2 pin to be saved along with received data. The value will 
-          reflect the SSEL2 pin for both master and slave operation. A zero 
-          indicates that a slave select is active. The actual polarity of each 
-          slave select pin is configured by the related SPOL bit in CFG.
+        description: Slave Select for receive. This field allows the state of the SSEL2 pin to be saved along with received data. The value will reflect the SSEL2 pin for both master and slave operation. A zero indicates that a slave select is active. The actual polarity of each slave select pin is configured by the related SPOL bit in CFG.
         bitOffset: 18
         bitWidth: 1
         access: read-only
       - name: RXSSEL3_N
-        description: Slave Select for receive. This field allows the state of 
-          the SSEL3 pin to be saved along with received data. The value will 
-          reflect the SSEL3 pin for both master and slave operation. A zero 
-          indicates that a slave select is active. The actual polarity of each 
-          slave select pin is configured by the related SPOL bit in CFG.
+        description: Slave Select for receive. This field allows the state of the SSEL3 pin to be saved along with received data. The value will reflect the SSEL3 pin for both master and slave operation. A zero indicates that a slave select is active. The actual polarity of each slave select pin is configured by the related SPOL bit in CFG.
         bitOffset: 19
         bitWidth: 1
         access: read-only
       - name: SOT
-        description: Start of Transfer flag. This flag will be 1 if this is the 
-          first data after the SSELs went from deasserted to asserted (i.e., any
-          previous transfer has ended). This information can be used to identify
-          the first piece of data in cases where the transfer length is greater 
-          than 16 bits.
+        description: Start of Transfer flag. This flag will be 1 if this is the first data after the SSELs went from deasserted to asserted (i.e., any previous transfer has ended). This information can be used to identify the first piece of data in cases where the transfer length is greater than 16 bits.
         bitOffset: 20
         bitWidth: 1
         access: read-only
@@ -994,8 +802,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: APERTURE
-        description: 'Aperture: encoded as (aperture size/4K) -1, so 0x00 means a
-          4K aperture.'
+        description: 'Aperture: encoded as (aperture size/4K) -1, so 0x00 means a 4K aperture.'
         bitOffset: 0
         bitWidth: 8
         access: read-only
@@ -1014,28 +821,9 @@ registers:
         bitOffset: 16
         bitWidth: 16
         access: read-only
-interrupts:
-  - name: FLEXCOMM0
 addressBlocks:
   - offset: 0
     size: 4096
     usage: registers
-clocks:
-  - name: base_clk
-  - name: busclk
-parameters:
-  - name: rx_req
-    bits: 5
-    min: 0
-    max: 31
-    description: DMA receive channel
-  - name: tx_req
-    bits: 5
-    min: 0
-    max: 31
-    description: DMA receive channel
-  - name: ssel_num
-    bits: 3
-    min: 0
-    max: 4
-    description: number of SSEL signals
+interrupts:
+  - name: FLEXCOMM

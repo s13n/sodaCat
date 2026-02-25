@@ -1,0 +1,441 @@
+# Consolidated configuration for NXP LPC model extraction.
+# Two top-level keys: shared_blocks (cross-family) and families (per-family).
+# SVD files are fetched from https://github.com/nxp-mcuxpresso/mcux-soc-svd
+# via CMake FetchContent. File layout: <chip>/<chip>.xml
+
+shared_blocks:
+  WWDT:
+    from: LPC865.WWDT
+    interrupts:
+      WDT: INTR
+      WDT_BOD: INTR
+
+  GPIO:
+    from: LPC54S018.GPIO
+    params:
+      - {name: ports, type: int, default: 2, description: Number of GPIO ports}
+
+families:
+  LPC8:
+    svd:
+      tag: MCUX_2.16.100
+    subfamilies:
+      LPC80x:
+        chips: [LPC802, LPC804]
+      LPC81x:
+        chips: [LPC810, LPC811, LPC812]
+      LPC82x:
+        chips: [LPC822, LPC824]
+      LPC83x:
+        chips: [LPC832, LPC834]
+      LPC84x:
+        chips: [LPC844, LPC845]
+      LPC86x:
+        chips: [LPC864, LPC865]
+    blocks:
+      ACOMP:
+        from: LPC865.ACOMP
+        instances: [ACOMP]
+        interrupts:
+          CMP: CMP
+          CMP_CAPT: CMP_CAPT
+      ADC:
+        from: LPC865.ADC0
+        instances: [ADC0]
+        interrupts:
+          ADC0_SEQA: SEQA
+          ADC0_SEQB: SEQB
+          ADC0_THCMP: THCMP
+          ADC0_OVR: OVR
+      CRC:
+        from: LPC865.CRC
+        instances: [CRC]
+      SmartDMA:
+        from: LPC865.DMA0
+        instances: [DMA0]
+        interrupts:
+          DMA0: DMA
+        params:
+          - {name: max_channel, type: int, default: 15, description: Index of last DMA channel}
+      FLASH_CTRL:
+        from: LPC865.FLASH_CTRL
+        instances: [FLASH_CTRL]
+        interrupts:
+          FLASH: FLASH
+      FTM:
+        from: LPC865.FTM0
+        instances: [FTM0, FTM1]
+        interrupts:
+          FTM0: FTM
+        params:
+          - {name: max_channel, type: int, default: 5, description: Index of last timer channel}
+          - {name: qdec, type: bool, default: false, description: Quadrature decoder present}
+          - {name: dither, type: bool, default: true, description: PWM dithering support}
+          - {name: fault_inputs, type: int, default: 4, description: Number of fault inputs}
+          - {name: modulation, type: bool, default: false, description: Modulation support}
+      GPIO:
+        uses: GPIO
+        instances: [GPIO]
+      I2C:
+        from: LPC865.I2C0
+        instances: [I2C0]
+        interrupts:
+          I2C0: I2C
+        params:
+          - {name: rx_req, type: int, description: DMA receive channel}
+          - {name: tx_req, type: int, description: DMA transmit channel}
+      I3C:
+        from: LPC865.I3C0
+        instances: [I3C0]
+        interrupts:
+          I3C0: I3C
+        params:
+          - {name: rx_req, type: int, description: DMA receive channel}
+          - {name: tx_req, type: int, description: DMA transmit channel}
+      INPUTMUX:
+        from: LPC865.INPUTMUX
+        instances: [INPUTMUX]
+      IOCON:
+        from: LPC865.IOCON
+        instances: [IOCON]
+      MRT:
+        from: LPC865.MRT0
+        instances: [MRT0]
+        interrupts:
+          MRT0: MRT
+      PINT:
+        from: LPC865.PINT
+        instances: [PINT]
+        interrupts:
+          PIN_INT0: INT0
+          PIN_INT1: INT1
+          PIN_INT2: INT2
+          PIN_INT3: INT3
+          PIN_INT4: INT4
+          PIN_INT5: INT5
+          PIN_INT6: INT6
+          PIN_INT7: INT7
+          PIN_INT5_DAC1: INT5
+          PIN_INT6_USART3: INT6
+          PIN_INT7_USART4: INT7
+      PMU:
+        from: LPC865.PMU
+        instances: [PMU]
+      SPI:
+        from: LPC865.SPI0
+        instances: [SPI0, SPI1]
+        interrupts:
+          SPI0: SPI
+        params:
+          - {name: rx_req, type: int, description: DMA receive channel}
+          - {name: tx_req, type: int, description: DMA transmit channel}
+          - {name: ssel_num, type: int, default: 4, description: Number of SSEL signals}
+      SWM:
+        from: LPC865.SWM0
+        instances: [SWM0]
+      SYSCON:
+        from: LPC865.SYSCON
+        instances: [SYSCON]
+        interrupts:
+          BOD: BOD
+      USART:
+        from: LPC865.USART0
+        instances: [USART0, USART1, USART2]
+        interrupts:
+          USART0: USART
+        params:
+          - {name: rx_req, type: int, description: DMA receive channel}
+          - {name: tx_req, type: int, description: DMA transmit channel}
+      WKT:
+        from: LPC865.WKT
+        instances: [WKT]
+        interrupts:
+          WKT: WKT
+      WWDT:
+        uses: WWDT
+        instances: [WWDT]
+    chip_params:
+      _all:
+        _all:
+          FTM1: {max_channel: 3, qdec: true, fault_inputs: 0}
+          SPI1: {ssel_num: 2}
+      LPC86x:
+        LPC865:
+          I2C0: {rx_req: 10, tx_req: 11}
+          I3C0: {rx_req: 12, tx_req: 13}
+          SPI0: {rx_req: 6, tx_req: 7}
+          SPI1: {rx_req: 8, tx_req: 9}
+          USART0: {rx_req: 0, tx_req: 1}
+          USART1: {rx_req: 2, tx_req: 3}
+          USART2: {rx_req: 4, tx_req: 5}
+
+  LPC54:
+    svd:
+      tag: MCUX_2.16.100
+    subfamilies:
+      LPC540xx:
+        chips: [LPC54005, LPC54016, LPC54018, LPC54018M,
+                LPC54S005, LPC54S016, LPC54S018, LPC54S018M]
+      LPC5411x:
+        chips: [LPC54113, LPC54114]
+      LPC546xx:
+        chips: [LPC54605, LPC54606, LPC54607, LPC54608,
+                LPC54616, LPC54618, LPC54628]
+    blocks:
+      ADC:
+        from: LPC54S018.ADC0
+        instances: [ADC0]
+        interrupts:
+          ADC0_SEQA: SEQA
+          ADC0_SEQB: SEQB
+          ADC0_THCMP: THCMP
+          ADC0_OVR: OVR
+      AES:
+        from: LPC54S018.AES0
+        instances: [AES0]
+      ASYNC_SYSCON:
+        from: LPC54S018.ASYNC_SYSCON
+        instances: [ASYNC_SYSCON]
+      CAN:
+        from: LPC54S018.CAN0
+        instances: [CAN0, CAN1]
+        interrupts:
+          CAN0_IRQ0: IRQ0
+          CAN0_IRQ1: IRQ1
+      CRC_ENGINE:
+        from: LPC54S018.CRC_ENGINE
+        instances: [CRC_ENGINE]
+      CTIMER:
+        from: LPC54S018.CTIMER0
+        instances: [CTIMER0, CTIMER1, CTIMER2, CTIMER3, CTIMER4]
+        interrupts:
+          CTIMER0: CTIMER
+      SmartDMA:
+        from: LPC54S018.DMA0
+        instances: [DMA0]
+        interrupts:
+          DMA0: DMA
+        params:
+          - {name: max_channel, type: int, default: 31, description: Index of last DMA channel}
+      DMIC:
+        from: LPC54S018.DMIC0
+        instances: [DMIC0]
+        interrupts:
+          DMIC0: DMIC
+          HWVAD0: HWVAD
+      EMC:
+        from: LPC54S018.EMC
+        instances: [EMC]
+      ENET:
+        from: LPC54S018.ENET
+        instances: [ENET]
+        interrupts:
+          ETHERNET: INTR
+          ETHERNET_MACLP: MACLP
+          ETHERNET_PMT: PMT
+      ETM:
+        from: LPC54S018.ETM
+        instances: [ETM]
+      FLEXCOMM:
+        from: LPC54S018.FLEXCOMM0
+        instances: [FLEXCOMM0, FLEXCOMM1, FLEXCOMM2, FLEXCOMM3, FLEXCOMM4,
+                    FLEXCOMM5, FLEXCOMM6, FLEXCOMM7, FLEXCOMM8, FLEXCOMM9,
+                    FLEXCOMM10]
+        interrupts:
+          FLEXCOMM0: INTR
+      GINT:
+        from: LPC54S018.GINT0
+        instances: [GINT0, GINT1]
+        interrupts:
+          GINT0: GINT
+      GPIO:
+        uses: GPIO
+        instances: [GPIO]
+      I2C:
+        from: LPC54S018.I2C0
+        instances: [I2C0, I2C1, I2C2, I2C3, I2C4, I2C5, I2C6, I2C7, I2C8, I2C9]
+        interrupts:
+          FLEXCOMM0: FLEXCOMM
+          FLEXCOMM1: FLEXCOMM
+          FLEXCOMM2: FLEXCOMM
+          FLEXCOMM3: FLEXCOMM
+          FLEXCOMM4: FLEXCOMM
+          FLEXCOMM5: FLEXCOMM
+          FLEXCOMM6: FLEXCOMM
+          FLEXCOMM7: FLEXCOMM
+          FLEXCOMM8: FLEXCOMM
+          FLEXCOMM9: FLEXCOMM
+        params:
+          - {name: rx_req, type: int, description: DMA receive channel}
+          - {name: tx_req, type: int, description: DMA transmit channel}
+      I2S:
+        from: LPC54S018.I2S0
+        instances: [I2S0, I2S1]
+        interrupts:
+          FLEXCOMM0: FLEXCOMM
+          FLEXCOMM1: FLEXCOMM
+          FLEXCOMM2: FLEXCOMM
+          FLEXCOMM3: FLEXCOMM
+          FLEXCOMM4: FLEXCOMM
+          FLEXCOMM5: FLEXCOMM
+          FLEXCOMM6: FLEXCOMM
+          FLEXCOMM7: FLEXCOMM
+          FLEXCOMM8: FLEXCOMM
+          FLEXCOMM9: FLEXCOMM
+      INPUTMUX:
+        from: LPC54S018.INPUTMUX
+        instances: [INPUTMUX]
+      IOCON:
+        from: LPC54S018.IOCON
+        instances: [IOCON]
+      LCD:
+        from: LPC54S018.LCD
+        instances: [LCD]
+        interrupts:
+          LCD: INTR
+      MRT:
+        from: LPC54S018.MRT0
+        instances: [MRT0]
+        interrupts:
+          MRT0: MRT
+      OTPC:
+        from: LPC54S018.OTPC
+        instances: [OTPC]
+      PINT:
+        from: LPC54S018.PINT
+        instances: [PINT]
+        interrupts:
+          PIN_INT0: INT0
+          PIN_INT1: INT1
+          PIN_INT2: INT2
+          PIN_INT3: INT3
+          PIN_INT4: INT4
+          PIN_INT5: INT5
+          PIN_INT6: INT6
+          PIN_INT7: INT7
+      PUF:
+        from: LPC54S018.PUF
+        instances: [PUF]
+        interrupts:
+          PUF: INTR
+      RIT:
+        from: LPC54S018.RIT
+        instances: [RIT]
+        interrupts:
+          RIT: INTR
+      RTC:
+        from: LPC54S018.RTC
+        instances: [RTC]
+        interrupts:
+          RTC: INTR
+      SCT:
+        from: LPC54S018.SCT0
+        instances: [SCT0]
+        interrupts:
+          SCT0: INTR
+      SMARTCARD:
+        from: LPC54S018.SMARTCARD0
+        instances: [SMARTCARD0, SMARTCARD1]
+        interrupts:
+          SMARTCARD0: INTR
+      SDIF:
+        from: LPC54S018.SDIF
+        instances: [SDIF]
+        interrupts:
+          SDIO: INTR
+      SPI:
+        from: LPC54S018.SPI0
+        instances: [SPI0, SPI1, SPI2, SPI3, SPI4, SPI5, SPI6, SPI7, SPI8, SPI9, SPI10]
+        interrupts:
+          FLEXCOMM0: FLEXCOMM
+          FLEXCOMM1: FLEXCOMM
+          FLEXCOMM2: FLEXCOMM
+          FLEXCOMM3: FLEXCOMM
+          FLEXCOMM4: FLEXCOMM
+          FLEXCOMM5: FLEXCOMM
+          FLEXCOMM6: FLEXCOMM
+          FLEXCOMM7: FLEXCOMM
+          FLEXCOMM8: FLEXCOMM
+          FLEXCOMM9: FLEXCOMM
+          FLEXCOMM10: FLEXCOMM
+        params:
+          - {name: rx_req, type: int, description: DMA receive channel}
+          - {name: tx_req, type: int, description: DMA transmit channel}
+          - {name: ssel_num, type: int, default: 4, description: Number of SSEL signals}
+      SPIFI:
+        from: LPC54S018.SPIFI0
+        instances: [SPIFI0]
+        interrupts:
+          SPIFI0: INTR
+      SYSCON:
+        from: LPC54S018.SYSCON
+        instances: [SYSCON]
+      USART:
+        from: LPC54S018.USART0
+        instances: [USART0, USART1, USART2, USART3, USART4, USART5,
+                    USART6, USART7, USART8, USART9]
+        interrupts:
+          FLEXCOMM0: FLEXCOMM
+          FLEXCOMM1: FLEXCOMM
+          FLEXCOMM2: FLEXCOMM
+          FLEXCOMM3: FLEXCOMM
+          FLEXCOMM4: FLEXCOMM
+          FLEXCOMM5: FLEXCOMM
+          FLEXCOMM6: FLEXCOMM
+          FLEXCOMM7: FLEXCOMM
+          FLEXCOMM8: FLEXCOMM
+          FLEXCOMM9: FLEXCOMM
+        params:
+          - {name: rx_req, type: int, description: DMA receive channel}
+          - {name: tx_req, type: int, description: DMA transmit channel}
+      USB0:
+        from: LPC54S018.USB0
+        instances: [USB0]
+        interrupts:
+          USB0_NEEDCLK: NEEDCLK
+          USB0: USB
+      USBFSH:
+        from: LPC54S018.USBFSH
+        instances: [USBFSH]
+        interrupts:
+          USB0: INTR
+          USB0_NEEDCLK: NEEDCLK
+      USBHSD:
+        from: LPC54S018.USBHSD
+        instances: [USBHSD]
+        interrupts:
+          USB1_PHY: PHY
+          USB1: USB
+          USB1_NEEDCLK: NEEDCLK
+      USBHSH:
+        from: LPC54S018.USBHSH
+        instances: [USBHSH]
+        interrupts:
+          USB1: INTR
+          USB1_NEEDCLK: NEEDCLK
+      UTICK:
+        from: LPC54S018.UTICK0
+        instances: [UTICK0]
+        interrupts:
+          UTICK0: INTR
+      WWDT:
+        uses: WWDT
+        instances: [WWDT]
+    chip_params:
+      LPC540xx:
+        LPC54S018:
+          GPIO: {ports: 6}
+          SmartDMA: {max_channel: 31}
+          I2C0: {rx_req: 10, tx_req: 11}
+          SPI0: {rx_req: 6, tx_req: 7}
+          SPI1: {rx_req: 8, tx_req: 9, ssel_num: 2}
+          USART0: {rx_req: 0, tx_req: 1}
+          USART1: {rx_req: 2, tx_req: 3}
+          USART2: {rx_req: 4, tx_req: 5}
+          USART3: {rx_req: 6, tx_req: 7}
+          USART4: {rx_req: 8, tx_req: 9}
+          USART5: {rx_req: 10, tx_req: 11}
+          USART6: {rx_req: 12, tx_req: 13}
+          USART7: {rx_req: 14, tx_req: 15}
+          USART8: {rx_req: 20, tx_req: 21}
+          USART9: {rx_req: 22, tx_req: 23}
