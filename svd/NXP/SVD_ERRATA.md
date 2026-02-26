@@ -174,6 +174,38 @@ reference manual.
 | SWM | Different switch matrix pin assignment tables (25 vs 21 registers) |
 | INPUTMUX | Different DMA trigger mux channels (3 vs 5 registers) |
 
+### LPC81x (MCUX_2.16.100)
+
+Reference: UM10601 LPC81x Rev. 1.7 (March 2021)
+
+Cross-checked against UM10601 NVIC table (Table 3) and memory map (Fig 2).
+All 19 peripheral base addresses match the reference manual. Per-chip peripheral
+availability correct: SPI1 and USART2 are LPC812-only (absent from LPC810/LPC811 SVDs).
+
+**Missing interrupts:**
+
+| IRQ | SVD name | RM name | Notes |
+|-----|----------|---------|-------|
+| 10 | (absent) | MRT_IRQ | MRT0 peripheral exists in SVD with no interrupt. Worked around via `chip_interrupts` (MRT at IRQ 10). |
+| 11 | (absent) | CMP_IRQ | Analog comparator interrupt; ACOMP peripheral exists in SVD. Worked around via `chip_interrupts` (COMPEDGE at IRQ 11). |
+| 13 | (absent) | BOD_IRQ | BOD interrupt not assigned to SYSCON in SVD. Worked around via `chip_interrupts` (BOD at IRQ 13). |
+| 14 | (absent) | FLASH_IRQ | FLASH_CTRL peripheral exists in SVD with no interrupt. Worked around via `chip_interrupts` (FLASH at IRQ 14). |
+
+**Peripherals with variant block models (genuinely different register maps vs LPC86x):**
+
+| Peripheral | Reason for variant |
+|------------|-------------------|
+| SYSCON | Different clock/peripheral control registers (39 vs 53 registers; similar to LPC82x minus IRCCTRL) |
+| SWM | Different switch matrix pin assignment tables (19 vs 21 registers; 9 PINASSIGN, no FTM) |
+
+**Peripherals present in LPC81x but not LPC86x:**
+
+| Peripheral | Notes |
+|------------|-------|
+| FLASH_CTRL | Flash memory controller |
+| SCT0 | SCTimer/PWM |
+| SPI1 | Second SPI bus controller (LPC812 only) |
+
 ## LPC54xxx
 
 (none known yet)
