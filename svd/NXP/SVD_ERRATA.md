@@ -107,6 +107,7 @@ base addresses. All 17 peripheral base addresses match the reference manual.
 | Peripheral | Reason for variant |
 |------------|-------------------|
 | SYSCON | Different clock/peripheral control registers (32 vs 53 registers; 9 unique to LPC802 including individual CLKSELs and FRG registers) |
+| SWM | Different switch matrix pin assignment tables (9 vs 12 registers; no PINASSIGN_DATA8 or FTM_PINASSIGN) |
 
 **Block model discrepancies (not yet addressed):**
 

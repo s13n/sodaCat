@@ -893,10 +893,9 @@ def main():
 
                 svd.dumpModel(block_data, family_dir / block_name)
 
-        # Non-variant subfamilies -> shared placement in base dir
+        # Non-variant subfamilies -> shared or subfamily-specific placement
         default_present = {f for f in families_present if f not in variants}
         if default_present:
-            common_count += 1
             entry = _select_block_entry(
                 block_families, families, default_present, block_cfg)
             block_data = entry['data']
@@ -909,8 +908,17 @@ def main():
             block_data = _inject_params(block_data, block_cfg.get('params'))
             block_data = _inject_source(block_data, entry, svd_tag)
 
-            svd.dumpModel(block_data, common_blocks_dir / block_name)
-            print(f"  + {block_name:20} -> {family_code} (shared)")
+            if len(default_present) == 1:
+                # Only one subfamily uses base -> place in subfamily dir
+                fam_name = next(iter(default_present))
+                family_specific_count += 1
+                family_dir = output_dir / family_code / fam_name
+                family_dir.mkdir(parents=True, exist_ok=True)
+                svd.dumpModel(block_data, family_dir / block_name)
+            else:
+                common_count += 1
+                svd.dumpModel(block_data, common_blocks_dir / block_name)
+                print(f"  + {block_name:20} -> {family_code} (shared)")
 
     # ==========================================================================
     # PASS 3: Generate chip models
