@@ -61,6 +61,49 @@ No SVD bugs found — all register and interrupt data matches the reference manu
 | I2C1, I2C2, I2C3 | Additional I2C bus controllers |
 | USART3, USART4 | USART3 shares IRQ 30 with PINT6; USART4 shares IRQ 31 with PINT7 |
 
+### LPC804 (MCUX_2.16.100)
+
+Reference: UM11065 LPC804 Rev. 1.3 (July 2018)
+
+Cross-checked against UM11065 NVIC table (Table 38) and all register chapter
+base addresses. All 17 peripheral base addresses match the reference manual.
+
+**Missing interrupts:**
+
+| IRQ | SVD name | RM name | Notes |
+|-----|----------|---------|-------|
+| 10 | (absent) | MRT_IRQ | MRT0 peripheral exists in SVD with no interrupt. Worked around via `chip_interrupts` (MRT at IRQ 10). |
+| 11 | (absent) | CMP_IRQ | Analog comparator interrupt; ACOMP peripheral exists in SVD. Shares IRQ 11 with CAPT (which has CMP_CAPT=11 in SVD). Worked around via `chip_interrupts` (COMPEDGE at IRQ 11). |
+| 13 | (absent) | BOD_IRQ | BOD interrupt not assigned to SYSCON in SVD. Worked around via `chip_interrupts` (BOD at IRQ 13). |
+
+**SVD naming issue:**
+
+| Peripheral | Issue | Notes |
+|------------|-------|-------|
+| ADC | Instance named "ADC" instead of "ADC0" | All other LPC8 chips use "ADC0". Worked around by adding "ADC" to ADC block instances list. |
+
+**Peripherals with variant block models (genuinely different register maps vs LPC86x):**
+
+| Peripheral | Reason for variant |
+|------------|-------------------|
+| SYSCON | Different clock/peripheral control registers (35 vs 53 registers) |
+| SWM | Different switch matrix pin assignment tables (22 vs 21 registers) |
+
+**Peripherals present in LPC804 but not LPC86x:**
+
+| Peripheral | Notes |
+|------------|-------|
+| CAPT | Capacitive touch controller; shares IRQ 11 with ACOMP |
+| CTIMER0 | 32-bit counter/timer (CT32B0 in RM) |
+| DAC0 | 10-bit DAC |
+| PLU | Programmable Logic Unit; unique to LPC804 among LPC8xx |
+
+**Suspected RM bugs (UM11065):**
+
+| Location | Issue | Notes |
+|----------|-------|-------|
+| ISER0 bit 14 | Labeled ISE_FLASH | Table 38 shows IRQ 14 as Reserved. No flash controller peripheral exists in SVD or RM memory map. Likely copy-paste from LPC84x ISER0 description. |
+
 ### LPC82x (MCUX_2.16.100)
 
 Reference: UM10800 LPC82x Rev. 1.3 (July 2018)
