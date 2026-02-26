@@ -61,6 +61,22 @@ No SVD bugs found — all register and interrupt data matches the reference manu
 | I2C1, I2C2, I2C3 | Additional I2C bus controllers |
 | USART3, USART4 | USART3 shares IRQ 30 with PINT6; USART4 shares IRQ 31 with PINT7 |
 
+### LPC82x (MCUX_2.16.100)
+
+Reference: UM10800 LPC82x Rev. 1.3 (July 2018)
+
+Cross-checked against UM10800 NVIC table (Table 5) and memory map (Fig 2).
+No SVD bugs found — all register, interrupt, and base address data matches the
+reference manual.
+
+**Peripherals with variant block models (genuinely different register maps vs LPC86x):**
+
+| Peripheral | Reason for variant |
+|------------|-------------------|
+| SYSCON | Different clock/peripheral control registers (40 vs 53 registers) |
+| SWM | Different switch matrix pin assignment tables (25 vs 21 registers) |
+| INPUTMUX | Different DMA trigger mux channels (3 vs 5 registers) |
+
 ## LPC54xxx
 
 (none known yet)
