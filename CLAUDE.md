@@ -102,6 +102,7 @@ Each family entry has up to four keys:
 - `subfamilies`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
 - `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides. A block may use `uses: <shared_block_name>` instead of `from:` to reference a cross-family shared model; `from` triggers SVD extraction while `uses` references the shared model. Defaults from `shared_blocks` are inherited and can be overridden.
 - `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
+- `chip_interrupts` (optional): subfamily-keyed interrupt overrides to inject or correct chip-level interrupt assignments. Same cascade structure as `chip_params`: `chip_interrupts[subfamily|_all][chip|_all][instance_name] = {canonical_name: irq_number}`. First match wins (no merging across levels). Used to fix SVD bugs where interrupts are misattributed, missing, or misnumbered.
 
 Parameter declarations are arrays of `{name, type, default?, description?}`. Permissible types: `int`, `bool`, `string`.
 
