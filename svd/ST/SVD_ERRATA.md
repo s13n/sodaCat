@@ -523,6 +523,59 @@ Note: The HSOTR register description also says "low-power mode" instead of
 are copy-pasted from the LPOTR-type OPAMP IP (L4/L5/U5) but the HSOTR-type
 IP uses genuinely different trim registers for high-speed mode.
 
+### NVIC interrupt vector bugs (RM0399 cross-check)
+
+Cross-checked against RM0399 Rev.4 Table 149 (vector table) and Table 7
+(register boundary addresses). All 111 peripheral base addresses verified —
+no discrepancies found. Per-chip peripheral availability correct: H745/H747
+lack CRYP/HASH; H755/H757 include them. Dual-core asymmetric interrupts
+(WWDG1/2, HSEM0/1, SEV, HOLD_CORE) correctly reflected in both CM4 and CM7
+SVDs.
+
+**BDMA channel naming off-by-one (H745_H757 SVDs only, confirmed in V2.8):**
+
+| SVD position | SVD name | RM0399 name | Notes |
+|-------------|----------|-------------|-------|
+| 129 | BDMA_CH1 | BDMA_CH0 | All channels shifted +1 in SVD |
+| 130 | BDMA_CH2 | BDMA_CH1 | |
+| 131 | BDMA_CH3 | BDMA_CH2 | |
+| 132 | BDMA_CH4 | BDMA_CH3 | |
+| 133 | BDMA_CH5 | BDMA_CH4 | |
+| 134 | BDMA_CH6 | BDMA_CH5 | |
+| 135 | BDMA_CH7 | BDMA_CH6 | |
+| 136 | BDMA_CH8 | BDMA_CH7 | SVD name "CH8" not in config; dropped from model |
+
+H723 and H743 SVDs have correct CH0–CH7 naming. Worked around via
+`chip_interrupts` (CH0–CH7 at positions 129–136).
+
+**SDMMC2 interrupt misattributed to SDMMC1 (H742_H753 + H745_H757 SVDs, confirmed in V2.8):**
+
+| SVD position | SVD peripheral | SVD interrupt name | RM says |
+|-------------|---------------|-------------------|---------|
+| 49 | SDMMC1 | SDMMC1 | SDMMC1 (correct) |
+| 124 | SDMMC1 | SDMMC | SDMMC2 (SVD has wrong peripheral) |
+
+H723 SVD has it correct (position 124 on SDMMC2 peripheral). Result: SDMMC1
+has duplicate INTR entries (49 + 124), SDMMC2 has no interrupt. Worked around
+via `chip_interrupts` (SDMMC1 INTR at 49, SDMMC2 INTR at 124).
+
+**OTG USB interrupts swapped between controllers (H745_H757 SVDs only, confirmed in V2.8):**
+
+| SVD position | SVD peripheral | SVD interrupt name | RM0399 says |
+|-------------|---------------|-------------------|-------------|
+| 74 | OTG2_HS_GLOBAL | OTG_HS_EP1_OUT | USB1/OTG1 (HS port) interrupt |
+| 75 | OTG2_HS_GLOBAL | OTG_HS_EP1_IN | USB1/OTG1 (HS port) interrupt |
+| 76 | OTG2_HS_GLOBAL | OTG_HS_WKUP | USB1/OTG1 (HS port) interrupt |
+| 77 | OTG2_HS_GLOBAL | OTG_HS | USB1/OTG1 (HS port) interrupt |
+| 98 | OTG1_HS_GLOBAL | OTG_FS_EP1_OUT | USB2/OTG2 (FS port) interrupt |
+| 99 | OTG1_HS_GLOBAL | OTG_FS_EP1_IN | USB2/OTG2 (FS port) interrupt |
+| 100 | OTG1_HS_GLOBAL | OTG_FS_WKUP | USB2/OTG2 (FS port) interrupt |
+| 101 | OTG1_HS_GLOBAL | OTG_FS | USB2/OTG2 (FS port) interrupt |
+
+H743 SVD has correct assignment (OTG1=HS interrupts, OTG2=FS interrupts).
+H723 has only one USB port — no swap possible. Worked around via
+`chip_interrupts` (OTG1 gets positions 74–77, OTG2 gets positions 98–101).
+
 
 ## ST STM32L0
 
