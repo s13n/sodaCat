@@ -61,6 +61,31 @@ No SVD bugs found — all register and interrupt data matches the reference manu
 | I2C1, I2C2, I2C3 | Additional I2C bus controllers |
 | USART3, USART4 | USART3 shares IRQ 30 with PINT6; USART4 shares IRQ 31 with PINT7 |
 
+### LPC83x (MCUX_2.16.100)
+
+Reference: UM11021 LPC83x Rev. 1.1 (October 2016)
+
+Cross-checked against UM11021 NVIC table (Table 4) and memory map (Fig 2).
+No SVD bugs found — all register, interrupt, and base address data matches the
+reference manual. All 24 active interrupts and 20 peripheral base addresses verified.
+
+**Peripherals with variant block models (genuinely different register maps vs LPC86x):**
+
+| Peripheral | Reason for variant |
+|------------|-------------------|
+| SYSCON | Different clock/peripheral control registers (40 vs 53 registers; identical to LPC82x) |
+| SWM | Different switch matrix pin assignment tables (24 vs 21 registers) |
+| INPUTMUX | Different DMA trigger mux channels (3 vs 5 registers; identical to LPC82x) |
+
+**Peripherals present in LPC83x but not LPC86x:**
+
+| Peripheral | Notes |
+|------------|-------|
+| DMA0 | SmartDMA controller |
+| FLASH_CTRL | Flash memory controller |
+| SCT0 | SCTimer/PWM |
+| SPI1 | Second SPI bus controller |
+
 ### LPC802 (MCUX_2.16.100)
 
 Reference: UM11045 LPC802 Rev. 1.5 (March 2021)
