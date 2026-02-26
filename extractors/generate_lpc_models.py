@@ -82,7 +82,7 @@ def load_family_config(family_code, config_file):
     for sf_key, sf_val in (config.get('chip_params') or {}).items():
         chip_params[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
-    svd_tag = config.get('svd', {}).get('tag', '')
+    svd_tag = full_config.get('svd', {}).get('tag', '')
 
     return families, blocks_config, chip_params, shared_blocks_config, svd_tag
 
@@ -501,14 +501,22 @@ def _inject_params(block_data, params):
     return ordered
 
 
+def _format_source(svd_path, svd_version='', svd_tag=''):
+    """Format a source attribution string from SVD metadata."""
+    parts = [svd_path or 'unknown']
+    if svd_version:
+        parts.append(f"v{svd_version}")
+    if svd_tag:
+        parts.append(f"({svd_tag})")
+    return ' '.join(parts)
+
+
 def _inject_source(block_data, entry, svd_tag=''):
     """Insert source attribution into block_data before params/registers."""
-    chip = entry.get('chip', '')
-    if svd_tag:
-        source = f"{chip} SVD ({svd_tag})"
-    else:
-        version = entry.get('svd_version', '')
-        source = f"{chip} SVD v{version}" if version else f"{chip} SVD"
+    source = _format_source(
+        entry.get('svd_path', ''),
+        entry.get('svd_version', ''),
+        svd_tag)
     ordered = {}
     for k, v in block_data.items():
         if k in ('params', 'registers') and 'source' not in ordered:
@@ -653,19 +661,22 @@ def _find_svd_file(svd_dir, chip_name):
     NXP repo layout: <svd_dir>/<chip_name>/<chip_name>.xml
     Falls back to .svd extension, then tries dual-core suffixes
     (_cm0plus, _cm4) for chips like LPC54114.
+
+    Returns (absolute_path, repo_relative_path) or (None, None).
     """
-    chip_dir = Path(svd_dir) / chip_name
+    svd_dir = Path(svd_dir)
+    chip_dir = svd_dir / chip_name
     for ext in ('.xml', '.svd'):
         svd_path = chip_dir / f"{chip_name}{ext}"
         if svd_path.exists():
-            return svd_path
+            return svd_path, svd_path.relative_to(svd_dir).as_posix()
     # Dual-core chips: try core-specific suffixes
     for suffix in ('_cm0plus', '_cm4'):
         for ext in ('.xml', '.svd'):
             svd_path = chip_dir / f"{chip_name}{suffix}{ext}"
             if svd_path.exists():
-                return svd_path
-    return None
+                return svd_path, svd_path.relative_to(svd_dir).as_posix()
+    return None, None
 
 
 # ==========================================================================
@@ -741,7 +752,7 @@ def main():
                 effective_blocks[bt] = _resolve_uses_config(resolved, shared_blocks)
 
         for chip_name in family_info['chips']:
-            svd_path = _find_svd_file(svd_dir, chip_name)
+            svd_path, svd_relpath = _find_svd_file(svd_dir, chip_name)
             if svd_path is None:
                 print(f"  {chip_name}: SVD not found, skipping")
                 continue
@@ -762,7 +773,8 @@ def main():
                     all_blocks[block_name][family_name].append({
                         'data': block_data,
                         'chip': chip_name,
-                        'svd_version': svd_version
+                        'svd_version': svd_version,
+                        'svd_path': svd_relpath,
                     })
 
                 # Save lightweight chip summary for Pass 3
@@ -782,6 +794,7 @@ def main():
                             'version': chip_device.get('version'),
                             'cpu': chip_device.get('cpu'),
                         },
+                        'svd_path': svd_relpath,
                         'peripherals': periph_summary
                     }
 
@@ -957,7 +970,10 @@ def main():
                 }
 
             # Assemble chip model
-            source = f"{chip_name} SVD ({svd_tag})" if svd_tag else f"{chip_name} SVD"
+            source = _format_source(
+                summary.get('svd_path', ''),
+                device_meta.get('version', ''),
+                svd_tag)
             chip_model = {
                 'name': device_meta.get('name', chip_name),
                 'source': source,

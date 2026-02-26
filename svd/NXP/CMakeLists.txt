@@ -44,3 +44,18 @@ add_custom_target(audit-lpc-models
 foreach(_id IN LISTS _LPC_FAMILY_IDS)
     add_dependencies(audit-lpc-models audit-lpc${_id}-models)
 endforeach()
+
+# ============================================================================
+# Reference Manual Check (not built by default)
+# ============================================================================
+# Usage: cmake --build <build_dir> --target check-lpc-manuals
+# Compares local PDFs in docs/NXP/ against revisions tracked in LPC.yaml.
+# NXP blocks automated downloads, so there is no update/download target.
+set(_lpc_config "${CMAKE_CURRENT_SOURCE_DIR}/LPC.yaml")
+set(_nxp_docs "${CMAKE_CURRENT_SOURCE_DIR}/../../docs/NXP")
+add_custom_target(check-lpc-manuals
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/check_nxp_manuals.py
+            --config ${_lpc_config} --docs-dir ${_nxp_docs}
+    COMMENT "Checking NXP LPC reference manuals against tracked revisions..."
+)
