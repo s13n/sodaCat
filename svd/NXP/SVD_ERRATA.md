@@ -61,6 +61,35 @@ No SVD bugs found — all register and interrupt data matches the reference manu
 | I2C1, I2C2, I2C3 | Additional I2C bus controllers |
 | USART3, USART4 | USART3 shares IRQ 30 with PINT6; USART4 shares IRQ 31 with PINT7 |
 
+### LPC802 (MCUX_2.16.100)
+
+Reference: UM11045 LPC802 Rev. 1.5 (March 2021)
+
+Cross-checked against UM11045 NVIC table (Table 38) and all register chapter
+base addresses. All 17 peripheral base addresses match the reference manual.
+
+**Missing interrupts:**
+
+| IRQ | SVD name | RM name | Notes |
+|-----|----------|---------|-------|
+| 10 | (absent) | MRT_IRQ | MRT0 peripheral exists in SVD with no interrupt. Worked around via `chip_interrupts` (MRT at IRQ 10). |
+| 11 | (absent) | CMP_IRQ | Analog comparator interrupt; ACOMP peripheral exists in SVD. Worked around via `chip_interrupts` (COMPEDGE at IRQ 11). |
+| 12 | (absent) | WDT_IRQ | WWDT peripheral exists in SVD with no interrupt. Other LPC8 SVDs (LPC804, LPC84x, LPC86x) have this. Worked around via `chip_interrupts` (INTR at IRQ 12). |
+| 13 | (absent) | BOD_IRQ | BOD interrupt not assigned to SYSCON in SVD. Worked around via `chip_interrupts` (BOD at IRQ 13). |
+
+**Peripherals with variant block models (genuinely different register maps vs LPC86x):**
+
+| Peripheral | Reason for variant |
+|------------|-------------------|
+| SYSCON | Different clock/peripheral control registers (32 vs 53 registers; 9 unique to LPC802 including individual CLKSELs and FRG registers) |
+
+**Block model discrepancies (not yet addressed):**
+
+| Peripheral | Issue | Notes |
+|------------|-------|-------|
+| PMU | LPC802 has WUENAREG/WUSRCREG; base (LPC865) has DPDCTRL | Same issue affects LPC804. Different wake-up register architecture. |
+| MRT0 | LPC802 has MODCFG register; base (LPC865) does not | Same issue affects LPC804 and LPC82x. May be genuine silicon difference or SVD omission. |
+
 ### LPC804 (MCUX_2.16.100)
 
 Reference: UM11065 LPC804 Rev. 1.3 (July 2018)
