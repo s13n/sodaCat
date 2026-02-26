@@ -82,9 +82,13 @@ def load_family_config(family_code, config_file):
     for sf_key, sf_val in (config.get('chip_params') or {}).items():
         chip_params[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
+    chip_interrupts = {}
+    for sf_key, sf_val in (config.get('chip_interrupts') or {}).items():
+        chip_interrupts[sf_key] = {k: dict(v) for k, v in sf_val.items()}
+
     svd_tag = full_config.get('svd', {}).get('tag', '')
 
-    return families, blocks_config, chip_params, shared_blocks_config, svd_tag
+    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag
 
 
 # ==========================================================================
@@ -108,6 +112,26 @@ def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, para
                     if param_name in params:
                         return params[param_name]
     return default
+
+
+def _resolve_chip_interrupts(chip_interrupts, subfamily, chip, instance, block_type):
+    """Resolve manual interrupt overrides for an instance.
+
+    Same cascade as _resolve_chip_param. Returns {canonical_name: irq_number}.
+    """
+    for sf_key in (subfamily, '_all'):
+        sf = chip_interrupts.get(sf_key)
+        if not sf:
+            continue
+        chip_keys = [chip, '_all'] if sf_key != '_all' else ['_all']
+        for chip_key in chip_keys:
+            chip_section = sf.get(chip_key)
+            if not chip_section:
+                continue
+            for target_key in (instance, block_type):
+                if target_key and target_key in chip_section:
+                    return dict(chip_section[target_key])
+    return {}
 
 
 def _resolve_block_config(block_cfg, subfamily_name):
@@ -702,7 +726,7 @@ def main():
         sys.exit(1)
 
     config_file = Path(__file__).parent.parent / 'svd' / 'NXP' / 'LPC.yaml'
-    families, blocks_config, chip_params, shared_blocks, svd_tag = \
+    families, blocks_config, chip_params, chip_interrupts, shared_blocks, svd_tag = \
         load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
@@ -943,12 +967,27 @@ def main():
                         mapped_intrs.append({
                             'name': canonical, 'value': raw_intr['value']
                         })
-                        vec = raw_intr['value'] + interrupt_offset
-                        entry = f"{inst_name}.{canonical}"
-                        if entry not in interrupt_table[vec]:
-                            interrupt_table[vec].append(entry)
                     else:
                         unmatched_interrupts[block_type].add(raw_name)
+
+                # Apply chip_interrupts overrides/injections
+                intr_overrides = _resolve_chip_interrupts(
+                    chip_interrupts, subfamily_name, chip_name,
+                    inst_name, block_type)
+                if intr_overrides:
+                    existing = {i['name']: i for i in mapped_intrs}
+                    for canonical_name, irq_value in intr_overrides.items():
+                        existing[canonical_name] = {
+                            'name': canonical_name, 'value': irq_value}
+                    mapped_intrs = sorted(
+                        existing.values(), key=lambda i: i['value'])
+
+                # Build interrupt table from final mapped interrupts
+                for intr in mapped_intrs:
+                    vec = intr['value'] + interrupt_offset
+                    entry = f"{inst_name}.{intr['name']}"
+                    if entry not in interrupt_table[vec]:
+                        interrupt_table[vec].append(entry)
 
                 # Resolve parameters
                 params_list = []

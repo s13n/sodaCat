@@ -26,9 +26,14 @@ blocks source from LPC864 to work around LPC865 bugs.
 
 | IRQ | SVD name | RM name | Notes |
 |-----|----------|---------|-------|
-| 11 | (absent) | ACMP_IRQ | Analog comparator interrupt |
-| 22 | (absent) | GPIO_HS_IRQ0 | GPIO group interrupt 0 |
-| 23 | (absent) | GPIO_HS_IRQ1 | GPIO group interrupt 1 |
+| 11 | (absent) | ACMP_IRQ | Analog comparator interrupt; ACOMP peripheral exists in SVD. Worked around via `chip_interrupts` (COMPEDGE at IRQ 11). |
+
+**Suspected RM bugs (UM11607 NVIC table):**
+
+| IRQ | RM name | Notes |
+|-----|---------|-------|
+| 22 | GPIO_HS_IRQ0 | No GINT peripheral or registers exist in the LPC86x SVD or memory map. No LPC8xx chip has ever had GINT. The LPC54xxx (which does have GINT) uses IRQ 2–3. Likely copy-paste artifact from LPC54xxx documentation. |
+| 23 | GPIO_HS_IRQ1 | Same as above. These slots should be reserved. |
 
 ## LPC54xxx
 
