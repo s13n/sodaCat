@@ -4,7 +4,7 @@ shared_blocks:
     from: STM32L412.WWDG
     interrupts: {WWDG: INTR}
     params:
-      - {name: cfr_version, type: int, default: 1, description: 'CFR register layout: 1 = v1 (2-bit WDGTB at [8:7]), 2 = v2 (3-bit WDGTB at [13:11])'}
+      - {name: cfr_version, type: int, default: 1, max: 2, description: 'CFR register layout: 1 = v1 (2-bit WDGTB at [8:7]), 2 = v2 (3-bit WDGTB at [13:11])'}
     transforms:
       # Clone CFR -> CFR_V2: newer WWDG IP with 3-bit prescaler at bits [13:11]
       - type: cloneRegister
@@ -21,15 +21,15 @@ shared_blocks:
       TIM2: {name: INTR, description: Global interrupt}
     params:
       - {name: width32, type: bool, default: false, description: 32-bit counter width}
-      - {name: channels, type: int, default: 4, description: Number of capture/compare channels}
+      - {name: channels, type: int, default: 4, max: 4, description: Number of capture/compare channels}
       - {name: has_centerPWM, type: bool, default: true, description: Center-aligned PWM (CMS/DIR in CR1)}
-      - {name: encoder, type: int, default: 0, description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'}
+      - {name: encoder, type: int, default: 0, max: 3, description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'}
       - {name: has_xor_input, type: bool, default: true, description: TI1S XOR (Hall sensor)}
       - {name: has_etr, type: bool, default: true, description: External trigger input (ETF/ETPS/ECE/ETP)}
-      - {name: dma_burst, type: int, default: 1, description: 'DMA burst: 0=none 1=v1(0x48) 2=v2(0x3DC)'}
+      - {name: dma_burst, type: int, default: 1, max: 2, description: 'DMA burst: 0=none 1=v1(0x48) 2=v2(0x3DC)'}
       - {name: has_complementary, type: bool, default: false, description: Complementary output (BDTR/RCR)}
       - {name: has_dither, type: bool, default: false, description: Dithering (DITHEN in CR1)}
-      - {name: sms_preload, type: int, default: 0, description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'}
+      - {name: sms_preload, type: int, default: 0, max: 2, description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'}
       - {name: has_uifremap, type: bool, default: false, description: UIF remap (UIFREMAP in CR1)}
       - {name: has_extended_ocm, type: bool, default: false, description: Extended OC mode (OC1M_3 etc.)}
     transforms:
@@ -58,7 +58,7 @@ shared_blocks:
     interrupts:
       USART1: {name: INTR, description: Global interrupt}
     params:
-      - {name: synchronous, type: int, default: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous only, 2=sync+smartcard, 3=sync+smartcard+TCBGT'}
+      - {name: synchronous, type: int, default: 3, max: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous only, 2=sync+smartcard, 3=sync+smartcard+TCBGT'}
       - {name: has_fifo, type: bool, default: true, description: 'FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR; TXFECF in ICR). Also implies PRESC register and SPI slave fields (SLVEN, DIS_NSS, UDR, UDRCF).'}
       - {name: has_wakeup, type: bool, default: true, description: 'Wakeup from Stop mode interrupt flag selection (WUS/WUFIE in CR3; WUF in ISR; WUCF in ICR)'}
       - {name: has_autocr, type: bool, default: false, description: 'Autonomous mode (AUTOCR register at 0x30)'}
@@ -161,7 +161,7 @@ families:
         interrupts:
           ADC: INTR
         params:
-          - {name: ext_channels, type: int, default: 19, description: Number of external input channels}
+          - {name: ext_channels, type: int, default: 19, max: 19, description: Number of external input channels}
       AdvCtrlTimer:
         from: STM32C071.TIM1
         instances: [TIM1]
@@ -184,14 +184,14 @@ families:
           DMA1_Channel1: Channel1
           DMA1_Channel2_3: Channel2_3
         params:
-          - {name: channels, type: int, default: 5, description: Number of DMA channels}
+          - {name: channels, type: int, default: 5, max: 5, description: Number of DMA channels}
       DMAMUX:
         from: STM32C071.DMAMUX
         instances: [DMAMUX]
         interrupts:
           DMAMUX_DMA1_Channel4_5: INTR
         params:
-          - {name: channels, type: int, default: 5, description: Number of DMA request multiplexer channels}
+          - {name: channels, type: int, default: 5, max: 5, description: Number of DMA request multiplexer channels}
       EXTI:
         from: STM32C071.EXTI
         instances: [EXTI]
@@ -212,7 +212,7 @@ families:
         interrupts:
           FLASH: INTR
         params:
-          - {name: pages, type: int, description: Number of flash memory pages}
+          - {name: pages, type: int, max: 128, description: Number of flash memory pages}
       GPIO:
         from: STM32C011.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOF]
@@ -928,7 +928,7 @@ families:
         params:
           - {name: power_mode, type: string, description: 'Power mode capability: none (F405/407), lvds (low-voltage deepsleep), overdrive'}
           - {name: has_fmssr, type: bool, default: false, description: Flash Memory Stop / Flash Interface Stop while System Run}
-          - {name: wakeup_pins, type: int, default: 1, description: 'Number of WKUP pins (1, 2, or 3)'}
+          - {name: wakeup_pins, type: int, default: 1, max: 3, description: 'Number of WKUP pins (1, 2, or 3)'}
         transforms:
       # Fix EWUP naming to numbered convention (RM uses EWUP1 on multi-pin chips)
           - {type: renameFields, register: CSR, pattern: ^EWUP$, replacement: EWUP1}
@@ -1026,7 +1026,7 @@ families:
         interrupts:
           UART5: INTR
         params:
-          - {name: synchronous, type: int, default: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
+          - {name: synchronous, type: int, default: 2, max: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
       WWDG:
         uses: WWDG
         instances: [WWDG]
@@ -1248,7 +1248,7 @@ families:
           DMA1_Stream6: Stream6
           DMA1_Stream7: Stream7
         params:
-          - {name: channel_count, type: int, description: Number of DMA request channels per stream}
+          - {name: channel_count, type: int, max: 16, description: Number of DMA request channels per stream}
         transforms:
           - {type: patchFields, register: S0CR, fields: [{name: CHSEL, bitWidth: 4}]}
           - {type: patchFields, register: S1CR, fields: [{name: CHSEL, bitWidth: 4}]}
@@ -1902,7 +1902,7 @@ families:
         interrupts:
           FLASH: INTR
         params:
-          - {name: pages, type: int, description: Number of flash memory pages}
+          - {name: pages, type: int, max: 256, description: Number of flash memory pages}
           - {name: dual_bank, type: bool, default: false, description: Dual-bank flash organization supported}
           - {name: pb4_pupen, type: bool, default: false, description: PB4 pull-up enable bit present in PWR_PUCRB}
       GPIO:
@@ -2591,7 +2591,7 @@ families:
           DFSDM1_FLT2: FLT2
           DFSDM1_FLT3: FLT3
         params:
-          - {name: filters, type: int, default: 4, description: Number of digital filter units (4 or 8)}
+          - {name: filters, type: int, default: 4, max: 8, description: Number of digital filter units (4 or 8)}
           - {name: has_dlyr, type: bool, default: true, description: CHyDLYR delay register present}
         transforms:
           - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
@@ -2723,7 +2723,7 @@ families:
         interrupts:
           HSEM0: INTR
         params:
-          - {name: semaphores, type: int, default: 32, description: Number of hardware semaphores (16 or 32)}
+          - {name: semaphores, type: int, default: 32, max: 32, description: Number of hardware semaphores (16 or 32)}
         transforms:
       # MASTERID (RM0433): 4-bit at [11:8]; H743 SVD has 8-bit — narrow to 4
       # H745 SVD uses COREID (RM0399 name) at correct 4-bit width — no fix needed
@@ -2863,7 +2863,7 @@ families:
         interrupts:
           ECC_DIAG_IT: INTR
         params:
-          - {name: monitors, type: int, default: 5, description: Number of ECC monitoring units in this RAMECC instance}
+          - {name: monitors, type: int, default: 5, max: 5, description: Number of ECC monitoring units in this RAMECC instance}
         transforms:
       # All H7 SVDs: M2FECR/M3FECR/M4FECR at wrong offsets (RM says regular 0x20 stride)
       # All H7 SVDs: scattered access bugs on FAR/FDRH/FECR (RM says all read-only)
@@ -3661,7 +3661,7 @@ families:
         interrupts:
           UART4: INTR
         params:
-          - {name: synchronous, type: int, default: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
+          - {name: synchronous, type: int, default: 2, max: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
       USB:
         from: STM32L100.USB
         instances: [USB]

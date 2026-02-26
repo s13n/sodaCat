@@ -176,7 +176,10 @@ $postfix"""))
         params = ''
         for par in per.get('parameters', per.get('params', [])):
             desc = par.get('description', '')
-            if 'bits' in par:
+            if par.get('type') == 'int' and 'max' in par:
+                bits = par['max'].bit_length() or 1
+                params += self.parameterTemplate.substitute(par, bits=bits, description=desc)
+            elif 'bits' in par:
                 params += self.parameterTemplate.substitute(par, description=desc)
             else:
                 ptype = {'bool': 'bool', 'string': 'const char*'}.get(par.get('type', 'int'), 'uint32_t')
