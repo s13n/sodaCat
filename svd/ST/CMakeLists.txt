@@ -54,13 +54,34 @@ endforeach()
 set(_stm32_config "${CMAKE_CURRENT_SOURCE_DIR}/STM32.yaml")
 add_custom_target(check-stm32-svds
     COMMAND ${Python3_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/download_stm32_svds.py
-            ${CMAKE_CURRENT_SOURCE_DIR} ${_stm32_config} --dry-run
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/st_maintenance.py
+            svd --svd-dir ${CMAKE_CURRENT_SOURCE_DIR} --config ${_stm32_config}
     COMMENT "Checking ST website for SVD updates (no downloads)..."
 )
 add_custom_target(update-stm32-svds
     COMMAND ${Python3_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/download_stm32_svds.py
-            ${CMAKE_CURRENT_SOURCE_DIR} ${_stm32_config}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/st_maintenance.py
+            svd --svd-dir ${CMAKE_CURRENT_SOURCE_DIR} --config ${_stm32_config}
+            --download
     COMMENT "Downloading SVD updates from ST website..."
+)
+
+# ============================================================================
+# Reference Manual Check (not built by default)
+# ============================================================================
+# Usage: cmake --build <build_dir> --target check-stm32-manuals  (read-only check)
+#        cmake --build <build_dir> --target update-stm32-manuals  (download updates)
+set(_stm32_docs "${CMAKE_CURRENT_SOURCE_DIR}/../../docs/ST")
+add_custom_target(check-stm32-manuals
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/st_maintenance.py
+            manuals --config ${_stm32_config} --docs-dir ${_stm32_docs} --fetch
+    COMMENT "Checking ST website for reference manual updates (no downloads)..."
+)
+add_custom_target(update-stm32-manuals
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/st_maintenance.py
+            manuals --config ${_stm32_config} --docs-dir ${_stm32_docs}
+            --download --update-config
+    COMMENT "Downloading reference manual updates from ST website..."
 )

@@ -85,7 +85,7 @@ the corresponding transforms can be cleaned up. See `SVD_ERRATA.md`.
 | `check-stm32-svds` | Query st.com for version changes (read-only, no downloads) |
 | `update-stm32-svds` | Download updated archives and update `STM32.yaml` |
 
-These targets run `tools/download_stm32_svds.py`, which fetches ST's SVD
+These targets run `tools/st_maintenance.py svd`, which fetches ST's SVD
 metadata API, compares remote versions against the `svd.version` fields in
 `STM32.yaml`, and optionally downloads changed archives. On download, the
 `svd.version` and `svd.date` fields are updated in-place.

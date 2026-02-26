@@ -156,7 +156,7 @@ For each no-op reported by the audit:
 ## Reference
 
 - SVD archives and config: `svd/ST/` (see `svd/ST/README.md`)
-- Download script: `tools/download_stm32_svds.py`
+- SVD/manual maintenance: `tools/st_maintenance.py` (`svd` and `manuals` subcommands)
 - Generator with audit mode: `extractors/generate_stm32_models.py --audit`
 - SVD errata log: `svd/ST/SVD_ERRATA.md`
 - Transform types: documented in `CLAUDE.md` under "Transformation framework"
