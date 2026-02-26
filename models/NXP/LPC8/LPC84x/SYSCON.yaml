@@ -1,0 +1,2824 @@
+name: SYSCON
+description: LPC84x System configuration (SYSCON)
+source: LPC845/LPC845.xml v1.6 (MCUX_2.16.100)
+registers:
+  - name: SYSMEMREMAP
+    description: System Remap register
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 2
+    resetMask: 3
+    fields:
+      - name: MAP
+        description: System memory remap. Value 0x3 is reserved.
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Boot Loader Mode. Interrupt vectors are re-mapped to Boot ROM.
+            value: 0
+          - name: '01'
+            description: User RAM Mode. Interrupt vectors are re-mapped to Static RAM.
+            value: 1
+          - name: '10'
+            description: User Flash Mode. Interrupt vectors are not re-mapped and reside in Flash.
+            value: 2
+  - name: SYSPLLCTRL
+    description: PLL control
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 127
+    fields:
+      - name: MSEL
+        description: 'Feedback divider value. The division value M is the programmed MSEL value + 1. 00000: Division ratio M = 1 to 11111: Division ratio M = 32'
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: PSEL
+        description: Post divider ratio P. The division ratio is 2 x P.
+        bitOffset: 5
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: P = 1
+            value: 0
+          - name: '01'
+            description: P = 2
+            value: 1
+          - name: '10'
+            description: P = 4
+            value: 2
+          - name: '11'
+            description: P = 8
+            value: 3
+  - name: SYSPLLSTAT
+    description: PLL status
+    addressOffset: 12
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: LOCK
+        description: PLL0 lock indicator
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+  - name: SYSOSCCTRL
+    description: system oscillator control
+    addressOffset: 32
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BYPASS
+        description: oscillator (Xtal) Test Mode input (Active High)
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: FREQRANGE
+        description: "oscillator low / high transconductance selection input (Active High) 1-20MHz '0' : 15-50MHz '1'"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: WDTOSCCTRL
+    description: Watchdog oscillator control
+    addressOffset: 36
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIVSEL
+        description: 'Select divider for Fclkana. wdt_osc_clk = Fclkana/ (2 x (1 + DIVSEL)) 00000: 2 x (1 + DIVSEL) = 2 00001: 2 x (1 + DIVSEL) = 4 to 11111: 2 x (1 + DIVSEL) = 64'
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: FREQSEL
+        description: Frequency select. Selects the frequency of the oscillator. 0x00 = invalid setting when watchdog oscillator is running 0x1 = 0.6 MHz 0x2 = 1.05 MHz 0x3 = 1.4 MHz 0x4 = 1.75 MHz 0x5 = 2.1 MHz 0x6 = 2.4 MHz 0x7 = 2.7 MHz 0x8 = 3.0 MHz 0x9 = 3.25 MHz 0xA = 3.5 MHz 0xB = 3.75 MHz 0xC = 4.0 MHz 0xD = 4.2 MHz 0xE = 4.4 MHz 0xF = 4.6 MHz
+        bitOffset: 5
+        bitWidth: 4
+        access: read-write
+  - name: FROOSCCTRL
+    description: FRO oscillator control
+    addressOffset: 40
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FRO_DIRECT
+        description: fro direct clock select
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: fro clock is divider by 2 or 16,depend on FAIM slow boot value
+            value: 0
+          - name: '1'
+            description: fro clock is direct from FRO oscillator
+            value: 1
+  - name: FRODIRECTCLKUEN
+    description: FRO direct clock source update enable register
+    addressOffset: 48
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: ENA
+        description: Enable fro clock source update
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: no change
+            value: 0
+          - name: '1'
+            description: update clock source
+            value: 1
+  - name: SYSRSTSTAT
+    description: System reset status register
+    addressOffset: 56
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 31
+    fields:
+      - name: POR
+        description: POR reset status
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: No POR detected
+            value: 0
+          - name: '1'
+            description: POR detected. Writing a one clears this reset.
+            value: 1
+      - name: EXTRST
+        description: Status of the external RESET pin. External reset status.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: No reset event detected.
+            value: 0
+          - name: '1'
+            description: Reset detected. Writing a one clears this reset.
+            value: 1
+      - name: WDT
+        description: Status of the Watchdog reset
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: No WDT reset detected
+            value: 0
+          - name: '1'
+            description: WDT reset detected. Writing a one clears this reset.
+            value: 1
+      - name: BOD
+        description: Status of the Brown-out detect reset
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: No BOD reset detected
+            value: 0
+          - name: '1'
+            description: BOD reset detected. Writing a one clears this reset.
+            value: 1
+      - name: SYSRST
+        description: Status of the software system reset
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: No System reset detected
+            value: 0
+          - name: '1'
+            description: System reset detected. Writing a one clears this reset.
+            value: 1
+  - name: SYSPLLCLKSEL
+    description: System PLL clock source select register
+    addressOffset: 64
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: SEL
+        description: System PLL clock source
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: FRO
+            value: 0
+          - name: '01'
+            description: External clock
+            value: 1
+          - name: '10'
+            description: Watchdog oscillator
+            value: 2
+          - name: '11'
+            description: FRO DIV
+            value: 3
+  - name: SYSPLLCLKUEN
+    description: System PLL clock source update enable register
+    addressOffset: 68
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: ENA
+        description: Enable system PLL clock source update
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: no change
+            value: 0
+          - name: '1'
+            description: update clock source
+            value: 1
+  - name: MAINCLKPLLSEL
+    description: Main clock source select register
+    addressOffset: 72
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: SEL
+        description: System PLL clock source
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: main_clk_pre_pll
+            value: 0
+          - name: '01'
+            description: sys pll
+            value: 1
+          - name: '10'
+            description: none
+            value: 2
+          - name: '11'
+            description: none
+            value: 3
+  - name: MAINCLKPLLUEN
+    description: Main clock source update enable register
+    addressOffset: 76
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: ENA
+        description: Enable main clock source update
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: no change
+            value: 0
+          - name: '1'
+            description: update clock source
+            value: 1
+  - name: MAINCLKSEL
+    description: Main clock source select register
+    addressOffset: 80
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: SEL
+        description: System PLL clock source
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: FRO
+            value: 0
+          - name: '01'
+            description: External clock
+            value: 1
+          - name: '10'
+            description: Watchdog oscillator
+            value: 2
+          - name: '11'
+            description: FRO_DIV
+            value: 3
+  - name: MAINCLKUEN
+    description: Main clock source update enable register
+    addressOffset: 84
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: ENA
+        description: Enable main clock source update
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: no change
+            value: 0
+          - name: '1'
+            description: update clock source
+            value: 1
+  - name: SYSAHBCLKDIV
+    description: System clock divider register
+    addressOffset: 88
+    size: 32
+    access: read-write
+    resetValue: 1
+    resetMask: 255
+    fields:
+      - name: DIV
+        description: 'System AHB clock divider values 0: System clock disabled. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: CAPTCLKSEL
+    description: CAPT clock source select register
+    addressOffset: 96
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Clock source for CAPT clock
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: sys pll
+            value: 2
+          - name: '011'
+            description: FRO_DIV
+            value: 3
+          - name: '100'
+            description: Watchdog oscillator
+            value: 4
+          - name: '101'
+            description: None
+            value: 5
+          - name: '110'
+            description: None
+            value: 6
+          - name: '111'
+            description: None
+            value: 7
+  - name: ADCCLKSEL
+    description: ADC clock source select register
+    addressOffset: 100
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: SEL
+        description: Clock source for ADC clock
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: FRO
+            value: 0
+          - name: '01'
+            description: sys pll
+            value: 1
+          - name: '10'
+            description: none
+            value: 2
+          - name: '11'
+            description: none
+            value: 3
+  - name: ADCCLKDIV
+    description: ADC clock divider register
+    addressOffset: 104
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: DIV
+        description: 'ADC clock divider values 0: ADC clock disabled. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: SCTCLKSEL
+    description: SCT clock source select register
+    addressOffset: 108
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: SEL
+        description: Clock source for SCT clock
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: FRO
+            value: 0
+          - name: '01'
+            description: main clock
+            value: 1
+          - name: '10'
+            description: sys pll
+            value: 2
+          - name: '11'
+            description: none
+            value: 3
+  - name: SCTCLKDIV
+    description: SCT clock divider register
+    addressOffset: 112
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: DIV
+        description: 'SCT clock divider values 0: SCT clock disabled. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EXTCLKSEL
+    description: external clock source select register
+    addressOffset: 116
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 1
+    fields:
+      - name: SEL
+        description: Clock source for external clock
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: System oscillator
+            value: 0
+          - name: '1'
+            description: Clk_in
+            value: 1
+  - name: SYSAHBCLKCTRL0
+    description: System clock group 0 control register
+    addressOffset: 128
+    size: 32
+    access: read-write
+    resetValue: 23
+    resetMask: 4294967295
+    fields:
+      - name: SYS
+        description: Enables the clock for the AHB, the APB bridge, the Cortex-M0+ core clocks, SYSCON, and the PMU. This bit is read only and always reads as 1.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: ROM
+        description: Enables clock for ROM.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: RAM0_1
+        description: Enables clock for SRAM0 and SRAM1.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: FLASH
+        description: Enables clock for flash.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: I2C0
+        description: Enables clock for I2C0.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: GPIO0
+        description: Enables clock for GPIO0 port registers.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: SWM
+        description: Enables clock for switch matrix.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: SCT
+        description: Enables clock for state configurable timer SCTimer/PWM.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: WKT
+        description: Enables clock for self-wake-up timer.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: MRT
+        description: Enables clock for multi-rate timer.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: SPI0
+        description: Enables clock for SPI0.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: SPI1
+        description: Enables clock for SPI1.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: CRC
+        description: Enables clock for CRC.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: UART0
+        description: Enables clock for UART0.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: UART1
+        description: Enables clock for UART1.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: UART2
+        description: Enables clock for UART2.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: WWDT
+        description: Enables clock for WWDT.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: IOCON
+        description: Enables clock for IOCON.
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: ACMP
+        description: Enables clock for analog comparator.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: GPIO1
+        description: Enables clock for GPIO1 port registers.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: I2C1
+        description: Enables clock for I2C1.
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: I2C2
+        description: Enables clock for I2C2.
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: I2C3
+        description: Enables clock for I2C3.
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: ADC
+        description: Enables clock for ADC.
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: CTIMER
+        description: Enables clock for CTIMER.
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: MTB
+        description: Enables clock to micro-trace buffer control registers. Turn on this clock when using the micro-trace buffer for debug purposes.
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: DAC0
+        description: Enables clock for DAC0.
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: GPIO_INT
+        description: Enable clock for GPIO pin interrupt registers
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: DMA
+        description: Enables clock for DMA.
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: UART3
+        description: Enables clock for UART3.
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: UART4
+        description: Enables clock for UART4.
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+  - name: SYSAHBCLKCTRL1
+    description: System clock group 1 control register
+    addressOffset: 132
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: CAPT
+        description: Enables clock for CAPT.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+      - name: DAC1
+        description: Enables clock for DAC1.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: disable
+            value: 0
+          - name: '1'
+            description: enable
+            value: 1
+  - name: PRESETCTRL0
+    description: Peripheral reset group 0 control register
+    addressOffset: 136
+    size: 32
+    access: read-write
+    resetValue: 4227727344
+    resetMask: 4227727344
+    fields:
+      - name: FLASH_RST_N
+        description: flash controller reset control
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the flash controller reset.
+            value: 0
+          - name: '1'
+            description: Clear the flash controller reset.
+            value: 1
+      - name: I2C0_RST_N
+        description: I2C0 reset control
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the I2C0 reset.
+            value: 0
+          - name: '1'
+            description: Clear the I2C0 reset.
+            value: 1
+      - name: GPIO0_RST_N
+        description: GPIO0 reset control
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the GPIO0 reset.
+            value: 0
+          - name: '1'
+            description: Clear the GPIO0 reset.
+            value: 1
+      - name: SWM_RST_N
+        description: SWM reset control
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the SWM reset.
+            value: 0
+          - name: '1'
+            description: Clear the SWM reset.
+            value: 1
+      - name: SCT_RST_N
+        description: SCT reset control
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the SCT reset.
+            value: 0
+          - name: '1'
+            description: Clear the SCT reset.
+            value: 1
+      - name: WKT_RST_N
+        description: Self-wake-up timer (WKT) reset control
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the WKT reset.
+            value: 0
+          - name: '1'
+            description: Clear the WKT reset.
+            value: 1
+      - name: MRT_RST_N
+        description: Multi-rate timer (MRT) reset control
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the MRT reset.
+            value: 0
+          - name: '1'
+            description: Clear the MRT reset.
+            value: 1
+      - name: SPI0_RST_N
+        description: SPI0 reset control
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the SPI0 reset.
+            value: 0
+          - name: '1'
+            description: Clear the SPI0 reset.
+            value: 1
+      - name: SPI1_RST_N
+        description: SPI1 reset control
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the SPI1 reset.
+            value: 0
+          - name: '1'
+            description: Clear the SPI1 reset.
+            value: 1
+      - name: CRC_RST_N
+        description: CRC engine reset control
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the CRC reset.
+            value: 0
+          - name: '1'
+            description: Clear the CRC reset.
+            value: 1
+      - name: UART0_RST_N
+        description: UART0 reset control
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the UART0 reset.
+            value: 0
+          - name: '1'
+            description: Clear the UART0 reset.
+            value: 1
+      - name: UART1_RST_N
+        description: UART1 reset control
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the UART1 reset.
+            value: 0
+          - name: '1'
+            description: Clear the UART1 reset.
+            value: 1
+      - name: UART2_RST_N
+        description: UART2 reset control
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the UART2 reset.
+            value: 0
+          - name: '1'
+            description: Clear the UART2 reset.
+            value: 1
+      - name: IOCON_RST_N
+        description: IOCON reset control
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the IOCON reset.
+            value: 0
+          - name: '1'
+            description: Clear the IOCON reset.
+            value: 1
+      - name: ACMP_RST_N
+        description: Analog comparator reset control
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the analog comparator reset.
+            value: 0
+          - name: '1'
+            description: Clear the analog comparator reset.
+            value: 1
+      - name: GPIO1_RST_N
+        description: GPIO1 reset control
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the GPIO1 reset.
+            value: 0
+          - name: '1'
+            description: Clear the GPIO1 reset.
+            value: 1
+      - name: I2C1_RST_N
+        description: I2C1 reset control
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the I2C1 reset.
+            value: 0
+          - name: '1'
+            description: Clear the I2C1 reset.
+            value: 1
+      - name: I2C2_RST_N
+        description: I2C2 reset control
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the I2C2 reset.
+            value: 0
+          - name: '1'
+            description: Clear the I2C2 reset.
+            value: 1
+      - name: I2C3_RST_N
+        description: I2C3 reset control
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the I2C3 reset.
+            value: 0
+          - name: '1'
+            description: Clear the I2C3 reset.
+            value: 1
+      - name: ADC_RST_N
+        description: ADC reset control
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the ADC reset.
+            value: 0
+          - name: '1'
+            description: Clear the ADC reset.
+            value: 1
+      - name: CTIMER_RST_N
+        description: CTIMER reset control
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the CTIMER reset.
+            value: 0
+          - name: '1'
+            description: Clear the CTIMER reset.
+            value: 1
+      - name: DAC0_RST_N
+        description: DAC0 reset control
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the DAC0 reset.
+            value: 0
+          - name: '1'
+            description: Clear the DAC0 reset.
+            value: 1
+      - name: GPIOINT_RST_N
+        description: GPIOINT reset control
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the GPIOINT reset.
+            value: 0
+          - name: '1'
+            description: Clear the GPIOINT reset.
+            value: 1
+      - name: DMA_RST_N
+        description: DMA reset control
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the DMA reset.
+            value: 0
+          - name: '1'
+            description: Clear the DMA reset.
+            value: 1
+      - name: UART3_RST_N
+        description: UART3 reset control
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the UART3 reset.
+            value: 0
+          - name: '1'
+            description: Clear the UART3 reset.
+            value: 1
+      - name: UART4_RST_N
+        description: UART4 reset control
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the UART4 reset.
+            value: 0
+          - name: '1'
+            description: Clear the UART4 reset.
+            value: 1
+  - name: PRESETCTRL1
+    description: Peripheral reset group 1 control register
+    addressOffset: 140
+    size: 32
+    access: read-write
+    resetValue: 31
+    resetMask: 31
+    fields:
+      - name: CAPT_RST_N
+        description: Capacitive touch reset control
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the capacitive touch reset.
+            value: 0
+          - name: '1'
+            description: Clear the capacitive touch reset.
+            value: 1
+      - name: DAC1_RST_N
+        description: DAC1 reset control
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the DAC1 reset.
+            value: 0
+          - name: '1'
+            description: Clear the DAC1 reset.
+            value: 1
+      - name: FRG0_RST_N
+        description: Fractional baud rate generator 0 reset control
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the FRG0 reset.
+            value: 0
+          - name: '1'
+            description: Clear the FRG0 reset.
+            value: 1
+      - name: FRG1_RST_N
+        description: Fractional baud rate generator 1 reset control
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Assert the FRG1 reset.
+            value: 0
+          - name: '1'
+            description: Clear the FRG1 reset.
+            value: 1
+  - name: FCLK0SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 144
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK1SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 148
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK2SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 152
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK3SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 156
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK4SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 160
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK5SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 164
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK6SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 168
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK7SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 172
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK8SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 176
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK9SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 180
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FCLK10SEL
+    description: peripheral clock source select register. FCLK0SEL~FCLK4SEL are for UART0~UART4 clock source select register. FCLK5SEL~FCLK8SEL are for I2C0~I2C3 clock source select register. FCLK9SEL~FCLK10SEL are for SPI0~SPI1 clock source select register.
+    addressOffset: 184
+    size: 32
+    access: read-write
+    resetValue: 7
+    resetMask: 7
+    fields:
+      - name: SEL
+        description: Peripheral clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: Frg0clk
+            value: 2
+          - name: '011'
+            description: Frg1clk
+            value: 3
+          - name: '100'
+            description: FRO_DIV
+            value: 4
+          - name: '101'
+            description: none
+            value: 5
+          - name: '110'
+            description: none
+            value: 6
+          - name: '111'
+            description: none
+            value: 7
+  - name: FRG0DIV
+    description: fractional generator N divider value register
+    addressOffset: 208
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: DIV
+        description: Denominator of the fractional divider. DIV is equal to the programmed value +1. Always set to 0xFF to use with the fractional baud rate generator.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: FRG0MULT
+    description: fractional generator N multiplier value register
+    addressOffset: 212
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: MULT
+        description: Numerator of the fractional divider. MULT is equal to the programmed value.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: FRG0CLKSEL
+    description: FRG N clock source select register
+    addressOffset: 216
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: SEL
+        description: Clock source for frgN_src clock
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: FRO
+            value: 0
+          - name: '01'
+            description: main clock
+            value: 1
+          - name: '10'
+            description: sys pll
+            value: 2
+          - name: '11'
+            description: None
+            value: 3
+  - name: FRG1DIV
+    description: fractional generator N divider value register
+    addressOffset: 224
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: DIV
+        description: Denominator of the fractional divider. DIV is equal to the programmed value +1. Always set to 0xFF to use with the fractional baud rate generator.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: FRG1MULT
+    description: fractional generator N multiplier value register
+    addressOffset: 228
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: MULT
+        description: Numerator of the fractional divider. MULT is equal to the programmed value.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: FRG1CLKSEL
+    description: FRG N clock source select register
+    addressOffset: 232
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: SEL
+        description: Clock source for frgN_src clock
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: FRO
+            value: 0
+          - name: '01'
+            description: main clock
+            value: 1
+          - name: '10'
+            description: sys pll
+            value: 2
+          - name: '11'
+            description: None
+            value: 3
+  - name: CLKOUTSEL
+    description: CLKOUT clock source select register
+    addressOffset: 240
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SEL
+        description: CLKOUT clock source
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: FRO
+            value: 0
+          - name: '001'
+            description: main clock
+            value: 1
+          - name: '010'
+            description: sys pll
+            value: 2
+          - name: '011'
+            description: external clock
+            value: 3
+          - name: '100'
+            description: Watchdog oscillator
+            value: 4
+          - name: '101'
+            description: None
+            value: 5
+          - name: '110'
+            description: None
+            value: 6
+          - name: '111'
+            description: None
+            value: 7
+  - name: CLKOUTDIV
+    description: CLKOUT clock divider registers
+    addressOffset: 244
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: DIV
+        description: 'CLKOUT clock divider values 0: Disable CLKOUT clock divider. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EXTTRACECMD
+    description: External trace buffer command register
+    addressOffset: 252
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3
+    fields:
+      - name: START
+        description: Trace start command. Writing a one to this bit sets the TSTART signal to the MTB to HIGH and starts tracing if the TSTARTEN bit in the MTB master register is set to one as well.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: STOP
+        description: Trace stop command. Writing a one to this bit sets the TSTOP signal in the MTB to HIGH and stops tracing if the TSTOPEN bit in the MTB master register is set to one as well.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: PIOPORCAP0
+    description: POR captured PIO N status register(PIO0 has 32 PIOs, PIO1 has 22 PIOs)
+    addressOffset: 256
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: PIOSTAT
+        description: State of PION_31 through PION_0 at power-on reset
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: PIOPORCAP1
+    description: POR captured PIO N status register(PIO0 has 32 PIOs, PIO1 has 22 PIOs)
+    addressOffset: 260
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: PIOSTAT
+        description: State of PION_31 through PION_0 at power-on reset
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: IOCONCLKDIV6
+    description: Peripheral clock 6 to the IOCON block for programmable glitch filter
+    addressOffset: 308
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIV
+        description: 'IOCON glitch filter clock divider values 0: Disable IOCONFILTR_PCLK. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: IOCONCLKDIV5
+    description: Peripheral clock 6 to the IOCON block for programmable glitch filter
+    addressOffset: 312
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIV
+        description: 'IOCON glitch filter clock divider values 0: Disable IOCONFILTR_PCLK. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: IOCONCLKDIV4
+    description: Peripheral clock 4 to the IOCON block for programmable glitch filter
+    addressOffset: 316
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIV
+        description: 'IOCON glitch filter clock divider values 0: Disable IOCONFILTR_PCLK. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: IOCONCLKDIV3
+    description: Peripheral clock 3 to the IOCON block for programmable glitch filter
+    addressOffset: 320
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIV
+        description: 'IOCON glitch filter clock divider values 0: Disable IOCONFILTR_PCLK. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: IOCONCLKDIV2
+    description: Peripheral clock 2 to the IOCON block for programmable glitch filter
+    addressOffset: 324
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIV
+        description: 'IOCON glitch filter clock divider values 0: Disable IOCONFILTR_PCLK. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: IOCONCLKDIV1
+    description: Peripheral clock 1 to the IOCON block for programmable glitch filter
+    addressOffset: 328
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIV
+        description: 'IOCON glitch filter clock divider values 0: Disable IOCONFILTR_PCLK. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: IOCONCLKDIV0
+    description: Peripheral clock 0 to the IOCON block for programmable glitch filter
+    addressOffset: 332
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DIV
+        description: 'IOCON glitch filter clock divider values 0: Disable IOCONFILTR_PCLK. 1: Divide by 1. to 255: Divide by 255.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: BODCTRL
+    description: BOD control register
+    addressOffset: 336
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 31
+    fields:
+      - name: BODRSTLEV
+        description: BOD reset level
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '01'
+            description: Level 1
+            value: 1
+          - name: '10'
+            description: Level 2
+            value: 2
+          - name: '11'
+            description: Level 3
+            value: 3
+      - name: BODINTVAL
+        description: BOD interrupt level
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '01'
+            description: Level 1
+            value: 1
+          - name: '10'
+            description: Level 2
+            value: 2
+          - name: '11'
+            description: Level 3
+            value: 3
+      - name: BODRSTENA
+        description: BOD reset enable
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disable reset function.
+            value: 0
+          - name: '1'
+            description: Enable reset function.
+            value: 1
+  - name: SYSTCKCAL
+    description: System tick timer calibration register
+    addressOffset: 340
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 67108863
+    fields:
+      - name: CAL
+        description: System tick timer calibration value.
+        bitOffset: 0
+        bitWidth: 26
+        access: read-write
+  - name: IRQLATENCY
+    description: IRQ latency register
+    addressOffset: 368
+    size: 32
+    access: read-write
+    resetValue: 16
+    resetMask: 255
+    fields:
+      - name: LATENCY
+        description: 8-bit latency value.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: NMISRC
+    description: NMI source selection register
+    addressOffset: 372
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 2147483679
+    fields:
+      - name: IRQN
+        description: The IRQ number of the interrupt that acts as the Non-Maskable Interrupt (NMI) if bit 31 is 1
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: NMIEN
+        description: Write a 1 to this bit to enable the Non-Maskable Interrupt (NMI) source selected by bits 4:0.
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: PINTSEL0
+    description: Pin interrupt select registers N
+    addressOffset: 376
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: INTPIN
+        description: Pin number select for pin interrupt or pattern match engine input. (PIO0_0 to PIO0_31correspond to numbers 0 to 31 and PIO1_0 to PIO1_31 correspond to numbers 32 to 63).
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: PINTSEL1
+    description: Pin interrupt select registers N
+    addressOffset: 380
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: INTPIN
+        description: Pin number select for pin interrupt or pattern match engine input. (PIO0_0 to PIO0_31correspond to numbers 0 to 31 and PIO1_0 to PIO1_31 correspond to numbers 32 to 63).
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: PINTSEL2
+    description: Pin interrupt select registers N
+    addressOffset: 384
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: INTPIN
+        description: Pin number select for pin interrupt or pattern match engine input. (PIO0_0 to PIO0_31correspond to numbers 0 to 31 and PIO1_0 to PIO1_31 correspond to numbers 32 to 63).
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: PINTSEL3
+    description: Pin interrupt select registers N
+    addressOffset: 388
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: INTPIN
+        description: Pin number select for pin interrupt or pattern match engine input. (PIO0_0 to PIO0_31correspond to numbers 0 to 31 and PIO1_0 to PIO1_31 correspond to numbers 32 to 63).
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: PINTSEL4
+    description: Pin interrupt select registers N
+    addressOffset: 392
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: INTPIN
+        description: Pin number select for pin interrupt or pattern match engine input. (PIO0_0 to PIO0_31correspond to numbers 0 to 31 and PIO1_0 to PIO1_31 correspond to numbers 32 to 63).
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: PINTSEL5
+    description: Pin interrupt select registers N
+    addressOffset: 396
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: INTPIN
+        description: Pin number select for pin interrupt or pattern match engine input. (PIO0_0 to PIO0_31correspond to numbers 0 to 31 and PIO1_0 to PIO1_31 correspond to numbers 32 to 63).
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: PINTSEL6
+    description: Pin interrupt select registers N
+    addressOffset: 400
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: INTPIN
+        description: Pin number select for pin interrupt or pattern match engine input. (PIO0_0 to PIO0_31correspond to numbers 0 to 31 and PIO1_0 to PIO1_31 correspond to numbers 32 to 63).
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: PINTSEL7
+    description: Pin interrupt select registers N
+    addressOffset: 404
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 63
+    fields:
+      - name: INTPIN
+        description: Pin number select for pin interrupt or pattern match engine input. (PIO0_0 to PIO0_31correspond to numbers 0 to 31 and PIO1_0 to PIO1_31 correspond to numbers 32 to 63).
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: STARTERP0
+    description: Start logic 0 pin wake-up enable register 0
+    addressOffset: 516
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: PINT0
+        description: GPIO pin interrupt 0 wake-up
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: PINT1
+        description: GPIO pin interrupt 1 wake-up
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: PINT2
+        description: GPIO pin interrupt 2 wake-up
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: PINT3
+        description: GPIO pin interrupt 3 wake-up
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: PINT4
+        description: GPIO pin interrupt 4 wake-up
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: PINT5
+        description: GPIO pin interrupt 5 wake-up
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: PINT6
+        description: GPIO pin interrupt 6 wake-up
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: PINT7
+        description: GPIO pin interrupt 7 wake-up
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+  - name: STARTERP1
+    description: Start logic 0 pin wake-up enable register 1
+    addressOffset: 532
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 255
+    fields:
+      - name: SPI0
+        description: SPI0 interrupt wake-up
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: SPI1
+        description: SPI1 interrupt wake-up
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: USART0
+        description: USART0 interrupt wake-up. Configure USART in synchronous slave mode.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: USART1
+        description: USART1 interrupt wake-up. Configure USART in synchronous slave mode.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: USART2
+        description: USART2 interrupt wake-up. Configure USART in synchronous slave mode.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: I2C1
+        description: I2C1 interrupt wake-up.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: I2C0
+        description: I2C0 interrupt wake-up.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: Cap_Touch
+        description: Cap Touch interrupt wake-up.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: WWDT
+        description: WWDT interrupt wake-up
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: BOD
+        description: BOD interrupt wake-up
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: WKT
+        description: Self-wake-up timer interrupt wake-up
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: I2C2
+        description: I2C2 interrupt wake-up
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: I2C3
+        description: I2C3 interrupt wake-up
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: UART3
+        description: UART3 interrupt wake-up
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: UART4
+        description: UART4 interrupt wake-up
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+  - name: PDSLEEPCFG
+    description: Deep-sleep configuration register
+    addressOffset: 560
+    size: 32
+    access: read-write
+    resetValue: 65535
+    resetMask: 65535
+    fields:
+      - name: BOD_PD
+        description: BOD power-down control for Deep-sleep and Power-down mode
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: WDTOSC_PD
+        description: Watchdog oscillator power-down control for Deep-sleep and Power-down mode. Changing this bit to powered-down has no effect when the LOCK bit in the WWDT MOD register is set. In this case, the watchdog oscillator is always running.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+  - name: PDAWAKECFG
+    description: Wake-up configuration register
+    addressOffset: 564
+    size: 32
+    access: read-write
+    resetValue: 60920
+    resetMask: 65535
+    fields:
+      - name: FROOUT_PD
+        description: FRO oscillator output wake-up configuration
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: FRO_PD
+        description: FRO oscillator power-down wake-up configuration
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: FLASH_PD
+        description: Flash wake-up configuration
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: BOD_PD
+        description: BOD wake-up configuration
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: ADC_PD
+        description: ADC wake-up configuration
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: SYSOSC_PD
+        description: Crystal oscillator wake-up configuration
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: WDTOSC_PD
+        description: Watchdog oscillator wake-up configuration. Changing this bit to powered-down has no effect when the LOCK bit in the WWDT MOD register is set. In this case, the watchdog oscillator is always running
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: SYSPLL_PD
+        description: System PLL wake-up configuration
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: VREF2_PD
+        description: VREF2 wake-up configuration
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: DAC0
+        description: DAC0 wake-up configuration
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: DAC1
+        description: DAC1 wake-up configuration
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: ACMP
+        description: Analog comparator wake-up configuration
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+  - name: PDRUNCFG
+    description: Power configuration register
+    addressOffset: 568
+    size: 32
+    access: read-write
+    resetValue: 60920
+    resetMask: 4294967295
+    fields:
+      - name: FROOUT_PD
+        description: FRO oscillator output wake-up configuration
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: FRO_PD
+        description: FRO oscillator power-down wake-up configuration
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: FLASH_PD
+        description: Flash wake-up configuration
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: BOD_PD
+        description: BOD wake-up configuration
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: ADC_PD
+        description: ADC wake-up configuration
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: SYSOSC_PD
+        description: Crystal oscillator wake-up configuration
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: powered
+            value: 0
+          - name: '1'
+            description: powered down
+            value: 1
+      - name: WDTOSC_PD
+        description: Watchdog oscillator wake-up configuration. Changing this bit to powered-down has no effect when the LOCK bit in the WWDT MOD register is set. In this case, the watchdog oscillator is always running
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: SYSPLL_PD
+        description: System PLL wake-up configuration
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: DAC0
+        description: DAC0 wake-up configuration
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: DAC1
+        description: DAC1 wake-up configuration
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+      - name: ACMP
+        description: Analog comparator wake-up configuration
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Disabled
+            value: 0
+          - name: '1'
+            description: Enabled
+            value: 1
+  - name: DEVICE_ID
+    description: Part ID register
+    addressOffset: 1016
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DEVICEID
+        description: Part ID
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+addressBlocks:
+  - offset: 0
+    size: 1020
+    usage: registers
+interrupts:
+  - name: BOD

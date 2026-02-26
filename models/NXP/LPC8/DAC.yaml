@@ -1,0 +1,105 @@
+name: DAC
+description: LPC84x 10-bit DAC controller (DAC)
+groupName: DAC
+source: LPC845/LPC845.xml v1.6 (MCUX_2.16.100)
+registers:
+  - name: CR
+    description: D/A Converter Register. This register contains the digital value to be converted to analog and a power control bit.
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 131008
+    fields:
+      - name: VALUE
+        description: After the selected settling time after this field is written with a new VALUE, the voltage on the DAC_OUT pin (with respect to VSSA) is VALUE (VREFP - VREFN)/1024 + VREFN.
+        bitOffset: 6
+        bitWidth: 10
+        access: read-write
+      - name: BIAS
+        description: The settling time of the DAC
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: The settling time of the DAC is 1 us max, and the maximum current is 700 uA. This allows a maximum update rate of 1 MHz.
+            value: 0
+          - name: '1'
+            description: The settling time of the DAC is 2.5 us and the maximum current is 350 uA. This allows a maximum update rate of 400 kHz.
+            value: 1
+  - name: CTRL
+    description: Control register. This register controls DMA and timer operation.
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 15
+    fields:
+      - name: INT_DMA_REQ
+        description: DMA request
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: This bit is cleared on any write to the DACR register.
+            value: 0
+          - name: '1'
+            description: This bit is set by hardware when the timer times out.
+            value: 1
+      - name: DBLBUF_ENA
+        description: dacr double buffer
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: DACR double-buffering is disabled.
+            value: 0
+          - name: '1'
+            description: When this bit and the CNT_ENA bit are both set, the double-buffering feature in the DACR register will be enabled. Writes to the DACR register are written to a pre-buffer and then transferred to the DACR on the next time-out of the counter.
+            value: 1
+      - name: CNT_ENA
+        description: time-out counter operation
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Time-out counter operation is disabled.
+            value: 0
+          - name: '1'
+            description: Time-out counter operation is enabled.
+            value: 1
+      - name: DMA_ENA
+        description: DMA access
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: DMA access is disabled.
+            value: 0
+          - name: '1'
+            description: DMA Burst Request Input 7 is enabled for the DAC
+            value: 1
+  - name: CNTVAL
+    description: Counter Value register. This register contains the reload value for the DAC DMA/Interrupt timer.
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: VALUE
+        description: 16-bit reload value for the DAC interrupt/DMA timer.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 12
+    usage: registers
+interrupts:
+  - name: DAC

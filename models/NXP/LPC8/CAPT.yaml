@@ -1,0 +1,408 @@
+name: CAPT
+description: LPC84x Capacitive Touch
+source: LPC845/LPC845.xml v1.6 (MCUX_2.16.100)
+registers:
+  - name: CTRL
+    description: Configuration and control to setup the functional clock, the rules, and the pin selections and rules.
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294950911
+    fields:
+      - name: POLLMODE
+        description: Mode of operation. May only change from 0 to another value. So, if 2 or 3, must be changed to 0 1st. Any attempt to go from non-0 to non-0 will result in 0 anyway.
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: 'None, inactive. Poll and time counters are turned off. Writing this will reset state and stop any collection in progress. Note: this has no effect on STATUS - those must be cleared manually.'
+            value: 0
+          - name: '01'
+            description: Poll now - forces a manual poll to be started immediately, using XPINSEL X pin(s) to activate in the integration loop (all pins set together). Self clears - clear is not indication it is done (see STATUS).
+            value: 1
+          - name: '10'
+            description: Normal polling using poll delay from POLL_TCNT register. This will start with the poll delay (which can be 0).
+            value: 2
+          - name: '11'
+            description: The CAPT block will operate in low-power mode. This means it will use GPIO as input, use combination touch measurements, and assume it is to wake the system. This will use the POLL_TCNT poll delay, and start with the delay.
+            value: 3
+      - name: TYPE
+        description: Selects type of Touch arrangement to use and so how to handle XPINSEL bits
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Normal - all X elements are treated as normal, such as buttons and sliders.
+            value: 0
+          - name: '01'
+            description: '3x3 grid using NXP Complementary measurements. The 1st 9 Xs are assumed to be the 3x3 grid. After that would be normal X elements. This will also allow 3x1 and 3x2 Note: Only possible if XMAX in STATUS is >=8'
+            value: 1
+          - name: '10'
+            description: 5 Sensors interleaved to act as 3x3 touch area using NXP Complementary measurements. 1st 5 Xs used for this, all remaining are treated as normal. Note that if 16 X pins allowed, the 16th will not be usable when TYPE=1. (use TYPE=0 and select 1 smaller than 15 ( and any others from 1 smaller than 5 on up in XPINSEL).
+            value: 2
+          - name: '11'
+            description: '9 Sensors interleaved to act as 5x5 touch area using NXP Complementary measurements. 1st 9 Xs used for this, all remaining are treated as normal. Note: Only possible if XMAX in STATUS is >=8'
+            value: 3
+      - name: TRIGGER
+        description: This selects what is being used as the trigger
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Uses YH GPIO. This is not normally used except in Low-power mode. But, it can be used with POLLNOW to baseline that measurement.
+            value: 0
+          - name: '1'
+            description: ACMP (if fitted). This assumes the ACMP state is fed in asynchronously and it will sample.
+            value: 1
+      - name: WAIT
+        description: If 0, the block will continue its X based measurements, even if the TOUCH register has not been read (and so could OVERRUN). If 1, it will wait until read when a touch (TOUCH's ISTOUCH bit is set) before starting the next. This should not normally be needed.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: DMA
+        description: If not 0, will use the DMA to read out touch events from TOUCH register. The values are shown below. This may be changed while active.
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: No DMA. Application will use ISRs to read out data
+            value: 0
+          - name: '01'
+            description: Trigger DMA on Touch events
+            value: 1
+          - name: '10'
+            description: Trigger DMA on both Touch and No-Touch events
+            value: 2
+          - name: '11'
+            description: Trigger DMA on both plus Timeout.
+            value: 3
+      - name: FDIV
+        description: 'Functional clock divider, or 0 if no divide. The term "clocks" in this spec then refer to divided clocks. For a 12MHz input (e.g. FRO 12MHz), this would normally be set to generate a 4MHz output (so, 2). For a 1MHz input, it should be 0. Note for internal use: this does not produce a 50/50 duty cycle when non even divide.'
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: '0000'
+            description: No divide
+            value: 0
+          - name: '0001'
+            description: /2
+            value: 1
+          - name: '0010'
+            description: /3
+            value: 2
+          - name: '0011'
+            description: /4
+            value: 3
+          - name: '0100'
+            description: /5
+            value: 4
+          - name: '0101'
+            description: /6
+            value: 5
+          - name: '0111'
+            description: /(FDIV+1)
+            value: 7
+          - name: '1000'
+            description: /(FDIV+1)
+            value: 8
+          - name: '1001'
+            description: /(FDIV+1)
+            value: 9
+          - name: '1010'
+            description: /(FDIV+1)
+            value: 10
+          - name: '1011'
+            description: /(FDIV+1)
+            value: 11
+          - name: '1100'
+            description: /(FDIV+1)
+            value: 12
+          - name: '1101'
+            description: /(FDIV+1)
+            value: 13
+          - name: '1110'
+            description: /(FDIV+1)
+            value: 14
+          - name: '1111'
+            description: /(FDIV+1)
+            value: 15
+      - name: XPINUSE
+        description: Controls how X pins selected in XPINSEL are used when not active in the current polling round.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Normal mode. Each inactive X pin is Hi-Z.
+            value: 0
+          - name: '1'
+            description: Ground mode. Each inactive X pin is Low
+            value: 1
+      - name: INCHANGE
+        description: If 1, do not attempt to write to this register again. This means the last change has not been propagated. This can only happen after changing POLLMODE and DMA. Worse case time would be based on divided FCLK.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+      - name: XPINSEL
+        description: 'Selects which of the X pins are to be used within the allowed pins - see XMAX in STATUS. The X pins are mapped via the IOCON (as are the YH and YL pins) to physical pads. So, this only selects which are to be used as the X half of the touch element. Note: when polling, these are "walked" (active) one at a time. When using POLLNOW, the 1 or more selected are used at the same time. Likewise, when in low-power mode, they are used at the same time (or small groups). X pads not selected by XPINSEL are kept at High-Z if they are connected to a pad. This allows using controlled sets for touch detection based on context.'
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: STATUS
+    description: Status from triggers and time-outs including if in a poll now. Some are used for interrupts.
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 524288
+    resetMask: 983327
+    fields:
+      - name: YESTOUCH
+        description: Is 1 if a touch has been detected, including a wakeup from low-power mode.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: NOTOUCH
+        description: Is 1 if a no-touch has been detected (ie. completed an integration cycle and found no-touch). This is not set when in low-power mode.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: POLLDONE
+        description: Is 1 if a poll or POLLNOW is complete.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TIMEOUT
+        description: Is 1 if an integration cycle ended with a timeout (should not happen).
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: OVERUN
+        description: Is 1 if new data was collected before application read out previous ISTOUCH. No-touch (ISTOUCH==0) data will be silently overrun. Is not possible if WAIT=1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: BUSY
+        description: In a poll now.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+      - name: XMAX
+        description: 'Indicates the maximum number of X pins allowed 0-relative. So, 15 means there are pins 0 to 15, or 16 total X pins. INTERNAL note: this may be setup to be written by ROM boot.'
+        bitOffset: 16
+        bitWidth: 4
+        access: read-only
+  - name: POLL_TCNT
+    description: This sets up the polling counter and measurement counter rules.
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 2415919103
+    fields:
+      - name: TCNT
+        description: Sets the threshold between touch and no-touch count. If not used, then the block will treat all events as touch or no-touch, depending whether at max or min. This is in terms of divided FCLK. If the comparator triggers it is no-touch; if bigger than TCNT counts, it is a touch event.
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: TOUT
+        description: Time-out count expressed as 1 is smaller than TOUT, allowing for up to 12 bits. Must be less than 13. So, for example, 1 is smaller than 12=4096 counts; if TOUT=12, then if 4096 counts occur without a trigger, it is a time-out. This should be set to be large enough above TCNT to prevent timeout invalidly.
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+      - name: POLL
+        description: Poll counter in (internal) 12-bit counter wraparounds (loosely 1msec), so related to divided FCLK. This expresses time delay between measurement cycles (ie. after one set of X measurements, time before starting next). This count is used to delay before the next set of measurements. Measuring too often wastes power and does not add value since movement of fingers is relatively slow. For low power mode, this must allow for the clock being used (e.g. a 1MHz osc) so 12 bit count will be potentially much longer. That means, lowering the count to get the reasonable delay period.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: MDELAY
+        description: If not 0, this selects the number of divided FCLKs to wait after entry of measurement mode before deciding if has triggered. This gives the ACMP time to react to the transferred charge. It is used as 1+(1 smaller than MDELAY), , so between 2 and 8 ticks of the divided FCLK added during the measurement.
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+      - name: RDELAY
+        description: If not 0, this is the number of divided FCLKs to hold in Step 0 'Reset' state (draining capacitance). It is used as (1 is smaller than RDELAY), so between 2 and 8 ticks of the divided FCLK added to the 'Reset' state.
+        bitOffset: 26
+        bitWidth: 2
+        access: read-write
+      - name: TCHLOW_ER
+        description: If 1, then the touch/no-touch boundary of TCNT is reversed. In a floating system (most common), the no-touch case triggers at a lower count vs. touch; this is due to touch drawing off charge. In a grounded system, the reverse is true and the touch adds to the charge and so touch is a lower count. In a system which can switch between grounded and non-grounded, the SW will check for all of the Xs looking like they have been touched and reverse the setting of this bit. This should only be changed between polls.
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: INTENSET
+    description: Interrupt enable
+    addressOffset: 16
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 31
+    fields:
+      - name: YESTOUCH
+        description: Is 1 if a touch detected should interrupt. This includes wake from low-power mode.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: NOTOUCH
+        description: Is 1 if a no-touch detected should interrupt
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: POLLDONE
+        description: Is 1 if a poll or POLLNOW completing should interrupt
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TIMEOUT
+        description: Is 1 if an integration cycle ending with timeout should interrupt
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: OVERUN
+        description: Is 1 if an overrun should interrupt.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+  - name: INTENCLR
+    description: Interrupt enable clear
+    addressOffset: 20
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 31
+    fields:
+      - name: YESTOUCH
+        description: clear the touch interrupt
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: NOTOUCH
+        description: clear the no-touch interrupt
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: POLLDONE
+        description: clear the poll or POLLNOW completing interrupt
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TIMEOUT
+        description: clear the timeout interrupt
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: OVERUN
+        description: clear the overrun interrupt
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+  - name: INTSTAT
+    description: Interrupt status (mask of STATUS and INTEN)
+    addressOffset: 24
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 31
+    fields:
+      - name: YESTOUCH
+        description: the status of touch interrrupt
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: NOTOUCH
+        description: the status of no-touch interrrupt
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: POLLDONE
+        description: the status of poll or pollnow completing interrupt
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: TIMEOUT
+        description: the status of timeout interrupt
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: OVERUN
+        description: the status of overrun interrupt
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+  - name: TOUCH
+    description: Last touch event (touch or no-touch) in context.
+    addressOffset: 32
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 2163474431
+    fields:
+      - name: COUNT
+        description: Count value reached at trigger. If timeout, will be (1 bigger than TOUT)-1; e.g. if TOUT=12, then 0xFFF.
+        bitOffset: 0
+        bitWidth: 12
+        access: read-only
+      - name: XVAL
+        description: Is the X that triggered this, or lowest X if more than one.
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+      - name: ISTOUCH
+        description: 1 if is Touch (by count) or 0 if is no-touch.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: ISTO
+        description: 1 if is Timeout.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-only
+      - name: SEQ
+        description: Sequence number - rolling counter of polls. Changes after all selected Xs per poll (so, 0 for 1st set of Xs, then 1 for next set, etc).
+        bitOffset: 20
+        bitWidth: 4
+        access: read-only
+      - name: CHANGE
+        description: If 1, the rest of the register is 0 because the data is changing. This will only happen for 1 cycle and would never happen if using interrupts to read, unless took so long as to overrun.
+        bitOffset: 31
+        bitWidth: 1
+        access: read-only
+  - name: ID
+    description: Block ID
+    addressOffset: 4092
+    size: 32
+    access: read-only
+    resetValue: 3774873600
+    resetMask: 4294967295
+    fields:
+      - name: APERTURE
+        description: 'Aperture: encoded as (aperture size/4K) -1, so 0x00 is a 4 K aperture.'
+        bitOffset: 0
+        bitWidth: 8
+        access: read-only
+      - name: MINOR_REV
+        description: Minor revision of module implementation, starting at 0. Software compatibility is expected between minor revisions.
+        bitOffset: 8
+        bitWidth: 4
+        access: read-only
+      - name: MAJOR_REV
+        description: Major revision of module implementation, starting at 0. There may not be software compatibility between major revisions.
+        bitOffset: 12
+        bitWidth: 4
+        access: read-only
+      - name: ID
+        description: 1 if is Timeout.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-only
+addressBlocks:
+  - offset: 0
+    size: 4096
+    usage: registers
+interrupts:
+  - name: CAPT

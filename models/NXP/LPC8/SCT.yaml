@@ -1,0 +1,2551 @@
+name: SCT
+description: LPC84x SCTimer/PWM (SCT)
+source: LPC845/LPC845.xml v1.6 (MCUX_2.16.100)
+registers:
+  - name: CONFIG
+    description: Configuration register
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 7680
+    resetMask: 401407
+    fields:
+      - name: UNIFY
+        description: SCT operation
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: The SCT operates as two 16-bit counters named COUNTER_L and COUNTER_H.
+            value: 0
+          - name: '1'
+            description: The SCT operates as a unified 32-bit counter.
+            value: 1
+      - name: CLKMODE
+        description: SCT clock mode
+        bitOffset: 1
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: System Clock Mode. The system clock clocks the entire SCT module including the counter(s) and counter prescalers.
+            value: 0
+          - name: '01'
+            description: Sampled System Clock Mode. The system clock clocks the SCT module, but the counter and prescalers are only enabled to count when the designated edge is detected on the input selected by the CKSEL field. The minimum pulse width on the selected clock-gate input is 1 bus clock period. This mode is the high-performance, sampled-clock mode.
+            value: 1
+          - name: '10'
+            description: SCT Input Clock Mode. The input/edge selected by the CKSEL field clocks the SCT module, including the counters and prescalers, after first being synchronized to the system clock. The minimum pulse width on the clock input is 1 bus clock period. This mode is the low-power, sampled-clock mode.
+            value: 2
+          - name: '11'
+            description: Asynchronous Mode. The entire SCT module is clocked directly by the input/edge selected by the CKSEL field. In this mode, the SCT outputs are switched synchronously to the SCT input clock - not the system clock. The input clock rate must be at least half the system clock rate and can be the same or faster than the system clock.
+            value: 3
+      - name: CKSEL
+        description: SCT clock select. The specific functionality of the designated input/edge is dependent on the CLKMODE bit selection in this register.
+        bitOffset: 3
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: '000'
+            description: Rising edges on input 0.
+            value: 0
+          - name: '001'
+            description: Falling edges on input 0.
+            value: 1
+          - name: '010'
+            description: Rising edges on input 1.
+            value: 2
+          - name: '011'
+            description: Falling edges on input 1.
+            value: 3
+          - name: '100'
+            description: Rising edges on input 2.
+            value: 4
+          - name: '101'
+            description: Falling edges on input 2.
+            value: 5
+          - name: '110'
+            description: Rising edges on input 3.
+            value: 6
+          - name: '111'
+            description: Falling edges on input 3.
+            value: 7
+      - name: NORELOAD_L
+        description: A 1 in this bit prevents the lower match registers from being reloaded from their respective reload registers. Setting this bit eliminates the need to write to the reload registers MATCHREL if the match values are fixed. Software can write to set or clear this bit at any time. This bit applies to both the higher and lower registers when the UNIFY bit is set.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: NORELOAD_H
+        description: A 1 in this bit prevents the higher match registers from being reloaded from their respective reload registers. Setting this bit eliminates the need to write to the reload registers MATCHREL if the match values are fixed. Software can write to set or clear this bit at any time. This bit is not used when the UNIFY bit is set.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: INSYNC
+        description: 'Synchronization for input N (bit 9 = input 0, bit 10 = input 1,, bit 12 = input 3); all other bits are reserved. A 1 in one of these bits subjects the corresponding input to synchronization to the SCT clock, before it is used to create an event. If an input is known to already be synchronous to the SCT clock, this bit may be set to 0 for faster input response. (Note: The SCT clock is the system clock for CKMODEs 0-2. It is the selected, asynchronous SCT input clock for CKMODE3). Note that the INSYNC field only affects inputs used for event generation. It does not apply to the clock input specified in the CKSEL field.'
+        bitOffset: 9
+        bitWidth: 4
+        access: read-write
+      - name: AUTOLIMIT_L
+        description: A one in this bit causes a match on match register 0 to be treated as a de-facto LIMIT condition without the need to define an associated event. As with any LIMIT event, this automatic limit causes the counter to be cleared to zero in unidirectional mode or to change the direction of count in bi-directional mode. Software can write to set or clear this bit at any time. This bit applies to both the higher and lower registers when the UNIFY bit is set.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: AUTOLIMIT_H
+        description: A one in this bit will cause a match on match register 0 to be treated as a de-facto LIMIT condition without the need to define an associated event. As with any LIMIT event, this automatic limit causes the counter to be cleared to zero in unidirectional mode or to change the direction of count in bi-directional mode. Software can write to set or clear this bit at any time. This bit is not used when the UNIFY bit is set.
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+  - name: CTRL
+    description: Control register
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 262148
+    resetMask: 536813567
+    fields:
+      - name: DOWN_L
+        description: This bit is 1 when the L or unified counter is counting down. Hardware sets this bit when the counter is counting up, counter limit occurs, and BIDIR = 1.Hardware clears this bit when the counter is counting down and a limit condition occurs or when the counter reaches 0.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: STOP_L
+        description: When this bit is 1 and HALT is 0, the L or unified counter does not run, but I/O events related to the counter can occur. If a designated start event occurs, this bit is cleared and counting resumes.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: HALT_L
+        description: When this bit is 1, the L or unified counter does not run and no events can occur. A reset sets this bit. When the HALT_L bit is one, the STOP_L bit is cleared. It is possible to remove the halt condition while keeping the SCT in the stop condition (not running) with a single write to this register to simultaneously clear the HALT bit and set the STOP bit. Once set, only software can clear this bit to restore counter operation. This bit is set on reset.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: CLRCTR_L
+        description: Writing a 1 to this bit clears the L or unified counter. This bit always reads as 0.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: BIDIR_L
+        description: L or unified counter direction select
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Up. The counter counts up to a limit condition, then is cleared to zero.
+            value: 0
+          - name: '1'
+            description: Up-down. The counter counts up to a limit, then counts down to a limit condition or to 0.
+            value: 1
+      - name: PRE_L
+        description: Specifies the factor by which the SCT clock is prescaled to produce the L or unified counter clock. The counter clock is clocked at the rate of the SCT clock divided by PRE_L+1. Clear the counter (by writing a 1 to the CLRCTR bit) whenever changing the PRE value.
+        bitOffset: 5
+        bitWidth: 8
+        access: read-write
+      - name: DOWN_H
+        description: This bit is 1 when the H counter is counting down. Hardware sets this bit when the counter is counting, a counter limit condition occurs, and BIDIR is 1. Hardware clears this bit when the counter is counting down and a limit condition occurs or when the counter reaches 0.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: STOP_H
+        description: When this bit is 1 and HALT is 0, the H counter does not, run but I/O events related to the counter can occur. If such an event matches the mask in the Start register, this bit is cleared and counting resumes.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: HALT_H
+        description: When this bit is 1, the H counter does not run and no events can occur. A reset sets this bit. When the HALT_H bit is one, the STOP_H bit is cleared. It is possible to remove the halt condition while keeping the SCT in the stop condition (not running) with a single write to this register to simultaneously clear the HALT bit and set the STOP bit. Once set, this bit can only be cleared by software to restore counter operation. This bit is set on reset.
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: CLRCTR_H
+        description: Writing a 1 to this bit clears the H counter. This bit always reads as 0.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: BIDIR_H
+        description: Direction select
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: The H counter counts up to its limit condition, then is cleared to zero.
+            value: 0
+          - name: '1'
+            description: The H counter counts up to its limit, then counts down to a limit condition or to 0.
+            value: 1
+      - name: PRE_H
+        description: Specifies the factor by which the SCT clock is prescaled to produce the H counter clock. The counter clock is clocked at the rate of the SCT clock divided by PRELH+1. Clear the counter (by writing a 1 to the CLRCTR bit) whenever changing the PRE value.
+        bitOffset: 21
+        bitWidth: 8
+        access: read-write
+  - name: LIMIT
+    description: Limit event select register
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LIMMSK_L
+        description: If bit n is one, event n is used as a counter limit for the L or unified counter (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: LIMMSK_H
+        description: If bit n is one, event n is used as a counter limit for the H counter (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: HALT
+    description: Halt event select register
+    addressOffset: 12
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: HALTMSK_L
+        description: If bit n is one, event n sets the HALT_L bit in the CTRL register (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: HALTMSK_H
+        description: If bit n is one, event n sets the HALT_H bit in the CTRL register (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: STOP
+    description: Stop event select register
+    addressOffset: 16
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: STOPMSK_L
+        description: If bit n is one, event n sets the STOP_L bit in the CTRL register (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: STOPMSK_H
+        description: If bit n is one, event n sets the STOP_H bit in the CTRL register (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: START
+    description: Start event select register
+    addressOffset: 20
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: STARTMSK_L
+        description: If bit n is one, event n clears the STOP_L bit in the CTRL register (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: STARTMSK_H
+        description: If bit n is one, event n clears the STOP_H bit in the CTRL register (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: COUNT
+    description: Counter register
+    addressOffset: 64
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CTR_L
+        description: When UNIFY = 0, read or write the 16-bit L counter value. When UNIFY = 1, read or write the lower 16 bits of the 32-bit unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CTR_H
+        description: When UNIFY = 0, read or write the 16-bit H counter value. When UNIFY = 1, read or write the upper 16 bits of the 32-bit unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: STATE
+    description: State register
+    addressOffset: 68
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 2031647
+    fields:
+      - name: STATE_L
+        description: State variable.
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: STATE_H
+        description: State variable.
+        bitOffset: 16
+        bitWidth: 5
+        access: read-write
+  - name: INPUT
+    description: Input register
+    addressOffset: 72
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: AIN0
+        description: Input 0 state. Input 0 state on the last SCT clock edge.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: AIN1
+        description: Input 1 state. Input 1 state on the last SCT clock edge.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: AIN2
+        description: Input 2 state. Input 2 state on the last SCT clock edge.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: AIN3
+        description: Input 3 state. Input 3 state on the last SCT clock edge.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: AIN4
+        description: Input 4 state. Input 4 state on the last SCT clock edge.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: SIN0
+        description: Input 0 state. Input 0 state following the synchronization specified by INSYNC.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: SIN1
+        description: Input 1 state. Input 1 state following the synchronization specified by INSYNC.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-only
+      - name: SIN2
+        description: Input 2 state. Input 2 state following the synchronization specified by INSYNC.
+        bitOffset: 18
+        bitWidth: 1
+        access: read-only
+      - name: SIN3
+        description: Input 3 state. Input 3 state following the synchronization specified by INSYNC.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-only
+      - name: SIN4
+        description: Input 4 state. Input 4 state following the synchronization specified by INSYNC.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-only
+  - name: REGMODE
+    description: Match/capture mode register
+    addressOffset: 76
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: REGMOD_L
+        description: Each bit controls one match/capture register (register 0 = bit 0, register 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT. 0 = register operates as match register. 1 = register operates as capture register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: REGMOD_H
+        description: Each bit controls one match/capture register (register 0 = bit 16, register 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT. 0 = register operates as match registers. 1 = register operates as capture registers.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: OUTPUT
+    description: Output register
+    addressOffset: 80
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: OUT
+        description: Writing a 1 to bit n forces the corresponding output HIGH. Writing a 0 forces the corresponding output LOW (output 0 = bit 0, output 1 = bit 1, etc.). The number of bits = number of outputs in this SCT.
+        bitOffset: 0
+        bitWidth: 7
+        access: read-write
+  - name: OUTPUTDIRCTRL
+    description: Output counter direction control register
+    addressOffset: 84
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SETCLR0
+        description: Set/clear operation on output 0. Value 0x3 is reserved. Do not program this value.
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Set and clear do not depend on the direction of any counter.
+            value: 0
+          - name: '01'
+            description: Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: '10'
+            description: Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+      - name: SETCLR1
+        description: Set/clear operation on output 1. Value 0x3 is reserved. Do not program this value.
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Set and clear do not depend on the direction of any counter.
+            value: 0
+          - name: '01'
+            description: Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: '10'
+            description: Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+      - name: SETCLR2
+        description: Set/clear operation on output 2. Value 0x3 is reserved. Do not program this value.
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Set and clear do not depend on the direction of any counter.
+            value: 0
+          - name: '01'
+            description: Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: '10'
+            description: Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+      - name: SETCLR3
+        description: Set/clear operation on output 3. Value 0x3 is reserved. Do not program this value.
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Set and clear do not depend on the direction of any counter.
+            value: 0
+          - name: '01'
+            description: Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: '10'
+            description: Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+      - name: SETCLR4
+        description: Set/clear operation on output 4. Value 0x3 is reserved. Do not program this value.
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Set and clear do not depend on the direction of any counter.
+            value: 0
+          - name: '01'
+            description: Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: '10'
+            description: Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+      - name: SETCLR5
+        description: Set/clear operation on output 5. Value 0x3 is reserved. Do not program this value.
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Set and clear do not depend on the direction of any counter.
+            value: 0
+          - name: '01'
+            description: Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: '10'
+            description: Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+      - name: SETCLR6
+        description: Set/clear operation on output 6. Value 0x3 is reserved. Do not program this value.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Set and clear do not depend on the direction of any counter.
+            value: 0
+          - name: '01'
+            description: Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: '10'
+            description: Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+  - name: RES
+    description: Conflict resolution register
+    addressOffset: 88
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: O0RES
+        description: Effect of simultaneous set and clear on output 0.
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: No change.
+            value: 0
+          - name: '01'
+            description: Set output (or clear based on the SETCLR0 field in the OUTPUTDIRCTRL register).
+            value: 1
+          - name: '10'
+            description: Clear output (or set based on the SETCLR0 field).
+            value: 2
+          - name: '11'
+            description: Toggle output.
+            value: 3
+      - name: O1RES
+        description: Effect of simultaneous set and clear on output 1.
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: No change.
+            value: 0
+          - name: '01'
+            description: Set output (or clear based on the SETCLR1 field in the OUTPUTDIRCTRL register).
+            value: 1
+          - name: '10'
+            description: Clear output (or set based on the SETCLR1 field).
+            value: 2
+          - name: '11'
+            description: Toggle output.
+            value: 3
+      - name: O2RES
+        description: Effect of simultaneous set and clear on output 2.
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: No change.
+            value: 0
+          - name: '01'
+            description: Set output (or clear based on the SETCLR2 field in the OUTPUTDIRCTRL register).
+            value: 1
+          - name: '10'
+            description: Clear output n (or set based on the SETCLR2 field).
+            value: 2
+          - name: '11'
+            description: Toggle output.
+            value: 3
+      - name: O3RES
+        description: Effect of simultaneous set and clear on output 3.
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: No change.
+            value: 0
+          - name: '01'
+            description: Set output (or clear based on the SETCLR3 field in the OUTPUTDIRCTRL register).
+            value: 1
+          - name: '10'
+            description: Clear output (or set based on the SETCLR3 field).
+            value: 2
+          - name: '11'
+            description: Toggle output.
+            value: 3
+      - name: O4RES
+        description: Effect of simultaneous set and clear on output 4.
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: No change.
+            value: 0
+          - name: '01'
+            description: Set output (or clear based on the SETCLR4 field in the OUTPUTDIRCTRL register).
+            value: 1
+          - name: '10'
+            description: Clear output (or set based on the SETCLR4 field).
+            value: 2
+          - name: '11'
+            description: Toggle output.
+            value: 3
+      - name: O5RES
+        description: Effect of simultaneous set and clear on output 5.
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: No change.
+            value: 0
+          - name: '01'
+            description: Set output (or clear based on the SETCLR5 field in the OUTPUTDIRCTRL register).
+            value: 1
+          - name: '10'
+            description: Clear output (or set based on the SETCLR5 field).
+            value: 2
+          - name: '11'
+            description: Toggle output.
+            value: 3
+      - name: O6RES
+        description: Effect of simultaneous set and clear on output 6.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: No change.
+            value: 0
+          - name: '01'
+            description: Set output (or clear based on the SETCLR6 field in the OUTPUTDIRCTRL register).
+            value: 1
+          - name: '10'
+            description: Clear output (or set based on the SETCLR6 field).
+            value: 2
+          - name: '11'
+            description: Toggle output.
+            value: 3
+  - name: DMAREQ0
+    description: DMA request 0 register
+    addressOffset: 92
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3221291007
+    fields:
+      - name: DEV_0
+        description: If bit n is one, event n triggers DMA request 0 (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+      - name: DRL0
+        description: A 1 in this bit triggers DMA request 0 when it loads the MATCH_L/Unified registers from the RELOAD_L/Unified registers.
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: DRQ0
+        description: This read-only bit indicates the state of DMA Request 0. Note that if the related DMA channel is enabled and properly set up, it is unlikely that software will see this flag, it will be cleared rapidly by the DMA service. The flag remaining set could point to an issue with DMA setup.
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: DMAREQ1
+    description: DMA request 1 register
+    addressOffset: 96
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3221291007
+    fields:
+      - name: DEV_1
+        description: If bit n is one, event n triggers DMA request 1 (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+      - name: DRL1
+        description: A 1 in this bit triggers DMA request 1 when it loads the Match L/Unified registers from the Reload L/Unified registers.
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: DRQ1
+        description: This read-only bit indicates the state of DMA Request 1. Note that if the related DMA channel is enabled and properly set up, it is unlikely that software will see this flag, it will be cleared rapidly by the DMA service. The flag remaining set could point to an issue with DMA setup.
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: EVEN
+    description: Event interrupt enable register
+    addressOffset: 240
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: IEN
+        description: The SCT requests an interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EVFLAG
+    description: Event flag register
+    addressOffset: 244
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: FLAG
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of events in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: CONEN
+    description: Conflict interrupt enable register
+    addressOffset: 248
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: NCEN
+        description: The SCT requests an interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1, etc.). The number of bits = number of outputs in this SCT.
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+  - name: CONFLAG
+    description: Conflict flag register
+    addressOffset: 252
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 3221291007
+    fields:
+      - name: NCFLAG
+        description: Bit n is one if a no-change conflict event occurred on output n since reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1, etc.). The number of bits = number of outputs in this SCT.
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+      - name: BUSERRL
+        description: The most recent bus error from this SCT involved writing CTR L/Unified, STATE L/Unified, MATCH L/Unified, or the Output register when the L/U counter was not halted. A word write to certain L and H registers can be half successful and half unsuccessful.
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: BUSERRH
+        description: The most recent bus error from this SCT involved writing CTR H, STATE H, MATCH H, or the Output register when the H counter was not halted.
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: CAP0
+    description: Capture register of capture channel
+    alternateGroup: SCT0
+    addressOffset: 256
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPn_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CAPn_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: MATCH0
+    description: Match value register of match channels
+    alternateGroup: SCT0
+    addressOffset: 256
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHn_L
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: MATCHn_H
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAP1
+    description: Capture register of capture channel
+    alternateGroup: SCT0
+    addressOffset: 260
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPn_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CAPn_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: MATCH1
+    description: Match value register of match channels
+    alternateGroup: SCT0
+    addressOffset: 260
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHn_L
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: MATCHn_H
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAP2
+    description: Capture register of capture channel
+    alternateGroup: SCT0
+    addressOffset: 264
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPn_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CAPn_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: MATCH2
+    description: Match value register of match channels
+    alternateGroup: SCT0
+    addressOffset: 264
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHn_L
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: MATCHn_H
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAP3
+    description: Capture register of capture channel
+    alternateGroup: SCT0
+    addressOffset: 268
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPn_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CAPn_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: MATCH3
+    description: Match value register of match channels
+    alternateGroup: SCT0
+    addressOffset: 268
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHn_L
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: MATCHn_H
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAP4
+    description: Capture register of capture channel
+    alternateGroup: SCT0
+    addressOffset: 272
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPn_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CAPn_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: MATCH4
+    description: Match value register of match channels
+    alternateGroup: SCT0
+    addressOffset: 272
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHn_L
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: MATCHn_H
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAP5
+    description: Capture register of capture channel
+    alternateGroup: SCT0
+    addressOffset: 276
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPn_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CAPn_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: MATCH5
+    description: Match value register of match channels
+    alternateGroup: SCT0
+    addressOffset: 276
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHn_L
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: MATCHn_H
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAP6
+    description: Capture register of capture channel
+    alternateGroup: SCT0
+    addressOffset: 280
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPn_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CAPn_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: MATCH6
+    description: Match value register of match channels
+    alternateGroup: SCT0
+    addressOffset: 280
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHn_L
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: MATCHn_H
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAP7
+    description: Capture register of capture channel
+    alternateGroup: SCT0
+    addressOffset: 284
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPn_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: CAPn_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: MATCH7
+    description: Match value register of match channels
+    alternateGroup: SCT0
+    addressOffset: 284
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHn_L
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: MATCHn_H
+        description: When UNIFY = 0, read or write the 16-bit value to be compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAPCTRL0
+    description: Capture control register
+    alternateGroup: SCT0
+    addressOffset: 512
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCONn_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: CAPCONn_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: MATCHREL0
+    description: Match reload value register
+    alternateGroup: SCT0
+    addressOffset: 512
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOADn_L
+        description: When UNIFY = 0, specifies the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, specifies the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: RELOADn_H
+        description: When UNIFY = 0, specifies the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, specifies the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAPCTRL1
+    description: Capture control register
+    alternateGroup: SCT0
+    addressOffset: 516
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCONn_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: CAPCONn_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: MATCHREL1
+    description: Match reload value register
+    alternateGroup: SCT0
+    addressOffset: 516
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOADn_L
+        description: When UNIFY = 0, specifies the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, specifies the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: RELOADn_H
+        description: When UNIFY = 0, specifies the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, specifies the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAPCTRL2
+    description: Capture control register
+    alternateGroup: SCT0
+    addressOffset: 520
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCONn_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: CAPCONn_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: MATCHREL2
+    description: Match reload value register
+    alternateGroup: SCT0
+    addressOffset: 520
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOADn_L
+        description: When UNIFY = 0, specifies the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, specifies the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: RELOADn_H
+        description: When UNIFY = 0, specifies the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, specifies the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAPCTRL3
+    description: Capture control register
+    alternateGroup: SCT0
+    addressOffset: 524
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCONn_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: CAPCONn_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: MATCHREL3
+    description: Match reload value register
+    alternateGroup: SCT0
+    addressOffset: 524
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOADn_L
+        description: When UNIFY = 0, specifies the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, specifies the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: RELOADn_H
+        description: When UNIFY = 0, specifies the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, specifies the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAPCTRL4
+    description: Capture control register
+    alternateGroup: SCT0
+    addressOffset: 528
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCONn_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: CAPCONn_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: MATCHREL4
+    description: Match reload value register
+    alternateGroup: SCT0
+    addressOffset: 528
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOADn_L
+        description: When UNIFY = 0, specifies the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, specifies the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: RELOADn_H
+        description: When UNIFY = 0, specifies the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, specifies the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAPCTRL5
+    description: Capture control register
+    alternateGroup: SCT0
+    addressOffset: 532
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCONn_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: CAPCONn_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: MATCHREL5
+    description: Match reload value register
+    alternateGroup: SCT0
+    addressOffset: 532
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOADn_L
+        description: When UNIFY = 0, specifies the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, specifies the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: RELOADn_H
+        description: When UNIFY = 0, specifies the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, specifies the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAPCTRL6
+    description: Capture control register
+    alternateGroup: SCT0
+    addressOffset: 536
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCONn_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: CAPCONn_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: MATCHREL6
+    description: Match reload value register
+    alternateGroup: SCT0
+    addressOffset: 536
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOADn_L
+        description: When UNIFY = 0, specifies the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, specifies the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: RELOADn_H
+        description: When UNIFY = 0, specifies the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, specifies the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: CAPCTRL7
+    description: Capture control register
+    alternateGroup: SCT0
+    addressOffset: 540
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCONn_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: CAPCONn_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17, etc.). The number of bits = number of match/captures in this SCT.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: MATCHREL7
+    description: Match reload value register
+    alternateGroup: SCT0
+    addressOffset: 540
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOADn_L
+        description: When UNIFY = 0, specifies the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, specifies the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: RELOADn_H
+        description: When UNIFY = 0, specifies the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, specifies the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: EV0_STATE
+    description: Event state register 0
+    addressOffset: 768
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: STATEMSKn
+        description: If bit m is one, event n happens in state m of the counter selected by the HEVENT bit (n = event number, m = state number; state 0 = bit 0, state 1= bit 1, etc.). The number of bits = number of states in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EV0_CTRL
+    description: Event control register 0
+    addressOffset: 772
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 8388607
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A match can occur only when the counter selected by the HEVENT bit is running.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: '1'
+            description: Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+      - name: OUTSEL
+        description: Input/output select
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the inputs selected by IOSEL.
+            value: 0
+          - name: '1'
+            description: Selects the outputs selected by IOSEL.
+            value: 1
+      - name: IOSEL
+        description: Selects the input or output signal number associated with this event (if any). Do not select an input in this register if CKMODE is 1x. In this case the clock input is an implicit ingredient of every event.
+        bitOffset: 6
+        bitWidth: 4
+        access: read-write
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lag the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT clock period .
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: LOW
+            value: 0
+          - name: '01'
+            description: Rise
+            value: 1
+          - name: '10'
+            description: Fall
+            value: 2
+          - name: '11'
+            description: HIGH
+            value: 3
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: '01'
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: '10'
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: '11'
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state selected by HEVENT when this event is the highest-numbered event occurring for that state.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: '1'
+            description: STATEV value is loaded into STATE.
+            value: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by HEVENT, depending on STATELD, when this event is the highest-numbered event occurring for that state. If STATELD and STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+        access: read-write
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match component to the triggering of this event, then a match is considered to be active whenever the counter value is GREATER THAN OR EQUAL TO the value specified in the match register when counting up, LESS THEN OR EQUAL TO the match value when counting down. If this bit is zero, a match is only be active during the cycle when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        bitOffset: 21
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: '01'
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: '10'
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+  - name: EV1_STATE
+    description: Event state register 0
+    addressOffset: 776
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: STATEMSKn
+        description: If bit m is one, event n happens in state m of the counter selected by the HEVENT bit (n = event number, m = state number; state 0 = bit 0, state 1= bit 1, etc.). The number of bits = number of states in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EV1_CTRL
+    description: Event control register 0
+    addressOffset: 780
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 8388607
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A match can occur only when the counter selected by the HEVENT bit is running.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: '1'
+            description: Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+      - name: OUTSEL
+        description: Input/output select
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the inputs selected by IOSEL.
+            value: 0
+          - name: '1'
+            description: Selects the outputs selected by IOSEL.
+            value: 1
+      - name: IOSEL
+        description: Selects the input or output signal number associated with this event (if any). Do not select an input in this register if CKMODE is 1x. In this case the clock input is an implicit ingredient of every event.
+        bitOffset: 6
+        bitWidth: 4
+        access: read-write
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lag the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT clock period .
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: LOW
+            value: 0
+          - name: '01'
+            description: Rise
+            value: 1
+          - name: '10'
+            description: Fall
+            value: 2
+          - name: '11'
+            description: HIGH
+            value: 3
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: '01'
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: '10'
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: '11'
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state selected by HEVENT when this event is the highest-numbered event occurring for that state.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: '1'
+            description: STATEV value is loaded into STATE.
+            value: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by HEVENT, depending on STATELD, when this event is the highest-numbered event occurring for that state. If STATELD and STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+        access: read-write
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match component to the triggering of this event, then a match is considered to be active whenever the counter value is GREATER THAN OR EQUAL TO the value specified in the match register when counting up, LESS THEN OR EQUAL TO the match value when counting down. If this bit is zero, a match is only be active during the cycle when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        bitOffset: 21
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: '01'
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: '10'
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+  - name: EV2_STATE
+    description: Event state register 0
+    addressOffset: 784
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: STATEMSKn
+        description: If bit m is one, event n happens in state m of the counter selected by the HEVENT bit (n = event number, m = state number; state 0 = bit 0, state 1= bit 1, etc.). The number of bits = number of states in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EV2_CTRL
+    description: Event control register 0
+    addressOffset: 788
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 8388607
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A match can occur only when the counter selected by the HEVENT bit is running.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: '1'
+            description: Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+      - name: OUTSEL
+        description: Input/output select
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the inputs selected by IOSEL.
+            value: 0
+          - name: '1'
+            description: Selects the outputs selected by IOSEL.
+            value: 1
+      - name: IOSEL
+        description: Selects the input or output signal number associated with this event (if any). Do not select an input in this register if CKMODE is 1x. In this case the clock input is an implicit ingredient of every event.
+        bitOffset: 6
+        bitWidth: 4
+        access: read-write
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lag the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT clock period .
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: LOW
+            value: 0
+          - name: '01'
+            description: Rise
+            value: 1
+          - name: '10'
+            description: Fall
+            value: 2
+          - name: '11'
+            description: HIGH
+            value: 3
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: '01'
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: '10'
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: '11'
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state selected by HEVENT when this event is the highest-numbered event occurring for that state.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: '1'
+            description: STATEV value is loaded into STATE.
+            value: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by HEVENT, depending on STATELD, when this event is the highest-numbered event occurring for that state. If STATELD and STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+        access: read-write
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match component to the triggering of this event, then a match is considered to be active whenever the counter value is GREATER THAN OR EQUAL TO the value specified in the match register when counting up, LESS THEN OR EQUAL TO the match value when counting down. If this bit is zero, a match is only be active during the cycle when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        bitOffset: 21
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: '01'
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: '10'
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+  - name: EV3_STATE
+    description: Event state register 0
+    addressOffset: 792
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: STATEMSKn
+        description: If bit m is one, event n happens in state m of the counter selected by the HEVENT bit (n = event number, m = state number; state 0 = bit 0, state 1= bit 1, etc.). The number of bits = number of states in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EV3_CTRL
+    description: Event control register 0
+    addressOffset: 796
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 8388607
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A match can occur only when the counter selected by the HEVENT bit is running.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: '1'
+            description: Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+      - name: OUTSEL
+        description: Input/output select
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the inputs selected by IOSEL.
+            value: 0
+          - name: '1'
+            description: Selects the outputs selected by IOSEL.
+            value: 1
+      - name: IOSEL
+        description: Selects the input or output signal number associated with this event (if any). Do not select an input in this register if CKMODE is 1x. In this case the clock input is an implicit ingredient of every event.
+        bitOffset: 6
+        bitWidth: 4
+        access: read-write
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lag the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT clock period .
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: LOW
+            value: 0
+          - name: '01'
+            description: Rise
+            value: 1
+          - name: '10'
+            description: Fall
+            value: 2
+          - name: '11'
+            description: HIGH
+            value: 3
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: '01'
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: '10'
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: '11'
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state selected by HEVENT when this event is the highest-numbered event occurring for that state.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: '1'
+            description: STATEV value is loaded into STATE.
+            value: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by HEVENT, depending on STATELD, when this event is the highest-numbered event occurring for that state. If STATELD and STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+        access: read-write
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match component to the triggering of this event, then a match is considered to be active whenever the counter value is GREATER THAN OR EQUAL TO the value specified in the match register when counting up, LESS THEN OR EQUAL TO the match value when counting down. If this bit is zero, a match is only be active during the cycle when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        bitOffset: 21
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: '01'
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: '10'
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+  - name: EV4_STATE
+    description: Event state register 0
+    addressOffset: 800
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: STATEMSKn
+        description: If bit m is one, event n happens in state m of the counter selected by the HEVENT bit (n = event number, m = state number; state 0 = bit 0, state 1= bit 1, etc.). The number of bits = number of states in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EV4_CTRL
+    description: Event control register 0
+    addressOffset: 804
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 8388607
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A match can occur only when the counter selected by the HEVENT bit is running.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: '1'
+            description: Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+      - name: OUTSEL
+        description: Input/output select
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the inputs selected by IOSEL.
+            value: 0
+          - name: '1'
+            description: Selects the outputs selected by IOSEL.
+            value: 1
+      - name: IOSEL
+        description: Selects the input or output signal number associated with this event (if any). Do not select an input in this register if CKMODE is 1x. In this case the clock input is an implicit ingredient of every event.
+        bitOffset: 6
+        bitWidth: 4
+        access: read-write
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lag the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT clock period .
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: LOW
+            value: 0
+          - name: '01'
+            description: Rise
+            value: 1
+          - name: '10'
+            description: Fall
+            value: 2
+          - name: '11'
+            description: HIGH
+            value: 3
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: '01'
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: '10'
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: '11'
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state selected by HEVENT when this event is the highest-numbered event occurring for that state.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: '1'
+            description: STATEV value is loaded into STATE.
+            value: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by HEVENT, depending on STATELD, when this event is the highest-numbered event occurring for that state. If STATELD and STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+        access: read-write
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match component to the triggering of this event, then a match is considered to be active whenever the counter value is GREATER THAN OR EQUAL TO the value specified in the match register when counting up, LESS THEN OR EQUAL TO the match value when counting down. If this bit is zero, a match is only be active during the cycle when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        bitOffset: 21
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: '01'
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: '10'
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+  - name: EV5_STATE
+    description: Event state register 0
+    addressOffset: 808
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: STATEMSKn
+        description: If bit m is one, event n happens in state m of the counter selected by the HEVENT bit (n = event number, m = state number; state 0 = bit 0, state 1= bit 1, etc.). The number of bits = number of states in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EV5_CTRL
+    description: Event control register 0
+    addressOffset: 812
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 8388607
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A match can occur only when the counter selected by the HEVENT bit is running.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: '1'
+            description: Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+      - name: OUTSEL
+        description: Input/output select
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the inputs selected by IOSEL.
+            value: 0
+          - name: '1'
+            description: Selects the outputs selected by IOSEL.
+            value: 1
+      - name: IOSEL
+        description: Selects the input or output signal number associated with this event (if any). Do not select an input in this register if CKMODE is 1x. In this case the clock input is an implicit ingredient of every event.
+        bitOffset: 6
+        bitWidth: 4
+        access: read-write
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lag the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT clock period .
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: LOW
+            value: 0
+          - name: '01'
+            description: Rise
+            value: 1
+          - name: '10'
+            description: Fall
+            value: 2
+          - name: '11'
+            description: HIGH
+            value: 3
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: '01'
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: '10'
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: '11'
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state selected by HEVENT when this event is the highest-numbered event occurring for that state.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: '1'
+            description: STATEV value is loaded into STATE.
+            value: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by HEVENT, depending on STATELD, when this event is the highest-numbered event occurring for that state. If STATELD and STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+        access: read-write
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match component to the triggering of this event, then a match is considered to be active whenever the counter value is GREATER THAN OR EQUAL TO the value specified in the match register when counting up, LESS THEN OR EQUAL TO the match value when counting down. If this bit is zero, a match is only be active during the cycle when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        bitOffset: 21
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: '01'
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: '10'
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+  - name: EV6_STATE
+    description: Event state register 0
+    addressOffset: 816
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: STATEMSKn
+        description: If bit m is one, event n happens in state m of the counter selected by the HEVENT bit (n = event number, m = state number; state 0 = bit 0, state 1= bit 1, etc.). The number of bits = number of states in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EV6_CTRL
+    description: Event control register 0
+    addressOffset: 820
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 8388607
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A match can occur only when the counter selected by the HEVENT bit is running.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: '1'
+            description: Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+      - name: OUTSEL
+        description: Input/output select
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the inputs selected by IOSEL.
+            value: 0
+          - name: '1'
+            description: Selects the outputs selected by IOSEL.
+            value: 1
+      - name: IOSEL
+        description: Selects the input or output signal number associated with this event (if any). Do not select an input in this register if CKMODE is 1x. In this case the clock input is an implicit ingredient of every event.
+        bitOffset: 6
+        bitWidth: 4
+        access: read-write
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lag the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT clock period .
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: LOW
+            value: 0
+          - name: '01'
+            description: Rise
+            value: 1
+          - name: '10'
+            description: Fall
+            value: 2
+          - name: '11'
+            description: HIGH
+            value: 3
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: '01'
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: '10'
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: '11'
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state selected by HEVENT when this event is the highest-numbered event occurring for that state.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: '1'
+            description: STATEV value is loaded into STATE.
+            value: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by HEVENT, depending on STATELD, when this event is the highest-numbered event occurring for that state. If STATELD and STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+        access: read-write
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match component to the triggering of this event, then a match is considered to be active whenever the counter value is GREATER THAN OR EQUAL TO the value specified in the match register when counting up, LESS THEN OR EQUAL TO the match value when counting down. If this bit is zero, a match is only be active during the cycle when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        bitOffset: 21
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: '01'
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: '10'
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+  - name: EV7_STATE
+    description: Event state register 0
+    addressOffset: 824
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: STATEMSKn
+        description: If bit m is one, event n happens in state m of the counter selected by the HEVENT bit (n = event number, m = state number; state 0 = bit 0, state 1= bit 1, etc.). The number of bits = number of states in this SCT.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: EV7_CTRL
+    description: Event control register 0
+    addressOffset: 828
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 8388607
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A match can occur only when the counter selected by the HEVENT bit is running.
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: '1'
+            description: Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+      - name: OUTSEL
+        description: Input/output select
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: Selects the inputs selected by IOSEL.
+            value: 0
+          - name: '1'
+            description: Selects the outputs selected by IOSEL.
+            value: 1
+      - name: IOSEL
+        description: Selects the input or output signal number associated with this event (if any). Do not select an input in this register if CKMODE is 1x. In this case the clock input is an implicit ingredient of every event.
+        bitOffset: 6
+        bitWidth: 4
+        access: read-write
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lag the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT clock period .
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: LOW
+            value: 0
+          - name: '01'
+            description: Rise
+            value: 1
+          - name: '10'
+            description: Fall
+            value: 2
+          - name: '11'
+            description: HIGH
+            value: 3
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: '01'
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: '10'
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: '11'
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state selected by HEVENT when this event is the highest-numbered event occurring for that state.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: '0'
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: '1'
+            description: STATEV value is loaded into STATE.
+            value: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by HEVENT, depending on STATELD, when this event is the highest-numbered event occurring for that state. If STATELD and STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+        access: read-write
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match component to the triggering of this event, then a match is considered to be active whenever the counter value is GREATER THAN OR EQUAL TO the value specified in the match register when counting up, LESS THEN OR EQUAL TO the match value when counting down. If this bit is zero, a match is only be active during the cycle when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        bitOffset: 21
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: '00'
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: '01'
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: '10'
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+  - name: OUT0_SET
+    description: Output 0 set register
+    addressOffset: 1280
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: SET
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) output 0 = bit 0, output 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT0_CLR
+    description: Output 0 clear register
+    addressOffset: 1284
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: CLR
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT1_SET
+    description: Output 0 set register
+    addressOffset: 1288
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: SET
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) output 0 = bit 0, output 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT1_CLR
+    description: Output 0 clear register
+    addressOffset: 1292
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: CLR
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT2_SET
+    description: Output 0 set register
+    addressOffset: 1296
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: SET
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) output 0 = bit 0, output 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT2_CLR
+    description: Output 0 clear register
+    addressOffset: 1300
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: CLR
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT3_SET
+    description: Output 0 set register
+    addressOffset: 1304
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: SET
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) output 0 = bit 0, output 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT3_CLR
+    description: Output 0 clear register
+    addressOffset: 1308
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: CLR
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT4_SET
+    description: Output 0 set register
+    addressOffset: 1312
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: SET
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) output 0 = bit 0, output 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT4_CLR
+    description: Output 0 clear register
+    addressOffset: 1316
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: CLR
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT5_SET
+    description: Output 0 set register
+    addressOffset: 1320
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: SET
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) output 0 = bit 0, output 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT5_CLR
+    description: Output 0 clear register
+    addressOffset: 1324
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: CLR
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT6_SET
+    description: Output 0 set register
+    addressOffset: 1328
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: SET
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) output 0 = bit 0, output 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - name: OUT6_CLR
+    description: Output 0 clear register
+    addressOffset: 1332
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 65535
+    fields:
+      - name: CLR
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1, etc. The number of bits = number of events in this SCT. When the counter is used in bi-directional mode, it is possible to reverse the action specified by the output set and clear registers when counting down, See the OUTPUTCTRL register.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 1336
+    usage: registers
+interrupts:
+  - name: INTR
