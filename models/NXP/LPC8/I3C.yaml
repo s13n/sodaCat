@@ -1,7 +1,7 @@
 name: I3C
 description: I3C
 groupName: I3C
-source: LPC865/LPC865.xml v1.0 (MCUX_2.16.100)
+source: LPC864/LPC864.xml v1.0 (MCUX_2.16.100)
 params:
   - name: rx_req
     type: int
@@ -11,7 +11,7 @@ params:
     description: DMA transmit channel
 registers:
   - name: MCONFIG
-    description: Master Configuration Register
+    description: Controller Configuration Register
     addressOffset: 0
     size: 32
     access: read-write
@@ -19,25 +19,32 @@ registers:
     resetMask: 4294967291
     fields:
       - name: MSTENA
-        description: Master enable
+        description: Controller enable
         bitOffset: 0
         bitWidth: 2
         access: read-write
         enumeratedValues:
-          - name: MASTER_OFF
-            description: 'MASTER_OFF: Master is off (is not enabled). If MASTER_OFF is enabled, then the I3C module can only use slave mode.'
+          - name: CONTROLLER_OFF
+            description: CONTROLLER_OFF. Controller is disabled. The I3C module can only use Target mode.
             value: 0
-          - name: MASTER_ON
-            description: 'MASTER_ON: Master is on (is enabled). When used from start-up, this I3C module is master by default (the main master). The module will control the bus unless the master is handed off. If the master is handed off, then MSTENA must move to 2 after that happens. The handoff means emitting GETACCMST and if accepted, the module will emit a STOP and set the MSTENA bit to 2 (or 0).'
+          - name: CONTROLLER_ON
+            description: CONTROLLER_ON. Controller is enabled. When used upon start-up, this I3C module is the Main Controller by default. The module controls the bus unless the controller ishanded off. If the controller is handed off, then MSTENA must become 2, so that it has the capability to become the controller again. Performing the handoff means emittingGETACCMST CCC command. If the command is accepted, the module emits a STOP and sets the MSTENA field to 2 (or 0).
             value: 1
-          - name: MASTER_CAPABLE
-            description: 'MASTER_CAPABLE: The I3C module is master-capable; however the module is operating as a slave now. When used from the start, the I3C module will start as a slave, but will be prepared to switch to master mode. To switch to master mode, the slave emits an Master Request (MR), or gets a GETACCMST CCC command and accepts it (to switch on the STOP).'
+          - name: CONTROLLER_CAPABLE
+            description: 'MASTER_CAPABLE: The I3C module is controller-capable; however the module is operating as a target now. When used from the start, the I3C module will start as a target, but will be prepared to switch to Controller mode. To switch to Controller mode, the target emits an Controller Request (CR), or gets a GETACCMST CCC command and accepts it (to switch on the STOP).'
             value: 2
       - name: DISTO
         description: Disable Timeout
         bitOffset: 3
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: ENABLE
+            description: Timeout enabled
+            value: 0
+          - name: DISABLE
+            description: Timeout disabled, if timeout is configured
+            value: 1
       - name: HKEEP
         description: High-Keeper
         bitOffset: 4
@@ -45,22 +52,29 @@ registers:
         access: read-write
         enumeratedValues:
           - name: NONE
-            description: 'NONE: Use PUR (Pull-Up Resistor). Hold SCL High.'
+            description: NONE. Use PUR (Pull-Up Resistor). No separate pin_HK_SDA/pin_HK_SCL is used. Only pin_PUR_oena is used for sda. Hold pin_SCL_oena High in this mode, SCL clock is push-pull and pin_SCL_out toggles which is actual clock.
             value: 0
           - name: WIRED_IN
-            description: 'WIRED_IN: Wired-in High Keeper controls; use pin_HK (High Keeper) controls.'
+            description: WIRED_IN. High Keeper controls, use pin_HK_SDA/pin_HK_SCL (High Keeper) controls. SCL may use an HK or that signal (pin_HK_SCL) may only OR into pin_SCL_oena. Uses pin_HK_SDA as well for sda high keeper, along with pin_PUR_oena.
             value: 1
           - name: PASSIVE_SDA
-            description: 'PASSIVE_SDA: Passive on SDA; can Hi-Z (high impedance) for Bus Free (IDLE) and hold.'
+            description: PASSIVE_SDA. Passive on SDA, can Hi-Z (high impedance) for Bus Free (IDLE) and hold. The pins, pin_HK_SDA and pin_HK_SCL are not used, Only a combination of SDA_oena and pin_PUR_oena are used.
             value: 2
           - name: PASSIVE_ON_SDA_SCL
-            description: 'PASSIVE_ON_SDA_SCL: Passive on SDA and SCL; can Hi-Z (high impedance) both for Bus Free (IDLE), and can Hi-Z SDA for hold.'
+            description: PASSIVE_ON_SDA_SCL. Passive on SDA and SCL, can Hi-Z (high impedance) both for Bus Free (IDLE), and can Hi-Z SDA for hold. This is for I2C clock stretching mode, where both SCL and SDA are open drain.
             value: 3
       - name: ODSTOP
         description: Open drain stop
         bitOffset: 6
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: DISABLE
+            description: Disable open-drain stop. ODSTOP must be disabled when sending an HDR exit pattern.
+            value: 0
+          - name: ENABLE
+            description: Enable open-drain stop. STOP is emitted at open-drain speeds even for I3C messages. In legacy devices, this feature can ensure that the legacy devices see the STOP.
+            value: 1
       - name: PPBAUD
         description: Push-pull baud rate
         bitOffset: 8
@@ -92,7 +106,7 @@ registers:
         bitWidth: 4
         access: read-write
   - name: SCONFIG
-    description: Slave Configuration Register
+    description: Target Configuration register
     addressOffset: 4
     size: 32
     access: read-write
@@ -100,7 +114,7 @@ registers:
     resetMask: 4278125439
     fields:
       - name: SLVENA
-        description: Slave enable
+        description: Target enable
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -115,18 +129,13 @@ registers:
         bitWidth: 1
         access: read-write
       - name: S0IGNORE
-        description: S0/S1 errors ignore
+        description: Ignore TE0/TE1 Errors
         bitOffset: 3
         bitWidth: 1
         access: read-write
-      - name: DDROK
-        description: Double Data Rate OK
+      - name: HDROK
+        description: HDR OK Deprecated. Use the SIDEXT[BCR] field instead
         bitOffset: 4
-        bitWidth: 1
-        access: read-write
-      - name: IDRAND
-        description: ID random
-        bitOffset: 8
         bitWidth: 1
         access: read-write
       - name: OFFLINE
@@ -137,7 +146,7 @@ registers:
       - name: BAMATCH
         description: Bus available match
         bitOffset: 16
-        bitWidth: 8
+        bitWidth: 6
         access: read-write
       - name: SADDR
         description: Static address
@@ -145,7 +154,7 @@ registers:
         bitWidth: 7
         access: read-write
   - name: SSTATUS
-    description: Slave Status Register
+    description: Target Status Register
     addressOffset: 8
     size: 32
     access: read-write
@@ -153,7 +162,7 @@ registers:
     resetMask: 4224188287
     fields:
       - name: STNOTSTOP
-        description: Status not stop
+        description: Status Not Stop
         bitOffset: 0
         bitWidth: 1
         access: read-only
@@ -242,6 +251,11 @@ registers:
         bitOffset: 18
         bitWidth: 1
         access: read-write
+      - name: SLVRST
+        description: Target Reset
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
       - name: EVDET
         description: Event details
         bitOffset: 20
@@ -266,7 +280,7 @@ registers:
         bitWidth: 1
         access: read-only
       - name: MRDIS
-        description: Master requests are disabled
+        description: Controller requests are disabled
         bitOffset: 25
         bitWidth: 1
         access: read-only
@@ -306,7 +320,7 @@ registers:
             description: 'ASYNC_MODE: Asynchronous standard mode (0) is enabled'
             value: 2
   - name: SCTRL
-    description: Slave Control Register
+    description: Target Control Register
     addressOffset: 12
     size: 32
     access: read-write
@@ -329,8 +343,18 @@ registers:
             description: 'MASTER_REQUEST: Start a Master-Request.'
             value: 2
           - name: HOT_JOIN_REQUEST
-            description: 'HOT_JOIN_REQUEST: Start a Hot-Join request. A Hot-Join Request should only be used when the device is powered on after the I3C bus is already powered up, or when the device is connected using hot insertion methods (the device is powered up when it is physically inserted onto the powered-up I3C bus). The hot join will wait for Bus Idle, and SCTRL.EVENT=HOT_JOIN_REQUEST must be set before the slave enable (SCONFIG.SLVENA).'
+            description: 'HOT_JOIN_REQUEST: Start a Hot-Join request. A Hot-Join Request should only be used when the device is powered on after the I3C bus is already powered up, or when the device is connected using hot insertion methods (the device is powered up when it is physically inserted onto the powered-up I3C bus). The hot join will wait for Bus Idle, and SCTRL.EVENT=HOT_JOIN_REQUEST must be set before the target enable (SCONFIG.SLVENA).'
             value: 3
+      - name: EXTDATA
+        description: Extended Data
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: MAPIDX
+        description: Map Index
+        bitOffset: 4
+        bitWidth: 3
+        access: read-write
       - name: IBIDATA
         description: In-Band Interrupt data
         bitOffset: 8
@@ -342,7 +366,7 @@ registers:
         bitWidth: 4
         access: read-write
       - name: ACTSTATE
-        description: Activity state (of slave)
+        description: Activity state (of target)
         bitOffset: 20
         bitWidth: 2
         access: read-write
@@ -352,7 +376,7 @@ registers:
         bitWidth: 8
         access: read-write
   - name: SINTSET
-    description: Slave Interrupt Set Register
+    description: Target Interrupt Set Register
     addressOffset: 16
     size: 32
     access: read-write
@@ -414,8 +438,13 @@ registers:
         bitOffset: 18
         bitWidth: 1
         access: read-write
+      - name: SLVRST
+        description: Target Reset
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
   - name: SINTCLR
-    description: Slave Interrupt Clear Register
+    description: Target Interrupt Clear Register
     addressOffset: 20
     size: 32
     access: read-write
@@ -489,8 +518,14 @@ registers:
         bitWidth: 1
         access: read-write
         modifiedWriteValues: oneToClear
+      - name: SLVRST
+        description: SLVRST interrupt enable clear
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+        modifiedWriteValues: oneToClear
   - name: SINTMASKED
-    description: Slave Interrupt Mask Register
+    description: Target Interrupt Mask Register
     addressOffset: 24
     size: 32
     access: read-only
@@ -553,7 +588,7 @@ registers:
         bitWidth: 1
         access: read-only
   - name: SERRWARN
-    description: Slave Errors and Warnings Register
+    description: Target Errors and Warnings Register
     addressOffset: 28
     size: 32
     access: read-write
@@ -616,7 +651,7 @@ registers:
         bitWidth: 1
         access: read-write
   - name: SDMACTRL
-    description: Slave DMA Control Register
+    description: Target DMA Control Register
     addressOffset: 32
     size: 32
     access: read-write
@@ -633,7 +668,7 @@ registers:
             description: DMA not used
             value: 0
           - name: ENABLE_ONE_FRAME
-            description: DMA is enabled for 1 frame
+            description: DMA is enabled for one frame.
             value: 1
           - name: ENABLE
             description: DMA enable
@@ -669,7 +704,7 @@ registers:
             description: 'HALF_WORD: Half word (16 bits). This will make sure that 2 bytes are free/available in the FIFO.'
             value: 2
   - name: SDATACTRL
-    description: Slave Data Control Register
+    description: Target Data Control Register
     addressOffset: 44
     size: 32
     access: read-write
@@ -762,7 +797,7 @@ registers:
             description: RX is empty
             value: 1
   - name: SWDATAB
-    description: Slave Write Data Byte Register
+    description: Target Write Data Byte Register
     addressOffset: 48
     size: 32
     access: write-only
@@ -770,7 +805,7 @@ registers:
     resetMask: 0
     fields:
       - name: DATA
-        description: The data byte to send to the master
+        description: Data byte to send to master
         bitOffset: 0
         bitWidth: 8
         access: write-only
@@ -785,7 +820,7 @@ registers:
         bitWidth: 1
         access: write-only
   - name: SWDATABE
-    description: Slave Write Data Byte End
+    description: Target Write Data Byte End
     addressOffset: 52
     size: 32
     access: write-only
@@ -793,12 +828,12 @@ registers:
     resetMask: 0
     fields:
       - name: DATA
-        description: The data byte to send to the master
+        description: Data byte to send to master.
         bitOffset: 0
         bitWidth: 8
         access: write-only
   - name: SWDATAH
-    description: Slave Write Data Half-word Register
+    description: Target Write Data Half-word Register
     addressOffset: 56
     size: 32
     access: write-only
@@ -806,12 +841,12 @@ registers:
     resetMask: 0
     fields:
       - name: DATA0
-        description: The 1st byte to send to the master
+        description: The 1st byte to send to the controller
         bitOffset: 0
         bitWidth: 8
         access: write-only
       - name: DATA1
-        description: The 2nd byte to send to the master
+        description: The 2nd byte to send to the controller
         bitOffset: 8
         bitWidth: 8
         access: write-only
@@ -821,7 +856,7 @@ registers:
         bitWidth: 1
         access: write-only
   - name: SWDATAHE
-    description: Slave Write Data Half-word End Register
+    description: Target Write Data Half-word End Register
     addressOffset: 60
     size: 32
     access: write-only
@@ -829,17 +864,17 @@ registers:
     resetMask: 0
     fields:
       - name: DATA0
-        description: The 1st byte to send to the master
+        description: The 1st byte to send to the controller
         bitOffset: 0
         bitWidth: 8
         access: write-only
       - name: DATA1
-        description: The 2nd byte to send to the master
+        description: The 2nd byte to send to the controller
         bitOffset: 8
         bitWidth: 8
         access: write-only
   - name: SRDATAB
-    description: Slave Read Data Byte Register
+    description: Target Read Data Byte Register
     addressOffset: 64
     size: 32
     access: read-only
@@ -847,12 +882,12 @@ registers:
     resetMask: 255
     fields:
       - name: DATA0
-        description: Byte read from the master
+        description: Byte read from the controller
         bitOffset: 0
         bitWidth: 8
         access: read-only
   - name: SRDATAH
-    description: Slave Read Data Half-word Register
+    description: Target Read Data Half-word Register
     addressOffset: 72
     size: 32
     access: read-only
@@ -860,12 +895,12 @@ registers:
     resetMask: 65535
     fields:
       - name: LSB
-        description: The 1st byte read from the slave
+        description: Represents the first byte read from the controller (and written by the target).
         bitOffset: 0
         bitWidth: 8
         access: read-only
       - name: MSB
-        description: The 2nd byte read from the slave
+        description: Represents the second byte read from the controller (and written by the target).
         bitOffset: 8
         bitWidth: 8
         access: read-only
@@ -878,12 +913,12 @@ registers:
     resetMask: 65535
     fields:
       - name: DATA
-        description: The data byte rto send to controller
+        description: Byte rto send to controller
         bitOffset: 0
         bitWidth: 8
         access: write-only
   - name: SCAPABILITIES
-    description: Slave Capabilities Register
+    description: Target Capabilities Register
     addressOffset: 96
     size: 32
     access: read-only
@@ -916,19 +951,19 @@ registers:
       - name: HDRSUPP
         description: HDR support
         bitOffset: 6
-        bitWidth: 3
+        bitWidth: 2
         access: read-only
       - name: MASTER
-        description: Master
+        description: Controller
         bitOffset: 9
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: MASTERNOTSUPPORTED
-            description: 'MASTERNOTSUPPORTED: master capability is not supported.'
+            description: 'MASTERNOTSUPPORTED: controller capability is not supported.'
             value: 0
           - name: MASTERSUPPORTED
-            description: 'MASTERSUPPORTED: master capability is supported.'
+            description: 'MASTERSUPPORTED: controller capability is supported.'
             value: 1
       - name: SADDR
         description: Static address
@@ -954,7 +989,7 @@ registers:
         bitWidth: 4
         access: read-only
       - name: IBI_MR_HJ
-        description: In-Band Interrupts, Master Requests, Hot Join events
+        description: In-Band Interrupts, Controller Requests, Hot Join events
         bitOffset: 16
         bitWidth: 5
         access: read-only
@@ -976,9 +1011,15 @@ registers:
         bitWidth: 3
         access: read-only
         enumeratedValues:
+          - name: NO_EXT_FIFO
+            description: 'NO_EXT_FIFO: No external FIFO is available'
+            value: 0
           - name: STD_EXT_FIFO
             description: 'STD_EXT_FIFO: standard available/free external FIFO'
             value: 1
+          - name: REQUEST_EXT_FIFO
+            description: 'REQUEST_EXT_FIFO: request track external FIFO'
+            value: 2
       - name: FIFOTX
         description: FIFO transmit
         bitOffset: 26
@@ -1080,7 +1121,7 @@ registers:
         bitWidth: 16
         access: read-write
   - name: SMAXLIMITS
-    description: Slave Maximum Limits Register
+    description: Target Maximum Limits Register
     addressOffset: 104
     size: 32
     access: read-write
@@ -1098,7 +1139,7 @@ registers:
         bitWidth: 12
         access: read-write
   - name: SIDPARTNO
-    description: Slave ID Part Number Register
+    description: Target ID Part Number Register
     addressOffset: 108
     size: 32
     access: read-write
@@ -1111,7 +1152,7 @@ registers:
         bitWidth: 32
         access: read-write
   - name: SIDEXT
-    description: Slave ID Extension Register
+    description: Target ID Extension Register
     addressOffset: 112
     size: 32
     access: read-write
@@ -1129,7 +1170,7 @@ registers:
         bitWidth: 8
         access: read-write
   - name: SVENDORID
-    description: Slave Vendor ID Register
+    description: Target Vendor ID Register
     addressOffset: 116
     size: 32
     access: read-write
@@ -1142,7 +1183,7 @@ registers:
         bitWidth: 15
         access: read-write
   - name: STCCLOCK
-    description: Slave Time Control Clock Register
+    description: Target Time Control Clock Register
     addressOffset: 120
     size: 32
     access: read-write
@@ -1159,31 +1200,96 @@ registers:
         bitOffset: 8
         bitWidth: 8
         access: read-write
-  - name: SMSGMAPADDR
-    description: Slave Message-Mapped Address Register
+  - name: SMSGLAST
+    description: Target Message Last Matched Register
     addressOffset: 124
     size: 32
     access: read-only
-    resetValue: 532
-    resetMask: 65535
+    resetValue: 0
+    resetMask: 15724543
     fields:
       - name: MAPLAST
         description: Matched address index
         bitOffset: 0
         bitWidth: 4
         access: read-only
+      - name: LASTSTATIC
+        description: Last Static Address Matched
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: LASTGROUP
+        description: Last Match Was Group
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+      - name: LASTMODE
+        description: Last Mode
+        bitOffset: 6
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: SDR
+            description: SDR mode (or I2C if static) was the last mode.
+            value: 0
+          - name: HDR_DDR
+            description: HDR-DDR was the last mode.
+            value: 1
+          - name: HDR_BT
+            description: HDR-BT was the last mode.
+            value: 2
       - name: MAPLASTM1
         description: Previous match index 1
         bitOffset: 8
         bitWidth: 4
         access: read-only
+      - name: LASTGROUPM1
+        description: Last Match 1 Previous Was Group
+        bitOffset: 13
+        bitWidth: 1
+        access: read-only
+      - name: LASTMODE1
+        description: Last Mode 1
+        bitOffset: 14
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: SDR
+            description: SDR mode (or I2C if static) was the last mode.
+            value: 0
+          - name: HDR_DDR
+            description: HDR-DDR was the last mode.
+            value: 1
+          - name: HDR_BT
+            description: HDR-BT was the last mode.
+            value: 2
       - name: MAPLASTM2
         description: Previous match index 2
         bitOffset: 16
         bitWidth: 4
         access: read-only
+      - name: LASTGROUPM2
+        description: Last Match 2 Previous Was Group
+        bitOffset: 21
+        bitWidth: 1
+        access: read-only
+      - name: LASTMODE2
+        description: Last Mode 2
+        bitOffset: 22
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: SDR
+            description: SDR mode (or I2C if static) was the last mode 2 previous accesses ago.
+            value: 0
+          - name: HDR_DDR
+            description: HDR-DDR was the last mode 2 previous accesses ago.
+            value: 1
+          - name: HDR_BT
+            description: HDR-BT was the last mode 2 previous accesses ago.
+            value: 2
   - name: MCTRL
-    description: Master Main Control Register
+    description: Controller Main Control Register
     addressOffset: 132
     size: 32
     access: read-write
@@ -1197,7 +1303,7 @@ registers:
         access: read-write
         enumeratedValues:
           - name: NONE
-            description: "NONE: Returns to this when finished with any request. The MSTATUS register indicates the master's state. See also AutoIBI mode. NONE is only written as 0: when setting RDTERM to 1 (to stop a read in progress) or when setting IBI reponse field (IBIRESP) for MSG use"
+            description: 'NONE: Indicates that no request is present. The REQUEST field returns to NONE when finished with any request. The MSTATUS register indicates the state of the controller. See also AutoIBI mode. NONE is only written as 0: writing 1 to MCTRL[RDTERM] (to stop a read in progress) or when setting MCTRL[IBIRESP] for MSG use.'
             value: 0
           - name: EMITSTARTADDR
             description: 'EMITSTARTADDR: Emit START with address and direction from a stopped state or in the middle of a Single Data Rate (SDR) message. If from a stopped state (IDLE), then emit start may be prevented by an event (like IBI, MR, HJ), in which case the appropriate interrupt is signaled; note that Emit START can be resubmitted.'
@@ -1209,13 +1315,13 @@ registers:
             description: 'IBIACKNACK: Manual In-Band Interrupt (IBI) Acknowledge (ACK) or Not Acknowledge (NACK). When IBIRESP has indicated a hold on an In-Band Interrupt to allow a manual decision, this request completes it. Uses IBIRESP to provide the information.'
             value: 3
           - name: PROCESSDAA
-            description: 'PROCESSDAA: If not in Dynamic Address Assignment (DAA) mode now, will issue START, 7E, ENTDAA, and then will emit 7E/R to process each slave. Will stop just before the new Dynamic Address (DA) is to be emitted. The next Process DAA request will use the Addr field as the new DA to assign. If NACKed on the 7E/R, then the interrupt will indicate this situation, and a STOP will be emitted.'
+            description: 'PROCESSDAA: If not currently in Dynamic Address Assignment (DAA) mode, emits START, 7E, ENTDAA sequence, then emits 7E/R to process the first target. Stops just before the new Dynamic Address (DA) is to be emitted. The DA is written using Controller Write Data Byte (MWDATAB), then Process DAA is requested again to write the new address, and then it starts the next unless marked to STOP. An MSTATUS indicating NACK means DA was not accepted (for example, parity error). If PROCESSDAA is NACKED on the 7E/R request, meaning no more targets need a DA, then a COMPLETE is signaled (along with DONE) and a STOP issued. If TYPE = 2 or TYPE = 3, the DA is assigned and then it emits a STOP (instead of starting a new 7E/R request). If TYPE = 1 or TYPE = 3, then the DA is taken from the ADDR field (bits 6:0).'
             value: 4
           - name: FORCEEXIT
-            description: 'FORCEEXIT and IBHR: Emit an Exit Pattern from any state, but end Double Data Rate (DDR) (including MSGDDR), if in DDR mode now. Includes a STOP afterward. If TYPE != 0, then it will perform an IBHR (In-Band Hardware Reset). If TYPE=2, then it does a normal reset (DEFRST can prevent the reset). If TYPE=3, it does a forced reset (will always reset).'
+            description: 'FORCEEXIT and IBHR: Emit an Exit Pattern from any state. End Double Data Rate (DDR) mode (including MSGDDR), including a STOP afterward. If MCTRL[TYPE] is 2, perform a Target Reset action (RSTACT can prevent the reset in the target). Target Reset may follow immediately after RSTACT CCC or after STOP.'
             value: 6
           - name: AUTOIBI
-            description: 'AUTOIBI: Hold in a stopped state, but auto-emit START,7E when the slave is holding down SDA to get an In-Band Interrupt (IBI). Actual In-Band Interrupt handling is defined by IBIRESP.'
+            description: 'AUTOIBI: Hold in a stopped state, but auto-emit START,7E when the target is holding down SDA to get an In-Band Interrupt (IBI). Actual In-Band Interrupt handling is defined by IBIRESP.'
             value: 7
       - name: TYPE
         description: Bus type with START
@@ -1242,16 +1348,16 @@ registers:
         access: read-write
         enumeratedValues:
           - name: ACK
-            description: 'ACK: Acknowledge. A mandatory byte (or not) is decided by the Master In-band Interrupt Registry and Rules Register (MIBIRULES). To limit the maximum number of IBI bytes, configure the Read Termination field (MCTRL.RDTERM).'
+            description: ACK (acknowledge). When REQUEST = 1 (EmitStartAddr) or REQUEST = 7 (AutoIBI), ACK with mandatory byte (or not), decided by the Controller In-band Interrupt Registry and Rules (MIBIRULES) register. When REQUEST = 3 (IBIAckNack), ACK with no mandatory byte.
             value: 0
           - name: NACK
             description: 'NACK: Not acknowledge'
             value: 1
           - name: ACK_WITH_MANDATORY
-            description: 'ACK_WITH_MANDATORY: Acknowledge with mandatory byte (ignores the MIBIRULES register). Acknowledge with mandatory byte should not be used, unless only slaves with a mandatory byte can cause an In-Band Interrupt.'
+            description: Acknowledge with mandatory byte. When REQUEST = 1 or REQUEST = 7, ignore the MIBIRULES register. Do not use this setting unless only targets with a mandatory byte can cause an IBI. When REQUEST = 3, ACK with mandatory byte.
             value: 2
           - name: MANUAL
-            description: 'MANUAL: stop and wait for a decision using the IBIAckNack request'
+            description: Manual. When REQUEST = 1 or REQUEST = 7, stop and wait for a decision using the IBI ACK NACK request. When REQUEST = 3, reserved.
             value: 3
       - name: DIR
         description: DIR
@@ -1276,7 +1382,7 @@ registers:
         bitWidth: 8
         access: read-write
   - name: MSTATUS
-    description: Master Status Register
+    description: Controller Status Register
     addressOffset: 136
     size: 32
     access: read-write
@@ -1284,25 +1390,25 @@ registers:
     resetMask: 4278763511
     fields:
       - name: STATE
-        description: State of the master
+        description: State of the controller
         bitOffset: 0
         bitWidth: 3
         access: read-only
         enumeratedValues:
           - name: IDLE
-            description: 'IDLE: the bus has STOPped.'
+            description: 'IDLE: the bus has stopped.'
             value: 0
           - name: SLVREQ
-            description: 'SLVREQ: (Slave Request state) the bus has STOPped but a slave is holding SDA low. If using auto-emit IBI (MCTRL.AutoIBI), then the master will not stay in the Slave Request state.'
+            description: 'SLVREQ: Target request. The bus has STOPped but a target is holding SDA low. If using auto-emit IBI ( MCTRL[REQUEST] = 7), the controller will not remain in this state.'
             value: 1
           - name: MSGSDR
-            description: 'MSGSDR: in Single Data Rate (SDR) Message state (from using MWMSG_SDR)'
+            description: 'MSGSDR: Single Data Rate Message mode, from using MWMSG_SDR'
             value: 2
           - name: NORMACT
-            description: 'NORMACT: normal active Single Data Rate (SDR) state (from using MCTRL and MWDATAn and MRDATAn registers). The master will stay in the NORMACT state until a STOP is issued.'
+            description: 'NORMACT: normal active Single Data Rate (SDR) state (from using MCTRL and MWDATAn and MRDATAn registers). The controller will stay in the NORMACT state until a STOP is issued.'
             value: 3
-          - name: DDR
-            description: 'MSGDDR: in Double Data Rate (DDR) Message mode (from using MWMSG_DDR or using the normal method with DDR). The master will stay in the DDR state, until the master exits using EXIT (emits the Exit pattern).'
+          - name: MSGDDR
+            description: 'MSGDDR: Double Data Rate (DDR) Message mode (from using MWMSG_DDR or using the normal method with DDR). The controller will stay in the DDR state, until the controller exits using EXIT (emits the Exit pattern).'
             value: 4
           - name: DAA
             description: 'DAA: in Enter Dynamic Address Assignment (ENTDAA) mode'
@@ -1330,24 +1436,24 @@ registers:
         access: read-only
         enumeratedValues:
           - name: NONE
-            description: 'NONE: cleared when IBI Won bit (MSTATUS.IBIWON) is cleared'
+            description: 'NONE: No IBI. This status occurs when MSTATUS[IBIWON] becomes 0.'
             value: 0
           - name: IBI
             description: 'IBI: In-Band Interrupt'
             value: 1
           - name: MR
-            description: 'MR: Master Request'
+            description: 'MR: Controller Request'
             value: 2
           - name: HJ
             description: 'HJ: Hot-Join'
             value: 3
       - name: SLVSTART
-        description: Slave start
+        description: Target start
         bitOffset: 8
         bitWidth: 1
         access: read-write
       - name: MCTRLDONE
-        description: Master control done
+        description: Controller control done
         bitOffset: 9
         bitWidth: 1
         access: read-write
@@ -1362,7 +1468,7 @@ registers:
         bitWidth: 1
         access: read-only
       - name: TXNOTFULL
-        description: TX buffer/FIFO not yet full
+        description: TX Buffer or FIFO Not Full
         bitOffset: 12
         bitWidth: 1
         access: read-only
@@ -1377,7 +1483,7 @@ registers:
         bitWidth: 1
         access: read-only
       - name: NOWMASTER
-        description: Now master (now this module is a master)
+        description: Now controller (now this module is a controller)
         bitOffset: 19
         bitWidth: 1
         access: read-write
@@ -1387,7 +1493,7 @@ registers:
         bitWidth: 7
         access: read-only
   - name: MIBIRULES
-    description: Master In-band Interrupt Registry and Rules Register
+    description: Controller In-band Interrupt Registry and Rules Register
     addressOffset: 140
     size: 32
     access: read-write
@@ -1430,7 +1536,7 @@ registers:
         bitWidth: 1
         access: read-write
   - name: MINTSET
-    description: Master Interrupt Set Register
+    description: Controller Interrupt Set Register
     addressOffset: 144
     size: 32
     access: read-write
@@ -1438,12 +1544,12 @@ registers:
     resetMask: 573184
     fields:
       - name: SLVSTART
-        description: Slave start interrupt enable
+        description: Target start interrupt enable
         bitOffset: 8
         bitWidth: 1
         access: read-write
       - name: MCTRLDONE
-        description: Master control done interrupt enable
+        description: Controller control done interrupt enable
         bitOffset: 9
         bitWidth: 1
         access: read-write
@@ -1473,12 +1579,12 @@ registers:
         bitWidth: 1
         access: read-write
       - name: NOWMASTER
-        description: Now master (now this I3C module is a master) interrupt enable
+        description: Now controller (now this I3C module is a controller) interrupt enable
         bitOffset: 19
         bitWidth: 1
         access: read-write
   - name: MINTCLR
-    description: Master Interrupt Clear Register
+    description: Controller Interrupt Clear Register
     addressOffset: 148
     size: 32
     access: write-only
@@ -1526,7 +1632,7 @@ registers:
         bitWidth: 1
         access: write-only
   - name: MINTMASKED
-    description: Master Interrupt Mask Register
+    description: Controller Interrupt Mask Register
     addressOffset: 152
     size: 32
     access: read-only
@@ -1574,13 +1680,18 @@ registers:
         bitWidth: 1
         access: read-only
   - name: MERRWARN
-    description: Master Errors and Warnings Register
+    description: Controller Errors and Warnings Register
     addressOffset: 156
     size: 32
     access: read-write
     resetValue: 0
     resetMask: 2033180
     fields:
+      - name: URUN
+        description: Underrun error
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
       - name: NACK
         description: Not acknowledge (NACK) error
         bitOffset: 2
@@ -1601,21 +1712,49 @@ registers:
         bitOffset: 9
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: NO_ERROR
+            description: No error
+            value: 0
+          - name: ERROR
+            description: Error
+            value: 1
       - name: HCRC
         description: High data rate CRC error
         bitOffset: 10
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: NO_ERROR
+            description: No error
+            value: 0
+          - name: ERROR
+            description: Error
+            value: 1
       - name: OREAD
         description: Over-read error
         bitOffset: 16
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: NO_ERROR
+            description: No error
+            value: 0
+          - name: ERROR
+            description: Error
+            value: 1
       - name: OWRITE
         description: Over-write error
         bitOffset: 17
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: NO_ERROR
+            description: No error
+            value: 0
+          - name: ERROR
+            description: Error
+            value: 1
       - name: MSGERR
         description: Message error
         bitOffset: 18
@@ -1632,7 +1771,7 @@ registers:
         bitWidth: 1
         access: read-write
   - name: MDMACTRL
-    description: Master DMA Control Register
+    description: Controller DMA Control Register
     addressOffset: 160
     size: 32
     access: read-write
@@ -1646,13 +1785,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: NOT_USED
-            description: 'NOT_USED: DMA is not used'
+            description: DMA is not used
             value: 0
           - name: ENABLE_ONE_FRAME
-            description: 'ENABLE_ONE_FRAME: DMA is enabled for 1 frame. DMAFB auto-clears on STOP or repeated START. See MCONFIG.MATCHSS.'
+            description: Enable DMA for one frame. STOP or repeated START causes DMAFB to automatically become 0. See SCONFIG[MATCHSS].
             value: 1
           - name: ENABLE
-            description: 'ENABLE: DMA is enabled until the DMA is turned off.'
+            description: Enable DMA until DMA is turned off
             value: 2
       - name: DMATB
         description: DMA to bus
@@ -1661,13 +1800,13 @@ registers:
         access: read-write
         enumeratedValues:
           - name: NOT_USED
-            description: 'NOT_USED: DMA is not used'
+            description: DMA is not used
             value: 0
           - name: ENABLE_ONE_FRAME
-            description: 'ENABLE_ONE_FRAME: DMA is enabled for 1 frame (ended by DMA or Terminated). DMATB auto-clears on STOP or START. See MCONFIG.MATCHSS.'
+            description: Enable DMA for one frame (ended by DMA or Terminated). STOP or START causes DMATB to become 0. See SCONFIG[MATCHSS] .
             value: 1
           - name: ENABLE
-            description: 'ENABLE: DMA is enabled until DMA is turned off. Normally DMA ENABLE should only be used in Master Message mode.'
+            description: Enable DMA until DMA is turned off. Normally, DMA ENABLE should only be used in Controller Message mode.
             value: 2
       - name: DMAWIDTH
         description: DMA width
@@ -1685,7 +1824,7 @@ registers:
             description: 'HALF_WORD: Half-word (16 bits). This will make sure that 2 bytes are free/available in FIFO.'
             value: 2
   - name: MDATACTRL
-    description: Master Data Control Register
+    description: Controller Data Control Register
     addressOffset: 172
     size: 32
     access: read-write
@@ -1708,37 +1847,37 @@ registers:
         bitWidth: 1
         access: write-only
       - name: TXTRIG
-        description: TX trigger level
+        description: Transmit trigger level
         bitOffset: 4
         bitWidth: 2
         access: read-write
       - name: RXTRIG
-        description: RX trigger level
+        description: Receive trigger level
         bitOffset: 6
         bitWidth: 2
         access: read-write
       - name: TXCOUNT
-        description: TX byte count
+        description: Transmit Byte Count.
         bitOffset: 16
         bitWidth: 5
         access: read-only
       - name: RXCOUNT
-        description: RX byte count
+        description: Receive Byte Count
         bitOffset: 24
         bitWidth: 5
         access: read-only
       - name: TXFULL
-        description: TX is full
+        description: Transmit Is Full
         bitOffset: 30
         bitWidth: 1
         access: read-only
       - name: RXEMPTY
-        description: RX is empty
+        description: Receive Is Empty
         bitOffset: 31
         bitWidth: 1
         access: read-only
   - name: MWDATAB
-    description: Master Write Data Byte Register
+    description: Controller Write Data Byte Register
     addressOffset: 176
     size: 32
     access: write-only
@@ -1761,20 +1900,20 @@ registers:
         bitWidth: 1
         access: write-only
   - name: MWDATABE
-    description: Master Write Data Byte End Register
+    description: Controller Write Data Byte End Register
     addressOffset: 180
     size: 32
     access: write-only
     resetValue: 0
     resetMask: 0
     fields:
-      - name: DATA
+      - name: VALUE
         description: Data
         bitOffset: 0
         bitWidth: 8
         access: write-only
   - name: MWDATAH
-    description: Master Write Data Half-word Register
+    description: Controller Write Data Half-word Register
     addressOffset: 184
     size: 32
     access: write-only
@@ -1797,7 +1936,7 @@ registers:
         bitWidth: 1
         access: write-only
   - name: MWDATAHE
-    description: Master Write Data Byte End Register
+    description: Controller Write Data Halfword End
     addressOffset: 188
     size: 32
     access: write-only
@@ -1815,7 +1954,7 @@ registers:
         bitWidth: 8
         access: write-only
   - name: MRDATAB
-    description: Master Read Data Byte Register
+    description: Controller Read Data Byte Register
     addressOffset: 192
     size: 32
     access: read-only
@@ -1828,7 +1967,7 @@ registers:
         bitWidth: 8
         access: read-only
   - name: MRDATAH
-    description: Master Read Data Half-word Register
+    description: Controller Read Data Half-word Register
     addressOffset: 200
     size: 32
     access: read-only
@@ -1859,7 +1998,7 @@ registers:
         bitWidth: 8
         access: read-only
   - name: MWMSG_SDR_CONTROL
-    description: Master Write Message in SDR mode
+    description: Controller Write Message in SDR mode
     alternateGroup: MWMSG_SDR
     addressOffset: 208
     size: 32
@@ -1880,7 +2019,7 @@ registers:
             description: Read
             value: 1
       - name: ADDR
-        description: Address to be written to
+        description: Contains address to be written.
         bitOffset: 1
         bitWidth: 7
         access: write-only
@@ -1889,6 +2028,13 @@ registers:
         bitOffset: 8
         bitWidth: 1
         access: write-only
+        enumeratedValues:
+          - name: NOTEND
+            description: Not the end. SDR message ends waiting for a new SDR message (issues a repeated START for a new message).
+            value: 0
+          - name: END
+            description: End. SDR message ends at the STOP.
+            value: 1
       - name: I2C
         description: I2C
         bitOffset: 10
@@ -1907,7 +2053,7 @@ registers:
         bitWidth: 5
         access: write-only
   - name: MWMSG_SDR_DATA
-    description: Master Write Message Data in SDR mode
+    description: Controller Write Message Data in SDR mode
     alternateGroup: MWMSG_SDR
     addressOffset: 208
     size: 32
@@ -1920,13 +2066,8 @@ registers:
         bitOffset: 0
         bitWidth: 16
         access: write-only
-      - name: END
-        description: End of message
-        bitOffset: 16
-        bitWidth: 1
-        access: write-only
   - name: MRMSG_SDR
-    description: Master Read Message in SDR mode
+    description: Controller Read Message in SDR mode
     addressOffset: 212
     size: 32
     access: read-only
@@ -1939,7 +2080,7 @@ registers:
         bitWidth: 16
         access: read-only
   - name: MWMSG_DDR_CONTROL
-    description: Master Write Message in DDR mode
+    description: 'Controller Write Message in DDR mode: First Control Word'
     alternateGroup: MWMSG_DDR
     addressOffset: 216
     size: 32
@@ -1947,18 +2088,13 @@ registers:
     resetValue: 0
     resetMask: 0
     fields:
-      - name: LEN
-        description: Length of message
+      - name: ADDRCMD
+        description: Address Command
         bitOffset: 0
-        bitWidth: 10
-        access: write-only
-      - name: END
-        description: End of message
-        bitOffset: 14
-        bitWidth: 1
+        bitWidth: 16
         access: write-only
   - name: MWMSG_DDR_DATA
-    description: Master Write Message Data in DDR mode
+    description: Controller Write Message Data in DDR mode
     alternateGroup: MWMSG_DDR
     addressOffset: 216
     size: 32
@@ -1971,13 +2107,8 @@ registers:
         bitOffset: 0
         bitWidth: 16
         access: write-only
-      - name: END
-        description: End of message
-        bitOffset: 16
-        bitWidth: 1
-        access: write-only
   - name: MRMSG_DDR
-    description: Master Read Message in DDR mode
+    description: Controller Read Message in DDR mode
     addressOffset: 220
     size: 32
     access: read-write
@@ -1989,29 +2120,77 @@ registers:
         bitOffset: 0
         bitWidth: 16
         access: read-write
-      - name: CLEN
-        description: Current length
-        bitOffset: 16
-        bitWidth: 10
-        access: read-write
   - name: MDYNADDR
-    description: Master Dynamic Address Register
+    description: Controller Dynamic Address
     addressOffset: 228
     size: 32
     access: read-write
     resetValue: 0
-    resetMask: 255
+    resetMask: 4294967295
     fields:
       - name: DAVALID
         description: Dynamic address valid
         bitOffset: 0
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - name: NO_VALID
+            description: No valid DA assigned
+            value: 0
+          - name: VALID
+            description: Valid DA assigned
+            value: 1
       - name: DADDR
         description: Dynamic address
         bitOffset: 1
         bitWidth: 7
         access: read-write
+  - name: SMAPCTRL0
+    description: Map Feature Control 0
+    addressOffset: 284
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ENA
+        description: Enable Primary Dynamic Address
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: DISABLE
+            description: Disable
+            value: 0
+          - name: ENABLE
+            description: Enable
+            value: 1
+      - name: DA
+        description: Dynamic Address
+        bitOffset: 1
+        bitWidth: 7
+        access: read-only
+      - name: CAUSE
+        description: Cause
+        bitOffset: 8
+        bitWidth: 3
+        access: read-only
+        enumeratedValues:
+          - name: NONE
+            description: No information. This value occurs when not configured to write DA.
+            value: 0
+          - name: ENTDAA
+            description: Set using ENTDAA
+            value: 1
+          - name: SETDASA
+            description: Set using SETDASA, SETAASA, or SETNEWDA
+            value: 2
+          - name: RSTDAA
+            description: Cleared using RSTDAA
+            value: 3
+          - name: AUTOMAP
+            description: Auto MAP change happened last. The change may have changed this DA as well (for example, ENTDAA, and SETAASA), but at least one MAP entry automatically changed after.
+            value: 4
   - name: SID
     description: Slave Module ID Register
     addressOffset: 4092
