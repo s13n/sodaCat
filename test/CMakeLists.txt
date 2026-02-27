@@ -44,7 +44,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/ADC_Co
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/AdvCtrlTimer .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/ART .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/AXI .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/BasicTimer .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/BasicTimer .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/BDMA .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/CAN_CCU .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/CEC .hpp)
