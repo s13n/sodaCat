@@ -69,7 +69,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/HRTIM_
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/I2C .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/IWDG .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/JPEG .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/LPTIM .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/LPTIM .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/LTDC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/MDIOS .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/MDMA .hpp)

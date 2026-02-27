@@ -164,6 +164,47 @@ shared_blocks:
       - {type: patchFields, register: CSR2, fields: [{name: VP_SEL, description: "Non inverted input selection", bitOffset: 2, bitWidth: 2}]}
       # SVD bug: OR register missing (all reserved, present in all H7/H5 RMs at offset 0x0C)
       - {type: patchRegisters, registers: [{name: OR, displayName: OR, description: "OPAMP option register", addressOffset: 12, size: 32, access: read-write, resetValue: 0}]}
+  LPTIM:
+    from: STM32U031.LPTIM1
+    interrupts:
+      LPTIM1: INTR
+      LPTIM2: INTR2
+      LP_Timer1: INTR
+    params:
+      - {name: max_channel, type: int, default: 0, max: 3, description: Highest CC channel index (0=CCR1 only, 1=CCR1+CCR2, 3=CCR1-CCR4)}
+      - {name: has_counter_reset, type: bool, default: true, description: COUNTRST/RSTARE in CR}
+      - {name: has_repetition, type: bool, default: true, description: RCR register and UE/REPOK status bits}
+      - {name: has_cfgr2, type: bool, default: true, description: CFGR2 input selection register}
+      - {name: or_type, type: int, default: 0, max: 2, description: "OR register variant (0=none, 1=L4 2-bit option, 2=G4 6-bit input mux)"}
+    transforms:
+      # Widen TRIGSEL from 3-bit to 4-bit (G4 has 16 trigger sources)
+      - {type: patchFields, register: CFGR, fields: [{name: TRIGSEL, bitWidth: 4}]}
+      # Add OR register variants at offset 0x20 (G4 input-mux layout, L4 generic option bits)
+      - type: patchRegisters
+        registers:
+          - name: OR_INMUX
+            displayName: OR_INMUX
+            description: Option register [input mux variant]
+            addressOffset: 32
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: IN1, description: LPTIM input 1 mux, bitOffset: 0, bitWidth: 1}
+              - {name: IN2, description: LPTIM input 2 mux, bitOffset: 1, bitWidth: 1}
+              - {name: IN1_2_1, description: LPTIM input 1 extended mux, bitOffset: 2, bitWidth: 2}
+              - {name: IN2_2_1, description: LPTIM input 2 extended mux, bitOffset: 4, bitWidth: 2}
+          - name: OR_OPTION
+            displayName: OR_OPTION
+            description: Option register [generic option bits variant]
+            alternateRegister: OR_INMUX
+            addressOffset: 32
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: OR_0, description: Option register bit 0, bitOffset: 0, bitWidth: 1}
+              - {name: OR_1, description: Option register bit 1, bitOffset: 1, bitWidth: 1}
   TimerV1:
     # Classic timer (V1 layout): DCR@0x48, CCR5@0x58
     # Unified GP + AdvCtrl. Families: F4, F7, H7, C0, G0, U0, L4, L4P, L5, L0, L1
@@ -887,7 +928,7 @@ families:
         from: STM32F401.IWDG
         instances: [IWDG]
       LPTIM:
-        from: STM32F413.LPTIM
+        uses: LPTIM
         instances: [LPTIM, LPTIM1]
       LTDC:
         from: STM32F429.LTDC
@@ -1107,6 +1148,7 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+          LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
       F401:
         _all:
           PWR: {power_mode: lvds}
@@ -1385,7 +1427,7 @@ families:
         interrupts:
           JPEG: INTR
       LPTIM:
-        from: STM32F722.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1]
         interrupts:
           LP_Timer1: INTR
@@ -1596,6 +1638,7 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+          LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
@@ -1717,7 +1760,7 @@ families:
         from: STM32G030.IWDG
         instances: [IWDG]
       LPTIM:
-        from: STM32G031.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2]
       LPUART:
         uses: LPUART
@@ -1785,6 +1828,7 @@ families:
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+          LPTIM: {has_repetition: false}
   G4:
     svd:
       zip: stm32g4_svd.zip
@@ -1934,10 +1978,8 @@ families:
         from: STM32G431.IWDG
         instances: [IWDG]
       LPTIM:
-        from: STM32G431.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART1]
@@ -2024,6 +2066,7 @@ families:
           TIM20: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM3: {encoder: 2, sms_preload: 2}
           TIM4: {encoder: 1, sms_preload: 2}
+          LPTIM: {has_repetition: false, has_cfgr2: false, or_type: 2}
       G4xx:
         STM32G431:
           Flash: {pages: 64}
@@ -2259,10 +2302,8 @@ families:
         from: STM32H523.IWDG_S
         instances: [IWDG_S]
       LPTIM:
-        from: STM32H503.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM1_S, LPTIM2, LPTIM2_S, LPTIM3, LPTIM4, LPTIM5, LPTIM6]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART, LPUART_S]
@@ -2435,6 +2476,7 @@ families:
           TIM8_S: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM3: {encoder: 3, sms_preload: 2}
           TIM4: {encoder: 3, sms_preload: 2}
+          LPTIM: {max_channel: 1}
   H7:
     svd:
       zip: stm32h7-svd.zip
@@ -2730,10 +2772,8 @@ families:
         interrupts:
           JPEG: INTR
       LPTIM:
-        from: STM32H723.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4, LPTIM5]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART1]
@@ -2961,6 +3001,7 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+          LPTIM: {has_repetition: false}
       H742_H753:
         _all:
           DFSDM: {has_dlyr: false}
@@ -3182,10 +3223,8 @@ families:
         interrupts:
           JPEG: INTR
       LPTIM:
-        from: STM32H7S.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4, LPTIM5]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART1]
@@ -3324,6 +3363,7 @@ families:
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          LPTIM: {max_channel: 1}
   L0:
     svd:
       zip: stm32l0-svd.zip
@@ -3411,10 +3451,8 @@ families:
         interrupts:
           LCD: INTR
       LPTIM:
-        from: STM32L0x0.LPTIM
+        uses: LPTIM
         instances: [LPTIM]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART1, LPUSART1]
@@ -3491,6 +3529,7 @@ families:
           TIM21: {max_channel: 1, has_xor_input: false, has_dma_burst: false}
           TIM22: {max_channel: 1, has_xor_input: false, has_dma_burst: false}
           TIM3: {encoder: 1}
+          LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
       L0x3:
         _all:
           ADC: {vlcd_channel: true}
@@ -3809,10 +3848,8 @@ families:
         interrupts:
           LCD: INTR
       LPTIM:
-        from: STM32L412.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART1]
@@ -3921,6 +3958,18 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+      L41x_L42x:
+        _all:
+          LPTIM: {or_type: 1}
+      L43x_L46x:
+        STM32L432:
+          LPTIM: {or_type: 1}
+        STM32L442:
+          LPTIM: {or_type: 1}
+        STM32L452:
+          LPTIM: {or_type: 1}
+        STM32L462:
+          LPTIM: {or_type: 1}
   L4P:
     svd:
       zip: stm32l4plus-svd.zip
@@ -4097,10 +4146,8 @@ families:
         from: STM32L4P5.IWDG
         instances: [IWDG]
       LPTIM:
-        from: STM32L4P5.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART1]
@@ -4225,6 +4272,7 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+          LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
   L5:
     svd:
       zip: stm32l5-svd.zip
@@ -4362,7 +4410,7 @@ families:
         from: STM32L552.IWDG
         instances: [IWDG]
       LPTIM:
-        from: STM32L552.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3]
         interrupts:
           LPTIM1: INTR
@@ -4671,10 +4719,8 @@ families:
         interrupts:
           JPEG: INTR
       LPTIM:
-        from: STM32N645.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4, LPTIM5]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART1]
@@ -4825,6 +4871,7 @@ families:
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          LPTIM: {max_channel: 1}
   U0:
     svd:
       zip: stm32u0-svd.zip
@@ -4915,7 +4962,7 @@ families:
         interrupts:
           LCD: INTR
       LPTIM:
-        from: STM32U031.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3]
       LPUART:
         uses: LPUART
@@ -4981,6 +5028,7 @@ families:
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
+          LPTIM: {max_channel: 3}
   U3:
     svd:
       zip: stm32u3-svd.zip
@@ -5121,10 +5169,8 @@ families:
         interrupts:
           IWDG: INTR
       LPTIM:
-        from: STM32U375.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART]
@@ -5233,6 +5279,7 @@ families:
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          LPTIM: {max_channel: 1}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5447,10 +5494,8 @@ families:
         from: STM32U5Fx.LPGPIO1
         instances: [LPGPIO1]
       LPTIM:
-        from: STM32U5Fx.LPTIM1
+        uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4]
-        interrupts:
-          LPTIM1: INTR
       LPUART:
         uses: LPUART
         instances: [LPUART1]
@@ -5592,3 +5637,4 @@ families:
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          LPTIM: {max_channel: 1}
