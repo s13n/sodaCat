@@ -83,7 +83,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/QUADSP
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/RAMECC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/RNG .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/RTC .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/SAI .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/SAI .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/SDMMC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/SPDIFRX .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/ModernSPI .hpp)

@@ -1,11 +1,40 @@
 name: SAI
 description: Serial audio interface
 groupName: SAI
-source: STM32L4P5 SVD v1.8
+source: STM32U535 SVD v1.0
+params:
+  - name: has_gcr
+    type: bool
+    default: true
+    description: GCR register (inter-SAI synchronization)
+  - name: has_pdm
+    type: bool
+    default: false
+    description: PDM support (PDMCR/PDMDLY registers + OSR in xCR1)
+  - name: has_mcken
+    type: bool
+    default: false
+    description: Master clock enable (MCKEN + 6-bit MCKDIV in xCR1)
 registers:
+  - name: GCR
+    displayName: GCR
+    description: Global configuration register
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: SYNCIN
+        description: Synchronization inputs
+        bitOffset: 0
+        bitWidth: 2
+      - name: SYNCOUT
+        description: Synchronization outputs
+        bitOffset: 4
+        bitWidth: 2
   - name: ACR1
     displayName: ACR1
-    description: AConfiguration register 1
+    description: A Configuration register 1
     addressOffset: 4
     size: 32
     access: read-write
@@ -39,11 +68,11 @@ registers:
         description: Mono mode
         bitOffset: 12
         bitWidth: 1
-      - name: OutDri
+      - name: OUTDRIV
         description: Output drive
         bitOffset: 13
         bitWidth: 1
-      - name: SAIAEN
+      - name: SAIXEN
         description: Audio block A enable
         bitOffset: 16
         bitWidth: 1
@@ -55,13 +84,21 @@ registers:
         description: No divider
         bitOffset: 19
         bitWidth: 1
-      - name: MCJDIV
+      - name: MCKDIV
         description: Master clock divider
         bitOffset: 20
-        bitWidth: 4
+        bitWidth: 6
+      - name: OSR
+        description: OSR
+        bitOffset: 26
+        bitWidth: 1
+      - name: MCKEN
+        description: MCKEN
+        bitOffset: 27
+        bitWidth: 1
   - name: ACR2
     displayName: ACR2
-    description: AConfiguration register 2
+    description: A Configuration register 2
     addressOffset: 8
     size: 32
     access: read-write
@@ -71,7 +108,7 @@ registers:
         description: FIFO threshold
         bitOffset: 0
         bitWidth: 3
-      - name: FFLUS
+      - name: FFLUSH
         description: FIFO flush
         bitOffset: 3
         bitWidth: 1
@@ -87,7 +124,7 @@ registers:
         description: Mute value
         bitOffset: 6
         bitWidth: 1
-      - name: MUTECN
+      - name: MUTECNT
         description: Mute counter
         bitOffset: 7
         bitWidth: 6
@@ -101,35 +138,39 @@ registers:
         bitWidth: 2
   - name: AFRCR
     displayName: AFRCR
-    description: AFRCR
+    description: A frame configuration register
     addressOffset: 12
     size: 32
-    access: read-write
     resetValue: 7
     fields:
       - name: FRL
         description: Frame length
         bitOffset: 0
         bitWidth: 8
+        access: read-write
       - name: FSALL
         description: "Frame synchronization active level\n              length"
         bitOffset: 8
         bitWidth: 7
+        access: read-write
       - name: FSDEF
         description: "Frame synchronization\n              definition"
         bitOffset: 16
         bitWidth: 1
+        access: read-only
       - name: FSPOL
         description: "Frame synchronization\n              polarity"
         bitOffset: 17
         bitWidth: 1
+        access: read-write
       - name: FSOFF
         description: "Frame synchronization\n              offset"
         bitOffset: 18
         bitWidth: 1
+        access: read-write
   - name: ASLOTR
     displayName: ASLOTR
-    description: ASlot register
+    description: A Slot register
     addressOffset: 16
     size: 32
     access: read-write
@@ -153,7 +194,7 @@ registers:
         bitWidth: 16
   - name: AIM
     displayName: AIM
-    description: AInterrupt mask register2
+    description: A Interrupt mask register
     addressOffset: 20
     size: 32
     access: read-write
@@ -163,11 +204,11 @@ registers:
         description: "Overrun/underrun interrupt\n              enable"
         bitOffset: 0
         bitWidth: 1
-      - name: MUTEDET
+      - name: MUTEDETIE
         description: "Mute detection interrupt\n              enable"
         bitOffset: 1
         bitWidth: 1
-      - name: WCKCFG
+      - name: WCKCFGIE
         description: "Wrong clock configuration interrupt\n              enable"
         bitOffset: 2
         bitWidth: 1
@@ -183,17 +224,17 @@ registers:
         description: "Anticipated frame synchronization\n              detection interrupt enable"
         bitOffset: 5
         bitWidth: 1
-      - name: LFSDET
+      - name: LFSDETIE
         description: "Late frame synchronization detection\n              interrupt enable"
         bitOffset: 6
         bitWidth: 1
   - name: ASR
     displayName: ASR
-    description: AStatus register
+    description: A Status register
     addressOffset: 24
     size: 32
-    access: read-write
-    resetValue: 0
+    access: read-only
+    resetValue: 8
     fields:
       - name: OVRUDR
         description: Overrun / underrun
@@ -229,25 +270,25 @@ registers:
         bitWidth: 3
   - name: ACLRFR
     displayName: ACLRFR
-    description: AClear flag register
+    description: A Clear flag register
     addressOffset: 28
     size: 32
-    access: read-write
+    access: write-only
     resetValue: 0
     fields:
-      - name: OVRUDR
+      - name: COVRUDR
         description: Clear overrun / underrun
         bitOffset: 0
         bitWidth: 1
-      - name: MUTEDET
+      - name: CMUTEDET
         description: Mute detection flag
         bitOffset: 1
         bitWidth: 1
-      - name: WCKCFG
+      - name: CWCKCFG
         description: "Clear wrong clock configuration\n              flag"
         bitOffset: 2
         bitWidth: 1
-      - name: CNRDY
+      - name: CCNRDY
         description: Clear codec not ready flag
         bitOffset: 4
         bitWidth: 1
@@ -255,13 +296,13 @@ registers:
         description: "Clear anticipated frame synchronization\n              detection flag"
         bitOffset: 5
         bitWidth: 1
-      - name: LFSDET
+      - name: CLFSDET
         description: "Clear late frame synchronization\n              detection flag"
         bitOffset: 6
         bitWidth: 1
   - name: ADR
     displayName: ADR
-    description: AData register
+    description: A Data register
     addressOffset: 32
     size: 32
     access: read-write
@@ -273,7 +314,7 @@ registers:
         bitWidth: 32
   - name: BCR1
     displayName: BCR1
-    description: BConfiguration register 1
+    description: B Configuration register 1
     addressOffset: 36
     size: 32
     access: read-write
@@ -307,12 +348,12 @@ registers:
         description: Mono mode
         bitOffset: 12
         bitWidth: 1
-      - name: OutDri
+      - name: OUTDRIV
         description: Output drive
         bitOffset: 13
         bitWidth: 1
-      - name: SAIBEN
-        description: Audio block B enable
+      - name: SAIXEN
+        description: Audio block A enable
         bitOffset: 16
         bitWidth: 1
       - name: DMAEN
@@ -323,13 +364,21 @@ registers:
         description: No divider
         bitOffset: 19
         bitWidth: 1
-      - name: MCJDIV
+      - name: MCKDIV
         description: Master clock divider
         bitOffset: 20
-        bitWidth: 4
+        bitWidth: 6
+      - name: OSR
+        description: OSR
+        bitOffset: 26
+        bitWidth: 1
+      - name: MCKEN
+        description: MCKEN
+        bitOffset: 27
+        bitWidth: 1
   - name: BCR2
     displayName: BCR2
-    description: BConfiguration register 2
+    description: B Configuration register 2
     addressOffset: 40
     size: 32
     access: read-write
@@ -339,7 +388,7 @@ registers:
         description: FIFO threshold
         bitOffset: 0
         bitWidth: 3
-      - name: FFLUS
+      - name: FFLUSH
         description: FIFO flush
         bitOffset: 3
         bitWidth: 1
@@ -355,7 +404,7 @@ registers:
         description: Mute value
         bitOffset: 6
         bitWidth: 1
-      - name: MUTECN
+      - name: MUTECNT
         description: Mute counter
         bitOffset: 7
         bitWidth: 6
@@ -369,35 +418,39 @@ registers:
         bitWidth: 2
   - name: BFRCR
     displayName: BFRCR
-    description: BFRCR
+    description: B frame configuration register
     addressOffset: 44
     size: 32
-    access: read-write
     resetValue: 7
     fields:
       - name: FRL
         description: Frame length
         bitOffset: 0
         bitWidth: 8
+        access: read-write
       - name: FSALL
         description: "Frame synchronization active level\n              length"
         bitOffset: 8
         bitWidth: 7
+        access: read-write
       - name: FSDEF
         description: "Frame synchronization\n              definition"
         bitOffset: 16
         bitWidth: 1
+        access: read-only
       - name: FSPOL
         description: "Frame synchronization\n              polarity"
         bitOffset: 17
         bitWidth: 1
+        access: read-write
       - name: FSOFF
         description: "Frame synchronization\n              offset"
         bitOffset: 18
         bitWidth: 1
+        access: read-write
   - name: BSLOTR
     displayName: BSLOTR
-    description: BSlot register
+    description: B Slot register
     addressOffset: 48
     size: 32
     access: read-write
@@ -421,7 +474,7 @@ registers:
         bitWidth: 16
   - name: BIM
     displayName: BIM
-    description: BInterrupt mask register2
+    description: B Interrupt mask register
     addressOffset: 52
     size: 32
     access: read-write
@@ -431,11 +484,11 @@ registers:
         description: "Overrun/underrun interrupt\n              enable"
         bitOffset: 0
         bitWidth: 1
-      - name: MUTEDET
+      - name: MUTEDETIE
         description: "Mute detection interrupt\n              enable"
         bitOffset: 1
         bitWidth: 1
-      - name: WCKCFG
+      - name: WCKCFGIE
         description: "Wrong clock configuration interrupt\n              enable"
         bitOffset: 2
         bitWidth: 1
@@ -457,11 +510,11 @@ registers:
         bitWidth: 1
   - name: BSR
     displayName: BSR
-    description: BStatus register
+    description: B Status register
     addressOffset: 56
     size: 32
     access: read-only
-    resetValue: 0
+    resetValue: 8
     fields:
       - name: OVRUDR
         description: Overrun / underrun
@@ -497,25 +550,25 @@ registers:
         bitWidth: 3
   - name: BCLRFR
     displayName: BCLRFR
-    description: BClear flag register
+    description: B Clear flag register
     addressOffset: 60
     size: 32
     access: write-only
     resetValue: 0
     fields:
-      - name: OVRUDR
+      - name: COVRUDR
         description: Clear overrun / underrun
         bitOffset: 0
         bitWidth: 1
-      - name: MUTEDET
+      - name: CMUTEDET
         description: Mute detection flag
         bitOffset: 1
         bitWidth: 1
-      - name: WCKCFG
+      - name: CWCKCFG
         description: "Clear wrong clock configuration\n              flag"
         bitOffset: 2
         bitWidth: 1
-      - name: CNRDY
+      - name: CCNRDY
         description: Clear codec not ready flag
         bitOffset: 4
         bitWidth: 1
@@ -523,13 +576,13 @@ registers:
         description: "Clear anticipated frame synchronization\n              detection flag"
         bitOffset: 5
         bitWidth: 1
-      - name: LFSDET
+      - name: CLFSDET
         description: "Clear late frame synchronization\n              detection flag"
         bitOffset: 6
         bitWidth: 1
   - name: BDR
     displayName: BDR
-    description: BData register
+    description: B Data register
     addressOffset: 64
     size: 32
     access: read-write
@@ -539,6 +592,78 @@ registers:
         description: Data
         bitOffset: 0
         bitWidth: 32
+  - name: PDMCR
+    displayName: PDMCR
+    description: PDM control register
+    addressOffset: 68
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: PDMEN
+        description: PDM enable
+        bitOffset: 0
+        bitWidth: 1
+      - name: MICNBR
+        description: MICNBR
+        bitOffset: 4
+        bitWidth: 2
+      - name: CKEN1
+        description: "Clock enable of bitstream clock number\n              1"
+        bitOffset: 8
+        bitWidth: 1
+      - name: CKEN2
+        description: CKEN2
+        bitOffset: 9
+        bitWidth: 1
+      - name: CKEN3
+        description: CKEN3
+        bitOffset: 10
+        bitWidth: 1
+      - name: CKEN4
+        description: CKEN4
+        bitOffset: 11
+        bitWidth: 1
+  - name: PDMDLY
+    displayName: PDMDLY
+    description: PDM delay register
+    addressOffset: 72
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: DLYM1L
+        description: "Delay line adjust for first microphone\n              of pair 1"
+        bitOffset: 0
+        bitWidth: 3
+      - name: DLYM1R
+        description: "Delay line adjust for second microphone\n              of pair 1"
+        bitOffset: 4
+        bitWidth: 3
+      - name: DLYM2L
+        description: "Delay line for first microphone of pair\n              2"
+        bitOffset: 8
+        bitWidth: 3
+      - name: DLYM2R
+        description: "Delay line for second microphone of pair\n              2"
+        bitOffset: 12
+        bitWidth: 3
+      - name: DLYM3L
+        description: DLYM3L
+        bitOffset: 16
+        bitWidth: 3
+      - name: DLYM3R
+        description: DLYM3R
+        bitOffset: 20
+        bitWidth: 3
+      - name: DLYM4L
+        description: DLYM4L
+        bitOffset: 24
+        bitWidth: 3
+      - name: DLYM4R
+        description: DLYM4R
+        bitOffset: 28
+        bitWidth: 3
 addressBlocks:
   - offset: 0
     size: 1024
@@ -546,3 +671,5 @@ addressBlocks:
 interrupts:
   - name: INTR
     description: SAI1 global interrupt
+  - name: A
+  - name: B

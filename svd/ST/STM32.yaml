@@ -321,6 +321,25 @@ shared_blocks:
         register: I2SCFGR
         fields:
           - {name: ASTRTEN, description: Asynchronous start enable, bitOffset: 12, bitWidth: 1}
+  SAI:
+    # Serial Audio Interface: dual audio block (A/B) with optional GCR, PDM
+    # Families: F4, F7, G4, H5, H7, H7RS, L4, L4P, L5, N6, U3, U5
+    from: STM32U535.SAI1
+    interrupts:
+      SAI1: INTR
+      SAI1_A: A
+      SAI1_B: B
+    params:
+      - {name: has_gcr, type: bool, default: true, description: 'GCR register (inter-SAI synchronization)'}
+      - {name: has_pdm, type: bool, default: false, description: 'PDM support (PDMCR/PDMDLY registers + OSR in xCR1)'}
+      - {name: has_mcken, type: bool, default: false, description: 'Master clock enable (MCKEN + 6-bit MCKDIV in xCR1)'}
+    transforms:
+      # Normalize enable field names to generic SAIXEN
+      - {type: renameFields, register: ACR1, pattern: ^SAIAEN$, replacement: SAIXEN}
+      - {type: renameFields, register: BCR1, pattern: ^SAIAEN$, replacement: SAIXEN}
+      # Fix truncated counter name
+      - {type: renameFields, register: ACR2, pattern: ^MUTECN$, replacement: MUTECNT}
+      - {type: renameFields, register: BCR2, pattern: ^MUTECN$, replacement: MUTECNT}
 families:
   C0:
     svd:
@@ -1150,14 +1169,8 @@ families:
         transforms:
           - {type: patchAddressBlock, size: 160}
       SAI:
-        from: STM32F446.SAI1
+        uses: SAI
         instances: [SAI, SAI1, SAI2]
-        params:
-          - {name: has_gcr, type: bool, default: false, description: Global configuration register (inter-SAI synchronization)}
-        transforms:
-          - {type: renameFields, register: ACR1, pattern: ^MCJDIV$, replacement: MCKDIV}
-          - {type: renameFields, register: BCR1, pattern: ^MCJDIV$, replacement: MCKDIV}
-          - {type: patchAddressBlock, size: 68}
       SDIO:
         from: STM32F401.SDIO
         instances: [SDIO]
@@ -1217,6 +1230,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
+          SAI: {has_gcr: false}
       F401:
         _all:
           PWR: {power_mode: lvds}
@@ -1621,10 +1635,8 @@ families:
         transforms:
           - {type: patchFields, register: OR, fields: [{name: TSINSEL, bitWidth: 2}]}
       SAI:
-        from: STM32F722.SAI1
+        uses: SAI
         instances: [SAI1, SAI2]
-        interrupts:
-          SAI1: INTR
       SDMMC:
         from: STM32F722.SDMMC1
         instances: [SDMMC1, SDMMC2]
@@ -2102,10 +2114,8 @@ families:
           RTC_WKUP: WKUP
           RTC_ALARM: ALARM
       SAI:
-        from: STM32G431.SAI
+        uses: SAI
         instances: [SAI]
-        interrupts:
-          SAI: INTR
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3, SPI4]
@@ -2155,6 +2165,7 @@ families:
           TIM3: {encoder: 2, sms_preload: 2}
           TIM4: {encoder: 1, sms_preload: 2}
           LPTIM: {has_repetition: false, has_cfgr2: false, or_type: 2}
+          SAI: {has_gcr: false, has_pdm: true, has_mcken: true}
       G4xx:
         STM32G431:
           Flash: {pages: 64}
@@ -2472,10 +2483,8 @@ families:
         from: STM32H533.SAES_S
         instances: [SAES_S]
       SAI:
-        from: STM32H562.SAI1
+        uses: SAI
         instances: [SAI1, SAI2]
-        interrupts:
-          SAI1: INTR
       SBS:
         from: STM32H503.SBS
         instances: [SBS]
@@ -2537,6 +2546,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           OPAMP: {single: true}
+          SAI: {has_pdm: true, has_mcken: true}
           SPI: {has_i2s: true}
           SPI_S: {has_i2s: true}
           SPI1: {has_i2s: true}
@@ -3016,10 +3026,8 @@ families:
           H7A3_B:
             from: STM32H7A3.RTC
       SAI:
-        from: STM32H723.SAI1
+        uses: SAI
         instances: [SAI1, SAI2, SAI3, SAI4]
-        interrupts:
-          SAI1: INTR
       SDMMC:
         from: STM32H743.SDMMC1
         instances: [SDMMC1, SDMMC2]
@@ -3097,6 +3105,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           LPTIM: {has_repetition: false}
+          SAI: {has_pdm: true}
       H742_H753:
         _all:
           DFSDM: {has_dlyr: false}
@@ -3387,11 +3396,8 @@ families:
           SAES: INTR
           AES: AES
       SAI:
-        from: STM32H7S.SAI1
+        uses: SAI
         instances: [SAI1, SAI2]
-        interrupts:
-          SAI1_A: A
-          SAI1_B: B
       SBS:
         from: STM32H7S.SBS
         instances: [SBS]
@@ -3463,6 +3469,7 @@ families:
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
+          SAI: {has_pdm: true, has_mcken: true}
   L0:
     svd:
       zip: stm32l0-svd.zip
@@ -3996,10 +4003,8 @@ families:
           L41x_L42x:
             from: STM32L412.RTC
       SAI:
-        from: STM32L431.SAI1
+        uses: SAI
         instances: [SAI1, SAI2]
-        interrupts:
-          SAI1: INTR
       SDMMC:
         from: STM32L431.SDMMC
         instances: [SDMMC, SDMMC1]
@@ -4059,6 +4064,7 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+          SAI: {has_gcr: false}
       L41x_L42x:
         _all:
           LPTIM: {or_type: 1}
@@ -4313,10 +4319,8 @@ families:
           L4Rx_L4Sx:
             from: STM32L4R5.RTC
       SAI:
-        from: STM32L4P5.SAI1
+        uses: SAI
         instances: [SAI1, SAI2]
-        interrupts:
-          SAI1: INTR
       SDMMC:
         instances: [SDMMC1, SDMMC2]
         interrupts:
@@ -4372,6 +4376,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
+          SAI: {has_gcr: false}
   L5:
     svd:
       zip: stm32l5-svd.zip
@@ -4556,10 +4561,8 @@ families:
           RTC: INTR
           RTC_S: S
       SAI:
-        from: STM32L552.SAI1
+        uses: SAI
         instances: [SAI1, SAI2]
-        interrupts:
-          SAI1: INTR
       SDMMC:
         from: STM32L552.SDMMC1
         instances: [SDMMC1]
@@ -4612,6 +4615,7 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+          SAI: {has_pdm: true}
   N6:
     svd:
       zip: stm32n6-svd.zip
@@ -4887,11 +4891,8 @@ families:
         interrupts:
           SAES: INTR
       SAI:
-        from: STM32N645.SAI1
+        uses: SAI
         instances: [SAI1, SAI2]
-        interrupts:
-          SAI1_A: A
-          SAI1_B: B
       SDMMC:
         from: STM32N645.SDMMC1
         instances: [SDMMC1, SDMMC2]
@@ -4971,6 +4972,7 @@ families:
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
+          SAI: {has_pdm: true, has_mcken: true}
   U0:
     svd:
       zip: stm32u0-svd.zip
@@ -5320,10 +5322,8 @@ families:
         interrupts:
           SAES: INTR
       SAI:
-        from: STM32U375.SAI
+        uses: SAI
         instances: [SAI]
-        interrupts:
-          SAI1: INTR
       SDMMC:
         from: STM32U375.SDMMC1
         instances: [SDMMC1]
@@ -5376,6 +5376,7 @@ families:
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
+          SAI: {has_gcr: false, has_pdm: true, has_mcken: true}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5675,10 +5676,8 @@ families:
         interrupts:
           SAES: INTR
       SAI:
-        from: STM32U535.SAI1
+        uses: SAI
         instances: [SAI1, SAI2]
-        interrupts:
-          SAI1: INTR
       SDMMC:
         from: STM32U535.SDMMC
         instances: [SDMMC, SDMMC1, SDMMC2]
@@ -5733,3 +5732,4 @@ families:
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
+          SAI: {has_pdm: true, has_mcken: true}
