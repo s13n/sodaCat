@@ -56,18 +56,18 @@ interrupts:
     - TIM1.TRG_COM_DIR_IDX
   60:
     - TIM1.CC
-  61:
-    - TIM2.INTR
-  62:
-    - TIM3.INTR
   65:
     - TIM6.INTR
   66:
     - TIM7.INTR
   67:
     - I2C1.EV
+  68:
+    - I2C1.ER
   69:
     - I2C2.EV
+  70:
+    - I2C2.ER
   71:
     - SPI1.INTR
   72:
@@ -82,10 +82,6 @@ interrupts:
     - USART3.INTR
   79:
     - LPUART.INTR
-  80:
-    - LPTIM1.INTR
-  86:
-    - LPTIM2.INTR
   91:
     - CRS.INTR
   106:
@@ -261,6 +257,8 @@ instances:
     interrupts:
       - name: EV
         value: 51
+      - name: ER
+        value: 52
     parameters: []
   I2C2:
     baseAddress: 1073764352
@@ -268,6 +266,8 @@ instances:
     interrupts:
       - name: EV
         value: 53
+      - name: ER
+        value: 54
     parameters: []
   I3C1:
     baseAddress: 1073765376
@@ -300,17 +300,33 @@ instances:
   LPTIM1:
     baseAddress: 1140868096
     model: LPTIM
-    interrupts:
-      - name: INTR
-        value: 64
-    parameters: []
+    interrupts: []
+    parameters:
+      - name: max_channel
+        value: 1
+      - name: has_counter_reset
+        value: true
+      - name: has_repetition
+        value: true
+      - name: has_cfgr2
+        value: true
+      - name: or_type
+        value: 0
   LPTIM2:
     baseAddress: 1073779712
     model: LPTIM
-    interrupts:
-      - name: INTR
-        value: 70
-    parameters: []
+    interrupts: []
+    parameters:
+      - name: max_channel
+        value: 1
+      - name: has_counter_reset
+        value: true
+      - name: has_repetition
+        value: true
+      - name: has_cfgr2
+        value: true
+      - name: or_type
+        value: 0
   LPUART:
     baseAddress: 1140859904
     model: LPUART
@@ -371,25 +387,43 @@ instances:
     parameters: []
   SPI1:
     baseAddress: 1073819648
-    model: SPI
+    model: ModernSPI
     interrupts:
       - name: INTR
         value: 55
-    parameters: []
+    parameters:
+      - name: has_tser
+        value: false
+      - name: has_autocr
+        value: false
+      - name: has_i2s
+        value: true
   SPI2:
     baseAddress: 1073756160
-    model: SPI
+    model: ModernSPI
     interrupts:
       - name: INTR
         value: 56
-    parameters: []
+    parameters:
+      - name: has_tser
+        value: false
+      - name: has_autocr
+        value: false
+      - name: has_i2s
+        value: true
   SPI3:
     baseAddress: 1073757184
-    model: SPI
+    model: ModernSPI
     interrupts:
       - name: INTR
         value: 57
-    parameters: []
+    parameters:
+      - name: has_tser
+        value: false
+      - name: has_autocr
+        value: false
+      - name: has_i2s
+        value: true
   TAMP:
     baseAddress: 1140882432
     model: TAMP
@@ -399,7 +433,7 @@ instances:
     parameters: []
   TIM1:
     baseAddress: 1073818624
-    model: AdvCtrlTimer
+    model: TimerV2
     interrupts:
       - name: BRK_TERR_IERR
         value: 41
@@ -409,18 +443,11 @@ instances:
         value: 43
       - name: CC
         value: 44
-    parameters: []
-  TIM2:
-    baseAddress: 1073741824
-    model: GpTimer
-    interrupts:
-      - name: INTR
-        value: 45
     parameters:
       - name: width32
-        value: true
-      - name: channels
-        value: 4
+        value: false
+      - name: max_channel
+        value: 5
       - name: has_centerPWM
         value: true
       - name: encoder
@@ -429,8 +456,39 @@ instances:
         value: true
       - name: has_etr
         value: true
-      - name: dma_burst
+      - name: has_dma_burst
+        value: true
+      - name: has_complementary
+        value: true
+      - name: has_dither
+        value: true
+      - name: sms_preload
         value: 2
+      - name: has_uifremap
+        value: false
+      - name: has_extended_ocm
+        value: false
+      - name: has_mms2
+        value: true
+  TIM2:
+    baseAddress: 1073741824
+    model: TimerV2
+    interrupts: []
+    parameters:
+      - name: width32
+        value: true
+      - name: max_channel
+        value: 3
+      - name: has_centerPWM
+        value: true
+      - name: encoder
+        value: 3
+      - name: has_xor_input
+        value: true
+      - name: has_etr
+        value: true
+      - name: has_dma_burst
+        value: true
       - name: has_complementary
         value: false
       - name: has_dither
@@ -440,18 +498,18 @@ instances:
       - name: has_uifremap
         value: false
       - name: has_extended_ocm
+        value: false
+      - name: has_mms2
         value: false
   TIM3:
     baseAddress: 1073742848
-    model: GpTimer
-    interrupts:
-      - name: INTR
-        value: 46
+    model: TimerV2
+    interrupts: []
     parameters:
       - name: width32
         value: false
-      - name: channels
-        value: 4
+      - name: max_channel
+        value: 3
       - name: has_centerPWM
         value: true
       - name: encoder
@@ -460,8 +518,8 @@ instances:
         value: true
       - name: has_etr
         value: true
-      - name: dma_burst
-        value: 2
+      - name: has_dma_burst
+        value: true
       - name: has_complementary
         value: false
       - name: has_dither
@@ -471,6 +529,8 @@ instances:
       - name: has_uifremap
         value: false
       - name: has_extended_ocm
+        value: false
+      - name: has_mms2
         value: false
   TIM6:
     baseAddress: 1073745920

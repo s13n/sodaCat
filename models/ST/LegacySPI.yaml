@@ -1,7 +1,20 @@
-name: SPI
+name: LegacySPI
 description: "Serial peripheral interface/Inter-IC\n      sound"
 groupName: SPI
-source: STM32F301 SVD v1.9
+source: STM32G030 SVD v1.6
+params:
+  - name: has_fifo
+    type: bool
+    default: true
+    description: FIFO capability (DS/FRXTH/LDMA_RX/LDMA_TX/NSSP in CR2, FRLVL/FTLVL in SR)
+  - name: has_i2s
+    type: bool
+    default: false
+    description: I2S audio capability (per-instance)
+  - name: has_astrten
+    type: bool
+    default: false
+    description: Asynchronous start enable (ASTRTEN in I2SCFGR)
 registers:
   - name: CR1
     displayName: CR1
@@ -47,8 +60,8 @@ registers:
         description: Receive only
         bitOffset: 10
         bitWidth: 1
-      - name: CRCL
-        description: CRC length
+      - name: DFF
+        description: Data frame format
         bitOffset: 11
         bitWidth: 1
       - name: CRCNEXT
@@ -235,7 +248,7 @@ registers:
         bitWidth: 16
   - name: I2SCFGR
     displayName: I2SCFGR
-    description: I2S configuration register
+    description: configuration register
     addressOffset: 28
     size: 32
     access: read-write
@@ -250,11 +263,11 @@ registers:
         bitOffset: 1
         bitWidth: 2
       - name: CKPOL
-        description: "Steady state clock\n              polarity"
+        description: "Inactive state clock\n              polarity"
         bitOffset: 3
         bitWidth: 1
       - name: I2SSTD
-        description: I2S standard selection
+        description: standard selection
         bitOffset: 4
         bitWidth: 2
       - name: PCMSYNC
@@ -266,23 +279,27 @@ registers:
         bitOffset: 8
         bitWidth: 2
       - name: I2SE
-        description: I2S Enable
+        description: I2S enable
         bitOffset: 10
         bitWidth: 1
       - name: I2SMOD
         description: I2S mode selection
         bitOffset: 11
         bitWidth: 1
+      - name: ASTRTEN
+        description: Asynchronous start enable
+        bitOffset: 12
+        bitWidth: 1
   - name: I2SPR
     displayName: I2SPR
-    description: I2S prescaler register
+    description: prescaler register
     addressOffset: 32
     size: 32
     access: read-write
-    resetValue: 16
+    resetValue: 0
     fields:
       - name: I2SDIV
-        description: I2S Linear prescaler
+        description: linear prescaler
         bitOffset: 0
         bitWidth: 8
       - name: ODD
@@ -299,3 +316,4 @@ addressBlocks:
     usage: registers
 interrupts:
   - name: INTR
+    description: SPI1 global interrupt

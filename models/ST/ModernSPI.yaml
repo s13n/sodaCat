@@ -1,7 +1,20 @@
-name: SPI
+name: ModernSPI
 description: Serial peripheral interface
 groupName: SPI
 source: STM32N645 SVD v1.0
+params:
+  - name: has_tser
+    type: bool
+    default: false
+    description: 'TSER transfer reload (H7): TSER in CR2, TSERFIE/TSERF/TSERFC, UDRDET/UDRCFG widened in CFG1'
+  - name: has_autocr
+    type: bool
+    default: false
+    description: Autonomous mode (AUTOCR register at 0x1C)
+  - name: has_i2s
+    type: bool
+    default: false
+    description: I2S audio capability (per-instance)
 registers:
   - name: CR1
     displayName: CR1
@@ -130,6 +143,11 @@ registers:
         bitOffset: 0
         bitWidth: 16
         access: read-write
+      - name: TSER
+        description: Number of data transfer extension to be reload into TSIZE
+        bitOffset: 16
+        bitWidth: 16
+        access: read-only
   - name: CFG1
     displayName: CFG1
     description: SPI/I2S configuration register 1
@@ -234,7 +252,7 @@ registers:
       - name: UDRCFG
         description: behavior of slave transmitter at underrun condition
         bitOffset: 9
-        bitWidth: 1
+        bitWidth: 2
         access: read-write
         enumeratedValues:
           - name: B_0x0
@@ -351,6 +369,10 @@ registers:
           - name: B_0x1
             description: bypass is enabled
             value: 1
+      - name: UDRDET
+        description: Detection of underrun condition at slave transmitter
+        bitOffset: 11
+        bitWidth: 2
   - name: CFG2
     displayName: CFG2
     description: SPI/I2S configuration register 2
@@ -691,6 +713,10 @@ registers:
           - name: B_0x1
             description: MODF interrupt enabled
             value: 1
+      - name: TSERFIE
+        description: Additional number of transactions reload interrupt enable
+        bitOffset: 10
+        bitWidth: 1
   - name: SR
     displayName: SR
     description: SPI/I2S status register
@@ -878,6 +904,10 @@ registers:
         bitOffset: 16
         bitWidth: 16
         access: read-only
+      - name: TSERF
+        description: Additional number of SPI data to be transacted was reload
+        bitOffset: 10
+        bitWidth: 1
   - name: IFCR
     displayName: IFCR
     description: SPI/I2S interrupt/status flags clear register
@@ -926,6 +956,10 @@ registers:
         bitOffset: 11
         bitWidth: 1
         access: write-only
+      - name: TSERFC
+        description: TSERFC flag clear
+        bitOffset: 10
+        bitWidth: 1
   - name: TXDR
     displayName: TXDR
     description: SPI/I2S transmit data register
@@ -1185,6 +1219,17 @@ registers:
           - name: B_0x1
             description: Master clock output is enabled
             value: 1
+  - name: AUTOCR
+    displayName: AUTOCR
+    description: Autonomous mode control register
+    addressOffset: 28
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - {name: TRIGSEL, description: Trigger selection, bitOffset: 16, bitWidth: 4}
+      - {name: TRIGPOL, description: Trigger polarity, bitOffset: 20, bitWidth: 1}
+      - {name: TRIGEN, description: Hardware control of CSTART triggering enable, bitOffset: 21, bitWidth: 1}
 addressBlocks:
   - offset: 0
     size: 1024

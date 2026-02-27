@@ -251,6 +251,76 @@ shared_blocks:
       - {type: patchFields, register: DMAR, fields: [{name: DMAB, bitWidth: 32}]}
       # Fix RCR REP field: SVD has 8-bit, RM says 16-bit for TIM1/TIM8
       - {type: patchFields, register: RCR, fields: [{name: REP, bitWidth: 16}]}
+  ModernSPI:
+    # Modern SPI/I2S: split TX/RX data registers, CFG1/CFG2 configuration
+    # Families: H5, H7, H7RS, N6, U3, U5
+    from: STM32N645.SPI1
+    interrupts:
+      SPI1: INTR
+    params:
+      - {name: has_tser, type: bool, default: false, description: 'TSER transfer reload (H7): TSER in CR2, TSERFIE/TSERF/TSERFC, UDRDET/UDRCFG widened in CFG1'}
+      - {name: has_autocr, type: bool, default: false, description: 'Autonomous mode (AUTOCR register at 0x1C)'}
+      - {name: has_i2s, type: bool, default: false, description: 'I2S audio capability (per-instance)'}
+    transforms:
+      # H7: TSER field in CR2 for transfer extension reload
+      - type: patchFields
+        register: CR2
+        fields:
+          - {name: TSER, description: Number of data transfer extension to be reload into TSIZE, bitOffset: 16, bitWidth: 16, access: read-only}
+      # H7: widen UDRCFG from 1-bit to 2-bit and add UDRDET
+      - type: patchFields
+        register: CFG1
+        fields:
+          - {name: UDRCFG, bitWidth: 2}
+          - {name: UDRDET, description: Detection of underrun condition at slave transmitter, bitOffset: 11, bitWidth: 2}
+      # H7: TSERFIE in IER
+      - type: patchFields
+        register: IER
+        fields:
+          - {name: TSERFIE, description: Additional number of transactions reload interrupt enable, bitOffset: 10, bitWidth: 1}
+      # H7: TSERF in SR
+      - type: patchFields
+        register: SR
+        fields:
+          - {name: TSERF, description: Additional number of SPI data to be transacted was reload, bitOffset: 10, bitWidth: 1}
+      # H7: TSERFC in IFCR
+      - type: patchFields
+        register: IFCR
+        fields:
+          - {name: TSERFC, description: TSERFC flag clear, bitOffset: 10, bitWidth: 1}
+      # U3/U5: AUTOCR register for autonomous mode
+      - type: patchRegisters
+        registers:
+          - name: AUTOCR
+            displayName: AUTOCR
+            description: Autonomous mode control register
+            addressOffset: 28
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: TRIGSEL, description: Trigger selection, bitOffset: 16, bitWidth: 4}
+              - {name: TRIGPOL, description: Trigger polarity, bitOffset: 20, bitWidth: 1}
+              - {name: TRIGEN, description: Hardware control of CSTART triggering enable, bitOffset: 21, bitWidth: 1}
+  LegacySPI:
+    # Legacy SPI/I2S: single data register, CR1/CR2/SR/DR architecture
+    # Families: C0, F3, F4, F7, G0, G4, L0, L1, L4, L4P, L5, U0
+    from: STM32G030.SPI1
+    interrupts:
+      SPI1: INTR
+      SPI3: INTR
+    params:
+      - {name: has_fifo, type: bool, default: true, description: 'FIFO capability (DS/FRXTH/LDMA_RX/LDMA_TX/NSSP in CR2, FRLVL/FTLVL in SR)'}
+      - {name: has_i2s, type: bool, default: false, description: 'I2S audio capability (per-instance)'}
+      - {name: has_astrten, type: bool, default: false, description: 'Asynchronous start enable (ASTRTEN in I2SCFGR)'}
+    transforms:
+      # Fix G0 SVD typo: SE2 should be I2SE
+      - {type: renameFields, register: I2SCFGR, pattern: ^SE2$, replacement: I2SE}
+      # Add ASTRTEN field (C0 and possibly others)
+      - type: patchFields
+        register: I2SCFGR
+        fields:
+          - {name: ASTRTEN, description: Asynchronous start enable, bitOffset: 12, bitWidth: 1}
 families:
   C0:
     svd:
@@ -350,10 +420,8 @@ families:
         interrupts:
           RTC: INTR
       SPI:
-        from: STM32C011.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32C071.SYSCFG
         instances: [SYSCFG]
@@ -372,6 +440,8 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          SPI: {has_astrten: true}
+          SPI1: {has_i2s: true}
           USART2: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
@@ -636,20 +706,8 @@ families:
         interrupts:
           SDADC1: INTR
       SPI:
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3, SPI4]
-        interrupts:
-          SPI1: INTR
-        variants:
-          F301:
-            from: STM32F301.SPI2
-          F302:
-            from: STM32F302.SPI1
-          F303:
-            from: STM32F303.SPI1
-          F37x:
-            from: STM32F373.SPI1
-          F334:
-            from: STM32F3x4.SPI1
       SYSCFG:
         instances: [SYSCFG_COMP_OPAMP]
         interrupts:
@@ -709,6 +767,8 @@ families:
           USART: {has_fifo: false, synchronous: 2}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
+          SPI2: {has_i2s: true}
+          SPI3: {has_i2s: true}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
           TIM12: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
@@ -720,6 +780,13 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           TIM19: {encoder: 1}
+      F37x:
+        _all:
+          SPI1: {has_i2s: true}
+      F334:
+        _all:
+          SPI2: {has_i2s: false}
+          SPI3: {has_i2s: false}
   F4:
     svd:
       zip: stm32f4-svd.zip
@@ -1102,10 +1169,8 @@ families:
         interrupts:
           SPDIF_Rx: INTR
       SPI:
-        from: STM32F401.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3, SPI4, SPI5, SPI6]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32F401.SYSCFG
         instances: [SYSCFG]
@@ -1136,6 +1201,9 @@ families:
           UART7: {synchronous: 0}
           UART8: {synchronous: 0}
           UART9: {synchronous: 0}
+          SPI: {has_fifo: false}
+          SPI2: {has_i2s: true}
+          SPI3: {has_i2s: true}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
           TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
@@ -1154,9 +1222,14 @@ families:
           PWR: {power_mode: lvds}
       F410:
         _all:
+          SPI1: {has_i2s: true}
+          SPI5: {has_i2s: true}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F411:
         _all:
+          SPI1: {has_i2s: true}
+          SPI4: {has_i2s: true}
+          SPI5: {has_i2s: true}
           PWR: {power_mode: lvds, has_fmssr: true}
       F4x5_F4x7_F42x_F43x:
         STM32F405:
@@ -1176,14 +1249,21 @@ families:
           PWR: {power_mode: overdrive}
       F412:
         _all:
+          SPI1: {has_i2s: true}
+          SPI4: {has_i2s: true}
+          SPI5: {has_i2s: true}
           OTG_FS_DEVICE: {has_lpm: true}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F413_F423:
         _all:
+          SPI1: {has_i2s: true}
+          SPI4: {has_i2s: true}
+          SPI5: {has_i2s: true}
           OTG_FS_DEVICE: {has_lpm: true}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F446:
         _all:
+          SPI1: {has_i2s: true}
           OTG_FS_DEVICE: {has_lpm: true}
           OTG_FS_GLOBAL: {has_bcd: false}
           ADC_Common: {multi: true}
@@ -1556,10 +1636,8 @@ families:
         interrupts:
           SPDIFRX: INTR
       SPI:
-        from: STM32F722.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3, SPI4, SPI5, SPI6]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32F722.SYSCFG
         instances: [SYSCFG]
@@ -1626,6 +1704,10 @@ families:
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
           UART8: {synchronous: 0}
+          SPI: {has_fifo: false}
+          SPI1: {has_i2s: true}
+          SPI2: {has_i2s: true}
+          SPI3: {has_i2s: true}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
           TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
@@ -1786,10 +1868,8 @@ families:
         interrupts:
           RTC_STAMP: INTR
       SPI:
-        from: STM32G030.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32G030.SYSCFG
         instances: [SYSCFG]
@@ -1820,6 +1900,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          SPI1: {has_i2s: true}
           TIM2: {width32: true, encoder: 1}
           TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
@@ -1829,6 +1910,13 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           LPTIM: {has_repetition: false}
+      G0x1:
+        STM32G0B0:
+          SPI2: {has_i2s: true}
+        STM32G0B1:
+          SPI2: {has_i2s: true}
+        STM32G0C1:
+          SPI2: {has_i2s: true}
   G4:
     svd:
       zip: stm32g4_svd.zip
@@ -2019,10 +2107,8 @@ families:
         interrupts:
           SAI: INTR
       SPI:
-        from: STM32G431.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3, SPI4]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32G431.SYSCFG
         instances: [SYSCFG]
@@ -2056,6 +2142,8 @@ families:
           WWDG: {cfr_version: 2}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
+          SPI2: {has_i2s: true}
+          SPI3: {has_i2s: true}
           TIM2: {width32: true, encoder: 2, sms_preload: 2}
           TIM5: {width32: true, encoder: 1, sms_preload: 2}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
@@ -2400,10 +2488,8 @@ families:
         interrupts:
           SDMMC1: INTR
       SPI:
-        from: STM32H523.SPI
+        uses: ModernSPI
         instances: [SPI, SPI1, SPI2, SPI2_S, SPI3, SPI3_S, SPI4, SPI4_S, SPI5, SPI6, SPI_S]
-        interrupts:
-          SPI1: INTR
       TAMP:
         from: STM32H503.TAMP
         instances: [TAMP]
@@ -2451,6 +2537,13 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           OPAMP: {single: true}
+          SPI: {has_i2s: true}
+          SPI_S: {has_i2s: true}
+          SPI1: {has_i2s: true}
+          SPI2: {has_i2s: true}
+          SPI2_S: {has_i2s: true}
+          SPI3: {has_i2s: true}
+          SPI3_S: {has_i2s: true}
           UART12: {synchronous: 0}
           UART4: {synchronous: 0}
           UART4_S: {synchronous: 0}
@@ -2938,10 +3031,8 @@ families:
         interrupts:
           SPDIF: INTR
       SPI:
-        from: STM32H743.SPI1
+        uses: ModernSPI
         instances: [SPI1, SPI2, SPI3, SPI4, SPI5, SPI6]
-        interrupts:
-          SPI1: INTR
       SWPMI:
         from: STM32H723.SWPMI
         instances: [SWPMI]
@@ -2988,6 +3079,10 @@ families:
           UART7: {synchronous: 0}
           UART8: {synchronous: 0}
           UART9: {synchronous: 0}
+          SPI: {has_tser: true}
+          SPI1: {has_i2s: true}
+          SPI2: {has_i2s: true}
+          SPI3: {has_i2s: true}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
           TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false}
@@ -3013,12 +3108,14 @@ families:
           RAMECC3: {monitors: 2}
       H73x:
         _all:
+          SPI6: {has_i2s: true}
           TIM23: {width32: true, encoder: 1}
           TIM24: {width32: true, encoder: 1}
           RAMECC2: {monitors: 3}
           RAMECC3: {monitors: 2}
       H7A3_B:
         _all:
+          SPI6: {has_i2s: true}
           DFSDM: {filters: 8}
           RAMECC: {monitors: 3}
           HSEM: {semaphores: 16}
@@ -3310,10 +3407,8 @@ families:
         interrupts:
           SPDIF_RX: INTR
       SPI:
-        from: STM32H7S.SPI1
+        uses: ModernSPI
         instances: [SPI1, SPI2, SPI3, SPI4, SPI5, SPI6]
-        interrupts:
-          SPI1: INTR
       TAMP:
         from: STM32H7S.TAMP
         instances: [TAMP]
@@ -3351,6 +3446,10 @@ families:
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
           UART8: {synchronous: 0}
+          SPI1: {has_i2s: true}
+          SPI2: {has_i2s: true}
+          SPI3: {has_i2s: true}
+          SPI6: {has_i2s: true}
           TIM2: {width32: true, encoder: 3, sms_preload: 2}
           TIM3: {encoder: 3, sms_preload: 2}
           TIM4: {encoder: 3, sms_preload: 2}
@@ -3489,10 +3588,8 @@ families:
         interrupts:
           RTC: INTR
       SPI:
-        from: STM32L0x0.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         instances: [SYSCFG, SYSCFG_COMP]
         variants:
@@ -3525,11 +3622,16 @@ families:
         _all:
           USART: {has_fifo: false, synchronous: 2}
           LPUART: {has_fifo: false}
+          SPI: {has_fifo: false}
+          SPI2: {has_i2s: true}
           TIM2: {width32: true, encoder: 1}
           TIM21: {max_channel: 1, has_xor_input: false, has_dma_burst: false}
           TIM22: {max_channel: 1, has_xor_input: false, has_dma_burst: false}
           TIM3: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
+      L0x0:
+        _all:
+          SPI2: {has_i2s: false}
       L0x3:
         _all:
           ADC: {vlcd_channel: true}
@@ -3661,10 +3763,8 @@ families:
         interrupts:
           SDIO: INTR
       SPI:
-        from: STM32L151.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
-          SPI3: INTR
       SYSCFG:
         from: STM32L151.SYSCFG
         instances: [SYSCFG]
@@ -3690,6 +3790,9 @@ families:
         _all:
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
+          SPI: {has_fifo: false}
+          SPI2: {has_i2s: true}
+          SPI3: {has_i2s: true}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
           TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
@@ -3903,10 +4006,8 @@ families:
         interrupts:
           SDMMC1: INTR
       SPI:
-        from: STM32L412.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
-          SPI1: INTR
       SWPMI:
         from: STM32L431.SWPMI1
         instances: [SWPMI1]
@@ -4226,10 +4327,8 @@ families:
           L4Rx_L4Sx:
             from: STM32L4R5.SDMMC1
       SPI:
-        from: STM32L4P5.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
-          SPI1: INTR
       SWPMI:
         from: STM32L4P5.SWPMI1
         instances: [SWPMI1]
@@ -4467,10 +4566,8 @@ families:
         interrupts:
           SDMMC1: INTR
       SPI:
-        from: STM32L552.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32L552.SYSCFG
         instances: [SYSCFG]
@@ -4806,10 +4903,8 @@ families:
         interrupts:
           SPDIFRX: INTR
       SPI:
-        from: STM32N645.SPI1
+        uses: ModernSPI
         instances: [SPI1, SPI2, SPI3, SPI4, SPI5, SPI6]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32N645.SYSCFG
         instances: [SYSCFG]
@@ -4856,6 +4951,10 @@ families:
           UART7: {synchronous: 0}
           UART8: {synchronous: 0}
           UART9: {synchronous: 0}
+          SPI1: {has_i2s: true}
+          SPI2: {has_i2s: true}
+          SPI3: {has_i2s: true}
+          SPI6: {has_i2s: true}
           TIM2: {width32: true, encoder: 3, sms_preload: 2}
           TIM3: {width32: true, encoder: 3, sms_preload: 2}
           TIM4: {width32: true, encoder: 3, sms_preload: 2}
@@ -4987,10 +5086,8 @@ families:
         interrupts:
           RTC_TAMP: INTR
       SPI:
-        from: STM32U031.SPI1
+        uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32U073.SYSCFG
         instances: [SYSCFG]
@@ -5233,10 +5330,8 @@ families:
         interrupts:
           SDMMC1: INTR
       SPI:
-        from: STM32U375.SPI1
+        uses: ModernSPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32U375.SYSCFG
         instances: [SYSCFG]
@@ -5268,6 +5363,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
           LPUART: {has_wakeup: false, has_autocr: true}
           UART4: {synchronous: 0}
@@ -5589,10 +5685,8 @@ families:
         interrupts:
           SDMMC1: INTR
       SPI:
-        from: STM32U5Fx.SPI1
+        uses: ModernSPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
-          SPI1: INTR
       SYSCFG:
         from: STM32U5Fx.SYSCFG
         instances: [SYSCFG]
@@ -5624,6 +5718,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
           LPUART: {has_wakeup: false, has_autocr: true}
           UART4: {synchronous: 0}
