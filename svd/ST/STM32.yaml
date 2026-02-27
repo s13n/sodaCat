@@ -15,43 +15,53 @@ shared_blocks:
         register: CFR_V2
         fields:
           - {name: WDGTB, description: Timer base, bitOffset: 11, bitWidth: 3}
-  GpTimer:
-    from: STM32N645.TIM2
+  TimerV2:
+    # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
+    # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
+    from: STM32N645.TIM1
     interrupts:
       TIM2: {name: INTR, description: Global interrupt}
+      TIM1_BRK: BRK
+      TIM1_UP: UP
+      TIM1_TRG_COM: TRG_COM
+      TIM1_TRG_CCU: TRG_CCU
+      TIM1_CC: CC
+      TIM1_BRK_TERR_IERR: BRK_TERR_IERR
+      TIM1_TRG_COM_DIR_IDX: TRG_COM_DIR_IDX
+      TIM1_BRK_TIM15: BRK
+      TIM1_UP_TIM16: UP
     params:
       - {name: width32, type: bool, default: false, description: 32-bit counter width}
-      - {name: max_channel, type: int, default: 3, max: 3, description: Highest capture/compare channel index}
+      - {name: max_channel, type: int, default: 3, max: 5, description: Highest capture/compare channel index (0-5)}
       - {name: has_centerPWM, type: bool, default: true, description: Center-aligned PWM (CMS/DIR in CR1)}
       - {name: encoder, type: int, default: 0, max: 3, description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'}
       - {name: has_xor_input, type: bool, default: true, description: TI1S XOR (Hall sensor)}
       - {name: has_etr, type: bool, default: true, description: External trigger input (ETF/ETPS/ECE/ETP)}
-      - {name: dma_burst, type: int, default: 1, max: 2, description: 'DMA burst: 0=none 1=v1(0x48) 2=v2(0x3DC)'}
-      - {name: has_complementary, type: bool, default: false, description: Complementary output (BDTR/RCR)}
-      - {name: has_dither, type: bool, default: false, description: Dithering (DITHEN in CR1)}
+      - {name: has_dma_burst, type: bool, default: true, description: DMA burst transfer (DCR/DMAR)}
+      - {name: has_complementary, type: bool, default: false, description: Complementary output (BDTR/RCR/break/dead-time)}
+      - {name: has_dither, type: bool, default: true, description: Dithering (DITHEN in CR1)}
       - {name: sms_preload, type: int, default: 0, max: 2, description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'}
       - {name: has_uifremap, type: bool, default: false, description: UIF remap (UIFREMAP in CR1)}
       - {name: has_extended_ocm, type: bool, default: false, description: Extended OC mode (OC1M_3 etc.)}
+      - {name: has_mms2, type: bool, default: false, description: Master mode selection 2 (MMS2 in CR2)}
     transforms:
       # N6 SVD naming normalization
-      - {type: renameRegisters, pattern: ^CCMR(\d+)_INPUT$, replacement: CCMR\1_Input}
-      - {type: renameRegisters, pattern: ^CCMR(\d+)_OUTPUT$, replacement: CCMR\1_Output}
       - {type: renameFields, register: SMCR, pattern: ^SMS_1$, replacement: SMS_3}
       - {type: renameFields, register: SMCR, pattern: ^TS_1$, replacement: TS_4_3}
       - {type: renameFields, register: CCMR1_Output, pattern: OC(\d)M_1$, replacement: 'OC\1M_3'}
       - {type: renameFields, register: CCMR2_Output, pattern: OC(\d)M_1$, replacement: 'OC\1M_3'}
+      - {type: renameFields, register: CCMR3, pattern: OC(\d)M_1$, replacement: 'OC\1M_3'}
       - {type: renameFields, register: CR2, pattern: ^MMS_1$, replacement: MMS_3}
-      # Clone DCR/DMAR at Gen1-3 offset (0x48/0x4c)
-      - {type: cloneRegister, source: DCR, name: DCR_V1}
-      - {type: cloneRegister, source: DMAR, name: DMAR_V1}
-      - {type: patchRegisters, registers: [{name: DCR_V1, addressOffset: 72}]}
-      - {type: patchRegisters, registers: [{name: DMAR_V1, addressOffset: 76}]}
-      # Remove DBSS from DCR_V1 (Gen1-3 don't have it)
-      - {type: patchFields, register: DCR_V1, fields: [name: DBSS]}
-      # Clone TISEL at Gen3 offset (0x68)
-      - {type: cloneRegister, source: TISEL, name: TISEL_V1}
-      - {type: patchRegisters, registers: [{name: TISEL_V1, addressOffset: 104}]}
-      # Ensure addressBlock covers all registers
+      # Widen counter/compare fields to 32-bit (TIM1 source has 16/20-bit)
+      - {type: patchFields, register: CNT, fields: [{name: CNT, bitWidth: 31}]}
+      - {type: patchFields, register: ARR, fields: [{name: ARR, bitWidth: 32}]}
+      - {type: patchFields, register: CCR1, fields: [{name: CCR1, bitWidth: 32}]}
+      - {type: patchFields, register: CCR2, fields: [{name: CCR2, bitWidth: 32}]}
+      - {type: patchFields, register: CCR3, fields: [{name: CCR3, bitWidth: 32}]}
+      - {type: patchFields, register: CCR4, fields: [{name: CCR4, bitWidth: 32}]}
+      # Add OCCS to SMCR (GP-only, bit 3, reserved on AdvCtrl hardware)
+      - {type: patchFields, register: SMCR, fields: [{name: OCCS, description: OCREF clear selection, bitOffset: 3, bitWidth: 1}]}
+      # Ensure addressBlock covers DCR/DMAR at 0x3E0+4
       - {type: patchAddressBlock, size: 996}
   BasicTimer:
     from: STM32N645.TIM6
@@ -154,6 +164,52 @@ shared_blocks:
       - {type: patchFields, register: CSR2, fields: [{name: VP_SEL, description: "Non inverted input selection", bitOffset: 2, bitWidth: 2}]}
       # SVD bug: OR register missing (all reserved, present in all H7/H5 RMs at offset 0x0C)
       - {type: patchRegisters, registers: [{name: OR, displayName: OR, description: "OPAMP option register", addressOffset: 12, size: 32, access: read-write, resetValue: 0}]}
+  TimerV1:
+    # Classic timer (V1 layout): DCR@0x48, CCR5@0x58
+    # Unified GP + AdvCtrl. Families: F4, F7, H7, C0, G0, U0, L4, L4P, L5, L0, L1
+    from: STM32H723.TIM1
+    interrupts:
+      TIM2: {name: INTR, description: Global interrupt}
+      TIM1_BRK: BRK
+      TIM1_UP: UP
+      TIM1_TRG_COM: TRG_COM
+      TIM1_CC: CC
+      TIM_CC: CC
+      TIM1_BRK_TIM9: BRK
+      TIM1_UP_TIM10: UP
+      TIM1_TRG_COM_TIM11: TRG_COM
+      TIM1_BRK_UP_TRG_COM: BRK_UP_TRG_COM
+      TIM1_BRK_TIM15: BRK
+      TIM1_UP_TIM16: UP
+      TIM1_TRG_COM_TIM17: TRG_COM
+    params:
+      - {name: width32, type: bool, default: false, description: 32-bit counter width}
+      - {name: max_channel, type: int, default: 3, max: 5, description: Highest capture/compare channel index (0-5)}
+      - {name: has_centerPWM, type: bool, default: true, description: Center-aligned PWM (CMS/DIR in CR1)}
+      - {name: encoder, type: int, default: 0, max: 1, description: 'Encoder level: 0=none 1=basic'}
+      - {name: has_xor_input, type: bool, default: true, description: TI1S XOR (Hall sensor)}
+      - {name: has_etr, type: bool, default: true, description: External trigger input (ETF/ETPS/ECE/ETP)}
+      - {name: has_dma_burst, type: bool, default: true, description: DMA burst transfer (DCR/DMAR)}
+      - {name: has_complementary, type: bool, default: false, description: Complementary output (BDTR/RCR/break/dead-time)}
+      - {name: has_uifremap, type: bool, default: false, description: UIF remap (UIFREMAP in CR1)}
+      - {name: has_extended_ocm, type: bool, default: false, description: Extended OC mode (OC1M_3 etc.)}
+      - {name: has_mms2, type: bool, default: false, description: Master mode selection 2 (MMS2 in CR2)}
+    transforms:
+      # Fix H7 SVD naming inconsistency: OC4M_4 should be OC4M_3
+      - {type: renameFields, register: CCMR2_Output, pattern: ^OC4M_4$, replacement: OC4M_3}
+      # Widen counter/compare fields to 32-bit (TIM1 source has 16-bit)
+      - {type: patchFields, register: CNT, fields: [{name: CNT, bitWidth: 31}]}
+      - {type: patchFields, register: ARR, fields: [{name: ARR, bitWidth: 32}]}
+      - {type: patchFields, register: CCR1, fields: [{name: CCR1, bitWidth: 32}]}
+      - {type: patchFields, register: CCR2, fields: [{name: CCR2, bitWidth: 32}]}
+      - {type: patchFields, register: CCR3, fields: [{name: CCR3, bitWidth: 32}]}
+      - {type: patchFields, register: CCR4, fields: [{name: CCR4, bitWidth: 32}]}
+      # Add OCCS to SMCR (GP-only, bit 3, reserved on AdvCtrl hardware)
+      - {type: patchFields, register: SMCR, fields: [{name: OCCS, description: OCREF clear selection, bitOffset: 3, bitWidth: 1}]}
+      # Widen DMAR DMAB field from 16-bit to 32-bit
+      - {type: patchFields, register: DMAR, fields: [{name: DMAB, bitWidth: 32}]}
+      # Fix RCR REP field: SVD has 8-bit, RM says 16-bit for TIM1/TIM8
+      - {type: patchFields, register: RCR, fields: [{name: REP, bitWidth: 16}]}
 families:
   C0:
     svd:
@@ -182,12 +238,6 @@ families:
           ADC: INTR
         params:
           - {name: ext_channels, type: int, default: 19, max: 19, description: Number of external input channels}
-      AdvCtrlTimer:
-        from: STM32C071.TIM1
-        instances: [TIM1]
-        interrupts:
-          TIM1_BRK_UP_TRG_COM: BRK_UP_TRG_COM
-          TIM1_CC: CC
       CRC:
         from: STM32C071.CRC
         instances: [CRC]
@@ -236,9 +286,9 @@ families:
       GPIO:
         from: STM32C011.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOF]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM14, TIM15, TIM16, TIM17, TIM2, TIM3]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3]
       I2C:
         uses: I2C
         instances: [I2C, I2C1, I2C2]
@@ -285,10 +335,11 @@ families:
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
           TIM2: {width32: true, encoder: 1}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
       C0xx:
         STM32C011:
@@ -468,8 +519,8 @@ families:
       GPIO:
         from: STM32F301.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
-      GpTimer:
-        uses: GpTimer
+      Timer:
+        uses: TimerV1
         instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM19, TIM2, TIM3, TIM4, TIM5]
       HRTIM_Common:
         from: STM32F3x4.HRTIM_Common
@@ -619,9 +670,9 @@ families:
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
-          TIM12: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM12: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
@@ -693,14 +744,6 @@ families:
         instances: [AES]
         interrupts:
           CRYPTO: INTR
-      AdvCtrlTimer:
-        from: STM32F401.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_BRK_TIM9: BRK
-          TIM1_UP_TIM10: UP
-          TIM1_TRG_COM_TIM11: TRG
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -816,9 +859,9 @@ families:
       GPIO:
         from: STM32F401.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM9]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM8, TIM9]
       HASH:
         from: STM32F405.HASH
         instances: [HASH]
@@ -1054,12 +1097,14 @@ families:
           UART9: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
-          TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM12: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM12: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM1: {max_channel: 5, has_complementary: true, encoder: 1}
+          TIM8: {max_channel: 5, has_complementary: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
       F401:
@@ -1158,39 +1203,6 @@ families:
         instances: [AES]
         interrupts:
           AES: INTR
-      AdvCtrlTimer:
-        from: STM32F722.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_BRK_TIM9: BRK
-          TIM1_UP_TIM10: UP
-          TIM1_TRG_COM_TIM11: TRG
-          TIM1_CC: CC
-        transforms:
-          - type: patchRegisters
-            registers:
-              - name: AF1
-                displayName: AF1
-                description: alternate function option register 1
-                addressOffset: 96
-                size: 32
-                access: read-write
-                resetValue: 1
-                fields:
-                  - {name: BKINE, description: BRK BKIN input enable, bitOffset: 0, bitWidth: 1}
-                  - {name: BKDFBKE, description: 'BRK DFSDM_BREAK[0] enable', bitOffset: 8, bitWidth: 1}
-                  - {name: BKINP, description: BRK BKIN input polarity, bitOffset: 9, bitWidth: 1}
-              - name: AF2
-                displayName: AF2
-                description: alternate function option register 2
-                addressOffset: 100
-                size: 32
-                access: read-write
-                resetValue: 1
-                fields:
-                  - {name: BK2INE, description: BRK2 BKIN input enable, bitOffset: 0, bitWidth: 1}
-                  - {name: BK2DFBKE, description: BRK2 DFSDM_BREAK enable, bitOffset: 8, bitWidth: 1}
-                  - {name: BK2INP, description: BRK2 BKIN2 input polarity, bitOffset: 9, bitWidth: 1}
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -1347,9 +1359,9 @@ families:
       GPIO:
         from: STM32F722.GPIOH
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM9]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM8, TIM9]
       HASH:
         from: STM32F745.HASH
         instances: [HASH]
@@ -1574,19 +1586,21 @@ families:
           UART8: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
-          TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM12: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM12: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
           Flash: {has_pcrop: true}
-          GpTimer: {has_uifremap: true, has_extended_ocm: true}
+          Timer: {has_uifremap: true, has_extended_ocm: true}
       F74x_F75x:
         _all:
           DMA: {channel_count: 8}
@@ -1635,12 +1649,6 @@ families:
         instances: [AES]
         interrupts:
           AES_RNG: INTR
-      AdvCtrlTimer:
-        from: STM32G030.TIM1
-        instances: [TIM1]
-        interrupts:
-          TIM1_BRK_UP_TRG_COM: BRK_UP_TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -1699,9 +1707,9 @@ families:
       GPIO:
         from: STM32G030.GPIOB
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4]
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
@@ -1770,10 +1778,11 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           TIM2: {width32: true, encoder: 1}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
   G4:
@@ -1813,14 +1822,6 @@ families:
         instances: [AES]
         interrupts:
           AES: INTR
-      AdvCtrlTimer:
-        from: STM32G431.TIM1
-        instances: [TIM1, TIM20, TIM8]
-        interrupts:
-          TIM1_BRK_TIM15: BRK
-          TIM1_UP_TIM16: UP
-          TIM1_TRG_COM: TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -1908,9 +1909,9 @@ families:
       GPIO:
         from: STM32G431.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
+      Timer:
+        uses: TimerV2
+        instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM20, TIM3, TIM4, TIM5, TIM8]
       HRTIM_Common:
         from: STM32G474.HRTIM_Common
         instances: [HRTIM_Common]
@@ -2018,7 +2019,9 @@ families:
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
-          GpTimer: {has_dither: true, dma_burst: 2}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          TIM20: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM3: {encoder: 2, sms_preload: 2}
           TIM4: {encoder: 1, sms_preload: 2}
       G4xx:
@@ -2079,14 +2082,6 @@ families:
       AES_S:
         from: STM32H533.AES_S
         instances: [AES_S]
-      AdvCtrlTimer:
-        from: STM32H503.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_BRK_TERR_IERR: BRK_TERR_IERR
-          TIM1_UP: UP
-          TIM1_TRG_COM_DIR_IDX: TRG_COM_DIR_IDX
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM6_S, TIM7, TIM7_S]
@@ -2227,9 +2222,9 @@ families:
       GPIO:
         from: STM32H503.GPIOA
         instances: [GPIOA, GPIOA_S, GPIOB, GPIOB_S, GPIOC, GPIOC_S, GPIOD, GPIOD_S, GPIOE, GPIOE_S, GPIOF, GPIOF_S, GPIOG, GPIOG_S, GPIOH, GPIOH_S, GPIOI]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM12, TIM13, TIM14, TIM15, TIM15_S, TIM16, TIM17, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8_S]
+      Timer:
+        uses: TimerV2
+        instances: [TIM1, TIM12, TIM13, TIM14, TIM15, TIM15_S, TIM16, TIM17, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8, TIM8_S]
       HASH:
         from: STM32H503.HASH
         instances: [HASH]
@@ -2427,14 +2422,17 @@ families:
           TIM2_S: {width32: true}
           TIM5: {width32: true, encoder: 3, sms_preload: 2}
           TIM5_S: {width32: true}
-          TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, dma_burst: 0, encoder: 3}
-          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false, encoder: 3}
+          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
           TIM15_S: {max_channel: 1}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
-          GpTimer: {has_dither: true, dma_burst: 2}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          TIM1_S: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          TIM8_S: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM3: {encoder: 3, sms_preload: 2}
           TIM4: {encoder: 3, sms_preload: 2}
   H7:
@@ -2497,14 +2495,6 @@ families:
       AXI:
         from: STM32H723.AXI
         instances: [AXI]
-      AdvCtrlTimer:
-        from: STM32H723.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_BRK: BRK
-          TIM1_UP: UP
-          TIM1_TRG_COM: TRG_COM
-          TIM_CC: CC
       BDMA:
         from: STM32H723.BDMA
         instances: [BDMA, BDMA1, BDMA2]
@@ -2684,12 +2674,12 @@ families:
       GPIO:
         from: STM32H723.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
         variants:
           H73x:
-            instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM23, TIM24, TIM3, TIM4, TIM5]
+            instances: [TIM1, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM23, TIM24, TIM3, TIM4, TIM5, TIM8]
       HASH:
         from: STM32H730.HASH
         instances: [HASH]
@@ -2960,12 +2950,15 @@ families:
           UART9: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
-          TIM12: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false}
+          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          Timer: {has_uifremap: true, has_extended_ocm: true}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
       H742_H753:
@@ -3017,14 +3010,6 @@ families:
         instances: [ADF]
         interrupts:
           ADF1_FLT0: INTR
-      AdvCtrlTimer:
-        from: STM32H7S.TIM1
-        instances: [TIM1]
-        interrupts:
-          TIM1_BRK: BRK
-          TIM1_UP: UP
-          TIM1_TRG_COM: TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -3152,9 +3137,9 @@ families:
           GPDMA1_CH13: CH13
           GPDMA1_CH14: CH14
           GPDMA1_CH15: CH15
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM2, TIM3, TIM4, TIM5, TIM9, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17]
+      Timer:
+        uses: TimerV2
+        instances: [TIM1, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM9]
       HASH:
         from: STM32H7S.HASH
         instances: [HASH]
@@ -3331,14 +3316,14 @@ families:
           TIM3: {encoder: 3, sms_preload: 2}
           TIM4: {encoder: 3, sms_preload: 2}
           TIM5: {width32: true, encoder: 3, sms_preload: 2}
-          TIM9: {max_channel: 1, has_centerPWM: false, has_etr: false, dma_burst: 0}
-          TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, dma_burst: 0}
-          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM9: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false}
+          TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false}
+          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
-          GpTimer: {has_dither: true, dma_burst: 2}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
   L0:
     svd:
       zip: stm32l0-svd.zip
@@ -3411,8 +3396,8 @@ families:
       GPIO:
         from: STM32L0x0.GPIOB
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOH]
-      GpTimer:
-        uses: GpTimer
+      Timer:
+        uses: TimerV1
         instances: [TIM2, TIM21, TIM22, TIM3]
       I2C:
         uses: I2C
@@ -3503,8 +3488,8 @@ families:
           USART: {has_fifo: false, synchronous: 2}
           LPUART: {has_fifo: false}
           TIM2: {width32: true, encoder: 1}
-          TIM21: {max_channel: 1, has_xor_input: false, dma_burst: 0}
-          TIM22: {max_channel: 1, has_xor_input: false, dma_burst: 0}
+          TIM21: {max_channel: 1, has_xor_input: false, has_dma_burst: false}
+          TIM22: {max_channel: 1, has_xor_input: false, has_dma_burst: false}
           TIM3: {encoder: 1}
       L0x3:
         _all:
@@ -3592,8 +3577,8 @@ families:
       GPIO:
         from: STM32L100.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
-      GpTimer:
-        uses: GpTimer
+      Timer:
+        uses: TimerV1
         instances: [TIM10, TIM11, TIM2, TIM3, TIM4, TIM5, TIM9]
       I2C:
         from: STM32L100.I2C1
@@ -3668,9 +3653,9 @@ families:
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
           TIM5: {width32: true, encoder: 1}
-          TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM9: {max_channel: 1, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
   L4:
@@ -3718,12 +3703,6 @@ families:
         instances: [AES]
         interrupts:
           AES: INTR
-      AdvCtrlTimer:
-        from: STM32L412.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_TRG_COM: TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -3804,9 +3783,9 @@ families:
       GPIO:
         from: STM32L412.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
       HASH:
         from: STM32L486.HASH
         instances: [HASH]
@@ -3938,6 +3917,8 @@ families:
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
   L4P:
@@ -3995,14 +3976,6 @@ families:
         instances: [AES]
         interrupts:
           AES: INTR
-      AdvCtrlTimer:
-        from: STM32L4P5.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_BRK_TIM15: BRK
-          TIM1_UP_TIM16: UP
-          TIM1_TRG_COM_TIM17: TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -4103,9 +4076,9 @@ families:
       GPIO:
         from: STM32L4P5.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
       HASH:
         from: STM32L4P5.HASH
         instances: [HASH]
@@ -4248,6 +4221,8 @@ families:
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
   L5:
@@ -4277,14 +4252,6 @@ families:
         instances: [AES]
         interrupts:
           AES: INTR
-      AdvCtrlTimer:
-        from: STM32L552.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_BRK: BRK
-          TIM1_UP: UP
-          TIM1_TRG_COM: TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -4380,9 +4347,9 @@ families:
       GPIO:
         from: STM32L552.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
       HASH:
         from: STM32L552.HASH
         instances: [HASH]
@@ -4496,6 +4463,8 @@ families:
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
   N6:
@@ -4529,14 +4498,6 @@ families:
         instances: [ADF]
         interrupts:
           ADF1_FLT0: INTR
-      AdvCtrlTimer:
-        from: STM32N645.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_BRK: BRK
-          TIM1_UP: UP
-          TIM1_TRG_CCU: TRG_CCU
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7, TIM18]
@@ -4664,9 +4625,9 @@ families:
       GPIO:
         from: STM32N645.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPION, GPIOO, GPIOP, GPIOQ]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM10, TIM11, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM9]
+      Timer:
+        uses: TimerV2
+        instances: [TIM1, TIM10, TIM11, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8, TIM9]
       HASH:
         from: STM32N645.HASH
         instances: [HASH]
@@ -4853,16 +4814,17 @@ families:
           TIM3: {width32: true, encoder: 3, sms_preload: 2}
           TIM4: {width32: true, encoder: 3, sms_preload: 2}
           TIM5: {width32: true, encoder: 3, sms_preload: 2}
-          TIM9: {max_channel: 1, has_centerPWM: false, has_etr: false, dma_burst: 0}
-          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, dma_burst: 0}
-          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
-          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, dma_burst: 0}
+          TIM9: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false}
+          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false}
+          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
-          GpTimer: {has_dither: true, dma_burst: 2}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
   U0:
     svd:
       zip: stm32u0-svd.zip
@@ -4890,12 +4852,6 @@ families:
         instances: [AES]
         interrupts:
           AES_RNG: INTR
-      AdvCtrlTimer:
-        from: STM32U031.TIM1
-        instances: [TIM1]
-        interrupts:
-          TIM1_BRK_UP_TRG_COM: BRK_UP_TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -4944,9 +4900,9 @@ families:
       GPIO:
         from: STM32U031.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM15, TIM16, TIM2, TIM3]
+      Timer:
+        uses: TimerV1
+        instances: [TIM1, TIM15, TIM16, TIM2, TIM3]
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
@@ -5023,6 +4979,7 @@ families:
           TIM2: {width32: true, encoder: 1}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
   U3:
     svd:
@@ -5058,14 +5015,6 @@ families:
         instances: [AES]
         interrupts:
           AES: INTR
-      AdvCtrlTimer:
-        from: STM32U375.TIM1
-        instances: [TIM1]
-        interrupts:
-          TIM1_BRK: BRK
-          TIM1_UP: UP
-          TIM1_TRG_COM: TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -5149,9 +5098,9 @@ families:
       GPIO:
         from: STM32U375.GPIOA
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOG, GPIOH]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4]
+      Timer:
+        uses: TimerV2
+        instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4]
       HASH:
         from: STM32U375.HASH
         instances: [HASH]
@@ -5283,7 +5232,7 @@ families:
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
-          GpTimer: {has_dither: true, dma_burst: 2}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5326,14 +5275,6 @@ families:
         instances: [AES]
         interrupts:
           AES: INTR
-      AdvCtrlTimer:
-        from: STM32U5Fx.TIM1
-        instances: [TIM1, TIM8]
-        interrupts:
-          TIM1_BRK: BRK
-          TIM1_UP: UP
-          TIM1_TRG_COM: TRG_COM
-          TIM1_CC: CC
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -5463,9 +5404,9 @@ families:
       GPIO:
         from: STM32U535.GPIOC
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ]
-      GpTimer:
-        uses: GpTimer
-        instances: [TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5]
+      Timer:
+        uses: TimerV2
+        instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
       HASH:
         from: STM32U5Fx.HASH
         instances: [HASH]
@@ -5649,4 +5590,5 @@ families:
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
-          GpTimer: {has_dither: true, dma_burst: 2}
+          TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}

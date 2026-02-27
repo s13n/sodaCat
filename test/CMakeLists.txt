@@ -27,7 +27,7 @@ set_target_properties(soc-data-modules PROPERTIES
 generate_header(soc-data-modules generate_chip_header stm32h7 ST/H7/H745_H757/STM32H757_CM7 .hpp)
 
 # Cross-family shared blocks
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/GpTimer .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/TimerV1 .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/LPUART .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/USART .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/WWDG .hpp)
@@ -41,7 +41,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/H745_H
 # Family-level shared blocks (H7)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/ADC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/ADC_Common .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/AdvCtrlTimer .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/TimerV2 .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/ART .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/AXI .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/BasicTimer .hpp)

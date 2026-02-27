@@ -1,7 +1,63 @@
-name: AdvCtrlTimer
+name: TimerV2
 description: Advanced-control timers
 groupName: TIMx
 source: STM32N645 SVD v1.0
+params:
+  - name: width32
+    type: bool
+    default: false
+    description: 32-bit counter width
+  - name: max_channel
+    type: int
+    default: 3
+    max: 5
+    description: Highest capture/compare channel index (0-5)
+  - name: has_centerPWM
+    type: bool
+    default: true
+    description: Center-aligned PWM (CMS/DIR in CR1)
+  - name: encoder
+    type: int
+    default: 0
+    max: 3
+    description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'
+  - name: has_xor_input
+    type: bool
+    default: true
+    description: TI1S XOR (Hall sensor)
+  - name: has_etr
+    type: bool
+    default: true
+    description: External trigger input (ETF/ETPS/ECE/ETP)
+  - name: has_dma_burst
+    type: bool
+    default: true
+    description: DMA burst transfer (DCR/DMAR)
+  - name: has_complementary
+    type: bool
+    default: false
+    description: Complementary output (BDTR/RCR/break/dead-time)
+  - name: has_dither
+    type: bool
+    default: true
+    description: Dithering (DITHEN in CR1)
+  - name: sms_preload
+    type: int
+    default: 0
+    max: 2
+    description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'
+  - name: has_uifremap
+    type: bool
+    default: false
+    description: UIF remap (UIFREMAP in CR1)
+  - name: has_extended_ocm
+    type: bool
+    default: false
+    description: Extended OC mode (OC1M_3 etc.)
+  - name: has_mms2
+    type: bool
+    default: false
+    description: Master mode selection 2 (MMS2 in CR2)
 registers:
   - name: CR1
     displayName: CR1
@@ -344,7 +400,7 @@ registers:
           - name: B_0xF
             description: Compare pulse - tim_oc5refc rising or tim_oc6refc falling edges generate pulses on tim_trgo2
             value: 15
-      - name: MMS_1
+      - name: MMS_3
         description: MMS[3]
         bitOffset: 25
         bitWidth: 1
@@ -537,12 +593,12 @@ registers:
           - name: B_0x1
             description: tim_etr_in is inverted, active at low level or falling edge.
             value: 1
-      - name: SMS_1
+      - name: SMS_3
         description: SMS[3]
         bitOffset: 16
         bitWidth: 1
         access: read-write
-      - name: TS_1
+      - name: TS_4_3
         description: TS[4:3]
         bitOffset: 20
         bitWidth: 2
@@ -571,6 +627,10 @@ registers:
           - name: B_0x1
             description: The transfer is triggered by the Index event
             value: 1
+      - name: OCCS
+        description: OCREF clear selection
+        bitOffset: 3
+        bitWidth: 1
   - name: DIER
     displayName: DIER
     description: DMA/interrupt enable register
@@ -1351,12 +1411,12 @@ registers:
         bitOffset: 15
         bitWidth: 1
         access: read-write
-      - name: OC1M_1
+      - name: OC1M_3
         description: OC1M[3]
         bitOffset: 16
         bitWidth: 1
         access: read-write
-      - name: OC2M_1
+      - name: OC2M_3
         description: OC2M[3]
         bitOffset: 24
         bitWidth: 1
@@ -1535,12 +1595,12 @@ registers:
         bitOffset: 15
         bitWidth: 1
         access: read-write
-      - name: OC3M_1
+      - name: OC3M_3
         description: OC3M[3]
         bitOffset: 16
         bitWidth: 1
         access: read-write
-      - name: OC4M_1
+      - name: OC4M_3
         description: OC4M[3]
         bitOffset: 24
         bitWidth: 1
@@ -1692,7 +1752,7 @@ registers:
       - name: CNT
         description: Counter value
         bitOffset: 0
-        bitWidth: 16
+        bitWidth: 31
         access: read-write
       - name: UIFCPY
         description: UIF copy
@@ -1723,7 +1783,7 @@ registers:
       - name: ARR
         description: Auto-reload value
         bitOffset: 0
-        bitWidth: 20
+        bitWidth: 32
         access: read-write
   - name: RCR
     displayName: RCR
@@ -1749,7 +1809,7 @@ registers:
       - name: CCR1
         description: Capture/compare 1 value
         bitOffset: 0
-        bitWidth: 20
+        bitWidth: 32
         access: read-write
   - name: CCR2
     displayName: CCR2
@@ -1762,7 +1822,7 @@ registers:
       - name: CCR2
         description: Capture/compare 2 value
         bitOffset: 0
-        bitWidth: 20
+        bitWidth: 32
         access: read-write
   - name: CCR3
     displayName: CCR3
@@ -1775,7 +1835,7 @@ registers:
       - name: CCR3
         description: Capture/compare value
         bitOffset: 0
-        bitWidth: 20
+        bitWidth: 32
         access: read-write
   - name: CCR4
     displayName: CCR4
@@ -1788,7 +1848,7 @@ registers:
       - name: CCR4
         description: Capture/compare value
         bitOffset: 0
-        bitWidth: 20
+        bitWidth: 32
         access: read-write
   - name: BDTR
     displayName: BDTR
@@ -2169,12 +2229,12 @@ registers:
         bitOffset: 15
         bitWidth: 1
         access: read-write
-      - name: OC5M_1
+      - name: OC5M_3
         description: OC5M[3]
         bitOffset: 16
         bitWidth: 1
         access: read-write
-      - name: OC6M_1
+      - name: OC6M_3
         description: OC6M[3]
         bitOffset: 24
         bitWidth: 1
@@ -2839,7 +2899,7 @@ registers:
         access: read-write
 addressBlocks:
   - offset: 0
-    size: 1024
+    size: 996
     usage: registers
 interrupts:
   - name: BRK
@@ -2850,3 +2910,8 @@ interrupts:
     description: TIM1 Trigger and Commutation interrupts
   - name: CC
     description: TIM1 Capture Compare interrupt
+  - name: INTR
+    description: Global interrupt
+  - name: TRG_COM
+  - name: BRK_TERR_IERR
+  - name: TRG_COM_DIR_IDX
