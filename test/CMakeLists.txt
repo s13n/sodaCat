@@ -61,7 +61,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/EXTI .
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/Ethernet_MAC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/FDCAN .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/FMC .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/GPIO .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/GPIO .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/HASH .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/HRTIM_Common .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/HRTIM_Master .hpp)

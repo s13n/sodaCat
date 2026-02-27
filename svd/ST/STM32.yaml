@@ -340,6 +340,14 @@ shared_blocks:
       # Fix truncated counter name
       - {type: renameFields, register: ACR2, pattern: ^MUTECN$, replacement: MUTECNT}
       - {type: renameFields, register: BCR2, pattern: ^MUTECN$, replacement: MUTECNT}
+  GPIO:
+    # General Purpose I/O: standard GPIO port with optional BRR, HSLVR, SECCFGR
+    # Families: all except N6 (N6 has 20+ extended registers)
+    from: STM32U375.GPIOA
+    params:
+      - {name: has_brr, type: bool, default: true, description: 'BRR register (port bit reset)'}
+      - {name: has_hslvr, type: bool, default: false, description: 'HSLVR register (high-speed low-voltage)'}
+      - {name: has_seccfgr, type: bool, default: false, description: 'SECCFGR register (security configuration)'}
 families:
   C0:
     svd:
@@ -414,7 +422,7 @@ families:
         params:
           - {name: pages, type: int, max: 128, description: Number of flash memory pages}
       GPIO:
-        from: STM32C011.GPIOA
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOF]
       Timer:
         uses: TimerV1
@@ -647,7 +655,7 @@ families:
           F334:
             from: STM32F3x4.Flash
       GPIO:
-        from: STM32F301.GPIOC
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
       Timer:
         uses: TimerV1
@@ -984,7 +992,7 @@ families:
         interrupts:
           FLASH: INTR
       GPIO:
-        from: STM32F401.GPIOC
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
       Timer:
         uses: TimerV1
@@ -1230,6 +1238,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
+          GPIO: {has_brr: false}
           SAI: {has_gcr: false}
       F401:
         _all:
@@ -1493,7 +1502,7 @@ families:
                   - {name: PCROPi, description: PCROP protection per sector, bitOffset: 0, bitWidth: 8}
                   - {name: PCROP_RDP, description: PCROP zone preserved when RDP level decreased, bitOffset: 31, bitWidth: 1}
       GPIO:
-        from: STM32F722.GPIOH
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
       Timer:
         uses: TimerV1
@@ -1733,6 +1742,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
+          GPIO: {has_brr: false}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
@@ -1842,7 +1852,7 @@ families:
         interrupts:
           FLASH: INTR
       GPIO:
-        from: STM32G030.GPIOB
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF]
       Timer:
         uses: TimerV1
@@ -2051,7 +2061,7 @@ families:
           - {name: dual_bank, type: bool, default: false, description: Dual-bank flash organization supported}
           - {name: pb4_pupen, type: bool, default: false, description: PB4 pull-up enable bit present in PWR_PUCRB}
       GPIO:
-        from: STM32G431.GPIOC
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG]
       Timer:
         uses: TimerV2
@@ -2362,7 +2372,7 @@ families:
           GPDMA1_CH1: CH1
           GPDMA1_CH0: CH0
       GPIO:
-        from: STM32H503.GPIOA
+        uses: GPIO
         instances: [GPIOA, GPIOA_S, GPIOB, GPIOB_S, GPIOC, GPIOC_S, GPIOD, GPIOD_S, GPIOE, GPIOE_S, GPIOF, GPIOF_S, GPIOG, GPIOG_S, GPIOH, GPIOH_S, GPIOI]
       Timer:
         uses: TimerV2
@@ -2546,6 +2556,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           OPAMP: {single: true}
+          GPIO: {has_hslvr: true}
           SAI: {has_pdm: true, has_mcken: true}
           SPI: {has_i2s: true}
           SPI_S: {has_i2s: true}
@@ -2817,7 +2828,7 @@ families:
           H7A3_B:
             from: STM32H7A3.Flash
       GPIO:
-        from: STM32H723.GPIOA
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
       Timer:
         uses: TimerV1
@@ -3082,6 +3093,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          GPIO: {has_brr: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -3262,7 +3274,7 @@ families:
         interrupts:
           GFXTIM: INTR
       GPIO:
-        from: STM32H7S.GPIOA
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOM, GPION, GPIOO, GPIOP]
       GPDMA:
         from: STM32H7S.GPDMA
@@ -3540,7 +3552,7 @@ families:
         interrupts:
           FLASH: INTR
       GPIO:
-        from: STM32L0x0.GPIOB
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOH]
       Timer:
         uses: TimerV1
@@ -3723,7 +3735,7 @@ families:
         interrupts:
           FLASH: INTR
       GPIO:
-        from: STM32L100.GPIOC
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
       Timer:
         uses: TimerV1
@@ -3807,6 +3819,7 @@ families:
           TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
+          GPIO: {has_brr: false}
   L4:
     svd:
       zip: stm32l4_svd.zip
@@ -3930,7 +3943,7 @@ families:
         interrupts:
           FLASH: INTR
       GPIO:
-        from: STM32L412.GPIOC
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI]
       Timer:
         uses: TimerV1
@@ -4230,7 +4243,7 @@ families:
         interrupts:
           GFXMMU: INTR
       GPIO:
-        from: STM32L4P5.GPIOC
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI]
       Timer:
         uses: TimerV1
@@ -4497,7 +4510,7 @@ families:
           FLASH: INTR
           FLASH_S: S
       GPIO:
-        from: STM32L552.GPIOC
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
       Timer:
         uses: TimerV1
@@ -4616,6 +4629,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           SAI: {has_pdm: true}
+          GPIO: {has_seccfgr: true}
   N6:
     svd:
       zip: stm32n6-svd.zip
@@ -5046,7 +5060,7 @@ families:
         interrupts:
           FLASH: INTR
       GPIO:
-        from: STM32U031.GPIOA
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF]
       Timer:
         uses: TimerV1
@@ -5243,7 +5257,7 @@ families:
           GPDMA1_CHannel10: CHannel10
           GPDMA1_CHannel11: CHannel11
       GPIO:
-        from: STM32U375.GPIOA
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOG, GPIOH]
       Timer:
         uses: TimerV2
@@ -5377,6 +5391,7 @@ families:
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
           SAI: {has_gcr: false, has_pdm: true, has_mcken: true}
+          GPIO: {has_hslvr: true, has_seccfgr: true}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5546,7 +5561,7 @@ families:
           GPDMA1_CH14: CH14
           GPDMA1_CH15: CH15
       GPIO:
-        from: STM32U535.GPIOC
+        uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ]
       Timer:
         uses: TimerV2
@@ -5733,3 +5748,4 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
           SAI: {has_pdm: true, has_mcken: true}
+          GPIO: {has_hslvr: true, has_seccfgr: true}
