@@ -62,15 +62,16 @@ cmake --build . --target rebuild-stm32h7-models
 models/ST/
 ├── WWDG.yaml              # Cross-family shared blocks (identical across families)
 ├── <Family>/
-│   ├── GPIO.yaml          # Blocks identical across ALL subfamilies in this family
-│   ├── <Subfamily_A>/     # Blocks that differ for this subfamily
+│   ├── GPIO.yaml          # Blocks shared by 2+ subfamilies in this family
+│   ├── <Subfamily_A>/     # Blocks unique to or variant for this subfamily
 │   │   ├── RCC.yaml
+│   │   ├── AES.yaml
 │   │   └── STM32xxxx.yaml # Chip-level model
 │   └── <Subfamily_B>/
 │       └── ...
 ```
 
-Model placement is config-driven: cross-family shared blocks (defined in `shared_blocks`) go to the top level; family blocks use the `variants` key for within-family placement — see "Family generator" below.
+Model placement is config-driven: cross-family shared blocks (defined in `shared_blocks`) go to the top level; within a family, blocks used by only one subfamily go in that subfamily's directory, blocks shared by 2+ subfamilies go in the family base directory — see "Family generator" below.
 
 ### CMake integration
 
@@ -108,7 +109,7 @@ Parameter declarations are arrays of `{name, type, default?, description?}`. Per
 
 The `chip_params` section is always keyed by subfamily (or `_all` for family-wide), then by chip name (or `_all` for subfamily-wide), then by block name or instance name. Resolution order: per-chip instance → per-chip block → subfamily `_all` instance → subfamily `_all` block → family `_all._all` instance → family `_all._all` block → param default.
 
-Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: blocks **without** `variants` are written to the family base directory (shared); subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** in `variants` share the base-directory model using the top-level config. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
+Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** share a common model. If only one subfamily uses the base config, the model is placed in that subfamily's directory (not the family base directory); if two or more subfamilies share the base config, it goes in the family base directory. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
 
 Three-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement; Pass 3 generates chip models with interrupts, instances, and parameters.
 

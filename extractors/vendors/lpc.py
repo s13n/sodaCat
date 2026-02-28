@@ -14,10 +14,6 @@ import svd
 # instance-prefix pattern that STM32 uses.
 use_config_interrupt_map = True
 
-# When only one subfamily uses a block's base config (no variant), place
-# the model in that subfamily's directory instead of the family base dir.
-use_single_subfamily_placement = True
-
 
 def add_cli_args(parser):
     """Add LPC-specific CLI arguments."""

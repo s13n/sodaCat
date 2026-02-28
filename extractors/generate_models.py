@@ -974,8 +974,7 @@ def main():
             block_data = _inject_params(block_data, block_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
 
-            use_single_sub = getattr(ext, 'use_single_subfamily_placement', False)
-            if use_single_sub and len(default_present) == 1:
+            if len(default_present) == 1:
                 # Only one subfamily uses base -> place in subfamily dir
                 fam_name = next(iter(default_present))
                 family_specific_count += 1
