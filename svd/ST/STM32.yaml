@@ -43,6 +43,15 @@ shared_blocks:
       - {name: gen, type: int, default: 1, max: 3, description: 'RNG generation: 0=basic (CR:RNGEN+IE), 1=+CED, 2=+HTCR/config/CONDRST/CONFIGLOCK, 3=+ARDIS+NSCR'}
     transforms:
       - {type: patchAddressBlock, size: 20}
+  CRYP:
+    # Cryptographic processor (Gen 0-2 superset chain)
+    # Gen 0 (basic): CR{ALGODIR,ALGOMODE,DATATYPE,KEYSIZE,FFLUSH,CRYPEN,GCM_CCMPH,ALGOMODE_1}, SR{IFEM-BUSY} — F4, F7, H7(H742_H753)
+    # Gen 1 (+NPBLB): +NPBLB[23:20] in CR — H7(H745_H757, H73x, H7A3_B)
+    # Gen 2 (+KMOD+IPRST+KERF+KEYVALID): +KMOD, +IPRST in CR; +KERF, +KEYVALID in SR — H7RS, N6
+    from: STM32N655.CRYP
+    interrupts: {CRYP: INTR}
+    params:
+      - {name: gen, type: int, default: 0, max: 2, description: 'CRYP generation: 0=basic, 1=+NPBLB, 2=+KMOD/IPRST/KERF/KEYVALID'}
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
@@ -1023,10 +1032,8 @@ families:
         from: STM32F401.CRC
         instances: [CRC]
       CRYP:
-        from: STM32F405.CRYP
+        uses: CRYP
         instances: [CRYP]
-        interrupts:
-          CRYP: INTR
       DAC:
         from: STM32F410.DAC
         instances: [DAC]
@@ -1482,7 +1489,7 @@ families:
         uses: CRC
         instances: [CRC]
       CRYP:
-        from: STM32F745.CRYP
+        uses: CRYP
         instances: [CRYP]
       DAC:
         from: STM32F722.DAC
@@ -2765,10 +2772,8 @@ families:
         uses: CRS
         instances: [CRS]
       CRYP:
-        from: STM32H730.CRYP
+        uses: CRYP
         instances: [CRYP]
-        interrupts:
-          CRYP: INTR
       DAC:
         from: STM32H7A3.DAC2
         instances: [DAC, DAC1, DAC2]
@@ -3183,10 +3188,12 @@ families:
           RAMECC3: {monitors: 2}
       H745_H757:
         _all:
+          CRYP: {gen: 1}
           DFSDM: {has_dlyr: false}
           RAMECC3: {monitors: 2}
       H73x:
         _all:
+          CRYP: {gen: 1}
           RNG: {gen: 2}
           SPI6: {has_i2s: true}
           TIM23: {width32: true, encoder: 1}
@@ -3195,6 +3202,7 @@ families:
           RAMECC3: {monitors: 2}
       H7A3_B:
         _all:
+          CRYP: {gen: 1}
           SPI6: {has_i2s: true}
           DFSDM: {filters: 8}
           RAMECC: {monitors: 3}
@@ -3246,7 +3254,7 @@ families:
         uses: CRS
         instances: [CRS]
       CRYP:
-        from: STM32H7S.CRYP
+        uses: CRYP
         instances: [CRYP]
       DBGMCU:
         from: STM32H7S.DBGMCU
@@ -3509,6 +3517,7 @@ families:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 3}
           RNG: {gen: 3}
+          CRYP: {gen: 2}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -4704,10 +4713,8 @@ families:
         uses: CRC
         instances: [CRC]
       CRYP:
-        from: STM32N655.CRYP
+        uses: CRYP
         instances: [CRYP]
-        interrupts:
-          CRYP: INTR
       CSI:
         from: STM32N645.CSI
         instances: [CSI]
@@ -4987,6 +4994,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           RNG: {gen: 3}
+          CRYP: {gen: 2}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}

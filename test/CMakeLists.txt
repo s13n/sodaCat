@@ -64,7 +64,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/AXI .h
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/BDMA .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/CAN_CCU .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/COMP .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/CRYP .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/CRYP .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/DAC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/DFSDM .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/DMA .hpp)
