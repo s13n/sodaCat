@@ -61,6 +61,16 @@ shared_blocks:
     interrupts: {HASH: INTR}
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-512 (4-bit ALGO)'}
+  PKA:
+    # Public key accelerator (Gen 0-3 superset chain)
+    # Gen 0 (basic): CR{EN,START,MODE,PROCENDIE,RAMERRIE,ADDRERRIE}, SR{BUSY,PROCENDF,RAMERRF,ADDRERRF} — L5
+    # Gen 1 (+OPER error): CR{+OPERRIE}, SR{+INITOK,+OPERRF}, CLRFR{+OPERRFC} — U5
+    # Gen 2 (+LMF): SR{+LMF} — H5, H7RS, N6
+    # Gen 3 (+chaining mode): CR{+CMFIE}, SR{+CCEN,+RNGOKF,+DATAOKF,+INCRERRF,+DATAZF,+TRZERRF,+MDERRF,+RNGERRF,+CMF}, CLRFR{+CMFC} — U3
+    from: STM32U385.PKA
+    interrupts: {PKA: INTR}
+    params:
+      - {name: gen, type: int, default: 2, max: 3, description: 'PKA generation: 0=basic, 1=+OPER error/INITOK, 2=+LMF, 3=+chaining mode'}
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
@@ -2506,10 +2516,8 @@ families:
         interrupts:
           OTFDEC1: INTR
       PKA:
-        from: STM32H533.PKA
+        uses: PKA
         instances: [PKA]
-        interrupts:
-          PKA: INTR
       PKA_S:
         from: STM32H533.PKA_S
         instances: [PKA_S]
@@ -3416,10 +3424,8 @@ families:
           OTG_HS: INTR
           OTG_FS: INTR
       PKA:
-        from: STM32H7S.PKA
+        uses: PKA
         instances: [PKA]
-        interrupts:
-          PKA: INTR
       PSSI:
         uses: PSSI
         instances: [PSSI]
@@ -4564,10 +4570,8 @@ families:
         interrupts:
           OTFDEC1: INTR
       PKA:
-        from: STM32L562.PKA
+        uses: PKA
         instances: [PKA]
-        interrupts:
-          PKA: INTR
       PWR:
         from: STM32L552.PWR
         instances: [PWR]
@@ -4645,6 +4649,7 @@ families:
           TIM4: {encoder: 1}
           SAI: {has_pdm: true}
           GPIO: {has_seccfgr: true}
+          PKA: {gen: 0}
   N6:
     svd:
       zip: stm32n6-svd.zip
@@ -4878,10 +4883,8 @@ families:
         interrupts:
           OTG1: INTR
       PKA:
-        from: STM32N655.PKA
+        uses: PKA
         instances: [PKA]
-        interrupts:
-          PKA: INTR
       PSSI:
         uses: PSSI
         instances: [PSSI]
@@ -5304,10 +5307,8 @@ families:
           # U3 SVD typo: OPAMP2_CRS instead of OPAMP2_CSR
           - {type: renameRegisters, pattern: '^CRS', replacement: CSR}
       PKA:
-        from: STM32U385.PKA
+        uses: PKA
         instances: [PKA]
-        interrupts:
-          PKA: INTR
       PWR:
         from: STM32U375.PWR
         instances: [PWR]
@@ -5399,6 +5400,7 @@ families:
           SAI: {has_gcr: false, has_pdm: true, has_mcken: true}
           GPIO: {has_hslvr: true, has_seccfgr: true}
           HASH: {gen: 2}
+          PKA: {gen: 3}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5644,10 +5646,8 @@ families:
         interrupts:
           OTG_HS: INTR
       PKA:
-        from: STM32U5Gx.PKA
+        uses: PKA
         instances: [PKA]
-        interrupts:
-          PKA: INTR
       PSSI:
         uses: PSSI
         instances: [PSSI]
@@ -5744,3 +5744,4 @@ families:
           SAI: {has_pdm: true, has_mcken: true}
           GPIO: {has_hslvr: true, has_seccfgr: true}
           HASH: {gen: 1}
+          PKA: {gen: 1}

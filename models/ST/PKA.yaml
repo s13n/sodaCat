@@ -1,18 +1,25 @@
 name: PKA
-description: Public key accelerator
+description: Register blank and RAM
 groupName: PKA
-source: STM32N655 SVD v1.0
+source: STM32U385 SVD v1.0
+params:
+  - name: gen
+    type: int
+    default: 2
+    max: 3
+    description: 'PKA generation: 0=basic, 1=+OPER error/INITOK, 2=+LMF, 3=+chaining mode'
 registers:
   - name: CR
     displayName: CR
     description: Control register
     addressOffset: 0
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: EN
-        description: PKA enable.
+        description: PKA enable
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -21,7 +28,7 @@ registers:
             description: Disable PKA
             value: 0
           - name: B_0x1
-            description: Enable PKA.PKA becomes functional when INITOK is set by hardware in PKA_SR.
+            description: Enable PKA.
             value: 1
       - name: START
         description: start the operation
@@ -47,10 +54,10 @@ registers:
             description: Modular exponentiation (protected, used when manipulating secrets)
             value: 3
           - name: B_0x20
-            description: Montgomery parameter computation then ECC scalar multiplication
+            description: Montgomery parameter computation then ECC scalar multiplication (protected)
             value: 32
           - name: B_0x24
-            description: ECDSA sign
+            description: ECDSA sign (protected)
             value: 36
           - name: B_0x26
             description: ECDSA verification
@@ -145,11 +152,24 @@ registers:
           - name: B_0x1
             description: An interrupt is generated when OPERRF flag is set in PKA_SR.
             value: 1
+      - name: CMFIE
+        description: Chaining mode flags interrupt enable
+        bitOffset: 22
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No interrupt is generated when any flag in bits 8 to 15 is set in PKA_SR.
+            value: 0
+          - name: B_0x1
+            description: An interrupt is generated when any flag in bits 8 to 15 is set in PKA_SR.
+            value: 1
   - name: SR
     displayName: SR
     description: Status register
     addressOffset: 4
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -160,7 +180,7 @@ registers:
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: PKA is not initialized correctly. START bit cannot be set.
+            description: PKA is not initialized correctly.
             value: 0
           - name: B_0x1
             description: PKA is initialized correctly and can be used normally.
@@ -172,13 +192,102 @@ registers:
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: All values documented in MODE bitfield can be used.
+            description: All values documented in MODE bit field can be used.
             value: 0
           - name: B_0x1
             description: Only ECDSA verification (MODE = 0x26) is supported by the PKA.
             value: 1
+      - name: CCEN
+        description: Coupling and chaining mode enable
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Access to PKA RAM and programming of PKA_CR has no extra limitation.
+            value: 0
+          - name: B_0x1
+            description: PKA RAM is write-only until START is set (it is no access then), and the MODE value written in PKA_CR must correspond to the CCOP mode selected in the CCB peripheral.
+            value: 1
+      - name: RNGOKF
+        description: RNG OK flag
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Random number not OK (if applicable).
+            value: 0
+          - name: B_0x1
+            description: Sequential writes to PKA RAM successfully transfered the expected amount of random data from the RNG.
+            value: 1
+      - name: DATAOKF
+        description: Data OK flag
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: Data not OK (if applicable), otherwise no event.
+            value: 0
+          - name: B_0x1
+            description: Sequential writes to / read from PKA RAM successfully transfered the expected amount of data from / to the SAES.
+            value: 1
+      - name: INCRERRF
+        description: Increment error flag
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No increment error
+            value: 0
+          - name: B_0x1
+            description: During the reading or writing of protected parameters in PKA RAM the application did not properly incremented the address.
+            value: 1
+      - name: DATAZF
+        description: Data 0-ed error flag
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: TRZERRF
+        description: Trailing 0s error flag
+        bitOffset: 12
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No trailing 0s error
+            value: 0
+          - name: B_0x1
+            description: Clear-text coming from CPU, or decrypted data coming from SAES does not have the required trailing 0s.
+            value: 1
+      - name: MDERRF
+        description: Mode error flag
+        bitOffset: 13
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No mode error
+            value: 0
+          - name: B_0x1
+            description: The value written in MODE of PKA_CR registers is different from the expected value corresponding to the CCOP mode selected in the CCB peripheral.
+            value: 1
+      - name: RNGERRF
+        description: RNG error flag
+        bitOffset: 14
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No random number drawn from RNG, or generated ECC private key is NIST compliant.
+            value: 0
+          - name: B_0x1
+            description: Random number drawn from RNG did not pass NIST key pair generation by testing candidates equivalent algorithm (see FIPS 186-4 annex B.
+            value: 1
       - name: BUSY
-        description: PKA operation is in progress
+        description: Busy flag
         bitOffset: 16
         bitWidth: 1
         access: read-only
@@ -190,7 +299,7 @@ registers:
             description: An operation is in progress
             value: 1
       - name: PROCENDF
-        description: PKA End of Operation flag
+        description: PKA end of operation flag
         bitOffset: 17
         bitWidth: 1
         access: read-only
@@ -199,7 +308,7 @@ registers:
             description: Operation in progress
             value: 0
           - name: B_0x1
-            description: PKA operation is completed. This flag is set when the BUSY bit is deasserted.
+            description: PKA operation is completed.
             value: 1
       - name: RAMERRF
         description: PKA RAM error flag
@@ -237,16 +346,29 @@ registers:
           - name: B_0x1
             description: An illegal or unknown operation has been selected in PKA_CR register
             value: 1
+      - name: CMF
+        description: Chaining mode flags
+        bitOffset: 22
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No chaining mode events.
+            value: 0
+          - name: B_0x1
+            description: Running chaining mode sequence triggered at least one flag status in bits 8 to 15 of this register.
+            value: 1
   - name: CLRFR
     displayName: CLRFR
     description: Clear flag register
     addressOffset: 8
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PROCENDFC
-        description: Clear PKA End of Operation flag
+        description: Clear PKA end of operation flag
         bitOffset: 17
         bitWidth: 1
         access: write-only
@@ -292,6 +414,18 @@ registers:
             value: 0
           - name: B_0x1
             description: Clear the OPERRF flag in PKA_SR
+            value: 1
+      - name: CMFC
+        description: Clear chaining mode flag
+        bitOffset: 22
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: B_0x0
+            description: No action
+            value: 0
+          - name: B_0x1
+            description: Clear the CMF flag and the chaining mode status bits in 8 to 15 in PKA_SR
             value: 1
 addressBlocks:
   - offset: 0
