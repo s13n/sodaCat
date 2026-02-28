@@ -1,7 +1,13 @@
 name: HASH
-description: Hash processor
+description: Register bank (full SHA-2/SHA-3)
 groupName: HASH
-source: STM32H503 SVD v1.5
+source: STM32N645 SVD v1.0
+params:
+  - name: gen
+    type: int
+    default: 0
+    max: 2
+    description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-512 (4-bit ALGO)'
 registers:
   - name: CR
     displayName: CR
@@ -12,12 +18,12 @@ registers:
     resetMask: 4294967295
     fields:
       - name: INIT
-        description: "Initialize message digest calculation\nWriting this bit to 1 resets the hash processor core, so that the HASH is ready to compute the message digest of a new message.\nWriting this bit to 0 has no effect. Reading this bit always returns 0."
+        description: Initialize message digest calculation
         bitOffset: 2
         bitWidth: 1
         access: read-write
       - name: DMAE
-        description: "DMA enable\nAfter this bit is set, it is cleared by hardware while the last data of the message is written into the hash processor.\nSetting this bit to 0 while a DMA transfer is ongoing does not abort the current transfer. Instead, the DMA interface of the HASH remains internally enabled until the transfer is completed or INIT is written to 1.\nSetting INIT bit to 1 does not clear DMAE bit."
+        description: DMA enable
         bitOffset: 3
         bitWidth: 1
         access: read-write
@@ -29,7 +35,7 @@ registers:
             description: DMA transfers enabled. A DMA request is sent as soon as the hash core is ready to receive data.
             value: 1
       - name: DATATYPE
-        description: "Data type selection\nThis bitfield defines the format of the data entered into the HASH_DIN register:"
+        description: Data type selection
         bitOffset: 4
         bitWidth: 2
         access: read-write
@@ -47,7 +53,7 @@ registers:
             description: bit data or bit string. The data written into HASH_DIN are considered as 32 bits (1st bit of the string at position 0), and are swapped before being used by the HASH processing (1st bit of the string at position 31).
             value: 3
       - name: MODE
-        description: "Mode selection\nThis bit selects the normal or the keyed HMAC mode for the selected algorithm:\nThis selection is only taken into account when the INIT bit is set. Changing this bit during a computation has no effect."
+        description: Mode selection
         bitOffset: 6
         bitWidth: 1
         access: read-write
@@ -56,20 +62,20 @@ registers:
             description: Hash mode selected
             value: 0
           - name: B_0x1
-            description: HMAC mode selected. LKEY bit must be set if the key being used is longer than 64 bytes.
+            description: HMAC mode selected. LKEY bit must be set if the key being used is longer than the algorithm block size.
             value: 1
       - name: NBW
-        description: "Number of words already pushed\nRefer to NBWP[3:0] bitfield of HASH_SR for a description of NBW[3:0] bitfield.\nThis bit is read-only."
+        description: Number of words already pushed
         bitOffset: 8
         bitWidth: 4
         access: read-only
       - name: DINNE
-        description: "DIN not empty\nRefer to DINNE bit of HASH_SR for a description of DINNE bit.\nThis bit is read-only."
+        description: DIN not empty
         bitOffset: 12
         bitWidth: 1
         access: read-only
       - name: MDMAT
-        description: "Multiple DMA transfers \nThis bit is set when hashing large files when multiple DMA transfers are needed."
+        description: Multiple DMA transfers
         bitOffset: 13
         bitWidth: 1
         access: read-write
@@ -81,7 +87,7 @@ registers:
             description: DCAL is not automatically set at the end of a DMA transfer.
             value: 1
       - name: LKEY
-        description: "Long key selection\nThe application must set this bit if the HMAC key is greater than the block size (64 bytes)\nThis selection is only taken into account when the INIT and MODE bits are set (HMAC mode selected). Changing this bit during a computation has no effect."
+        description: Long key selection
         bitOffset: 16
         bitWidth: 1
         access: read-write
@@ -93,20 +99,32 @@ registers:
             description: HMAC key is longer than the block size (long key). The hash of the key is used instead of the real key during the HMAC computation.
             value: 1
       - name: ALGO
-        description: "Algorithm selection\nThese bits select the hash algorithm:\nThis selection is only taken into account when the INIT bit is set. Changing this bitfield during a computation has no effect.\nWhen the ALGO bitfield is updated and INIT bit is set, NBWE in HASH_SR is automatically updated to 0x11."
+        description: Algorithm selection
         bitOffset: 17
-        bitWidth: 2
+        bitWidth: 4
         access: read-write
         enumeratedValues:
           - name: B_0x0
             description: SHA-1
             value: 0
           - name: B_0x2
-            description: SHA-224
+            description: SHA2-224
             value: 2
           - name: B_0x3
-            description: SHA-256
+            description: SHA2-256
             value: 3
+          - name: B_0xC
+            description: SHA2-384
+            value: 12
+          - name: B_0xD
+            description: SHA2-512/224
+            value: 13
+          - name: B_0xE
+            description: SHA2-512/256
+            value: 14
+          - name: B_0xF
+            description: SHA2-512
+            value: 15
   - name: DIN
     displayName: DIN
     description: Data input register
@@ -116,7 +134,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: DATAIN
-        description: "Data input\nWriting this register pushes the current register content into the FIFO, and the register takes the new value presented on the AHB bus.\nReading this register returns zeros."
+        description: Data input
         bitOffset: 0
         bitWidth: 32
         access: write-only
@@ -129,7 +147,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: NBLW
-        description: "Number of valid bits in the last word\nWhen the last word of the message bit string is written to HASH_DIN register, the hash processor takes only the valid bits, specified as below, after internal data swapping:\n...\nThe above mechanism is valid only if DCAL = 0. If NBLW bits are written while DCAL is set to 1, the NBLW bitfield remains unchanged. In other words it is not possible to configure NBLW and set DCAL at the same time.\nReading NBLW bits returns the last value written to NBLW."
+        description: Number of valid bits in the last word
         bitOffset: 0
         bitWidth: 5
         access: read-write
@@ -150,7 +168,7 @@ registers:
             description: Only 31 bits of the last data written (after swapping) are valid that is M[30:0]
             value: 31
       - name: DCAL
-        description: "Digest calculation\nWriting this bit to 1 starts the message padding using the previously written value of NBLW, and starts the calculation of the final message digest with all the data words written to the input FIFO since the INIT bit was last written to 1.\nReading this bit returns 0."
+        description: Digest calculation
         bitOffset: 8
         bitWidth: 1
         access: read-write
@@ -163,7 +181,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H0
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -176,7 +194,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H1
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -189,7 +207,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H2
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -202,7 +220,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H3
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -215,7 +233,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H4
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -260,7 +278,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: DINIS
-        description: "Data input interrupt status\nThis bit is set by hardware when the FIFO is ready to get a new block (16 locations are free). It is cleared by writing it to 0 or by writing the HASH_DIN register.\nWhen DINIS = 0, HASH_CSRx registers reads as zero."
+        description: Data input interrupt status
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -272,7 +290,7 @@ registers:
             description: A new block can be entered into the input buffer. An interrupt is generated if the DINIE bit is set in the HASH_IMR register.
             value: 1
       - name: DCIS
-        description: "Digest calculation completion interrupt status\nThis bit is set by hardware when a digest becomes ready (the whole message has been processed). It is cleared by writing it to 0 or by writing the INIT bit to 1 in the HASH_CR register."
+        description: Digest calculation completion interrupt status
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -284,7 +302,7 @@ registers:
             description: Digest calculation complete, a digest is available in the HASH_HRx registers. An interrupt is generated if the DCIE bit is set in the HASH_IMR register.
             value: 1
       - name: DMAS
-        description: "DMA Status\nThis bit provides information on the DMA interface activity. It is set with DMAE and cleared when DMAE = 0 and no DMA transfer is ongoing. No interrupt is associated with this bit."
+        description: DMA Status
         bitOffset: 2
         bitWidth: 1
         access: read-only
@@ -308,12 +326,12 @@ registers:
             description: The hash core is processing a block of data
             value: 1
       - name: NBWP
-        description: "Number of words already pushed\nThis bitfield is the exact number of words in the message that have already been pushed into the FIFO. NBWP is incremented by 1 when a write access is performed to the HASH_DIN register. \nWhen a digest calculation starts, NBWP is updated to NBWP- block size (in words), and NBWP goes to zero when the INIT bit is written to 1."
+        description: Number of words already pushed
         bitOffset: 9
         bitWidth: 5
         access: read-only
       - name: DINNE
-        description: "DIN not empty\nThis bit is set when the HASH_DIN register holds valid data (that is after being written at least once). It is cleared when either the INIT bit (initialization) or the DCAL bit (completion of the previous message processing) is written to 1."
+        description: DIN not empty
         bitOffset: 15
         bitWidth: 1
         access: read-only
@@ -325,7 +343,7 @@ registers:
             description: The input buffer contains at least one word of data
             value: 1
       - name: NBWE
-        description: "Number of words expected\nThis bitfield reflects the number of words in the message that must be pushed into the FIFO to trigger a partial computation. NBWE is decremented by 1 when a write access is performed to the HASH_DIN register.\nNBWE is set to the expected block size +1 in words (0x11) when INIT bit is set in HASH_CR. It is set to the expected block size (0x10) when the partial digest calculation ends."
+        description: Number of words expected
         bitOffset: 16
         bitWidth: 5
         access: read-only
@@ -338,7 +356,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS0
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -351,7 +369,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS1
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -364,7 +382,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS2
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -377,7 +395,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS3
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -390,7 +408,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS4
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -403,7 +421,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS5
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -416,7 +434,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS6
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -429,7 +447,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS7
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -442,7 +460,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS8
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -455,7 +473,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS9
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -468,7 +486,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS10
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -481,7 +499,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS11
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -494,7 +512,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS12
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -507,7 +525,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS13
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -520,7 +538,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS14
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -533,7 +551,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS15
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -546,7 +564,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS16
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -559,7 +577,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS17
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -572,7 +590,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS18
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -585,7 +603,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS19
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -598,7 +616,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS20
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -611,7 +629,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS21
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -624,7 +642,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS22
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -637,7 +655,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS23
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -650,7 +668,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS24
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -663,7 +681,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS25
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -676,7 +694,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS26
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -689,7 +707,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS27
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -702,7 +720,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS28
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -715,7 +733,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS29
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -728,7 +746,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS30
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -741,7 +759,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS31
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -754,7 +772,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS32
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -767,7 +785,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS33
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -780,7 +798,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS34
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -793,7 +811,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS35
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -806,7 +824,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS36
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -819,7 +837,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS37
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -832,7 +850,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS38
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -845,7 +863,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS39
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -858,7 +876,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS40
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -871,7 +889,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS41
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -884,7 +902,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS42
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -897,7 +915,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS43
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -910,7 +928,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS44
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -923,7 +941,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS45
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -936,7 +954,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS46
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -949,7 +967,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS47
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -962,7 +980,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS48
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -975,7 +993,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS49
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -988,7 +1006,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS50
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -1001,7 +1019,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS51
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -1014,7 +1032,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS52
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -1027,7 +1045,644 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CS53
-        description: "Context swap x\nRefer to Section 24.7.7: HASH context swap registers introduction."
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR54
+    displayName: CSR54
+    description: Context swap register 54
+    addressOffset: 464
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS54
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR55
+    displayName: CSR55
+    description: Context swap register 55
+    addressOffset: 468
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS55
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR56
+    displayName: CSR56
+    description: Context swap register 56
+    addressOffset: 472
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS56
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR57
+    displayName: CSR57
+    description: Context swap register 57
+    addressOffset: 476
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS57
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR58
+    displayName: CSR58
+    description: Context swap register 58
+    addressOffset: 480
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS58
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR59
+    displayName: CSR59
+    description: Context swap register 59
+    addressOffset: 484
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS59
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR60
+    displayName: CSR60
+    description: Context swap register 60
+    addressOffset: 488
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS60
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR61
+    displayName: CSR61
+    description: Context swap register 61
+    addressOffset: 492
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS61
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR62
+    displayName: CSR62
+    description: Context swap register 62
+    addressOffset: 496
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS62
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR63
+    displayName: CSR63
+    description: Context swap register 63
+    addressOffset: 500
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS63
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR64
+    displayName: CSR64
+    description: Context swap register 64
+    addressOffset: 504
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS64
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR65
+    displayName: CSR65
+    description: Context swap register 65
+    addressOffset: 508
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS65
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR66
+    displayName: CSR66
+    description: Context swap register 66
+    addressOffset: 512
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS66
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR67
+    displayName: CSR67
+    description: Context swap register 67
+    addressOffset: 516
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS67
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR68
+    displayName: CSR68
+    description: Context swap register 68
+    addressOffset: 520
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS68
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR69
+    displayName: CSR69
+    description: Context swap register 69
+    addressOffset: 524
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS69
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR70
+    displayName: CSR70
+    description: Context swap register 70
+    addressOffset: 528
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS70
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR71
+    displayName: CSR71
+    description: Context swap register 71
+    addressOffset: 532
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS71
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR72
+    displayName: CSR72
+    description: Context swap register 72
+    addressOffset: 536
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS72
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR73
+    displayName: CSR73
+    description: Context swap register 73
+    addressOffset: 540
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS73
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR74
+    displayName: CSR74
+    description: Context swap register 74
+    addressOffset: 544
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS74
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR75
+    displayName: CSR75
+    description: Context swap register 75
+    addressOffset: 548
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS75
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR76
+    displayName: CSR76
+    description: Context swap register 76
+    addressOffset: 552
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS76
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR77
+    displayName: CSR77
+    description: Context swap register 77
+    addressOffset: 556
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS77
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR78
+    displayName: CSR78
+    description: Context swap register 78
+    addressOffset: 560
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS78
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR79
+    displayName: CSR79
+    description: Context swap register 79
+    addressOffset: 564
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS79
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR80
+    displayName: CSR80
+    description: Context swap register 80
+    addressOffset: 568
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS80
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR81
+    displayName: CSR81
+    description: Context swap register 81
+    addressOffset: 572
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS81
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR82
+    displayName: CSR82
+    description: Context swap register 82
+    addressOffset: 576
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS82
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR83
+    displayName: CSR83
+    description: Context swap register 83
+    addressOffset: 580
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS83
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR84
+    displayName: CSR84
+    description: Context swap register 84
+    addressOffset: 584
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS84
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR85
+    displayName: CSR85
+    description: Context swap register 85
+    addressOffset: 588
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS85
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR86
+    displayName: CSR86
+    description: Context swap register 86
+    addressOffset: 592
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS86
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR87
+    displayName: CSR87
+    description: Context swap register 87
+    addressOffset: 596
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS87
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR88
+    displayName: CSR88
+    description: Context swap register 88
+    addressOffset: 600
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS88
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR89
+    displayName: CSR89
+    description: Context swap register 89
+    addressOffset: 604
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS89
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR90
+    displayName: CSR90
+    description: Context swap register 90
+    addressOffset: 608
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS90
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR91
+    displayName: CSR91
+    description: Context swap register 91
+    addressOffset: 612
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS91
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR92
+    displayName: CSR92
+    description: Context swap register 92
+    addressOffset: 616
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS92
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR93
+    displayName: CSR93
+    description: Context swap register 93
+    addressOffset: 620
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS93
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR94
+    displayName: CSR94
+    description: Context swap register 94
+    addressOffset: 624
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS94
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR95
+    displayName: CSR95
+    description: Context swap register 95
+    addressOffset: 628
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS95
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR96
+    displayName: CSR96
+    description: Context swap register 96
+    addressOffset: 632
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS96
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR97
+    displayName: CSR97
+    description: Context swap register 97
+    addressOffset: 636
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS97
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR98
+    displayName: CSR98
+    description: Context swap register 98
+    addressOffset: 640
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS98
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR99
+    displayName: CSR99
+    description: Context swap register 99
+    addressOffset: 644
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS99
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR100
+    displayName: CSR100
+    description: Context swap register 100
+    addressOffset: 648
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS100
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR101
+    displayName: CSR101
+    description: Context swap register 101
+    addressOffset: 652
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS101
+        description: Context swap x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CSR102
+    displayName: CSR102
+    description: Context swap register 102
+    addressOffset: 656
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CS102
+        description: Context swap x
         bitOffset: 0
         bitWidth: 32
         access: read-write
@@ -1040,7 +1695,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H0
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1053,7 +1708,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H1
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1066,7 +1721,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H2
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1079,7 +1734,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H3
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1092,7 +1747,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H4
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1105,7 +1760,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H5
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1118,7 +1773,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H6
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1131,7 +1786,111 @@ registers:
     resetMask: 4294967295
     fields:
       - name: H7
-        description: "Hash data x\nRefer to Section 24.7.4: HASH digest registers introduction."
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR8
+    displayName: HR8
+    description: Supplementary digest register 8
+    addressOffset: 816
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H8
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR9
+    displayName: HR9
+    description: Supplementary digest register 9
+    addressOffset: 820
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H9
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR10
+    displayName: HR10
+    description: Supplementary digest register 10
+    addressOffset: 824
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H10
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR11
+    displayName: HR11
+    description: Supplementary digest register 11
+    addressOffset: 828
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H11
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR12
+    displayName: HR12
+    description: Supplementary digest register 12
+    addressOffset: 832
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H12
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR13
+    displayName: HR13
+    description: Supplementary digest register 13
+    addressOffset: 836
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H13
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR14
+    displayName: HR14
+    description: Supplementary digest register 14
+    addressOffset: 840
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H14
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR15
+    displayName: HR15
+    description: Supplementary digest register 15
+    addressOffset: 844
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H15
+        description: Hash data x
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1141,4 +1900,4 @@ addressBlocks:
     usage: registers
 interrupts:
   - name: INTR
-    description: HASH interrupt
+    description: HASH global interrupt

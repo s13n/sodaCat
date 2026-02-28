@@ -52,6 +52,15 @@ shared_blocks:
     interrupts: {CRYP: INTR}
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'CRYP generation: 0=basic, 1=+NPBLB, 2=+KMOD/IPRST/KERF/KEYVALID'}
+  HASH:
+    # Hash processor (Gen 0-2 superset chain)
+    # Gen 0 (basic): CR{ALGO0[7]+ALGO1[18] split}, SR{DINIS,DCIS,DMAS,BUSY} — F4, F7, H7, L4, L4+, L5
+    # Gen 1 (+extended SR): CR{ALGO[17:18] unified 2-bit}, SR{+NBWP,DINNE,NBWE} — H5, U5
+    # Gen 2 (+SHA-512): CR{ALGO[17:20] unified 4-bit, +SHA-384/512}, SR extended — H7RS, N6, U3
+    from: STM32N645.HASH
+    interrupts: {HASH: INTR}
+    params:
+      - {name: gen, type: int, default: 0, max: 2, description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-512 (4-bit ALGO)'}
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
@@ -1133,18 +1142,10 @@ families:
         uses: TimerV1
         instances: [TIM1, TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM8, TIM9]
       HASH:
-        from: STM32F405.HASH
+        uses: HASH
         instances: [HASH]
         interrupts:
           HASH_RNG: INTR
-        transforms:
-          - type: patchRegisters
-            registers:
-              - {name: HR0, newName: HRA0}
-              - {name: HR1, newName: HRA1}
-              - {name: HR2, newName: HRA2}
-              - {name: HR3, newName: HRA3}
-              - {name: HR4, newName: HRA4}
       I2C:
         from: STM32F429.I2C1
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -1633,16 +1634,8 @@ families:
         uses: TimerV1
         instances: [TIM1, TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM8, TIM9]
       HASH:
-        from: STM32F745.HASH
+        uses: HASH
         instances: [HASH]
-        transforms:
-          - type: patchRegisters
-            registers:
-              - {name: HR0, newName: HRA0}
-              - {name: HR1, newName: HRA1}
-              - {name: HR2, newName: HRA2}
-              - {name: HR3, newName: HRA3}
-              - {name: HR4, newName: HRA4}
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -2464,10 +2457,8 @@ families:
         uses: TimerV2
         instances: [TIM1, TIM12, TIM13, TIM14, TIM15, TIM15_S, TIM16, TIM17, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8, TIM8_S]
       HASH:
-        from: STM32H503.HASH
+        uses: HASH
         instances: [HASH]
-        interrupts:
-          HASH: INTR
       HASH_S:
         from: STM32H523.HASH_S
         instances: [HASH_S]
@@ -2637,6 +2628,7 @@ families:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 3}
           RNG: {gen: 3}
+          HASH: {gen: 1}
           CRS: {trim_width: 7}
           OPAMP: {single: true}
           GPIO: {has_hslvr: true}
@@ -2908,7 +2900,7 @@ families:
           H73x:
             instances: [TIM1, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM23, TIM24, TIM3, TIM4, TIM5, TIM8]
       HASH:
-        from: STM32H730.HASH
+        uses: HASH
         instances: [HASH]
         interrupts:
           HASH_RNG: INTR
@@ -3361,10 +3353,8 @@ families:
         uses: TimerV2
         instances: [TIM1, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM9]
       HASH:
-        from: STM32H7S.HASH
+        uses: HASH
         instances: [HASH]
-        interrupts:
-          HASH: INTR
       HPDMA:
         from: STM32H7S.HPDMA
         instances: [HPDMA]
@@ -3518,6 +3508,7 @@ families:
           IWDG: {gen: 3}
           RNG: {gen: 3}
           CRYP: {gen: 2}
+          HASH: {gen: 2}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -4006,16 +3997,8 @@ families:
         uses: TimerV1
         instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
       HASH:
-        from: STM32L486.HASH
+        uses: HASH
         instances: [HASH]
-        transforms:
-          - type: patchRegisters
-            registers:
-              - {name: HR0, newName: HRA0}
-              - {name: HR1, newName: HRA1}
-              - {name: HR2, newName: HRA2}
-              - {name: HR3, newName: HRA3}
-              - {name: HR4, newName: HRA4}
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -4296,16 +4279,8 @@ families:
         uses: TimerV1
         instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
       HASH:
-        from: STM32L4P5.HASH
+        uses: HASH
         instances: [HASH]
-        transforms:
-          - type: patchRegisters
-            registers:
-              - {name: HR0, newName: HRA0}
-              - {name: HR1, newName: HRA1}
-              - {name: HR2, newName: HRA2}
-              - {name: HR3, newName: HRA3}
-              - {name: HR4, newName: HRA4}
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -4560,10 +4535,8 @@ families:
         uses: TimerV1
         instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
       HASH:
-        from: STM32L552.HASH
+        uses: HASH
         instances: [HASH]
-        interrupts:
-          HASH: INTR
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -4830,10 +4803,8 @@ families:
         uses: TimerV2
         instances: [TIM1, TIM10, TIM11, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8, TIM9]
       HASH:
-        from: STM32N645.HASH
+        uses: HASH
         instances: [HASH]
-        interrupts:
-          HASH: INTR
       HPDMA:
         from: STM32N645.HPDMA
         instances: [HPDMA]
@@ -4995,6 +4966,7 @@ families:
           WWDG: {cfr_version: 2}
           RNG: {gen: 3}
           CRYP: {gen: 2}
+          HASH: {gen: 2}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -5300,10 +5272,8 @@ families:
         uses: TimerV2
         instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4]
       HASH:
-        from: STM32U375.HASH
+        uses: HASH
         instances: [HASH]
-        interrupts:
-          HASH: INTR
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
@@ -5428,6 +5398,7 @@ families:
           LPTIM: {max_channel: 1}
           SAI: {has_gcr: false, has_pdm: true, has_mcken: true}
           GPIO: {has_hslvr: true, has_seccfgr: true}
+          HASH: {gen: 2}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5595,10 +5566,8 @@ families:
         uses: TimerV2
         instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM3, TIM4, TIM5, TIM8]
       HASH:
-        from: STM32U5Fx.HASH
+        uses: HASH
         instances: [HASH]
-        interrupts:
-          HASH: INTR
       HSPI:
         from: STM32U599.HSPI1
         instances: [HSPI1]
@@ -5774,3 +5743,4 @@ families:
           LPTIM: {max_channel: 1}
           SAI: {has_pdm: true, has_mcken: true}
           GPIO: {has_hslvr: true, has_seccfgr: true}
+          HASH: {gen: 1}
