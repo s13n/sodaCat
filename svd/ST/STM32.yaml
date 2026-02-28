@@ -30,6 +30,19 @@ shared_blocks:
       - {type: patchAddressBlock, size: 24}
       # Rename PR field to PRESCALER to avoid C++ name collision with register PR
       - {type: renameFields, register: PR, pattern: ^PR$, replacement: PRESCALER}
+  RNG:
+    # Random Number Generator (Gen 0-3 superset chain)
+    # Gen 0 (basic): CR{RNGEN,IE}, SR{DRDY,CECS,SECS,CEIS,SEIS}, DR — F4
+    # Gen 1 (+CED): +CED in CR — F7, L0, L4, L4+(L4R/S), G0, G4, H7(non-H73x)
+    # Gen 2 (+config): +CONFIG3/NISTC/CONFIG2/CLKDIV/CONFIG1/CONDRST/CONFIGLOCK, +HTCR — L5, L4+(L4P/Q), H7(H73x)
+    # Gen 3 (+ARDIS+NSCR): +ARDIS in CR, +NSCR register — H5, H7RS, U0, U5, N6
+    # U3 stays separate (8-bit CONFIG1, BUSY in SR, 4 HTCR registers)
+    from: STM32N645.RNG
+    interrupts: {RNG: INTR}
+    params:
+      - {name: gen, type: int, default: 1, max: 3, description: 'RNG generation: 0=basic (CR:RNGEN+IE), 1=+CED, 2=+HTCR/config/CONDRST/CONFIGLOCK, 3=+ARDIS+NSCR'}
+    transforms:
+      - {type: patchAddressBlock, size: 20}
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
@@ -1273,10 +1286,8 @@ families:
           F469_F479:
             from: STM32F469.RCC
       RNG:
-        from: STM32F410.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RTC:
         from: STM32F401.RTC
         instances: [RTC]
@@ -1319,6 +1330,7 @@ families:
       _all:
         _all:
           IWDG: {gen: 0}
+          RNG: {gen: 0}
           UART10: {synchronous: 0}
           DCMI: {has_pixel_select: false}
           UART4: {synchronous: 0}
@@ -1725,10 +1737,8 @@ families:
           F76x_F77x:
             from: STM32F767.RCC
       RNG:
-        from: STM32F722.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RTC:
         from: STM32F722.RTC
         instances: [RTC]
@@ -1966,7 +1976,7 @@ families:
         interrupts:
           RCC: INTR
       RNG:
-        from: STM32G041.RNG
+        uses: RNG
         instances: [RNG]
         interrupts:
           AES_RNG: INTR
@@ -2191,10 +2201,8 @@ families:
         interrupts:
           RCC: INTR
       RNG:
-        from: STM32G431.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RTC:
         from: STM32G431.RTC
         instances: [RTC]
@@ -2536,10 +2544,8 @@ families:
         from: STM32H523.RCC_S
         instances: [RCC_S]
       RNG:
-        from: STM32H503.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RNG_S:
         from: STM32H523.RNG_S
         instances: [RNG_S]
@@ -2623,6 +2629,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 3}
+          RNG: {gen: 3}
           CRS: {trim_width: 7}
           OPAMP: {single: true}
           GPIO: {has_hslvr: true}
@@ -3070,7 +3077,7 @@ families:
           H7A3_B:
             from: STM32H7A3.RCC
       RNG:
-        from: STM32H723.RNG
+        uses: RNG
         instances: [RNG]
         interrupts:
           HASH_RNG: INTR
@@ -3180,6 +3187,7 @@ families:
           RAMECC3: {monitors: 2}
       H73x:
         _all:
+          RNG: {gen: 2}
           SPI6: {has_i2s: true}
           TIM23: {width32: true, encoder: 1}
           TIM24: {width32: true, encoder: 1}
@@ -3431,10 +3439,8 @@ families:
         interrupts:
           RCC: INTR
       RNG:
-        from: STM32H7S.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RTC:
         from: STM32H7S.RTC
         instances: [RTC]
@@ -3502,6 +3508,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 3}
+          RNG: {gen: 3}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -3641,7 +3648,7 @@ families:
           L0x3:
             from: STM32L0x3.RCC
       RNG:
-        from: STM32L052.RNG
+        uses: RNG
         instances: [RNG]
       RTC:
         from: STM32L0x0.RTC
@@ -4046,10 +4053,8 @@ families:
         interrupts:
           RCC: INTR
       RNG:
-        from: STM32L412.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RTC:
         from: STM32L431.RTC
         instances: [RTC]
@@ -4349,7 +4354,7 @@ families:
           L4Rx_L4Sx:
             from: STM32L4R5.RCC
       RNG:
-        from: STM32L4P5.RNG
+        uses: RNG
         instances: [RNG]
         interrupts:
           RNG_HASH: INTR
@@ -4419,6 +4424,9 @@ families:
           TIM4: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
           SAI: {has_gcr: false}
+      L4Px_L4Qx:
+        _all:
+          RNG: {gen: 2}
   L5:
     svd:
       zip: stm32l5-svd.zip
@@ -4588,10 +4596,8 @@ families:
           RCC: INTR
           RCC_S: S
       RNG:
-        from: STM32L552.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RTC:
         from: STM32L552.RTC
         instances: [RTC]
@@ -4642,6 +4648,7 @@ families:
     chip_params:
       _all:
         _all:
+          RNG: {gen: 2}
           CRS: {trim_width: 7}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -4912,10 +4919,8 @@ families:
         interrupts:
           RCC: INTR
       RNG:
-        from: STM32N645.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RTC:
         from: STM32N645.RTC
         instances: [RTC]
@@ -4981,6 +4986,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          RNG: {gen: 3}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -5116,7 +5122,7 @@ families:
         interrupts:
           RCC_CRS: INTR
       RNG:
-        from: STM32U031.RNG
+        uses: RNG
         instances: [RNG]
       RTC:
         from: STM32U031.RTC
@@ -5156,6 +5162,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 3}
+          RNG: {gen: 3}
           CRC: {has_rtype: true}
           OPAMP: {single: true}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
@@ -5684,10 +5691,8 @@ families:
           RCC: INTR
           RCC_S: S
       RNG:
-        from: STM32U535.RNG
+        uses: RNG
         instances: [RNG]
-        interrupts:
-          RNG: INTR
       RTC:
         from: STM32U535.RTC
         instances: [RTC]
@@ -5742,6 +5747,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 2}
+          RNG: {gen: 3}
           OCTOSPI: {has_maxtran: true}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}

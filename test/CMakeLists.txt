@@ -85,7 +85,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/OTG_HS
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/OTG_HS_HOST .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/PWR .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/RAMECC .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/RNG .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/RNG .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/RTC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/SDMMC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/SWPMI .hpp)
