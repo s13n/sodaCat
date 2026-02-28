@@ -1,7 +1,12 @@
 name: PSSI
 description: Parallel synchronous slave interface
 groupName: PSSI
-source: STM32N645 SVD v1.0
+source: STM32H7S SVD v1.3
+params:
+  - name: has_cksrc
+    type: bool
+    default: false
+    description: CKSRC field in CR for clock source selection
 registers:
   - name: CR
     displayName: CR
@@ -12,7 +17,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: CKPOL
-        description: Parallel data clock polarity
+        description: "Parallel data clock polarity\nThis bit configures the capture edge of the parallel clock or the edge used for driving outputs, depending on OUTEN."
         bitOffset: 5
         bitWidth: 1
         access: read-write
@@ -24,7 +29,7 @@ registers:
             description: Rising edge active for inputs or falling edge active for outputs.
             value: 1
       - name: DEPOL
-        description: Data enable (PSSI_DE) polarity
+        description: "Data enable (PSSI_DE) polarity\nThis bit indicates the level on the PSSI_DE pin when the data are not valid on the parallel interface."
         bitOffset: 6
         bitWidth: 1
         access: read-write
@@ -36,7 +41,7 @@ registers:
             description: PSSI_DE active high (1 indicates that data is valid)
             value: 1
       - name: RDYPOL
-        description: Ready (PSSI_RDY) polarity
+        description: "Ready (PSSI_RDY) polarity\nThis bit indicates the level on the PSSI_RDY pin when the data are not valid on the parallel interface."
         bitOffset: 8
         bitWidth: 1
         access: read-write
@@ -56,11 +61,17 @@ registers:
           - name: B_0x0
             description: Interface captures 8-bit data on every parallel data clock
             value: 0
+          - name: B_0x1
+            description: Reserved, must not be selected
+            value: 1
+          - name: B_0x2
+            description: Reserved, must not be selected
+            value: 2
           - name: B_0x3
             description: The interface captures 16-bit data on every parallel data clock
             value: 3
       - name: ENABLE
-        description: PSSI enable
+        description: "PSSI enable\nThe contents of the FIFO are flushed when ENABLE is cleared to 0.\nNote: When ENABLE=1, the content of PSSI_CR must not be changed, except for the ENABLE bit itself. All configuration bits can change as soon as ENABLE changes from 0 to 1.\nNote: The DMA controller and all PSSI configuration registers must be programmed correctly before setting the ENABLE bit to 1."
         bitOffset: 14
         bitWidth: 1
         access: read-write
@@ -72,7 +83,7 @@ registers:
             description: PSSI enabled
             value: 1
       - name: DERDYCFG
-        description: Data enable and ready configuration
+        description: "Data enable and ready configuration\nWhen the PSSI_RDY function is mapped to the PSSI_DE pin (settings 101 or 111), it is still the RDYPOL bit which determines its polarity. Similarly, when the PSSI_DE function is mapped to the PSSI_RDY pin (settings 110 or 111), it is still the DEPOL bit which determines its polarity."
         bitOffset: 18
         bitWidth: 3
         access: read-write
@@ -90,7 +101,7 @@ registers:
             description: Both PSSI_RDY and PSSI_DE alternate functions enabled
             value: 3
           - name: B_0x4
-            description: Both PSSI_RDY and PSSI_DE features enabled - bidirectional on PSSI_RDY pin (see Bidirectional PSSI_DE/PSSI_RDY signal on page 2004)
+            description: Both PSSI_RDY and PSSI_DE features enabled - bidirectional on PSSI_RDY pin (see Bidirectional PSSI_DE/PSSI_RDY signal on page 2965)
             value: 4
           - name: B_0x5
             description: Only PSSI_RDY function enabled, but mapped to PSSI_DE pin
@@ -99,10 +110,10 @@ registers:
             description: Only PSSI_DE function enabled, but mapped to PSSI_RDY pin
             value: 6
           - name: B_0x7
-            description: Both PSSI_RDY and PSSI_DE features enabled - bidirectional on PSSI_DE pin (see Bidirectional PSSI_DE/PSSI_RDY signal on page 2004)
+            description: Both PSSI_RDY and PSSI_DE features enabled - bidirectional on PSSI_DE pin (see Bidirectional PSSI_DE/PSSI_RDY signal on page 2965)
             value: 7
       - name: CKSRC
-        description: Clock source
+        description: "Clock source\nThis bit configures the clock source of the PSSI_PDCK."
         bitOffset: 29
         bitWidth: 1
         access: read-write
@@ -178,7 +189,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: OVR_RIS
-        description: Data buffer overrun/underrun raw interrupt status
+        description: "Data buffer overrun/underrun raw interrupt status\nThis bit is cleared by writing a 1 to the OVR_ISC bit in PSSI_ICR."
         bitOffset: 1
         bitWidth: 1
         access: read-only
@@ -218,7 +229,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: OVR_MIS
-        description: Data buffer overrun/underrun masked interrupt status
+        description: "Data buffer overrun/underrun masked interrupt status\nThis bit is set to 1 only when PSSI_IER/OVR_IE and PSSI_RIS/OVR_RIS are both set to 1."
         bitOffset: 1
         bitWidth: 1
         access: read-only
@@ -238,7 +249,7 @@ registers:
     resetMask: 4294967295
     fields:
       - name: OVR_ISC
-        description: Data buffer overrun/underrun interrupt status clear
+        description: "Data buffer overrun/underrun interrupt status clear\nWriting this bit to 1 clears the OVR_RIS bit in PSSI_RIS."
         bitOffset: 1
         bitWidth: 1
         access: write-only
@@ -274,3 +285,6 @@ addressBlocks:
   - offset: 0
     size: 1024
     usage: registers
+interrupts:
+  - name: INTR
+    description: PSSI global interrupt

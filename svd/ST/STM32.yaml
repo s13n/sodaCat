@@ -373,6 +373,88 @@ shared_blocks:
       SPDIF_RX: INTR
     params:
       - {name: has_symbol_clock, type: bool, default: true, description: 'CR symbol clock fields (CKSEN, CKSBKPEN)'}
+  CORDIC:
+    # CORDIC co-processor: G4, H5, H7, H7RS, U5
+    from: STM32H562.CORDIC
+    interrupts:
+      Cordic: INTR
+      CORDIC_IT: INTR
+      CORDIC: INTR
+  FMAC:
+    # Filter Math Accelerator: G4, H5, H7, U5
+    from: STM32H723.FMAC
+    interrupts:
+      FMAC: INTR
+  MDIOS:
+    # Management Data Input/Output Slave: F7, H7, H7RS, N6
+    from: STM32H723.MDIOS
+    interrupts:
+      MDIOS_WKUP: WKUP
+      MDIOS: INTR
+  OTG_HS_PWRCLK:
+    # USB OTG HS power and clock: F4, F7, H7
+    from: STM32H723.OTG1_HS_PWRCLK
+    transforms:
+      - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
+    interrupts:
+      OTG_HS_WKUP: INTR
+  OTG_FS_PWRCLK:
+    # USB OTG FS power and clock: F4, F7, L4, L4P
+    from: STM32F722.OTG_FS_PWRCLK
+    transforms:
+      - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
+    interrupts:
+      OTG_FS_WKUP: INTR
+  CRC:
+    # CRC calculation unit (modern IP with INIT/POL): all except F3, F4, L1
+    from: STM32U375.CRC
+    params:
+      - {name: idr_width, type: int, default: 32, description: 'IDR register width in bits (8 or 32)'}
+      - {name: has_rtype, type: bool, default: false, description: 'CR register includes RTYPE_IN and RTYPE_OUT reversal type fields'}
+  CRS:
+    # Clock Recovery System: C0, G4, H5, H7, H7RS, L0, L4, L4P, L5, U0, U3, U5
+    from: STM32U375.CRS
+    interrupts:
+      CRS: INTR
+    params:
+      - {name: trim_width, type: int, default: 6, description: 'TRIM field width in CR register (6 or 7 bits)'}
+  PSSI:
+    # Parallel Synchronous Slave Interface: H5, H7, H7RS, N6, U5
+    from: STM32H7S.PSSI
+    interrupts:
+      PSSI: INTR
+    params:
+      - {name: has_cksrc, type: bool, default: false, description: 'CKSRC field in CR for clock source selection'}
+  CEC:
+    # Gen2 HDMI-CEC: F4, F7, G0, H7, H7RS (F3 Gen1 stays separate)
+    from: STM32H723.CEC
+    interrupts:
+      CEC: INTR
+      HDMI_CEC: INTR
+  DCMI:
+    # Digital Camera Interface: F4, F7, H5, H7, L4, L4P, N6, U5
+    from: STM32H723.DCMI
+    interrupts:
+      DCMI: INTR
+      DCMI_PSSI: INTR
+    params:
+      - {name: has_pixel_select, type: bool, default: true, description: 'BSM/OEBS/LSM/OELS fields in CR for byte/line selection'}
+  bxCAN:
+    # Basic Extended CAN: F3, F4, F7, L4, L4P
+    from: STM32F446.CAN1
+    interrupts:
+      CAN1_TX: TX
+      CAN1_RX0: RX0
+      CAN1_RX1: RX1
+      CAN1_SCE: SCE
+      USB_HP_CAN_TX: CAN_TX
+      USB_LP_CAN_RX0: CAN_RX0
+      CAN_RX1: RX1
+      CAN_SCE: SCE
+    params:
+      - {name: filter_banks, type: int, default: 28, description: 'Number of CAN filter banks (14 or 28)'}
+      - {name: linked_to_slave, type: string, default: '', description: Instance name of slave CAN sharing this master filter banks}
+      - {name: linked_to_master, type: string, default: '', description: Instance name of master CAN whose filter banks this slave uses}
 families:
   C0:
     svd:
@@ -402,10 +484,10 @@ families:
         params:
           - {name: ext_channels, type: int, default: 19, max: 19, description: Number of external input channels}
       CRC:
-        from: STM32C071.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32C071.CRS
+        uses: CRS
         instances: [CRS]
       DBGMCU:
         from: STM32C071.DBG
@@ -493,6 +575,8 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           SPI: {has_astrten: true}
+          CRC: {has_rtype: true}
+          CRS: {trim_width: 7}
           SPI1: {has_i2s: true}
           USART2: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
@@ -806,17 +890,13 @@ families:
         uses: WWDG
         instances: [WWDG]
       bxCAN:
-        from: STM32F302.CAN
+        uses: bxCAN
         instances: [CAN]
-        interrupts:
-          USB_HP_CAN_TX: CAN_TX
-          USB_LP_CAN_RX0: CAN_RX0
-          CAN_RX1: RX1
-          CAN_SCE: SCE
     chip_params:
       _all:
         _all:
           USART: {has_fifo: false, synchronous: 2}
+          DCMI: {has_pixel_select: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           SPI2: {has_i2s: true}
@@ -910,10 +990,8 @@ families:
         interrupts:
           TIM6_DAC1: INTR
       CEC:
-        from: STM32F446.HDMI_CEC
+        uses: CEC
         instances: [HDMI_CEC]
-        interrupts:
-          HDMI_CEC: INTR
       CRC:
         from: STM32F401.CRC
         instances: [CRC]
@@ -931,10 +1009,8 @@ families:
         from: STM32F401.DBG
         instances: [DBG]
       DCMI:
-        from: STM32F405.DCMI
+        uses: DCMI
         instances: [DCMI]
-        interrupts:
-          DCMI: INTR
       DFSDM:
         from: STM32F412.DFSDM
         instances: [DFSDM, DFSDM1, DFSDM2]
@@ -1101,7 +1177,7 @@ families:
           F446:
             from: STM32F446.OTG_FS_HOST
       OTG_FS_PWRCLK:
-        from: STM32F401.OTG_FS_PWRCLK
+        uses: OTG_FS_PWRCLK
         instances: [OTG_FS_PWRCLK]
       OTG_HS_DEVICE:
         from: STM32F405.OTG_HS_DEVICE
@@ -1124,12 +1200,8 @@ families:
         transforms:
           - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
       OTG_HS_PWRCLK:
-        from: STM32F405.OTG_HS_PWRCLK
+        uses: OTG_HS_PWRCLK
         instances: [OTG_HS_PWRCLK]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-        interrupts:
-          OTG_HS_WKUP: INTR
       PWR:
         from: STM32F446.PWR
         instances: [PWR]
@@ -1227,17 +1299,14 @@ families:
         uses: WWDG
         instances: [WWDG]
       bxCAN:
-        from: STM32F405.CAN1
+        uses: bxCAN
         instances: [CAN1, CAN2, CAN3]
-        interrupts:
-          CAN1_TX: TX
-          CAN1_RX0: RX0
-          CAN1_RX1: RX1
-          CAN1_SCE: SCE
     chip_params:
       _all:
         _all:
           UART10: {synchronous: 0}
+          CRC: {idr_width: 8}
+          DCMI: {has_pixel_select: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -1260,6 +1329,7 @@ families:
           TIM4: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
           GPIO: {has_brr: false}
+          PSSI: {has_cksrc: true}
           SAI: {has_gcr: false}
           SPDIFRX: {has_symbol_clock: false}
       F401:
@@ -1380,12 +1450,10 @@ families:
         interrupts:
           TIM6_DAC: INTR
       CEC:
-        from: STM32F745.CEC
+        uses: CEC
         instances: [CEC]
-        interrupts:
-          HDMI_CEC: INTR
       CRC:
-        from: STM32F722.CRC
+        uses: CRC
         instances: [CRC]
       CRYP:
         from: STM32F745.CRYP
@@ -1409,10 +1477,8 @@ families:
               - {name: DBG_CAN3_STOP, bitOffset: 13, bitWidth: 1}
               - {name: DBG_I2C4_SMBUS_TIMEOUT, bitOffset: 24, bitWidth: 1}
       DCMI:
-        from: STM32F745.DCMI
+        uses: DCMI
         instances: [DCMI]
-        interrupts:
-          DCMI: INTR
       DFSDM:
         from: STM32F767.DFSDM
         instances: [DFSDM]
@@ -1567,10 +1633,8 @@ families:
           LCD_TFT: INTR
           LCD_TFT_1: ERROR
       MDIOS:
-        from: STM32F767.MDIOS
+        uses: MDIOS
         instances: [MDIOS]
-        interrupts:
-          MDIOS: INTR
       OTG_FS_DEVICE:
         from: STM32F722.OTG_FS_DEVICE
         instances: [OTG_FS_DEVICE]
@@ -1591,12 +1655,8 @@ families:
         transforms:
           - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
       OTG_FS_PWRCLK:
-        from: STM32F722.OTG_FS_PWRCLK
+        uses: OTG_FS_PWRCLK
         instances: [OTG_FS_PWRCLK]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
-        interrupts:
-          OTG_FS_WKUP: INTR
       OTG_HS_DEVICE:
         from: STM32F722.OTG_HS_DEVICE
         instances: [OTG_HS_DEVICE]
@@ -1622,12 +1682,8 @@ families:
         transforms:
           - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
       OTG_HS_PWRCLK:
-        from: STM32F722.OTG_HS_PWRCLK
+        uses: OTG_HS_PWRCLK
         instances: [OTG_HS_PWRCLK]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-        interrupts:
-          OTG_HS_WKUP: INTR
       PWR:
         from: STM32F767.PWR
         instances: [PWR]
@@ -1729,16 +1785,8 @@ families:
         uses: WWDG
         instances: [WWDG]
       bxCAN:
-        from: STM32F745.CAN1
+        uses: bxCAN
         instances: [CAN1, CAN2, CAN3]
-        interrupts:
-          CAN1_TX: TX
-          CAN1_RX0: RX0
-          CAN1_RX1: RX1
-          CAN1_SCE: SCE
-        params:
-          - {name: linked_to_slave, type: string, default: '', description: Instance name of slave CAN sharing this master's filter banks}
-          - {name: linked_to_master, type: string, default: '', description: Instance name of master CAN whose filter banks this slave uses}
     chip_params:
       _all:
         _all:
@@ -1829,20 +1877,16 @@ families:
         interrupts:
           TIM6: INTR
       CEC:
-        from: STM32G051.HDMI_CEC
+        uses: CEC
         instances: [HDMI_CEC]
-        interrupts:
-          CEC: INTR
       COMP:
         from: STM32G051.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
       CRC:
-        from: STM32G030.CRC
+        uses: CRC
         instances: [CRC]
-        interrupts:
-          CEC: INTR
       DAC:
         from: STM32G051.DAC
         instances: [DAC]
@@ -1950,6 +1994,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           SPI1: {has_i2s: true}
+          CRS: {trim_width: 7}
           TIM2: {width32: true, encoder: 1}
           TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
@@ -2016,18 +2061,14 @@ families:
           COMP4_5_6: INTR4_5_6
           COMP7: INTR7
       CORDIC:
-        from: STM32G431.CORDIC
+        uses: CORDIC
         instances: [CORDIC]
-        interrupts:
-          Cordic: INTR
       CRC:
-        from: STM32G431.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32G431.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       DAC:
         from: STM32G431.DAC1
         instances: [DAC1, DAC2, DAC3, DAC4]
@@ -2069,10 +2110,8 @@ families:
           FDCAN1_IT0: IT0
           FDCAN1_IT1: IT1
       FMAC:
-        from: STM32G431.FMAC
+        uses: FMAC
         instances: [FMAC]
-        interrupts:
-          FMAC: INTR
       FMC:
         from: STM32G473.FMC
         instances: [FMC]
@@ -2270,21 +2309,17 @@ families:
         interrupts:
           COMP: INTR
       CORDIC:
-        from: STM32H562.CORDIC
+        uses: CORDIC
         instances: [CORDIC]
-        interrupts:
-          Cordic: INTR
       CRC:
-        from: STM32H503.CRC
+        uses: CRC
         instances: [CRC]
       CRC_S:
         from: STM32H523.CRC_S
         instances: [CRC_S]
       CRS:
-        from: STM32H503.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       CRS_S:
         from: STM32H523.CRS_S
         instances: [CRS_S]
@@ -2311,10 +2346,8 @@ families:
         from: STM32H523.DCACHE_S
         instances: [DCACHE_S]
       DCMI:
-        from: STM32H523.DCMI
+        uses: DCMI
         instances: [DCMI]
-        interrupts:
-          DCMI_PSSI: INTR
       DCMI_S:
         from: STM32H523.DCMI_S
         instances: [DCMI_S]
@@ -2367,10 +2400,8 @@ families:
         interrupts:
           FLASH_S: INTR
       FMAC:
-        from: STM32H562.FMAC
+        uses: FMAC
         instances: [FMAC]
-        interrupts:
-          FMAC: INTR
       FMC:
         from: STM32H523.FMC
         instances: [FMC]
@@ -2464,7 +2495,7 @@ families:
         from: STM32H533.PKA_S
         instances: [PKA_S]
       PSSI:
-        from: STM32H523.PSSI
+        uses: PSSI
         instances: [PSSI]
       PSSI_S:
         from: STM32H523.PSSI_S
@@ -2578,6 +2609,8 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          CRC: {has_rtype: true}
+          CRS: {trim_width: 7}
           OPAMP: {single: true}
           GPIO: {has_hslvr: true}
           SAI: {has_pdm: true, has_mcken: true}
@@ -2695,28 +2728,22 @@ families:
         from: STM32H723.CAN_CCU
         instances: [CAN_CCU]
       CEC:
-        from: STM32H723.CEC
+        uses: CEC
         instances: [CEC]
-        interrupts:
-          CEC: INTR
       COMP:
         from: STM32H723.COMP1
         instances: [COMP1]
         interrupts:
           COMP: INTR
       CORDIC:
-        from: STM32H723.CORDIC
+        uses: CORDIC
         instances: [CORDIC]
-        interrupts:
-          CORDIC_IT: INTR
       CRC:
-        from: STM32H723.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32H723.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       CRYP:
         from: STM32H730.CRYP
         instances: [CRYP]
@@ -2739,10 +2766,8 @@ families:
           H7A3_B:
             from: STM32H7A3.DBGMCU
       DCMI:
-        from: STM32H723.DCMI
+        uses: DCMI
         instances: [DCMI]
-        interrupts:
-          DCMI: INTR
       DFSDM:
         from: STM32H7A3.DFSDM1
         instances: [DFSDM, DFSDM1, DFSDM2]
@@ -2826,10 +2851,8 @@ families:
           FDCAN3_IT0: IT0
           FDCAN3_IT1: IT1
       FMAC:
-        from: STM32H723.FMAC
+        uses: FMAC
         instances: [FMAC]
-        interrupts:
-          FMAC: INTR
       FMC:
         from: STM32H723.FMC
         instances: [FMC]
@@ -2921,11 +2944,8 @@ families:
           LTDC: INTR
           LTDC_ER: ER
       MDIOS:
-        from: STM32H723.MDIOS
+        uses: MDIOS
         instances: [MDIOS]
-        interrupts:
-          MDIOS_WKUP: WKUP
-          MDIOS: INTR
       MDMA:
         from: STM32H743.MDMA
         instances: [MDMA]
@@ -2976,12 +2996,10 @@ families:
         interrupts:
           OTG_FS: INTR
       OTG_HS_PWRCLK:
-        from: STM32H723.OTG1_HS_PWRCLK
+        uses: OTG_HS_PWRCLK
         instances: [OTG1_HS_PWRCLK, OTG2_HS_PWRCLK]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
       PSSI:
-        from: STM32H723.PSSI
+        uses: PSSI
         instances: [PSSI]
       PWR:
         from: STM32H723.PWR
@@ -3136,6 +3154,8 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           LPTIM: {has_repetition: false}
+          CRC: {has_rtype: true}
+          PSSI: {has_cksrc: true}
           SAI: {has_pdm: true}
       H742_H753:
         _all:
@@ -3194,23 +3214,17 @@ families:
         interrupts:
           TIM6: INTR
       CEC:
-        from: STM32H7S.CEC
+        uses: CEC
         instances: [CEC]
-        interrupts:
-          CEC: INTR
       CORDIC:
-        from: STM32H7S.CORDIC
+        uses: CORDIC
         instances: [CORDIC]
-        interrupts:
-          CORDIC: INTR
       CRC:
-        from: STM32H7S.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32H7S.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       CRYP:
         from: STM32H7S.CRYP
         instances: [CRYP]
@@ -3377,10 +3391,8 @@ families:
         interrupts:
           MCE1: INTR
       MDIOS:
-        from: STM32H7S.MDIOS
+        uses: MDIOS
         instances: [MDIOS]
-        interrupts:
-          MDIOS: INTR
       OTG:
         from: STM32H7S.OTG_HS
         instances: [OTG_HS, OTG_FS]
@@ -3393,10 +3405,8 @@ families:
         interrupts:
           PKA: INTR
       PSSI:
-        from: STM32H7S.PSSI
+        uses: PSSI
         instances: [PSSI]
-        interrupts:
-          PSSI: INTR
       PWR:
         from: STM32H7S.PWR
         instances: [PWR]
@@ -3485,6 +3495,7 @@ families:
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
           UART8: {synchronous: 0}
+          CRC: {idr_width: 8}
           SPI1: {has_i2s: true}
           SPI2: {has_i2s: true}
           SPI3: {has_i2s: true}
@@ -3546,10 +3557,10 @@ families:
         interrupts:
           TIM6: INTR
       CRC:
-        from: STM32L0x0.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32L052.CRS
+        uses: CRS
         instances: [CRS]
       DAC:
         from: STM32L052.DAC
@@ -3660,6 +3671,7 @@ families:
     chip_params:
       _all:
         _all:
+          CRC: {idr_width: 8}
           USART: {has_fifo: false, synchronous: 2}
           LPUART: {has_fifo: false}
           SPI: {has_fifo: false}
@@ -3830,6 +3842,8 @@ families:
         _all:
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
+          CRC: {idr_width: 8}
+          bxCAN: {filter_banks: 14}
           SPI: {has_fifo: false}
           SPI2: {has_i2s: true}
           SPI3: {has_i2s: true}
@@ -3899,13 +3913,11 @@ families:
         interrupts:
           COMP: INTR
       CRC:
-        from: STM32L412.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32L412.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       DAC:
         from: STM32L471.DAC
         instances: [DAC, DAC1]
@@ -3913,10 +3925,8 @@ families:
         from: STM32L412.DBGMCU
         instances: [DBGMCU]
       DCMI:
-        from: STM32L471.DCMI
+        uses: DCMI
         instances: [DCMI]
-        interrupts:
-          DCMI: INTR
       DFSDM:
         from: STM32L431.DFSDM
         instances: [DFSDM, DFSDM1]
@@ -4012,7 +4022,7 @@ families:
         from: STM32L471.OTG_FS_HOST
         instances: [OTG_FS_HOST]
       OTG_FS_PWRCLK:
-        from: STM32L471.OTG_FS_PWRCLK
+        uses: OTG_FS_PWRCLK
         instances: [OTG_FS_PWRCLK]
       PWR:
         from: STM32L412.PWR
@@ -4075,13 +4085,8 @@ families:
         uses: WWDG
         instances: [WWDG]
       bxCAN:
-        from: STM32L431.CAN1
+        uses: bxCAN
         instances: [CAN1, CAN2]
-        interrupts:
-          CAN1_TX: TX
-          CAN1_RX0: RX0
-          CAN1_RX1: RX1
-          CAN1_SCE: SCE
     chip_params:
       _all:
         _all:
@@ -4179,13 +4184,11 @@ families:
         interrupts:
           COMP: INTR
       CRC:
-        from: STM32L4P5.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32L4P5.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       DAC:
         from: STM32L4P5.DAC
         instances: [DAC]
@@ -4193,10 +4196,8 @@ families:
         from: STM32L4P5.DBGMCU
         instances: [DBGMCU]
       DCMI:
-        from: STM32L4P5.DCMI
+        uses: DCMI
         instances: [DCMI]
-        interrupts:
-          DCMI: INTR
       DFSDM:
         from: STM32L4P5.DFSDM1
         instances: [DFSDM1]
@@ -4322,7 +4323,7 @@ families:
         from: STM32L4P5.OTG_FS_HOST
         instances: [OTG_FS_HOST]
       OTG_FS_PWRCLK:
-        from: STM32L4P5.OTG_FS_PWRCLK
+        uses: OTG_FS_PWRCLK
         instances: [OTG_FS_PWRCLK]
       PWR:
         from: STM32L4P5.PWR
@@ -4388,13 +4389,8 @@ families:
         uses: WWDG
         instances: [WWDG]
       bxCAN:
-        from: STM32L4P5.CAN1
+        uses: bxCAN
         instances: [CAN1]
-        interrupts:
-          CAN1_TX: TX
-          CAN1_RX0: RX0
-          CAN1_RX1: RX1
-          CAN1_SCE: SCE
     chip_params:
       _all:
         _all:
@@ -4451,13 +4447,11 @@ families:
         interrupts:
           COMP: INTR
       CRC:
-        from: STM32L552.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32L552.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       DAC:
         from: STM32L552.DAC
         instances: [DAC]
@@ -4636,6 +4630,8 @@ families:
     chip_params:
       _all:
         _all:
+          CRC: {idr_width: 8}
+          CRS: {trim_width: 7}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
@@ -4687,7 +4683,7 @@ families:
           TIM6: INTR
           TIM18: INTR
       CRC:
-        from: STM32N645.CRC
+        uses: CRC
         instances: [CRC]
       CRYP:
         from: STM32N655.CRYP
@@ -4703,10 +4699,8 @@ families:
         from: STM32N645.DBGMCU
         instances: [DBGMCU]
       DCMI:
-        from: STM32N645.DCMI
+        uses: DCMI
         instances: [DCMI]
-        interrupts:
-          DCMI_PSSI: INTR
       DCMIPP:
         from: STM32N645.DCMIPP
         instances: [DCMIPP]
@@ -4880,10 +4874,8 @@ families:
           MDF1_FLT4: FLT4
           MDF1_FLT5: FLT5
       MDIOS:
-        from: STM32N645.MDIOS
+        uses: MDIOS
         instances: [MDIOS]
-        interrupts:
-          MDIOS: INTR
       OTG:
         from: STM32N645.OTG1
         instances: [OTG1, OTG2]
@@ -4895,7 +4887,7 @@ families:
         interrupts:
           PKA: INTR
       PSSI:
-        from: STM32N645.PSSI
+        uses: PSSI
         instances: [PSSI]
       PWR:
         from: STM32N645.PWR
@@ -4983,6 +4975,8 @@ families:
           UART7: {synchronous: 0}
           UART8: {synchronous: 0}
           UART9: {synchronous: 0}
+          CRC: {has_rtype: true}
+          CRS: {trim_width: 7}
           SPI1: {has_i2s: true}
           SPI2: {has_i2s: true}
           SPI3: {has_i2s: true}
@@ -5042,10 +5036,10 @@ families:
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
       CRC:
-        from: STM32U031.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32U073.CRS
+        uses: CRS
         instances: [CRS]
       DAC:
         from: STM32U031.DAC
@@ -5209,13 +5203,11 @@ families:
         interrupts:
           COMP: INTR
       CRC:
-        from: STM32U375.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32U375.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       DAC:
         from: STM32U375.DAC
         instances: [DAC]
@@ -5392,6 +5384,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          CRS: {trim_width: 7}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
           LPUART: {has_wakeup: false, has_autocr: true}
@@ -5462,18 +5455,14 @@ families:
         interrupts:
           COMP: INTR
       CORDIC:
-        from: STM32U535.CORDIC
+        uses: CORDIC
         instances: [CORDIC]
-        interrupts:
-          CORDIC: INTR
       CRC:
-        from: STM32U535.CRC
+        uses: CRC
         instances: [CRC]
       CRS:
-        from: STM32U535.CRS
+        uses: CRS
         instances: [CRS]
-        interrupts:
-          CRS: INTR
       DAC:
         from: STM32U535.DAC1
         instances: [DAC1]
@@ -5486,10 +5475,8 @@ families:
         from: STM32U535.DCB
         instances: [DCB]
       DCMI:
-        from: STM32U535.DCMI
+        uses: DCMI
         instances: [DCMI]
-        interrupts:
-          DCMI_PSSI: INTR
       DMA2D:
         from: STM32U5Fx.DMA2D
         instances: [DMA2D]
@@ -5529,10 +5516,8 @@ families:
         from: STM32U535.FDCAN1
         instances: [FDCAN1, FDCAN1_RAM]
       FMAC:
-        from: STM32U535.FMAC
+        uses: FMAC
         instances: [FMAC]
-        interrupts:
-          FMAC: INTR
       FMC:
         from: STM32U5Fx.FMC
         instances: [FMC]
@@ -5669,7 +5654,7 @@ families:
         interrupts:
           PKA: INTR
       PSSI:
-        from: STM32U535.PSSI
+        uses: PSSI
         instances: [PSSI]
       PWR:
         from: STM32U5Fx.PWR
