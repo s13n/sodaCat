@@ -19,8 +19,8 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(STM32_MODELS_DIR "${CMAKE_SOURCE_DIR}/models/ST" CACHE PATH
     "Output directory for generated STM32 models")
-set(STM32_GENERATOR "${CMAKE_SOURCE_DIR}/extractors/generate_stm32_models.py" CACHE PATH
-    "Path to the unified STM32 model generator script")
+set(STM32_GENERATOR "${CMAKE_SOURCE_DIR}/extractors/generate_models.py" CACHE PATH
+    "Path to the unified model generator script")
 
 # Internal registry of family IDs
 set(_STM32_FAMILY_IDS "" CACHE INTERNAL "")
@@ -58,7 +58,7 @@ function(stm32_add_family)
     add_custom_command(
         OUTPUT ${_marker}
         COMMAND ${Python3_EXECUTABLE} ${STM32_GENERATOR}
-                ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
+                stm32 ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
         COMMAND ${CMAKE_COMMAND} -E touch ${_marker}
         MAIN_DEPENDENCY ${STM32${FAM_CODE}_SVD_ZIP}
         DEPENDS ${STM32_GENERATOR} ${_family_config}
@@ -78,7 +78,7 @@ function(stm32_add_family)
     # Audit target: check transforms for no-ops (SVD bugs potentially fixed)
     add_custom_target(audit-${_target}
         COMMAND ${Python3_EXECUTABLE} ${STM32_GENERATOR}
-                ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
+                stm32 ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
                 --audit
         COMMENT "Auditing ${FAM_DISPLAY} transforms for no-ops..."
         VERBATIM

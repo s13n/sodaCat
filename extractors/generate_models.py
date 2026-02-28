@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
 """
-Generic extractor: generate YAML models for any STM32 family.
+Unified model generator: extract YAML models from vendor SVD files.
 
-Usage: generate_stm32_models.py <family_code> <zip_path> <output_dir> [--audit]
+Usage: generate_models.py <vendor> <family_code> <svd_source> <output_dir> [--audit]
 
-The family_code selects a YAML config from families/<family_code>.yaml,
-which provides the subfamily-to-chip mapping and the block definitions
-(source instances, interrupt mappings) for that family.
+Vendor-specific behavior (SVD access, source formatting, config location) is
+provided by extension modules in extractors/vendors/.
 """
 
 import argparse
 import copy
+import importlib
 import re
 import sys
-import os
-import tempfile
 from pathlib import Path
 from collections import defaultdict
 from ruamel.yaml import YAML
@@ -24,6 +22,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
 from transform import renameEntries
 
+
+# ============================================================================
+# Vendor registry
+# ============================================================================
+
+VENDORS = {
+    'stm32': 'vendors.stm32',
+    'lpc': 'vendors.lpc',
+}
+
+
+# ============================================================================
+# Config loading & resolution
+# ============================================================================
 
 def _parse_block_cfg(block_cfg):
     """Parse a block config dict from YAML into a plain dict."""
@@ -46,7 +58,11 @@ def _parse_block_cfg(block_cfg):
 
 
 def load_family_config(family_code, config_file):
-    """Load the YAML config for a given family code."""
+    """Load the YAML config for a given family code.
+
+    Returns (families, blocks_config, chip_params, chip_interrupts,
+             shared_blocks_config, svd_tag).
+    """
     if not config_file.exists():
         print(f"Error: Config {config_file} not found")
         sys.exit(1)
@@ -80,7 +96,9 @@ def load_family_config(family_code, config_file):
     for sf_key, sf_val in (config.get('chip_interrupts') or {}).items():
         chip_interrupts[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
-    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config
+    svd_tag = full_config.get('svd', {}).get('tag', '')
+
+    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -170,6 +188,10 @@ def _resolve_uses_config(family_block_cfg, shared_blocks_config):
     return resolved
 
 
+# ============================================================================
+# Entry selection
+# ============================================================================
+
 def _select_block_entry(block_families, families, families_present, block_cfg):
     """Select the best block entry for a shared block, preferring the 'from' chip."""
     source = block_cfg.get('from', '')
@@ -200,6 +222,10 @@ def _select_subfamily_entry(entries, block_cfg):
 
     return entries[0]
 
+
+# ============================================================================
+# Transform engine
+# ============================================================================
 
 def _describe_transform(t):
     """Return a one-line human-readable summary of a transform."""
@@ -376,16 +402,13 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                 clone = copy.deepcopy(src)
                 clone['name'] = t['name']
                 clone['displayName'] = t['name']
-                # Remove specified fields
                 if 'removeFields' in t and clone.get('fields'):
                     remove_set = set(t['removeFields'])
                     clone['fields'] = [f for f in clone['fields']
                                        if f.get('name') not in remove_set]
-                # Rename fields in the clone
                 for rf in t.get('renameFields', []):
                     renameEntries(clone.get('fields', []), 'name',
                                   rf['pattern'], rf['replacement'])
-                # Insert clone right after the source register
                 idx = regs.index(src)
                 regs.insert(idx + 1, clone)
         elif typ == 'patchAddressBlock':
@@ -410,8 +433,6 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     findings.append((block_name, 'partial', desc, details))
 
     return findings
-
-
 
 
 def _audit_transform_details(before, after, t):
@@ -448,7 +469,6 @@ def _audit_transform_details(before, after, t):
     if typ == 'patchFields':
         details = []
         has_fixed = False
-        # Find the register(s) in the before state
         for reg in before.get('registers', []):
             if reg.get('name') == t.get('register') or \
                (t.get('register_pattern') and re.match(t['register_pattern'], reg.get('name', ''))):
@@ -490,11 +510,14 @@ def _audit_transform_details(before, after, t):
         return details if has_fixed else None
 
     if typ in ('renameRegisters', 'renameFields'):
-        # For renames that had an effect, no per-property breakdown needed
         return None
 
     return None
 
+
+# ============================================================================
+# Name normalization
+# ============================================================================
 
 def _strip_instance_prefix(block_data, instance_name, block_type):
     """Auto-strip instance/block-type prefix from register names and descriptions.
@@ -561,6 +584,10 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
                     break
 
 
+# ============================================================================
+# Model writing helpers
+# ============================================================================
+
 def _inject_params(block_data, params):
     """Insert params declaration into block_data before 'registers' key."""
     if not params:
@@ -575,11 +602,8 @@ def _inject_params(block_data, params):
     return ordered
 
 
-def _inject_source(block_data, entry):
-    """Insert source attribution into block_data before params/registers."""
-    chip = entry.get('chip', '')
-    version = entry.get('svd_version', '')
-    source = f"{chip} SVD v{version}" if version else f"{chip} SVD"
+def _inject_source(block_data, source):
+    """Insert source attribution string into block_data before params/registers."""
     ordered = {}
     for k, v in block_data.items():
         if k in ('params', 'registers') and 'source' not in ordered:
@@ -589,6 +613,10 @@ def _inject_source(block_data, entry):
         ordered['source'] = source
     return ordered
 
+
+# ============================================================================
+# Interrupt resolution
+# ============================================================================
 
 def _build_canonical_interrupts(blocks_config, shared_blocks):
     """Build a dict of block_type -> set of canonical interrupt names.
@@ -615,6 +643,30 @@ def _build_canonical_interrupts(blocks_config, shared_blocks):
             canonical = mapping['name'] if isinstance(mapping, dict) else mapping
             result[bt].add(canonical)
     return result
+
+
+def _build_config_interrupt_mapping(blocks_config, shared_blocks):
+    """Build a direct raw_name -> canonical mapping per block type from config.
+
+    Provides a config-driven lookup that is tried before algorithmic resolution.
+    Useful when interrupt names don't follow prefix-stripping patterns.
+
+    Returns: dict of (block_type, raw_name) -> canonical_name
+    """
+    mapping = {}
+    for bt, bc in blocks_config.items():
+        interrupt_map = bc.get('interrupts') or {}
+        if not interrupt_map and bc.get('uses'):
+            shared = shared_blocks.get(bc['uses'], {})
+            interrupt_map = shared.get('interrupts') or {}
+        for raw, canonical_spec in interrupt_map.items():
+            canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
+            mapping[(bt, raw)] = canonical
+    for bt, bc in shared_blocks.items():
+        for raw, canonical_spec in (bc.get('interrupts') or {}).items():
+            canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
+            mapping[(bt, raw)] = canonical
+    return mapping
 
 
 def _resolve_interrupt_name(raw_name, instance_name, canonical_names):
@@ -668,6 +720,10 @@ def _resolve_interrupt_name(raw_name, instance_name, canonical_names):
     return None
 
 
+# ============================================================================
+# Instance/param mapping
+# ============================================================================
+
 def _build_instance_to_block(blocks_config, subfamily_name):
     """Build instance_name -> block_type mapping for a subfamily.
 
@@ -696,26 +752,38 @@ def _get_param_decls(block_type, blocks_config, shared_blocks, subfamily_name):
     return []
 
 
+# ============================================================================
+# Main pipeline
+# ============================================================================
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate YAML models for an STM32 family from SVD files.')
-    parser.add_argument('family_code', help='Family code (e.g. H7, F4, C0)')
-    parser.add_argument('zip_path', type=Path, help='Path to SVD zip archive')
-    parser.add_argument('output_dir', type=Path, help='Output directory for models')
-    parser.add_argument('--audit', action='store_true',
-                        help='Report transforms that had no effect (SVD may be fixed)')
+        description='Generate YAML models from vendor SVD files.')
+    subs = parser.add_subparsers(dest='vendor', required=True,
+                                 help='Vendor name (stm32, lpc)')
+
+    vendor_modules = {}
+    for name, mod_path in VENDORS.items():
+        mod = importlib.import_module(mod_path)
+        sub = subs.add_parser(name)
+        sub.add_argument('family_code', help='Family code')
+        mod.add_cli_args(sub)
+        sub.add_argument('output_dir', type=Path, help='Output directory for models')
+        sub.add_argument('--audit', action='store_true',
+                         help='Report transforms that had no effect (SVD may be fixed)')
+        vendor_modules[name] = mod
+
     args = parser.parse_args()
+    ext = vendor_modules[args.vendor]
 
     family_code = args.family_code
-    zip_path = args.zip_path
     output_dir = args.output_dir
 
-    if not zip_path.exists():
-        print(f"Error: {zip_path} not found")
-        sys.exit(1)
+    ext.validate_args(args)
 
-    config_file = zip_path.parent / 'STM32.yaml'
-    families, blocks_config, chip_params, chip_interrupts, shared_blocks = load_family_config(family_code, config_file)
+    config_file = ext.config_path(args)
+    families, blocks_config, chip_params, chip_interrupts, shared_blocks, svd_tag = \
+        load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
     family_chips = set()
@@ -736,7 +804,7 @@ def main():
         if uses_name and uses_name in my_shared_blocks:
             owned_shared_mapping[bt] = uses_name
 
-    print(f"Extracting STM32{family_code} models from {zip_path}")
+    print(f"Extracting {family_code} models from {args.svd_source}")
     print(f"Output directory: {output_dir}")
     if my_shared_blocks:
         print(f"Shared blocks to generate: {', '.join(sorted(my_shared_blocks))}")
@@ -746,14 +814,14 @@ def main():
     # PASS 1: Collect blocks from all subfamilies
     # ==========================================================================
     print(f"{'='*60}")
-    print("PASS 1: Collecting blocks from all families")
+    print("PASS 1: Collecting blocks from all subfamilies")
     print(f"{'='*60}")
 
     all_blocks = defaultdict(lambda: defaultdict(list))
-    chip_summaries = defaultdict(dict)  # subfamily -> chip_name -> summary
+    chip_summaries = defaultdict(dict)
 
     for family_name, family_info in families.items():
-        print(f"\nProcessing {family_name} family...")
+        print(f"\nProcessing {family_name} subfamily...")
 
         # Resolve block configs for this subfamily (applies variant overrides)
         # Exclude blocks with 'uses:' (they reference shared models, no extraction)
@@ -768,61 +836,61 @@ def main():
 
         for chip_name in family_info['chips']:
             try:
-                svd_content = svd.extractFromZip(zip_path, chip_name)
-                if svd_content is not None:
-                    with tempfile.NamedTemporaryFile(mode='wb', suffix='.svd', delete=False) as tf:
-                        tf.write(svd_content)
-                        temp_svd = tf.name
+                result = ext.open_svd(args, chip_name)
+                if result is None:
+                    print(f"  {chip_name}: SVD not found, skipping")
+                    continue
 
-                    try:
-                        root = svd.parse(temp_svd)
-                        blocks, _, chip_device = svd.processChip(root, chip_name, effective_blocks)
-                        svd_version = chip_device.get('version', '') if chip_device else ''
+                root, extra_meta = result
+                blocks, _, chip_device = svd.processChip(root, chip_name, effective_blocks)
+                svd_version = chip_device.get('version', '') if chip_device else ''
 
-                        # Auto-strip instance prefixes from register names
-                        for bn, bd in blocks.items():
-                            from_spec = effective_blocks.get(bn, {}).get('from', '')
-                            if '.' in from_spec:
-                                inst = from_spec.split('.', 1)[1]
-                                _strip_instance_prefix(bd, inst, bn)
+                # Auto-strip instance prefixes from register names
+                for bn, bd in blocks.items():
+                    from_spec = effective_blocks.get(bn, {}).get('from', '')
+                    if '.' in from_spec:
+                        inst = from_spec.split('.', 1)[1]
+                        _strip_instance_prefix(bd, inst, bn)
 
-                        for block_name, block_data in blocks.items():
-                            all_blocks[block_name][family_name].append({
-                                'data': block_data,
-                                'chip': chip_name,
-                                'svd_version': svd_version
-                            })
+                for block_name, block_data in blocks.items():
+                    entry = {
+                        'data': block_data,
+                        'chip': chip_name,
+                        'svd_version': svd_version,
+                    }
+                    entry.update(extra_meta)
+                    all_blocks[block_name][family_name].append(entry)
 
-                        # Save lightweight chip summary for Pass 3 (chip model generation)
-                        if chip_device:
-                            periph_summary = {}
-                            for periph in chip_device.get('peripherals', []):
-                                periph_summary[periph['name']] = {
-                                    'baseAddress': periph.get('baseAddress'),
-                                    'interrupts': [
-                                        {'name': i['name'], 'value': i['value']}
-                                        for i in periph.get('interrupts', [])
-                                    ]
-                                }
-                            chip_summaries[family_name][chip_name] = {
-                                'device_meta': {
-                                    'name': chip_device.get('name'),
-                                    'version': chip_device.get('version'),
-                                    'cpu': chip_device.get('cpu'),
-                                },
-                                'peripherals': periph_summary
-                            }
-                    finally:
-                        os.unlink(temp_svd)
+                # Save lightweight chip summary for Pass 3 (chip model generation)
+                if chip_device:
+                    periph_summary = {}
+                    for periph in chip_device.get('peripherals', []):
+                        periph_summary[periph['name']] = {
+                            'baseAddress': periph.get('baseAddress'),
+                            'interrupts': [
+                                {'name': i['name'], 'value': i['value']}
+                                for i in periph.get('interrupts', [])
+                            ]
+                        }
+                    summary = {
+                        'device_meta': {
+                            'name': chip_device.get('name'),
+                            'version': chip_device.get('version'),
+                            'cpu': chip_device.get('cpu'),
+                        },
+                        'peripherals': periph_summary
+                    }
+                    summary.update(extra_meta)
+                    chip_summaries[family_name][chip_name] = summary
 
             except Exception as e:
                 print(f"  ERROR processing {chip_name}: {e}")
 
     # ==========================================================================
-    # PASS 2: Generate models (placement driven by config)
+    # PASS 2: Generate block models (placement driven by config)
     # ==========================================================================
     print(f"\n{'='*60}")
-    print("PASS 2: Generating models")
+    print("PASS 2: Generating block models")
     print(f"{'='*60}")
 
     common_blocks_dir = output_dir / family_code
@@ -832,6 +900,10 @@ def main():
     common_count = 0
     family_specific_count = 0
     all_findings = []
+
+    def _format_block_source(entry):
+        name = entry.get('svd_path', entry.get('chip', ''))
+        return ext.format_source(name, entry.get('svd_version', ''), svd_tag)
 
     for block_name in sorted(all_blocks.keys()):
         block_families = all_blocks[block_name]
@@ -854,7 +926,7 @@ def main():
                     block_data, transforms, audit=args.audit,
                     block_name=f"{shared_name} (shared)"))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
-            block_data = _inject_source(block_data, entry)
+            block_data = _inject_source(block_data, _format_block_source(entry))
             block_data['name'] = shared_name
 
             svd.dumpModel(block_data, output_dir / shared_name)
@@ -883,14 +955,13 @@ def main():
                         block_data, transforms, audit=args.audit,
                         block_name=f"{block_name} ({fam_name})"))
                 block_data = _inject_params(block_data, block_cfg.get('params'))
-                block_data = _inject_source(block_data, entry)
-    
+                block_data = _inject_source(block_data, _format_block_source(entry))
+
                 svd.dumpModel(block_data, family_dir / block_name)
 
-        # Non-variant subfamilies -> shared placement in base dir
+        # Non-variant subfamilies -> shared or subfamily-specific placement
         default_present = {f for f in families_present if f not in variants}
         if default_present:
-            common_count += 1
             entry = _select_block_entry(
                 block_families, families, default_present, block_cfg)
             block_data = entry['data']
@@ -901,10 +972,20 @@ def main():
                     block_data, transforms, audit=args.audit,
                     block_name=block_name))
             block_data = _inject_params(block_data, block_cfg.get('params'))
-            block_data = _inject_source(block_data, entry)
+            block_data = _inject_source(block_data, _format_block_source(entry))
 
-            svd.dumpModel(block_data, common_blocks_dir / block_name)
-            print(f"  + {block_name:20} -> {family_code} (shared)")
+            use_single_sub = getattr(ext, 'use_single_subfamily_placement', False)
+            if use_single_sub and len(default_present) == 1:
+                # Only one subfamily uses base -> place in subfamily dir
+                fam_name = next(iter(default_present))
+                family_specific_count += 1
+                family_dir = output_dir / family_code / fam_name
+                family_dir.mkdir(parents=True, exist_ok=True)
+                svd.dumpModel(block_data, family_dir / block_name)
+            else:
+                common_count += 1
+                svd.dumpModel(block_data, common_blocks_dir / block_name)
+                print(f"  + {block_name:20} -> {family_code} (shared)")
 
     # ==========================================================================
     # PASS 3: Generate chip models
@@ -914,6 +995,12 @@ def main():
     print(f"{'='*60}")
 
     canonical_interrupts = _build_canonical_interrupts(blocks_config, shared_blocks)
+    # Config-driven interrupt lookup: used by LPC (interrupt names don't follow
+    # prefix-stripping patterns). STM32 uses algorithmic resolution only.
+    if hasattr(ext, 'use_config_interrupt_map') and ext.use_config_interrupt_map:
+        config_interrupt_map = _build_config_interrupt_mapping(blocks_config, shared_blocks)
+    else:
+        config_interrupt_map = {}
     chip_model_count = 0
     unmatched_interrupts = defaultdict(set)  # block_type -> set of unmatched raw names
 
@@ -934,7 +1021,6 @@ def main():
                 continue
 
             device_meta = summary['device_meta']
-            svd_version = device_meta.get('version', '?')
 
             # Build instances and interrupt table
             instances = {}
@@ -948,17 +1034,20 @@ def main():
 
                 canonical_names = canonical_interrupts.get(block_type, set())
 
-                # Map interrupts
+                # Map interrupts: config-driven lookup first, then algorithmic
                 mapped_intrs = []
                 for raw_intr in periph.get('interrupts', []):
-                    canonical = _resolve_interrupt_name(
-                        raw_intr['name'], inst_name, canonical_names)
+                    raw_name = raw_intr['name']
+                    canonical = config_interrupt_map.get((block_type, raw_name))
+                    if not canonical:
+                        canonical = _resolve_interrupt_name(
+                            raw_name, inst_name, canonical_names)
                     if canonical:
                         mapped_intrs.append({
                             'name': canonical, 'value': raw_intr['value']
                         })
                     else:
-                        unmatched_interrupts[block_type].add(raw_intr['name'])
+                        unmatched_interrupts[block_type].add(raw_name)
 
                 # Apply chip_interrupts overrides/injections
                 intr_overrides = _resolve_chip_interrupts(
@@ -999,7 +1088,9 @@ def main():
                 }
 
             # Assemble chip model
-            source = f"{chip_name} SVD v{svd_version}" if svd_version else f"{chip_name} SVD"
+            source_name = summary.get('svd_path', chip_name)
+            source = ext.format_source(
+                source_name, device_meta.get('version', ''), svd_tag)
             chip_model = {
                 'name': device_meta.get('name', chip_name),
                 'source': source,
@@ -1056,7 +1147,7 @@ def main():
                         for line in details:
                             print(f"    {line}")
             print(f"\nTotal: {len(noops)} no-op, {len(partials)} partially obsolete")
-            print(f"Review these in {config_file} and svd/ST/SVD_ERRATA.md")
+            print(f"Review these in {config_file} and {ext.errata_path()}")
         else:
             print(f"\nAUDIT: All transforms are active (no no-ops detected)")
 

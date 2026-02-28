@@ -923,6 +923,43 @@ All SVDs except F446 mark VOSRDY as read-write. All RMs confirm it is read-only.
 | STM32F469  | 1024    | 8       | Same |
 
 
+## Cross-family: SPDIFRX
+
+### Interrupt naming inconsistency
+
+The S/PDIF receiver interrupt uses different names across SVD files, preventing
+heuristic matching between SVD interrupt names and peripheral instance names.
+Worked around via `chip_interrupts` for all affected families.
+
+| Family | Instance name | SVD interrupt name | Vector | Match? |
+|--------|---------------|--------------------|--------|--------|
+| F4     | SPDIF_RX      | SPDIF_Rx           | 94     | No (case mismatch: `Rx` vs `RX`) |
+| F7     | SPDIF_RX      | SPDIFRX            | 97     | No (different name) |
+| H7     | SPDIFRX       | SPDIF              | 97     | No (different name) |
+| H7RS   | SPDIFRX       | SPDIF_RX           | 124    | No (different name) |
+| N6     | SPDIFRX       | SPDIFRX            | 150    | Yes |
+
+Only N6 has a matching SVD interrupt name. F7 has a secondary issue: the
+F74x_F75x subfamily uses `SPDIFRX` as the SVD interrupt name but `SPDIF_RX`
+as the instance name, while F76x_F77x uses `SPDIFRX` for both (matches).
+
+### Missing alternate data register views (F4, F7)
+
+The SPDIFRX data register (offset 0x10) has three format views controlled by
+DRFMT[1:0] in CR. H7, H7RS, and N6 SVDs provide all three as overlapping
+registers; F4 and F7 SVDs only provide one.
+
+| Family | DR registers at 0x10              | RM confirms 3 formats? |
+|--------|-----------------------------------|------------------------|
+| F4     | DR (single)                       | Yes (RM0090/RM0390)    |
+| F7     | DR (single)                       | Yes (RM0385/RM0410)    |
+| H7     | DR_00, DR_01, DR_10               | Yes                    |
+| H7RS   | FMT0_DR, FMT0_DR_alt1, FMT0_DR_alt2 | Yes               |
+| N6     | FMT0_DR, FMT1_DR, FMT2_DR        | Yes                    |
+
+The shared model (sourced from N6) provides all three format views to all families.
+
+
 ## Cross-family: GpTimer (TIM2/TIM3/TIM4/TIM5)
 
 ### CCMR1_Input — IC1PSC/IC2PSC field name typo

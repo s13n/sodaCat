@@ -39,7 +39,7 @@ cmake --build . --target rebuild-stm32h7-models
 
 1. **SVD parsing** (`tools/svd.py`): `svd.parse()` reads XML, `svd.collateDevice()` normalizes into Python dicts with numeric values, collated arrays, and cleaned interrupts.
 
-2. **Transformation** (`tools/transform.py`, `tools/generic_transform.py`): Fixes SVD issues — strips instance-specific prefixes from field names, groups repetitive registers into arrays (`createClusterArray`), maps instance names to block types (`headerStructName`). Can be driven declaratively via YAML config files (e.g., `extractors/stm32h7-transforms.yaml`). Note: the family generator (`generate_stm32_models.py`) has its own auto-strip and inline transform system — see "Family generator" below.
+2. **Transformation** (`tools/transform.py`, `tools/generic_transform.py`): Fixes SVD issues — strips instance-specific prefixes from field names, groups repetitive registers into arrays (`createClusterArray`), maps instance names to block types (`headerStructName`). Can be driven declaratively via YAML config files (e.g., `extractors/stm32h7-transforms.yaml`). Note: the family generator (`generate_models.py`) has its own auto-strip and inline transform system — see "Family generator" below.
 
 3. **Model output** (`svd.dumpModel`, `svd.dumpDevice`): Writes YAML using `ruamel.yaml` with `indent(mapping=2, sequence=4, offset=2)`.
 
@@ -47,7 +47,7 @@ cmake --build . --target rebuild-stm32h7-models
 
 ### Directory roles
 
-- `extractors/` — Python scripts that convert SVD → YAML. The unified `generate_stm32_models.py` handles all STM32 families.
+- `extractors/` — Python scripts that convert SVD → YAML. The unified `generate_models.py` handles all families via vendor extensions in `extractors/vendors/`.
 - `generators/cxx/` — Python scripts that convert YAML → C++20 headers. Also contains `hwreg.hpp` (the HwReg template).
 - `tools/` — Shared libraries: `svd.py` (parser), `transform.py` (register/field transforms), `compare_peripherals.py` (similarity analysis).
 - `cmake/` — One `stm32XX-extraction.cmake` module per family, plus `sodaCat.cmake` (the `generate_header()` macro).
@@ -91,7 +91,7 @@ They use `string.Template` for code emission and produce `HwReg<T>`-based regist
 
 ### Family generator
 
-A single `extractors/generate_stm32_models.py` script handles all 17 STM32 families. All family configuration lives in a single consolidated file `svd/ST/STM32.yaml` with two top-level keys:
+A single unified `extractors/generate_models.py` script handles all families (STM32, LPC). Vendor-specific behavior (SVD access, source formatting) is provided by lightweight extension modules in `extractors/vendors/`. All STM32 family configuration lives in a single consolidated file `svd/ST/STM32.yaml` with two top-level keys:
 
 - `shared_blocks`: cross-family shared block definitions — blocks whose register map is identical across multiple families. Each entry has the same keys as a family block (`from`, `interrupts`, `transforms`, `params`) except `instances`, which is inherently per-family and must be specified in each family's block entry. Shared models are written to `models/ST/` (top level), not under a family directory.
 - `families`: per-family configuration, keyed by family code (C0, F3, ..., U5)
@@ -110,9 +110,11 @@ The `chip_params` section is always keyed by subfamily (or `_all` for family-wid
 
 Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: blocks **without** `variants` are written to the family base directory (shared); subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** in `variants` share the base-directory model using the top-level config. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
 
-Two-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement.
+Three-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement; Pass 3 generates chip models with interrupts, instances, and parameters.
 
-**Usage:** `python3 extractors/generate_stm32_models.py <family_code> <zip_path> <output_dir>`
+**Usage:** `python3 extractors/generate_models.py <vendor> <family_code> <svd_source> <output_dir> [--audit]`
+
+Where `<vendor>` is `stm32` or `lpc`, and `<svd_source>` is a zip archive (STM32) or SVD repository directory (LPC).
 
 ### Register name prefix stripping
 
@@ -120,7 +122,7 @@ SVD files often prefix register names with the instance name (e.g., `ADC_ISR`, `
 
 ### Transformation framework
 
-Per-block `transforms` lists in the family YAML config fix SVD bugs and naming issues during extraction. The generator (`generate_stm32_models.py`) applies these in-place after auto-strip, before writing models. Supported transform types:
+Per-block `transforms` lists in the family YAML config fix SVD bugs and naming issues during extraction. The generator (`generate_models.py`) applies these in-place after auto-strip, before writing models. Supported transform types:
 
 - `renameRegisters` — regex rename on register `name` and `displayName`: `{type, pattern, replacement}`
 - `renameFields` — regex rename on field `name` within a specific register: `{type, register, pattern, replacement}`
@@ -143,7 +145,7 @@ A GitHub Actions workflow validates clock-tree specs: `tools/validate_clock_spec
 - Tests are compile-only — if `soc-data-test` builds successfully, the generated headers are valid
 - The `test/CMakeLists.txt` references models via paths relative to `SODACAT_LOCAL_DIR` (defaults to `${CMAKE_SOURCE_DIR}/models`)
 - CMake extraction targets use stamp files (`<target>.stamp`) to avoid redundant re-extraction
-- Cache variables like `STM32XX_GENERATOR` persist in CMakeCache.txt — after moving files, a stale cache may need `cmake .. -DSTM32XX_GENERATOR=<new_path>` or a clean reconfigure
+- Cache variables like `STM32_GENERATOR` and `LPC_GENERATOR` persist in CMakeCache.txt — after moving files, a stale cache may need explicit reconfiguration (e.g., `cmake .. -DSTM32_GENERATOR=<new_path>`) or a clean reconfigure
 - SVD zip naming: STM32 zips live in `svd/ST/`; most are `stm32<family>-svd.zip`; exceptions use underscores: `stm32g4_svd.zip`, `stm32l1_svd.zip`, `stm32l4_svd.zip`, `stm32l4plus-svd.zip`, `stm32u5_svd.zip`
 - Interrupt mapping is data-driven via `interrupts` in family config — SVD interrupt names not listed are dropped (acts as filter)
 - Reference manuals are pdf files stored in `docs/<Vendor>/` (e.g., `docs/ST/`, `docs/NXP/`)

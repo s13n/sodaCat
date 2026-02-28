@@ -19,8 +19,8 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(LPC_MODELS_DIR "${CMAKE_SOURCE_DIR}/models/NXP" CACHE PATH
     "Output directory for generated LPC models")
-set(LPC_GENERATOR "${CMAKE_SOURCE_DIR}/extractors/generate_lpc_models.py" CACHE PATH
-    "Path to the unified LPC model generator script")
+set(LPC_GENERATOR "${CMAKE_SOURCE_DIR}/extractors/generate_models.py" CACHE PATH
+    "Path to the unified model generator script")
 
 # Internal registry of family IDs
 set(_LPC_FAMILY_IDS "" CACHE INTERNAL "")
@@ -57,7 +57,7 @@ function(lpc_add_family)
     add_custom_command(
         OUTPUT ${_marker}
         COMMAND ${Python3_EXECUTABLE} ${LPC_GENERATOR}
-                ${FAM_CODE} ${NXP_SVD_DIR} ${LPC_MODELS_DIR}
+                lpc ${FAM_CODE} ${NXP_SVD_DIR} ${LPC_MODELS_DIR}
         COMMAND ${CMAKE_COMMAND} -E touch ${_marker}
         DEPENDS ${LPC_GENERATOR} ${_family_config}
         COMMENT "Extracting ${FAM_DISPLAY} family models from SVD files..."
@@ -76,7 +76,7 @@ function(lpc_add_family)
     # Audit target: check transforms for no-ops (SVD bugs potentially fixed)
     add_custom_target(audit-${_target}
         COMMAND ${Python3_EXECUTABLE} ${LPC_GENERATOR}
-                ${FAM_CODE} ${NXP_SVD_DIR} ${LPC_MODELS_DIR}
+                lpc ${FAM_CODE} ${NXP_SVD_DIR} ${LPC_MODELS_DIR}
                 --audit
         COMMENT "Auditing ${FAM_DISPLAY} transforms for no-ops..."
         VERBATIM
