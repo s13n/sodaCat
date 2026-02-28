@@ -54,6 +54,8 @@ def _parse_block_cfg(block_cfg):
         entry['params'] = [dict(p) for p in block_cfg['params']]
     if block_cfg.get('variants') is not None:
         entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
+    if block_cfg.get('description'):
+        entry['description'] = block_cfg['description']
     return entry
 
 
@@ -928,6 +930,8 @@ def main():
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
             block_data['name'] = shared_name
+            if shared_cfg.get('description'):
+                block_data['description'] = shared_cfg['description']
 
             svd.dumpModel(block_data, output_dir / shared_name)
             print(f"  * {shared_name:20} -> top-level (cross-family shared)")
@@ -956,6 +960,8 @@ def main():
                         block_name=f"{block_name} ({fam_name})"))
                 block_data = _inject_params(block_data, block_cfg.get('params'))
                 block_data = _inject_source(block_data, _format_block_source(entry))
+                if resolved.get('description'):
+                    block_data['description'] = resolved['description']
 
                 svd.dumpModel(block_data, family_dir / block_name)
 
@@ -973,6 +979,8 @@ def main():
                     block_name=block_name))
             block_data = _inject_params(block_data, block_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
+            if block_cfg.get('description'):
+                block_data['description'] = block_cfg['description']
 
             if len(default_present) == 1:
                 # Only one subfamily uses base -> place in subfamily dir

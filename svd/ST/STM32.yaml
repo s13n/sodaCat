@@ -239,7 +239,7 @@ shared_blocks:
       LPTIM2: INTR2
       LP_Timer1: INTR
     params:
-      - {name: max_channel, type: int, default: 0, max: 3, description: Highest CC channel index (0=CCR1 only, 1=CCR1+CCR2, 3=CCR1-CCR4)}
+      - {name: max_channel, type: int, default: 0, max: 3, description: 'Highest CC channel index (0=CCR1 only, 1=CCR1+CCR2, 3=CCR1-CCR4)'}
       - {name: has_counter_reset, type: bool, default: true, description: COUNTRST/RSTARE in CR}
       - {name: has_repetition, type: bool, default: true, description: RCR register and UE/REPOK status bits}
       - {name: has_cfgr2, type: bool, default: true, description: CFGR2 input selection register}
@@ -476,6 +476,7 @@ shared_blocks:
       - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
     interrupts:
       OTG_HS_WKUP: INTR
+    description: USB on-the-go high-speed power and clock (Synopsys DWC2)
   OTG_FS_PWRCLK:
     # USB OTG FS power and clock: F4, F7, L4, L4P
     from: STM32F722.OTG_FS_PWRCLK
@@ -483,6 +484,7 @@ shared_blocks:
       - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
     interrupts:
       OTG_FS_WKUP: INTR
+    description: USB on-the-go full-speed power and clock (Synopsys DWC2)
   CRC:
     # CRC calculation unit (modern IP with INIT/POL): all except F3, F4, L1
     from: STM32U375.CRC
@@ -533,6 +535,7 @@ shared_blocks:
       - {name: filter_banks, type: int, default: 28, description: 'Number of CAN filter banks (14 or 28)'}
       - {name: linked_to_slave, type: string, default: '', description: Instance name of slave CAN sharing this master filter banks}
       - {name: linked_to_master, type: string, default: '', description: Instance name of master CAN whose filter banks this slave uses}
+    description: Controller area network (Bosch C_CAN)
   VREFBUF_V1:
     # Voltage Reference Buffer (2-scale, 1-bit VRS at bit 2): L4, L4P, L5, U0
     from: STM32U031.VREFBUF
@@ -549,6 +552,7 @@ shared_blocks:
     interrupts: {FDCAN1_IT0: IT0, FDCAN1_IT1: IT1}
     transforms:
       - {type: patchAddressBlock, size: 1024}
+    description: Controller area network with flexible data-rate (Bosch M_CAN)
 families:
   C0:
     svd:
@@ -615,6 +619,7 @@ families:
         interrupts:
           FDCAN_IT0: IT0
           FDCAN_IT1: IT1
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       Flash:
         from: STM32C071.FLASH
         instances: [FLASH]
@@ -975,6 +980,7 @@ families:
       bxCAN:
         uses: bxCAN
         instances: [CAN]
+        description: Controller area network (Bosch C_CAN)
     chip_params:
       _all:
         _all:
@@ -1121,6 +1127,7 @@ families:
       DSI:
         from: STM32F469.DSIHOST
         instances: [DSIHOST]
+        description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32F401.EXTI
         instances: [EXTI]
@@ -1136,18 +1143,22 @@ families:
       Ethernet_DMA:
         from: STM32F405.Ethernet_DMA
         instances: [Ethernet_DMA]
+        description: Ethernet DMA (Synopsys GMAC)
       Ethernet_MAC:
         from: STM32F405.Ethernet_MAC
         instances: [Ethernet_MAC]
         interrupts:
           ETH: IT
           ETH_WKUP: WKUP
+        description: Ethernet MAC (Synopsys GMAC)
       Ethernet_MMC:
         from: STM32F405.Ethernet_MMC
         instances: [Ethernet_MMC]
+        description: Ethernet MMC (Synopsys GMAC)
       Ethernet_PTP:
         from: STM32F405.Ethernet_PTP
         instances: [Ethernet_PTP]
+        description: Ethernet PTP (Synopsys GMAC)
       FMC:
         from: STM32F427.FMC
         instances: [FMC]
@@ -1215,6 +1226,7 @@ families:
             register: FS_DSTS
             fields:
               - {name: DEVLNSTS, description: Device line status, bitOffset: 22, bitWidth: 2}
+        description: USB on-the-go full-speed device (Synopsys DWC2)
       OTG_FS_GLOBAL:
         from: STM32F412.OTG_FS_GLOBAL
         instances: [OTG_FS_GLOBAL]
@@ -1238,20 +1250,24 @@ families:
             from: STM32F429.OTG_FS_GLOBAL
             transforms:
               - {type: patchAddressBlock, size: 272}
+        description: USB on-the-go full-speed global (Synopsys DWC2)
       OTG_FS_HOST:
         from: STM32F401.OTG_FS_HOST
         instances: [OTG_FS_HOST]
         variants:
           F446:
             from: STM32F446.OTG_FS_HOST
+        description: USB on-the-go full-speed host (Synopsys DWC2)
       OTG_FS_PWRCLK:
         uses: OTG_FS_PWRCLK
         instances: [OTG_FS_PWRCLK]
+        description: USB on-the-go full-speed power and clock (Synopsys DWC2)
       OTG_HS_DEVICE:
         from: STM32F405.OTG_HS_DEVICE
         instances: [OTG_HS_DEVICE]
         transforms:
           - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
+        description: USB on-the-go high-speed device (Synopsys DWC2)
       OTG_HS_GLOBAL:
         from: STM32F405.OTG_HS_GLOBAL
         instances: [OTG_HS_GLOBAL]
@@ -1262,14 +1278,17 @@ families:
           OTG_HS_EP1_IN: EP1_IN
           OTG_HS_WKUP: WKUP
           OTG_HS: INTR
+        description: USB on-the-go high-speed global (Synopsys DWC2)
       OTG_HS_HOST:
         from: STM32F405.OTG_HS_HOST
         instances: [OTG_HS_HOST]
         transforms:
           - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
+        description: USB on-the-go high-speed host (Synopsys DWC2)
       OTG_HS_PWRCLK:
         uses: OTG_HS_PWRCLK
         instances: [OTG_HS_PWRCLK]
+        description: USB on-the-go high-speed power and clock (Synopsys DWC2)
       PWR:
         from: STM32F446.PWR
         instances: [PWR]
@@ -1345,6 +1364,7 @@ families:
         instances: [SDIO]
         interrupts:
           SDIO: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
         uses: SPDIFRX
         instances: [SPDIF_RX]
@@ -1367,6 +1387,7 @@ families:
       bxCAN:
         uses: bxCAN
         instances: [CAN1, CAN2, CAN3]
+        description: Controller area network (Bosch C_CAN)
     chip_params:
       _all:
         _all:
@@ -1587,6 +1608,7 @@ families:
         instances: [DSI]
         interrupts:
           DSIHOST: INTR
+        description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32F722.EXTI
         instances: [EXTI]
@@ -1604,18 +1626,22 @@ families:
         interrupts:
           ETH: INTR
           ETH_WKUP: ETH_WKUP
+        description: Ethernet DMA (Synopsys GMAC)
       Ethernet_MAC:
         from: STM32F745.Ethernet_MAC
         instances: [Ethernet_MAC]
         interrupts:
           ETH: INTR
           ETH_WKUP: ETH_WKUP
+        description: Ethernet MAC (Synopsys GMAC)
       Ethernet_MMC:
         from: STM32F745.Ethernet_MMC
         instances: [Ethernet_MMC]
+        description: Ethernet MMC (Synopsys GMAC)
       Ethernet_PTP:
         from: STM32F745.Ethernet_PTP
         instances: [Ethernet_PTP]
+        description: Ethernet PTP (Synopsys GMAC)
       FMC:
         from: STM32F722.FMC
         instances: [FMC]
@@ -1697,6 +1723,7 @@ families:
         instances: [OTG_FS_DEVICE]
         transforms:
           - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
+        description: USB on-the-go full-speed device (Synopsys DWC2)
       OTG_FS_GLOBAL:
         from: STM32F722.OTG_FS_GLOBAL
         instances: [OTG_FS_GLOBAL]
@@ -1704,6 +1731,7 @@ families:
           OTG_FS: INTR
         transforms:
           - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
+        description: USB on-the-go full-speed global (Synopsys DWC2)
       OTG_FS_HOST:
         from: STM32F722.OTG_FS_HOST
         instances: [OTG_FS_HOST]
@@ -1711,14 +1739,17 @@ families:
           OTG_FS_WKUP: INTR
         transforms:
           - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
+        description: USB on-the-go full-speed host (Synopsys DWC2)
       OTG_FS_PWRCLK:
         uses: OTG_FS_PWRCLK
         instances: [OTG_FS_PWRCLK]
+        description: USB on-the-go full-speed power and clock (Synopsys DWC2)
       OTG_HS_DEVICE:
         from: STM32F722.OTG_HS_DEVICE
         instances: [OTG_HS_DEVICE]
         transforms:
           - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
+        description: USB on-the-go high-speed device (Synopsys DWC2)
       OTG_HS_GLOBAL:
         from: STM32F745.OTG_HS_GLOBAL
         instances: [OTG_HS_GLOBAL]
@@ -1731,6 +1762,7 @@ families:
           - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
           - {type: renameRegisters, pattern: ^GNPTXSTS$, replacement: HNPTXSTS}
           - {type: patchRegisters, registers: [name: DIEPTXF8]}
+        description: USB on-the-go high-speed global (Synopsys DWC2)
       OTG_HS_HOST:
         from: STM32F722.OTG_HS_HOST
         instances: [OTG_HS_HOST]
@@ -1738,9 +1770,11 @@ families:
           OTG_FS: INTR
         transforms:
           - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
+        description: USB on-the-go high-speed host (Synopsys DWC2)
       OTG_HS_PWRCLK:
         uses: OTG_HS_PWRCLK
         instances: [OTG_HS_PWRCLK]
+        description: USB on-the-go high-speed power and clock (Synopsys DWC2)
       PWR:
         from: STM32F767.PWR
         instances: [PWR]
@@ -1786,6 +1820,7 @@ families:
         instances: [SDMMC1, SDMMC2]
         interrupts:
           SDMMC1: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
         uses: SPDIFRX
         instances: [SPDIFRX, SPDIF_RX]
@@ -1842,6 +1877,7 @@ families:
       bxCAN:
         uses: bxCAN
         instances: [CAN1, CAN2, CAN3]
+        description: Controller area network (Bosch C_CAN)
     chip_params:
       _all:
         _all:
@@ -1973,6 +2009,7 @@ families:
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1, FDCAN2]
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       Flash:
         from: STM32G030.FLASH
         instances: [FLASH]
@@ -2162,6 +2199,7 @@ families:
       FDCAN:
         uses: FDCAN
         instances: [FDCAN, FDCAN1, FDCAN2, FDCAN3]
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       FMAC:
         uses: FMAC
         instances: [FMAC]
@@ -2442,6 +2480,7 @@ families:
       FDCAN:
         uses: FDCAN
         instances: [FDCAN, FDCAN1, FDCAN2, FDCAN2_S, FDCAN_S]
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       FLASH_S:
         from: STM32H523.FLASH_S
         instances: [FLASH_S]
@@ -2600,6 +2639,7 @@ families:
         instances: [SDMMC, SDMMC1, SDMMC2, SDMMC_S]
         interrupts:
           SDMMC1: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: ModernSPI
         instances: [SPI, SPI1, SPI2, SPI2_S, SPI3, SPI3_S, SPI4, SPI4_S, SPI5, SPI6, SPI_S]
@@ -2846,6 +2886,7 @@ families:
         instances: [DSIHOST]
         transforms:
           - {type: renameRegisters, pattern: ^DSI_, replacement: ''}
+        description: MIPI DSI host controller (Synopsys DesignWare)
       ETH:
         from: STM32H750.ETH
         instances: [ETH]
@@ -2869,12 +2910,15 @@ families:
       Ethernet_DMA:
         from: STM32H742.Ethernet_DMA
         instances: [Ethernet_DMA]
+        description: Ethernet DMA (Synopsys GMAC)
       Ethernet_MAC:
         from: STM32H723.Ethernet_MAC
         instances: [Ethernet_MAC]
+        description: Ethernet MAC (Synopsys GMAC)
       Ethernet_MTL:
         from: STM32H742.Ethernet_MTL
         instances: [Ethernet_MTL]
+        description: Ethernet MTL (Synopsys GMAC)
       FDCAN:
         from: STM32H7A3.FDCAN
         instances: [FDCAN, FDCAN1, FDCAN2]
@@ -2884,6 +2928,7 @@ families:
           FDCAN1_IT1: IT1
           FDCAN2_IT0: IT0
           FDCAN1_IT0: IT0
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       FDCAN3:
         from: STM32H723.FDCAN3
         instances: [FDCAN3]
@@ -3013,6 +3058,7 @@ families:
           OTG_HS_EP1_IN: EP1_IN
           OTG_HS_WKUP: WKUP
           OTG_HS: INTR
+        description: USB on-the-go high-speed device (Synopsys DWC2)
       OTG_HS_GLOBAL:
         from: STM32H723.OTG1_HS_GLOBAL
         instances: [OTG1_HS_GLOBAL, OTG2_HS_GLOBAL]
@@ -3028,6 +3074,7 @@ families:
       # H723 SVD bug: STSPHST is 4-bit in SVD, should be 1-bit per RM0468
           - {type: patchFields, register: GRXSTSR_Device, fields: [{name: STSPHST, bitWidth: 1}]}
           - {type: patchFields, register: GRXSTSP_Device, fields: [{name: STSPHST, bitWidth: 1}]}
+        description: USB on-the-go high-speed global (Synopsys DWC2)
       OTG_HS_HOST:
         from: STM32H723.OTG1_HS_HOST
         instances: [OTG1_HS_HOST, OTG2_HS_HOST]
@@ -3035,9 +3082,11 @@ families:
           - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
         interrupts:
           OTG_FS: INTR
+        description: USB on-the-go high-speed host (Synopsys DWC2)
       OTG_HS_PWRCLK:
         uses: OTG_HS_PWRCLK
         instances: [OTG1_HS_PWRCLK, OTG2_HS_PWRCLK]
+        description: USB on-the-go high-speed power and clock (Synopsys DWC2)
       PSSI:
         uses: PSSI
         instances: [PSSI]
@@ -3119,6 +3168,7 @@ families:
         instances: [SDMMC1, SDMMC2]
         interrupts:
           SDMMC1: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
         uses: SPDIFRX
         instances: [SPDIFRX]
@@ -3324,6 +3374,7 @@ families:
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1, FDCAN2]
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       Flash:
         from: STM32H7S.FLASH
         instances: [FLASH]
@@ -3433,6 +3484,7 @@ families:
         interrupts:
           OTG_HS: INTR
           OTG_FS: INTR
+        description: USB on-the-go (Synopsys DWC2)
       PKA:
         uses: PKA
         instances: [PKA]
@@ -3478,6 +3530,7 @@ families:
         interrupts:
           SDMMC1: INTR
           SDMMC2: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
         uses: SPDIFRX
         instances: [SPDIFRX]
@@ -3846,6 +3899,7 @@ families:
         instances: [SDIO]
         interrupts:
           SDIO: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
@@ -4035,17 +4089,21 @@ families:
       OTG_FS_DEVICE:
         from: STM32L471.OTG_FS_DEVICE
         instances: [OTG_FS_DEVICE]
+        description: USB on-the-go full-speed device (Synopsys DWC2)
       OTG_FS_GLOBAL:
         from: STM32L471.OTG_FS_GLOBAL
         instances: [OTG_FS_GLOBAL]
         interrupts:
           OTG_FS: INTR
+        description: USB on-the-go full-speed global (Synopsys DWC2)
       OTG_FS_HOST:
         from: STM32L471.OTG_FS_HOST
         instances: [OTG_FS_HOST]
+        description: USB on-the-go full-speed host (Synopsys DWC2)
       OTG_FS_PWRCLK:
         uses: OTG_FS_PWRCLK
         instances: [OTG_FS_PWRCLK]
+        description: USB on-the-go full-speed power and clock (Synopsys DWC2)
       PWR:
         from: STM32L412.PWR
         instances: [PWR]
@@ -4074,6 +4132,7 @@ families:
         instances: [SDMMC, SDMMC1]
         interrupts:
           SDMMC1: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
@@ -4105,6 +4164,7 @@ families:
       bxCAN:
         uses: bxCAN
         instances: [CAN1, CAN2]
+        description: Controller area network (Bosch C_CAN)
     chip_params:
       _all:
         _all:
@@ -4251,6 +4311,7 @@ families:
         instances: [DSI]
         interrupts:
           DSIHSOT: INTR
+        description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32L4P5.EXTI
         instances: [EXTI]
@@ -4325,17 +4386,21 @@ families:
       OTG_FS_DEVICE:
         from: STM32L4P5.OTG_FS_DEVICE
         instances: [OTG_FS_DEVICE]
+        description: USB on-the-go full-speed device (Synopsys DWC2)
       OTG_FS_GLOBAL:
         from: STM32L4P5.OTG_FS_GLOBAL
         instances: [OTG_FS_GLOBAL]
         interrupts:
           OTG_FS: INTR
+        description: USB on-the-go full-speed global (Synopsys DWC2)
       OTG_FS_HOST:
         from: STM32L4P5.OTG_FS_HOST
         instances: [OTG_FS_HOST]
+        description: USB on-the-go full-speed host (Synopsys DWC2)
       OTG_FS_PWRCLK:
         uses: OTG_FS_PWRCLK
         instances: [OTG_FS_PWRCLK]
+        description: USB on-the-go full-speed power and clock (Synopsys DWC2)
       PWR:
         from: STM32L4P5.PWR
         instances: [PWR]
@@ -4376,6 +4441,7 @@ families:
             from: STM32L4P5.SDMMC1
           L4Rx_L4Sx:
             from: STM32L4R5.SDMMC1
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
@@ -4400,6 +4466,7 @@ families:
       bxCAN:
         uses: bxCAN
         instances: [CAN1]
+        description: Controller area network (Bosch C_CAN)
     chip_params:
       _all:
         _all:
@@ -4524,6 +4591,7 @@ families:
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1]
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       FMC:
         from: STM32L552.FMC
         instances: [FMC]
@@ -4599,6 +4667,7 @@ families:
         instances: [SDMMC1]
         interrupts:
           SDMMC1: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
@@ -4763,6 +4832,7 @@ families:
           FDCAN1_IT0: IT0
           FDCAN1_IT1: IT1
           FDCAN_CU: CU
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       FMC:
         from: STM32N645.FMC1
         instances: [FMC1]
@@ -4879,6 +4949,7 @@ families:
         instances: [OTG1, OTG2]
         interrupts:
           OTG1: INTR
+        description: USB on-the-go (Synopsys DWC2)
       PKA:
         uses: PKA
         instances: [PKA]
@@ -4917,6 +4988,7 @@ families:
         instances: [SDMMC1, SDMMC2]
         interrupts:
           SDMMC1: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
         uses: SPDIFRX
         instances: [SPDIFRX]
@@ -5241,6 +5313,7 @@ families:
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1]
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       Flash:
         from: STM32U375.FLASH
         instances: [FLASH]
@@ -5341,6 +5414,7 @@ families:
         instances: [SDMMC1]
         interrupts:
           SDMMC1: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: ModernSPI
         instances: [SPI1, SPI2, SPI3]
@@ -5479,6 +5553,7 @@ families:
         instances: [DSI]
         interrupts:
           DSIHOST: INTR
+        description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32U535.EXTI
         instances: [EXTI]
@@ -5507,6 +5582,7 @@ families:
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1, FDCAN1_RAM]
+        description: Controller area network with flexible data-rate (Bosch M_CAN)
       FMAC:
         uses: FMAC
         instances: [FMAC]
@@ -5631,11 +5707,13 @@ families:
         instances: [OTG_FS]
         interrupts:
           OTG_FS: INTR
+        description: USB on-the-go full-speed (Synopsys DWC2)
       OTG_HS:
         from: STM32U595.OTG_HS
         instances: [OTG_HS]
         interrupts:
           OTG_HS: INTR
+        description: USB on-the-go high-speed (Synopsys DWC2)
       PKA:
         uses: PKA
         instances: [PKA]
@@ -5680,6 +5758,7 @@ families:
         instances: [SDMMC, SDMMC1, SDMMC2]
         interrupts:
           SDMMC1: INTR
+        description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: ModernSPI
         instances: [SPI1, SPI2, SPI3]
