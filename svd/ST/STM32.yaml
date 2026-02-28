@@ -15,6 +15,21 @@ shared_blocks:
         register: CFR_V2
         fields:
           - {name: WDGTB, description: Timer base, bitOffset: 11, bitWidth: 3}
+  IWDG:
+    # Independent Watchdog (Gen 0-3 superset chain)
+    # Gen 0 (basic): KR, PR[2:0], RLR, SR{PVU,RVU} — F4, L1
+    # Gen 1 (window): +WINR, +WVU — F3, F7, L0, L4, L4+, L5, C0, G0, G4, H7
+    # Gen 2 (early wakeup): +EWCR, PR[3:0], +EWU/EWIF in SR — U3, U5
+    # Gen 3 (EW+ONF): +ONF in SR — H5, H7RS, U0
+    # N6 stays separate (Gen 4: EWIF@bit15, separate ICR register)
+    from: STM32H7S.IWDG
+    interrupts: {IWDG: INTR}
+    params:
+      - {name: gen, type: int, default: 1, max: 3, description: 'IWDG generation: 0=basic (KR/PR/RLR/SR), 1=+window (WINR/WVU), 2=+early wakeup (EWCR/4-bit PR/EWU/EWIF), 3=+ONF status'}
+    transforms:
+      - {type: patchAddressBlock, size: 24}
+      # Rename PR field to PRESCALER to avoid C++ name collision with register PR
+      - {type: renameFields, register: PR, pattern: ^PR$, replacement: PRESCALER}
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
@@ -538,7 +553,7 @@ families:
         uses: I2C
         instances: [I2C, I2C1, I2C2]
       IWDG:
-        from: STM32C011.IWDG
+        uses: IWDG
         instances: [IWDG]
       PWR:
         from: STM32C071.PWR
@@ -787,7 +802,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
       IWDG:
-        from: STM32F301.IWDG
+        uses: IWDG
         instances: [IWDG]
       PWR:
         instances: [PWR]
@@ -1119,7 +1134,7 @@ families:
         params:
           - {name: has_noise_filter, type: bool, default: true, description: Digital and analog noise filter (FLTR register)}
       IWDG:
-        from: STM32F401.IWDG
+        uses: IWDG
         instances: [IWDG]
       LPTIM:
         uses: LPTIM
@@ -1303,6 +1318,7 @@ families:
     chip_params:
       _all:
         _all:
+          IWDG: {gen: 0}
           UART10: {synchronous: 0}
           DCMI: {has_pixel_select: false}
           UART4: {synchronous: 0}
@@ -1612,7 +1628,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
       IWDG:
-        from: STM32F722.IWDG
+        uses: IWDG
         instances: [IWDG]
       JPEG:
         from: STM32F767.JPEG
@@ -1931,7 +1947,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
       IWDG:
-        from: STM32G030.IWDG
+        uses: IWDG
         instances: [IWDG]
       LPTIM:
         uses: LPTIM
@@ -2150,7 +2166,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
       IWDG:
-        from: STM32G431.IWDG
+        uses: IWDG
         instances: [IWDG]
       LPTIM:
         uses: LPTIM
@@ -2458,10 +2474,8 @@ families:
         from: STM32H523.ICACHE_S
         instances: [ICACHE_S]
       IWDG:
-        from: STM32H503.IWDG
+        uses: IWDG
         instances: [IWDG]
-        interrupts:
-          IWDG: INTR
       IWDG_S:
         from: STM32H523.IWDG_S
         instances: [IWDG_S]
@@ -2608,6 +2622,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          IWDG: {gen: 3}
           CRS: {trim_width: 7}
           OPAMP: {single: true}
           GPIO: {has_hslvr: true}
@@ -2922,7 +2937,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4, I2C5]
       IWDG:
-        from: STM32H723.IWDG1
+        uses: IWDG
         instances: [IWDG, IWDG1, IWDG2]
       JPEG:
         from: STM32H742.JPEG
@@ -3361,10 +3376,8 @@ families:
         from: STM32H7S.ICACHE
         instances: [ICACHE]
       IWDG:
-        from: STM32H7S.IWDG
+        uses: IWDG
         instances: [IWDG]
-        interrupts:
-          IWDG: INTR
       JPEG:
         from: STM32H7S.JPEG
         instances: [JPEG]
@@ -3488,6 +3501,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          IWDG: {gen: 3}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -3589,7 +3603,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
       IWDG:
-        from: STM32L0x0.IWDG
+        uses: IWDG
         instances: [IWDG]
       LCD:
         from: STM32L053.LCD
@@ -3776,7 +3790,7 @@ families:
           I2C1_EV: EV
           I2C1_ER: ER
       IWDG:
-        from: STM32L100.IWDG
+        uses: IWDG
         instances: [IWDG]
       LCD:
         from: STM32L100.LCD
@@ -3836,6 +3850,7 @@ families:
     chip_params:
       _all:
         _all:
+          IWDG: {gen: 0}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           bxCAN: {filter_banks: 14}
@@ -3989,7 +4004,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
       IWDG:
-        from: STM32L412.IWDG
+        uses: IWDG
         instances: [IWDG]
       LCD:
         from: STM32L431.LCD
@@ -4281,7 +4296,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
       IWDG:
-        from: STM32L4P5.IWDG
+        uses: IWDG
         instances: [IWDG]
       LPTIM:
         uses: LPTIM
@@ -4536,7 +4551,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
       IWDG:
-        from: STM32L552.IWDG
+        uses: IWDG
         instances: [IWDG]
       LPTIM:
         uses: LPTIM
@@ -5076,7 +5091,7 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
       IWDG:
-        from: STM32U031.IWDG
+        uses: IWDG
         instances: [IWDG]
       LCD:
         from: STM32U073.LCD
@@ -5140,6 +5155,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          IWDG: {gen: 3}
           CRC: {has_rtype: true}
           OPAMP: {single: true}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
@@ -5283,10 +5299,8 @@ families:
           I3C1_ER: ER
           I3C1_EV: EV
       IWDG:
-        from: STM32U375.IWDG
+        uses: IWDG
         instances: [IWDG]
-        interrupts:
-          IWDG: INTR
       LPTIM:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4]
@@ -5381,6 +5395,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          IWDG: {gen: 2}
           CRC: {has_rtype: true}
           CRS: {trim_width: 7}
           SPI: {has_autocr: true}
@@ -5583,10 +5598,8 @@ families:
         interrupts:
           ICACHE: INTR
       IWDG:
-        from: STM32U535.IWDG
+        uses: IWDG
         instances: [IWDG]
-        interrupts:
-          IWDG: INTR
       JPEG:
         from: STM32U5Fx.JPEG
         instances: [JPEG]
@@ -5728,6 +5741,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          IWDG: {gen: 2}
           OCTOSPI: {has_maxtran: true}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
