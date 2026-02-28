@@ -441,6 +441,16 @@ shared_blocks:
       SPDIF_RX: INTR
     params:
       - {name: has_symbol_clock, type: bool, default: true, description: 'CR symbol clock fields (CKSEN, CKSBKPEN)'}
+  TSC:
+    # Touch Sensing Controller: F3, L0, L4, L4P, L5, U0, U3, U5
+    # 8 IO groups max (G1-G8); some chips implement 6 or 7
+    from: STM32U535.TSC
+    interrupts:
+      TSC: INTR
+    params:
+      - {name: groups, type: int, default: 8, description: 'Number of touch sensing IO groups (6, 7, or 8)'}
+    transforms:
+      - {type: patchAddressBlock, size: 1024}
   CORDIC:
     # CORDIC co-processor: G4, H5, H7, H7RS, U5
     from: STM32H562.CORDIC
@@ -929,20 +939,10 @@ families:
           F334:
             from: STM32F3x4.SYSCFG_COMP_OPAMP
       TSC:
+        uses: TSC
         instances: [TSC]
         interrupts:
           EXTI2_TSC: INTR
-        variants:
-          F301:
-            from: STM32F301.TSC
-          F302:
-            from: STM32F302.TSC
-          F303:
-            from: STM32F303.TSC
-          F37x:
-            from: STM32F373.TSC
-          F334:
-            from: STM32F3x4.TSC
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
@@ -979,6 +979,9 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           TIM19: {encoder: 1}
+      F301:
+        _all:
+          TSC: {groups: 6}
       F37x:
         _all:
           SPI1: {has_i2s: true}
@@ -3677,10 +3680,8 @@ families:
           L0x3:
             from: STM32L0x3.SYSCFG_COMP
       TSC:
-        from: STM32L052.TSC
+        uses: TSC
         instances: [TSC]
-        interrupts:
-          TSC: INTR
       USART:
         uses: USART
         instances: [USART1, USART2, USART4, USART5]
@@ -4078,10 +4079,8 @@ families:
         from: STM32L412.SYSCFG
         instances: [SYSCFG]
       TSC:
-        from: STM32L412.TSC
+        uses: TSC
         instances: [TSC]
-        interrupts:
-          TSC: INTR
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
@@ -4104,6 +4103,7 @@ families:
         _all:
           CRC: {idr32: false}
           DMA2D: {gen: 1}
+          TSC: {groups: 7}
           USART: {has_fifo: false, synchronous: 2}
           LPUART: {has_fifo: false}
           UART4: {synchronous: 0}
@@ -4379,10 +4379,8 @@ families:
         from: STM32L4P5.SYSCFG
         instances: [SYSCFG]
       TSC:
-        from: STM32L4P5.TSC
+        uses: TSC
         instances: [TSC]
-        interrupts:
-          TSC: INTR
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
@@ -4607,10 +4605,8 @@ families:
         from: STM32L552.TAMP
         instances: [TAMP]
       TSC:
-        from: STM32L552.TSC
+        uses: TSC
         instances: [TSC]
-        interrupts:
-          TSC: INTR
       UCPD:
         from: STM32L552.UCPD1
         instances: [UCPD1]
@@ -5120,10 +5116,8 @@ families:
         from: STM32U031.TAMP
         instances: [TAMP]
       TSC:
-        from: STM32U031.TSC
+        uses: TSC
         instances: [TSC]
-        interrupts:
-          TSC: INTR
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, USART4]
@@ -5145,6 +5139,7 @@ families:
           IWDG: {gen: 3}
           RNG: {gen: 3}
           CRC: {has_rtype: true}
+          TSC: {groups: 7}
           OPAMP: {single: true}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
@@ -5357,10 +5352,8 @@ families:
         interrupts:
           TAMP: INTR
       TSC:
-        from: STM32U375.TSC
+        uses: TSC
         instances: [TSC]
-        interrupts:
-          TSC: INTR
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART3]
@@ -5399,6 +5392,7 @@ families:
           GPIO: {has_hslvr: true, has_seccfgr: true}
           HASH: {gen: 2}
           PKA: {gen: 3}
+          TSC: {groups: 7}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5697,10 +5691,8 @@ families:
         interrupts:
           TAMP: INTR
       TSC:
-        from: STM32U535.TSC
+        uses: TSC
         instances: [TSC]
-        interrupts:
-          TSC: INTR
       UCPD:
         from: STM32U5Fx.UCPD1
         instances: [UCPD1]
