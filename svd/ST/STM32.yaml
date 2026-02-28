@@ -71,6 +71,18 @@ shared_blocks:
     interrupts: {PKA: INTR}
     params:
       - {name: gen, type: int, default: 2, max: 3, description: 'PKA generation: 0=basic, 1=+OPER error/INITOK, 2=+LMF, 3=+chaining mode'}
+  DMA2D:
+    # Chrom-Art Accelerator (Gen 0-3 superset chain)
+    # Gen 0 (basic): CR.MODE[2-bit], LO[14-bit], OPFCCR{CM}, single OCOLR — F4, F7
+    # Gen 1 (+AI/RBS): FGPFCCR/BGPFCCR/OPFCCR{+AI,+RBS} — L4, L4+
+    # Gen 2 (+LOM/wideMode/wideLO/SB): CR{+LOM}, MODE→3-bit, LO→16-bit, OPFCCR{+SB}, 4 OCOLR variants — U5
+    # Gen 3 (+CSS): FGPFCCR{+CSS} — H7RS, N6
+    from: STM32H7S.DMA2D
+    interrupts: {DMA2D: INTR}
+    params:
+      - {name: gen, type: int, default: 0, max: 3, description: 'DMA2D generation: 0=basic, 1=+AI/RBS, 2=+LOM/wideMode/wideLO/SB/OCOLR variants, 3=+CSS'}
+    transforms:
+      - {type: patchAddressBlock, size: 3072}
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
@@ -1085,16 +1097,8 @@ families:
           DMA1_Stream6: Stream6
           DMA1_Stream7: Stream7
       DMA2D:
-        from: STM32F469.DMA2D
+        uses: DMA2D
         instances: [DMA2D]
-        interrupts:
-          DMA2D: INTR
-        transforms:
-          - {type: renameFields, register: OCOLR, pattern: ^APLHA$, replacement: ALPHA}
-          - {type: renameFields, register: FGCLUT, pattern: ^APLHA$, replacement: ALPHA}
-          - {type: renameFields, register: BGCLUT, pattern: ^APLHA$, replacement: ALPHA}
-          - {type: patchFields, register: FGCLUT, fields: [{name: ALPHA, description: Alpha value}]}
-          - {type: patchFields, register: BGCLUT, fields: [{name: ALPHA, description: Alpha value}]}
       DSI:
         from: STM32F469.DSIHOST
         instances: [DSIHOST]
@@ -1557,10 +1561,8 @@ families:
           - {type: patchFields, register: S6CR, fields: [{name: CHSEL, bitWidth: 4}]}
           - {type: patchFields, register: S7CR, fields: [{name: CHSEL, bitWidth: 4}]}
       DMA2D:
-        from: STM32F745.DMA2D
+        uses: DMA2D
         instances: [DMA2D]
-        interrupts:
-          DMA2D: INTR
       DSI:
         from: STM32F767.DSI
         instances: [DSI]
@@ -3268,10 +3270,8 @@ families:
         from: STM32H7S.DLYB1
         instances: [DLYB1, DLYB2]
       DMA2D:
-        from: STM32H7S.DMA2D
+        uses: DMA2D
         instances: [DMA2D]
-        interrupts:
-          DMA2D: INTR
       DTS:
         from: STM32H7S.DTS
         instances: [DTS]
@@ -3515,6 +3515,7 @@ families:
           RNG: {gen: 3}
           CRYP: {gen: 2}
           HASH: {gen: 2}
+          DMA2D: {gen: 3}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -3970,10 +3971,8 @@ families:
           DMA1_Channel6: Channel6
           DMA1_Channel7: Channel7
       DMA2D:
-        from: STM32L486.DMA2D
+        uses: DMA2D
         instances: [DMA2D]
-        interrupts:
-          DMA2D: INTR
       EXTI:
         from: STM32L412.EXTI
         instances: [EXTI]
@@ -4104,6 +4103,7 @@ families:
       _all:
         _all:
           CRC: {idr32: false}
+          DMA2D: {gen: 1}
           USART: {has_fifo: false, synchronous: 2}
           LPUART: {has_fifo: false}
           UART4: {synchronous: 0}
@@ -4232,10 +4232,8 @@ families:
           DMA1_CH6: CH6
           DMA1_CH7: CH7
       DMA2D:
-        from: STM32L4P5.DMA2D
+        uses: DMA2D
         instances: [DMA2D]
-        interrupts:
-          DMA2D: INTR
       DMAMUX:
         from: STM32L4P5.DMAMUX1
         instances: [DMAMUX1]
@@ -4401,6 +4399,7 @@ families:
       _all:
         _all:
           CRC: {idr32: false}
+          DMA2D: {gen: 1}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
@@ -4710,10 +4709,8 @@ families:
         interrupts:
           DCMIPP: INTR
       DMA2D:
-        from: STM32N645.DMA2D
+        uses: DMA2D
         instances: [DMA2D]
-        interrupts:
-          DMA2D: INTR
       DTS:
         from: STM32N645.DTS
         instances: [DTS]
@@ -4970,6 +4967,7 @@ families:
           RNG: {gen: 3}
           CRYP: {gen: 2}
           HASH: {gen: 2}
+          DMA2D: {gen: 3}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -5479,10 +5477,8 @@ families:
         uses: DCMI
         instances: [DCMI]
       DMA2D:
-        from: STM32U5Fx.DMA2D
+        uses: DMA2D
         instances: [DMA2D]
-        interrupts:
-          DMA2D: INTR
       DSI:
         from: STM32U599.DSI
         instances: [DSI]
@@ -5725,6 +5721,7 @@ families:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 2}
           RNG: {gen: 3}
+          DMA2D: {gen: 2}
           OCTOSPI: {has_maxtran: true}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
