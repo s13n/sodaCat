@@ -485,6 +485,31 @@ shared_blocks:
     interrupts:
       OTG_FS_WKUP: INTR
     description: USB on-the-go full-speed power and clock (Synopsys DWC2)
+  USB_DRD:
+    # USB full-speed dual-role device (CHEPnR, PMA-based): C0, G0, H5, U0, U3
+    from: STM32H503.USB
+    interrupts:
+      USB: INTR
+      USB_FS: INTR
+    description: USB full-speed dual-role device interface (PMA-based, CHEPnR)
+    params:
+      - {name: has_ddisc, type: bool, default: true, description: "Device disconnection detection (DDISCM in CNTR, DDISC in ISTR)"}
+      - {name: has_dcd, type: bool, default: true, description: "Data contact detection (DCDEN/DCDET in BCDR)"}
+  USB_DEV:
+    # USB full-speed device (EPnR, PMA-based): F3, G4, L0, L1, L5
+    from: STM32L552.USB
+    interrupts:
+      USB_HP: HP
+      USB_LP: LP
+      USB_WAKEUP: WAKEUP
+      USBWakeUP: WAKEUP
+      USB_FS_WKUP: FS_WKUP
+      USB: INTR
+      USB_FS: INTR
+    description: USB full-speed device interface (PMA-based, EPnR)
+    params:
+      - {name: has_lpm, type: bool, default: true, description: "LPM support (L1RESUME/L1REQM in CNTR, L1REQ in ISTR)"}
+      - {name: has_lpmcsr, type: bool, default: true, description: "LPMCSR and BCDR registers present"}
   CRC:
     # CRC calculation unit (modern IP with INIT/POL): all except F3, F4, L1
     from: STM32U375.CRC
@@ -710,10 +735,8 @@ families:
         uses: USART
         instances: [USART1, USART2, USART3, USART4]
       USB:
-        from: STM32C071.USB
+        uses: USB_DRD
         instances: [USB]
-        interrupts:
-          USB: INTR
       WWDG:
         uses: WWDG
         instances: [WWDG]
@@ -721,6 +744,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          USB: {has_dcd: false}
           SPI: {has_astrten: true}
           CRS: {trim_width: 7}
           SPI1: {has_i2s: true}
@@ -1016,12 +1040,8 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
       USB:
-        from: STM32F373.USB
+        uses: USB_DEV
         instances: [USB, USB_FS]
-        interrupts:
-          USB_HP: HP
-          USB_LP: LP
-          USB_WAKEUP: WAKEUP
       WWDG:
         uses: WWDG
         instances: [WWDG]
@@ -1032,6 +1052,7 @@ families:
     chip_params:
       _all:
         _all:
+          USB: {has_lpm: false, has_lpmcsr: false}
           USART: {has_fifo: false, synchronous: 2}
           DCMI: {has_pixel_select: false}
           UART4: {synchronous: 0}
@@ -2121,7 +2142,7 @@ families:
         uses: USART
         instances: [USART1, USART2, USART3, USART4, USART5, USART6]
       USB:
-        from: STM32G0B0.USB
+        uses: USB_DRD
         instances: [USB]
       VREFBUF:
         uses: VREFBUF_V2
@@ -2133,6 +2154,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          USB: {has_ddisc: false}
           SPI1: {has_i2s: true}
           CRS: {trim_width: 7}
           TIM2: {width32: true, encoder: 1}
@@ -2344,12 +2366,8 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
       USB:
-        from: STM32G431.USB_FS_device
+        uses: USB_DEV
         instances: [USB_FS_device]
-        interrupts:
-          USB_HP: HP
-          USB_LP: LP
-          USBWakeUP: WakeUP
       VREFBUF:
         uses: VREFBUF_V2
         instances: [VREFBUF]
@@ -2360,6 +2378,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
+          USB: {has_lpmcsr: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           SPI2: {has_i2s: true}
@@ -2705,10 +2724,8 @@ families:
         uses: USART
         instances: [UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART8, UART9, USART, USART1, USART10, USART11, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
       USB:
-        from: STM32H503.USB
+        uses: USB_DRD
         instances: [USB]
-        interrupts:
-          USB_FS: INTR
       USBSRAM:
         from: STM32H523.USBSRAM
         instances: [USBSRAM]
@@ -3792,10 +3809,8 @@ families:
         uses: USART
         instances: [USART1, USART2, USART4, USART5]
       USB:
-        from: STM32L052.USB_FS
+        uses: USB_DEV
         instances: [USB_FS]
-        interrupts:
-          USB: INTR
       WWDG:
         uses: WWDG
         instances: [WWDG]
@@ -3958,12 +3973,8 @@ families:
         params:
           - {name: synchronous, type: int, default: 2, max: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
       USB:
-        from: STM32L100.USB
+        uses: USB_DEV
         instances: [USB]
-        interrupts:
-          USB_HP: HP
-          USB_LP: LP
-          USB_FS_WKUP: FS_WKUP
       WWDG:
         uses: WWDG
         instances: [WWDG]
@@ -3971,6 +3982,7 @@ families:
       _all:
         _all:
           IWDG: {gen: 0}
+          USB: {has_lpm: false, has_lpmcsr: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           bxCAN: {filter_banks: 14}
@@ -4727,10 +4739,8 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
       USB:
-        from: STM32L552.USB
+        uses: USB_DEV
         instances: [USB]
-        interrupts:
-          USB_FS: INTR
       VREFBUF:
         uses: VREFBUF_V1
         instances: [VREFBUF]
@@ -5238,10 +5248,8 @@ families:
         uses: USART
         instances: [USART1, USART2, USART3, USART4]
       USB:
-        from: STM32U073.USB
+        uses: USB_DRD
         instances: [USB]
-        interrupts:
-          USB: INTR
       VREFBUF:
         uses: VREFBUF_V1
         instances: [VREFBUF]
@@ -5471,10 +5479,8 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART3]
       USB:
-        from: STM32U375.USB
+        uses: USB_DRD
         instances: [USB]
-        interrupts:
-          USB_FS: INTR
       VREFBUF:
         uses: VREFBUF_V2
         instances: [VREFBUF]
