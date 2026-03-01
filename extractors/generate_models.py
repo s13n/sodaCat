@@ -604,6 +604,32 @@ def _inject_params(block_data, params):
     return ordered
 
 
+def _inject_interrupts(block_data, interrupt_map):
+    """Ensure all canonical interrupt names from config appear in block_data.
+
+    The interrupt_map (raw_name -> canonical) may define canonical names that the
+    SVD source chip didn't have (e.g. WKUP, EP1_IN for OTG).  This adds any
+    missing canonical names so the model declares all interrupts that any family
+    might use.
+    """
+    if not interrupt_map:
+        return block_data
+    existing = block_data.get('interrupts', [])
+    seen = {i['name'] for i in existing}
+    for raw_name, mapping in interrupt_map.items():
+        canonical = mapping['name'] if isinstance(mapping, dict) else mapping
+        desc = mapping.get('description', '') if isinstance(mapping, dict) else ''
+        if canonical not in seen:
+            seen.add(canonical)
+            entry = {'name': canonical}
+            if desc:
+                entry['description'] = desc
+            existing.append(entry)
+    if existing:
+        block_data['interrupts'] = existing
+    return block_data
+
+
 def _inject_source(block_data, source):
     """Insert source attribution string into block_data before params/registers."""
     ordered = {}
@@ -927,6 +953,7 @@ def main():
                 all_findings.extend(_apply_transforms(
                     block_data, transforms, audit=args.audit,
                     block_name=f"{shared_name} (shared)"))
+            block_data = _inject_interrupts(block_data, shared_cfg.get('interrupts'))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
             block_data['name'] = shared_name

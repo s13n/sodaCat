@@ -469,22 +469,71 @@ shared_blocks:
     interrupts:
       MDIOS_WKUP: WKUP
       MDIOS: INTR
-  OTG_HS_PWRCLK:
-    # USB OTG HS power and clock: F4, F7, H7
-    from: STM32H723.OTG1_HS_PWRCLK
-    transforms:
-      - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
+  OTG:
+    # USB OTG (Synopsys DWC2): F4, F7, H7, H7RS, L4, L4P, N6, U5
+    from: STM32H7S.OTG_HS
     interrupts:
-      OTG_HS_WKUP: INTR
-    description: USB on-the-go high-speed power and clock (Synopsys DWC2)
-  OTG_FS_PWRCLK:
-    # USB OTG FS power and clock: F4, F7, L4, L4P
-    from: STM32F722.OTG_FS_PWRCLK
+      OTG_FS: INTR
+      OTG_HS: INTR
+      OTG1: INTR
+      OTG_FS_WKUP: WKUP
+      OTG_HS_WKUP: WKUP
+      OTG_HS_EP1_OUT: EP1_OUT
+      OTG_HS_EP1_IN: EP1_IN
+    description: USB on-the-go (Synopsys DWC2)
+    params:
+      - {name: gccfg, type: string, default: cdp, description: "GCCFG register variant: cdp (H7RS/N6), bcd (F4-BCD/F7/H7/U5), vbus (F4-old/L4/L4P)"}
+      - {name: in_endpoints, type: int, default: 9, description: "Device IN endpoint count (DIEPCTL registers)"}
+      - {name: out_endpoints, type: int, default: 9, description: "Device OUT endpoint count (DOEPCTL registers)"}
+      - {name: channels, type: int, default: 16, description: "Host channel count (HCCHAR registers)"}
+      - {name: tx_fifos, type: int, default: 8, description: "Dedicated TX FIFO count (DIEPTXF registers)"}
+      - {name: has_dma, type: bool, default: true, description: "DMA support (HBSTLEN/DMAEN in GAHBCFG, DMA registers)"}
+      - {name: has_lpm, type: bool, default: true, description: "Link Power Management (GLPMCFG register, ERRATIM/DEVLNSTS)"}
     transforms:
-      - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
-    interrupts:
-      OTG_FS_WKUP: INTR
-    description: USB on-the-go full-speed power and clock (Synopsys DWC2)
+      # Patch base GCCFG: add N6-specific fields to make superset
+      - type: patchFields
+        register: GCCFG
+        fields:
+          - {name: VBUSVLD, description: VBUS valid indicator, bitOffset: 4, bitWidth: 1, access: read-only}
+          - {name: BCDEN, description: Force Battery Charging mode, bitOffset: 26, bitWidth: 1}
+          - {name: IDPULLUPDIS, description: Disable ID pin pull-up, bitOffset: 28, bitWidth: 1}
+      # Clone GCCFG → GCCFG_BCD (BCD charger detection: F4-BCD, F7, H7, U5)
+      - type: cloneRegister
+        source: GCCFG
+        name: GCCFG_BCD
+        removeFields: [CHGDET, FSVPLUS, FSVMINUS, SESSVLD, VBUSVLD, HCDPEN, HCDPDETEN,
+                        HVDMSRCEN, DCDEN, PDEN, VBDEN, SDEN, VBVALOVAL, VBVALOVEN,
+                        FORCEHOSTPD, BCDEN, IDPULLUPDIS]
+      - type: patchFields
+        register: GCCFG_BCD
+        fields:
+          - {name: DCDET, description: Data contact detection, bitOffset: 0, bitWidth: 1, access: read-only}
+          - {name: PDET, description: Primary detection, bitOffset: 1, bitWidth: 1, access: read-only}
+          - {name: SDET, description: Secondary detection, bitOffset: 2, bitWidth: 1, access: read-only}
+          - {name: PS2DET, description: PS2 port or proprietary charger, bitOffset: 3, bitWidth: 1, access: read-only}
+          - {name: PWRDWN, description: Power down, bitOffset: 16, bitWidth: 1}
+          - {name: BCDEN, description: Battery charging detector enable, bitOffset: 17, bitWidth: 1}
+          - {name: DCDEN, description: Data contact detection enable, bitOffset: 18, bitWidth: 1}
+          - {name: PDEN, description: Primary detection enable, bitOffset: 19, bitWidth: 1}
+          - {name: SDEN, description: Secondary detection enable, bitOffset: 20, bitWidth: 1}
+          - {name: VBDEN, description: VBUS detection enable, bitOffset: 21, bitWidth: 1}
+      # Clone GCCFG → GCCFG_VBUS (old VBUS sensing: F4-old, L4, L4P)
+      - type: cloneRegister
+        source: GCCFG
+        name: GCCFG_VBUS
+        removeFields: [CHGDET, FSVPLUS, FSVMINUS, SESSVLD, VBUSVLD, HCDPEN, HCDPDETEN,
+                        HVDMSRCEN, DCDEN, PDEN, VBDEN, SDEN, VBVALOVAL, VBVALOVEN,
+                        FORCEHOSTPD, BCDEN, IDPULLUPDIS]
+      - type: patchFields
+        register: GCCFG_VBUS
+        fields:
+          - {name: PWRDWN, description: Power down, bitOffset: 16, bitWidth: 1}
+          - {name: I2CPADEN, description: Enable I2C bus connection for USB OTG, bitOffset: 17, bitWidth: 1}
+          - {name: VBUSASEN, description: Enable the VBUS sensing A device, bitOffset: 18, bitWidth: 1}
+          - {name: VBUSBSEN, description: Enable the VBUS sensing B device, bitOffset: 19, bitWidth: 1}
+          - {name: SOFOUTEN, description: SOF output enable, bitOffset: 20, bitWidth: 1}
+          - {name: NOVBUSSENS, description: VBUS sensing disable, bitOffset: 21, bitWidth: 1}
+      - {type: patchAddressBlock, size: 3592}
   USB_DRD:
     # USB full-speed dual-role device (CHEPnR, PMA-based): C0, G0, H5, U0, U3
     from: STM32H503.USB
@@ -1279,85 +1328,20 @@ families:
         interrupts:
           LCD_TFT: INTR
           LCD_TFT_1: ERROR
-      OTG_FS_DEVICE:
-        from: STM32F401.OTG_FS_DEVICE
-        instances: [OTG_FS_DEVICE]
-        interrupts:
-          OTG_FS: INTR
-        params:
-          - {name: has_lpm, type: bool, default: false, description: 'Link Power Management support (ERRATIM in DCFG, DEVLNSTS in DSTS)'}
-        transforms:
-          - type: patchFields
-            register: FS_DCFG
-            fields:
-              - {name: ERRATIM, description: Erratic error interrupt mask, bitOffset: 15, bitWidth: 1}
-          - type: patchFields
-            register: FS_DSTS
-            fields:
-              - {name: DEVLNSTS, description: Device line status, bitOffset: 22, bitWidth: 2}
-        description: USB on-the-go full-speed device (Synopsys DWC2)
-      OTG_FS_GLOBAL:
-        from: STM32F412.OTG_FS_GLOBAL
+      OTG_FS:
+        uses: OTG
         instances: [OTG_FS_GLOBAL]
         interrupts:
           OTG_FS_WKUP: WKUP
           OTG_FS: INTR
-        params:
-          - {name: has_bcd, type: bool, default: true, description: Battery charging detection (BCD fields in GCCFG)}
-        transforms:
-          - {type: patchAddressBlock, size: 280}
-        variants:
-          F401:
-            from: STM32F429.OTG_FS_GLOBAL
-            transforms:
-              - {type: patchAddressBlock, size: 272}
-          F411:
-            from: STM32F429.OTG_FS_GLOBAL
-            transforms:
-              - {type: patchAddressBlock, size: 272}
-          F4x5_F4x7_F42x_F43x:
-            from: STM32F429.OTG_FS_GLOBAL
-            transforms:
-              - {type: patchAddressBlock, size: 272}
-        description: USB on-the-go full-speed global (Synopsys DWC2)
-      OTG_FS_HOST:
-        from: STM32F401.OTG_FS_HOST
-        instances: [OTG_FS_HOST]
-        variants:
-          F446:
-            from: STM32F446.OTG_FS_HOST
-        description: USB on-the-go full-speed host (Synopsys DWC2)
-      OTG_FS_PWRCLK:
-        uses: OTG_FS_PWRCLK
-        instances: [OTG_FS_PWRCLK]
-        description: USB on-the-go full-speed power and clock (Synopsys DWC2)
-      OTG_HS_DEVICE:
-        from: STM32F405.OTG_HS_DEVICE
-        instances: [OTG_HS_DEVICE]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-        description: USB on-the-go high-speed device (Synopsys DWC2)
-      OTG_HS_GLOBAL:
-        from: STM32F405.OTG_HS_GLOBAL
+      OTG_HS:
+        uses: OTG
         instances: [OTG_HS_GLOBAL]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
         interrupts:
           OTG_HS_EP1_OUT: EP1_OUT
           OTG_HS_EP1_IN: EP1_IN
           OTG_HS_WKUP: WKUP
           OTG_HS: INTR
-        description: USB on-the-go high-speed global (Synopsys DWC2)
-      OTG_HS_HOST:
-        from: STM32F405.OTG_HS_HOST
-        instances: [OTG_HS_HOST]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-        description: USB on-the-go high-speed host (Synopsys DWC2)
-      OTG_HS_PWRCLK:
-        uses: OTG_HS_PWRCLK
-        instances: [OTG_HS_PWRCLK]
-        description: USB on-the-go high-speed power and clock (Synopsys DWC2)
       PWR:
         from: STM32F446.PWR
         instances: [PWR]
@@ -1487,6 +1471,8 @@ families:
           PSSI: {has_cksrc: true}
           SAI: {has_gcr: false}
           SPDIFRX: {has_symbol_clock: false}
+          OTG_FS: {gccfg: vbus, in_endpoints: 4, out_endpoints: 4, channels: 8, tx_fifos: 3, has_dma: false, has_lpm: false}
+          OTG_HS: {gccfg: vbus, in_endpoints: 8, out_endpoints: 4, tx_fifos: 7, has_lpm: false}
       F401:
         _all:
           PWR: {power_mode: lvds}
@@ -1522,27 +1508,25 @@ families:
           SPI1: {has_i2s: true}
           SPI4: {has_i2s: true}
           SPI5: {has_i2s: true}
-          OTG_FS_DEVICE: {has_lpm: true}
+          OTG_FS: {gccfg: bcd, has_lpm: true}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F413_F423:
         _all:
           SPI1: {has_i2s: true}
           SPI4: {has_i2s: true}
           SPI5: {has_i2s: true}
-          OTG_FS_DEVICE: {has_lpm: true}
+          OTG_FS: {gccfg: bcd, has_lpm: true}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F446:
         _all:
           SPI1: {has_i2s: true}
-          OTG_FS_DEVICE: {has_lpm: true}
-          OTG_FS_GLOBAL: {has_bcd: false}
+          OTG_FS: {has_lpm: true}
           ADC_Common: {multi: true}
           SAI: {has_gcr: true}
           PWR: {power_mode: overdrive, has_fmssr: true, wakeup_pins: 2}
       F469_F479:
         _all:
-          OTG_FS_DEVICE: {has_lpm: true}
-          OTG_FS_GLOBAL: {has_bcd: false}
+          OTG_FS: {has_lpm: true}
           ADC_Common: {multi: true}
           PWR: {power_mode: overdrive}
     chip_interrupts:
@@ -1785,63 +1769,20 @@ families:
       MDIOS:
         uses: MDIOS
         instances: [MDIOS]
-      OTG_FS_DEVICE:
-        from: STM32F722.OTG_FS_DEVICE
-        instances: [OTG_FS_DEVICE]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
-        description: USB on-the-go full-speed device (Synopsys DWC2)
-      OTG_FS_GLOBAL:
-        from: STM32F722.OTG_FS_GLOBAL
+      OTG_FS:
+        uses: OTG
         instances: [OTG_FS_GLOBAL]
         interrupts:
           OTG_FS: INTR
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
-        description: USB on-the-go full-speed global (Synopsys DWC2)
-      OTG_FS_HOST:
-        from: STM32F722.OTG_FS_HOST
-        instances: [OTG_FS_HOST]
-        interrupts:
-          OTG_FS_WKUP: INTR
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_FS_, replacement: ''}
-        description: USB on-the-go full-speed host (Synopsys DWC2)
-      OTG_FS_PWRCLK:
-        uses: OTG_FS_PWRCLK
-        instances: [OTG_FS_PWRCLK]
-        description: USB on-the-go full-speed power and clock (Synopsys DWC2)
-      OTG_HS_DEVICE:
-        from: STM32F722.OTG_HS_DEVICE
-        instances: [OTG_HS_DEVICE]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-        description: USB on-the-go high-speed device (Synopsys DWC2)
-      OTG_HS_GLOBAL:
-        from: STM32F745.OTG_HS_GLOBAL
+          OTG_FS_WKUP: WKUP
+      OTG_HS:
+        uses: OTG
         instances: [OTG_HS_GLOBAL]
         interrupts:
           OTG_HS_EP1_OUT: EP1_OUT
           OTG_HS_EP1_IN: EP1_IN
           OTG_HS_WKUP: WKUP
           OTG_HS: INTR
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-          - {type: renameRegisters, pattern: ^GNPTXSTS$, replacement: HNPTXSTS}
-          - {type: patchRegisters, registers: [name: DIEPTXF8]}
-        description: USB on-the-go high-speed global (Synopsys DWC2)
-      OTG_HS_HOST:
-        from: STM32F722.OTG_HS_HOST
-        instances: [OTG_HS_HOST]
-        interrupts:
-          OTG_FS: INTR
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-        description: USB on-the-go high-speed host (Synopsys DWC2)
-      OTG_HS_PWRCLK:
-        uses: OTG_HS_PWRCLK
-        instances: [OTG_HS_PWRCLK]
-        description: USB on-the-go high-speed power and clock (Synopsys DWC2)
       PWR:
         from: STM32F767.PWR
         instances: [PWR]
@@ -1974,6 +1915,8 @@ families:
           GPIO: {has_brr: false}
           SPDIFRX: {has_symbol_clock: false}
           SDMMC: {has_ceata: false, has_stbiterr: false}
+          OTG_FS: {gccfg: bcd, in_endpoints: 6, out_endpoints: 6, channels: 12, tx_fifos: 6, has_dma: false}
+          OTG_HS: {gccfg: bcd, in_endpoints: 8, out_endpoints: 8, tx_fifos: 8}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
@@ -3111,45 +3054,14 @@ families:
         interrupts:
           OTFDEC1: INTR
           OTFDEC2: INTR
-      OTG_HS_DEVICE:
-        from: STM32H723.OTG1_HS_DEVICE
-        instances: [OTG1_HS_DEVICE, OTG2_HS_DEVICE]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-        interrupts:
-          OTG_HS_EP1_OUT: EP1_OUT
-          OTG_HS_EP1_IN: EP1_IN
-          OTG_HS_WKUP: WKUP
-          OTG_HS: INTR
-        description: USB on-the-go high-speed device (Synopsys DWC2)
-      OTG_HS_GLOBAL:
-        from: STM32H723.OTG1_HS_GLOBAL
+      OTG_HS:
+        uses: OTG
         instances: [OTG1_HS_GLOBAL, OTG2_HS_GLOBAL]
         interrupts:
           OTG_HS: INTR
           OTG_HS_WKUP: WKUP
           OTG_HS_EP1_IN: EP1_IN
           OTG_HS_EP1_OUT: EP1_OUT
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-      # H723 SVD bug: DIEPTXF7 at 0x12C, should be 0x11C per RM0468
-          - {type: patchRegisters, registers: [{name: DIEPTXF7, addressOffset: 284}]}
-      # H723 SVD bug: STSPHST is 4-bit in SVD, should be 1-bit per RM0468
-          - {type: patchFields, register: GRXSTSR_Device, fields: [{name: STSPHST, bitWidth: 1}]}
-          - {type: patchFields, register: GRXSTSP_Device, fields: [{name: STSPHST, bitWidth: 1}]}
-        description: USB on-the-go high-speed global (Synopsys DWC2)
-      OTG_HS_HOST:
-        from: STM32H723.OTG1_HS_HOST
-        instances: [OTG1_HS_HOST, OTG2_HS_HOST]
-        transforms:
-          - {type: renameRegisters, pattern: ^OTG_HS_, replacement: ''}
-        interrupts:
-          OTG_FS: INTR
-        description: USB on-the-go high-speed host (Synopsys DWC2)
-      OTG_HS_PWRCLK:
-        uses: OTG_HS_PWRCLK
-        instances: [OTG1_HS_PWRCLK, OTG2_HS_PWRCLK]
-        description: USB on-the-go high-speed power and clock (Synopsys DWC2)
       PSSI:
         uses: PSSI
         instances: [PSSI]
@@ -3308,6 +3220,7 @@ families:
           PSSI: {has_cksrc: true}
           SAI: {has_pdm: true}
           SDMMC: {has_version_id: true}
+          OTG_HS: {gccfg: bcd, in_endpoints: 8, out_endpoints: 8}
       H742_H753:
         _all:
           DFSDM: {has_dlyr: false}
@@ -3541,12 +3454,11 @@ families:
         uses: MDIOS
         instances: [MDIOS]
       OTG:
-        from: STM32H7S.OTG_HS
+        uses: OTG
         instances: [OTG_HS, OTG_FS]
         interrupts:
           OTG_HS: INTR
           OTG_FS: INTR
-        description: USB on-the-go (Synopsys DWC2)
       PKA:
         uses: PKA
         instances: [PKA]
@@ -4142,24 +4054,11 @@ families:
       OPAMP:
         uses: LPOPAMP
         instances: [OPAMP]
-      OTG_FS_DEVICE:
-        from: STM32L471.OTG_FS_DEVICE
-        instances: [OTG_FS_DEVICE]
-        description: USB on-the-go full-speed device (Synopsys DWC2)
-      OTG_FS_GLOBAL:
-        from: STM32L471.OTG_FS_GLOBAL
+      OTG_FS:
+        uses: OTG
         instances: [OTG_FS_GLOBAL]
         interrupts:
           OTG_FS: INTR
-        description: USB on-the-go full-speed global (Synopsys DWC2)
-      OTG_FS_HOST:
-        from: STM32L471.OTG_FS_HOST
-        instances: [OTG_FS_HOST]
-        description: USB on-the-go full-speed host (Synopsys DWC2)
-      OTG_FS_PWRCLK:
-        uses: OTG_FS_PWRCLK
-        instances: [OTG_FS_PWRCLK]
-        description: USB on-the-go full-speed power and clock (Synopsys DWC2)
       PWR:
         from: STM32L412.PWR
         instances: [PWR]
@@ -4241,6 +4140,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           SAI: {has_gcr: false}
+          OTG_FS: {gccfg: vbus, in_endpoints: 4, out_endpoints: 4, channels: 8, tx_fifos: 3, has_dma: false, has_lpm: false}
       L41x_L42x:
         _all:
           LPTIM: {or_type: 1}
@@ -4439,24 +4339,11 @@ families:
       OPAMP:
         uses: LPOPAMP
         instances: [OPAMP]
-      OTG_FS_DEVICE:
-        from: STM32L4P5.OTG_FS_DEVICE
-        instances: [OTG_FS_DEVICE]
-        description: USB on-the-go full-speed device (Synopsys DWC2)
-      OTG_FS_GLOBAL:
-        from: STM32L4P5.OTG_FS_GLOBAL
+      OTG_FS:
+        uses: OTG
         instances: [OTG_FS_GLOBAL]
         interrupts:
           OTG_FS: INTR
-        description: USB on-the-go full-speed global (Synopsys DWC2)
-      OTG_FS_HOST:
-        from: STM32L4P5.OTG_FS_HOST
-        instances: [OTG_FS_HOST]
-        description: USB on-the-go full-speed host (Synopsys DWC2)
-      OTG_FS_PWRCLK:
-        uses: OTG_FS_PWRCLK
-        instances: [OTG_FS_PWRCLK]
-        description: USB on-the-go full-speed power and clock (Synopsys DWC2)
       PWR:
         from: STM32L4P5.PWR
         instances: [PWR]
@@ -4537,6 +4424,7 @@ families:
           TIM4: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
           SAI: {has_gcr: false}
+          OTG_FS: {gccfg: vbus, in_endpoints: 4, out_endpoints: 4, channels: 8, tx_fifos: 3, has_dma: false, has_lpm: false}
       L4Px_L4Qx:
         _all:
           RNG: {gen: 2}
@@ -4994,11 +4882,10 @@ families:
         uses: MDIOS
         instances: [MDIOS]
       OTG:
-        from: STM32N645.OTG1
+        uses: OTG
         instances: [OTG1, OTG2]
         interrupts:
           OTG1: INTR
-        description: USB on-the-go (Synopsys DWC2)
       PKA:
         uses: PKA
         instances: [PKA]
@@ -5748,17 +5635,15 @@ families:
         interrupts:
           OTFDEC1: INTR
       OTG_FS:
-        from: STM32U5Fx.OTG_FS
+        uses: OTG
         instances: [OTG_FS]
         interrupts:
           OTG_FS: INTR
-        description: USB on-the-go full-speed (Synopsys DWC2)
       OTG_HS:
-        from: STM32U595.OTG_HS
+        uses: OTG
         instances: [OTG_HS]
         interrupts:
           OTG_HS: INTR
-        description: USB on-the-go high-speed (Synopsys DWC2)
       PKA:
         uses: PKA
         instances: [PKA]
@@ -5858,3 +5743,5 @@ families:
           HASH: {gen: 1}
           PKA: {gen: 1}
           SDMMC: {idma_list: true}
+          OTG_FS: {gccfg: bcd, in_endpoints: 6, out_endpoints: 6, channels: 12, tx_fifos: 5, has_dma: false}
+          OTG_HS: {gccfg: bcd, in_endpoints: 6, out_endpoints: 9, channels: 12, has_lpm: false}

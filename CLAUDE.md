@@ -111,7 +111,7 @@ The `chip_params` section is always keyed by subfamily (or `_all` for family-wid
 
 Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** share a common model. If only one subfamily uses the base config, the model is placed in that subfamily's directory (not the family base directory); if two or more subfamilies share the base config, it goes in the family base directory. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
 
-Three-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement; Pass 3 generates chip models with interrupts, instances, and parameters.
+Three-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement (for shared blocks, canonical interrupt names from the shared block's `interrupts` mapping are injected into the model so it declares the superset of all families' interrupts); Pass 3 generates chip models with interrupts, instances, and parameters.
 
 **Usage:** `python3 extractors/generate_models.py <vendor> <family_code> <svd_source> <output_dir> [--audit]`
 
