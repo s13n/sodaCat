@@ -27,6 +27,8 @@ EXPORT constexpr struct $ns::integration::${model} i_$name = {$params$ints$init}
             v = i['value']
             if isinstance(v, bool):
                 params += f"\n\t.{i['name']} = {'true' if v else 'false'},"
+            elif isinstance(v, str):
+                params += f'\n\t.{i["name"]} = "{v}",'
             else:
                 params += self.instanceParamTemplate.substitute(i)
         return params

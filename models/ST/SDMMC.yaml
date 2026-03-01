@@ -2,6 +2,15 @@ name: SDMMC
 description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
 groupName: SDMMC
 source: STM32H743 SVD v2.4
+params:
+  - name: idma_list
+    type: bool
+    default: false
+    description: IDMA linked-list mode (vs double-buffer)
+  - name: has_version_id
+    type: bool
+    default: false
+    description: VER and ID identification registers present
 registers:
   - name: POWER
     displayName: POWER
@@ -630,7 +639,7 @@ registers:
       - name: IDMABNDT
         description: "Number of transfers per buffer. This\n              8-bit value shall be multiplied by 8 to get the size\n              of the buffer in 32-bit words and by 32 to get the\n              size of the buffer in bytes. Example: IDMABNDT =\n              0x01: buffer size = 8 words = 32 bytes. These bits\n              can only be written by firmware when DPSM is inactive\n              (DPSMACT = 0)."
         bitOffset: 5
-        bitWidth: 8
+        bitWidth: 12
   - name: IDMABASE0R
     displayName: IDMABASE0R
     description: "The SDMMC_IDMABASE0R register contains the\n          memory buffer base address in single buffer configuration\n          and the buffer 0 base address in double buffer\n          configuration."
@@ -695,9 +704,30 @@ registers:
         description: SDMMC IP identification.
         bitOffset: 0
         bitWidth: 32
+  - name: IDMALAR
+    displayName: IDMALAR
+    description: IDMA linked list address register
+    addressOffset: 100
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - {name: IDMALA, description: Word aligned linked list item address offset, bitOffset: 2, bitWidth: 14}
+      - {name: ABR, description: Acknowledge linked list buffer ready, bitOffset: 29, bitWidth: 1}
+      - {name: ULS, description: Update IDMABSIZE from next linked list, bitOffset: 30, bitWidth: 1}
+      - {name: ULA, description: Update IDMALAR from linked list, bitOffset: 31, bitWidth: 1}
+  - name: IDMABAR
+    displayName: IDMABAR
+    description: IDMA linked list memory base register
+    addressOffset: 104
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - {name: IDMABA, description: Word aligned linked list memory base address, bitOffset: 2, bitWidth: 30}
 addressBlocks:
   - offset: 0
-    size: 1021
+    size: 1024
     usage: registers
 interrupts:
   - name: INTR

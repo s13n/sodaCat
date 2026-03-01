@@ -554,23 +554,52 @@ shared_blocks:
       - {type: patchAddressBlock, size: 1024}
     description: Controller area network with flexible data-rate (Bosch M_CAN)
   SDIO:
-    # Legacy SD/SDIO/MMC (ARM PrimeCell PL18x): F4, L1
+    # Legacy SD/SDIO/MMC (ARM PrimeCell PL18x): F4, F7, L1, L4
     from: STM32F401.SDIO
     interrupts:
       SDIO: INTR
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
+    params:
+      - {name: has_ceata, type: bool, default: true, description: "CE-ATA support fields in CMD/STA/ICR/MASK"}
+      - {name: has_stbiterr, type: bool, default: true, description: "Start bit error detection in STA/ICR/MASK"}
   SDMMC:
-    # SDMMC with double-buffer IDMA: H7, L5
+    # Modern SDMMC with IDMA: H5, H7, H7RS, L4P, L5, N6, U3, U5
     from: STM32H743.SDMMC1
     interrupts:
       SDMMC1: INTR
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
-  ModernSDMMC:
-    # SDMMC with linked-list IDMA: H5, H7RS, U3, U5
-    from: STM32H523.SDMMC
-    interrupts:
-      SDMMC1: INTR
-    description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
+    transforms:
+      - type: patchFields
+        register: IDMABSIZER
+        fields:
+          - {name: IDMABNDT, bitWidth: 12}
+      - type: patchRegisters
+        registers:
+          - name: IDMALAR
+            displayName: IDMALAR
+            description: IDMA linked list address register
+            addressOffset: 100
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: IDMALA, description: "Word aligned linked list item address offset", bitOffset: 2, bitWidth: 14}
+              - {name: ABR, description: "Acknowledge linked list buffer ready", bitOffset: 29, bitWidth: 1}
+              - {name: ULS, description: "Update IDMABSIZE from next linked list", bitOffset: 30, bitWidth: 1}
+              - {name: ULA, description: "Update IDMALAR from linked list", bitOffset: 31, bitWidth: 1}
+          - name: IDMABAR
+            displayName: IDMABAR
+            description: IDMA linked list memory base register
+            addressOffset: 104
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: IDMABA, description: "Word aligned linked list memory base address", bitOffset: 2, bitWidth: 30}
+      - {type: patchAddressBlock, size: 1024}
+    params:
+      - {name: idma_list, type: bool, default: false, description: "IDMA linked-list mode (vs double-buffer)"}
+      - {name: has_version_id, type: bool, default: false, description: "VER and ID identification registers present"}
 families:
   C0:
     svd:
@@ -1832,7 +1861,7 @@ families:
         uses: SAI
         instances: [SAI1, SAI2]
       SDMMC:
-        from: STM32F722.SDMMC1
+        uses: SDIO
         instances: [SDMMC1, SDMMC2]
         interrupts:
           SDMMC1: INTR
@@ -1922,6 +1951,7 @@ families:
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
           GPIO: {has_brr: false}
           SPDIFRX: {has_symbol_clock: false}
+          SDMMC: {has_ceata: false, has_stbiterr: false}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
@@ -2651,7 +2681,7 @@ families:
         from: STM32H523.SBS_S
         instances: [SBS_S]
       SDMMC:
-        uses: ModernSDMMC
+        uses: SDMMC
         instances: [SDMMC, SDMMC1, SDMMC2, SDMMC_S]
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
@@ -2743,6 +2773,7 @@ families:
           TIM3: {encoder: 3, sms_preload: 2}
           TIM4: {encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
+          SDMMC: {idma_list: true}
   H7:
     svd:
       zip: stm32h7-svd.zip
@@ -3258,6 +3289,7 @@ families:
           LPTIM: {has_repetition: false}
           PSSI: {has_cksrc: true}
           SAI: {has_pdm: true}
+          SDMMC: {has_version_id: true}
       H742_H753:
         _all:
           DFSDM: {has_dlyr: false}
@@ -3537,7 +3569,7 @@ families:
         from: STM32H7S.SBS
         instances: [SBS]
       SDMMC:
-        uses: ModernSDMMC
+        uses: SDMMC
         instances: [SDMMC1, SDMMC2]
         interrupts:
           SDMMC1: INTR
@@ -3613,6 +3645,7 @@ families:
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
           SAI: {has_pdm: true, has_mcken: true}
+          SDMMC: {idma_list: true}
   L0:
     svd:
       zip: stm32l0-svd.zip
@@ -4138,7 +4171,7 @@ families:
         uses: SAI
         instances: [SAI1, SAI2]
       SDMMC:
-        from: STM32L431.SDMMC
+        uses: SDIO
         instances: [SDMMC, SDMMC1]
         interrupts:
           SDMMC1: INTR
@@ -4443,14 +4476,10 @@ families:
         uses: SAI
         instances: [SAI1, SAI2]
       SDMMC:
+        uses: SDMMC
         instances: [SDMMC1, SDMMC2]
         interrupts:
           SDMMC1: INTR
-        variants:
-          L4Px_L4Qx:
-            from: STM32L4P5.SDMMC1
-          L4Rx_L4Sx:
-            from: STM32L4R5.SDMMC1
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: LegacySPI
@@ -4726,6 +4755,7 @@ families:
           SAI: {has_pdm: true}
           GPIO: {has_seccfgr: true}
           PKA: {gen: 0}
+          SDMMC: {has_version_id: true}
   N6:
     svd:
       zip: stm32n6-svd.zip
@@ -4992,7 +5022,7 @@ families:
         uses: SAI
         instances: [SAI1, SAI2]
       SDMMC:
-        from: STM32N645.SDMMC1
+        uses: SDMMC
         instances: [SDMMC1, SDMMC2]
         interrupts:
           SDMMC1: INTR
@@ -5076,6 +5106,7 @@ families:
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
           SAI: {has_pdm: true, has_mcken: true}
+          SDMMC: {idma_list: true}
   U0:
     svd:
       zip: stm32u0-svd.zip
@@ -5418,7 +5449,7 @@ families:
         uses: SAI
         instances: [SAI]
       SDMMC:
-        uses: ModernSDMMC
+        uses: SDMMC
         instances: [SDMMC1]
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
@@ -5474,6 +5505,7 @@ families:
           HASH: {gen: 2}
           PKA: {gen: 3}
           TSC: {groups: 7}
+          SDMMC: {idma_list: true}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5760,7 +5792,7 @@ families:
         uses: SAI
         instances: [SAI1, SAI2]
       SDMMC:
-        uses: ModernSDMMC
+        uses: SDMMC
         instances: [SDMMC, SDMMC1, SDMMC2]
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
@@ -5818,3 +5850,4 @@ families:
           GPIO: {has_hslvr: true, has_seccfgr: true}
           HASH: {gen: 1}
           PKA: {gen: 1}
+          SDMMC: {idma_list: true}
