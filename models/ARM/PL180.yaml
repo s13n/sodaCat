@@ -1,0 +1,590 @@
+name: PL180
+description: ARM PrimeCell Multimedia Card Interface (PL180)
+source: ARM DDI0172A
+ipPedigree:
+  designer: ARM
+  ipName: PL180
+  trm: DDI0172A
+registers:
+  - name: Power
+    description: Power control register
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: Ctrl
+        description: "Power control: 00=power-off, 10=power-up, 11=power-on"
+        bitOffset: 0
+        bitWidth: 2
+      - name: Voltage
+        description: Output voltage
+        bitOffset: 2
+        bitWidth: 4
+      - name: OpenDrain
+        description: MCICMD output control
+        bitOffset: 6
+        bitWidth: 1
+      - name: Rod
+        description: Rod control
+        bitOffset: 7
+        bitWidth: 1
+  - name: Clock
+    description: Clock control register
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: ClkDiv
+        description: "Clock divide factor: MCLK frequency = MCLK / [2x(ClkDiv+1)]"
+        bitOffset: 0
+        bitWidth: 8
+      - name: Enable
+        description: "Enable MCI bus clock: 0=disabled, 1=enabled"
+        bitOffset: 8
+        bitWidth: 1
+      - name: PwrSave
+        description: "Disable clock output when bus is idle: 0=always enabled, 1=clock enabled when bus active"
+        bitOffset: 9
+        bitWidth: 1
+      - name: Bypass
+        description: "Enable bypass of clock divide logic: 0=disable, 1=enable"
+        bitOffset: 10
+        bitWidth: 1
+      - name: WideBus
+        description: "Enable wide bus mode: 0=standard (MCIDAT0 only), 1=wide (MCIDAT3:0)"
+        bitOffset: 11
+        bitWidth: 1
+  - name: Argument
+    description: Argument register
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CmdArg
+        description: Command argument
+        bitOffset: 0
+        bitWidth: 32
+  - name: Command
+    description: Command register
+    addressOffset: 12
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CmdIndex
+        description: Command index
+        bitOffset: 0
+        bitWidth: 6
+      - name: Response
+        description: If set, CPSM waits for a response
+        bitOffset: 6
+        bitWidth: 1
+      - name: LongRsp
+        description: If set, CPSM receives a 136-bit long response
+        bitOffset: 7
+        bitWidth: 1
+      - name: Interrupt
+        description: If set, CPSM disables command timer and waits for interrupt request
+        bitOffset: 8
+        bitWidth: 1
+      - name: Pending
+        description: If set, CPSM waits for CmdPend before sending a command
+        bitOffset: 9
+        bitWidth: 1
+      - name: Enable
+        description: If set, CPSM is enabled
+        bitOffset: 10
+        bitWidth: 1
+  - name: RespCmd
+    description: Command response register
+    addressOffset: 16
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: RespCmd
+        description: Response command index
+        bitOffset: 0
+        bitWidth: 6
+  - dim: 4
+    dimIncrement: 4
+    name: Response[%s]
+    description: Response register (Response3 bit 0 is always 0)
+    addressOffset: 20
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: Status
+        description: Card status
+        bitOffset: 0
+        bitWidth: 32
+  - name: DataTimer
+    description: Data timer register
+    addressOffset: 36
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: DataTime
+        description: Data timeout period
+        bitOffset: 0
+        bitWidth: 32
+  - name: DataLength
+    description: Data length register
+    addressOffset: 40
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: DataLength
+        description: Data length value
+        bitOffset: 0
+        bitWidth: 16
+  - name: DataCtrl
+    description: Data control register
+    addressOffset: 44
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: Enable
+        description: Data transfer enabled
+        bitOffset: 0
+        bitWidth: 1
+      - name: Direction
+        description: "Data transfer direction: 0=controller to card, 1=card to controller"
+        bitOffset: 1
+        bitWidth: 1
+      - name: Mode
+        description: "Data transfer mode: 0=block, 1=stream"
+        bitOffset: 2
+        bitWidth: 1
+      - name: DMAEnable
+        description: "DMA enable: 0=disabled, 1=enabled"
+        bitOffset: 3
+        bitWidth: 1
+      - name: BlockSize
+        description: Data block length (2^BlockSize bytes)
+        bitOffset: 4
+        bitWidth: 4
+  - name: DataCnt
+    description: Data counter register
+    addressOffset: 48
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: DataCount
+        description: Remaining data count
+        bitOffset: 0
+        bitWidth: 16
+  - name: Status
+    description: Status register
+    addressOffset: 52
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: CmdCrcFail
+        description: Command response received (CRC check failed)
+        bitOffset: 0
+        bitWidth: 1
+      - name: DataCrcFail
+        description: Data block sent/received (CRC check failed)
+        bitOffset: 1
+        bitWidth: 1
+      - name: CmdTimeOut
+        description: Command response timeout
+        bitOffset: 2
+        bitWidth: 1
+      - name: DataTimeOut
+        description: Data timeout
+        bitOffset: 3
+        bitWidth: 1
+      - name: TxUnderrun
+        description: Transmit FIFO underrun error
+        bitOffset: 4
+        bitWidth: 1
+      - name: RxOverrun
+        description: Receive FIFO overrun error
+        bitOffset: 5
+        bitWidth: 1
+      - name: CmdRespEnd
+        description: Command response received (CRC check passed)
+        bitOffset: 6
+        bitWidth: 1
+      - name: CmdSent
+        description: Command sent (no response required)
+        bitOffset: 7
+        bitWidth: 1
+      - name: DataEnd
+        description: Data end (data counter is zero)
+        bitOffset: 8
+        bitWidth: 1
+      - name: StartBitErr
+        description: Start bit not detected on all data signals in wide bus mode
+        bitOffset: 9
+        bitWidth: 1
+      - name: DataBlockEnd
+        description: Data block sent/received (CRC check passed)
+        bitOffset: 10
+        bitWidth: 1
+      - name: CmdActive
+        description: Command transfer in progress
+        bitOffset: 11
+        bitWidth: 1
+      - name: TxActive
+        description: Data transmit in progress
+        bitOffset: 12
+        bitWidth: 1
+      - name: RxActive
+        description: Data receive in progress
+        bitOffset: 13
+        bitWidth: 1
+      - name: TxFifoHalfEmpty
+        description: Transmit FIFO half empty
+        bitOffset: 14
+        bitWidth: 1
+      - name: RxFifoHalfFull
+        description: Receive FIFO half full
+        bitOffset: 15
+        bitWidth: 1
+      - name: TxFifoFull
+        description: Transmit FIFO full
+        bitOffset: 16
+        bitWidth: 1
+      - name: RxFifoFull
+        description: Receive FIFO full
+        bitOffset: 17
+        bitWidth: 1
+      - name: TxFifoEmpty
+        description: Transmit FIFO empty
+        bitOffset: 18
+        bitWidth: 1
+      - name: RxFifoEmpty
+        description: Receive FIFO empty
+        bitOffset: 19
+        bitWidth: 1
+      - name: TxDataAvlbl
+        description: Data available in transmit FIFO
+        bitOffset: 20
+        bitWidth: 1
+      - name: RxDataAvlbl
+        description: Data available in receive FIFO
+        bitOffset: 21
+        bitWidth: 1
+  - name: Clear
+    description: Clear register
+    addressOffset: 56
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: CmdCrcFailClr
+        description: Clears CmdCrcFail flag
+        bitOffset: 0
+        bitWidth: 1
+      - name: DataCrcFailClr
+        description: Clears DataCrcFail flag
+        bitOffset: 1
+        bitWidth: 1
+      - name: CmdTimeOutClr
+        description: Clears CmdTimeOut flag
+        bitOffset: 2
+        bitWidth: 1
+      - name: DataTimeOutClr
+        description: Clears DataTimeOut flag
+        bitOffset: 3
+        bitWidth: 1
+      - name: TxUnderrunClr
+        description: Clears TxUnderrun flag
+        bitOffset: 4
+        bitWidth: 1
+      - name: RxOverrunClr
+        description: Clears RxOverrun flag
+        bitOffset: 5
+        bitWidth: 1
+      - name: CmdRespEndClr
+        description: Clears CmdRespEnd flag
+        bitOffset: 6
+        bitWidth: 1
+      - name: CmdSentClr
+        description: Clears CmdSent flag
+        bitOffset: 7
+        bitWidth: 1
+      - name: DataEndClr
+        description: Clears DataEnd flag
+        bitOffset: 8
+        bitWidth: 1
+      - name: StartBitErrClr
+        description: Clears StartBitErr flag
+        bitOffset: 9
+        bitWidth: 1
+      - name: DataBlockEndClr
+        description: Clears DataBlockEnd flag
+        bitOffset: 10
+        bitWidth: 1
+  - name: Mask0
+    description: Interrupt 0 mask register
+    addressOffset: 60
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CmdCrcFailMask
+        description: Mask CmdCrcFail flag
+        bitOffset: 0
+        bitWidth: 1
+      - name: DataCrcFailMask
+        description: Mask DataCrcFail flag
+        bitOffset: 1
+        bitWidth: 1
+      - name: CmdTimeOutMask
+        description: Mask CmdTimeOut flag
+        bitOffset: 2
+        bitWidth: 1
+      - name: DataTimeOutMask
+        description: Mask DataTimeOut flag
+        bitOffset: 3
+        bitWidth: 1
+      - name: TxUnderrunMask
+        description: Mask TxUnderrun flag
+        bitOffset: 4
+        bitWidth: 1
+      - name: RxOverrunMask
+        description: Mask RxOverrun flag
+        bitOffset: 5
+        bitWidth: 1
+      - name: CmdRespEndMask
+        description: Mask CmdRespEnd flag
+        bitOffset: 6
+        bitWidth: 1
+      - name: CmdSentMask
+        description: Mask CmdSent flag
+        bitOffset: 7
+        bitWidth: 1
+      - name: DataEndMask
+        description: Mask DataEnd flag
+        bitOffset: 8
+        bitWidth: 1
+      - name: StartBitErrMask
+        description: Mask StartBitErr flag
+        bitOffset: 9
+        bitWidth: 1
+      - name: DataBlockEndMask
+        description: Mask DataBlockEnd flag
+        bitOffset: 10
+        bitWidth: 1
+      - name: CmdActiveMask
+        description: Mask CmdActive flag
+        bitOffset: 11
+        bitWidth: 1
+      - name: TxActiveMask
+        description: Mask TxActive flag
+        bitOffset: 12
+        bitWidth: 1
+      - name: RxActiveMask
+        description: Mask RxActive flag
+        bitOffset: 13
+        bitWidth: 1
+      - name: TxFifoHalfEmptyMask
+        description: Mask TxFifoHalfEmpty flag
+        bitOffset: 14
+        bitWidth: 1
+      - name: RxFifoHalfFullMask
+        description: Mask RxFifoHalfFull flag
+        bitOffset: 15
+        bitWidth: 1
+      - name: TxFifoFullMask
+        description: Mask TxFifoFull flag
+        bitOffset: 16
+        bitWidth: 1
+      - name: RxFifoFullMask
+        description: Mask RxFifoFull flag
+        bitOffset: 17
+        bitWidth: 1
+      - name: TxFifoEmptyMask
+        description: Mask TxFifoEmpty flag
+        bitOffset: 18
+        bitWidth: 1
+      - name: RxFifoEmptyMask
+        description: Mask RxFifoEmpty flag
+        bitOffset: 19
+        bitWidth: 1
+      - name: TxDataAvlblMask
+        description: Mask TxDataAvlbl flag
+        bitOffset: 20
+        bitWidth: 1
+      - name: RxDataAvlblMask
+        description: Mask RxDataAvlbl flag
+        bitOffset: 21
+        bitWidth: 1
+  - name: Mask1
+    description: Interrupt 1 mask register
+    addressOffset: 64
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CmdCrcFailMask
+        description: Mask CmdCrcFail flag
+        bitOffset: 0
+        bitWidth: 1
+      - name: DataCrcFailMask
+        description: Mask DataCrcFail flag
+        bitOffset: 1
+        bitWidth: 1
+      - name: CmdTimeOutMask
+        description: Mask CmdTimeOut flag
+        bitOffset: 2
+        bitWidth: 1
+      - name: DataTimeOutMask
+        description: Mask DataTimeOut flag
+        bitOffset: 3
+        bitWidth: 1
+      - name: TxUnderrunMask
+        description: Mask TxUnderrun flag
+        bitOffset: 4
+        bitWidth: 1
+      - name: RxOverrunMask
+        description: Mask RxOverrun flag
+        bitOffset: 5
+        bitWidth: 1
+      - name: CmdRespEndMask
+        description: Mask CmdRespEnd flag
+        bitOffset: 6
+        bitWidth: 1
+      - name: CmdSentMask
+        description: Mask CmdSent flag
+        bitOffset: 7
+        bitWidth: 1
+      - name: DataEndMask
+        description: Mask DataEnd flag
+        bitOffset: 8
+        bitWidth: 1
+      - name: StartBitErrMask
+        description: Mask StartBitErr flag
+        bitOffset: 9
+        bitWidth: 1
+      - name: DataBlockEndMask
+        description: Mask DataBlockEnd flag
+        bitOffset: 10
+        bitWidth: 1
+      - name: CmdActiveMask
+        description: Mask CmdActive flag
+        bitOffset: 11
+        bitWidth: 1
+      - name: TxActiveMask
+        description: Mask TxActive flag
+        bitOffset: 12
+        bitWidth: 1
+      - name: RxActiveMask
+        description: Mask RxActive flag
+        bitOffset: 13
+        bitWidth: 1
+      - name: TxFifoHalfEmptyMask
+        description: Mask TxFifoHalfEmpty flag
+        bitOffset: 14
+        bitWidth: 1
+      - name: RxFifoHalfFullMask
+        description: Mask RxFifoHalfFull flag
+        bitOffset: 15
+        bitWidth: 1
+      - name: TxFifoFullMask
+        description: Mask TxFifoFull flag
+        bitOffset: 16
+        bitWidth: 1
+      - name: RxFifoFullMask
+        description: Mask RxFifoFull flag
+        bitOffset: 17
+        bitWidth: 1
+      - name: TxFifoEmptyMask
+        description: Mask TxFifoEmpty flag
+        bitOffset: 18
+        bitWidth: 1
+      - name: RxFifoEmptyMask
+        description: Mask RxFifoEmpty flag
+        bitOffset: 19
+        bitWidth: 1
+      - name: TxDataAvlblMask
+        description: Mask TxDataAvlbl flag
+        bitOffset: 20
+        bitWidth: 1
+      - name: RxDataAvlblMask
+        description: Mask RxDataAvlbl flag
+        bitOffset: 21
+        bitWidth: 1
+  - name: Select
+    description: Secure digital memory card select register
+    addressOffset: 68
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: SDCard
+        description: Secure digital memory card address
+        bitOffset: 0
+        bitWidth: 4
+  - name: FifoCnt
+    description: FIFO counter register
+    addressOffset: 72
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: DataCount
+        description: Remaining number of words to be written to or read from the FIFO
+        bitOffset: 0
+        bitWidth: 15
+  - dim: 16
+    dimIncrement: 4
+    name: FIFO[%s]
+    description: Data FIFO register
+    addressOffset: 128
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: Data
+        description: FIFO data
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 4
+    dimIncrement: 4
+    name: PeriphID[%s]
+    description: Peripheral identification register (PartNumber[11:0], Designer[7:0], Revision, Configuration)
+    addressOffset: 4064
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: Value
+        description: Identification value byte
+        bitOffset: 0
+        bitWidth: 8
+  - dim: 4
+    dimIncrement: 4
+    name: PCellID[%s]
+    description: PrimeCell identification register
+    addressOffset: 4080
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: Value
+        description: PrimeCell identification value byte
+        bitOffset: 0
+        bitWidth: 8
+addressBlocks:
+  - offset: 0
+    size: 4096
+    usage: registers
+interrupts:
+  - name: INTR0
+    description: MCI interrupt 0 (masked by Mask0)
+  - name: INTR1
+    description: MCI interrupt 1 (masked by Mask1)
