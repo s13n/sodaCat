@@ -12,6 +12,9 @@ from pathlib import Path
 import svd
 
 
+use_config_interrupt_map = True
+
+
 def add_cli_args(parser):
     """Add STM32-specific CLI arguments."""
     parser.add_argument('svd_source', type=Path,

@@ -956,6 +956,21 @@ def main():
             block_data = _inject_interrupts(block_data, shared_cfg.get('interrupts'))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
+
+            # Strip instance prefix from interrupt descriptions
+            from_spec = shared_cfg.get('from', '')
+            if '.' in from_spec:
+                inst = from_spec.split('.', 1)[1]
+                inst_base = re.sub(r'\d+$', '', inst)
+                pfx = re.compile(
+                    r'^(?:' + re.escape(inst) + r'|' + re.escape(inst_base)
+                    + r')\d*\s+', re.IGNORECASE)
+                for irq in block_data.get('interrupts', []):
+                    desc = irq.get('description', '')
+                    if desc:
+                        stripped = pfx.sub('', desc)
+                        if stripped != desc:
+                            irq['description'] = stripped[0].upper() + stripped[1:]
             block_data['name'] = shared_name
             if shared_cfg.get('description'):
                 block_data['description'] = shared_cfg['description']
