@@ -98,6 +98,62 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
 
     return reglist
 
+def createArray(reglist:list, pattern:str, name:str, template:int=0):
+    """Convert numbered registers into a single register array with dim/dimIncrement.
+
+    This collapses a sequence of identically-structured registers with numbered
+    names (e.g. FGCLUT0, FGCLUT1, ..., FGCLUT255) into a single register with
+    dim/dimIncrement properties (e.g. FGCLUT[%s] with dim=256, dimIncrement=4).
+
+    The pattern is a regex with one capture group for the zero-based array index.
+    The name parameter specifies the base name for the resulting array register.
+    The template parameter selects which instance to use as prototype (default 0).
+    """
+    pat = re.compile(pattern)
+
+    # Collect matching registers with their indices
+    matches = []  # (index, register)
+    for r in reglist:
+        m = pat.match(r['name'])
+        if m:
+            try:
+                matches.append((int(m.group(1)), r))
+            except ValueError:
+                pass
+
+    if len(matches) < 2:
+        print(f'Register set unsuitable for array: only {len(matches)} matches for {pattern}')
+        return reglist
+
+    matches.sort(key=lambda x: x[0])
+
+    # Calculate dimIncrement from first two consecutive instances
+    def addr(r):
+        v = r['addressOffset']
+        return v if isinstance(v, int) else int(v, 0)
+
+    dimIncrement = addr(matches[1][1]) - addr(matches[0][1])
+
+    # Find template instance
+    tmpl_reg = next((r for idx, r in matches if idx == template), matches[0][1])
+
+    # Modify template in place
+    tmpl_reg['name'] = name + '[%s]'
+    if 'displayName' in tmpl_reg:
+        tmpl_reg['displayName'] = name + '[%s]'
+    tmpl_reg['dim'] = len(matches)
+    tmpl_reg['dimIncrement'] = dimIncrement
+
+    fmt = "Registers {} become array {}: Address offset = {}  Increment = {}  Count = {}"
+    print(fmt.format(pattern, tmpl_reg['name'], addr(tmpl_reg), dimIncrement, len(matches)))
+
+    # Build result: non-matched registers + array register at end
+    matched_ids = set(id(r) for _, r in matches)
+    result = [r for r in reglist if id(r) not in matched_ids]
+    result.append(tmpl_reg)
+    return result
+
+
 def compareRegisters(left:dict, right:dict, includeDescription=False):
     """Compare two register lists and generate a list of differences.
     """
