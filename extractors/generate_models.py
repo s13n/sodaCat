@@ -429,7 +429,7 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
             # Strip "Channel N " prefix from cluster register descriptions
             for reg in cluster.get('registers', []):
                 desc = reg.get('description', '')
-                m = re.match(r'^[Cc]hannel\s+\d+\s+', desc)
+                m = re.match(r'^.*?[Cc]hannel\s+\d+\s+', desc)
                 if m:
                     stripped = desc[m.end():]
                     if stripped:
