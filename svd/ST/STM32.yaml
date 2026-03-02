@@ -716,16 +716,25 @@ shared_blocks:
       - {name: linked_to_slave, type: string, default: '', description: Instance name of slave CAN sharing this master filter banks}
       - {name: linked_to_master, type: string, default: '', description: Instance name of master CAN whose filter banks this slave uses}
     description: Controller area network (Bosch C_CAN)
-  VREFBUF_V1:
-    # Voltage Reference Buffer (2-scale, 1-bit VRS at bit 2): L4, L4P, L5, U0
-    from: STM32U031.VREFBUF
-    transforms:
-      - {type: patchAddressBlock, size: 8}
-  VREFBUF_V2:
-    # Voltage Reference Buffer (4-scale, 3-bit VRS at bits 4-6): G0, G4, H5, H7, H7RS, N6, U3, U5
+  VREFBUF:
+    # Voltage Reference Buffer: C0, G0, G4, H5, H7, H7RS, L4, L4P, L5, N6, U0, U3, U5
     from: STM32N645.VREFBUF
+    params:
+      - {name: vrs_wide, type: bool, default: true, description: 'VRS field layout: true = 3-bit at [6:4] (4 scales), false = 1-bit at [2] (2 scales)'}
     transforms:
       - {type: patchAddressBlock, size: 8}
+      - {type: cloneRegister, source: CSR, name: CSR_V1, removeFields: [VRS]}
+      - type: patchFields
+        register: CSR_V1
+        fields:
+          - name: VRS
+            description: Voltage reference scale
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - {name: B_0x0, description: 'Voltage reference set to VREF_OUT1 (around 2.048 V).', value: 0}
+              - {name: B_0x1, description: 'Voltage reference set to VREF_OUT2 (around 2.5 V).', value: 1}
   FDCAN:
     # Basic FDCAN (37-register Bosch M_CAN): C0, G0, G4, H5, H7RS, L5, U3, U5
     from: STM32H523.FDCAN
@@ -786,8 +795,8 @@ shared_blocks:
     # H7A3 is superset: 8 channels, 8 filters, CHyDLYR delay register
     from: STM32H7A3.DFSDM1
     params:
-      - {name: channels, type: int, default: 8, description: Number of serial channels (2, 4, or 8)}
-      - {name: filters, type: int, default: 4, description: Number of digital filter units (1, 2, 4, or 8)}
+      - {name: channels, type: int, default: 8, max: 8, description: Number of serial channels (2, 4, or 8)}
+      - {name: filters, type: int, default: 4, max: 8, description: Number of digital filter units (1, 2, 4, or 8)}
       - {name: has_dlyr, type: bool, default: true, description: CHyDLYR delay register present}
     transforms:
       - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
@@ -2213,7 +2222,7 @@ families:
         uses: USB_DRD
         instances: [USB]
       VREFBUF:
-        uses: VREFBUF_V2
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -2437,7 +2446,7 @@ families:
         uses: USB_DEV
         instances: [USB_FS_device]
       VREFBUF:
-        uses: VREFBUF_V2
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -2795,7 +2804,7 @@ families:
         from: STM32H523.USB_S
         instances: [USB_S]
       VREFBUF:
-        uses: VREFBUF_V2
+        uses: VREFBUF
         instances: [VREFBUF]
       VREFBUF_S:
         from: STM32H523.VREFBUF_S
@@ -3268,7 +3277,7 @@ families:
         uses: USART
         instances: [UART4, UART5, UART7, UART8, UART9, USART1, USART10, USART2, USART3, USART6, USART9]
       VREFBUF:
-        uses: VREFBUF_V2
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -3612,7 +3621,7 @@ families:
         interrupts:
           USART1: {name: INTR, description: Global interrupt}
       VREFBUF:
-        uses: VREFBUF_V2
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -4195,7 +4204,7 @@ families:
         interrupts:
           USB_FS: INTR
       VREFBUF:
-        uses: VREFBUF_V1
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -4225,6 +4234,7 @@ families:
           TIM4: {encoder: 1}
           SAI: {has_gcr: false}
           OTG_FS: {gccfg: 0, max_in_endpoint: 3, max_out_endpoint: 3, max_channel: 7, max_tx_fifo: 2, has_dma: false, has_lpm: false}
+          VREFBUF: {vrs_wide: false}
       L41x_L42x:
         _all:
           LPTIM: {or_type: 1}
@@ -4483,7 +4493,7 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
       VREFBUF:
-        uses: VREFBUF_V1
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -4511,6 +4521,7 @@ families:
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
           SAI: {has_gcr: false}
           OTG_FS: {gccfg: 0, max_in_endpoint: 3, max_out_endpoint: 3, max_channel: 7, max_tx_fifo: 2, has_dma: false, has_lpm: false}
+          VREFBUF: {vrs_wide: false}
       L4Px_L4Qx:
         _all:
           RNG: {gen: 2}
@@ -4716,7 +4727,7 @@ families:
         uses: USB_DEV
         instances: [USB]
       VREFBUF:
-        uses: VREFBUF_V1
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -4741,6 +4752,7 @@ families:
           GPIO: {has_seccfgr: true}
           PKA: {gen: 0}
           SDMMC: {has_version_id: true}
+          VREFBUF: {vrs_wide: false}
   N6:
     svd:
       zip: stm32n6-svd.zip
@@ -5022,7 +5034,7 @@ families:
         interrupts:
           VENC: INTR
       VREFBUF:
-        uses: VREFBUF_V2
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -5205,7 +5217,7 @@ families:
         uses: USB_DRD
         instances: [USB]
       VREFBUF:
-        uses: VREFBUF_V1
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -5227,6 +5239,7 @@ families:
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
           LPTIM: {max_channel: 3}
+          VREFBUF: {vrs_wide: false}
   U3:
     svd:
       zip: stm32u3-svd.zip
@@ -5423,7 +5436,7 @@ families:
         uses: USB_DRD
         instances: [USB]
       VREFBUF:
-        uses: VREFBUF_V2
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG
@@ -5746,7 +5759,7 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3, USART6]
       VREFBUF:
-        uses: VREFBUF_V2
+        uses: VREFBUF
         instances: [VREFBUF]
       WWDG:
         uses: WWDG

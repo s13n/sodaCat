@@ -90,7 +90,7 @@ generate_header(soc-data-modules generate_peripheral_header stm32f4 ST/SDIO .hpp
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/SDMMC .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/SWPMI .hpp)
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/H7/SYSCFG .hpp)
-generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/VREFBUF_V2 .hpp)
+generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/VREFBUF .hpp)
 
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ARM/NVIC .hpp)
 
