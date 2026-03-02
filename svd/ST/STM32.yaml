@@ -100,6 +100,29 @@ shared_blocks:
       - {type: createArray, pattern: 'HUFFENC_DC1_(\d+)', name: HUFFENC_DC1, description: Huffman encoder DC table 1}
       - {type: create2DArray, pattern: 'QMEM(\d+)_(\d+)', name: QMEM, description: Quantization memory}
       - {type: create2DArray, pattern: 'HUFFMIN(\d+)_(\d+)', name: HUFFMIN, description: Huffman min}
+  HRTIM:
+    # High Resolution Timer — unified block: Master (11 regs) + Timer cluster (29 regs × 6)
+    # + Common (36 regs). G4 superset (6 timers, FLTINR3/4, ADC post-scaler).
+    # Families: F3, G4, H7. Model is hand-maintained (no from:).
+    params:
+      - {name: timers, type: int, default: 5, description: "Number of timer units (5=A-E, 6=A-F)"}
+    interrupts:
+      HRTIM1_MST: MST
+      HRTIM_Master_IRQn: MST
+      HRTIM1_TIMA: TIMA
+      HRTIM1_TIMB: TIMB
+      HRTIM1_TIMC: TIMC
+      HRTIM1_TIMD: TIMD
+      HRTIM1_TIME: TIME
+      HRTIM1_TIMF: TIMF
+      HRTIM1_FLT: FLT
+      HRTIM_TIMA_IRQn: TIMA
+      HRTIM_TIMB_IRQn: TIMB
+      HRTIM_TIMC_IRQn: TIMC
+      HRTIM_TIMD_IRQn: TIMD
+      HRTIM_TIME_IRQn: TIME
+      HRTIM_TIMF_IRQn: TIMF
+      HRTIM_TIM_FLT_IRQn: FLT
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
@@ -1260,21 +1283,9 @@ families:
       Timer:
         uses: TimerV1
         instances: [TIM12, TIM13, TIM14, TIM15, TIM16, TIM17, TIM19, TIM2, TIM3, TIM4, TIM5]
-      HRTIM_Common:
-        from: STM32F3x4.HRTIM_Common
-        instances: [HRTIM_Common]
-        interrupts:
-          HRTIM1_FLT: INTR
-      HRTIM_Master:
-        from: STM32F3x4.HRTIM_Master
+      HRTIM:
+        uses: HRTIM
         instances: [HRTIM_Master]
-        interrupts:
-          HRTIM1_MST: INTR
-      HRTIM_Timer:
-        from: STM32F3x4.HRTIM_TIMA
-        instances: [HRTIM_TIMA, HRTIM_TIMB, HRTIM_TIMC, HRTIM_TIMD, HRTIM_TIME]
-        interrupts:
-          HRTIM1_TIMA: INTR
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
@@ -1401,6 +1412,10 @@ families:
         _all:
           SPI2: {has_i2s: false}
           SPI3: {has_i2s: false}
+    chip_interrupts:
+      F334:
+        _all:
+          HRTIM_Master: {MST: 103, TIMA: 104, TIMB: 105, TIMC: 106, TIMD: 107, TIME: 108, FLT: 109}
   F4:
     svd:
       zip: stm32f4-svd.zip
@@ -2503,21 +2518,9 @@ families:
       Timer:
         uses: TimerV2
         instances: [TIM1, TIM15, TIM16, TIM17, TIM2, TIM20, TIM3, TIM4, TIM5, TIM8]
-      HRTIM_Common:
-        from: STM32G474.HRTIM_Common
-        instances: [HRTIM_Common]
-        interrupts:
-          HRTIM_TIM_FLT_IRQn: INTR
-      HRTIM_Master:
-        from: STM32G474.HRTIM_Master
+      HRTIM:
+        uses: HRTIM
         instances: [HRTIM_Master]
-        interrupts:
-          HRTIM_Master_IRQn: INTR
-      HRTIM_Timer:
-        from: STM32G474.HRTIM_TIMA
-        instances: [HRTIM_TIMA, HRTIM_TIMB, HRTIM_TIMC, HRTIM_TIMD, HRTIM_TIME, HRTIM_TIMF]
-        interrupts:
-          HRTIM_TIMA_IRQn: INTR
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -2606,6 +2609,7 @@ families:
           TIM4: {encoder: 1, sms_preload: 2}
           LPTIM: {has_repetition: false, has_cfgr2: false, or_type: 2}
           SAI: {has_gcr: false, has_pdm: true, has_mcken: true}
+          HRTIM_Master: {timers: 6}
       G4xx:
         STM32G431:
           Flash: {pages: 64}
@@ -2627,6 +2631,10 @@ families:
           Flash: {pages: 256, pb4_pupen: true}
         STM32G4A1:
           Flash: {pages: 256, pb4_pupen: true}
+    chip_interrupts:
+      G4xx:
+        _all:
+          HRTIM_Master: {MST: 67, TIMA: 68, TIMB: 69, TIMC: 70, TIMD: 71, TIME: 72, FLT: 73, TIMF: 74}
   H5:
     svd:
       zip: stm32h5-svd.zip
@@ -3226,20 +3234,9 @@ families:
         instances: [HASH]
         interrupts:
           HASH_RNG: INTR
-      HRTIM_Common:
-        from: STM32H742.HRTIM_Common
-        instances: [HRTIM_Common]
-      HRTIM_Master:
-        from: STM32H742.HRTIM_Master
+      HRTIM:
+        uses: HRTIM
         instances: [HRTIM_Master]
-        interrupts:
-          HRTIM1_MST: INTR
-      HRTIM_Timer:
-        from: STM32H742.HRTIM_TIMA
-        instances: [HRTIM_TIMA, HRTIM_TIMB, HRTIM_TIMC, HRTIM_TIMD, HRTIM_TIME]
-        interrupts:
-          HRTIM1_FLT: FLT
-          HRTIM1_MST: MST
       HSEM:
         from: STM32H743.HSEM
         instances: [HSEM]
@@ -3421,6 +3418,7 @@ families:
       _all:
         _all:
           SPDIFRX: {INTR: 97}
+          HRTIM_Master: {MST: 103, TIMA: 104, TIMB: 105, TIMC: 106, TIMD: 107, TIME: 108, FLT: 109}
       H742_H753:
         _all:
           SDMMC1: {INTR: 49}
