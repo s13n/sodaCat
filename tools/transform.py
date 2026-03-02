@@ -154,6 +154,71 @@ def createArray(reglist:list, pattern:str, name:str, template:int=0):
     return result
 
 
+def create2DArray(reglist:list, pattern:str, name:str, template:tuple=(0,0)):
+    """Convert numbered registers into a 2D register array with list-valued dim/dimIncrement.
+
+    This collapses a grid of identically-structured registers with two numeric
+    indices (e.g. QMEM0_0, QMEM0_1, ..., QMEM3_15) into a single register with
+    dim=[rows, cols] and dimIncrement=[rowStride, colStride] (e.g. QMEM[%s][%s]
+    with dim=[4, 16], dimIncrement=[64, 4]).
+
+    The pattern is a regex with two capture groups for the zero-based row and
+    column indices. The name parameter specifies the base name for the resulting
+    array register. The template parameter selects which (row, col) instance to
+    use as prototype (default (0, 0)).
+    """
+    pat = re.compile(pattern)
+
+    # Collect matching registers with their (row, col) indices
+    matches = {}  # (row, col) -> register
+    for r in reglist:
+        m = pat.match(r['name'])
+        if m:
+            try:
+                row, col = int(m.group(1)), int(m.group(2))
+                matches[(row, col)] = r
+            except ValueError:
+                pass
+
+    if len(matches) < 4:
+        print(f'Register set unsuitable for 2D array: only {len(matches)} matches for {pattern}')
+        return reglist
+
+    rows = max(r for r, c in matches) + 1
+    cols = max(c for r, c in matches) + 1
+
+    if len(matches) != rows * cols:
+        print(f'Incomplete 2D array for {pattern}: expected {rows}x{cols}={rows*cols}, got {len(matches)}')
+        return reglist
+
+    def addr(r):
+        v = r['addressOffset']
+        return v if isinstance(v, int) else int(v, 0)
+
+    # Calculate strides from adjacent elements
+    colStride = addr(matches[(0, 1)]) - addr(matches[(0, 0)])
+    rowStride = addr(matches[(1, 0)]) - addr(matches[(0, 0)])
+
+    # Find template instance
+    tmpl_reg = matches.get(template, matches[(0, 0)])
+
+    # Modify template in place
+    tmpl_reg['name'] = name + '[%s][%s]'
+    if 'displayName' in tmpl_reg:
+        tmpl_reg['displayName'] = name + '[%s][%s]'
+    tmpl_reg['dim'] = [rows, cols]
+    tmpl_reg['dimIncrement'] = [rowStride, colStride]
+
+    fmt = "Registers {} become 2D array {}: Address offset = {}  Dims = {}x{}  Increments = {},{}"
+    print(fmt.format(pattern, tmpl_reg['name'], addr(tmpl_reg), rows, cols, rowStride, colStride))
+
+    # Build result: non-matched registers + array register at end
+    matched_ids = set(id(r) for r in matches.values())
+    result = [r for r in reglist if id(r) not in matched_ids]
+    result.append(tmpl_reg)
+    return result
+
+
 def compareRegisters(left:dict, right:dict, includeDescription=False):
     """Compare two register lists and generate a list of differences.
     """

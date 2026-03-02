@@ -110,15 +110,23 @@ $postfix"""))
             addressOffset = reg['addressOffset']
             description = reg.get('description', '')
             dim = reg.get('dim', 1)
+            # Support list-valued dim for multidimensional arrays (sodaCat extension)
+            if isinstance(dim, int):
+                dim_fmt = dim      # for % formatting
+                dim_total = dim    # total element count
+            else:
+                dim_fmt = tuple(dim)
+                dim_total = 1
+                for d in dim: dim_total *= d
             if 'registers' in reg:
                 name = reg['name'].replace('[%s]', '')
                 padSize = reg.get('dimIncrement', 0)
                 types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4)
                 enums += enum
                 structs += self.registersTemplate.substitute(name=name, regs=regs, types=types, description=description, size=size)
-                names = reg['name'] % dim
+                names = reg['name'] % dim_fmt
                 line = self.fieldTemplate.substitute(name=names, type='struct ' + name, description=description)
-                list.append([line, addressOffset, size*dim])
+                list.append([line, addressOffset, size*dim_total])
             else:
                 dimIndex = reg.get('dimIndex', "")
                 name = reg['name'].replace('%s', '')
@@ -126,9 +134,9 @@ $postfix"""))
                 if dimIndex:
                     #TODO: Check if the address offset matches the size
                     names = ",".join(reg['name'] % item for item in dimIndex.split(","))
-                elif dim > 1:
+                elif dim_total > 1:
                     name = reg['name'].replace('[%s]', '')
-                    names = reg['name'] % dim
+                    names = reg['name'] % dim_fmt
                 size = reg.get('size', defaultSize * 8)
                 type = reg.get('dataType', 'uint%s_t' % size)
                 if 'fields' in reg and reg['fields']:
@@ -136,7 +144,7 @@ $postfix"""))
                     enums += self.regEnumsTemplate.substitute(reg, name=name, enums=enum) if enum else ''
                     structs += self.fieldsTemplate.substitute(reg, name=name, fields=fields, description=description)
                 line = self.fieldTemplate.substitute(reg, name=names, type=self.typeTemplate.substitute(reg, name=name), description=description)
-                list.append([line, addressOffset, (size>>3)*dim])
+                list.append([line, addressOffset, (size>>3)*dim_total])
 
         list.sort(key=lambda r:r[1])
         list.append(['', 0xFFFFFFFF, 0])     # dummy
