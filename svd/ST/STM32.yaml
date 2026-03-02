@@ -781,6 +781,28 @@ shared_blocks:
       - {name: idma_list, type: bool, default: false, description: "IDMA linked-list mode (vs double-buffer)"}
       - {name: idma_buf_align64, type: bool, default: false, description: "IDMA 64-byte buffer alignment (11-bit IDMABNDT at [16:6] vs 12-bit at [16:5])"}
       - {name: has_version_id, type: bool, default: false, description: "VER and ID identification registers present"}
+  DFSDM:
+    # Digital Filter for Sigma-Delta Modulators: F4, F7, H7, L4, L4P, L5
+    # H7A3 is superset: 8 channels, 8 filters, CHyDLYR delay register
+    from: STM32H7A3.DFSDM1
+    params:
+      - {name: filters, type: int, default: 4, max: 8, description: Number of digital filter units (4 or 8)}
+      - {name: has_dlyr, type: bool, default: true, description: CHyDLYR delay register present}
+    transforms:
+      - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
+      # H7A3 SVD bug: CKOUTDIV/CKOUTSRC/DFSDMEN duplicated in CH1-CH7 (CH0-only per RM)
+      - {type: patchFields, register: CH1CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH2CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH3CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH4CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH5CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH6CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+      - {type: patchFields, register: CH7CFGR1, fields: [{name: CKOUTDIV}, {name: CKOUTSRC}, {name: DFSDMEN}]}
+    interrupts:
+      DFSDM1_FLT0: FLT0
+      DFSDM1_FLT1: FLT1
+      DFSDM1_FLT2: FLT2
+      DFSDM1_FLT3: FLT3
 families:
   C0:
     svd:
@@ -1326,10 +1348,8 @@ families:
         uses: DCMI
         instances: [DCMI]
       DFSDM:
-        from: STM32F412.DFSDM
+        uses: DFSDM
         instances: [DFSDM, DFSDM1, DFSDM2]
-        transforms:
-          - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
         interrupts:
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
@@ -1579,6 +1599,7 @@ families:
           SPDIFRX: {has_symbol_clock: false}
           OTG_FS: {gccfg: 0, max_in_endpoint: 3, max_out_endpoint: 3, max_channel: 7, max_tx_fifo: 2, has_dma: false, has_lpm: false}
           OTG_HS: {gccfg: 0, max_in_endpoint: 7, max_out_endpoint: 3, max_tx_fifo: 6, has_lpm: false}
+          DFSDM: {has_dlyr: false}
       F401:
         _all:
           PWR: {power_mode: lvds}
@@ -1725,10 +1746,8 @@ families:
         uses: DCMI
         instances: [DCMI]
       DFSDM:
-        from: STM32F767.DFSDM
+        uses: DFSDM
         instances: [DFSDM]
-        transforms:
-          - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
         interrupts:
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
@@ -2021,6 +2040,7 @@ families:
           SDMMC: {has_ceata: false, has_stbiterr: false}
           OTG_FS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 5, max_channel: 11, max_tx_fifo: 5, has_dma: false}
           OTG_HS: {gccfg: 1, max_in_endpoint: 7, max_out_endpoint: 7, max_tx_fifo: 7}
+          DFSDM: {has_dlyr: false}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
@@ -2951,26 +2971,13 @@ families:
         uses: DCMI
         instances: [DCMI]
       DFSDM:
-        from: STM32H7A3.DFSDM1
+        uses: DFSDM
         instances: [DFSDM, DFSDM1, DFSDM2]
         interrupts:
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
           DFSDM1_FLT2: FLT2
           DFSDM1_FLT3: FLT3
-        params:
-          - {name: filters, type: int, default: 4, max: 8, description: Number of digital filter units (4 or 8)}
-          - {name: has_dlyr, type: bool, default: true, description: CHyDLYR delay register present}
-        transforms:
-          - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
-      # H7A3 SVD bug: CKOUTDIV/CKOUTSRC/DFSDMEN duplicated in CH1-CH7 (CH0-only per RM)
-          - {type: patchFields, register: CH1CFGR1, fields: [name: CKOUTDIV, name: CKOUTSRC, name: DFSDMEN]}
-          - {type: patchFields, register: CH2CFGR1, fields: [name: CKOUTDIV, name: CKOUTSRC, name: DFSDMEN]}
-          - {type: patchFields, register: CH3CFGR1, fields: [name: CKOUTDIV, name: CKOUTSRC, name: DFSDMEN]}
-          - {type: patchFields, register: CH4CFGR1, fields: [name: CKOUTDIV, name: CKOUTSRC, name: DFSDMEN]}
-          - {type: patchFields, register: CH5CFGR1, fields: [name: CKOUTDIV, name: CKOUTSRC, name: DFSDMEN]}
-          - {type: patchFields, register: CH6CFGR1, fields: [name: CKOUTDIV, name: CKOUTSRC, name: DFSDMEN]}
-          - {type: patchFields, register: CH7CFGR1, fields: [name: CKOUTDIV, name: CKOUTSRC, name: DFSDMEN]}
       DMA:
         from: STM32H723.DMA1
         instances: [DMA1, DMA2, DMA2D, DMAMUX1, DMAMUX2]
@@ -4056,7 +4063,7 @@ families:
         uses: DCMI
         instances: [DCMI]
       DFSDM:
-        from: STM32L431.DFSDM
+        uses: DFSDM
         instances: [DFSDM, DFSDM1]
         interrupts:
           DFSDM1_FLT3: FLT3
@@ -4308,7 +4315,7 @@ families:
         uses: DCMI
         instances: [DCMI]
       DFSDM:
-        from: STM32L4P5.DFSDM1
+        uses: DFSDM
         instances: [DFSDM1]
         interrupts:
           DFSDM1_FLT3: FLT3
@@ -4554,7 +4561,7 @@ families:
         from: STM32L552.DBGMCU
         instances: [DBGMCU]
       DFSDM:
-        from: STM32L552.DFSDM1
+        uses: DFSDM
         instances: [DFSDM1]
         interrupts:
           DFSDM1_FLT0: FLT0
