@@ -889,6 +889,63 @@ shared_blocks:
       EXTI22_RTC_WKUP: WKUP
       EXTI17_RTC_Alarm: ALARM
       RTC_TAMP_STAMP: TAMP_STAMP_CSS_LSE
+  RTC_V2:
+    # New-IP RTC: ICSR register, no embedded BKP, separate TAMP peripheral
+    # Spans C0, G0, G4, H5, H7RS, L5, N6, U0, U3, U5
+    # L5 uses SMCR (XXDPROT naming) instead of SECCFGR (XXSEC naming)
+    from: STM32U375.RTC
+    params:
+      - {name: has_wutr, type: bool, default: true, description: "Wakeup timer + Alarm B registers (WUTR, ALRMBR, ALRMBSSR)"}
+      - {name: has_binary, type: bool, default: false, description: "Binary mode: ALRABINR/ALRBBINR registers"}
+      - {name: has_privcfgr, type: bool, default: false, description: "Privilege configuration register (PRIVCFGR)"}
+      - {name: has_seccfgr, type: bool, default: false, description: "Security configuration register (SECCFGR or SMCR)"}
+      - {name: smcr, type: bool, default: false, description: "Use SMCR naming for security config (L5 variant)"}
+      - {name: has_smisr, type: bool, default: false, description: "Secure masked interrupt status register"}
+      - {name: has_tamptscr, type: bool, default: false, description: "TAMPTSCR + TSIDR tamper timestamp registers"}
+    transforms:
+      - type: cloneRegister
+        source: SECCFGR
+        name: SMCR
+        removeFields: [ALRASEC, ALRBSEC, WUTSEC, TSSEC, CALSEC, INITSEC, SEC]
+      - type: patchFields
+        register: SMCR
+        fields:
+          - name: ALRADPROT
+            description: Alarm A and SSR underflow protection
+            bitOffset: 0
+            bitWidth: 1
+          - name: ALRBDPROT
+            description: Alarm B protection
+            bitOffset: 1
+            bitWidth: 1
+          - name: WUTDPROT
+            description: Wake-up timer protection
+            bitOffset: 2
+            bitWidth: 1
+          - name: TSDPROT
+            description: Timestamp protection
+            bitOffset: 3
+            bitWidth: 1
+          - name: CALDPROT
+            description: Calibration protection
+            bitOffset: 13
+            bitWidth: 1
+          - name: INITDPROT
+            description: Initialization protection
+            bitOffset: 14
+            bitWidth: 1
+          - name: DECPROT
+            description: Global RTC protection
+            bitOffset: 15
+            bitWidth: 1
+    interrupts:
+      RTC: INTR
+      RTC_STAMP: INTR
+      RTC_TAMP: INTR
+      RTC_TAMP_CSS_LSE: TAMP_CSS_LSE
+      RTC_WKUP: WKUP
+      RTC_ALARM: ALARM
+      RTC_S: S
 families:
   C0:
     svd:
@@ -984,7 +1041,7 @@ families:
         interrupts:
           RCC_CRS: INTR
       RTC:
-        from: STM32C011.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC: INTR
@@ -1021,6 +1078,7 @@ families:
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 1}
           TIM3: {encoder: 1}
+          RTC: {has_wutr: false}
       C0xx:
         STM32C011:
           ADC: {ext_channels: 13}
@@ -2270,7 +2328,7 @@ families:
         interrupts:
           AES_RNG: INTR
       RTC:
-        from: STM32G030.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC_STAMP: INTR
@@ -2492,7 +2550,7 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32G431.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC_TAMP_CSS_LSE: TAMP_CSS_LSE
@@ -2820,7 +2878,7 @@ families:
         from: STM32H523.RNG_S
         instances: [RNG_S]
       RTC:
-        from: STM32H503.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC: INTR
@@ -2937,6 +2995,7 @@ families:
           LPTIM: {max_channel: 1}
           GPDMA: {max_channel: 7, enhanced_channels: 2}
           SDMMC: {idma_list: true}
+          RTC: {has_binary: true, has_privcfgr: true}
   H7:
     svd:
       zip: stm32h7-svd.zip
@@ -3653,7 +3712,7 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32H7S.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC: INTR
@@ -3748,6 +3807,7 @@ families:
           SAI: {has_pdm: true, has_mcken: true}
           GPDMA: {has_trustzone: false}
           SDMMC: {idma_list: true}
+          RTC: {has_binary: true, has_privcfgr: true}
   L0:
     svd:
       zip: stm32l0-svd.zip
@@ -4770,7 +4830,7 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32L552.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC: INTR
@@ -4832,6 +4892,7 @@ families:
           PKA: {gen: 0}
           SDMMC: {has_version_id: true}
           VREFBUF: {vrs_wide: false}
+          RTC: {has_privcfgr: true, has_seccfgr: true, smcr: true, has_smisr: true}
   N6:
     svd:
       zip: stm32n6-svd.zip
@@ -5065,7 +5126,7 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32N645.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC: INTR
@@ -5163,6 +5224,7 @@ families:
           LPTIM: {max_channel: 1}
           SAI: {has_pdm: true, has_mcken: true}
           SDMMC: {idma_list: true, idma_buf_align64: true}
+          RTC: {has_binary: true, has_privcfgr: true, has_seccfgr: true, has_smisr: true}
   U0:
     svd:
       zip: stm32u0-svd.zip
@@ -5273,7 +5335,7 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32U031.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC_TAMP: INTR
@@ -5319,6 +5381,7 @@ families:
           TIM3: {encoder: 1}
           LPTIM: {max_channel: 3}
           VREFBUF: {vrs_wide: false}
+          RTC: {has_binary: true}
   U3:
     svd:
       zip: stm32u3-svd.zip
@@ -5478,7 +5541,7 @@ families:
         interrupts:
           RNG: INTR
       RTC:
-        from: STM32U375.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC: INTR
@@ -5547,6 +5610,7 @@ families:
           TSC: {groups: 7}
           GPDMA: {max_channel: 11, enhanced_channels: 2}
           SDMMC: {idma_list: true}
+          RTC: {has_binary: true, has_privcfgr: true, has_seccfgr: true, has_smisr: true, has_tamptscr: true}
   U5:
     svd:
       zip: stm32u5_svd.zip
@@ -5798,7 +5862,7 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32U535.RTC
+        uses: RTC_V2
         instances: [RTC]
         interrupts:
           RTC: INTR
@@ -5873,3 +5937,4 @@ families:
           SDMMC: {idma_list: true}
           OTG_FS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 5, max_channel: 11, max_tx_fifo: 4, has_dma: false}
           OTG_HS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 8, max_channel: 11, has_lpm: false}
+          RTC: {has_binary: true, has_privcfgr: true, has_seccfgr: true, has_smisr: true}
