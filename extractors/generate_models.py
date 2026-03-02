@@ -20,7 +20,7 @@ from ruamel.yaml import YAML
 # Add sodaCat tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
-from transform import renameEntries
+from transform import renameEntries, createClusterArray
 
 
 # ============================================================================
@@ -419,6 +419,21 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     if k != 'type':
                         ab[k] = v
                 break  # patch first (typically only) address block
+        elif typ == 'createClusterArray':
+            cluster = {'name': t['name']}
+            if 'description' in t:
+                cluster['description'] = t['description']
+            block_data['registers'] = createClusterArray(
+                block_data.get('registers', []), t['pattern'], cluster,
+                template=t.get('template', 0))
+            # Strip "Channel N " prefix from cluster register descriptions
+            for reg in cluster.get('registers', []):
+                desc = reg.get('description', '')
+                m = re.match(r'^[Cc]hannel\s+\d+\s+', desc)
+                if m:
+                    stripped = desc[m.end():]
+                    if stripped:
+                        reg['description'] = stripped[0].upper() + stripped[1:]
         else:
             print(f"  WARNING: unknown transform type '{typ}'")
 

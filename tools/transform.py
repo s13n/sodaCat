@@ -14,9 +14,9 @@ def renameEntries(array:list, key, pattern:str, replacement):
             e[key] = pat.sub(replacement, e[key])
 
     
-def createClusterArray(reglist:list, pattern:str, cluster:dict):
+def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
     """Convert a register list into a cluster array.
-    
+
     This can be used to convert a linear list of registers of several identical
     subsystems into a cluster array, by giving a pattern to identify the registers
     that belong to a cluster. For example consider a DMA controller with several
@@ -28,6 +28,10 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict):
 
     The initial dict to which the registers will be added is passed in cluster.
     This dict must include the cluster name, and should include a description.
+
+    The template parameter selects which instance index to use as the prototype
+    for the cluster's register set (default 0). Use a non-zero index when some
+    instances have additional registers (e.g. enhanced DMA channels with TR3/BR2).
 
     The initial register list is passed in reglist, and the function returns the modified
     register list that should be used to replace it.
@@ -76,13 +80,13 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict):
         registers = []
         for i,r in enumerate(reglist):
             index, regname = indexName(r, pat)
-            # fill the cluster with registers at index 0
+            # fill the cluster with registers from the template instance
             if regname:         # register belongs to cluster
-                if index == 0:  # we only user registers from the first index
+                if index == template:
                     r['name'] = regname
                     if 'displayName' in r:
                         r['displayName'] = regname
-                    r['addressOffset'] = (r['addressOffset'] if isinstance(r['addressOffset'], int) else int(r['addressOffset'], 0)) - cluster['addressOffset']
+                    r['addressOffset'] = (r['addressOffset'] if isinstance(r['addressOffset'], int) else int(r['addressOffset'], 0)) - cluster['addressOffset'] - template * cluster['dimIncrement']
                     cluster['registers'].append(r)
             else:               # register doesn't belong to cluster
                 registers.append(r)
