@@ -1,7 +1,7 @@
 name: SWPMI
 description: "Single Wire Protocol Master\n      Interface"
 groupName: SWPMI
-source: STM32L4P5 SVD v1.8
+source: STM32H723 SVD v2.1
 registers:
   - name: CR
     displayName: CR
@@ -31,13 +31,17 @@ registers:
         description: Loopback mode enable
         bitOffset: 4
         bitWidth: 1
-      - name: SWPME
-        description: "Single wire protocol master interface\n              enable"
+      - name: SWPACT
+        description: "Single wire protocol master interface\n              activate"
         bitOffset: 5
         bitWidth: 1
       - name: DEACT
         description: "Single wire protocol master interface\n              deactivate"
         bitOffset: 10
+        bitWidth: 1
+      - name: SWPTEN
+        description: "Single wire protocol master transceiver\n              enable"
+        bitOffset: 11
         bitWidth: 1
   - name: BRR
     displayName: BRR
@@ -50,7 +54,7 @@ registers:
       - name: BR
         description: Bitrate prescaler
         bitOffset: 0
-        bitWidth: 6
+        bitWidth: 8
   - name: ISR
     displayName: ISR
     description: "Interrupt and Status\n          register"
@@ -103,6 +107,10 @@ registers:
         description: DEACTIVATED flag
         bitOffset: 10
         bitWidth: 1
+      - name: RDYF
+        description: transceiver ready flag
+        bitOffset: 11
+        bitWidth: 1
   - name: ICR
     displayName: ICR
     description: "Interrupt Flag Clear\n          register"
@@ -138,6 +146,10 @@ registers:
       - name: CSRF
         description: Clear slave resume flag
         bitOffset: 8
+        bitWidth: 1
+      - name: CRDYF
+        description: "Clear transceiver ready\n              flag"
+        bitOffset: 11
         bitWidth: 1
   - name: IER
     displayName: IER
@@ -183,6 +195,10 @@ registers:
         description: "Slave resume interrupt\n              enable"
         bitOffset: 8
         bitWidth: 1
+      - name: RDYIE
+        description: "Transceiver ready interrupt\n              enable"
+        bitOffset: 11
+        bitWidth: 1
   - name: RFL
     displayName: RFL
     description: "Receive Frame Length\n          register"
@@ -219,7 +235,26 @@ registers:
         description: received data
         bitOffset: 0
         bitWidth: 32
+  - name: OR
+    displayName: OR
+    description: Option register
+    addressOffset: 36
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: SWP_TBYP
+        description: SWP transceiver bypass
+        bitOffset: 0
+        bitWidth: 1
+      - name: SWP_CLASS
+        description: SWP class selection
+        bitOffset: 1
+        bitWidth: 1
 addressBlocks:
   - offset: 0
     size: 1024
     usage: registers
+interrupts:
+  - name: INTR
+    description: Global interrupt
