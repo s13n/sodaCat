@@ -36,7 +36,7 @@ EXPORT constexpr struct $ns::integration::${model} i_$name = {$params$ints$init}
     def createInterrupts(self, instance):
         ints = ''
         seen = set()
-        for i in sorted(instance.get('interrupts', []), key=lambda x: x.get('name', '')):
+        for i in instance.get('interrupts', []):
             if i['name'] not in seen:
                 seen.add(i['name'])
                 ints += self.instanceIntTemplate.substitute(i)
