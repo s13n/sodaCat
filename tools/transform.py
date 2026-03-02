@@ -73,7 +73,10 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
         cluster['name'] += "[%s]"
         cluster['dim'] = len(instances)
         cluster['addressOffset'] = addressOffset
-        cluster['dimIncrement'] = findDimIncrement(instances[0], instances[1])
+        # Compute stride from the template and its nearest neighbor.
+        # Search from neighbor into template (template is the superset, so name matches succeed).
+        neighbor = template + 1 if template + 1 < len(instances) else template - 1
+        cluster['dimIncrement'] = abs(findDimIncrement(instances[neighbor], instances[template]))
         fmt = "Registers {} become cluster array {}: Address offset = {}  Increment = {}  Count = {}"
         print(fmt.format(pattern, cluster['name'], cluster['addressOffset'], cluster['dimIncrement'], cluster['dim']))
         # we now move the affected registers from the reglist array to the cluster array
@@ -87,6 +90,10 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
                     r['name'] = regname
                     if 'displayName' in r:
                         r['displayName'] = regname
+                    if 'alternateRegister' in r:
+                        _, altname = indexName({'name': r['alternateRegister']}, pat)
+                        if altname:
+                            r['alternateRegister'] = altname
                     r['addressOffset'] = (r['addressOffset'] if isinstance(r['addressOffset'], int) else int(r['addressOffset'], 0)) - cluster['addressOffset'] - template * cluster['dimIncrement']
                     cluster['registers'].append(r)
             else:               # register doesn't belong to cluster

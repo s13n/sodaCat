@@ -95,13 +95,16 @@ $postfix"""))
             pos += width
         return txt, enums
                 
-    def formatRegisterList(self, reglist:list, defaultType:str, padToSize:int, defaultSize:int):
+    def formatRegisterList(self, reglist:list, defaultType:str, padToSize:int, defaultSize:int, structPrefix:str=''):
         """ Generate structs and instances for a list of registers
         Returns four values (in this order):
         1. All the type definitions for the registers as a multiline string
         2. The formatted list of registers as a multiline string
         3. The size of the register list in the address space of the controller
         4. The list of enumeration definitions
+
+        structPrefix is prepended to struct/enum type names to avoid collisions
+        when multiple clusters have identically-named registers.
         """
         enums = ''
         structs = ''
@@ -121,7 +124,8 @@ $postfix"""))
             if 'registers' in reg:
                 name = reg['name'].replace('[%s]', '')
                 padSize = reg.get('dimIncrement', 0)
-                types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4)
+                innerPrefix = structPrefix + name + '_'
+                types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4, innerPrefix)
                 enums += enum
                 structs += self.registersTemplate.substitute(name=name, regs=regs, types=types, description=description, size=size)
                 names = reg['name'] % dim_fmt
@@ -129,21 +133,23 @@ $postfix"""))
                 list.append([line, addressOffset, size*dim_total])
             else:
                 dimIndex = reg.get('dimIndex', "")
-                name = reg['name'].replace('%s', '')
-                names = name
+                memberName = reg['name'].replace('%s', '')
+                typeName = structPrefix + memberName
+                names = memberName
                 if dimIndex:
                     #TODO: Check if the address offset matches the size
                     names = ",".join(reg['name'] % item for item in dimIndex.split(","))
                 elif dim_total > 1:
-                    name = reg['name'].replace('[%s]', '')
+                    memberName = reg['name'].replace('[%s]', '')
+                    typeName = structPrefix + memberName
                     names = reg['name'] % dim_fmt
                 size = reg.get('size', defaultSize * 8)
                 type = reg.get('dataType', 'uint%s_t' % size)
                 if 'fields' in reg and reg['fields']:
                     fields, enum = self.formatFieldList(reg['fields'], type)
-                    enums += self.regEnumsTemplate.substitute(reg, name=name, enums=enum) if enum else ''
-                    structs += self.fieldsTemplate.substitute(reg, name=name, fields=fields, description=description)
-                line = self.fieldTemplate.substitute(reg, name=names, type=self.typeTemplate.substitute(reg, name=name), description=description)
+                    enums += self.regEnumsTemplate.substitute(reg, name=typeName, enums=enum) if enum else ''
+                    structs += self.fieldsTemplate.substitute(reg, name=typeName, fields=fields, description=description)
+                line = self.fieldTemplate.substitute(reg, name=names, type=self.typeTemplate.substitute(reg, name=typeName), description=description)
                 list.append([line, addressOffset, (size>>3)*dim_total])
 
         list.sort(key=lambda r:r[1])

@@ -375,6 +375,7 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
         if typ == 'renameRegisters':
             renameEntries(block_data.get('registers', []), 'name', t['pattern'], t['replacement'])
             renameEntries(block_data.get('registers', []), 'displayName', t['pattern'], t['replacement'])
+            renameEntries(block_data.get('registers', []), 'alternateRegister', t['pattern'], t['replacement'])
         elif typ == 'renameFields':
             reg = next((r for r in block_data.get('registers', [])
                         if r.get('name') == t['register']), None)
@@ -426,10 +427,10 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
             block_data['registers'] = createClusterArray(
                 block_data.get('registers', []), t['pattern'], cluster,
                 template=t.get('template', 0))
-            # Strip "Channel N " prefix from cluster register descriptions
+            # Strip instance-number prefix from cluster register descriptions
             for reg in cluster.get('registers', []):
                 desc = reg.get('description', '')
-                m = re.match(r'^.*?[Cc]hannel\s+\d+\s+', desc)
+                m = re.match(r'^.*?(?:[Cc]hannel|[Ee]ndpoint)\s+\d+\s+', desc)
                 if m:
                     stripped = desc[m.end():]
                     if stripped:
