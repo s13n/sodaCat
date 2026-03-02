@@ -1065,3 +1065,42 @@ they don't match any GPDMA canonical interrupt name.
 RAMCFG peripheral registers use `RAMECC_` prefix instead of `RAMCFG_` (e.g.,
 `RAMECC_IER` instead of `RAMCFG_IER` or just `IER`). Fixed by renameRegisters
 transform: `'^RAMECC_' → ''`.
+
+
+## Cross-family: JPEG codec
+
+The JPEG codec IP is present in F7, H7, H7RS, N6, and U5. The unified shared
+model sources from STM32N645 (cleanest SVD). Other families have these bugs:
+
+### H7: Incomplete register set
+
+**STM32H743 (SVD v1.8):**
+
+The JPEG peripheral is severely incomplete — only the core control registers
+are present (CONFR0–3, CONFRN1–4, CR, SR, CFR, DIR, DOR). All memory-mapped
+tables are missing: QMEM (64 quantization registers), HUFFMIN (16 Huffman
+minimum code registers), DHTMEM (103 DHT memory registers), HUFFBASE (32),
+HUFFSYMB (84), HUFFENC_AC0/AC1 (88 each), HUFFENC_DC0/DC1 (8 each).
+
+Additionally, configuration registers 4–7 are named CONFRN1–CONFRN4 instead
+of the standard CONFR4–CONFR7 naming used by all other families.
+
+### F7: DHTMEM off-by-one and naming quirks
+
+**STM32F769 (SVD v1.5):**
+
+| Issue | Bug | N6 (correct) |
+|-------|-----|--------------|
+| DHTMEM numbering | Missing DHTMEM1; index jumps 0, 2, 3, ..., 103 | Contiguous 0–102 |
+| HUFFMIN naming | Flat: HUFFMIN_0 through HUFFMIN_15 | Grouped: HUFFMIN0_0 through HUFFMIN3_3 |
+| DHTMem fields | Generic `DHTMem_RAM` single field | Detailed `HCODE`/`HLEN` subfields |
+
+### H7RS, U5: HUFFENC alternateRegister overlap
+
+**STM32H7S (SVD v1.3), STM32U585 (SVD v1.5):**
+
+HUFFENC_AC1 registers are encoded with `alternateRegister` referencing
+HUFFENC_AC0 entries, causing them to share the same address offsets. For
+example, HUFFENC_AC1_0 has `alternateRegister: HUFFENC_AC0_55` and appears
+at the same address. In reality the AC1 table is at a different offset
+(contiguous after AC0). The N6 SVD has the correct non-overlapping layout.

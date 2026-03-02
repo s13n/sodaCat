@@ -130,6 +130,9 @@ Per-block `transforms` lists in the family YAML config fix SVD bugs and naming i
 - `patchFields` — add/modify/remove fields in a register: `{type, register, fields: [{name, ...props}]}`. Name-only entries remove the field; name+props entries add or merge.
 - `patchRegisters` — add/modify/remove register-level properties: `{type, registers: [{name, ...props}]}`. Same add/merge/remove semantics.
 - `patchAddressBlock` — override addressBlock properties: `{type, size}` (and optionally other addressBlock fields).
+- `cloneRegister` — deep-copy a register with optional field removal/rename: `{type, register, newName, removeFields, renameFields}`. Enables overlapping register pairs at the same offset for union-style alternatives.
+- `createArray` — collapse numbered flat registers (e.g. FGCLUT0–255) into a single register with `dim`/`dimIncrement`: `{type, pattern, name, description?, template?}`. Pattern has one capture group for the zero-based index.
+- `createClusterArray` — group registers of identical subsystems into a cluster array with `dim`/`dimIncrement`: `{type, pattern, name, description?, template?}`. Pattern has two capture groups (index, register name).
 
 Additionally, `tools/generic_transform.py` provides a standalone `TransformationEngine` with broader transforms (`createArrays`, `setParameters`, `setHeaderStructName`, `addFields`) driven via separate YAML config files (see `extractors/stm32h7-transforms.yaml`). This engine is not currently used by the family generator.
 
