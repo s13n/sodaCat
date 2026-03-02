@@ -144,6 +144,8 @@ def createArray(reglist:list, pattern:str, name:str, template:int=0):
         tmpl_reg['displayName'] = name + '[%s]'
     tmpl_reg['dim'] = len(matches)
     tmpl_reg['dimIncrement'] = dimIncrement
+    # Adjust addressOffset to the start of the array (index 0)
+    tmpl_reg['addressOffset'] = addr(tmpl_reg) - template * dimIncrement
 
     fmt = "Registers {} become array {}: Address offset = {}  Increment = {}  Count = {}"
     print(fmt.format(pattern, tmpl_reg['name'], addr(tmpl_reg), dimIncrement, len(matches)))
