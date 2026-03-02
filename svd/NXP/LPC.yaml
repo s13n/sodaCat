@@ -32,6 +32,43 @@ shared_blocks:
     interrupts:
       SCT0: INTR
 
+  MRT:
+    from: LPC865.MRT0
+    params:
+      - {name: timer_bits, type: int, default: 31, description: Timer counter width in bits}
+      - {name: has_modcfg, type: bool, default: false, description: Has MODCFG register and INUSE flags}
+    transforms:
+      - type: patchRegisters
+        registers:
+          - name: MODCFG
+            description: Module Configuration register. This register provides information about this particular MRT instance, and allows choosing an overall mode for the idle channel feature.
+            addressOffset: 240
+            size: 32
+            access: read-write
+            resetValue: 371
+            resetMask: 2147484159
+            fields:
+              - name: NOC
+                description: Identifies the number of channels in this MRT.
+                bitOffset: 0
+                bitWidth: 4
+                access: read-only
+              - name: NOB
+                description: Identifies the number of timer bits in this MRT.
+                bitOffset: 4
+                bitWidth: 5
+                access: read-only
+              - name: MULTITASK
+                description: Selects the operating mode for the INUSE flags and the IDLE_CH register.
+                bitOffset: 31
+                bitWidth: 1
+                access: read-write
+                enumeratedValues:
+                  - {name: HARDWARE_STATUS_MODE, description: Hardware status mode. In this mode, the INUSE(n) flags for all channels are reset., value: 0}
+                  - {name: MULTI_TASK_MODE, description: Multi-task mode., value: 1}
+    interrupts:
+      MRT0: MRT
+
 families:
   LPC8:
     subfamilies:
@@ -151,7 +188,7 @@ families:
         from: LPC865.IOCON
         instances: [IOCON]
       MRT:
-        from: LPC865.MRT0
+        uses: MRT
         instances: [MRT0]
         interrupts:
           MRT0: MRT
@@ -405,7 +442,7 @@ families:
         interrupts:
           LCD: INTR
       MRT:
-        from: LPC54S018.MRT0
+        uses: MRT
         instances: [MRT0]
         interrupts:
           MRT0: MRT
@@ -533,6 +570,9 @@ families:
         uses: WWDT
         instances: [WWDT]
     chip_params:
+      _all:
+        _all:
+          MRT0: {timer_bits: 24, has_modcfg: true}
       LPC540xx:
         LPC54S018:
           GPIO: {ports: 6}
