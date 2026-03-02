@@ -1,7 +1,38 @@
-name: RTC
+name: RTC_V1
 description: RTC
 groupName: RTC
 source: STM32H723 SVD v2.1
+params:
+  - name: has_tampcr
+    type: bool
+    default: true
+    description: TAMPCR layout (false = legacy TAFCR)
+  - name: has_calibr
+    type: bool
+    default: false
+    description: Legacy CALIBR register at offset 0x18
+  - name: has_or
+    type: bool
+    default: true
+    description: OR output routing register present
+  - name: or_f7
+    type: bool
+    default: false
+    description: F7-style OR layout (TSINSEL+ALARM_TYPE at different bits)
+  - name: has_itsf
+    type: bool
+    default: false
+    description: Internal timestamp flag (ISR.ITSF) and enable (CR.ITSE)
+  - name: backup_regs
+    type: int
+    default: 32
+    max: 32
+    description: Number of backup registers (5, 20, or 32)
+  - name: tampers
+    type: int
+    default: 3
+    max: 3
+    description: Tamper detection channels (2 or 3)
 registers:
   - name: TR
     displayName: TR
@@ -672,6 +703,74 @@ registers:
         description: Tamper 3 mask flag
         bitOffset: 24
         bitWidth: 1
+  - name: TAFCR
+    displayName: TAFCR
+    description: "Tamper and alternate function\n          configuration register"
+    addressOffset: 64
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: TAMP1E
+        description: "RTC_TAMP1 input detection\n              enable"
+        bitOffset: 0
+        bitWidth: 1
+      - name: TAMP1TRG
+        description: "Active level for RTC_TAMP1 input If\n              TAMPFLT != 00 if TAMPFLT = 00:"
+        bitOffset: 1
+        bitWidth: 1
+      - name: TAMPIE
+        description: Tamper interrupt enable
+        bitOffset: 2
+        bitWidth: 1
+      - name: TAMP2E
+        description: "RTC_TAMP2 input detection\n              enable"
+        bitOffset: 3
+        bitWidth: 1
+      - name: TAMP2TRG
+        description: "Active level for RTC_TAMP2 input if\n              TAMPFLT != 00: if TAMPFLT = 00:"
+        bitOffset: 4
+        bitWidth: 1
+      - name: TAMP3E
+        description: RTC_TAMP3 detection enable
+        bitOffset: 5
+        bitWidth: 1
+      - name: TAMP3TRG
+        description: "Active level for RTC_TAMP3 input if\n              TAMPFLT != 00: if TAMPFLT = 00:"
+        bitOffset: 6
+        bitWidth: 1
+      - name: TAMPTS
+        description: "Activate timestamp on tamper detection\n              event TAMPTS is valid even if TSE=0 in the RTC_CR\n              register."
+        bitOffset: 7
+        bitWidth: 1
+      - name: TAMPFREQ
+        description: "Tamper sampling frequency Determines the\n              frequency at which each of the RTC_TAMPx inputs are\n              sampled."
+        bitOffset: 8
+        bitWidth: 3
+      - name: TAMPFLT
+        description: "RTC_TAMPx filter count These bits\n              determines the number of consecutive samples at the\n              specified level (TAMP*TRG) needed to activate a\n              Tamper event. TAMPFLT is valid for each of the\n              RTC_TAMPx inputs."
+        bitOffset: 11
+        bitWidth: 2
+      - name: TAMPPRCH
+        description: "RTC_TAMPx precharge duration These bit\n              determines the duration of time during which the\n              pull-up/is activated before each sample. TAMPPRCH is\n              valid for each of the RTC_TAMPx inputs."
+        bitOffset: 13
+        bitWidth: 2
+      - name: TAMPPUDIS
+        description: "RTC_TAMPx pull-up disable This bit\n              determines if each of the RTC_TAMPx pins are\n              pre-charged before each sample."
+        bitOffset: 15
+        bitWidth: 1
+      - name: TAMP1INSEL
+        description: TAMPER1 mapping
+        bitOffset: 16
+        bitWidth: 1
+      - name: TSINSEL
+        description: TIMESTAMP mapping
+        bitOffset: 17
+        bitWidth: 1
+      - name: ALARMOUTTYPE
+        description: AFO_ALARM output type
+        bitOffset: 18
+        bitWidth: 1
   - name: ALRMASSR
     displayName: ALRMASSR
     description: "This register can be written only when ALRAE\n          is reset in RTC_CR register, or in initialization\n          mode.This register is write protected. The write access\n          procedure is described in RTC register write protection\n          on page9"
@@ -719,6 +818,22 @@ registers:
       - name: RTC_OUT_RMP
         description: RTC_OUT remap
         bitOffset: 1
+        bitWidth: 1
+  - name: OR_F7
+    displayName: OR_F7
+    description: Option register
+    addressOffset: 76
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: TSINSEL
+        description: TIMESTAMP mapping
+        bitOffset: 1
+        bitWidth: 2
+      - name: RTC_ALARM_TYPE
+        description: RTC_ALARM on PC13 output type
+        bitOffset: 3
         bitWidth: 1
   - name: BKP0R
     displayName: BKP0R
@@ -1104,14 +1219,33 @@ registers:
         description: "The application can write or read data\n              to and from these registers. They are powered-on by\n              VBAT when VDD is switched off, so that they are not\n              reset by System reset, and their contents remain\n              valid when the device operates in low-power mode.\n              This register is reset on a tamper detection event,\n              as long as TAMPxF=1. or when the Flash readout\n              protection is disabled."
         bitOffset: 0
         bitWidth: 32
+  - name: CALIBR
+    displayName: CALIBR
+    description: Calibration register
+    addressOffset: 24
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DC
+        description: Digital calibration
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: DCS
+        description: Digital calibration sign
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
 addressBlocks:
   - offset: 0
     size: 1024
     usage: registers
 interrupts:
   - name: TAMP_STAMP_CSS_LSE
-    description: RTC tamper, timestamp
+    description: Tamper, timestamp
   - name: WKUP
-    description: RTC Wakeup interrupt
+    description: Wakeup interrupt
   - name: ALARM
-    description: RTC alarms (A and B)
+    description: Alarms (A and B)
+  - name: INTR

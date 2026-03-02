@@ -811,6 +811,84 @@ shared_blocks:
       DFSDM1_FLT5: FLT5
       DFSDM1_FLT6: FLT6
       DFSDM1_FLT7: FLT7
+  RTC_V1:
+    # Old-IP RTC: ISR register, embedded BKPxR, TAFCR/TAMPCR
+    # Gen 1 (L1, F4): CALIBR + TAFCR (TAMP1INSEL/TSINSEL/ALARMOUTTYPE)
+    # Gen 2.5 (F7, L4, L4P, H7, L0): TAMPCR (per-tamper IE/NOERASE/MF) + OR
+    # F3 excluded: unique PC13/14/15 GPIO bits in TAFCR
+    from: STM32H723.RTC
+    params:
+      - {name: has_tampcr, type: bool, default: true, description: "TAMPCR layout (false = legacy TAFCR)"}
+      - {name: has_calibr, type: bool, default: false, description: "Legacy CALIBR register at offset 0x18"}
+      - {name: has_or, type: bool, default: true, description: "OR output routing register present"}
+      - {name: or_f7, type: bool, default: false, description: "F7-style OR layout (TSINSEL+ALARM_TYPE at different bits)"}
+      - {name: has_itsf, type: bool, default: false, description: "Internal timestamp flag (ISR.ITSF) and enable (CR.ITSE)"}
+      - {name: backup_regs, type: int, default: 32, max: 32, description: "Number of backup registers (5, 20, or 32)"}
+      - {name: tampers, type: int, default: 3, max: 3, description: "Tamper detection channels (2 or 3)"}
+    transforms:
+      - type: cloneRegister
+        source: TAMPCR
+        name: TAFCR
+        removeFields: [TAMP1IE, TAMP1NOERASE, TAMP1MF, TAMP2IE, TAMP2NOERASE, TAMP2MF, TAMP3IE, TAMP3NOERASE, TAMP3MF]
+      - type: patchFields
+        register: TAFCR
+        fields:
+          - name: TAMP1INSEL
+            description: TAMPER1 mapping
+            bitOffset: 16
+            bitWidth: 1
+          - name: TSINSEL
+            description: TIMESTAMP mapping
+            bitOffset: 17
+            bitWidth: 1
+          - name: ALARMOUTTYPE
+            description: AFO_ALARM output type
+            bitOffset: 18
+            bitWidth: 1
+      - type: cloneRegister
+        source: OR
+        name: OR_F7
+        removeFields: [RTC_ALARM_TYPE, RTC_OUT_RMP]
+      - type: patchFields
+        register: OR_F7
+        fields:
+          - name: TSINSEL
+            description: TIMESTAMP mapping
+            bitOffset: 1
+            bitWidth: 2
+          - name: RTC_ALARM_TYPE
+            description: RTC_ALARM on PC13 output type
+            bitOffset: 3
+            bitWidth: 1
+      - type: patchRegisters
+        registers:
+          - name: CALIBR
+            displayName: CALIBR
+            description: Calibration register
+            addressOffset: 24
+            size: 32
+            resetValue: 0
+            resetMask: 4294967295
+            fields:
+              - name: DC
+                description: Digital calibration
+                bitOffset: 0
+                bitWidth: 5
+                access: read-write
+              - name: DCS
+                description: Digital calibration sign
+                bitOffset: 7
+                bitWidth: 1
+                access: read-write
+    interrupts:
+      RTC_WKUP: WKUP
+      RTC_ALARM: ALARM
+      RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
+      RTC: INTR
+      RTC_Alarm: ALARM
+      EXTI22_RTC_WKUP: WKUP
+      EXTI17_RTC_Alarm: ALARM
+      RTC_TAMP_STAMP: TAMP_STAMP_CSS_LSE
 families:
   C0:
     svd:
@@ -1536,13 +1614,11 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32F401.RTC
+        uses: RTC_V1
         instances: [RTC]
         interrupts:
           EXTI22_RTC_WKUP: WKUP
-          EXTI17_RTC_Alarm: Alarm
-        transforms:
-          - {type: patchAddressBlock, size: 160}
+          EXTI17_RTC_Alarm: ALARM
       SAI:
         uses: SAI
         instances: [SAI, SAI1, SAI2]
@@ -1578,6 +1654,7 @@ families:
         _all:
           IWDG: {gen: 0}
           RNG: {gen: 0}
+          RTC: {has_tampcr: false, has_calibr: true, has_or: false, backup_regs: 20, tampers: 2}
           UART10: {synchronous: 0}
           DCMI: {has_pixel_select: false}
           UART4: {synchronous: 0}
@@ -1946,13 +2023,11 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32F722.RTC
+        uses: RTC_V1
         instances: [RTC]
         interrupts:
           RTC_WKUP: WKUP
           RTC_ALARM: ALARM
-        transforms:
-          - {type: patchFields, register: OR, fields: [{name: TSINSEL, bitWidth: 2}]}
       SAI:
         uses: SAI
         instances: [SAI1, SAI2]
@@ -2023,6 +2098,7 @@ families:
       _all:
         _all:
           CRC: {idr32: false}
+          RTC: {or_f7: true, has_itsf: true}
           USART: {has_fifo: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -3237,7 +3313,7 @@ families:
         interrupts:
           HASH_RNG: INTR
       RTC:
-        from: STM32H723.RTC
+        uses: RTC_V1
         instances: [RTC]
         interrupts:
           RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
@@ -3305,6 +3381,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           GPIO: {has_brr: false}
+          RTC: {has_itsf: true}
           OCTOSPI: {has_maxtran: true}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -3791,7 +3868,7 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32L0x0.RTC
+        uses: RTC_V1
         instances: [RTC]
         interrupts:
           RTC: INTR
@@ -3825,6 +3902,7 @@ families:
       _all:
         _all:
           CRC: {idr32: false}
+          RTC: {backup_regs: 5, tampers: 2}
           USART: {has_fifo: false, synchronous: 2}
           LPUART: {has_fifo: false}
           SPI: {has_fifo: false}
@@ -3957,11 +4035,11 @@ families:
         from: STM32L100.RI
         instances: [RI]
       RTC:
-        from: STM32L100.RTC
+        uses: RTC_V1
         instances: [RTC]
         interrupts:
           RTC_WKUP: WKUP
-          RTC_Alarm: Alarm
+          RTC_Alarm: ALARM
       SDIO:
         uses: SDIO
         instances: [SDIO]
@@ -3989,6 +4067,7 @@ families:
       _all:
         _all:
           IWDG: {gen: 0}
+          RTC: {has_tampcr: false, has_calibr: true, has_or: false}
           USB: {has_lpm: false, has_lpmcsr: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -4169,8 +4248,12 @@ families:
         uses: RNG
         instances: [RNG]
       RTC:
-        from: STM32L431.RTC
+        uses: RTC_V1
         instances: [RTC]
+        interrupts:
+          RTC_TAMP_STAMP: TAMP_STAMP_CSS_LSE
+          RTC_WKUP: WKUP
+          RTC_Alarm: ALARM
         variants:
           L41x_L42x:
             from: STM32L412.RTC
@@ -4458,16 +4541,12 @@ families:
         interrupts:
           RNG_HASH: INTR
       RTC:
+        uses: RTC_V1
         instances: [RTC]
         interrupts:
           RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
           RTC_WKUP: WKUP
           RTC_ALARM: ALARM
-        variants:
-          L4Px_L4Qx:
-            from: STM32L4P5.RTC
-          L4Rx_L4Sx:
-            from: STM32L4R5.RTC
       SAI:
         uses: SAI
         instances: [SAI1, SAI2]
