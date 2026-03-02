@@ -2,6 +2,7 @@
 # (C) 2024 Stefan Heinzmann
 import re
 import sys
+from ruamel.yaml.comments import CommentedSeq
     
 def renameEntries(array:list, key, pattern:str, replacement):
     """In all entries of array, replace the value of given key using regular expression matching.
@@ -206,8 +207,12 @@ def create2DArray(reglist:list, pattern:str, name:str, template:tuple=(0,0)):
     tmpl_reg['name'] = name + '[%s][%s]'
     if 'displayName' in tmpl_reg:
         tmpl_reg['displayName'] = name + '[%s][%s]'
-    tmpl_reg['dim'] = [rows, cols]
-    tmpl_reg['dimIncrement'] = [rowStride, colStride]
+    dim = CommentedSeq([rows, cols])
+    dim.fa.set_flow_style()
+    inc = CommentedSeq([rowStride, colStride])
+    inc.fa.set_flow_style()
+    tmpl_reg['dim'] = dim
+    tmpl_reg['dimIncrement'] = inc
 
     fmt = "Registers {} become 2D array {}: Address offset = {}  Dims = {}x{}  Increments = {},{}"
     print(fmt.format(pattern, tmpl_reg['name'], addr(tmpl_reg), rows, cols, rowStride, colStride))
