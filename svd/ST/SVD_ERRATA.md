@@ -576,6 +576,77 @@ H743 SVD has correct assignment (OTG1=HS interrupts, OTG2=FS interrupts).
 H723 has only one USB port — no swap possible. Worked around via
 `chip_interrupts` (OTG1 gets positions 74–77, OTG2 gets positions 98–101).
 
+### HRTIM interrupt misattribution
+
+**H742_H753 + H745_H757 (SVD v2.4/v2.8):**
+
+HRTIM interrupts are split across three SVD peripherals (HRTIM_Master, HRTIM_TIMA,
+HRTIM_Common). The MST (Master) and FLT (Fault) interrupts are incorrectly
+attributed to HRTIM_TIMA instead of their proper sub-peripherals:
+
+| Vector | SVD peripheral | SVD interrupt name | RM says |
+|--------|---------------|-------------------|---------|
+| 103 | HRTIM_TIMA | HRTIM_Master_IRQn | HRTIM Master timer (HRTIM_Master) |
+| 109 | HRTIM_TIMA | HRTIM_TIM_FLT_IRQn | HRTIM Fault (HRTIM_Common) |
+
+Vectors 104–108 (TIMA–TIME) are correctly on HRTIM_TIMA. Worked around via
+`chip_interrupts` (all 7 interrupts injected on the unified HRTIM_Master instance).
+
+
+## ST STM32F3
+
+References:
+- RM0364 Rev.4 — STM32F334xx
+
+### HRTIM missing interrupts
+
+**STM32F3x4 (SVD v1.3):**
+
+HRTIM timer interrupts TIMC and TIMD are missing from the SVD. The vector table
+(RM0364 Table 41, p.236) shows consecutive IRQ numbers 103–109 for all 7 HRTIM
+interrupts:
+
+| Vector | Expected | SVD has? |
+|--------|----------|----------|
+| 103 | HRTIM_Master (MST) | Yes |
+| 104 | HRTIM_TIMA | Yes |
+| 105 | HRTIM_TIMB | Yes |
+| 106 | HRTIM_TIMC | **Missing** |
+| 107 | HRTIM_TIMD | **Missing** |
+| 108 | HRTIM_TIME | Yes |
+| 109 | HRTIM_FLT | Yes |
+
+Worked around via `chip_interrupts` (all 7 interrupts injected on the unified
+HRTIM_Master instance).
+
+
+## ST STM32G4
+
+References:
+- RM0440 Rev.8 — STM32G4 series
+
+### HRTIM missing interrupts
+
+**STM32G474 (SVD v3.0):**
+
+Only MST (67) and TIMA (68) HRTIM interrupts are present in the SVD. The
+remaining 6 timer/fault interrupts are missing. The vector table (RM0440
+Table 100, p.461) shows consecutive IRQ numbers 67–74:
+
+| Vector | Expected | SVD has? |
+|--------|----------|----------|
+| 67 | HRTIM1_MST | Yes |
+| 68 | HRTIM1_TIMA | Yes |
+| 69 | HRTIM1_TIMB | **Missing** |
+| 70 | HRTIM1_TIMC | **Missing** |
+| 71 | HRTIM1_TIMD | **Missing** |
+| 72 | HRTIM1_TIME | **Missing** |
+| 73 | HRTIM1_FLT | **Missing** |
+| 74 | HRTIM1_TIMF | **Missing** |
+
+Worked around via `chip_interrupts` (all 8 interrupts injected on the unified
+HRTIM_Master instance).
+
 
 ## ST STM32L0
 
