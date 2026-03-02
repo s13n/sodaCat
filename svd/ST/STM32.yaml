@@ -786,7 +786,8 @@ shared_blocks:
     # H7A3 is superset: 8 channels, 8 filters, CHyDLYR delay register
     from: STM32H7A3.DFSDM1
     params:
-      - {name: filters, type: int, default: 4, max: 8, description: Number of digital filter units (4 or 8)}
+      - {name: channels, type: int, default: 8, description: Number of serial channels (2, 4, or 8)}
+      - {name: filters, type: int, default: 4, description: Number of digital filter units (1, 2, 4, or 8)}
       - {name: has_dlyr, type: bool, default: true, description: CHyDLYR delay register present}
     transforms:
       - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
@@ -803,6 +804,10 @@ shared_blocks:
       DFSDM1_FLT1: FLT1
       DFSDM1_FLT2: FLT2
       DFSDM1_FLT3: FLT3
+      DFSDM1_FLT4: FLT4
+      DFSDM1_FLT5: FLT5
+      DFSDM1_FLT6: FLT6
+      DFSDM1_FLT7: FLT7
 families:
   C0:
     svd:
@@ -1636,6 +1641,7 @@ families:
           SPI4: {has_i2s: true}
           SPI5: {has_i2s: true}
           OTG_FS: {gccfg: 1, has_lpm: true}
+          DFSDM: {channels: 4, filters: 2}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F413_F423:
         _all:
@@ -1643,6 +1649,7 @@ families:
           SPI4: {has_i2s: true}
           SPI5: {has_i2s: true}
           OTG_FS: {gccfg: 1, has_lpm: true}
+          DFSDM1: {channels: 4, filters: 2}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F446:
         _all:
@@ -3287,6 +3294,9 @@ families:
           OTG2_HS_GLOBAL: {EP1_OUT: 98, EP1_IN: 99, WKUP: 100, INTR: 101}
           SDMMC1: {INTR: 49}
           SDMMC2: {INTR: 124}
+      H7A3_B:
+        _all:
+          DFSDM2: {FLT0: 42}
     chip_params:
       _all:
         _all:
@@ -3343,7 +3353,8 @@ families:
         _all:
           CRYP: {gen: 1}
           SPI6: {has_i2s: true}
-          DFSDM: {filters: 8}
+          DFSDM1: {filters: 8}
+          DFSDM2: {filters: 1, channels: 2, has_dlyr: false}
           RAMECC: {monitors: 3}
           HSEM: {semaphores: 16}
   H7RS:
@@ -4224,6 +4235,8 @@ families:
         _all:
           LPTIM: {or_type: 1}
       L43x_L46x:
+        _all:
+          DFSDM: {channels: 4, filters: 2}
         STM32L432:
           LPTIM: {or_type: 1}
         STM32L442:
