@@ -574,11 +574,11 @@ shared_blocks:
       OTG_HS_EP1_IN: EP1_IN
     description: USB on-the-go (Synopsys DWC2)
     params:
-      - {name: gccfg, type: string, default: cdp, description: "GCCFG register variant: cdp (H7RS/N6), bcd (F4-BCD/F7/H7/U5), vbus (F4-old/L4/L4P)"}
-      - {name: in_endpoints, type: int, default: 9, description: "Device IN endpoint count (DIEPCTL registers)"}
-      - {name: out_endpoints, type: int, default: 9, description: "Device OUT endpoint count (DOEPCTL registers)"}
-      - {name: channels, type: int, default: 16, description: "Host channel count (HCCHAR registers)"}
-      - {name: tx_fifos, type: int, default: 8, description: "Dedicated TX FIFO count (DIEPTXF registers)"}
+      - {name: gccfg, type: int, default: 2, max: 2, description: "GCCFG register variant: 0=vbus (F4-old/L4/L4P), 1=bcd (F4-BCD/F7/H7/U5), 2=cdp (H7RS/N6)"}
+      - {name: max_in_endpoint, type: int, default: 8, max: 15, description: "Highest device IN endpoint index (DIEPCTL registers, 0=EP0 only)"}
+      - {name: max_out_endpoint, type: int, default: 8, max: 15, description: "Highest device OUT endpoint index (DOEPCTL registers, 0=EP0 only)"}
+      - {name: max_channel, type: int, default: 15, max: 15, description: "Highest host channel index (HCCHAR registers)"}
+      - {name: max_tx_fifo, type: int, default: 7, max: 14, description: "Highest dedicated TX FIFO index (DIEPTXF registers, 1-based)"}
       - {name: has_dma, type: bool, default: true, description: "DMA support (HBSTLEN/DMAEN in GAHBCFG, DMA registers)"}
       - {name: has_lpm, type: bool, default: true, description: "Link Power Management (GLPMCFG register, ERRATIM/DEVLNSTS)"}
     transforms:
@@ -1563,8 +1563,8 @@ families:
           PSSI: {has_cksrc: true}
           SAI: {has_gcr: false}
           SPDIFRX: {has_symbol_clock: false}
-          OTG_FS: {gccfg: vbus, in_endpoints: 4, out_endpoints: 4, channels: 8, tx_fifos: 3, has_dma: false, has_lpm: false}
-          OTG_HS: {gccfg: vbus, in_endpoints: 8, out_endpoints: 4, tx_fifos: 7, has_lpm: false}
+          OTG_FS: {gccfg: 0, max_in_endpoint: 3, max_out_endpoint: 3, max_channel: 7, max_tx_fifo: 2, has_dma: false, has_lpm: false}
+          OTG_HS: {gccfg: 0, max_in_endpoint: 7, max_out_endpoint: 3, max_tx_fifo: 6, has_lpm: false}
       F401:
         _all:
           PWR: {power_mode: lvds}
@@ -1600,14 +1600,14 @@ families:
           SPI1: {has_i2s: true}
           SPI4: {has_i2s: true}
           SPI5: {has_i2s: true}
-          OTG_FS: {gccfg: bcd, has_lpm: true}
+          OTG_FS: {gccfg: 1, has_lpm: true}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F413_F423:
         _all:
           SPI1: {has_i2s: true}
           SPI4: {has_i2s: true}
           SPI5: {has_i2s: true}
-          OTG_FS: {gccfg: bcd, has_lpm: true}
+          OTG_FS: {gccfg: 1, has_lpm: true}
           PWR: {power_mode: lvds, has_fmssr: true, wakeup_pins: 3}
       F446:
         _all:
@@ -2005,8 +2005,8 @@ families:
           GPIO: {has_brr: false}
           SPDIFRX: {has_symbol_clock: false}
           SDMMC: {has_ceata: false, has_stbiterr: false}
-          OTG_FS: {gccfg: bcd, in_endpoints: 6, out_endpoints: 6, channels: 12, tx_fifos: 6, has_dma: false}
-          OTG_HS: {gccfg: bcd, in_endpoints: 8, out_endpoints: 8, tx_fifos: 8}
+          OTG_FS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 5, max_channel: 11, max_tx_fifo: 5, has_dma: false}
+          OTG_HS: {gccfg: 1, max_in_endpoint: 7, max_out_endpoint: 7, max_tx_fifo: 7}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
@@ -3300,7 +3300,7 @@ families:
           PSSI: {has_cksrc: true}
           SAI: {has_pdm: true}
           SDMMC: {has_version_id: true}
-          OTG_HS: {gccfg: bcd, in_endpoints: 8, out_endpoints: 8}
+          OTG_HS: {gccfg: 1, max_in_endpoint: 7, max_out_endpoint: 7}
       H742_H753:
         _all:
           DFSDM: {has_dlyr: false}
@@ -4202,7 +4202,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           SAI: {has_gcr: false}
-          OTG_FS: {gccfg: vbus, in_endpoints: 4, out_endpoints: 4, channels: 8, tx_fifos: 3, has_dma: false, has_lpm: false}
+          OTG_FS: {gccfg: 0, max_in_endpoint: 3, max_out_endpoint: 3, max_channel: 7, max_tx_fifo: 2, has_dma: false, has_lpm: false}
       L41x_L42x:
         _all:
           LPTIM: {or_type: 1}
@@ -4486,7 +4486,7 @@ families:
           TIM4: {encoder: 1}
           LPTIM: {has_counter_reset: false, has_repetition: false, has_cfgr2: false}
           SAI: {has_gcr: false}
-          OTG_FS: {gccfg: vbus, in_endpoints: 4, out_endpoints: 4, channels: 8, tx_fifos: 3, has_dma: false, has_lpm: false}
+          OTG_FS: {gccfg: 0, max_in_endpoint: 3, max_out_endpoint: 3, max_channel: 7, max_tx_fifo: 2, has_dma: false, has_lpm: false}
       L4Px_L4Qx:
         _all:
           RNG: {gen: 2}
@@ -5755,5 +5755,5 @@ families:
           HASH: {gen: 1}
           PKA: {gen: 1}
           SDMMC: {idma_list: true}
-          OTG_FS: {gccfg: bcd, in_endpoints: 6, out_endpoints: 6, channels: 12, tx_fifos: 5, has_dma: false}
-          OTG_HS: {gccfg: bcd, in_endpoints: 6, out_endpoints: 9, channels: 12, has_lpm: false}
+          OTG_FS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 5, max_channel: 11, max_tx_fifo: 4, has_dma: false}
+          OTG_HS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 8, max_channel: 11, has_lpm: false}
