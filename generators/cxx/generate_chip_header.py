@@ -67,7 +67,9 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                         raise ValueError(f"Duplicate value {v!r}")
         decl, incl = self.createIntegration(chip['instances'], namespace, inverse)
         imports = [re.search(r'"(\w+)\.hpp"', l).group(1) for l in incl.splitlines() if '#   include ' in l]
-        return prefix.substitute(chip, ns=namespace, name=name, incl=incl, imp=';\nimport '.join(imports)) + decl + postfix.substitute(ns=namespace)
+        interrupts = chip.get('interrupts', {})
+        interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
+        return prefix.substitute(chip, ns=namespace, name=name, incl=incl, imp=';\nimport '.join(imports), interruptCount=interruptCount) + decl + postfix.substitute(ns=namespace)
                 
 prefixTemplate = Template("""// File was generated, do not edit!
 #ifdef REGISTERS_MODULE
@@ -88,6 +90,7 @@ import $imp;
 namespace $ns {
 
 EXPORT constexpr Exception interruptOffset = $interruptOffset;\t//!< Exception number of first interrupt
+EXPORT constexpr Exception interruptCount = $interruptCount;\t//!< Total number of exceptions (interrupts + system exceptions)
 """)
 
 postfixTemplate = Template("""
