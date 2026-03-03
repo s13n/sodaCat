@@ -378,9 +378,15 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
             snapshot = copy.deepcopy(block_data)
 
         if typ == 'renameRegisters':
-            renameEntries(block_data.get('registers', []), 'name', t['pattern'], t['replacement'])
-            renameEntries(block_data.get('registers', []), 'displayName', t['pattern'], t['replacement'])
-            renameEntries(block_data.get('registers', []), 'alternateRegister', t['pattern'], t['replacement'])
+            regs = block_data.get('registers', [])
+            renameEntries(regs, 'name', t['pattern'], t['replacement'])
+            renameEntries(regs, 'displayName', t['pattern'], t['replacement'])
+            renameEntries(regs, 'alternateRegister', t['pattern'], t['replacement'])
+            # Also rename registers inside cluster arrays
+            for r in regs:
+                if 'registers' in r:
+                    renameEntries(r['registers'], 'name', t['pattern'], t['replacement'])
+                    renameEntries(r['registers'], 'displayName', t['pattern'], t['replacement'])
         elif typ == 'renameFields':
             reg = next((r for r in block_data.get('registers', [])
                         if r.get('name') == t['register']), None)
