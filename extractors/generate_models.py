@@ -979,6 +979,10 @@ def main():
     common_count = 0
     family_specific_count = 0
     all_findings = []
+    # Interrupt ordering per model, used in Pass 3 to match chip model
+    # interrupt order to the peripheral model's struct field order.
+    # Keys: model_name (str) for shared/common, (block_name, subfamily) for variants.
+    model_interrupt_order = {}
 
     def _format_block_source(entry):
         name = entry.get('svd_path', entry.get('chip', ''))
@@ -1027,6 +1031,8 @@ def main():
                 block_data['description'] = shared_cfg['description']
 
             svd.dumpModel(block_data, output_dir / shared_name)
+            model_interrupt_order[shared_name] = [
+                irq['name'] for irq in block_data.get('interrupts', [])]
             print(f"  * {shared_name:20} -> top-level (cross-family shared)")
             continue
 
@@ -1057,6 +1063,8 @@ def main():
                     block_data['description'] = resolved['description']
 
                 svd.dumpModel(block_data, family_dir / block_name)
+                model_interrupt_order[(block_name, fam_name)] = [
+                    irq['name'] for irq in block_data.get('interrupts', [])]
 
         # Non-variant subfamilies -> shared or subfamily-specific placement
         default_present = {f for f in families_present if f not in variants}
@@ -1075,6 +1083,7 @@ def main():
             if block_cfg.get('description'):
                 block_data['description'] = block_cfg['description']
 
+            intr_order = [irq['name'] for irq in block_data.get('interrupts', [])]
             if len(default_present) == 1:
                 # Only one subfamily uses base -> place in subfamily dir
                 fam_name = next(iter(default_present))
@@ -1082,10 +1091,26 @@ def main():
                 family_dir = output_dir / family_code / fam_name
                 family_dir.mkdir(parents=True, exist_ok=True)
                 svd.dumpModel(block_data, family_dir / block_name)
+                model_interrupt_order[(block_name, fam_name)] = intr_order
             else:
                 common_count += 1
                 svd.dumpModel(block_data, common_blocks_dir / block_name)
+                model_interrupt_order[block_name] = intr_order
                 print(f"  + {block_name:20} -> {family_code} (shared)")
+
+    # Fill in interrupt orders for models not written in this run (uses: blocks)
+    yaml_loader = YAML(typ='safe')
+    for bt, bc in blocks_config.items():
+        model_name = bc.get('uses') or bt
+        if model_name not in model_interrupt_order:
+            model_path = output_dir / f"{model_name}.yaml"
+            if not model_path.exists():
+                model_path = output_dir / family_code / f"{model_name}.yaml"
+            if model_path.exists():
+                model = yaml_loader.load(model_path)
+                if model:
+                    model_interrupt_order[model_name] = [
+                        irq['name'] for irq in model.get('interrupts', [])]
 
     # ==========================================================================
     # PASS 3: Generate chip models
@@ -1169,6 +1194,17 @@ def main():
                             'name': canonical_name, 'value': irq_value}
                     mapped_intrs = sorted(
                         existing.values(), key=lambda i: i['value'])
+
+                # Sort interrupts to match peripheral model's declaration order
+                model_name = block_model_names.get(block_type, block_type)
+                intr_order = (
+                    model_interrupt_order.get((block_type, subfamily_name))
+                    or model_interrupt_order.get(model_name)
+                    or model_interrupt_order.get(block_type, []))
+                if intr_order:
+                    order_map = {name: i for i, name in enumerate(intr_order)}
+                    mapped_intrs.sort(
+                        key=lambda x: order_map.get(x['name'], len(order_map)))
 
                 # Build interrupt table from final mapped interrupts
                 for intr in mapped_intrs:
