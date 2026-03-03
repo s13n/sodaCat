@@ -93,6 +93,12 @@ generate_header(soc-data-modules generate_peripheral_header stm32h7 ST/VREFBUF .
 
 generate_header(soc-data-modules generate_peripheral_header stm32h7 ARM/NVIC .hpp)
 
+# ESP32-P4
+generate_header(soc-data-modules generate_chip_header esp32p4 ESP/P4/ESP32_P4/ESP32-P4 .hpp)
+generate_header(soc-data-modules generate_peripheral_header esp32p4 ESP/P4/ESP32_P4/UART .hpp)
+generate_header(soc-data-modules generate_peripheral_header esp32p4 ESP/P4/ESP32_P4/GPIO .hpp)
+generate_header(soc-data-modules generate_peripheral_header esp32p4 ESP/P4/ESP32_P4/SPI .hpp)
+
 add_executable(soc-data-test main.cpp)
 target_link_libraries(soc-data-test PRIVATE soc-data-modules)
 target_compile_options(soc-data-test PUBLIC $<$<BOOL:${FOR_MODULES}>:-fmodules-ts>)

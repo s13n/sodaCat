@@ -1,0 +1,335 @@
+name: TRACE
+description: Peripheral
+groupName: TRACE
+source: ESP32-P4 SVD v2
+registers:
+  - name: MEM_START_ADDR
+    description: mem start addr
+    addressOffset: 0
+    size: 32
+    fields:
+      - name: MEM_START_ADDR
+        description: The start address of trace memory
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: MEM_END_ADDR
+    description: mem end addr
+    addressOffset: 4
+    size: 32
+    resetValue: 4294967295
+    fields:
+      - name: MEM_END_ADDR
+        description: The end address of trace memory
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: MEM_CURRENT_ADDR
+    description: mem current addr
+    addressOffset: 8
+    size: 32
+    fields:
+      - name: MEM_CURRENT_ADDR
+        description: current_mem_addr,indicate that next writing addr
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: MEM_ADDR_UPDATE
+    description: mem addr update
+    addressOffset: 12
+    size: 32
+    fields:
+      - name: MEM_CURRENT_ADDR_UPDATE
+        description: when set, the  will \hyperref[fielddesc:TRACEMEMCURRENTADDR]{TRACE_MEM_CURRENT_ADDR} update to \hyperref[fielddesc:TRACEMEMSTARTADDR]{TRACE_MEM_START_ADDR}.
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+  - name: FIFO_STATUS
+    description: fifo status register
+    addressOffset: 16
+    size: 32
+    resetValue: 1
+    fields:
+      - name: FIFO_EMPTY
+        description: 'Represent whether the fifo is empty. \\1: empty \\0: not empty'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: WORK_STATUS
+        description: 'Represent trace work status: \\0: idle state \\1: working state\\ 2: wait state due to hart halted or havereset \\3: lost state'
+        bitOffset: 1
+        bitWidth: 2
+        access: read-only
+  - name: INTR_ENA
+    description: interrupt enable register
+    addressOffset: 20
+    size: 32
+    fields:
+      - name: FIFO_OVERFLOW_INTR_ENA
+        description: Set 1 enable fifo_overflow interrupt
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: MEM_FULL_INTR_ENA
+        description: Set 1 enable mem_full interrupt
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: INTR_RAW
+    description: interrupt status register
+    addressOffset: 24
+    size: 32
+    fields:
+      - name: FIFO_OVERFLOW_INTR_RAW
+        description: fifo_overflow interrupt status
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: MEM_FULL_INTR_RAW
+        description: mem_full interrupt status
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+  - name: INTR_CLR
+    description: interrupt clear register
+    addressOffset: 28
+    size: 32
+    fields:
+      - name: FIFO_OVERFLOW_INTR_CLR
+        description: Set 1 clear fifo overflow interrupt
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: MEM_FULL_INTR_CLR
+        description: Set 1 clear mem full interrupt
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+  - name: TRIGGER
+    description: trigger register
+    addressOffset: 32
+    size: 32
+    resetValue: 12
+    fields:
+      - name: ON
+        description: 'Configure whether or not start trace.\\1: start trace \\0: invalid\\'
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: OFF
+        description: 'Configure whether or not stop trace.\\1: stop trace \\0: invalid\\'
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: MEM_LOOP
+        description: 'Configure memory loop mode. \\1: trace will loop wrtie trace_mem. \\0: when mem_current_addr at mem_end_addr, it will stop at the mem_end_addr\\'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: RESTART_ENA
+        description: 'Configure whether or not enable auto-restart.\\1: enable\\0: disable\\'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+  - name: CONFIG
+    description: trace configuration register
+    addressOffset: 36
+    size: 32
+    fields:
+      - name: DM_TRIGGER_ENA
+        description: 'Configure whether or not enable cpu trigger action.\\1: enable\\0:disable\\'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RESET_ENA
+        description: 'Configure whether or not enable trace cpu haverest, when enabeld, if cpu have reset, the encoder will output a packet to report the address of the last instruction, and upon reset deassertion, the encoder start again.\\1: enabeld\\0: disabled\\'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: HALT_ENA
+        description: 'Configure whether or not enable trace cpu is halted, when enabeld, if the cpu halted, the encoder will output a packet to report the address of the last instruction, and upon halted deassertion, the encoder start again.When disabled, encoder will not report the last address before halted and first address after halted, cpu halted information will not be tracked. \\1: enabeld\\0: disabled\\'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: STALL_ENA
+        description: 'Configure whether or not enable stall cpu. When enabled, when the fifo almost full, the cpu will be stalled until the packets is able to write to fifo.\\1: enabled.\\0: disabled\\'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: FULL_ADDRESS
+        description: 'Configure whether or not enable full-address mode.\\1: full address mode.\\0: delta address mode\\'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: IMPLICIT_EXCEPT
+        description: 'Configure whether or not enabel implicit exception mode. When enabled,, do not sent exception address, only exception cause in exception packets.\\1: enabled\\0: disabled\\'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+  - name: FILTER_CONTROL
+    description: filter control register
+    addressOffset: 40
+    size: 32
+    fields:
+      - name: FILTER_EN
+        description: 'Configure whether or not enable filter unit. \\1: enable filter.\\ 0: always match'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: MATCH_COMP
+        description: when set, the comparator must be high in order for the filter to match
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: MATCH_PRIVILEGE
+        description: when set, match privilege levels specified by \hyperref[fielddesc:TRACEMATCHCHOICEPRIVILEGE]{TRACE_MATCH_CHOICE_PRIVILEGE}.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: MATCH_ECAUSE
+        description: when set, start matching from exception cause codes specified by \hyperref[fielddesc:TRACEMATCHCHOICEECAUSE]{TRACE_MATCH_CHOICE_ECAUSE}, and stop matching upon return from the 1st matching exception.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: MATCH_INTERRUPT
+        description: when set, start matching from a trap with the interrupt level codes specified by \hyperref[fielddesc:TRACEMATCHVALUEINTERRUPT]{TRACE_MATCH_VALUE_INTERRUPT}, and stop matching upon return from the 1st matching trap.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+  - name: FILTER_MATCH_CONTROL
+    description: filter match control register
+    addressOffset: 44
+    size: 32
+    fields:
+      - name: MATCH_CHOICE_PRIVILEGE
+        description: 'Select match which privilege level when \hyperref[fielddesc:TRACEMATCHPRIVILEGE]{TRACE_MATCH_PRIVILEGE} is set. \\1: machine mode. \\0: user mode'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: MATCH_VALUE_INTERRUPT
+        description: 'Select which match which itype when \hyperref[fielddesc:TRACEMATCHINTERRUPT]{TRACE_MATCH_INTERRUP} is set. \\1: match itype of 2. \\0: match itype or 1.'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: MATCH_CHOICE_ECAUSE
+        description: specified which ecause matched.
+        bitOffset: 2
+        bitWidth: 6
+        access: read-write
+  - name: FILTER_COMPARATOR_CONTROL
+    description: filter comparator match control register
+    addressOffset: 48
+    size: 32
+    fields:
+      - name: P_INPUT
+        description: 'Determines which input to compare against the primary comparator, \\0: iaddr, \\1: tval.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: P_FUNCTION
+        description: 'Select the primary comparator function. \\0: equal, \\1: not equal, \\2: less than, \\3: less than or equal, \\4: greater than, \\5: greater than or equal, \\other: always match'
+        bitOffset: 2
+        bitWidth: 3
+        access: read-write
+      - name: P_NOTIFY
+        description: Generate a trace packet explicitly reporting the address that cause the primary match
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: S_INPUT
+        description: 'Determines which input to compare against the secondary comparator, \\0: iaddr, \\1: tval.'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: S_FUNCTION
+        description: 'Select the secondary comparator function. \\0: equal, \\1: not equal, \\2: less than, \\3: less than or equal, \\4: greater than, \\5: greater than or equal, \\other: always match'
+        bitOffset: 10
+        bitWidth: 3
+        access: read-write
+      - name: S_NOTIFY
+        description: Generate a trace packet explicitly reporting the address that cause the secondary match
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: MATCH_MODE
+        description: '0: only primary matches, \\1: primary and secondary comparator both matches(P\&\&S),\\ 2:either primary or secondary comparator matches !(P\&\&S), \\3: set when primary matches and continue to match until after secondary comparator matches'
+        bitOffset: 16
+        bitWidth: 2
+        access: read-write
+  - name: FILTER_P_COMPARATOR_MATCH
+    description: primary comparator match value
+    addressOffset: 52
+    size: 32
+    fields:
+      - name: P_MATCH
+        description: primary comparator match value
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: FILTER_S_COMPARATOR_MATCH
+    description: secondary comparator match value
+    addressOffset: 56
+    size: 32
+    fields:
+      - name: S_MATCH
+        description: secondary comparator match value
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: RESYNC_PROLONGED
+    description: resync configuration register
+    addressOffset: 60
+    size: 32
+    resetValue: 128
+    fields:
+      - name: RESYNC_PROLONGED
+        description: count number, when count to this value, send a sync package
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+      - name: RESYNC_MODE
+        description: 'resyc mode sel: \\0: off, \\2: cycle count  \\3: package num count'
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+  - name: AHB_CONFIG
+    description: AHB config register
+    addressOffset: 64
+    size: 32
+    fields:
+      - name: HBURST
+        description: set hburst
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+      - name: MAX_INCR
+        description: set max continuous access for incr mode
+        bitOffset: 3
+        bitWidth: 3
+        access: read-write
+  - name: CLOCK_GATE
+    description: Clock gate control register
+    addressOffset: 68
+    size: 32
+    resetValue: 1
+    fields:
+      - name: CLK_EN
+        description: The bit is used to enable clock gate when access all registers in this module.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: DATE
+    description: Version control register
+    addressOffset: 1020
+    size: 32
+    resetValue: 35721984
+    fields:
+      - name: DATE
+        description: version control register. Note that this default value stored is the latest date when the hardware logic was updated.
+        bitOffset: 0
+        bitWidth: 28
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 76
+    usage: registers

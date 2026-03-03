@@ -1,0 +1,648 @@
+name: ADC
+description: (Analog to Digital Converter)
+groupName: ADC
+source: ESP32-P4 SVD v2
+registers:
+  - name: CTRL
+    description: Register
+    addressOffset: 0
+    size: 32
+    resetValue: 1077920032
+    fields:
+      - name: START_FORCE
+        description: need_des
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: START
+        description: need_des
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: WORK_MODE
+        description: '0: single mode, 1: double mode, 2: alternate mode'
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+      - name: SAR_SEL
+        description: '0: SAR1, 1: SAR2, only work for single SAR mode'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: SAR_CLK_GATED
+        description: need_des
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: SAR_CLK_DIV
+        description: SAR clock divider
+        bitOffset: 6
+        bitWidth: 8
+        access: read-write
+      - name: SAR1_PATT_LEN
+        description: 0 ~ 15 means length 1 ~ 16
+        bitOffset: 14
+        bitWidth: 4
+        access: read-write
+      - name: SAR2_PATT_LEN
+        description: 0 ~ 15 means length 1 ~ 16
+        bitOffset: 18
+        bitWidth: 4
+        access: read-write
+      - name: SAR1_PATT_P_CLEAR
+        description: clear the pointer of pattern table for DIG ADC1 CTRL
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: SAR2_PATT_P_CLEAR
+        description: clear the pointer of pattern table for DIG ADC2 CTRL
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: DATA_SAR_SEL
+        description: '1: sar_sel will be coded by the MSB of the 16-bit output data, in this case the resolution should not be larger than 11 bits.'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: DATA_TO_I2S
+        description: '1: I2S input data is from SAR ADC (for DMA), 0: I2S input data is from GPIO matrix'
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: XPD_SAR1_FORCE
+        description: force option to xpd sar1 blocks
+        bitOffset: 26
+        bitWidth: 2
+        access: read-write
+      - name: XPD_SAR2_FORCE
+        description: force option to xpd sar2 blocks
+        bitOffset: 28
+        bitWidth: 2
+        access: read-write
+      - name: WAIT_ARB_CYCLE
+        description: wait arbit signal stable after sar_done
+        bitOffset: 30
+        bitWidth: 2
+        access: read-write
+  - name: CTRL2
+    description: Register
+    addressOffset: 4
+    size: 32
+    resetValue: 41470
+    fields:
+      - name: MEAS_NUM_LIMIT
+        description: need_des
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: MAX_MEAS_NUM
+        description: max conversion number
+        bitOffset: 1
+        bitWidth: 8
+        access: read-write
+      - name: SAR1_INV
+        description: '1: data to DIG ADC1 CTRL is inverted, otherwise not'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: SAR2_INV
+        description: '1: data to DIG ADC2 CTRL is inverted, otherwise not'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: TIMER_SEL
+        description: '1: select saradc timer 0: i2s_ws trigger'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: TIMER_TARGET
+        description: to set saradc timer target
+        bitOffset: 12
+        bitWidth: 12
+        access: read-write
+      - name: TIMER_EN
+        description: to enable saradc timer trigger
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+  - name: FILTER_CTRL1
+    description: Register
+    addressOffset: 8
+    size: 32
+    fields:
+      - name: FILTER_FACTOR1
+        description: need_des
+        bitOffset: 26
+        bitWidth: 3
+        access: read-write
+      - name: FILTER_FACTOR0
+        description: need_des
+        bitOffset: 29
+        bitWidth: 3
+        access: read-write
+  - name: FSM_WAIT
+    description: Register
+    addressOffset: 12
+    size: 32
+    resetValue: 16713736
+    fields:
+      - name: XPD_WAIT
+        description: need_des
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: RSTB_WAIT
+        description: need_des
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: STANDBY_WAIT
+        description: need_des
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: SAR1_STATUS
+    description: Register
+    addressOffset: 16
+    size: 32
+    fields:
+      - name: SAR1_STATUS
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: SAR2_STATUS
+    description: Register
+    addressOffset: 20
+    size: 32
+    fields:
+      - name: SAR2_STATUS
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: SAR1_PATT_TAB1
+    description: Register
+    addressOffset: 24
+    size: 32
+    fields:
+      - name: SAR1_PATT_TAB1
+        description: item 0 ~ 3 for pattern table 1 (each item one byte)
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: SAR1_PATT_TAB2
+    description: Register
+    addressOffset: 28
+    size: 32
+    fields:
+      - name: SAR1_PATT_TAB2
+        description: Item 4 ~ 7 for pattern table 1 (each item one byte)
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: SAR1_PATT_TAB3
+    description: Register
+    addressOffset: 32
+    size: 32
+    fields:
+      - name: SAR1_PATT_TAB3
+        description: Item 8 ~ 11 for pattern table 1 (each item one byte)
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: SAR1_PATT_TAB4
+    description: Register
+    addressOffset: 36
+    size: 32
+    fields:
+      - name: SAR1_PATT_TAB4
+        description: Item 12 ~ 15 for pattern table 1 (each item one byte)
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: SAR2_PATT_TAB1
+    description: Register
+    addressOffset: 40
+    size: 32
+    fields:
+      - name: SAR2_PATT_TAB1
+        description: item 0 ~ 3 for pattern table 2 (each item one byte)
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: SAR2_PATT_TAB2
+    description: Register
+    addressOffset: 44
+    size: 32
+    fields:
+      - name: SAR2_PATT_TAB2
+        description: Item 4 ~ 7 for pattern table 2 (each item one byte)
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: SAR2_PATT_TAB3
+    description: Register
+    addressOffset: 48
+    size: 32
+    fields:
+      - name: SAR2_PATT_TAB3
+        description: Item 8 ~ 11 for pattern table 2 (each item one byte)
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: SAR2_PATT_TAB4
+    description: Register
+    addressOffset: 52
+    size: 32
+    fields:
+      - name: SAR2_PATT_TAB4
+        description: Item 12 ~ 15 for pattern table 2 (each item one byte)
+        bitOffset: 0
+        bitWidth: 24
+        access: read-write
+  - name: ARB_CTRL
+    description: Register
+    addressOffset: 56
+    size: 32
+    resetValue: 2304
+    fields:
+      - name: ARB_APB_FORCE
+        description: adc2 arbiter force to enableapb controller
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: ARB_RTC_FORCE
+        description: adc2 arbiter force to enable rtc controller
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: ARB_WIFI_FORCE
+        description: adc2 arbiter force to enable wifi controller
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: ARB_GRANT_FORCE
+        description: adc2 arbiter force grant
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: ARB_APB_PRIORITY
+        description: Set adc2 arbiterapb priority
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+      - name: ARB_RTC_PRIORITY
+        description: Set adc2 arbiter rtc priority
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+      - name: ARB_WIFI_PRIORITY
+        description: Set adc2 arbiter wifi priority
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+      - name: ARB_FIX_PRIORITY
+        description: adc2 arbiter uses fixed priority
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+  - name: FILTER_CTRL0
+    description: Register
+    addressOffset: 60
+    size: 32
+    resetValue: 7028736
+    fields:
+      - name: FILTER_CHANNEL1
+        description: need_des
+        bitOffset: 14
+        bitWidth: 5
+        access: read-write
+      - name: FILTER_CHANNEL0
+        description: apb_adc1_filter_factor
+        bitOffset: 19
+        bitWidth: 5
+        access: read-write
+      - name: FILTER_RESET
+        description: enable apb_adc1_filter
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: SAR1_DATA_STATUS
+    description: Register
+    addressOffset: 64
+    size: 32
+    fields:
+      - name: APB_SARADC1_DATA
+        description: need_des
+        bitOffset: 0
+        bitWidth: 17
+        access: read-only
+  - name: THRES0_CTRL
+    description: Register
+    addressOffset: 68
+    size: 32
+    resetValue: 262125
+    fields:
+      - name: THRES0_CHANNEL
+        description: need_des
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: THRES0_HIGH
+        description: saradc1's thres0 monitor thres
+        bitOffset: 5
+        bitWidth: 13
+        access: read-write
+      - name: THRES0_LOW
+        description: saradc1's thres0 monitor thres
+        bitOffset: 18
+        bitWidth: 13
+        access: read-write
+  - name: THRES1_CTRL
+    description: Register
+    addressOffset: 72
+    size: 32
+    resetValue: 262125
+    fields:
+      - name: THRES1_CHANNEL
+        description: need_des
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: THRES1_HIGH
+        description: saradc1's thres0 monitor thres
+        bitOffset: 5
+        bitWidth: 13
+        access: read-write
+      - name: THRES1_LOW
+        description: saradc1's thres0 monitor thres
+        bitOffset: 18
+        bitWidth: 13
+        access: read-write
+  - name: THRES_CTRL
+    description: Register
+    addressOffset: 76
+    size: 32
+    fields:
+      - name: THRES_ALL_EN
+        description: need_des
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: THRES3_EN
+        description: need_des
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: THRES2_EN
+        description: need_des
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+      - name: THRES1_EN
+        description: need_des
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: THRES0_EN
+        description: need_des
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: INT_ENA
+    description: Register
+    addressOffset: 80
+    size: 32
+    fields:
+      - name: THRES1_LOW_INT_ENA
+        description: need_des
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: THRES0_LOW_INT_ENA
+        description: need_des
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: THRES1_HIGH_INT_ENA
+        description: need_des
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: THRES0_HIGH_INT_ENA
+        description: need_des
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+      - name: SAR2_DONE_INT_ENA
+        description: need_des
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: SAR1_DONE_INT_ENA
+        description: need_des
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: INT_RAW
+    description: Register
+    addressOffset: 84
+    size: 32
+    fields:
+      - name: THRES1_LOW_INT_RAW
+        description: need_des
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: THRES0_LOW_INT_RAW
+        description: need_des
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: THRES1_HIGH_INT_RAW
+        description: need_des
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: THRES0_HIGH_INT_RAW
+        description: need_des
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+      - name: SAR2_DONE_INT_RAW
+        description: need_des
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: SAR1_DONE_INT_RAW
+        description: need_des
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: INT_ST
+    description: Register
+    addressOffset: 88
+    size: 32
+    fields:
+      - name: THRES1_LOW_INT_ST
+        description: need_des
+        bitOffset: 26
+        bitWidth: 1
+        access: read-only
+      - name: THRES0_LOW_INT_ST
+        description: need_des
+        bitOffset: 27
+        bitWidth: 1
+        access: read-only
+      - name: THRES1_HIGH_INT_ST
+        description: need_des
+        bitOffset: 28
+        bitWidth: 1
+        access: read-only
+      - name: THRES0_HIGH_INT_ST
+        description: need_des
+        bitOffset: 29
+        bitWidth: 1
+        access: read-only
+      - name: APB_SARADC2_DONE_INT_ST
+        description: need_des
+        bitOffset: 30
+        bitWidth: 1
+        access: read-only
+      - name: APB_SARADC1_DONE_INT_ST
+        description: need_des
+        bitOffset: 31
+        bitWidth: 1
+        access: read-only
+  - name: INT_CLR
+    description: Register
+    addressOffset: 92
+    size: 32
+    fields:
+      - name: THRES1_LOW_INT_CLR
+        description: need_des
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: THRES0_LOW_INT_CLR
+        description: need_des
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: THRES1_HIGH_INT_CLR
+        description: need_des
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: THRES0_HIGH_INT_CLR
+        description: need_des
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+      - name: APB_SARADC2_DONE_INT_CLR
+        description: need_des
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
+      - name: APB_SARADC1_DONE_INT_CLR
+        description: need_des
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: DMA_CONF
+    description: Register
+    addressOffset: 96
+    size: 32
+    resetValue: 255
+    fields:
+      - name: APB_ADC_EOF_NUM
+        description: the dma_in_suc_eof gen when sample cnt = spi_eof_num
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: APB_ADC_RESET_FSM
+        description: reset_apb_adc_state
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: APB_ADC_TRANS
+        description: enable apb_adc use spi_dma
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: SAR2_DATA_STATUS
+    description: Register
+    addressOffset: 100
+    size: 32
+    fields:
+      - name: APB_SARADC2_DATA
+        description: need_des
+        bitOffset: 0
+        bitWidth: 17
+        access: read-only
+  - name: CALI
+    description: Register
+    addressOffset: 104
+    size: 32
+    resetValue: 32768
+    fields:
+      - name: CFG
+        description: need_des
+        bitOffset: 0
+        bitWidth: 17
+        access: read-write
+  - name: RND_ECO_LOW
+    description: Register
+    addressOffset: 108
+    size: 32
+    fields:
+      - name: RND_ECO_LOW
+        description: rnd eco low
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: RND_ECO_HIGH
+    description: Register
+    addressOffset: 112
+    size: 32
+    resetValue: 4294967295
+    fields:
+      - name: RND_ECO_HIGH
+        description: rnd eco high
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: RND_ECO_CS
+    description: Register
+    addressOffset: 116
+    size: 32
+    fields:
+      - name: RND_ECO_EN
+        description: need_des
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RND_ECO_RESULT
+        description: need_des
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+  - name: CTRL_DATE
+    description: Register
+    addressOffset: 1020
+    size: 32
+    resetValue: 35725920
+    fields:
+      - name: CTRL_DATE
+        description: need_des
+        bitOffset: 0
+        bitWidth: 31
+        access: read-write
+      - name: CLK_EN
+        description: need_des
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 124
+    usage: registers

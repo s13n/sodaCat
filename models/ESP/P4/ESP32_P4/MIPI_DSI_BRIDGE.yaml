@@ -1,0 +1,656 @@
+name: MIPI_DSI_BRIDGE
+description: MIPI Camera Interface Bridge
+groupName: DSI_BRG
+source: ESP32-P4 SVD v2
+registers:
+  - name: CLK_EN
+    description: dsi bridge clk control register
+    addressOffset: 0
+    size: 32
+    fields:
+      - name: CLK_EN
+        description: this bit configures force_on of dsi_bridge register clock gate
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: EN
+    description: dsi bridge en register
+    addressOffset: 4
+    size: 32
+    fields:
+      - name: DSI_EN
+        description: 'this bit configures module enable of dsi_bridge. 0: disable, 1: enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: DMA_REQ_CFG
+    description: dsi bridge dma burst len register
+    addressOffset: 8
+    size: 32
+    resetValue: 128
+    fields:
+      - name: DMA_BURST_LEN
+        description: this field configures the num of 64-bit in one dma burst transfer, valid only when dsi_bridge as flow controller
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+  - name: RAW_NUM_CFG
+    description: dsi bridge raw number control register
+    addressOffset: 12
+    size: 32
+    resetValue: 230400
+    fields:
+      - name: RAW_NUM_TOTAL
+        description: this field configures number of total pix bits/64
+        bitOffset: 0
+        bitWidth: 22
+        access: read-write
+      - name: UNALIGN_64BIT_EN
+        description: 'this field configures whether the total pix bits is a multiple of 64bits. 0: align to 64-bit, 1: unalign to 64-bit'
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: RAW_NUM_TOTAL_SET
+        description: 'this bit configures enable of reload reg_raw_num_total to internal cnt. 0: disable, 1: enable. valid only when dsi_bridge as flow controller'
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: RAW_BUF_CREDIT_CTL
+    description: dsi bridge credit register
+    addressOffset: 16
+    size: 32
+    resetValue: 52429824
+    fields:
+      - name: CREDIT_THRD
+        description: this field configures the threshold whether dsi_bridge fifo can receive one more 64-bit, valid only when dsi_bridge as flow controller
+        bitOffset: 0
+        bitWidth: 15
+        access: read-write
+      - name: CREDIT_BURST_THRD
+        description: this field configures the threshold whether dsi_bridge fifo can receive one more dma burst, valid only when dsi_bridge as flow controller
+        bitOffset: 16
+        bitWidth: 15
+        access: read-write
+      - name: CREDIT_RESET
+        description: 'this bit configures internal credit cnt clear, 0: non, 1: reset. valid only when dsi_bridge as flow controller'
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: FIFO_FLOW_STATUS
+    description: dsi bridge raw buffer depth register
+    addressOffset: 20
+    size: 32
+    fields:
+      - name: RAW_BUF_DEPTH
+        description: this field configures the depth of dsi_bridge fifo depth
+        bitOffset: 0
+        bitWidth: 14
+        access: read-only
+  - name: PIXEL_TYPE
+    description: dsi bridge dpi type control register
+    addressOffset: 24
+    size: 32
+    fields:
+      - name: RAW_TYPE
+        description: 'this field configures the pixel type. 0: rgb888, 1:rgb666, 2:rgb565'
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: DPI_CONFIG
+        description: this field configures the pixel arrange type of dpi interface
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+      - name: DATA_IN_TYPE
+        description: 'input data type, 0: rgb, 1: yuv'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+  - name: DMA_BLOCK_INTERVAL
+    description: dsi bridge dma block interval control register
+    addressOffset: 28
+    size: 32
+    resetValue: 805315593
+    fields:
+      - name: DMA_BLOCK_SLOT
+        description: this field configures the max block_slot_cnt
+        bitOffset: 0
+        bitWidth: 10
+        access: read-write
+      - name: DMA_BLOCK_INTERVAL
+        description: this field configures the max block_interval_cnt, block_interval_cnt increased by 1 when block_slot_cnt if full
+        bitOffset: 10
+        bitWidth: 18
+        access: read-write
+      - name: RAW_NUM_TOTAL_AUTO_RELOAD
+        description: 'this bit configures enable of auto reload reg_raw_num_total, 0: disable, 1: enable'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: EN
+        description: 'this bit configures enable of interval between dma block transfer, 0: disable, 1: enable'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+  - name: DMA_REQ_INTERVAL
+    description: dsi bridge dma req interval control register
+    addressOffset: 32
+    size: 32
+    resetValue: 1
+    fields:
+      - name: DMA_REQ_INTERVAL
+        description: this field configures the interval between dma req events
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DPI_LCD_CTL
+    description: dsi bridge dpi signal control register
+    addressOffset: 36
+    size: 32
+    fields:
+      - name: DPISHUTDN
+        description: this bit configures dpishutdn signal in dpi interface
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: DPICOLORM
+        description: this bit configures dpicolorm signal in dpi interface
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: DPIUPDATECFG
+        description: this bit configures dpiupdatecfg signal in dpi interface
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+  - name: DPI_RSV_DPI_DATA
+    description: dsi bridge dpi reserved data register
+    addressOffset: 40
+    size: 32
+    resetValue: 16383
+    fields:
+      - name: DPI_RSV_DATA
+        description: this field controls the pixel data sent to dsi_host when dsi_bridge fifo underflow
+        bitOffset: 0
+        bitWidth: 30
+        access: read-write
+  - name: DPI_V_CFG0
+    description: dsi bridge dpi v config register 0
+    addressOffset: 48
+    size: 32
+    resetValue: 31457805
+    fields:
+      - name: VTOTAL
+        description: 'this field configures the total length of one frame (by line) for dpi output, must meet: reg_vtotal > reg_vdisp+reg_vsync+reg_vbank'
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: VDISP
+        description: this field configures the length of valid line (by line) for dpi output
+        bitOffset: 16
+        bitWidth: 12
+        access: read-write
+  - name: DPI_V_CFG1
+    description: dsi bridge dpi v config register 1
+    addressOffset: 52
+    size: 32
+    resetValue: 131105
+    fields:
+      - name: VBANK
+        description: this field configures the length between vsync and valid line (by line) for dpi output
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: VSYNC
+        description: this field configures the length of vsync (by line) for dpi output
+        bitOffset: 16
+        bitWidth: 12
+        access: read-write
+  - name: DPI_H_CFG0
+    description: dsi bridge dpi h config register 0
+    addressOffset: 56
+    size: 32
+    resetValue: 41943840
+    fields:
+      - name: HTOTAL
+        description: 'this field configures the total length of one line (by pixel num) for dpi output, must meet: reg_htotal > reg_hdisp+reg_hsync+reg_hbank'
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: HDISP
+        description: this field configures the length of valid pixel data (by pixel num) for dpi output
+        bitOffset: 16
+        bitWidth: 12
+        access: read-write
+  - name: DPI_H_CFG1
+    description: dsi bridge dpi h config register 1
+    addressOffset: 60
+    size: 32
+    resetValue: 6291504
+    fields:
+      - name: HBANK
+        description: this field configures the length between hsync and pixel data valid (by pixel num) for dpi output
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: HSYNC
+        description: this field configures the length of hsync (by pixel num) for dpi output
+        bitOffset: 16
+        bitWidth: 12
+        access: read-write
+  - name: DPI_MISC_CONFIG
+    description: dsi_bridge dpi misc config register
+    addressOffset: 64
+    size: 32
+    resetValue: 6608
+    fields:
+      - name: DPI_EN
+        description: 'this bit configures enable of dpi output, 0: disable, 1: enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: FIFO_UNDERRUN_DISCARD_VCNT
+        description: this field configures the underrun interrupt musk, when underrun occurs and line cnt is less then this field
+        bitOffset: 4
+        bitWidth: 12
+        access: read-write
+  - name: DPI_CONFIG_UPDATE
+    description: dsi_bridge dpi config update register
+    addressOffset: 68
+    size: 32
+    fields:
+      - name: DPI_CONFIG_UPDATE
+        description: write 1 to this bit to update dpi config register MIPI_DSI_BRG_DPI_*
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+  - name: INT_ENA
+    description: dsi_bridge interrupt enable register
+    addressOffset: 80
+    size: 32
+    fields:
+      - name: UNDERRUN_INT_ENA
+        description: write 1 to enables dpi_underrun_int_st field of MIPI_DSI_BRG_INT_ST_REG controlled by dpi_underrun  interrupt signal
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: INT_CLR
+    description: dsi_bridge interrupt clear register
+    addressOffset: 84
+    size: 32
+    fields:
+      - name: UNDERRUN_INT_CLR
+        description: write 1 to this bit to clear dpi_underrun_int_raw field of MIPI_DSI_BRG_INT_RAW_REG
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+  - name: INT_RAW
+    description: dsi_bridge raw interrupt register
+    addressOffset: 88
+    size: 32
+    fields:
+      - name: UNDERRUN_INT_RAW
+        description: the raw interrupt status of dpi_underrun
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: INT_ST
+    description: dsi_bridge masked interrupt register
+    addressOffset: 92
+    size: 32
+    fields:
+      - name: UNDERRUN_INT_ST
+        description: the masked interrupt status of dpi_underrun
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+  - name: HOST_BIST_CTL
+    description: dsi_bridge host bist control register
+    addressOffset: 96
+    size: 32
+    fields:
+      - name: BISTOK
+        description: bistok
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: BISTON
+        description: biston
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: HOST_TRIGGER_REV
+    description: dsi_bridge host trigger reverse control register
+    addressOffset: 100
+    size: 32
+    fields:
+      - name: TX_TRIGGER_REV_EN
+        description: 'tx_trigger reverse. 0: disable, 1: enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RX_TRIGGER_REV_EN
+        description: 'rx_trigger reverse. 0: disable, 1: enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: BLK_RAW_NUM_CFG
+    description: dsi_bridge block raw number control register
+    addressOffset: 104
+    size: 32
+    resetValue: 230400
+    fields:
+      - name: BLK_RAW_NUM_TOTAL
+        description: this field configures number of total block pix bits/64
+        bitOffset: 0
+        bitWidth: 22
+        access: read-write
+      - name: BLK_RAW_NUM_TOTAL_SET
+        description: write 1 to reload reg_blk_raw_num_total to internal cnt
+        bitOffset: 31
+        bitWidth: 1
+        access: write-only
+  - name: DMA_FRAME_INTERVAL
+    description: dsi_bridge dam frame interval control register
+    addressOffset: 108
+    size: 32
+    resetValue: 536880137
+    fields:
+      - name: DMA_FRAME_SLOT
+        description: this field configures the max frame_slot_cnt
+        bitOffset: 0
+        bitWidth: 10
+        access: read-write
+      - name: DMA_FRAME_INTERVAL
+        description: this field configures the max frame_interval_cnt, frame_interval_cnt increased by 1 when frame_slot_cnt if full
+        bitOffset: 10
+        bitWidth: 18
+        access: read-write
+      - name: DMA_MULTIBLK_EN
+        description: 'this bit configures enable multi-blk transfer, 0: disable, 1: enable'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: EN
+        description: 'this bit configures enable interval between frame transfer, 0: disable, 1: enable'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+  - name: MEM_AUX_CTRL
+    description: dsi_bridge mem aux control register
+    addressOffset: 112
+    size: 32
+    resetValue: 4896
+    fields:
+      - name: DSI_MEM_AUX_CTRL
+        description: this field configures dsi_bridge fifo memory aux ctrl
+        bitOffset: 0
+        bitWidth: 14
+        access: read-write
+  - name: RDN_ECO_CS
+    description: dsi_bridge rdn eco cs register
+    addressOffset: 116
+    size: 32
+    fields:
+      - name: RDN_ECO_EN
+        description: rdn_eco_en
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RDN_ECO_RESULT
+        description: rdn_eco_result
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+  - name: RDN_ECO_LOW
+    description: dsi_bridge rdn eco all low register
+    addressOffset: 120
+    size: 32
+    fields:
+      - name: RDN_ECO_LOW
+        description: rdn_eco_low
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: RDN_ECO_HIGH
+    description: dsi_bridge rdn eco all high register
+    addressOffset: 124
+    size: 32
+    resetValue: 4294967295
+    fields:
+      - name: RDN_ECO_HIGH
+        description: rdn_eco_high
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: HOST_CTRL
+    description: dsi_bridge host control register
+    addressOffset: 128
+    size: 32
+    resetValue: 1
+    fields:
+      - name: DSI_CFG_REF_CLK_EN
+        description: 'this bit configures the clk enable refclk and cfg_clk of dsi_host. 0: disable, 1: enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: MEM_CLK_CTRL
+    description: dsi_bridge mem force on control register
+    addressOffset: 132
+    size: 32
+    fields:
+      - name: DSI_BRIDGE_MEM_CLK_FORCE_ON
+        description: 'this bit configures the clock force on of dsi_bridge fifo memory. 0: disable, 1: force on'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: DSI_MEM_CLK_FORCE_ON
+        description: 'this bit configures the clock force on of dpi fifo memory. 0: disable, 1: force on'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: DMA_FLOW_CTRL
+    description: dsi_bridge dma flow controller register
+    addressOffset: 136
+    size: 32
+    resetValue: 17
+    fields:
+      - name: DSI_DMA_FLOW_CONTROLLER
+        description: 'this bit configures the flow controller, 0: dmac as flow controller, 1:dsi_bridge as flow controller'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: DMA_FLOW_MULTIBLK_NUM
+        description: this field configures the num of blocks when multi-blk is enable and dmac as flow controller
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+  - name: RAW_BUF_ALMOST_EMPTY_THRD
+    description: dsi_bridge buffer empty threshold register
+    addressOffset: 140
+    size: 32
+    resetValue: 512
+    fields:
+      - name: DSI_RAW_BUF_ALMOST_EMPTY_THRD
+        description: this field configures the fifo almost empty threshold, is valid only when dmac as flow controller
+        bitOffset: 0
+        bitWidth: 11
+        access: read-write
+  - name: YUV_CFG
+    description: dsi_bridge yuv format config register
+    addressOffset: 144
+    size: 32
+    fields:
+      - name: PROTOCAL
+        description: 'this bit configures yuv protoocl, 0: bt.601, 1: bt.709'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: YUV_PIX_ENDIAN
+        description: 'this bit configures yuv pixel endian, 0: y0u0y1v1y2u2y3v3, 1: y3u3y2v2y1u1y0v0'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: YUV422_FORMAT
+        description: 'this field configures yuv422 store format, 0: yuyv, 1: yvyu, 2: uyvy, 3: vyuy'
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+  - name: PHY_LP_LOOPBACK_CTRL
+    description: dsi phy lp_loopback test ctrl
+    addressOffset: 148
+    size: 32
+    fields:
+      - name: PHY_LP_TXDATAESC_1
+        description: txdataesc_1 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: PHY_LP_TXREQUESTESC_1
+        description: txrequestesc_1 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_TXVALIDESC_1
+        description: txvalidesc_1 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_TXLPDTESC_1
+        description: txlpdtesc_1 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_BASEDIR_1
+        description: basedir_1 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_TXDATAESC_0
+        description: txdataesc_0 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: PHY_LP_TXREQUESTESC_0
+        description: txrequestesc_0 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_TXVALIDESC_0
+        description: txvalidesc_0 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_TXLPDTESC_0
+        description: txlpdtesc_0 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_BASEDIR_0
+        description: basedir_0 ctrl when enable dsi phy lp_loopback_test
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_LOOPBACK_CHECK
+        description: dsi phy lp_loopback test start check
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: PHY_LP_LOOPBACK_CHECK_DONE
+        description: dsi phy lp_loopback test check done
+        bitOffset: 29
+        bitWidth: 1
+        access: read-only
+      - name: PHY_LP_LOOPBACK_EN
+        description: dsi phy lp_loopback ctrl en
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: PHY_LP_LOOPBACK_OK
+        description: result of dsi phy lp_loopback test
+        bitOffset: 31
+        bitWidth: 1
+        access: read-only
+  - name: PHY_HS_LOOPBACK_CTRL
+    description: dsi phy hp_loopback test ctrl
+    addressOffset: 152
+    size: 32
+    resetValue: 512
+    fields:
+      - name: PHY_HS_TXDATAHS_1
+        description: txdatahs_1 ctrl when enable dsi phy hs_loopback_test
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: PHY_HS_TXREQUESTDATAHS_1
+        description: txrequestdatahs_1 ctrl when enable dsi phy hs_loopback_test
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: PHY_HS_BASEDIR_1
+        description: basedir_1 ctrl when enable dsi phy hs_loopback_test
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: PHY_HS_TXDATAHS_0
+        description: txdatahs_0 ctrl when enable dsi phy hs_loopback_test
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: PHY_HS_TXREQUESTDATAHS_0
+        description: txrequestdatahs_0 ctrl when enable dsi phy hs_loopback_test
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: PHY_HS_BASEDIR_0
+        description: basedir_0 ctrl when enable dsi phy hs_loopback_test
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: PHY_HS_TXREQUESTHSCLK
+        description: txrequesthsclk when  enable dsi phy hs_loopback_test
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: PHY_HS_LOOPBACK_CHECK
+        description: dsi phy hs_loopback test start check
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: PHY_HS_LOOPBACK_CHECK_DONE
+        description: dsi phy hs_loopback test check done
+        bitOffset: 29
+        bitWidth: 1
+        access: read-only
+      - name: PHY_HS_LOOPBACK_EN
+        description: dsi phy hs_loopback ctrl en
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: PHY_HS_LOOPBACK_OK
+        description: result of dsi phy hs_loopback test
+        bitOffset: 31
+        bitWidth: 1
+        access: read-only
+  - name: PHY_LOOPBACK_CNT
+    description: loopback test cnt
+    addressOffset: 156
+    size: 32
+    resetValue: 4194368
+    fields:
+      - name: PHY_HS_CHECK_CNT_TH
+        description: hs_loopback test check cnt
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: PHY_LP_CHECK_CNT_TH
+        description: lp_loopback test check cnt
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 148
+    usage: registers
+interrupts:
+  - name: INTR

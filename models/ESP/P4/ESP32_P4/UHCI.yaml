@@ -1,0 +1,721 @@
+name: UHCI
+description: Universal Host Controller Interface 0
+groupName: UHCI
+source: ESP32-P4 SVD v2
+registers:
+  - name: CONF0
+    description: Configuration Register0
+    addressOffset: 0
+    size: 32
+    resetValue: 1760
+    fields:
+      - name: TX_RST
+        description: Write 1 then write 0 to this bit to reset decode state machine.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RX_RST
+        description: Write 1 then write 0 to this bit to reset encode state machine.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: UART_SEL
+        description: Select which uart to connect with GDMA.
+        bitOffset: 2
+        bitWidth: 3
+        access: read-write
+      - name: SEPER_EN
+        description: Set this bit to separate the data frame using a special char.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: HEAD_EN
+        description: Set this bit to encode the data packet with a formatting header.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: CRC_REC_EN
+        description: Set this bit to enable UHCI to receive the 16 bit CRC.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: UART_IDLE_EOF_EN
+        description: If this bit is set to 1 UHCI will end the payload receiving process when UART has been in idle state.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: LEN_EOF_EN
+        description: If this bit is set to 1 UHCI decoder receiving payload data is end when the receiving byte count has reached the specified value. The value is payload length indicated by UHCI packet header when UHCI_HEAD_EN is 1 or the value is configuration value when UHCI_HEAD_EN is 0. If this bit is set to 0 UHCI decoder receiving payload data is end when 0xc0 is received.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: ENCODE_CRC_EN
+        description: Set this bit to enable data integrity checking by appending a 16 bit CCITT-CRC to end of the payload.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: CLK_EN
+        description: "1'b1: Force clock on for register. 1'b0: Support clock only when application writes registers."
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: UART_RX_BRK_EOF_EN
+        description: If this bit is set to 1 UHCI will end payload receive process when NULL frame is received by UART.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+  - name: INT_RAW
+    description: Interrupt Raw Register
+    addressOffset: 4
+    size: 32
+    fields:
+      - name: RX_START_INT_RAW
+        description: Indicates the raw interrupt of UHCI_RX_START_INT. Interrupt will be triggered when delimiter is sent successfully.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TX_START_INT_RAW
+        description: Indicates the raw interrupt of UHCI_TX_START_INT. Interrupt will be triggered when DMA detects delimiter.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: RX_HUNG_INT_RAW
+        description: Indicates the raw interrupt of UHCI_RX_HUNG_INT. Interrupt will be triggered when the required time of DMA receiving data  exceeds the configuration value.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TX_HUNG_INT_RAW
+        description: Indicates the raw interrupt of UHCI_TX_HUNG_INT. Interrupt will be triggered when the required time of DMA reading RAM data  exceeds the configuration value.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: SEND_S_REG_Q_INT_RAW
+        description: Indicates the raw interrupt of UHCI_SEND_S_REG_Q_INT. Interrupt will be triggered when UHCI sends short packet successfully with single_send mode.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: SEND_A_REG_Q_INT_RAW
+        description: Indicates the raw interrupt of UHCI_SEND_A_REG_Q_INT. Interrupt will be triggered when UHCI sends short packet successfully with always_send mode.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: OUT_EOF_INT_RAW
+        description: Indicates the raw interrupt of UHCI_OUT_EOF_INT. Interrupt will be triggered when there are errors in EOF.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: APP_CTRL0_INT_RAW
+        description: Indicates the raw interrupt of UHCI_APP_CTRL0_INT. Interrupt will be triggered when UHCI_APP_CTRL0_IN_SET is set to 1.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: APP_CTRL1_INT_RAW
+        description: Indicates the raw interrupt of UHCI_APP_CTRL1_INT. Interrupt will be triggered when UHCI_APP_CTRL1_IN_SET is set to 1.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+  - name: INT_ST
+    description: Interrupt Status Register
+    addressOffset: 8
+    size: 32
+    fields:
+      - name: RX_START_INT_ST
+        description: Indicates the interrupt status of UHCI_RX_START_INT.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: TX_START_INT_ST
+        description: Indicates the interrupt status of UHCI_TX_START_INT.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: RX_HUNG_INT_ST
+        description: Indicates the interrupt status of UHCI_RX_HUNG_INT.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: TX_HUNG_INT_ST
+        description: Indicates the interrupt status of UHCI_TX_HUNG_INT.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: SEND_S_REG_Q_INT_ST
+        description: Indicates the interrupt status of UHCI_SEND_S_REG_Q_INT.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: SEND_A_REG_Q_INT_ST
+        description: Indicates the interrupt status of UHCI_SEND_A_REG_Q_INT.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+      - name: OUTLINK_EOF_ERR_INT_ST
+        description: Indicates the interrupt status of UHCI_OUT_EOF_INT.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: APP_CTRL0_INT_ST
+        description: Indicates the interrupt status of UHCI_APP_CTRL0_INT.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: APP_CTRL1_INT_ST
+        description: Indicates the interrupt status of UHCI_APP_CTRL1_INT.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+  - name: INT_ENA
+    description: Interrupt Enable Register
+    addressOffset: 12
+    size: 32
+    fields:
+      - name: RX_START_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_RX_START_INT.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TX_START_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_TX_START_INT.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: RX_HUNG_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_RX_HUNG_INT.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TX_HUNG_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_TX_HUNG_INT.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: SEND_S_REG_Q_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_SEND_S_REG_Q_INT.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: SEND_A_REG_Q_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_SEND_A_REG_Q_INT.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: OUTLINK_EOF_ERR_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_OUT_EOF_INT.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: APP_CTRL0_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_APP_CTRL0_INT.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: APP_CTRL1_INT_ENA
+        description: Set this bit to enable the interrupt of UHCI_APP_CTRL1_INT.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+  - name: INT_CLR
+    description: Interrupt Clear Register
+    addressOffset: 16
+    size: 32
+    fields:
+      - name: RX_START_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_RX_START_INT.
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: TX_START_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_TX_START_INT.
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: RX_HUNG_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_RX_HUNG_INT.
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: TX_HUNG_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_TX_HUNG_INT.
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: SEND_S_REG_Q_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_SEND_S_REG_Q_INT.
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: SEND_A_REG_Q_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_SEND_A_REG_Q_INT.
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: OUTLINK_EOF_ERR_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_OUT_EOF_INT.
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: APP_CTRL0_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_APP_CTRL0_INT.
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: APP_CTRL1_INT_CLR
+        description: Set this bit to clear the raw interrupt of UHCI_APP_CTRL1_INT.
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+  - name: CONF1
+    description: Configuration Register1
+    addressOffset: 20
+    size: 32
+    resetValue: 51
+    fields:
+      - name: CHECK_SUM_EN
+        description: Set this bit to enable head checksum check when receiving.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CHECK_SEQ_EN
+        description: Set this bit to  enable sequence number check when receiving.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: CRC_DISABLE
+        description: Set this bit to support CRC calculation, and data integrity check bit should 1.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: SAVE_HEAD
+        description: Set this bit to save data packet head when UHCI receive data.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TX_CHECK_SUM_RE
+        description: Set this bit to encode data packet with checksum.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: TX_ACK_NUM_RE
+        description: Set this bit to encode data packet with ACK when reliable data packet is ready.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: WAIT_SW_START
+        description: Set this bit to enable UHCI encoder transfer to ST_SW_WAIT status.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: SW_START
+        description: Set this bit to transmit data packet if UCHI_ENCODE_STATE is ST_SW_WAIT.
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+  - name: STATE0
+    description: Receive Status Register
+    addressOffset: 24
+    size: 32
+    fields:
+      - name: RX_ERR_CAUSE
+        description: "Indicates the error types when DMA receives the error frame. 3'b001: UHCI packet checksum error. 3'b010: UHCI packet sequence number error. 3'b011: UHCI packet CRC bit error. 3'b100: find 0xC0, but received packet is uncompleted. 3'b101: 0xC0 is not found, but received packet is completed. 3'b110: CRC check error."
+        bitOffset: 0
+        bitWidth: 3
+        access: read-only
+      - name: DECODE_STATE
+        description: Indicates UHCI decoder status.
+        bitOffset: 3
+        bitWidth: 3
+        access: read-only
+  - name: STATE1
+    description: Transmit Status Register
+    addressOffset: 28
+    size: 32
+    fields:
+      - name: ENCODE_STATE
+        description: Indicates UHCI encoder status.
+        bitOffset: 0
+        bitWidth: 3
+        access: read-only
+  - name: ESCAPE_CONF
+    description: Escapes Configuration Register0
+    addressOffset: 32
+    size: 32
+    resetValue: 51
+    fields:
+      - name: TX_C0_ESC_EN
+        description: Set this bit to enable resolve char 0xC0 when DMA receiving data.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TX_DB_ESC_EN
+        description: Set this bit to enable resolve char 0xDB when DMA receiving data.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TX_11_ESC_EN
+        description: Set this bit to enable resolve flow control char 0x11 when DMA receiving data.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TX_13_ESC_EN
+        description: Set this bit to enable resolve flow control char 0x13 when DMA receiving data.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: RX_C0_ESC_EN
+        description: Set this bit to enable replacing 0xC0 with special char when DMA receiving data.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: RX_DB_ESC_EN
+        description: Set this bit to enable replacing 0xDB with special char when DMA receiving data.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: RX_11_ESC_EN
+        description: Set this bit to enable replacing 0x11 with special char when DMA receiving data.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: RX_13_ESC_EN
+        description: Set this bit to enable replacing 0x13 with special char when DMA receiving data.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+  - name: HUNG_CONF
+    description: Hung Configuration Register0
+    addressOffset: 36
+    size: 32
+    resetValue: 8456208
+    fields:
+      - name: TXFIFO_TIMEOUT
+        description: Stores the timeout value. DMA generates UHCI_TX_HUNG_INT for timeout when receiving data.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: TXFIFO_TIMEOUT_SHIFT
+        description: Configures the maximum counter value.
+        bitOffset: 8
+        bitWidth: 3
+        access: read-write
+      - name: TXFIFO_TIMEOUT_ENA
+        description: Set this bit to enable TX FIFO timeout when receiving.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: RXFIFO_TIMEOUT
+        description: Stores the timeout value. DMA generates UHCI_TX_HUNG_INT for timeout when reading RAM data.
+        bitOffset: 12
+        bitWidth: 8
+        access: read-write
+      - name: RXFIFO_TIMEOUT_SHIFT
+        description: Configures the maximum counter value.
+        bitOffset: 20
+        bitWidth: 3
+        access: read-write
+      - name: RXFIFO_TIMEOUT_ENA
+        description: Set this bit to enable TX FIFO timeout when DMA sending data.
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+  - name: ACK_NUM
+    description: Ack Value Configuration Register0
+    addressOffset: 40
+    size: 32
+    fields:
+      - name: ACK_NUM
+        description: Indicates the ACK number during software flow control.
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+      - name: LOAD
+        description: Set this bit to load the ACK value of UHCI_ACK_NUM.
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+  - name: RX_HEAD
+    description: Head Register
+    addressOffset: 44
+    size: 32
+    fields:
+      - name: RX_HEAD
+        description: Stores the head of received packet.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: QUICK_SENT
+    description: UCHI Quick send Register
+    addressOffset: 48
+    size: 32
+    fields:
+      - name: SINGLE_SEND_NUM
+        description: Configures single_send mode.
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+      - name: SINGLE_SEND_EN
+        description: Set this bit to enable sending short packet with single_send mode.
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: ALWAYS_SEND_NUM
+        description: Configures always_send mode.
+        bitOffset: 4
+        bitWidth: 3
+        access: read-write
+      - name: ALWAYS_SEND_EN
+        description: Set this bit to enable sending short packet with always_send mode.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+  - name: REG_Q0_WORD0
+    description: Q0_WORD0 Quick Send Register
+    addressOffset: 52
+    size: 32
+    fields:
+      - name: SEND_Q0_WORD0
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q0_WORD1
+    description: Q0_WORD1 Quick Send Register
+    addressOffset: 56
+    size: 32
+    fields:
+      - name: SEND_Q0_WORD1
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q1_WORD0
+    description: Q1_WORD0 Quick Send Register
+    addressOffset: 60
+    size: 32
+    fields:
+      - name: SEND_Q1_WORD0
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q1_WORD1
+    description: Q1_WORD1 Quick Send Register
+    addressOffset: 64
+    size: 32
+    fields:
+      - name: SEND_Q1_WORD1
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q2_WORD0
+    description: Q2_WORD0 Quick Send Register
+    addressOffset: 68
+    size: 32
+    fields:
+      - name: SEND_Q2_WORD0
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q2_WORD1
+    description: Q2_WORD1 Quick Send Register
+    addressOffset: 72
+    size: 32
+    fields:
+      - name: SEND_Q2_WORD1
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q3_WORD0
+    description: Q3_WORD0 Quick Send Register
+    addressOffset: 76
+    size: 32
+    fields:
+      - name: SEND_Q3_WORD0
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q3_WORD1
+    description: Q3_WORD1 Quick Send Register
+    addressOffset: 80
+    size: 32
+    fields:
+      - name: SEND_Q3_WORD1
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q4_WORD0
+    description: Q4_WORD0 Quick Send Register
+    addressOffset: 84
+    size: 32
+    fields:
+      - name: SEND_Q4_WORD0
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q4_WORD1
+    description: Q4_WORD1 Quick Send Register
+    addressOffset: 88
+    size: 32
+    fields:
+      - name: SEND_Q4_WORD1
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q5_WORD0
+    description: Q5_WORD0 Quick Send Register
+    addressOffset: 92
+    size: 32
+    fields:
+      - name: SEND_Q5_WORD0
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q5_WORD1
+    description: Q5_WORD1 Quick Send Register
+    addressOffset: 96
+    size: 32
+    fields:
+      - name: SEND_Q5_WORD1
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q6_WORD0
+    description: Q6_WORD0 Quick Send Register
+    addressOffset: 100
+    size: 32
+    fields:
+      - name: SEND_Q6_WORD0
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: REG_Q6_WORD1
+    description: Q6_WORD1 Quick Send Register
+    addressOffset: 104
+    size: 32
+    fields:
+      - name: SEND_Q6_WORD1
+        description: Serves as quick sending register in specified mode in UHCI_ALWAYS_SEND_NUM or UHCI_SINGLE_SEND_NUM.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: ESC_CONF0
+    description: Escapes Sequence Configuration Register0
+    addressOffset: 108
+    size: 32
+    resetValue: 14474176
+    fields:
+      - name: SEPER_CHAR
+        description: Configures the delimiter for encoding, default value is 0xC0.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: SEPER_ESC_CHAR0
+        description: Configures the first char of SLIP escape character, default value is 0xDB.
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: SEPER_ESC_CHAR1
+        description: Configures the second char of SLIP escape character, default value is 0xDC.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: ESC_CONF1
+    description: Escapes Sequence Configuration Register1
+    addressOffset: 112
+    size: 32
+    resetValue: 14539739
+    fields:
+      - name: ESC_SEQ0
+        description: Configures the char needing encoding, which is 0xDB as flow control char by default.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: ESC_SEQ0_CHAR0
+        description: Configures the first char of SLIP escape character, default value is 0xDB.
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: ESC_SEQ0_CHAR1
+        description: Configures the second char of SLIP escape character, default value is 0xDD.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: ESC_CONF2
+    description: Escapes Sequence Configuration Register2
+    addressOffset: 116
+    size: 32
+    resetValue: 14605073
+    fields:
+      - name: ESC_SEQ1
+        description: Configures the char needing encoding, which is 0x11 as flow control char by default.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: ESC_SEQ1_CHAR0
+        description: Configures the first char of SLIP escape character, default value is 0xDB.
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: ESC_SEQ1_CHAR1
+        description: Configures the second char of SLIP escape character, default value is 0xDE.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: ESC_CONF3
+    description: Escapes Sequence Configuration Register3
+    addressOffset: 120
+    size: 32
+    resetValue: 14670611
+    fields:
+      - name: ESC_SEQ2
+        description: Configures the char needing encoding, which is 0x13 as flow control char by default.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: ESC_SEQ2_CHAR0
+        description: Configures the first char of SLIP escape character, default value is 0xDB.
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: ESC_SEQ2_CHAR1
+        description: Configures the second char of SLIP escape character, default value is 0xDF.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: PKT_THRES
+    description: UCHI Packet Length Configuration Register
+    addressOffset: 124
+    size: 32
+    resetValue: 128
+    fields:
+      - name: PKT_THRS
+        description: Configures the data packet's maximum length when UHCI_HEAD_EN is 0.
+        bitOffset: 0
+        bitWidth: 13
+        access: read-write
+  - name: DATE
+    description: Version Register
+    addressOffset: 128
+    size: 32
+    resetValue: 35655936
+    fields:
+      - name: DATE
+        description: Configures version.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 132
+    usage: registers
+interrupts:
+  - name: INTR

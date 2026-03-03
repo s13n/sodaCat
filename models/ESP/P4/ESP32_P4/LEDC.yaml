@@ -1,0 +1,1138 @@
+name: LEDC
+description: LED Control PWM (Pulse Width Modulation)
+groupName: LEDC
+source: ESP32-P4 SVD v2
+registers:
+  - dim: 8
+    dimIncrement: 20
+    name: CH%s_CONF0
+    description: Configuration register 0 for channel %s
+    addressOffset: 0
+    size: 32
+    fields:
+      - name: TIMER_SEL_CH
+        description: 'Configures which timer is channel %s selected.\\0: Select timer0\\1: Select timer1\\2: Select timer2\\3: Select timer3'
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+      - name: SIG_OUT_EN_CH
+        description: 'Configures whether or not to enable signal output on channel %s.\\0: Signal output disable\\1: Signal output enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: IDLE_LV_CH
+        description: 'Configures the output value when channel %s is inactive. Valid only when  LEDC_SIG_OUT_EN_CH%s is 0.\\0: Output level is low\\1: Output level is high'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: PARA_UP_CH
+        description: 'Configures whether or not to update LEDC_HPOINT_CH%s, LEDC_DUTY_START_CH%s, LEDC_SIG_OUT_EN_CH%s, LEDC_TIMER_SEL_CH%s, LEDC_DUTY_NUM_CH%s, LEDC_DUTY_CYCLE_CH%s, LEDC_DUTY_SCALE_CH%s, LEDC_DUTY_INC_CH%s, and LEDC_OVF_CNT_EN_CH%s fields for channel %s, and will be automatically cleared by hardware.\\0: Invalid. No effect\\1: Update'
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: OVF_NUM_CH
+        description: Configures the maximum times of overflow minus 1.The LEDC_OVF_CNT_CH%s_INT interrupt will be triggered when channel %s overflows for (LEDC_OVF_NUM_CH%s + 1) times.
+        bitOffset: 5
+        bitWidth: 10
+        access: read-write
+      - name: OVF_CNT_EN_CH
+        description: 'Configures whether or not to enable the ovf_cnt of channel %s.\\0: Disable\\1: Enable'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_RESET_CH
+        description: 'Configures whether or not to reset the  ovf_cnt of channel %s.\\0: Invalid. No effect\\1: Reset the ovf_cnt'
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+  - dim: 8
+    dimIncrement: 20
+    name: CH%s_HPOINT
+    description: High point register for channel %s
+    addressOffset: 4
+    size: 32
+    fields:
+      - name: HPOINT_CH
+        description: Configures high point of signal output on channel %s. The output value changes to high when the selected timers has reached the value specified by this register.
+        bitOffset: 0
+        bitWidth: 20
+        access: read-write
+  - dim: 8
+    dimIncrement: 20
+    name: CH%s_DUTY
+    description: Initial duty cycle register for channel %s
+    addressOffset: 8
+    size: 32
+    fields:
+      - name: DUTY_CH
+        description: Configures the duty of signal output on channel %s.
+        bitOffset: 0
+        bitWidth: 25
+        access: read-write
+  - dim: 8
+    dimIncrement: 20
+    name: CH%s_CONF1
+    description: Configuration register 1 for channel %s
+    addressOffset: 12
+    size: 32
+    fields:
+      - name: DUTY_START_CH
+        description: 'Configures whether the duty cycle fading configurations take effect.\\0: Not take effect\\1: Take effect'
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - dim: 8
+    dimIncrement: 20
+    name: CH%s_DUTY_R
+    description: Current duty cycle register for channel %s
+    addressOffset: 16
+    size: 32
+    fields:
+      - name: DUTY_CH_R
+        description: Represents the current duty of output signal on channel %s.
+        bitOffset: 0
+        bitWidth: 25
+        access: read-only
+  - dim: 4
+    dimIncrement: 8
+    name: TIMER%s_CONF
+    description: Timer %s configuration register
+    addressOffset: 160
+    size: 32
+    resetValue: 16777216
+    fields:
+      - name: TIMER_DUTY_RES
+        description: Configures the range of the counter in timer %s.
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: CLK_DIV_TIMER
+        description: Configures the divisor for the divider in timer %s.The least significant eight bits represent the fractional part.
+        bitOffset: 5
+        bitWidth: 18
+        access: read-write
+      - name: TIMER_PAUSE
+        description: 'Configures whether or not to pause the counter in timer %s.\\0: Normal\\1: Pause'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: TIMER_RST
+        description: 'Configures whether or not to reset timer %s. The counter will show 0 after reset.\\0: Not reset\\1: Reset'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: TICK_SEL_TIMER
+        description: Configures which clock is timer %s selected. Unused.
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: TIMER_PARA_UP
+        description: 'Configures whether or not to update LEDC_CLK_DIV_TIMER%s and LEDC_TIMER%s_DUTY_RES.\\0: Invalid. No effect\\1: Update'
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+  - dim: 4
+    dimIncrement: 8
+    name: TIMER%s_VALUE
+    description: Timer %s current counter value register
+    addressOffset: 164
+    size: 32
+    fields:
+      - name: TIMER_CNT
+        description: Represents the current counter value of timer %s.
+        bitOffset: 0
+        bitWidth: 20
+        access: read-only
+  - name: INT_RAW
+    description: Interrupt raw status register
+    addressOffset: 192
+    size: 32
+    fields:
+      - name: TIMER0_OVF_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_TIMER0_OVF_INT. Triggered when the timer0 has reached its maximum counter value.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TIMER1_OVF_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_TIMER1_OVF_INT. Triggered when the timer1 has reached its maximum counter value.'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TIMER2_OVF_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_TIMER2_OVF_INT. Triggered when the timer2 has reached its maximum counter value.'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TIMER3_OVF_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_TIMER3_OVF_INT. Triggered when the timer3 has reached its maximum counter value.'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH0_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_DUTY_CHNG_END_CH0_INT. Triggered when the fading of duty has finished.'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH1_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_DUTY_CHNG_END_CH1_INT. Triggered when the fading of duty has finished.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH2_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_DUTY_CHNG_END_CH2_INT. Triggered when the fading of duty has finished.'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH3_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_DUTY_CHNG_END_CH3_INT. Triggered when the fading of duty has finished.'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH4_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_DUTY_CHNG_END_CH4_INT. Triggered when the fading of duty has finished.'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH5_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_DUTY_CHNG_END_CH5_INT. Triggered when the fading of duty has finished.'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH6_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_DUTY_CHNG_END_CH6_INT. Triggered when the fading of duty has finished.'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH7_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_DUTY_CHNG_END_CH7_INT. Triggered when the fading of duty has finished.'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH0_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_OVF_CNT_CH0_INT. Triggered when the ovf_cnt has reached the value specified by LEDC_OVF_NUM_CH0.'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH1_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_OVF_CNT_CH1_INT. Triggered when the ovf_cnt has reached the value specified by LEDC_OVF_NUM_CH1.'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH2_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_OVF_CNT_CH2_INT. Triggered when the ovf_cnt has reached the value specified by LEDC_OVF_NUM_CH2.'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH3_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_OVF_CNT_CH3_INT. Triggered when the ovf_cnt has reached the value specified by LEDC_OVF_NUM_CH3.'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH4_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_OVF_CNT_CH4_INT. Triggered when the ovf_cnt has reached the value specified by LEDC_OVF_NUM_CH4.'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH5_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_OVF_CNT_CH5_INT. Triggered when the ovf_cnt has reached the value specified by LEDC_OVF_NUM_CH5.'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH6_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_OVF_CNT_CH6_INT. Triggered when the ovf_cnt has reached the value specified by LEDC_OVF_NUM_CH6.'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH7_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of LEDC_OVF_CNT_CH7_INT. Triggered when the ovf_cnt has reached the value specified by LEDC_OVF_NUM_CH7.'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+  - name: INT_ST
+    description: Interrupt masked status register
+    addressOffset: 196
+    size: 32
+    fields:
+      - name: TIMER0_OVF_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_TIMER0_OVF_INT. Valid only when LEDC_TIMER0_OVF_INT_ENA is set to 1.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: TIMER1_OVF_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_TIMER1_OVF_INT. Valid only when LEDC_TIMER1_OVF_INT_ENA is set to 1.'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: TIMER2_OVF_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_TIMER2_OVF_INT. Valid only when LEDC_TIMER2_OVF_INT_ENA is set to 1.'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: TIMER3_OVF_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_TIMER3_OVF_INT. Valid only when LEDC_TIMER3_OVF_INT_ENA is set to 1.'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: DUTY_CHNG_END_CH0_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_DUTY_CHNG_END_CH0_INT. Valid only when LEDC_DUTY_CHNG_END_CH0_INT_ENA is set to 1.'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: DUTY_CHNG_END_CH1_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_DUTY_CHNG_END_CH1_INT. Valid only when LEDC_DUTY_CHNG_END_CH1_INT_ENA is set to 1.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+      - name: DUTY_CHNG_END_CH2_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_DUTY_CHNG_END_CH2_INT. Valid only when LEDC_DUTY_CHNG_END_CH2_INT_ENA is set to 1.'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: DUTY_CHNG_END_CH3_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_DUTY_CHNG_END_CH3_INT. Valid only when LEDC_DUTY_CHNG_END_CH3_INT_ENA is set to 1.'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: DUTY_CHNG_END_CH4_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_DUTY_CHNG_END_CH4_INT. Valid only when LEDC_DUTY_CHNG_END_CH4_INT_ENA is set to 1.'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+      - name: DUTY_CHNG_END_CH5_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_DUTY_CHNG_END_CH5_INT. Valid only when LEDC_DUTY_CHNG_END_CH5_INT_ENA is set to 1.'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+      - name: DUTY_CHNG_END_CH6_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_DUTY_CHNG_END_CH6_INT. Valid only when LEDC_DUTY_CHNG_END_CH6_INT_ENA is set to 1.'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+      - name: DUTY_CHNG_END_CH7_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_DUTY_CHNG_END_CH7_INT. Valid only when LEDC_DUTY_CHNG_END_CH7_INT_ENA is set to 1.'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: OVF_CNT_CH0_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_OVF_CNT_CH0_INT. Valid only when LEDC_OVF_CNT_CH0_INT_ENA is set to 1.'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-only
+      - name: OVF_CNT_CH1_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_OVF_CNT_CH1_INT. Valid only when LEDC_OVF_CNT_CH1_INT_ENA is set to 1.'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-only
+      - name: OVF_CNT_CH2_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_OVF_CNT_CH2_INT. Valid only when LEDC_OVF_CNT_CH2_INT_ENA is set to 1.'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-only
+      - name: OVF_CNT_CH3_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_OVF_CNT_CH3_INT. Valid only when LEDC_OVF_CNT_CH3_INT_ENA is set to 1.'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+      - name: OVF_CNT_CH4_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_OVF_CNT_CH4_INT. Valid only when LEDC_OVF_CNT_CH4_INT_ENA is set to 1.'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: OVF_CNT_CH5_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_OVF_CNT_CH5_INT. Valid only when LEDC_OVF_CNT_CH5_INT_ENA is set to 1.'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-only
+      - name: OVF_CNT_CH6_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_OVF_CNT_CH6_INT. Valid only when LEDC_OVF_CNT_CH6_INT_ENA is set to 1.'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-only
+      - name: OVF_CNT_CH7_INT_ST
+        description: 'Masked status bit: The masked interrupt status of LEDC_OVF_CNT_CH7_INT. Valid only when LEDC_OVF_CNT_CH7_INT_ENA is set to 1.'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-only
+  - name: INT_ENA
+    description: Interrupt enable register
+    addressOffset: 200
+    size: 32
+    fields:
+      - name: TIMER0_OVF_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_TIMER0_OVF_INT.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TIMER1_OVF_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_TIMER1_OVF_INT.'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TIMER2_OVF_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_TIMER2_OVF_INT.'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TIMER3_OVF_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_TIMER3_OVF_INT.'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH0_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_DUTY_CHNG_END_CH0_INT.'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH1_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_DUTY_CHNG_END_CH1_INT.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH2_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_DUTY_CHNG_END_CH2_INT.'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH3_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_DUTY_CHNG_END_CH3_INT.'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH4_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_DUTY_CHNG_END_CH4_INT.'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH5_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_DUTY_CHNG_END_CH5_INT.'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH6_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_DUTY_CHNG_END_CH6_INT.'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: DUTY_CHNG_END_CH7_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_DUTY_CHNG_END_CH7_INT.'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH0_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_OVF_CNT_CH0_INT.'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH1_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_OVF_CNT_CH1_INT.'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH2_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_OVF_CNT_CH2_INT.'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH3_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_OVF_CNT_CH3_INT.'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH4_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_OVF_CNT_CH4_INT.'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH5_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_OVF_CNT_CH5_INT.'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH6_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_OVF_CNT_CH6_INT.'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: OVF_CNT_CH7_INT_ENA
+        description: 'Enable bit: Write 1 to enable LEDC_OVF_CNT_CH7_INT.'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+  - name: INT_CLR
+    description: Interrupt clear register
+    addressOffset: 204
+    size: 32
+    fields:
+      - name: TIMER0_OVF_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_TIMER0_OVF_INT.'
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: TIMER1_OVF_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_TIMER1_OVF_INT.'
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: TIMER2_OVF_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_TIMER2_OVF_INT.'
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: TIMER3_OVF_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_TIMER3_OVF_INT.'
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: DUTY_CHNG_END_CH0_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_DUTY_CHNG_END_CH0_INT.'
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: DUTY_CHNG_END_CH1_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_DUTY_CHNG_END_CH1_INT.'
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: DUTY_CHNG_END_CH2_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_DUTY_CHNG_END_CH2_INT.'
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: DUTY_CHNG_END_CH3_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_DUTY_CHNG_END_CH3_INT.'
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: DUTY_CHNG_END_CH4_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_DUTY_CHNG_END_CH4_INT.'
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: DUTY_CHNG_END_CH5_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_DUTY_CHNG_END_CH5_INT.'
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: DUTY_CHNG_END_CH6_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_DUTY_CHNG_END_CH6_INT.'
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: DUTY_CHNG_END_CH7_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_DUTY_CHNG_END_CH7_INT.'
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: OVF_CNT_CH0_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_OVF_CNT_CH0_INT.'
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: OVF_CNT_CH1_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_OVF_CNT_CH1_INT.'
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: OVF_CNT_CH2_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_OVF_CNT_CH2_INT.'
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: OVF_CNT_CH3_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_OVF_CNT_CH3_INT.'
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: OVF_CNT_CH4_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_OVF_CNT_CH4_INT.'
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: OVF_CNT_CH5_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_OVF_CNT_CH5_INT.'
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: OVF_CNT_CH6_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_OVF_CNT_CH6_INT.'
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: OVF_CNT_CH7_INT_CLR
+        description: 'Clear bit: Write 1 to clear LEDC_OVF_CNT_CH7_INT.'
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+  - dim: 8
+    dimIncrement: 4
+    name: CH%s_GAMMA_CONF
+    description: Ledc ch%s gamma config register.
+    addressOffset: 256
+    size: 32
+    fields:
+      - name: CH_GAMMA_ENTRY_NUM
+        description: Configures the number of duty cycle fading rages for LEDC ch%s.
+        bitOffset: 0
+        bitWidth: 5
+        access: read-write
+      - name: CH_GAMMA_PAUSE
+        description: 'Configures whether or not to pause duty cycle fading of LEDC ch%s.\\0: Invalid. No effect\\1: Pause'
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: CH_GAMMA_RESUME
+        description: 'Configures whether or nor to resume duty cycle fading of LEDC ch%s.\\0: Invalid. No effect\\1: Resume'
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+  - name: EVT_TASK_EN0
+    description: Ledc event task enable bit register0.
+    addressOffset: 288
+    size: 32
+    fields:
+      - name: EVT_DUTY_CHNG_END_CH0_EN
+        description: 'Configures whether or not to enable the ledc_ch0_duty_chng_end event.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: EVT_DUTY_CHNG_END_CH1_EN
+        description: 'Configures whether or not to enable the ledc_ch1_duty_chng_end event.\\0: Disable\\1: Enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: EVT_DUTY_CHNG_END_CH2_EN
+        description: 'Configures whether or not to enable the ledc_ch2_duty_chng_end event.\\0: Disable\\1: Enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: EVT_DUTY_CHNG_END_CH3_EN
+        description: 'Configures whether or not to enable the ledc_ch3_duty_chng_end event.\\0: Disable\\1: Enable'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: EVT_DUTY_CHNG_END_CH4_EN
+        description: 'Configures whether or not to enable the ledc_ch4_duty_chng_end event.\\0: Disable\\1: Enable'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: EVT_DUTY_CHNG_END_CH5_EN
+        description: 'Configures whether or not to enable the ledc_ch5_duty_chng_end event.\\0: Disable\\1: Enable'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: EVT_DUTY_CHNG_END_CH6_EN
+        description: 'Configures whether or not to enable the ledc_ch6_duty_chng_end event.\\0: Disable\\1: Enable'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: EVT_DUTY_CHNG_END_CH7_EN
+        description: 'Configures whether or not to enable the ledc_ch7_duty_chng_end event.\\0: Disable\\1: Enable'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OVF_CNT_PLS_CH0_EN
+        description: 'Configures whether or not to enable the ledc_ch0_ovf_cnt_pls event.\\0: Disable\\1: Enable'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OVF_CNT_PLS_CH1_EN
+        description: 'Configures whether or not to enable the ledc_ch1_ovf_cnt_pls event.\\0: Disable\\1: Enable'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OVF_CNT_PLS_CH2_EN
+        description: 'Configures whether or not to enable the ledc_ch2_ovf_cnt_pls event.\\0: Disable\\1: Enable'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OVF_CNT_PLS_CH3_EN
+        description: 'Configures whether or not to enable the ledc_ch3_ovf_cnt_pls event.\\0: Disable\\1: Enable'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OVF_CNT_PLS_CH4_EN
+        description: 'Configures whether or not to enable the ledc_ch4_ovf_cnt_pls event.\\0: Disable\\1: Enable'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OVF_CNT_PLS_CH5_EN
+        description: 'Configures whether or not to enable the ledc_ch5_ovf_cnt_pls event.\\0: Disable\\1: Enable'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OVF_CNT_PLS_CH6_EN
+        description: 'Configures whether or not to enable the ledc_ch6_ovf_cnt_pls event.\\0: Disable\\1: Enable'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OVF_CNT_PLS_CH7_EN
+        description: 'Configures whether or not to enable the ledc_ch7_ovf_cnt_pls event.\\0: Disable\\1: Enable'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIME_OVF_TIMER0_EN
+        description: 'Configures whether or not to enable the ledc_timer0_ovf event.\\0: Disable\\1: Enable'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIME_OVF_TIMER1_EN
+        description: 'Configures whether or not to enable the ledc_timer1_ovf event.\\0: Disable\\1: Enable'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIME_OVF_TIMER2_EN
+        description: 'Configures whether or not to enable the ledc_timer2_ovf event.\\0: Disable\\1: Enable'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIME_OVF_TIMER3_EN
+        description: 'Configures whether or not to enable the ledc_timer3_ovf event.\\0: Disable\\1: Enable'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIME0_CMP_EN
+        description: 'Configures whether or not to enable the ledc_timer0_cmp event.\\0: Disable\\1: Enable'
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIME1_CMP_EN
+        description: 'Configures whether or not to enable the ledc_timer1_cmp event.\\0: Disable\\1: Enable'
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIME2_CMP_EN
+        description: 'Configures whether or not to enable the ledc_timer2_cmp event.\\0: Disable\\1: Enable'
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIME3_CMP_EN
+        description: 'Configures whether or not to enable the ledc_timer3_cmp event.\\0: Disable\\1: Enable'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: TASK_DUTY_SCALE_UPDATE_CH0_EN
+        description: 'Configures whether or not to enable the ledc_ch0_duty_scale_update task.\\0: Disable\\1: Enable'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: TASK_DUTY_SCALE_UPDATE_CH1_EN
+        description: 'Configures whether or not to enable the ledc_ch1_duty_scale_update task.\\0: Disable\\1: Enable'
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: TASK_DUTY_SCALE_UPDATE_CH2_EN
+        description: 'Configures whether or not to enable the ledc_ch2_duty_scale_update task.\\0: Disable\\1: Enable'
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: TASK_DUTY_SCALE_UPDATE_CH3_EN
+        description: 'Configures whether or not to enable the ledc_ch3_duty_scale_update task.\\0: Disable\\1: Enable'
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: TASK_DUTY_SCALE_UPDATE_CH4_EN
+        description: 'Configures whether or not to enable the ledc_ch4_duty_scale_update task.\\0: Disable\\1: Enable'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: TASK_DUTY_SCALE_UPDATE_CH5_EN
+        description: 'Configures whether or not to enable the ledc_ch5_duty_scale_update task.\\0: Disable\\1: Enable'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+      - name: TASK_DUTY_SCALE_UPDATE_CH6_EN
+        description: 'Configures whether or not to enable the ledc_ch6_duty_scale_update task.\\0: Disable\\1: Enable'
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: TASK_DUTY_SCALE_UPDATE_CH7_EN
+        description: 'Configures whether or not to enable the ledc_ch7_duty_scale_update task.\\0: Disable\\1: Enable'
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: EVT_TASK_EN1
+    description: Ledc event task enable bit register1.
+    addressOffset: 292
+    size: 32
+    fields:
+      - name: TASK_TIMER0_RES_UPDATE_EN
+        description: 'Configures whether or not to enable ledc_timer0_res_update task.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER1_RES_UPDATE_EN
+        description: 'Configures whether or not to enable ledc_timer1_res_update task.\\0: Disable\\1: Enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER2_RES_UPDATE_EN
+        description: 'Configures whether or not to enable ledc_timer2_res_update task.\\0: Disable\\1: Enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER3_RES_UPDATE_EN
+        description: 'Configures whether or not to enable ledc_timer3_res_update task.\\0: Disable\\1: Enable'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER0_CAP_EN
+        description: 'Configures whether or not to enable ledc_timer0_cap task.\\0: Disable\\1: Enable'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER1_CAP_EN
+        description: 'Configures whether or not to enable ledc_timer1_cap task.\\0: Disable\\1: Enable'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER2_CAP_EN
+        description: 'Configures whether or not to enable ledc_timer2_cap task.\\0: Disable\\1: Enable'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER3_CAP_EN
+        description: 'Configures whether or not to enable ledc_timer3_cap task.\\0: Disable\\1: Enable'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: TASK_SIG_OUT_DIS_CH0_EN
+        description: 'Configures whether or not to enable ledc_ch0_sig_out_dis task.\\0: Disable\\1: Enable'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: TASK_SIG_OUT_DIS_CH1_EN
+        description: 'Configures whether or not to enable ledc_ch1_sig_out_dis task.\\0: Disable\\1: Enable'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: TASK_SIG_OUT_DIS_CH2_EN
+        description: 'Configures whether or not to enable ledc_ch2_sig_out_dis task.\\0: Disable\\1: Enable'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: TASK_SIG_OUT_DIS_CH3_EN
+        description: 'Configures whether or not to enable ledc_ch3_sig_out_dis task.\\0: Disable\\1: Enable'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: TASK_SIG_OUT_DIS_CH4_EN
+        description: 'Configures whether or not to enable ledc_ch4_sig_out_dis task.\\0: Disable\\1: Enable'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: TASK_SIG_OUT_DIS_CH5_EN
+        description: 'Configures whether or not to enable ledc_ch5_sig_out_dis task.\\0: Disable\\1: Enable'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: TASK_SIG_OUT_DIS_CH6_EN
+        description: 'Configures whether or not to enable ledc_ch6_sig_out_dis task.\\0: Disable\\1: Enable'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: TASK_SIG_OUT_DIS_CH7_EN
+        description: 'Configures whether or not to enable ledc_ch7_sig_out_dis task.\\0: Disable\\1: Enable'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: TASK_OVF_CNT_RST_CH0_EN
+        description: 'Configures whether or not to enable ledc_ch0_ovf_cnt_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: TASK_OVF_CNT_RST_CH1_EN
+        description: 'Configures whether or not to enable ledc_ch1_ovf_cnt_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: TASK_OVF_CNT_RST_CH2_EN
+        description: 'Configures whether or not to enable ledc_ch2_ovf_cnt_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: TASK_OVF_CNT_RST_CH3_EN
+        description: 'Configures whether or not to enable ledc_ch3_ovf_cnt_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: TASK_OVF_CNT_RST_CH4_EN
+        description: 'Configures whether or not to enable ledc_ch4_ovf_cnt_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: TASK_OVF_CNT_RST_CH5_EN
+        description: 'Configures whether or not to enable ledc_ch5_ovf_cnt_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: TASK_OVF_CNT_RST_CH6_EN
+        description: 'Configures whether or not to enable ledc_ch6_ovf_cnt_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: TASK_OVF_CNT_RST_CH7_EN
+        description: 'Configures whether or not to enable ledc_ch7_ovf_cnt_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER0_RST_EN
+        description: 'Configures whether or not to enable ledc_timer0_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER1_RST_EN
+        description: 'Configures whether or not to enable ledc_timer1_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER2_RST_EN
+        description: 'Configures whether or not to enable ledc_timer2_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER3_RST_EN
+        description: 'Configures whether or not to enable ledc_timer3_rst task.\\0: Disable\\1: Enable'
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER0_PAUSE_RESUME_EN
+        description: 'Configures whether or not to enable ledc_timer0_pause_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER1_PAUSE_RESUME_EN
+        description: 'Configures whether or not to enable ledc_timer1_pause_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER2_PAUSE_RESUME_EN
+        description: 'Configures whether or not to enable ledc_timer2_pause_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER3_PAUSE_RESUME_EN
+        description: 'Configures whether or not to enable ledc_timer3_pause_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: EVT_TASK_EN2
+    description: Ledc event task enable bit register2.
+    addressOffset: 296
+    size: 32
+    fields:
+      - name: TASK_GAMMA_RESTART_CH0_EN
+        description: 'Configures whether or not to enable ledc_ch0_gamma_restart task.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESTART_CH1_EN
+        description: 'Configures whether or not to enable ledc_ch1_gamma_restart task.\\0: Disable\\1: Enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESTART_CH2_EN
+        description: 'Configures whether or not to enable ledc_ch2_gamma_restart task.\\0: Disable\\1: Enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESTART_CH3_EN
+        description: 'Configures whether or not to enable ledc_ch3_gamma_restart task.\\0: Disable\\1: Enable'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESTART_CH4_EN
+        description: 'Configures whether or not to enable ledc_ch4_gamma_restart task.\\0: Disable\\1: Enable'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESTART_CH5_EN
+        description: 'Configures whether or not to enable ledc_ch5_gamma_restart task.\\0: Disable\\1: Enable'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESTART_CH6_EN
+        description: 'Configures whether or not to enable ledc_ch6_gamma_restart task.\\0: Disable\\1: Enable'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESTART_CH7_EN
+        description: 'Configures whether or not to enable ledc_ch7_gamma_restart task.\\0: Disable\\1: Enable'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_PAUSE_CH0_EN
+        description: 'Configures whether or not to enable ledc_ch0_gamma_pause task.\\0: Disable\\1: Enable'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_PAUSE_CH1_EN
+        description: 'Configures whether or not to enable ledc_ch1_gamma_pause task.\\0: Disable\\1: Enable'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_PAUSE_CH2_EN
+        description: 'Configures whether or not to enable ledc_ch2_gamma_pause task.\\0: Disable\\1: Enable'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_PAUSE_CH3_EN
+        description: 'Configures whether or not to enable ledc_ch3_gamma_pause task.\\0: Disable\\1: Enable'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_PAUSE_CH4_EN
+        description: 'Configures whether or not to enable ledc_ch4_gamma_pause task.\\0: Disable\\1: Enable'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_PAUSE_CH5_EN
+        description: 'Configures whether or not to enable ledc_ch5_gamma_pause task.\\0: Disable\\1: Enable'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_PAUSE_CH6_EN
+        description: 'Configures whether or not to enable ledc_ch6_gamma_pause task.\\0: Disable\\1: Enable'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_PAUSE_CH7_EN
+        description: 'Configures whether or not to enable ledc_ch7_gamma_pause task.\\0: Disable\\1: Enable'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESUME_CH0_EN
+        description: 'Configures whether or not to enable ledc_ch0_gamma_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESUME_CH1_EN
+        description: 'Configures whether or not to enable ledc_ch1_gamma_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESUME_CH2_EN
+        description: 'Configures whether or not to enable ledc_ch2_gamma_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESUME_CH3_EN
+        description: 'Configures whether or not to enable ledc_ch3_gamma_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESUME_CH4_EN
+        description: 'Configures whether or not to enable ledc_ch4_gamma_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESUME_CH5_EN
+        description: 'Configures whether or not to enable ledc_ch5_gamma_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESUME_CH6_EN
+        description: 'Configures whether or not to enable ledc_ch6_gamma_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GAMMA_RESUME_CH7_EN
+        description: 'Configures whether or not to enable ledc_ch7_gamma_resume task.\\0: Disable\\1: Enable'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+  - dim: 4
+    dimIncrement: 4
+    name: TIMER%s_CMP
+    description: Ledc timer%s compare value register.
+    addressOffset: 320
+    size: 32
+    fields:
+      - name: TIMER_CMP
+        description: Configures the comparison value for LEDC timer%s.
+        bitOffset: 0
+        bitWidth: 20
+        access: read-write
+  - dim: 4
+    dimIncrement: 4
+    name: TIMER%s_CNT_CAP
+    description: Ledc timer%s captured count value register.
+    addressOffset: 336
+    size: 32
+    fields:
+      - name: TIMER_CNT_CAP
+        description: Represents the captured LEDC timer%s count value.
+        bitOffset: 0
+        bitWidth: 20
+        access: read-only
+  - name: CONF
+    description: Global configuration register
+    addressOffset: 368
+    size: 32
+    fields:
+      - name: APB_CLK_SEL
+        description: 'Configures the clock source for the four timers.\\0: APB_CLK\\1: RC_FAST_CLK\\2: XTAL_CLK\\3: Invalid. No clock'
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+      - name: GAMMA_RAM_CLK_EN_CH0
+        description: 'Configures whether or not to open LEDC ch0 gamma ram clock gate.\\0: Open the clock gate only when application writes or reads LEDC ch0 gamma ram\\1: Force open the clock gate for LEDC ch0 gamma ram'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: GAMMA_RAM_CLK_EN_CH1
+        description: 'Configures whether or not to open LEDC ch1 gamma ram clock gate.\\0: Open the clock gate only when application writes or reads LEDC ch1 gamma ram\\1: Force open the clock gate for LEDC ch1 gamma ram'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: GAMMA_RAM_CLK_EN_CH2
+        description: 'Configures whether or not to open LEDC ch2 gamma ram clock gate.\\0: Open the clock gate only when application writes or reads LEDC ch2 gamma ram\\1: Force open the clock gate for LEDC ch2 gamma ram'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: GAMMA_RAM_CLK_EN_CH3
+        description: 'Configures whether or not to open LEDC ch3 gamma ram clock gate.\\0: Open the clock gate only when application writes or reads LEDC ch3 gamma ram\\1: Force open the clock gate for LEDC ch3 gamma ram'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: GAMMA_RAM_CLK_EN_CH4
+        description: 'Configures whether or not to open LEDC ch4 gamma ram clock gate.\\0: Open the clock gate only when application writes or reads LEDC ch4 gamma ram\\1: Force open the clock gate for LEDC ch4 gamma ram'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: GAMMA_RAM_CLK_EN_CH5
+        description: 'Configures whether or not to open LEDC ch5 gamma ram clock gate.\\0: Open the clock gate only when application writes or reads LEDC ch5 gamma ram\\1: Force open the clock gate for LEDC ch5 gamma ram'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: GAMMA_RAM_CLK_EN_CH6
+        description: 'Configures whether or not to open LEDC ch6 gamma ram clock gate.\\0: Open the clock gate only when application writes or reads LEDC ch6 gamma ram\\1: Force open the clock gate for LEDC ch6 gamma ram'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: GAMMA_RAM_CLK_EN_CH7
+        description: 'Configures whether or not to open LEDC ch7 gamma ram clock gate.\\0: Open the clock gate only when application writes or reads LEDC ch7 gamma ram\\1: Force open the clock gate for LEDC ch7 gamma ram'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: CLK_EN
+        description: 'Configures whether or not to open register clock gate.\\0: Open the clock gate only when application writes registers\\1: Force open the clock gate for register'
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: DATE
+    description: Version control register
+    addressOffset: 372
+    size: 32
+    resetValue: 36712560
+    fields:
+      - name: LEDC_DATE
+        description: Configures the version.
+        bitOffset: 0
+        bitWidth: 28
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 292
+    usage: registers
+interrupts:
+  - name: INTR

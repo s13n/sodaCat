@@ -1,0 +1,1333 @@
+name: JPEG
+description: Codec
+groupName: JPEG
+source: ESP32-P4 SVD v2
+registers:
+  - name: CONFIG
+    description: Control and configuration registers
+    addressOffset: 0
+    size: 32
+    resetValue: 4229464
+    fields:
+      - name: FSM_RST
+        description: fsm reset
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: JPEG_START
+        description: start to compress a new pic(in dma reg mode)
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: QNR_PRESITION
+        description: 0:8bit qnr,1:12bit qnr(TBD)
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: FF_CHECK_EN
+        description: enable whether to add "00" after "ff"
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: SAMPLE_SEL
+        description: 0:yuv444,1:yuv422, 2:yuv420
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+      - name: DMA_LINKLIST_MODE
+        description: 1:use linklist to configure dma
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: DEBUG_DIRECT_OUT_EN
+        description: 0:normal mode,1:debug mode for direct output from input
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: GRAY_SEL
+        description: 0:use non-fifo way to access qnr ram,1:use fifo way to access qnr ram
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: LQNR_TBL_SEL
+        description: choose  luminance quntization table id(TBD)
+        bitOffset: 9
+        bitWidth: 2
+        access: read-write
+      - name: CQNR_TBL_SEL
+        description: choose  chrominance quntization table id (TBD)
+        bitOffset: 11
+        bitWidth: 2
+        access: read-write
+      - name: COLOR_SPACE
+        description: configure picture's color space:0-rb888,1-yuv422,2-rgb565, 3-gray
+        bitOffset: 13
+        bitWidth: 2
+        access: read-write
+      - name: DHT_FIFO_EN
+        description: 0:use non-fifo way to write dht len_total/codemin/value table,1:use fifo way to write dht len_total/codemin/value table. Reading dht len_total/codemin/value table only has nonfifo way
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: MEM_CLK_FORCE_ON
+        description: force memory's clock enabled
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: JFIF_VER
+        description: decode pause period to trigger decode_timeout int, the timeout periods =2 power (reg_decode_timeout_thres) -1
+        bitOffset: 17
+        bitWidth: 6
+        access: read-write
+      - name: DECODE_TIMEOUT_TASK_SEL
+        description: '0: software use reset to abort decode process ,1: decoder abort decode process by itself'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: SOFT_RST
+        description: when set to 1, soft reset JPEG module except jpeg_reg module
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: FIFO_RST
+        description: fifo reset
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: PIXEL_REV
+        description: reverse the source color pixel
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: TAILER_EN
+        description: set this bit to add EOI of "0xffd9" at the end of bitstream
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: PAUSE_EN
+        description: set this bit to pause jpeg encoding
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: MEM_FORCE_PD
+        description: '0: no operation,1:force jpeg memory to power down'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+      - name: MEM_FORCE_PU
+        description: '0: no operation,1:force jpeg memory to power up'
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+      - name: MODE
+        description: '0:encoder mode, 1: decoder mode'
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: DQT_INFO
+    description: Control and configuration registers
+    addressOffset: 4
+    size: 32
+    resetValue: 50462976
+    fields:
+      - name: T0_DQT_INFO
+        description: Configure dqt table0's quantization coefficient precision in bit[7:4], configure dqt table0's table id in bit[3:0]
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: T1_DQT_INFO
+        description: Configure dqt table1's quantization coefficient precision in bit[7:4], configure dqt table1's table id in bit[3:0]
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: T2_DQT_INFO
+        description: Configure dqt table2's quantization coefficient precision in bit[7:4], configure dqt table2's table id in bit[3:0]
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: T3_DQT_INFO
+        description: Configure dqt table3's quantization coefficient precision in bit[7:4], configure dqt table3's table id in bit[3:0]
+        bitOffset: 24
+        bitWidth: 8
+        access: read-write
+  - name: PIC_SIZE
+    description: Control and configuration registers
+    addressOffset: 8
+    size: 32
+    resetValue: 41943520
+    fields:
+      - name: VA
+        description: configure picture's height. when encode, the max configurable bits is 14, when decode, the max configurable bits is 16
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: HA
+        description: configure picture's width. when encode, the max configurable bits is 14, when decode, the max configurable bits is 16
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+  - name: T0QNR
+    description: Control and configuration registers
+    addressOffset: 16
+    size: 32
+    fields:
+      - name: T0_QNR_VAL
+        description: write this reg to configure 64 quantization coefficient in t0 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: T1QNR
+    description: Control and configuration registers
+    addressOffset: 20
+    size: 32
+    fields:
+      - name: CHROMINANCE_QNR_VAL
+        description: write this reg to configure 64 quantization coefficient in t1 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: T2QNR
+    description: Control and configuration registers
+    addressOffset: 24
+    size: 32
+    fields:
+      - name: T2_QNR_VAL
+        description: write this reg to configure 64 quantization coefficient in t2 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: T3QNR
+    description: Control and configuration registers
+    addressOffset: 28
+    size: 32
+    fields:
+      - name: T3_QNR_VAL
+        description: write this reg to configure 64 quantization coefficient in t3 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DECODE_CONF
+    description: Control and configuration registers
+    addressOffset: 32
+    size: 32
+    resetValue: 1594032128
+    fields:
+      - name: RESTART_INTERVAL
+        description: configure restart interval in DRI marker when decode
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: COMPONENT_NUM
+        description: configure number of components in frame when decode
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: SW_DHT_EN
+        description: software decode dht table enable
+        bitOffset: 24
+        bitWidth: 1
+        access: read-only
+      - name: SOS_CHECK_BYTE_NUM
+        description: Configure the byte number to check next sos marker in the multi-scan picture after one scan is decoded down. The real check number is reg_sos_check_byte_num+1
+        bitOffset: 25
+        bitWidth: 2
+        access: read-write
+      - name: RST_CHECK_BYTE_NUM
+        description: Configure the byte number to check next rst marker after one rst interval is decoded down. The real check number is reg_rst_check_byte_num+1
+        bitOffset: 27
+        bitWidth: 2
+        access: read-write
+      - name: MULTI_SCAN_ERR_CHECK
+        description: reserved for decoder
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+      - name: DEZIGZAG_READY_CTL
+        description: reserved for decoder
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+  - name: C0
+    description: Control and configuration registers
+    addressOffset: 36
+    size: 32
+    resetValue: 4352
+    fields:
+      - name: DQT_TBL_SEL
+        description: choose  c0 quntization table id (TBD)
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: Y_FACTOR
+        description: vertical sampling factor of c0
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: X_FACTOR
+        description: horizontal sampling factor of c0
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+      - name: ID
+        description: the identifier of c0
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: C1
+    description: Control and configuration registers
+    addressOffset: 40
+    size: 32
+    resetValue: 4352
+    fields:
+      - name: DQT_TBL_SEL
+        description: choose  c1 quntization table id (TBD)
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: Y_FACTOR
+        description: vertical sampling factor of c1
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: X_FACTOR
+        description: horizontal sampling factor of c1
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+      - name: ID
+        description: the identifier of c1
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: C2
+    description: Control and configuration registers
+    addressOffset: 44
+    size: 32
+    resetValue: 4352
+    fields:
+      - name: DQT_TBL_SEL
+        description: choose  c2 quntization table id (TBD)
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: Y_FACTOR
+        description: vertical sampling factor of c2
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: X_FACTOR
+        description: horizontal sampling factor of c2
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+      - name: ID
+        description: the identifier of c2
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: C3
+    description: Control and configuration registers
+    addressOffset: 48
+    size: 32
+    resetValue: 4352
+    fields:
+      - name: DQT_TBL_SEL
+        description: choose  c3 quntization table id (TBD)
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: Y_FACTOR
+        description: vertical sampling factor of c3
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: X_FACTOR
+        description: horizontal sampling factor of c3
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+      - name: ID
+        description: the identifier of c3
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: DHT_INFO
+    description: Control and configuration registers
+    addressOffset: 52
+    size: 32
+    resetValue: 4112
+    fields:
+      - name: DC0_DHT_ID
+        description: configure dht dc table 0 id
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: DC1_DHT_ID
+        description: configure dht dc table 1 id
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+      - name: AC0_DHT_ID
+        description: configure dht ac table 0 id
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: AC1_DHT_ID
+        description: configure dht ac table 1 id
+        bitOffset: 12
+        bitWidth: 4
+        access: read-write
+  - name: INT_RAW
+    description: Interrupt raw registers
+    addressOffset: 56
+    size: 32
+    fields:
+      - name: DONE_INT_RAW
+        description: This raw interrupt bit turns to high level when JPEG finishes encoding a picture..
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RLE_PARALLEL_ERR_INT_RAW
+        description: The raw interrupt bit to sign that rle parallel error when decoding.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: CID_ERR_INT_RAW
+        description: The raw interrupt bit to sign that scan id check with component fails when decoding.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: C_DHT_DC_ID_ERR_INT_RAW
+        description: The raw interrupt bit to sign that scan component's dc dht id check with dc dht table's id fails when decoding.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: C_DHT_AC_ID_ERR_INT_RAW
+        description: The raw interrupt bit to sign that scan component's ac dht id check with ac dht table's id fails when decoding.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: C_DQT_ID_ERR_INT_RAW
+        description: The raw interrupt bit to sign that scan component's dqt id check with dqt table's id fails when decoding.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: RST_UXP_ERR_INT_RAW
+        description: The raw interrupt bit to sign that RST header marker is detected but restart interval is 0 when decoding.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: RST_CHECK_NONE_ERR_INT_RAW
+        description: The raw interrupt bit to sign that RST header marker is not detected but restart interval is not 0 when decoding.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: RST_CHECK_POS_ERR_INT_RAW
+        description: The raw interrupt bit to sign that RST header marker position mismatches with restart interval when decoding.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: OUT_EOF_INT_RAW
+        description: The raw interrupt bit turns to high level when the last pixel of one square has been transmitted for Tx channel.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: SR_COLOR_MODE_ERR_INT_RAW
+        description: The raw interrupt bit to sign that the selected source color mode is not supported.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: DCT_DONE_INT_RAW
+        description: The raw interrupt bit to sign that one dct calculation is finished.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: BS_LAST_BLOCK_EOF_INT_RAW
+        description: The raw interrupt bit to sign that the coding process for last block is finished.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: SCAN_CHECK_NONE_ERR_INT_RAW
+        description: The raw interrupt bit to sign that SOS header marker is not detected but there are still components left to be decoded.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: SCAN_CHECK_POS_ERR_INT_RAW
+        description: The raw interrupt bit to sign that SOS header marker position wrong when decoding.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: UXP_DET_INT_RAW
+        description: The raw interrupt bit to sign that unsupported header marker is detected when decoding.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: EN_FRAME_EOF_ERR_INT_RAW
+        description: The raw interrupt bit to sign that received pixel blocks are smaller than expected when encoding.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: EN_FRAME_EOF_LACK_INT_RAW
+        description: The raw interrupt bit to sign that the frame eof sign bit from dma input is missing when encoding. But the number of pixel blocks is enough.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: DE_FRAME_EOF_ERR_INT_RAW
+        description: The raw interrupt bit to sign that decoded blocks are smaller than expected when decoding.
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: DE_FRAME_EOF_LACK_INT_RAW
+        description: The raw interrupt bit to sign that the either frame eof from dma input or eoi marker is missing when encoding. But the number of decoded blocks is enough.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: SOS_UNMATCH_ERR_INT_RAW
+        description: The raw interrupt bit to sign that the component number of a scan is 0 or does not match the sos marker's length when decoding.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: MARKER_ERR_FST_SCAN_INT_RAW
+        description: The raw interrupt bit to sign that the first scan has header marker error when decoding.
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: MARKER_ERR_OTHER_SCAN_INT_RAW
+        description: The raw interrupt bit to sign that the following scans but not the first scan have header marker error when decoding.
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: UNDET_INT_RAW
+        description: The raw interrupt bit to sign that JPEG format is not detected at the eof data of a packet when decoding.
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: DECODE_TIMEOUT_INT_RAW
+        description: The raw interrupt bit to sign that decode pause time is longer than the setting decode timeout time when decoding.
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+  - name: INT_ENA
+    description: Interrupt enable registers
+    addressOffset: 60
+    size: 32
+    fields:
+      - name: DONE_INT_ENA
+        description: This enable interrupt bit turns to high level when JPEG finishes encoding a picture..
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RLE_PARALLEL_ERR_INT_ENA
+        description: The enable interrupt bit to sign that rle parallel error when decoding.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: CID_ERR_INT_ENA
+        description: The enable interrupt bit to sign that scan id check with component fails when decoding.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: C_DHT_DC_ID_ERR_INT_ENA
+        description: The enable interrupt bit to sign that scan component's dc dht id check with dc dht table's id fails when decoding.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: C_DHT_AC_ID_ERR_INT_ENA
+        description: The enable interrupt bit to sign that scan component's ac dht id check with ac dht table's id fails when decoding.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: C_DQT_ID_ERR_INT_ENA
+        description: The enable interrupt bit to sign that scan component's dqt id check with dqt table's id fails when decoding.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: RST_UXP_ERR_INT_ENA
+        description: The enable interrupt bit to sign that RST header marker is detected but restart interval is 0 when decoding.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: RST_CHECK_NONE_ERR_INT_ENA
+        description: The enable interrupt bit to sign that RST header marker is not detected but restart interval is not 0 when decoding.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: RST_CHECK_POS_ERR_INT_ENA
+        description: The enable interrupt bit to sign that RST header marker position mismatches with restart interval when decoding.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: OUT_EOF_INT_ENA
+        description: The enable interrupt bit turns to high level when the last pixel of one square has been transmitted for Tx channel.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: SR_COLOR_MODE_ERR_INT_ENA
+        description: The enable interrupt bit to sign that the selected source color mode is not supported.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: DCT_DONE_INT_ENA
+        description: The enable interrupt bit to sign that one dct calculation is finished.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: BS_LAST_BLOCK_EOF_INT_ENA
+        description: The enable interrupt bit to sign that the coding process for last block is finished.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: SCAN_CHECK_NONE_ERR_INT_ENA
+        description: The enable interrupt bit to sign that SOS header marker is not detected but there are still components left to be decoded.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: SCAN_CHECK_POS_ERR_INT_ENA
+        description: The enable interrupt bit to sign that SOS header marker position wrong when decoding.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: UXP_DET_INT_ENA
+        description: The enable interrupt bit to sign that unsupported header marker is detected when decoding.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: EN_FRAME_EOF_ERR_INT_ENA
+        description: The enable interrupt bit to sign that received pixel blocks are smaller than expected when encoding.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: EN_FRAME_EOF_LACK_INT_ENA
+        description: The enable interrupt bit to sign that the frame eof sign bit from dma input is missing when encoding. But the number of pixel blocks is enough.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: DE_FRAME_EOF_ERR_INT_ENA
+        description: The enable interrupt bit to sign that decoded blocks are smaller than expected when decoding.
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: DE_FRAME_EOF_LACK_INT_ENA
+        description: The enable interrupt bit to sign that the either frame eof from dma input or eoi marker is missing when encoding. But the number of decoded blocks is enough.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: SOS_UNMATCH_ERR_INT_ENA
+        description: The enable interrupt bit to sign that the component number of a scan is 0 or does not match the sos marker's length when decoding.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: MARKER_ERR_FST_SCAN_INT_ENA
+        description: The enable interrupt bit to sign that the first scan has header marker error when decoding.
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: MARKER_ERR_OTHER_SCAN_INT_ENA
+        description: The enable interrupt bit to sign that the following scans but not the first scan have header marker error when decoding.
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: UNDET_INT_ENA
+        description: The enable interrupt bit to sign that JPEG format is not detected at the eof data of a packet when decoding.
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: DECODE_TIMEOUT_INT_ENA
+        description: The enable interrupt bit to sign that decode pause time is longer than the setting decode timeout time when decoding.
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+  - name: INT_ST
+    description: Interrupt status registers
+    addressOffset: 64
+    size: 32
+    fields:
+      - name: DONE_INT_ST
+        description: This status interrupt bit turns to high level when JPEG finishes encoding a picture..
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: RLE_PARALLEL_ERR_INT_ST
+        description: The status interrupt bit to sign that rle parallel error when decoding.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: CID_ERR_INT_ST
+        description: The status interrupt bit to sign that scan id check with component fails when decoding.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: C_DHT_DC_ID_ERR_INT_ST
+        description: The status interrupt bit to sign that scan component's dc dht id check with dc dht table's id fails when decoding.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: C_DHT_AC_ID_ERR_INT_ST
+        description: The status interrupt bit to sign that scan component's ac dht id check with ac dht table's id fails when decoding.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: C_DQT_ID_ERR_INT_ST
+        description: The status interrupt bit to sign that scan component's dqt id check with dqt table's id fails when decoding.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+      - name: RST_UXP_ERR_INT_ST
+        description: The status interrupt bit to sign that RST header marker is detected but restart interval is 0 when decoding.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: RST_CHECK_NONE_ERR_INT_ST
+        description: The status interrupt bit to sign that RST header marker is not detected but restart interval is not 0 when decoding.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: RST_CHECK_POS_ERR_INT_ST
+        description: The status interrupt bit to sign that RST header marker position mismatches with restart interval when decoding.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+      - name: OUT_EOF_INT_ST
+        description: The status interrupt bit turns to high level when the last pixel of one square has been transmitted for Tx channel.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+      - name: SR_COLOR_MODE_ERR_INT_ST
+        description: The status interrupt bit to sign that the selected source color mode is not supported.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+      - name: DCT_DONE_INT_ST
+        description: The status interrupt bit to sign that one dct calculation is finished.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: BS_LAST_BLOCK_EOF_INT_ST
+        description: The status interrupt bit to sign that the coding process for last block is finished.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-only
+      - name: SCAN_CHECK_NONE_ERR_INT_ST
+        description: The status interrupt bit to sign that SOS header marker is not detected but there are still components left to be decoded.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-only
+      - name: SCAN_CHECK_POS_ERR_INT_ST
+        description: The status interrupt bit to sign that SOS header marker position wrong when decoding.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-only
+      - name: UXP_DET_INT_ST
+        description: The status interrupt bit to sign that unsupported header marker is detected when decoding.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+      - name: EN_FRAME_EOF_ERR_INT_ST
+        description: The status interrupt bit to sign that received pixel blocks are smaller than expected when encoding.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: EN_FRAME_EOF_LACK_INT_ST
+        description: The status interrupt bit to sign that the frame eof sign bit from dma input is missing when encoding. But the number of pixel blocks is enough.
+        bitOffset: 17
+        bitWidth: 1
+        access: read-only
+      - name: DE_FRAME_EOF_ERR_INT_ST
+        description: The status interrupt bit to sign that decoded blocks are smaller than expected when decoding.
+        bitOffset: 18
+        bitWidth: 1
+        access: read-only
+      - name: DE_FRAME_EOF_LACK_INT_ST
+        description: The status interrupt bit to sign that the either frame eof from dma input or eoi marker is missing when encoding. But the number of decoded blocks is enough.
+        bitOffset: 19
+        bitWidth: 1
+        access: read-only
+      - name: SOS_UNMATCH_ERR_INT_ST
+        description: The status interrupt bit to sign that the component number of a scan is 0 or does not match the sos marker's length when decoding.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-only
+      - name: MARKER_ERR_FST_SCAN_INT_ST
+        description: The status interrupt bit to sign that the first scan has header marker error when decoding.
+        bitOffset: 21
+        bitWidth: 1
+        access: read-only
+      - name: MARKER_ERR_OTHER_SCAN_INT_ST
+        description: The status interrupt bit to sign that the following scans but not the first scan have header marker error when decoding.
+        bitOffset: 22
+        bitWidth: 1
+        access: read-only
+      - name: UNDET_INT_ST
+        description: The status interrupt bit to sign that JPEG format is not detected at the eof data of a packet when decoding.
+        bitOffset: 23
+        bitWidth: 1
+        access: read-only
+      - name: DECODE_TIMEOUT_INT_ST
+        description: The status interrupt bit to sign that decode pause time is longer than the setting decode timeout time when decoding.
+        bitOffset: 24
+        bitWidth: 1
+        access: read-only
+  - name: INT_CLR
+    description: Interrupt clear registers
+    addressOffset: 68
+    size: 32
+    fields:
+      - name: DONE_INT_CLR
+        description: This clear interrupt bit turns to high level when JPEG finishes encoding a picture..
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: RLE_PARALLEL_ERR_INT_CLR
+        description: The clear interrupt bit to sign that rle parallel error when decoding.
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: CID_ERR_INT_CLR
+        description: The clear interrupt bit to sign that scan id check with component fails when decoding.
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: C_DHT_DC_ID_ERR_INT_CLR
+        description: The clear interrupt bit to sign that scan component's dc dht id check with dc dht table's id fails when decoding.
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: C_DHT_AC_ID_ERR_INT_CLR
+        description: The clear interrupt bit to sign that scan component's ac dht id check with ac dht table's id fails when decoding.
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: C_DQT_ID_ERR_INT_CLR
+        description: The clear interrupt bit to sign that scan component's dqt id check with dqt table's id fails when decoding.
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: RST_UXP_ERR_INT_CLR
+        description: The clear interrupt bit to sign that RST header marker is detected but restart interval is 0 when decoding.
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: RST_CHECK_NONE_ERR_INT_CLR
+        description: The clear interrupt bit to sign that RST header marker is not detected but restart interval is not 0 when decoding.
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: RST_CHECK_POS_ERR_INT_CLR
+        description: The clear interrupt bit to sign that RST header marker position mismatches with restart interval when decoding.
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: OUT_EOF_INT_CLR
+        description: The clear interrupt bit turns to high level when the last pixel of one square has been transmitted for Tx channel.
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: SR_COLOR_MODE_ERR_INT_CLR
+        description: The clear interrupt bit to sign that the selected source color mode is not supported.
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: DCT_DONE_INT_CLR
+        description: The clear interrupt bit to sign that one dct calculation is finished.
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: BS_LAST_BLOCK_EOF_INT_CLR
+        description: The clear interrupt bit to sign that the coding process for last block is finished.
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: SCAN_CHECK_NONE_ERR_INT_CLR
+        description: The clear interrupt bit to sign that SOS header marker is not detected but there are still components left to be decoded.
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: SCAN_CHECK_POS_ERR_INT_CLR
+        description: The clear interrupt bit to sign that SOS header marker position wrong when decoding.
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: UXP_DET_INT_CLR
+        description: The clear interrupt bit to sign that unsupported header marker is detected when decoding.
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: EN_FRAME_EOF_ERR_INT_CLR
+        description: The clear interrupt bit to sign that received pixel blocks are smaller than expected when encoding.
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: EN_FRAME_EOF_LACK_INT_CLR
+        description: The clear interrupt bit to sign that the frame eof sign bit from dma input is missing when encoding. But the number of pixel blocks is enough.
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: DE_FRAME_EOF_ERR_INT_CLR
+        description: The clear interrupt bit to sign that decoded blocks are smaller than expected when decoding.
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: DE_FRAME_EOF_LACK_INT_CLR
+        description: The clear interrupt bit to sign that the either frame eof from dma input or eoi marker is missing when encoding. But the number of decoded blocks is enough.
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: SOS_UNMATCH_ERR_INT_CLR
+        description: The clear interrupt bit to sign that the component number of a scan is 0 or does not match the sos marker's length when decoding.
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: MARKER_ERR_FST_SCAN_INT_CLR
+        description: The clear interrupt bit to sign that the first scan has header marker error when decoding.
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: MARKER_ERR_OTHER_SCAN_INT_CLR
+        description: The clear interrupt bit to sign that the following scans but not the first scan have header marker error when decoding.
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: UNDET_INT_CLR
+        description: The clear interrupt bit to sign that JPEG format is not detected at the eof data of a packet when decoding.
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: DECODE_TIMEOUT_INT_CLR
+        description: The clear interrupt bit to sign that decode pause time is longer than the setting decode timeout time when decoding.
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+  - name: STATUS0
+    description: Trace and Debug registers
+    addressOffset: 72
+    size: 32
+    fields:
+      - name: BITSTREAM_EOF_VLD_CNT
+        description: the valid bit count for last bitstream
+        bitOffset: 11
+        bitWidth: 6
+        access: read-only
+      - name: DCTOUT_ZZSCAN_ADDR
+        description: the zig-zag read addr from dctout_ram
+        bitOffset: 17
+        bitWidth: 6
+        access: read-only
+      - name: QNRVAL_ZZSCAN_ADDR
+        description: the zig-zag read addr from qnrval_ram
+        bitOffset: 23
+        bitWidth: 6
+        access: read-only
+      - name: REG_STATE_YUV
+        description: the state of jpeg fsm
+        bitOffset: 29
+        bitWidth: 3
+        access: read-only
+  - name: STATUS2
+    description: Trace and Debug registers
+    addressOffset: 76
+    size: 32
+    resetValue: 134217728
+    fields:
+      - name: SOURCE_PIXEL
+        description: source pixels fetched from dma
+        bitOffset: 0
+        bitWidth: 24
+        access: read-only
+      - name: LAST_BLOCK
+        description: indicate the encoding process for the last mcu of the picture
+        bitOffset: 24
+        bitWidth: 1
+        access: read-only
+      - name: LAST_MCU
+        description: indicate the encoding process for the last block of the picture
+        bitOffset: 25
+        bitWidth: 1
+        access: read-only
+      - name: LAST_DC
+        description: indicate the encoding process is at the header of the last block of the picture
+        bitOffset: 26
+        bitWidth: 1
+        access: read-only
+      - name: PACKFIFO_READY
+        description: the jpeg pack_fifo ready signal, high active
+        bitOffset: 27
+        bitWidth: 1
+        access: read-only
+  - name: STATUS3
+    description: Trace and Debug registers
+    addressOffset: 80
+    size: 32
+    fields:
+      - name: YO
+        description: component y transferred from rgb input
+        bitOffset: 0
+        bitWidth: 9
+        access: read-only
+      - name: Y_READY
+        description: component y valid signal, high active
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+      - name: CBO
+        description: component cb transferred from rgb input
+        bitOffset: 10
+        bitWidth: 9
+        access: read-only
+      - name: CB_READY
+        description: component cb valid signal, high active
+        bitOffset: 19
+        bitWidth: 1
+        access: read-only
+      - name: CRO
+        description: component cr transferred from rgb input
+        bitOffset: 20
+        bitWidth: 9
+        access: read-only
+      - name: CR_READY
+        description: component cr valid signal, high active
+        bitOffset: 29
+        bitWidth: 1
+        access: read-only
+  - name: STATUS4
+    description: Trace and Debug registers
+    addressOffset: 84
+    size: 32
+    fields:
+      - name: HFM_BITSTREAM
+        description: the hufman bitstream during encoding process
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_TOTLEN_DC0
+    description: Trace and Debug registers
+    addressOffset: 88
+    size: 32
+    fields:
+      - name: DHT_TOTLEN_DC0
+        description: write the numbers of 1~n codeword length sum from 1~16 of dc0 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_VAl_DC0
+    description: Trace and Debug registers
+    addressOffset: 92
+    size: 32
+    fields:
+      - name: DHT_VAL_DC0
+        description: write codeword corresponding huffman values of dc0 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_TOTLEN_AC0
+    description: Trace and Debug registers
+    addressOffset: 96
+    size: 32
+    fields:
+      - name: DHT_TOTLEN_AC0
+        description: write the numbers of 1~n codeword length sum from 1~16 of ac0 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_VAl_AC0
+    description: Trace and Debug registers
+    addressOffset: 100
+    size: 32
+    fields:
+      - name: DHT_VAL_AC0
+        description: write codeword corresponding huffman values of ac0 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_TOTLEN_DC1
+    description: Trace and Debug registers
+    addressOffset: 104
+    size: 32
+    fields:
+      - name: DHT_TOTLEN_DC1
+        description: write the numbers of 1~n codeword length sum from 1~16 of dc1 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_VAl_DC1
+    description: Trace and Debug registers
+    addressOffset: 108
+    size: 32
+    fields:
+      - name: DHT_VAL_DC1
+        description: write codeword corresponding huffman values of dc1 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_TOTLEN_AC1
+    description: Trace and Debug registers
+    addressOffset: 112
+    size: 32
+    fields:
+      - name: DHT_TOTLEN_AC1
+        description: write the numbers of 1~n codeword length sum from 1~16 of ac1 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_VAl_AC1
+    description: Trace and Debug registers
+    addressOffset: 116
+    size: 32
+    fields:
+      - name: DHT_VAL_AC1
+        description: write codeword corresponding huffman values of ac1 table
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_CODEMIN_DC0
+    description: Trace and Debug registers
+    addressOffset: 120
+    size: 32
+    fields:
+      - name: DHT_CODEMIN_DC0
+        description: write the minimum codeword of  code length from 1~16 of dc0 table. The codeword is left shifted to the MSB position of a 16bit word
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_CODEMIN_AC0
+    description: Trace and Debug registers
+    addressOffset: 124
+    size: 32
+    fields:
+      - name: DHT_CODEMIN_AC0
+        description: write the minimum codeword of  code length from 1~16 of ac0 table. The codeword is left shifted to the MSB position of a 16bit word
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_CODEMIN_DC1
+    description: Trace and Debug registers
+    addressOffset: 128
+    size: 32
+    fields:
+      - name: DHT_CODEMIN_DC1
+        description: write the minimum codeword of  code length from 1~16 of dc1 table. The codeword is left shifted to the MSB position of a 16bit word
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DHT_CODEMIN_AC1
+    description: Trace and Debug registers
+    addressOffset: 132
+    size: 32
+    fields:
+      - name: DHT_CODEMIN_AC1
+        description: write the minimum codeword of  code length from 1~16 of ac1 table. The codeword is left shifted to the MSB position of a 16bit word
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DECODER_STATUS0
+    description: Trace and Debug registers
+    addressOffset: 136
+    size: 32
+    fields:
+      - name: DECODE_BYTE_CNT
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 26
+        access: read-only
+      - name: HEADER_DEC_ST
+        description: Reserved
+        bitOffset: 26
+        bitWidth: 4
+        access: read-only
+      - name: DECODE_SAMPLE_SEL
+        description: Reserved
+        bitOffset: 30
+        bitWidth: 2
+        access: read-only
+  - name: DECODER_STATUS1
+    description: Trace and Debug registers
+    addressOffset: 140
+    size: 32
+    fields:
+      - name: ENCODE_DATA
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+      - name: COUNT_Q
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 7
+        access: read-only
+      - name: MCU_FSM_READY
+        description: Reserved
+        bitOffset: 23
+        bitWidth: 1
+        access: read-only
+      - name: DECODE_DATA
+        description: Reserved
+        bitOffset: 24
+        bitWidth: 8
+        access: read-only
+  - name: DECODER_STATUS2
+    description: Trace and Debug registers
+    addressOffset: 144
+    size: 32
+    fields:
+      - name: COMP_BLOCK_NUM
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 26
+        access: read-only
+      - name: SCAN_NUM
+        description: Reserved
+        bitOffset: 26
+        bitWidth: 3
+        access: read-only
+      - name: RST_CHECK_WAIT
+        description: Reserved
+        bitOffset: 29
+        bitWidth: 1
+        access: read-only
+      - name: SCAN_CHECK_WAIT
+        description: Reserved
+        bitOffset: 30
+        bitWidth: 1
+        access: read-only
+      - name: MCU_IN_PROC
+        description: Reserved
+        bitOffset: 31
+        bitWidth: 1
+        access: read-only
+  - name: DECODER_STATUS3
+    description: Trace and Debug registers
+    addressOffset: 148
+    size: 32
+    fields:
+      - name: LOOKUP_DATA
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: DECODER_STATUS4
+    description: Trace and Debug registers
+    addressOffset: 152
+    size: 32
+    fields:
+      - name: BLOCK_EOF_CNT
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 26
+        access: read-only
+      - name: DEZIGZAG_READY
+        description: Reserved
+        bitOffset: 26
+        bitWidth: 1
+        access: read-only
+      - name: DE_FRAME_EOF_CHECK
+        description: Reserved
+        bitOffset: 27
+        bitWidth: 1
+        access: read-only
+      - name: DE_DMA2D_IN_PUSH
+        description: Reserved
+        bitOffset: 28
+        bitWidth: 1
+        access: read-only
+  - name: DECODER_STATUS5
+    description: Trace and Debug registers
+    addressOffset: 156
+    size: 32
+    fields:
+      - name: IDCT_HFM_DATA
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+      - name: NS0
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 3
+        access: read-only
+      - name: NS1
+        description: Reserved
+        bitOffset: 19
+        bitWidth: 3
+        access: read-only
+      - name: NS2
+        description: Reserved
+        bitOffset: 22
+        bitWidth: 3
+        access: read-only
+      - name: NS3
+        description: Reserved
+        bitOffset: 25
+        bitWidth: 3
+        access: read-only
+      - name: DATA_LAST_O
+        description: Reserved
+        bitOffset: 28
+        bitWidth: 1
+        access: read-only
+      - name: RDN_RESULT
+        description: redundant registers for jpeg
+        bitOffset: 29
+        bitWidth: 1
+        access: read-only
+      - name: RDN_ENA
+        description: redundant control registers for jpeg
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+  - name: STATUS5
+    description: Trace and Debug registers
+    addressOffset: 160
+    size: 32
+    fields:
+      - name: PIC_BLOCK_NUM
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 24
+        access: read-only
+  - name: ECO_LOW
+    description: Trace and Debug registers
+    addressOffset: 164
+    size: 32
+    fields:
+      - name: RDN_ECO_LOW
+        description: redundant registers for jpeg
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: ECO_HIGH
+    description: Trace and Debug registers
+    addressOffset: 168
+    size: 32
+    resetValue: 4294967295
+    fields:
+      - name: RDN_ECO_HIGH
+        description: redundant registers for jpeg
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: SYS
+    description: Trace and Debug registers
+    addressOffset: 248
+    size: 32
+    fields:
+      - name: CLK_EN
+        description: Reserved
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: VERSION
+    description: Trace and Debug registers
+    addressOffset: 252
+    size: 32
+    resetValue: 34673040
+    fields:
+      - name: JPEG_VER
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 28
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 176
+    usage: registers
+interrupts:
+  - name: INTR

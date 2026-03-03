@@ -1,0 +1,1840 @@
+name: MCPWM
+description: Motor Control Pulse-Width Modulation 0
+groupName: MCPWM
+source: ESP32-P4 SVD v2
+registers:
+  - name: CLK_CFG
+    description: PWM clock prescaler register.
+    addressOffset: 0
+    size: 32
+    fields:
+      - name: CLK_PRESCALE
+        description: Configures the prescaler value of clock, so that the period of PWM_clk = 6.25ns * (PWM_CLK_PRESCALE + 1).
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+  - dim: 3
+    dimIncrement: 16
+    name: TIMER%s_CFG0
+    description: PWM timer%s period and update method configuration register.
+    addressOffset: 4
+    size: 32
+    resetValue: 65280
+    fields:
+      - name: TIMER_PRESCALE
+        description: Configures the prescaler value of timer%s, so that the period of PT0_clk = Period of PWM_clk * (PWM_TIMER%s_PRESCALE + 1)
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: TIMER_PERIOD
+        description: Configures the period shadow of PWM timer%s
+        bitOffset: 8
+        bitWidth: 16
+        access: read-write
+      - name: TIMER_PERIOD_UPMETHOD
+        description: 'Configures the update method for active register of PWM timer%s period.\\0: Immediate\\1: TEZ\\2: Sync\\3: TEZ or sync\\TEZ here and below means timer equal zero event'
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+  - dim: 3
+    dimIncrement: 16
+    name: TIMER%s_CFG1
+    description: PWM timer%s working mode and start/stop control register.
+    addressOffset: 8
+    size: 32
+    fields:
+      - name: TIMER_START
+        description: 'Configures whether or not to start/stop PWM timer%s.\\0: If PWM timer%s starts, then stops at TEZ\\1: If timer%s starts, then stops at TEP\\2: PWM timer%s starts and runs on\\3: Timer%s starts and stops at the next TEZ\\4: Timer0 starts and stops at the next TEP.\\TEP here and below means the event that happens when the timer equals to period'
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+      - name: TIMER_MOD
+        description: 'Configures the working mode of PWM timer%s.\\0: Freeze\\1: Increase mode\\2: Decrease mode\\3: Up-down mode'
+        bitOffset: 3
+        bitWidth: 2
+        access: read-write
+  - dim: 3
+    dimIncrement: 16
+    name: TIMER%s_SYNC
+    description: PWM timer%s sync function configuration register.
+    addressOffset: 12
+    size: 32
+    fields:
+      - name: TIMER_SYNCI_EN
+        description: 'Configures whether or not to enable timer%s reloading with phase on sync input event is enabled.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: SW
+        description: Configures the generation of software sync. Toggling this bit will trigger a software sync.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TIMER_SYNCO_SEL
+        description: 'Configures the selection of PWM timer%s sync_out.\\0: Sync_in\\1: TEZ\\2: TEP\\3: Invalid, sync_out selects noting'
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+      - name: TIMER_PHASE
+        description: Configures the phase for timer%s reload on sync event.
+        bitOffset: 4
+        bitWidth: 16
+        access: read-write
+      - name: TIMER_PHASE_DIRECTION
+        description: "Configures the PWM timer%s's direction when timer%s mode is up-down mode.\\\\0: Increase\\\\1: Decrease"
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+  - dim: 3
+    dimIncrement: 16
+    name: TIMER%s_STATUS
+    description: PWM timer%s status register.
+    addressOffset: 16
+    size: 32
+    fields:
+      - name: TIMER_VALUE
+        description: Represents current PWM timer%s counter value.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-only
+      - name: TIMER_DIRECTION
+        description: 'Represents current PWM timer%s counter direction.\\0: Increment\\1: Decrement'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+  - name: TIMER_SYNCI_CFG
+    description: Synchronization input selection register for PWM timers.
+    addressOffset: 52
+    size: 32
+    fields:
+      - name: TIMER0_SYNCISEL
+        description: 'Configures the selection of sync input for PWM timer0.\\1: PWM timer0 sync_out\\2: PWM timer1 sync_out\\3: PWM timer2 sync_out\\4: SYNC0 from GPIO matrix\\5: SYNC1 from GPIO matrix\\6: SYNC2 from GPIO matrix\\Other values: No sync input selected'
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+      - name: TIMER1_SYNCISEL
+        description: 'Configures the selection of sync input for PWM timer1.\\1: PWM timer0 sync_out\\2: PWM timer1 sync_out\\3: PWM timer2 sync_out\\4: SYNC0 from GPIO matrix\\5: SYNC1 from GPIO matrix\\6: SYNC2 from GPIO matrix\\Other values: No sync input selected'
+        bitOffset: 3
+        bitWidth: 3
+        access: read-write
+      - name: TIMER2_SYNCISEL
+        description: 'Configures the selection of sync input for PWM timer2.\\1: PWM timer0 sync_out\\2: PWM timer1 sync_out\\3: PWM timer2 sync_out\\4: SYNC0 from GPIO matrix\\5: SYNC1 from GPIO matrix\\6: SYNC2 from GPIO matrix\\Other values: No sync input selected'
+        bitOffset: 6
+        bitWidth: 3
+        access: read-write
+      - name: EXTERNAL_SYNCI0_INVERT
+        description: 'Configures whether or not to invert SYNC0 from GPIO matrix.\\0: Not invert\\1: Invert'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: EXTERNAL_SYNCI1_INVERT
+        description: 'Configures whether or not to invert SYNC1 from GPIO matrix.\\0: Not invert\\1: Invert'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: EXTERNAL_SYNCI2_INVERT
+        description: 'Configures whether or not to invert SYNC2 from GPIO matrix.\\0: Not invert\\1: Invert'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+  - name: OPERATOR_TIMERSEL
+    description: PWM operator's timer select register
+    addressOffset: 56
+    size: 32
+    fields:
+      - name: OPERATOR0_TIMERSEL
+        description: 'Configures which PWM timer will be the timing reference for PWM operator0.\\0: Timer0\\1: Timer1\\2: Timer2\\3: Invalid, will select timer2'
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+      - name: OPERATOR1_TIMERSEL
+        description: 'Configures which PWM timer will be the timing reference for PWM operator1.\\0: Timer0\\1: Timer1\\2: Timer2\\3: Invalid, will select timer2'
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+      - name: OPERATOR2_TIMERSEL
+        description: 'Configures which PWM timer will be the timing reference for PWM operator2.\\0: Timer0\\1: Timer1\\2: Timer2\\3: Invalid, will select timer2'
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: GEN%s_STMP_CFG
+    description: Generator%s time stamp registers A and B transfer status and update method register
+    addressOffset: 60
+    size: 32
+    fields:
+      - name: CMPR_A_UPMETHOD
+        description: "Configures the update method for PWM generator %s time stamp A's active register.\\\\0: Immediately\\\\Bit0 is set to 1: TEZ\\\\Bit1 is set to 1: TEP\\\\Bit2 is set to 1: Sync\\\\Bit3 is set to 1: Disable the update"
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: CMPR_B_UPMETHOD
+        description: "Configures the update method for PWM generator %s time stamp B's active register.\\\\0: Immediately\\\\Bit0 is set to 1: TEZ\\\\Bit1 is set to 1: TEP\\\\Bit2 is set to 1: Sync\\\\Bit3 is set to 1: Disable the update"
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+      - name: CMPR_A_SHDW_FULL
+        description: "Represents whether or not generator%s time stamp A's shadow reg is transferred.\\\\0: A's active reg has been updated with shadow register latest value.\\\\1: A's shadow reg is filled and waiting to be transferred to A's active reg"
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: CMPR_B_SHDW_FULL
+        description: "Represents whether or not generator%s time stamp B's shadow reg is transferred.\\\\0: B's active reg has been updated with shadow register latest value.\\\\1: B's shadow reg is filled and waiting to be transferred to B's active reg"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: GEN%s_TSTMP_A
+    description: Generator%s time stamp A's shadow register
+    addressOffset: 64
+    size: 32
+    fields:
+      - name: CMPR_A
+        description: Configures the value of PWM generator %s time stamp A's shadow register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: GEN%s_TSTMP_B
+    description: Generator%s time stamp B's shadow register
+    addressOffset: 68
+    size: 32
+    fields:
+      - name: CMPR_B
+        description: Configures the value of PWM generator %s time stamp B's shadow register.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: GEN%s_CFG0
+    description: Generator%s fault event T0 and T1 configuration register
+    addressOffset: 72
+    size: 32
+    fields:
+      - name: GEN_CFG_UPMETHOD
+        description: "Configures update method for PWM generator %s's active register.\\\\0: Immediately\\\\Bit0 is set to 1: TEZ\\\\Bit1 is set to 1: TEP\\\\Bit2 is set to 1: Sync\\\\Bit3 is set to 1: Disable the update"
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: GEN_T0_SEL
+        description: 'Configures source selection for PWM generator %s event_t0, take effect immediately.\\0: fault_event0\\1: fault_event1\\2: fault_event2\\3: sync_taken\\4: Invalid, Select nothing'
+        bitOffset: 4
+        bitWidth: 3
+        access: read-write
+      - name: GEN_T1_SEL
+        description: 'Configures source selection for PWM generator %s event_t1, take effect immediately.\\0: fault_event0\\1: fault_event1\\2: fault_event2\\3: sync_taken\\4: Invalid, Select nothing'
+        bitOffset: 7
+        bitWidth: 3
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: GEN%s_FORCE
+    description: Generator%s output signal force mode register.
+    addressOffset: 76
+    size: 32
+    resetValue: 32
+    fields:
+      - name: GEN_CNTUFORCE_UPMETHOD
+        description: "Configures update method for continuous software force of PWM generator%s.\\\\0: Immediately\\\\Bit0 is set to 1: TEZ\\\\Bit1 is set to 1: TEP\\\\Bit2 is set to 1: TEA\\\\Bit3 is set to 1: TEB\\\\Bit4 is set to 1: Sync\\\\Bit5 is set to 1: Disable update. TEA/B here and below means an event generated when the timer's value equals to that of register A/B."
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+      - name: GEN_A_CNTUFORCE_MODE
+        description: 'Configures continuous software force mode for PWM%s A.\\0: Disabled\\1: Low\\2: High\\3: Disabled'
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+      - name: GEN_B_CNTUFORCE_MODE
+        description: 'Configures continuous software force mode for PWM%s B.\\0: Disabled\\1: Low\\2: High\\3: Disabled'
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+      - name: GEN_A_NCIFORCE
+        description: Configures the generation of non-continuous immediate software-force event for PWM%s A, a toggle will trigger a force event.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: GEN_A_NCIFORCE_MODE
+        description: 'Configures non-continuous immediate software force mode for PWM%s A.\\0: Disabled\\1: Low\\2: High\\3: Disabled'
+        bitOffset: 11
+        bitWidth: 2
+        access: read-write
+      - name: GEN_B_NCIFORCE
+        description: Configures the generation of non-continuous immediate software-force event for PWM%s B, a toggle will trigger a force event.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: GEN_B_NCIFORCE_MODE
+        description: 'Configures non-continuous immediate software force mode for PWM%s B.\\0: Disabled\\1: Low\\2: High\\3: Disabled'
+        bitOffset: 14
+        bitWidth: 2
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: GEN%s_A
+    description: PWM%s output signal A actions configuration register
+    addressOffset: 80
+    size: 32
+    fields:
+      - name: UTEZ
+        description: 'Configures action on PWM%s A triggered by event TEZ when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+      - name: UTEP
+        description: 'Configures action on PWM%s A triggered by event TEP when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+      - name: UTEA
+        description: 'Configures action on PWM%s A triggered by event TEA when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+      - name: UTEB
+        description: 'Configures action on PWM%s A triggered by event TEB when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+      - name: UT0
+        description: 'Configures action on PWM%s A triggered by event_t0 when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+      - name: UT1
+        description: 'Configures action on PWM%s A triggered by event_t1 when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+      - name: DTEZ
+        description: 'Configures action on PWM%s A triggered by event TEZ when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+      - name: DTEP
+        description: 'Configures action on PWM%s A triggered by event TEP when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 14
+        bitWidth: 2
+        access: read-write
+      - name: DTEA
+        description: 'Configures action on PWM%s A triggered by event TEA when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 16
+        bitWidth: 2
+        access: read-write
+      - name: DTEB
+        description: 'Configures action on PWM%s A triggered by event TEB when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 18
+        bitWidth: 2
+        access: read-write
+      - name: DT0
+        description: 'Configures action on PWM%s A triggered by event_t0 when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 20
+        bitWidth: 2
+        access: read-write
+      - name: DT1
+        description: 'Configures action on PWM%s A triggered by event_t1 when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 22
+        bitWidth: 2
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: GEN%s_B
+    description: PWM%s output signal B actions configuration register
+    addressOffset: 84
+    size: 32
+    fields:
+      - name: UTEZ
+        description: 'Configures action on PWM%s B triggered by event TEZ when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+      - name: UTEP
+        description: 'Configures action on PWM%s B triggered by event TEP when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 2
+        bitWidth: 2
+        access: read-write
+      - name: UTEA
+        description: 'Configures action on PWM%s B triggered by event TEA when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+      - name: UTEB
+        description: 'Configures action on PWM%s B triggered by event TEB when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+      - name: UT0
+        description: 'Configures action on PWM%s B triggered by event_t0 when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+      - name: UT1
+        description: 'Configures action on PWM%s B triggered by event_t1 when timer increasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+      - name: DTEZ
+        description: 'Configures action on PWM%s B triggered by event TEZ when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+      - name: DTEP
+        description: 'Configures action on PWM%s B triggered by event TEP when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 14
+        bitWidth: 2
+        access: read-write
+      - name: DTEA
+        description: 'Configures action on PWM%s B triggered by event TEA when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 16
+        bitWidth: 2
+        access: read-write
+      - name: DTEB
+        description: 'Configures action on PWM%s B triggered by event TEB when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 18
+        bitWidth: 2
+        access: read-write
+      - name: DT0
+        description: 'Configures action on PWM%s B triggered by event_t0 when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 20
+        bitWidth: 2
+        access: read-write
+      - name: DT1
+        description: 'Configures action on PWM%s B triggered by event_t1 when timer decreasing.\\0: No change\\1: Low\\2: High\\3: Toggle'
+        bitOffset: 22
+        bitWidth: 2
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: DT%s_CFG
+    description: Dead time configuration register
+    addressOffset: 88
+    size: 32
+    resetValue: 98304
+    fields:
+      - name: DB_FED_UPMETHOD
+        description: 'Configures update method for FED (Falling edge delay) active register.\\0: Immediate\\Bit0 is set to 1: TEZ\\Bit1 is set to 1: TEP\\Bit2 is set to 1: Sync\\Bit3 is set to 1: Disable the update'
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: DB_RED_UPMETHOD
+        description: 'Configures update method for RED (rising edge delay) active register.\\0: Immediate\\Bit0 is set to 1: TEZ\\Bit1 is set to 1: TEP\\Bit2 is set to 1: Sync\\Bit3 is set to 1: Disable the update'
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+      - name: DB_DEB_MODE
+        description: 'Configures S8 in table, dual-edge B mode.\\0: fed/red take effect on different path separately\\1: fed/red take effect on B path, A out is in bypass or dulpB mode'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: DB_A_OUTSWAP
+        description: Configures S6 in table.
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: DB_B_OUTSWAP
+        description: Configures S7 in table.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: DB_RED_INSEL
+        description: Configures S4 in table.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: DB_FED_INSEL
+        description: Configures S5 in table.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: DB_RED_OUTINVERT
+        description: Configures S2 in table.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: DB_FED_OUTINVERT
+        description: Configures S3 in table.
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: DB_A_OUTBYPASS
+        description: Configures S1 in table.
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: DB_B_OUTBYPASS
+        description: Configures S0 in table.
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: DB_CLK_SEL
+        description: 'Configures dead time generator %s clock selection.\\0: PWM_clk\\1: PT_clk'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: DT%s_FED_CFG
+    description: Falling edge delay (FED) shadow register
+    addressOffset: 92
+    size: 32
+    fields:
+      - name: DB_FED
+        description: Configures shadow register for FED.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: DT%s_RED_CFG
+    description: Rising edge delay (RED) shadow register
+    addressOffset: 96
+    size: 32
+    fields:
+      - name: DB_RED
+        description: Configures shadow register for RED.
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: CARRIER%s_CFG
+    description: Carrier%s configuration register
+    addressOffset: 100
+    size: 32
+    fields:
+      - name: CHOPPER_EN
+        description: 'Configures whether or not to enable carrier%s.\\0: Bypassed\\1: Enabled'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CHOPPER_PRESCALE
+        description: Configures the prescale value of PWM carrier%s clock (PC_clk), so that period of PC_clk = period of PWM_clk * (PWM_CARRIER%s_PRESCALE + 1)
+        bitOffset: 1
+        bitWidth: 4
+        access: read-write
+      - name: CHOPPER_DUTY
+        description: Configures carrier duty. Duty = PWM_CARRIER%s_DUTY / 8
+        bitOffset: 5
+        bitWidth: 3
+        access: read-write
+      - name: CHOPPER_OSHTWTH
+        description: 'Configures width of the first pulse. Measurement unit: Periods of the carrier.'
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: CHOPPER_OUT_INVERT
+        description: 'Configures whether or not to invert the output of PWM%s A and PWM%s B for this submodule.\\0: Normal\\1: Invert'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: CHOPPER_IN_INVERT
+        description: 'Configures whether or not to invert the input of PWM%s A and PWM%s B for this submodule.\\0: Normal\\1: Invert'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: FH%s_CFG0
+    description: PWM%s A and PWM%s B trip events actions configuration register
+    addressOffset: 104
+    size: 32
+    fields:
+      - name: TZ_SW_CBC
+        description: 'Configures whether or not to enable software force cycle-by-cycle mode action.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TZ_F2_CBC
+        description: 'Configures whether or not event_f2 will trigger cycle-by-cycle mode action.\\0: Disable\\1: Enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TZ_F1_CBC
+        description: 'Configures whether or not event_f1 will trigger cycle-by-cycle mode action.\\0: Disable\\1: Enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TZ_F0_CBC
+        description: 'Configures whether or not event_f0 will trigger cycle-by-cycle mode action.\\0: Disable\\1: Enable'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TZ_SW_OST
+        description: 'Configures whether or not to enable software force one-shot mode action.\\0: Disable\\1: Enable'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: TZ_F2_OST
+        description: 'Configures whether or not event_f2 will trigger one-shot mode action.\\0: Disable\\1: Enable'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: TZ_F1_OST
+        description: 'Configures whether or not event_f1 will trigger one-shot mode action.\\0: Disable\\1: Enable'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: TZ_F0_OST
+        description: 'Configures whether or not event_f0 will trigger one-shot mode action.\\0: Disable\\1: Enable'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: TZ_A_CBC_D
+        description: 'Configures cycle-by-cycle mode action on PWM%s A when fault event occurs and timer is decreasing.\\0: Do nothing\\1: Force low\\2: Force high\\3: Toggle'
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+      - name: TZ_A_CBC_U
+        description: 'Configures cycle-by-cycle mode action on PWM%s A when fault event occurs and timer is increasing.\\0: Do nothing\\1: Force low\\2: Force high\\3: Toggle'
+        bitOffset: 10
+        bitWidth: 2
+        access: read-write
+      - name: TZ_A_OST_D
+        description: 'Configures one-shot mode action on PWM%s A when fault event occurs and timer is decreasing.\\0: Do nothing\\1: Force low\\2: Force high\\3: Toggle'
+        bitOffset: 12
+        bitWidth: 2
+        access: read-write
+      - name: TZ_A_OST_U
+        description: 'Configures one-shot mode action on PWM%s A when fault event occurs and timer is increasing.\\0: Do nothing\\1: Force low\\2: Force high\\3: Toggle'
+        bitOffset: 14
+        bitWidth: 2
+        access: read-write
+      - name: TZ_B_CBC_D
+        description: 'Configures cycle-by-cycle mode action on PWM%s B when fault event occurs and timer is decreasing.\\0: Do nothing\\1: Force low\\2: Force high\\3: Toggle'
+        bitOffset: 16
+        bitWidth: 2
+        access: read-write
+      - name: TZ_B_CBC_U
+        description: 'Configures cycle-by-cycle mode action on PWM%s B when fault event occurs and timer is increasing.\\0: Do nothing\\1: Force low\\2: Force high\\3: Toggle'
+        bitOffset: 18
+        bitWidth: 2
+        access: read-write
+      - name: TZ_B_OST_D
+        description: 'Configures one-shot mode action on PWM%s B when fault event occurs and timer is decreasing.\\0: Do nothing\\1: Force low\\2: Force high\\3: Toggle'
+        bitOffset: 20
+        bitWidth: 2
+        access: read-write
+      - name: TZ_B_OST_U
+        description: 'Configures one-shot mode action on PWM%s B when fault event occurs and timer is increasing.\\0: Do nothing\\1: Force low\\2: Force high\\3: Toggle'
+        bitOffset: 22
+        bitWidth: 2
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: FH%s_CFG1
+    description: Software triggers for fault handler actions configuration register
+    addressOffset: 108
+    size: 32
+    fields:
+      - name: TZ_CLR_OST
+        description: Configures the generation of software one-shot mode action clear. A toggle (software negate its value) triggers a clear for on going one-shot mode action.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TZ_CBCPULSE
+        description: 'Configures the refresh moment selection of cycle-by-cycle mode action.\\0: Select nothing, will not refresh\\Bit0 is set to 1: TEZ\\Bit1 is set to 1: TEP'
+        bitOffset: 1
+        bitWidth: 2
+        access: read-write
+      - name: TZ_FORCE_CBC
+        description: Configures the generation of software cycle-by-cycle mode action. A toggle (software negate its value) triggers a cycle-by-cycle mode action.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TZ_FORCE_OST
+        description: Configures the generation of software one-shot mode action. A toggle (software negate its value) triggers a one-shot mode action.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+  - dim: 3
+    dimIncrement: 56
+    name: FH%s_STATUS
+    description: Fault events status register
+    addressOffset: 112
+    size: 32
+    fields:
+      - name: TZ_CBC_ON
+        description: 'Represents whether or not an cycle-by-cycle mode action is on going.\\0:No action\\1: On going'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: TZ_OST_ON
+        description: 'Represents whether or not an one-shot mode action is on going.\\0:No action\\1: On going'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+  - name: FAULT_DETECT
+    description: Fault detection configuration and status register
+    addressOffset: 228
+    size: 32
+    fields:
+      - name: F0_EN
+        description: 'Configures whether or not to enable event_f0 generation.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: F1_EN
+        description: 'Configures whether or not to enable event_f1 generation.\\0: Disable\\1: Enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: F2_EN
+        description: 'Configures whether or not to enable event_f2 generation.\\0: Disable\\1: Enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: F0_POLE
+        description: 'Configures event_f0 trigger polarity on FAULT0 source from GPIO matrix.\\0: Level low\\1: Level high'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: F1_POLE
+        description: 'Configures event_f1 trigger polarity on FAULT1 source from GPIO matrix.\\0: Level low\\1: Level high'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: F2_POLE
+        description: 'Configures event_f2 trigger polarity on FAULT2 source from GPIO matrix.\\0: Level low\\1: Level high'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: EVENT_F0
+        description: 'Represents whether or not an event_f0 is on going.\\0: No action\\1: On going'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: EVENT_F1
+        description: 'Represents whether or not an event_f1 is on going.\\0: No action\\1: On going'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: EVENT_F2
+        description: 'Represents whether or not an event_f2 is on going.\\0: No action\\1: On going'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+  - name: CAP_TIMER_CFG
+    description: Capture timer configuration register
+    addressOffset: 232
+    size: 32
+    fields:
+      - name: CAP_TIMER_EN
+        description: 'Configures whether or not to enable capture timer increment.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CAP_SYNCI_EN
+        description: 'Configures whether or not to enable capture timer sync.\\0: Disable\\1: Enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: CAP_SYNCI_SEL
+        description: 'Configures the selection of capture module sync input.\\0: None\\1: Timer0 sync_out\\2: Timer1 sync_out\\3: Timer2 sync_out\\4: SYNC0 from GPIO matrix\\5: SYNC1 from GPIO matrix\\6: SYNC2 from GPIO matrix\\7: None'
+        bitOffset: 2
+        bitWidth: 3
+        access: read-write
+      - name: CAP_SYNC_SW
+        description: 'Configures the generation of a capture timer sync when reg_cap_synci_en is 1.\\0: Invalid, No effect\\1: Trigger a capture timer sync, capture timer is loaded with value in phase register'
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+  - name: CAP_TIMER_PHASE
+    description: Capture timer sync phase register
+    addressOffset: 236
+    size: 32
+    fields:
+      - name: CAP_PHASE
+        description: Configures phase value for capture timer sync operation.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - dim: 3
+    dimIncrement: 4
+    name: CAP_CH%s_CFG
+    description: Capture channel %s configuration register
+    addressOffset: 240
+    size: 32
+    fields:
+      - name: CAP_EN
+        description: 'Configures whether or not to enable capture on channel %s.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CAP_MODE
+        description: 'Configures which edge of capture on channel %s after prescaling is used.\\0: None\\Bit0 is set to 1: Rnable capture on the negative edge\\Bit1 is set to 1: Enable capture on the positive edge'
+        bitOffset: 1
+        bitWidth: 2
+        access: read-write
+      - name: CAP_PRESCALE
+        description: Configures prescale value on possitive edge of CAP%s. Prescale value = PWM_CAP%s_PRESCALE + 1
+        bitOffset: 3
+        bitWidth: 8
+        access: read-write
+      - name: CAP_IN_INVERT
+        description: 'Configures whether or not to invert CAP%s from GPIO matrix before prescale.\\0: Normal\\1: Invert'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: CAP_SW
+        description: 'Configures the generation of software capture.\\0: Invalid, No effect\\1: Trigger a software forced capture on channel %s'
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+  - dim: 3
+    dimIncrement: 4
+    name: CAP_CH%s
+    description: CAP%s capture value register
+    addressOffset: 252
+    size: 32
+    fields:
+      - name: CAP_VALUE
+        description: Represents value of last capture on CAP%s
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: CAP_STATUS
+    description: Last capture trigger edge information register
+    addressOffset: 264
+    size: 32
+    fields:
+      - name: CAP0_EDGE
+        description: 'Represents edge of last capture trigger on channel0.\\0: Posedge\\1: Negedge'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: CAP1_EDGE
+        description: 'Represents edge of last capture trigger on channel1.\\0: Posedge\\1: Negedge'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: CAP2_EDGE
+        description: 'Represents edge of last capture trigger on channel2.\\0: Posedge\\1: Negedge'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+  - name: UPDATE_CFG
+    description: Generator Update configuration register
+    addressOffset: 268
+    size: 32
+    resetValue: 5
+    fields:
+      - name: GLOBAL_UP_EN
+        description: 'Configures whether or not to enable global update for all active registers in MCPWM module.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: GLOBAL_FORCE_UP
+        description: Configures the generation of global forced update for all active registers in MCPWM module. A toggle (software invert its value) will trigger a global forced update. Valid only when MCPWM_GLOBAL_UP_EN and MCPWM_OP0/1/2_UP_EN are both set to 1.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: OP0_UP_EN
+        description: 'Configures whether or not to enable update of active registers in PWM operator0. Valid only when PWM_GLOBAL_UP_EN is set to 1.\\0: Disable\\1: Enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: OP0_FORCE_UP
+        description: Configures the generation of forced update for active registers in PWM operator0. A toggle (software invert its value) will trigger a forced update. Valid only when MCPWM_GLOBAL_UP_EN and MCPWM_OP0_UP_EN are both set to 1.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: OP1_UP_EN
+        description: 'Configures whether or not to enable update of active registers in PWM operator1. Valid only when PWM_GLOBAL_UP_EN is set to 1.\\0: Disable\\1: Enable'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: OP1_FORCE_UP
+        description: Configures the generation of forced update for active registers in PWM operator1. A toggle (software invert its value) will trigger a forced update. Valid only when MCPWM_GLOBAL_UP_EN and MCPWM_OP1_UP_EN are both set to 1.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: OP2_UP_EN
+        description: 'Configures whether or not to enable update of active registers in PWM operator2. Valid only when PWM_GLOBAL_UP_EN is set to 1.\\0: Disable\\1: Enable'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: OP2_FORCE_UP
+        description: Configures the generation of forced update for active registers in PWM operator2. A toggle (software invert its value) will trigger a forced update. Valid only when MCPWM_GLOBAL_UP_EN and MCPWM_OP2_UP_EN are both set to 1.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+  - name: INT_ENA
+    description: Interrupt enable register
+    addressOffset: 272
+    size: 32
+    fields:
+      - name: TIMER0_STOP_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when the timer 0 stops.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TIMER1_STOP_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when the timer 1 stops.'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TIMER2_STOP_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when the timer 2 stops.'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TIMER0_TEZ_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM timer 0 TEZ event.'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TIMER1_TEZ_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM timer 1 TEZ event.'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: TIMER2_TEZ_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM timer 2 TEZ event.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: TIMER0_TEP_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM timer 0 TEP event.'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: TIMER1_TEP_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM timer 1 TEP event.'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: TIMER2_TEP_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM timer 2 TEP event.'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: FAULT0_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when event_f0 starts.'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: FAULT1_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when event_f1 starts.'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: FAULT2_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when event_f2 starts.'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: FAULT0_CLR_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when event_f0 clears.'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: FAULT1_CLR_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when event_f1 clears.'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: FAULT2_CLR_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered when event_f2 clears.'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: CMPR0_TEA_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM operator 0 TEA event.'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: CMPR1_TEA_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM operator 1 TEA event.'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: CMPR2_TEA_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM operator 2 TEA event.'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: CMPR0_TEB_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM operator 0 TEB event.'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: CMPR1_TEB_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM operator 1 TEB event.'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: CMPR2_TEB_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a PWM operator 2 TEB event.'
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: TZ0_CBC_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a cycle-by-cycle mode action on PWM0.'
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: TZ1_CBC_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a cycle-by-cycle mode action on PWM1.'
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: TZ2_CBC_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a cycle-by-cycle mode action on PWM2.'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: TZ0_OST_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a one-shot mode action on PWM0.'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: TZ1_OST_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a one-shot mode action on PWM1.'
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: TZ2_OST_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by a one-shot mode action on PWM2.'
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: CAP0_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by capture on CAP0.'
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: CAP1_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by capture on CAP1.'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: CAP2_INT_ENA
+        description: 'Enable bit: Write 1 to enable the interrupt triggered by capture on CAP2.'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+  - name: INT_RAW
+    description: Interrupt raw status register
+    addressOffset: 276
+    size: 32
+    fields:
+      - name: TIMER0_STOP_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when the timer 0 stops.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TIMER1_STOP_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when the timer 1 stops.'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TIMER2_STOP_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when the timer 2 stops.'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TIMER0_TEZ_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM timer 0 TEZ event.'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TIMER1_TEZ_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM timer 1 TEZ event.'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: TIMER2_TEZ_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM timer 2 TEZ event.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: TIMER0_TEP_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM timer 0 TEP event.'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: TIMER1_TEP_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM timer 1 TEP event.'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: TIMER2_TEP_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM timer 2 TEP event.'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: FAULT0_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when event_f0 starts.'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: FAULT1_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when event_f1 starts.'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: FAULT2_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when event_f2 starts.'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: FAULT0_CLR_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when event_f0 clears.'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: FAULT1_CLR_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when event_f1 clears.'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: FAULT2_CLR_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered when event_f2 clears.'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: CMPR0_TEA_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM operator 0 TEA event'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: CMPR1_TEA_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM operator 1 TEA event'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: CMPR2_TEA_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM operator 2 TEA event'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: CMPR0_TEB_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM operator 0 TEB event'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: CMPR1_TEB_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM operator 1 TEB event'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: CMPR2_TEB_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a PWM operator 2 TEB event'
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: TZ0_CBC_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a cycle-by-cycle mode action on PWM0.'
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: TZ1_CBC_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a cycle-by-cycle mode action on PWM1.'
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: TZ2_CBC_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a cycle-by-cycle mode action on PWM2.'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: TZ0_OST_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a one-shot mode action on PWM0.'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: TZ1_OST_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a one-shot mode action on PWM1.'
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: TZ2_OST_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by a one-shot mode action on PWM2.'
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: CAP0_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by capture on CAP0.'
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: CAP1_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by capture on CAP1.'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: CAP2_INT_RAW
+        description: 'Raw status bit: The raw interrupt status of the interrupt triggered by capture on CAP2.'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+  - name: INT_ST
+    description: Interrupt masked status register
+    addressOffset: 280
+    size: 32
+    fields:
+      - name: TIMER0_STOP_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when the timer 0 stops.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: TIMER1_STOP_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when the timer 1 stops.'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: TIMER2_STOP_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when the timer 2 stops.'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: TIMER0_TEZ_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM timer 0 TEZ event.'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: TIMER1_TEZ_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM timer 1 TEZ event.'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: TIMER2_TEZ_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM timer 2 TEZ event.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+      - name: TIMER0_TEP_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM timer 0 TEP event.'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: TIMER1_TEP_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM timer 1 TEP event.'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: TIMER2_TEP_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM timer 2 TEP event.'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+      - name: FAULT0_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when event_f0 starts.'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+      - name: FAULT1_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when event_f1 starts.'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+      - name: FAULT2_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when event_f2 starts.'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: FAULT0_CLR_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when event_f0 clears.'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-only
+      - name: FAULT1_CLR_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when event_f1 clears.'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-only
+      - name: FAULT2_CLR_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered when event_f2 clears.'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-only
+      - name: CMPR0_TEA_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM operator 0 TEA event'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+      - name: CMPR1_TEA_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM operator 1 TEA event'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: CMPR2_TEA_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM operator 2 TEA event'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-only
+      - name: CMPR0_TEB_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM operator 0 TEB event'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-only
+      - name: CMPR1_TEB_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM operator 1 TEB event'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-only
+      - name: CMPR2_TEB_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a PWM operator 2 TEB event'
+        bitOffset: 20
+        bitWidth: 1
+        access: read-only
+      - name: TZ0_CBC_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a cycle-by-cycle mode action on PWM0.'
+        bitOffset: 21
+        bitWidth: 1
+        access: read-only
+      - name: TZ1_CBC_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a cycle-by-cycle mode action on PWM1.'
+        bitOffset: 22
+        bitWidth: 1
+        access: read-only
+      - name: TZ2_CBC_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a cycle-by-cycle mode action on PWM2.'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-only
+      - name: TZ0_OST_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a one-shot mode action on PWM0.'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-only
+      - name: TZ1_OST_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a one-shot mode action on PWM1.'
+        bitOffset: 25
+        bitWidth: 1
+        access: read-only
+      - name: TZ2_OST_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by a one-shot mode action on PWM2.'
+        bitOffset: 26
+        bitWidth: 1
+        access: read-only
+      - name: CAP0_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by capture on CAP0.'
+        bitOffset: 27
+        bitWidth: 1
+        access: read-only
+      - name: CAP1_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by capture on CAP1.'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-only
+      - name: CAP2_INT_ST
+        description: 'Masked status bit: The masked interrupt status of the interrupt triggered by capture on CAP2.'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-only
+  - name: INT_CLR
+    description: Interrupt clear register
+    addressOffset: 284
+    size: 32
+    fields:
+      - name: TIMER0_STOP_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when the timer 0 stops.'
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: TIMER1_STOP_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when the timer 1 stops.'
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: TIMER2_STOP_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when the timer 2 stops.'
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: TIMER0_TEZ_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM timer 0 TEZ event.'
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: TIMER1_TEZ_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM timer 1 TEZ event.'
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: TIMER2_TEZ_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM timer 2 TEZ event.'
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+      - name: TIMER0_TEP_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM timer 0 TEP event.'
+        bitOffset: 6
+        bitWidth: 1
+        access: write-only
+      - name: TIMER1_TEP_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM timer 1 TEP event.'
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: TIMER2_TEP_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM timer 2 TEP event.'
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+      - name: FAULT0_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when event_f0 starts.'
+        bitOffset: 9
+        bitWidth: 1
+        access: write-only
+      - name: FAULT1_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when event_f1 starts.'
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: FAULT2_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when event_f2 starts.'
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: FAULT0_CLR_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when event_f0 clears.'
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+      - name: FAULT1_CLR_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when event_f1 clears.'
+        bitOffset: 13
+        bitWidth: 1
+        access: write-only
+      - name: FAULT2_CLR_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered when event_f2 clears.'
+        bitOffset: 14
+        bitWidth: 1
+        access: write-only
+      - name: CMPR0_TEA_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM operator 0 TEA event'
+        bitOffset: 15
+        bitWidth: 1
+        access: write-only
+      - name: CMPR1_TEA_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM operator 1 TEA event'
+        bitOffset: 16
+        bitWidth: 1
+        access: write-only
+      - name: CMPR2_TEA_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM operator 2 TEA event'
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+      - name: CMPR0_TEB_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM operator 0 TEB event'
+        bitOffset: 18
+        bitWidth: 1
+        access: write-only
+      - name: CMPR1_TEB_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM operator 1 TEB event'
+        bitOffset: 19
+        bitWidth: 1
+        access: write-only
+      - name: CMPR2_TEB_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a PWM operator 2 TEB event'
+        bitOffset: 20
+        bitWidth: 1
+        access: write-only
+      - name: TZ0_CBC_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a cycle-by-cycle mode action on PWM0.'
+        bitOffset: 21
+        bitWidth: 1
+        access: write-only
+      - name: TZ1_CBC_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a cycle-by-cycle mode action on PWM1.'
+        bitOffset: 22
+        bitWidth: 1
+        access: write-only
+      - name: TZ2_CBC_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a cycle-by-cycle mode action on PWM2.'
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: TZ0_OST_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a one-shot mode action on PWM0.'
+        bitOffset: 24
+        bitWidth: 1
+        access: write-only
+      - name: TZ1_OST_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a one-shot mode action on PWM1.'
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: TZ2_OST_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by a one-shot mode action on PWM2.'
+        bitOffset: 26
+        bitWidth: 1
+        access: write-only
+      - name: CAP0_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by capture on CAP0.'
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: CAP1_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by capture on CAP1.'
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: CAP2_INT_CLR
+        description: 'Clear bit: Write 1 to clear the interrupt triggered by capture on CAP2.'
+        bitOffset: 29
+        bitWidth: 1
+        access: write-only
+  - name: EVT_EN
+    description: Event enable register
+    addressOffset: 288
+    size: 32
+    fields:
+      - name: EVT_TIMER0_STOP_EN
+        description: 'Configures whether or not to enable timer0 stop event generate.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIMER1_STOP_EN
+        description: 'Configures whether or not to enable timer1 stop event generate.\\0: Disable\\1: Enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIMER2_STOP_EN
+        description: 'Configures whether or not to enable timer2 stop event generate.\\0: Disable\\1: Enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIMER0_TEZ_EN
+        description: 'Configures whether or not to enable timer0 equal zero event generate.\\0: Disable\\1: Enable'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIMER1_TEZ_EN
+        description: 'Configures whether or not to enable timer1 equal zero event generate.\\0: Disable\\1: Enable'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIMER2_TEZ_EN
+        description: 'Configures whether or not to enable timer2 equal zero event generate.\\0: Disable\\1: Enable'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIMER0_TEP_EN
+        description: 'Configures whether or not to enable timer0 equal period event generate.\\0: Disable\\1: Enable'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIMER1_TEP_EN
+        description: 'Configures whether or not to enable timer1 equal period event generate.\\0: Disable\\1: Enable'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TIMER2_TEP_EN
+        description: 'Configures whether or not to enable timer2 equal period event generate.\\0: Disable\\1: Enable'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP0_TEA_EN
+        description: 'Configures whether or not to enable PWM generator0 timer equal a event generate.\\0: Disable\\1: Enable'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP1_TEA_EN
+        description: 'Configures whether or not to enable PWM generator1 timer equal a event generate.\\0: Disable\\1: Enable'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP2_TEA_EN
+        description: 'Configures whether or not to enable PWM generator2 timer equal a event generate.\\0: Disable\\1: Enable'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP0_TEB_EN
+        description: 'Configures whether or not to enable PWM generator0 timer equal b event generate.\\0: Disable\\1: Enable'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP1_TEB_EN
+        description: 'Configures whether or not to enable PWM generator1 timer equal b event generate.\\0: Disable\\1: Enable'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP2_TEB_EN
+        description: 'Configures whether or not to enable PWM generator2 timer equal b event generate.\\0: Disable\\1: Enable'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: EVT_F0_EN
+        description: 'Configures whether or not to enable fault0 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: EVT_F1_EN
+        description: 'Configures whether or not to enable fault1 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: EVT_F2_EN
+        description: 'Configures whether or not to enable fault2 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: EVT_F0_CLR_EN
+        description: 'Configures whether or not to enable fault0 clear event generate.\\0: Disable\\1: Enable'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: EVT_F1_CLR_EN
+        description: 'Configures whether or not to enable fault1 clear event generate.\\0: Disable\\1: Enable'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: EVT_F2_CLR_EN
+        description: 'Configures whether or not to enable fault2 clear event generate.\\0: Disable\\1: Enable'
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TZ0_CBC_EN
+        description: 'Configures whether or not to enable cycle-by-cycle trip0 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TZ1_CBC_EN
+        description: 'Configures whether or not to enable cycle-by-cycle trip1 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TZ2_CBC_EN
+        description: 'Configures whether or not to enable cycle-by-cycle trip2 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 23
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TZ0_OST_EN
+        description: 'Configures whether or not to enable one-shot trip0 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TZ1_OST_EN
+        description: 'Configures whether or not to enable one-shot trip1 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+      - name: EVT_TZ2_OST_EN
+        description: 'Configures whether or not to enable one-shot trip2 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: EVT_CAP0_EN
+        description: 'Configures whether or not to enable capture0 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: EVT_CAP1_EN
+        description: 'Configures whether or not to enable capture1 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: EVT_CAP2_EN
+        description: 'Configures whether or not to enable capture2 event generate.\\0: Disable\\1: Enable'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+  - name: TASK_EN
+    description: Task enable register
+    addressOffset: 292
+    size: 32
+    fields:
+      - name: TASK_CMPR0_A_UP_EN
+        description: "Configures whether or not to enable PWM generator0 timer stamp A's shadow register update task receive.\\\\0: Disable\\\\1: Enable"
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CMPR1_A_UP_EN
+        description: "Configures whether or not to enable PWM generator1 timer stamp A's shadow register update task receive.\\\\0: Disable\\\\1: Enable"
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CMPR2_A_UP_EN
+        description: "Configures whether or not to enable PWM generator2 timer stamp A's shadow register update task receive.\\\\0: Disable\\\\1: Enable"
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CMPR0_B_UP_EN
+        description: "Configures whether or not to enable PWM generator0 timer stamp B's shadow register update task receive.\\\\0: Disable\\\\1: Enable"
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CMPR1_B_UP_EN
+        description: "Configures whether or not to enable PWM generator1 timer stamp B's shadow register update task receive.\\\\0: Disable\\\\1: Enable"
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CMPR2_B_UP_EN
+        description: "Configures whether or not to enable PWM generator2 timer stamp B's shadow register update task receive.\\\\0: Disable\\\\1: Enable"
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: TASK_GEN_STOP_EN
+        description: 'Configures whether or not to enable all PWM generate stop task receive.\\0: Disable\\1: Enable'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER0_SYNC_EN
+        description: 'Configures whether or not to enable timer0 sync task receive.\\0: Disable\\1: Enable'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER1_SYNC_EN
+        description: 'Configures whether or not to enable timer1 sync task receive.\\0: Disable\\1: Enable'
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER2_SYNC_EN
+        description: 'Configures whether or not to enable timer2 sync task receive.\\0: Disable\\1: Enable'
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER0_PERIOD_UP_EN
+        description: 'Configures whether or not to enable timer0 period update task receive.\\0: Disable\\1: Enable'
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER1_PERIOD_UP_EN
+        description: 'Configures whether or not to enable timer1 period update task receive.\\0: Disable\\1: Enable'
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TIMER2_PERIOD_UP_EN
+        description: 'Configures whether or not to enable timer2 period update task receive.\\0: Disable\\1: Enable'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TZ0_OST_EN
+        description: 'Configures whether or not to enable one shot trip0 task receive.\\0: Disable\\1: Enable'
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TZ1_OST_EN
+        description: 'Configures whether or not to enable one shot trip1 task receive.\\0: Disable\\1: Enable'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: TASK_TZ2_OST_EN
+        description: 'Configures whether or not to enable one shot trip2 task receive.\\0: Disable\\1: Enable'
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CLR0_OST_EN
+        description: 'Configures whether or not to enable one shot trip0 clear task receive.\\0: Disable\\1: Enable'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CLR1_OST_EN
+        description: 'Configures whether or not to enable one shot trip1 clear task receive.\\0: Disable\\1: Enable'
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CLR2_OST_EN
+        description: 'Configures whether or not to enable one shot trip2 clear task receive.\\0: Disable\\1: Enable'
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CAP0_EN
+        description: 'Configures whether or not to enable capture0 task receive.\\0: Disable\\1: Enable'
+        bitOffset: 19
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CAP1_EN
+        description: 'Configures whether or not to enable capture1 task receive.\\0: Disable\\1: Enable'
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: TASK_CAP2_EN
+        description: 'Configures whether or not to enable capture2 task receive.\\0: Disable\\1: Enable'
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+  - name: EVT_EN2
+    description: Event enable register2
+    addressOffset: 296
+    size: 32
+    fields:
+      - name: EVT_OP0_TEE1_EN
+        description: 'Configures whether or not to enable PWM generator0 timer equal OP0_TSTMP_E1_REG event generate.\\0: Disable\\1: Enable'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP1_TEE1_EN
+        description: 'Configures whether or not to enable PWM generator1 timer equal OP1_TSTMP_E1_REG event generate.\\0: Disable\\1: Enable'
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP2_TEE1_EN
+        description: 'Configures whether or not to enable PWM generator2 timer equal OP2_TSTMP_E1_REG event generate.\\0: Disable\\1: Enable'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP0_TEE2_EN
+        description: 'Configures whether or not to enable PWM generator0 timer equal OP0_TSTMP_E2_REG event generate.\\0: Disable\\1: Enable'
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP1_TEE2_EN
+        description: 'Configures whether or not to enable PWM generator1 timer equal OP1_TSTMP_E2_REG event generate.\\0: Disable\\1: Enable'
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: EVT_OP2_TEE2_EN
+        description: 'Configures whether or not to enable PWM generator2 timer equal OP2_TSTMP_E2_REG event generate.\\0: Disable\\1: Enable'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+  - dim: 3
+    dimIncrement: 8
+    name: OP%s_TSTMP_E1
+    description: Generator%s timer stamp E1 value register
+    addressOffset: 300
+    size: 32
+    fields:
+      - name: OP_TSTMP_E1
+        description: Configures generator%s timer stamp E1 value register
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - dim: 3
+    dimIncrement: 8
+    name: OP%s_TSTMP_E2
+    description: Generator%s timer stamp E2 value register
+    addressOffset: 304
+    size: 32
+    fields:
+      - name: OP_TSTMP_E2
+        description: Configures generator%s timer stamp E2 value register
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: CLK
+    description: Global configuration register
+    addressOffset: 324
+    size: 32
+    fields:
+      - name: EN
+        description: 'Configures whether or not to open register clock gate.\\0: Open the clock gate only when application writes registers\\1: Force open the clock gate for register'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: VERSION
+    description: Version register.
+    addressOffset: 328
+    size: 32
+    resetValue: 35725968
+    fields:
+      - name: DATE
+        description: Configures the version.
+        bitOffset: 0
+        bitWidth: 28
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 332
+    usage: registers
+interrupts:
+  - name: INTR

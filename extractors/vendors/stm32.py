@@ -61,3 +61,8 @@ def format_source(name, version, svd_tag=''):
 def errata_path():
     """Return the vendor's SVD errata doc path (for audit reports)."""
     return 'svd/ST/SVD_ERRATA.md'
+
+
+def get_interrupt_offset(cpu_info):
+    """Return interrupt vector offset for Cortex-M (16 system exceptions)."""
+    return 16

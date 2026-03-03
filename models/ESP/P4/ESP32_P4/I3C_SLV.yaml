@@ -1,0 +1,401 @@
+name: I3C_SLV
+description: I3C Controller (Slave)
+groupName: I3C_SLV
+source: ESP32-P4 SVD v2
+registers:
+  - name: CONFIG
+    description: NA
+    addressOffset: 4
+    size: 32
+    resetValue: 3080193
+    fields:
+      - name: SLVENA
+        description: '1: allow the slave to operate on i2c or i3c bus. 0: the slave will ignore the bus. This should be not set until registers such as PARTNO, IDEXT and the like are set 1st  -if used- since they impact data to the master'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: NACK
+        description: 1:the slave will NACK all requests to it except CCC broadcast. This should be used with caution as the Master may determine the slave is missing if overused.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: MATCHSS
+        description: '1: the START and STOP sticky STATUS bits will only be set if MATCHED is set..This allows START and STOP to be used to detect end of a message to /from this slave.'
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: S0IGNORE
+        description: If 1, the Slave will not detect S0 or S1 errors and so not lock up waiting on an Exit Pattern. This should only be used when the bus will not use HDR.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: DDROK
+        description: NA
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: IDRAND
+        description: NA
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: OFFLINE
+        description: NA
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: BAMATCH
+        description: Bus Available condition match value for current ???Slow clock???. This provides the count of the slow clock to count out 1us (or more) to allow an IBI to drive SDA Low when the Master is not doing so. The max width , and so max value, is controlled by the block. Only if enabled for events such IBI or MR or HJ, and if enabled to provide this as a register. With is limited to CLK_SLOW_BITS
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: SADDR
+        description: If allowed by the block:sets i2c 7 bits static address,else should be 0. If enabled to use one and to be provided by SW. Block may provide in HW as well.
+        bitOffset: 25
+        bitWidth: 7
+        access: read-write
+  - name: STATUS
+    description: NA
+    addressOffset: 8
+    size: 32
+    fields:
+      - name: STNOTSTOP
+        description: Is 1 if bus is busy(activity) and 0 when in a STOP condition. Other bits may also set when busy. Note that this can also be true from an S0 or S1 error, which waits for an Exit Pattern.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: STMSG
+        description: Is 1 if this bus Slave is listening to the bus traffic or repsonding, If STNOSTOP=1, then this will be 0 when a non-matching address seen until next respeated START it STOP.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: STCCCH
+        description: Is 1 if a CCC message is being handled automatically.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: STREQRD
+        description: 1 if the req in process is an sdr read from this slave or an IBI is being pushed out,
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: STREQWR
+        description: NA
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: STDAA
+        description: NA
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+      - name: STHDR
+        description: NA
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: START
+        description: NA
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: MATCHED
+        description: NA
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: STOP
+        description: NA
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: RXPEND
+        description: Receiving a message from master,which is not being handled by block(not a CCC internally processed). For all but External FIFO, this uses DATACTRL RXTRIG, which defaults to not-empty. If DMA is enabled for RX, DMA will be signaled as well. Will self-clear if data is read(FIFO and non-FIFO)
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: TXNOTFULL
+        description: Is 1 when the To-bus buffer/FIFO can accept more data to go out. Defau:1. For all but External FIFO, this uses DATACTRL TXTRIG,which defaults to not-full. If DMA is enabled for TX, it will also be signaled to provide more.
+        bitOffset: 12
+        bitWidth: 1
+        access: read-only
+      - name: DACHG
+        description: The Slv Dynamic Address has been assigned, reassigned, or reset(lost) and is now in that state of being valid or none. Actual DA can be seen in the DYNADDR register. Note that this will also be used when MAP Auto feature is configured. This will be changing one or more MAP items. See DYNADDR and/or MAPCTRLn. DYNAADDR for the main DA(0) will indicate if last change was due to Auto MAP.
+        bitOffset: 13
+        bitWidth: 1
+        access: read-write
+      - name: CCC
+        description: 'A common -command-code(CCC), not handled by block, has been received. This acts differently between: *Broadcasted ones, which will then also correspond with RXPEND and the 1st byte will be the CCC(command) . *Direct ones, which may never be directed to this device.  If it is, then the TXSEND or RXPEND will be triggered with this end the RXPEND will contain the command.'
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
+      - name: ERRWARN
+        description: NA
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+      - name: HDRMATCH
+        description: NA
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+  - name: CTRL
+    description: NA
+    addressOffset: 12
+    size: 32
+    fields:
+      - name: SLV_EVENT
+        description: 'If set to non-0, will request an event. Once requested, STATUS.EVENT and EVDET will show the status as it progresses. Once completed, the field will automatically return to 0. Once non-0, only 0 can be written(to cancel) until done. 0: Normal mode. If set to 0 after was a non-0 value, will cancel if not already in flight. 1: start an IBI. This will try to push through an IBI on the bus. If data associate with the IBI, it will be drawn from the IBIDATA field. Note that if Time control is enabled, this will include anytime control related bytes  further, the IBIDATA byte will have bit7 set to 1.'
+        bitOffset: 0
+        bitWidth: 2
+        access: read-write
+      - name: EXTDATA
+        description: reserved
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: MAPIDX
+        description: Index of Dynamic Address that IBI is for. This is 0 for the main or base Dynamic Address, or can be any valid index.
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+      - name: IBIDATA
+        description: Data byte to go with an IBI, if enabled for it. If enabled (was in BCR), then it is required.
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: PENDINT
+        description: Should be set to the pending interrupt that GETSTATUS CCC will return. This should be maintained by the application if used and configured, as the Master will read this. If not configured, the GETSTATUS field will return 1 if an IBI is pending, and 0 otherwise.
+        bitOffset: 16
+        bitWidth: 4
+        access: read-write
+      - name: ACTSTATE
+        description: NA
+        bitOffset: 20
+        bitWidth: 2
+        access: read-write
+      - name: VENDINFO
+        description: NA
+        bitOffset: 24
+        bitWidth: 8
+        access: read-write
+  - name: INTSET
+    description: INSET allows setting enables for interrupts(connecting the corresponding STATUS source to causing an IRQ to the processor)
+    addressOffset: 16
+    size: 32
+    fields:
+      - name: STOP_ENA
+        description: Interrupt on STOP state on the bus. See Start as the preferred interrupt when needed. This interrupt may not trigger for quick STOP/START combination, as it relates to the state of being stopped.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: RXPEND_ENA
+        description: Interrupt when receiving a message from Master, which is not being handled by the block (excludes CCCs being handled automatically). If FIFO, then RX fullness trigger. If DMA, then message end.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: TXSEND_ENA
+        description: NA
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+  - name: INTCLR
+    description: NA
+    addressOffset: 20
+    size: 32
+    fields:
+      - name: STOP_CLR
+        description: Interrupt on STOP state on the bus. See Start as the preferred interrupt when needed. This interrupt may not trigger for quick STOP/START combination, as it relates to the state of being stopped.
+        bitOffset: 10
+        bitWidth: 1
+        access: write-only
+      - name: RXPEND_CLR
+        description: Interrupt when receiving a message from Master, which is not being handled by the block (excludes CCCs being handled automatically). If FIFO, then RX fullness trigger. If DMA, then message end.
+        bitOffset: 11
+        bitWidth: 1
+        access: write-only
+      - name: TXSEND_CLR
+        description: NA
+        bitOffset: 12
+        bitWidth: 1
+        access: write-only
+  - name: INTMASKED
+    description: NA
+    addressOffset: 24
+    size: 32
+    fields:
+      - name: STOP_MASK
+        description: Interrupt on STOP state on the bus. See Start as the preferred interrupt when needed. This interrupt may not trigger for quick STOP/START combination, as it relates to the state of being stopped.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+      - name: RXPEND_MASK
+        description: Interrupt when receiving a message from Master, which is not being handled by the block (excludes CCCs being handled automatically). If FIFO, then RX fullness trigger. If DMA, then message end.
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: TXSEND_MASK
+        description: NA
+        bitOffset: 12
+        bitWidth: 1
+        access: read-only
+  - name: DATACTRL
+    description: NA
+    addressOffset: 44
+    size: 32
+    resetValue: 176
+    fields:
+      - name: FLUSHTB
+        description: Flushes the from-bus buffer/FIFO. Not normally used
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: FLUSHFB
+        description: Flushes the to-bus buffer/FIFO. Used when Master terminates a to-bus (read) message prematurely
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: UNLOCK
+        description: If this bit is not written 1, the register bits from 7 to 4 are not changed on write.
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: TXTRIG
+        description: Trigger level for tx emptiness when FIFOed, Affects interrupt and DMA(if enabled). The defaults is 3
+        bitOffset: 4
+        bitWidth: 2
+        access: read-write
+      - name: RXTRIG
+        description: Trigger level for rx fulless when FIFOed, Affects interrupt and DMA(if enabled). The defaults is 3
+        bitOffset: 6
+        bitWidth: 2
+        access: read-write
+      - name: TXCOUNT
+        description: NA
+        bitOffset: 16
+        bitWidth: 5
+        access: read-only
+      - name: RXCOUNT
+        description: NA
+        bitOffset: 24
+        bitWidth: 5
+        access: read-only
+      - name: TXFULL
+        description: NA
+        bitOffset: 30
+        bitWidth: 1
+        access: read-only
+      - name: RXEMPTY
+        description: NA
+        bitOffset: 31
+        bitWidth: 1
+        access: read-only
+  - name: WDATAB
+    description: NA
+    addressOffset: 48
+    size: 32
+    fields:
+      - name: WDATAB
+        description: NA
+        bitOffset: 0
+        bitWidth: 8
+        access: write-only
+      - name: WDATA_END
+        description: NA
+        bitOffset: 8
+        bitWidth: 1
+        access: write-only
+  - name: WDATABE
+    description: NA
+    addressOffset: 52
+    size: 32
+    fields:
+      - name: WDATABE
+        description: NA
+        bitOffset: 0
+        bitWidth: 8
+        access: write-only
+  - name: RDARAB
+    description: Read Byte Data (from-bus) register
+    addressOffset: 64
+    size: 32
+    fields:
+      - name: DATA0
+        description: This register allows reading a byte from the bus unless external FIFO is used. A byte should not be read unless there is data waiting, as indicated by the RXPEND bit being set in the STATUS register
+        bitOffset: 0
+        bitWidth: 8
+        access: read-only
+  - name: RDATAH
+    description: Read Half-word Data (from-bus) register
+    addressOffset: 72
+    size: 32
+    fields:
+      - name: DATA_LSB
+        description: NA
+        bitOffset: 0
+        bitWidth: 8
+        access: read-only
+      - name: DATA_MSB
+        description: This register allows reading a Half-word (byte pair)  from the bus unless external FIFO is used. A Half-word should not be read unless there is at least 2 bytes of data waiting, as indicated by the RX FIFO level trigger or RXCOUNT available space in the DATACTRL register
+        bitOffset: 8
+        bitWidth: 8
+        access: read-only
+  - name: CAPABILITIES2
+    description: NA
+    addressOffset: 92
+    size: 32
+    resetValue: 256
+    fields:
+      - name: CAPABLITIES2
+        description: NA
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: CAPABILITIES
+    description: NA
+    addressOffset: 96
+    size: 32
+    resetValue: 2081684508
+    fields:
+      - name: CAPABLITIES
+        description: NA
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: IDPARTNO
+    description: NA
+    addressOffset: 108
+    size: 32
+    fields:
+      - name: PARTNO
+        description: NA
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: IDEXT
+    description: NA
+    addressOffset: 112
+    size: 32
+    fields:
+      - name: IDEXT
+        description: NA
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: VENDORID
+    description: NA
+    addressOffset: 116
+    size: 32
+    resetValue: 21840
+    fields:
+      - name: VID
+        description: NA
+        bitOffset: 0
+        bitWidth: 15
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 64
+    usage: registers
+interrupts:
+  - name: INTR

@@ -1,0 +1,360 @@
+name: MIPI_CSI_BRIDGE
+description: MIPI Camera Interface Bridge
+groupName: CSI_BRIG
+source: ESP32-P4 SVD v2
+registers:
+  - name: CLK_EN
+    description: csi bridge register mapping unit clock gating.
+    addressOffset: 0
+    size: 32
+    fields:
+      - name: CLK_EN
+        description: '0: enable clock gating. 1: disable clock gating, clock always on.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: CSI_EN
+    description: csi bridge enable.
+    addressOffset: 4
+    size: 32
+    fields:
+      - name: CSI_BRIG_EN
+        description: '0: disable csi bridge. 1: enable csi bridge.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: DMA_REQ_CFG
+    description: dma request configuration.
+    addressOffset: 8
+    size: 32
+    resetValue: 128
+    fields:
+      - name: DMA_BURST_LEN
+        description: DMA burst length.
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: DMA_CFG_UPD_BY_BLK
+        description: '1: reg_dma_burst_len & reg_dma_burst_len will be updated by dma block finish. 0: updated by frame.'
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: DMA_FORCE_RD_STATUS
+        description: '1: mask dma request when reading frame info. 0: disable mask.'
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+  - name: BUF_FLOW_CTL
+    description: csi bridge buffer control.
+    addressOffset: 12
+    size: 32
+    resetValue: 2040
+    fields:
+      - name: CSI_BUF_AFULL_THRD
+        description: buffer almost full threshold.
+        bitOffset: 0
+        bitWidth: 14
+        access: read-write
+      - name: CSI_BUF_DEPTH
+        description: buffer data count.
+        bitOffset: 16
+        bitWidth: 14
+        access: read-only
+  - name: DATA_TYPE_CFG
+    description: pixel data type configuration.
+    addressOffset: 16
+    size: 32
+    resetValue: 12056
+    fields:
+      - name: DATA_TYPE_MIN
+        description: the min value of data type used for pixel filter.
+        bitOffset: 0
+        bitWidth: 6
+        access: read-write
+      - name: DATA_TYPE_MAX
+        description: the max value of data type used for pixel filter.
+        bitOffset: 8
+        bitWidth: 6
+        access: read-write
+  - name: FRAME_CFG
+    description: frame configuration.
+    addressOffset: 20
+    size: 32
+    resetValue: 18743776
+    fields:
+      - name: VADR_NUM
+        description: vadr of frame data.
+        bitOffset: 0
+        bitWidth: 12
+        access: read-write
+      - name: HADR_NUM
+        description: hadr of frame data.
+        bitOffset: 12
+        bitWidth: 12
+        access: read-write
+      - name: HAS_HSYNC_E
+        description: "0: frame data doesn't contain hsync. 1: frame data contains hsync."
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+      - name: VADR_NUM_CHECK
+        description: '0: disable vadr check. 1: enable vadr check.'
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+  - name: ENDIAN_MODE
+    description: data endianness order configuration.
+    addressOffset: 24
+    size: 32
+    fields:
+      - name: BYTE_ENDIAN_ORDER
+        description: endianness order in bytes. 2'h0 is normal mode and 2'h3 is useful to YUV420(Legacy) when isp is bapassed.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: BIT_ENDIAN_ORDER
+        description: N/A
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: INT_RAW
+    description: csi bridge interrupt raw.
+    addressOffset: 28
+    size: 32
+    fields:
+      - name: VADR_NUM_GT_INT_RAW
+        description: reg_vadr_num is greater than real interrupt raw.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: VADR_NUM_LT_INT_RAW
+        description: reg_vadr_num is less than real interrupt raw.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: DISCARD_INT_RAW
+        description: an incomplete frame of data was sent interrupt raw.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: CSI_BUF_OVERRUN_INT_RAW
+        description: buffer overrun interrupt raw.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: CSI_ASYNC_FIFO_OVF_INT_RAW
+        description: buffer overflow interrupt raw.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: DMA_CFG_HAS_UPDATED_INT_RAW
+        description: dma configuration update complete interrupt raw.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+  - name: INT_CLR
+    description: csi bridge interrupt clr.
+    addressOffset: 32
+    size: 32
+    fields:
+      - name: VADR_NUM_GT_REAL_INT_CLR
+        description: reg_vadr_num is greater than real interrupt clr.
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: VADR_NUM_LT_REAL_INT_CLR
+        description: reg_vadr_num is less than real interrupt clr.
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: DISCARD_INT_CLR
+        description: an incomplete frame of data was sent interrupt clr.
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: CSI_BUF_OVERRUN_INT_CLR
+        description: buffer overrun interrupt clr.
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: CSI_ASYNC_FIFO_OVF_INT_CLR
+        description: buffer overflow interrupt clr.
+        bitOffset: 4
+        bitWidth: 1
+        access: write-only
+      - name: DMA_CFG_HAS_UPDATED_INT_CLR
+        description: dma configuration update complete interrupt clr.
+        bitOffset: 5
+        bitWidth: 1
+        access: write-only
+  - name: INT_ST
+    description: csi bridge interrupt st.
+    addressOffset: 36
+    size: 32
+    fields:
+      - name: VADR_NUM_GT_INT_ST
+        description: reg_vadr_num is greater than real interrupt st.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: VADR_NUM_LT_INT_ST
+        description: reg_vadr_num is less than real interrupt st.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: DISCARD_INT_ST
+        description: an incomplete frame of data was sent interrupt st.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: CSI_BUF_OVERRUN_INT_ST
+        description: buffer overrun interrupt st.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: CSI_ASYNC_FIFO_OVF_INT_ST
+        description: buffer overflow interrupt st.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: DMA_CFG_HAS_UPDATED_INT_ST
+        description: dma configuration update complete interrupt st.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+  - name: INT_ENA
+    description: csi bridge interrupt enable.
+    addressOffset: 40
+    size: 32
+    fields:
+      - name: VADR_NUM_GT_INT_ENA
+        description: reg_vadr_num is greater than real interrupt enable.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: VADR_NUM_LT_INT_ENA
+        description: reg_vadr_num is less than real interrupt enable.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: DISCARD_INT_ENA
+        description: an incomplete frame of data was sent interrupt enable.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: CSI_BUF_OVERRUN_INT_ENA
+        description: buffer overrun interrupt enable.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: CSI_ASYNC_FIFO_OVF_INT_ENA
+        description: buffer overflow interrupt enable.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: DMA_CFG_HAS_UPDATED_INT_ENA
+        description: dma configuration update complete interrupt enable.
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+  - name: DMA_REQ_INTERVAL
+    description: DMA interval configuration.
+    addressOffset: 44
+    size: 32
+    resetValue: 1
+    fields:
+      - name: DMA_REQ_INTERVAL
+        description: "16'b1: 1 cycle. 16'b11: 2 cycle. ... ... 16'hFFFF: 16 cycle."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+  - name: DMABLK_SIZE
+    description: DMA block size configuration.
+    addressOffset: 48
+    size: 32
+    resetValue: 8191
+    fields:
+      - name: DMABLK_SIZE
+        description: the number of reg_dma_burst_len in a block
+        bitOffset: 0
+        bitWidth: 13
+        access: read-write
+  - name: RDN_ECO_CS
+    description: N/A
+    addressOffset: 52
+    size: 32
+    fields:
+      - name: RDN_ECO_EN
+        description: N/A
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: RDN_ECO_RESULT
+        description: N/A
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+  - name: RDN_ECO_LOW
+    description: N/A
+    addressOffset: 56
+    size: 32
+    fields:
+      - name: RDN_ECO_LOW
+        description: N/A
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: RDN_ECO_HIGH
+    description: N/A
+    addressOffset: 60
+    size: 32
+    resetValue: 4294967295
+    fields:
+      - name: RDN_ECO_HIGH
+        description: N/A
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: HOST_CTRL
+    description: csi host control by csi bridge.
+    addressOffset: 64
+    size: 32
+    resetValue: 3
+    fields:
+      - name: CSI_ENABLECLK
+        description: enable clock lane module of csi phy.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CSI_CFG_CLK_EN
+        description: enable cfg_clk of csi host module.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: LOOPBK_TEST_EN
+        description: for phy test by loopback dsi phy to csi phy.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+  - name: MEM_CTRL
+    description: csi bridge buffer control.
+    addressOffset: 68
+    size: 32
+    resetValue: 9792
+    fields:
+      - name: CSI_BRIDGE_MEM_CLK_FORCE_ON
+        description: csi bridge memory clock gating force on.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CSI_MEM_AUX_CTRL
+        description: N/A
+        bitOffset: 1
+        bitWidth: 14
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 72
+    usage: registers
+interrupts:
+  - name: INTR

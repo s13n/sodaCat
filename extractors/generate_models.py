@@ -30,6 +30,7 @@ from transform import renameEntries, createClusterArray, createArray, create2DAr
 VENDORS = {
     'stm32': 'vendors.stm32',
     'lpc': 'vendors.lpc',
+    'esp': 'vendors.esp',
 }
 
 
@@ -98,9 +99,13 @@ def load_family_config(family_code, config_file):
     for sf_key, sf_val in (config.get('chip_interrupts') or {}).items():
         chip_interrupts[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
+    address_overrides = {}
+    for inst, addr in (config.get('address_overrides') or {}).items():
+        address_overrides[inst] = int(addr) if isinstance(addr, str) else addr
+
     svd_tag = full_config.get('svd', {}).get('tag', '')
 
-    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag
+    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag, address_overrides
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -850,8 +855,8 @@ def main():
     ext.validate_args(args)
 
     config_file = ext.config_path(args)
-    families, blocks_config, chip_params, chip_interrupts, shared_blocks, svd_tag = \
-        load_family_config(family_code, config_file)
+    families, blocks_config, chip_params, chip_interrupts, shared_blocks, svd_tag, \
+        address_overrides = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
     family_chips = set()
@@ -1114,7 +1119,16 @@ def main():
             # Build instances and interrupt table
             instances = {}
             interrupt_table = defaultdict(list)
-            interrupt_offset = 16  # Cortex-M: 16 system exceptions before IRQs
+            if hasattr(ext, 'get_interrupt_offset'):
+                interrupt_offset = ext.get_interrupt_offset(
+                    device_meta.get('cpu', {}))
+            else:
+                interrupt_offset = 16  # Default: Cortex-M
+
+            # Apply base address overrides (fix known SVD bugs)
+            for inst_name, periph in summary['peripherals'].items():
+                if inst_name in address_overrides:
+                    periph['baseAddress'] = address_overrides[inst_name]
 
             for inst_name, periph in summary['peripherals'].items():
                 block_type = instance_to_block.get(inst_name)

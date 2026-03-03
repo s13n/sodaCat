@@ -1,0 +1,760 @@
+name: PPA
+description: Peripheral
+groupName: PPA
+source: ESP32-P4 SVD v2
+registers:
+  - name: BLEND0_CLUT_DATA
+    description: CLUT sram data read/write register in background plane of blender
+    addressOffset: 0
+    size: 32
+    fields:
+      - name: RDWR_WORD_BLEND0_CLUT
+        description: Write and read data to/from CLUT RAM in background plane of blender engine through this field in fifo mode.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: BLEND1_CLUT_DATA
+    description: CLUT sram data read/write register in foreground plane of blender
+    addressOffset: 4
+    size: 32
+    fields:
+      - name: RDWR_WORD_BLEND1_CLUT
+        description: Write and read data to/from CLUT RAM in foreground plane of blender engine through this field in fifo mode.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CLUT_CONF
+    description: CLUT configure register
+    addressOffset: 12
+    size: 32
+    fields:
+      - name: APB_FIFO_MASK
+        description: "1'b0: fifo mode to wr/rd clut0/clut1 RAM through register PPA_SR_CLUT_DATA_REG/PPA_BLEND0_CLUT_DATA_REG/PPA_BLEND1_CLUT_DATA_REG. 1'b1: memory mode to wr/rd sr/blend0/blend1 clut RAM. The bit 11 and 10 of the waddr should be 01 to access sr clut and should be 10 to access blend0 clut and should be 11 to access blend 1 clut in memory mode."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: BLEND0_CLUT_MEM_RST
+        description: Write 1 then write 0 to this bit to reset BLEND0 CLUT.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: BLEND1_CLUT_MEM_RST
+        description: Write 1 then write 0 to this bit to reset BLEND1 CLUT.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: BLEND0_CLUT_MEM_RDADDR_RST
+        description: Write 1 then write 0 to reset the read address of BLEND0 CLUT in fifo mode.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: BLEND1_CLUT_MEM_RDADDR_RST
+        description: Write 1 then write 0 to reset the read address of BLEND1 CLUT in fifo mode.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: BLEND0_CLUT_MEM_FORCE_PD
+        description: '1: force power down BLEND CLUT memory.'
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: BLEND0_CLUT_MEM_FORCE_PU
+        description: '1: force power up BLEND CLUT memory.'
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: BLEND0_CLUT_MEM_CLK_ENA
+        description: '1: Force clock on for BLEND CLUT memory.'
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+  - name: INT_RAW
+    description: Raw status interrupt
+    addressOffset: 16
+    size: 32
+    fields:
+      - name: SR_EOF_INT_RAW
+        description: The raw interrupt bit turns to high level when scaling and rotating engine calculate one frame image.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: BLEND_EOF_INT_RAW
+        description: The raw interrupt bit turns to high level when blending engine calculate one frame image.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: SR_PARAM_CFG_ERR_INT_RAW
+        description: The raw interrupt bit turns to high level when the configured scaling and rotating coefficient is wrong. User can check the reasons through register PPA_SR_PARAM_ERR_ST_REG.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+  - name: INT_ST
+    description: Masked interrupt
+    addressOffset: 20
+    size: 32
+    fields:
+      - name: SR_EOF_INT_ST
+        description: The raw interrupt status bit for the PPA_SR_EOF_INT interrupt.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: BLEND_EOF_INT_ST
+        description: The raw interrupt status bit for the PPA_BLEND_EOF_INT interrupt.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: SR_PARAM_CFG_ERR_INT_ST
+        description: The raw interrupt status bit for the PPA_SR_RX_YSCAL_ERR_INT interrupt.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+  - name: INT_ENA
+    description: Interrupt enable bits
+    addressOffset: 24
+    size: 32
+    fields:
+      - name: SR_EOF_INT_ENA
+        description: The interrupt enable bit for the PPA_SR_EOF_INT interrupt.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: BLEND_EOF_INT_ENA
+        description: The interrupt enable bit for the PPA_BLEND_EOF_INT interrupt.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: SR_PARAM_CFG_ERR_INT_ENA
+        description: The interrupt enable bit for the PPA_SR_RX_YSCAL_ERR_INT interrupt.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+  - name: INT_CLR
+    description: Interrupt clear bits
+    addressOffset: 28
+    size: 32
+    fields:
+      - name: SR_EOF_INT_CLR
+        description: Set this bit to clear the PPA_SR_EOF_INT interrupt.
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: BLEND_EOF_INT_CLR
+        description: Set this bit to clear the PPA_BLEND_EOF_INT interrupt.
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: SR_PARAM_CFG_ERR_INT_CLR
+        description: Set this bit to clear the PPA_SR_RX_YSCAL_ERR_INT interrupt.
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+  - name: SR_COLOR_MODE
+    description: Scaling and rotating engine color mode register
+    addressOffset: 32
+    size: 32
+    fields:
+      - name: SR_RX_CM
+        description: 'The source image color mode for Scaling and Rotating engine Rx. 0: ARGB8888. 1: RGB888. 2: RGB565. 8: YUV420. others: Reserved.'
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: SR_TX_CM
+        description: 'The destination image color mode for Scaling and Rotating engine Tx. 0: ARGB8888. 1: RGB888. 2: RGB565. 8: YUV420. others: Reserved.'
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+      - name: YUV_RX_RANGE
+        description: "YUV input range when reg_sr_rx_cm is 4'd8. 0: limit range. 1: full range"
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: YUV_TX_RANGE
+        description: "YUV output range when reg_sr_tx_cm is 4'd8. 0: limit range. 1: full range"
+        bitOffset: 9
+        bitWidth: 1
+        access: read-write
+      - name: YUV2RGB_PROTOCAL
+        description: "YUV to RGB protocal when reg_sr_rx_cm is 4'd8. 0: BT601. 1: BT709"
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: RGB2YUV_PROTOCAL
+        description: "RGB to YUV protocal when reg_sr_tx_cm is 4'd8. 0: BT601. 1: BT709"
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+  - name: BLEND_COLOR_MODE
+    description: blending engine color mode register
+    addressOffset: 36
+    size: 32
+    fields:
+      - name: BLEND0_RX_CM
+        description: 'The source image color mode for background plane. 0: ARGB8888. 1: RGB888. 2: RGB565. 3: Reserved. 4: L8. 5: L4.'
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: BLEND1_RX_CM
+        description: 'The source image color mode for foreground plane. 0: ARGB8888. 1: RGB888. 2: RGB565. 3: Reserved. 4: L8. 5: L4. 6: A8. 7: A4.'
+        bitOffset: 4
+        bitWidth: 4
+        access: read-write
+      - name: BLEND_TX_CM
+        description: 'The destination image color mode for output of blender. 0: ARGB8888. 1: RGB888. 2: RGB565. 3: Reserved..'
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+  - name: SR_BYTE_ORDER
+    description: Scaling and rotating engine byte order register
+    addressOffset: 40
+    size: 32
+    fields:
+      - name: SR_RX_BYTE_SWAP_EN
+        description: Set this bit to 1  the data into Rx channel 0 would be swapped in byte. The Byte0 and Byte1 would be swapped while byte 2 and byte 3 would be swappped.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: SR_RX_RGB_SWAP_EN
+        description: Set this bit to 1  the data into Rx channel 0 would be swapped in rgb. It means rgb would be swap to bgr.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: SR_MACRO_BK_RO_BYPASS
+        description: Set this bit to 1 to bypass the macro block order function. This function is used to improve efficient accessing external memory.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+  - name: BLEND_BYTE_ORDER
+    description: Blending engine byte order register
+    addressOffset: 44
+    size: 32
+    fields:
+      - name: BLEND0_RX_BYTE_SWAP_EN
+        description: Set this bit to 1  the data into Rx channel 0 would be swapped in byte. The Byte0 and Byte1 would be swapped while byte 2 and byte 3 would be swappped.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: BLEND1_RX_BYTE_SWAP_EN
+        description: Set this bit to 1  the data into Rx channel 0 would be swapped in byte. The Byte0 and Byte1 would be swapped while byte 2 and byte 3 would be swappped.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: BLEND0_RX_RGB_SWAP_EN
+        description: Set this bit to 1  the data into Rx channel 0 would be swapped in rgb. It means rgb would be swap to bgr.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: BLEND1_RX_RGB_SWAP_EN
+        description: Set this bit to 1  the data into Rx channel 0 would be swapped in rgb. It means rgb would be swap to bgr.
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+  - name: BLEND_TRANS_MODE
+    description: Blending engine mode configure register
+    addressOffset: 52
+    size: 32
+    fields:
+      - name: BLEND_EN
+        description: Set this bit to enable alpha blending.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: BLEND_BYPASS
+        description: Set this bit to bypass blender. Then background date would be output.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: BLEND_FIX_PIXEL_FILL_EN
+        description: This bit is used to enable fix pixel filling. When this mode is enable  only Tx channel is work and the output pixel is configured by PPA_OUT_FIX_PIXEL.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: UPDATE
+        description: Set this bit to update the transfer mode. Only the bit is set  the transfer mode is valid.
+        bitOffset: 3
+        bitWidth: 1
+        access: write-only
+      - name: BLEND_RST
+        description: write 1 then write 0 to reset blending engine.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+  - name: SR_FIX_ALPHA
+    description: Scaling and rotating engine alpha override register
+    addressOffset: 56
+    size: 32
+    resetValue: 128
+    fields:
+      - name: SR_RX_FIX_ALPHA
+        description: The value would replace the alpha value in received pixel for Scaling and Rotating engine when PPA_SR_RX_ALPHA_CONF_EN is enabled.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: SR_RX_ALPHA_MOD
+        description: 'Alpha mode. 0/3: not replace alpha. 1: replace alpha with PPA_SR_FIX_ALPHA. 2: Original alpha multiply with PPA_SR_FIX_ALPHA/256.'
+        bitOffset: 8
+        bitWidth: 2
+        access: read-write
+      - name: SR_RX_ALPHA_INV
+        description: Set this bit to invert the original alpha value. When RX color mode is RGB565/RGB88. The original alpha value is 255.
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+  - name: BLEND_TX_SIZE
+    description: Fix pixel filling mode image size register
+    addressOffset: 60
+    size: 32
+    fields:
+      - name: BLEND_HB
+        description: The horizontal width of image block that would be filled in fix pixel filling mode. The unit is pixel
+        bitOffset: 0
+        bitWidth: 14
+        access: read-write
+      - name: BLEND_VB
+        description: The vertical width of image block that would be filled in fix pixel filling mode. The unit is pixel
+        bitOffset: 14
+        bitWidth: 14
+        access: read-write
+  - name: BLEND_FIX_ALPHA
+    description: Blending engine alpha override register
+    addressOffset: 64
+    size: 32
+    resetValue: 32896
+    fields:
+      - name: BLEND0_RX_FIX_ALPHA
+        description: The value would replace the alpha value in received pixel for background plane of blender when PPA_BLEND0_RX_ALPHA_CONF_EN is enabled.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: BLEND1_RX_FIX_ALPHA
+        description: The value would replace the alpha value in received pixel for foreground plane of blender when PPA_BLEND1_RX_ALPHA_CONF_EN is enabled.
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: BLEND0_RX_ALPHA_MOD
+        description: 'Alpha mode. 0/3: not replace alpha. 1: replace alpha with PPA_SR_FIX_ALPHA. 2: Original alpha multiply with PPA_SR_FIX_ALPHA/256.'
+        bitOffset: 16
+        bitWidth: 2
+        access: read-write
+      - name: BLEND1_RX_ALPHA_MOD
+        description: 'Alpha mode. 0/3: not replace alpha. 1: replace alpha with PPA_SR_FIX_ALPHA. 2: Original alpha multiply with PPA_SR_FIX_ALPHA/256.'
+        bitOffset: 18
+        bitWidth: 2
+        access: read-write
+      - name: BLEND0_RX_ALPHA_INV
+        description: Set this bit to invert the original alpha value. When RX color mode is RGB565/RGB88. The original alpha value is 255.
+        bitOffset: 20
+        bitWidth: 1
+        access: read-write
+      - name: BLEND1_RX_ALPHA_INV
+        description: Set this bit to invert the original alpha value. When RX color mode is RGB565/RGB88. The original alpha value is 255.
+        bitOffset: 21
+        bitWidth: 1
+        access: read-write
+  - name: BLEND_RGB
+    description: RGB color register
+    addressOffset: 72
+    size: 32
+    resetValue: 8421504
+    fields:
+      - name: BLEND1_RX_B
+        description: blue color for A4/A8 mode.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: BLEND1_RX_G
+        description: green color for A4/A8 mode.
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: BLEND1_RX_R
+        description: red color for A4/A8 mode.
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: BLEND_FIX_PIXEL
+    description: Blending engine fix pixel register
+    addressOffset: 76
+    size: 32
+    fields:
+      - name: BLEND_TX_FIX_PIXEL
+        description: The configure fix pixel in fix pixel filling mode for blender engine.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: CK_FG_LOW
+    description: foreground color key lower threshold
+    addressOffset: 80
+    size: 32
+    resetValue: 16777215
+    fields:
+      - name: COLORKEY_FG_B_LOW
+        description: color key lower threshold of foreground b channel
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_FG_G_LOW
+        description: color key lower threshold of foreground g channel
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_FG_R_LOW
+        description: color key lower threshold of foreground r channel
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: CK_FG_HIGH
+    description: foreground color key higher threshold
+    addressOffset: 84
+    size: 32
+    fields:
+      - name: COLORKEY_FG_B_HIGH
+        description: color key higher threshold of foreground b channel
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_FG_G_HIGH
+        description: color key higher threshold of foreground g channel
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_FG_R_HIGH
+        description: color key higher threshold of foreground r channel
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: CK_BG_LOW
+    description: background color key lower threshold
+    addressOffset: 88
+    size: 32
+    resetValue: 16777215
+    fields:
+      - name: COLORKEY_BG_B_LOW
+        description: color key lower threshold of background b channel
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_BG_G_LOW
+        description: color key lower threshold of background g channel
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_BG_R_LOW
+        description: color key lower threshold of background r channel
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: CK_BG_HIGH
+    description: background color key higher threshold
+    addressOffset: 92
+    size: 32
+    fields:
+      - name: COLORKEY_BG_B_HIGH
+        description: color key higher threshold of background b channel
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_BG_G_HIGH
+        description: color key higher threshold of background g channel
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_BG_R_HIGH
+        description: color key higher threshold of background r channel
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+  - name: CK_DEFAULT
+    description: default value when foreground and background both in color key range
+    addressOffset: 96
+    size: 32
+    fields:
+      - name: COLORKEY_DEFAULT_B
+        description: default B channle value of color key
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_DEFAULT_G
+        description: default G channle value of color key
+        bitOffset: 8
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_DEFAULT_R
+        description: default R channle value of color key
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: COLORKEY_FG_BG_REVERSE
+        description: 'when pixel in bg ck range but not in fg ck range, 0: the result is bg, 1: the result is fg'
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+  - name: SR_SCAL_ROTATE
+    description: Scaling and rotating coefficient register
+    addressOffset: 100
+    size: 32
+    resetValue: 4097
+    fields:
+      - name: SR_SCAL_X_INT
+        description: The integrated part of scaling coefficient in X direction.
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: SR_SCAL_X_FRAG
+        description: The fragment part of scaling coefficient in X direction.
+        bitOffset: 8
+        bitWidth: 4
+        access: read-write
+      - name: SR_SCAL_Y_INT
+        description: The integrated part of scaling coefficient in Y direction.
+        bitOffset: 12
+        bitWidth: 8
+        access: read-write
+      - name: SR_SCAL_Y_FRAG
+        description: The fragment part of scaling coefficient in Y direction.
+        bitOffset: 20
+        bitWidth: 4
+        access: read-write
+      - name: SR_ROTATE_ANGLE
+        description: 'The rotate angle. 0: 0 degree. 1: 90 degree. 2: 180 degree. 3: 270 degree.'
+        bitOffset: 24
+        bitWidth: 2
+        access: read-write
+      - name: SCAL_ROTATE_RST
+        description: Write 1 then write 0 to this bit to reset scaling and rotating engine.
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+      - name: SCAL_ROTATE_START
+        description: Write 1 to enable scaling and rotating engine after parameter is configured.
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: SR_MIRROR_X
+        description: 'Image mirror in X direction. 0: disable, 1: enable'
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: SR_MIRROR_Y
+        description: 'Image mirror in Y direction. 0: disable, 1: enable'
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+  - name: SR_MEM_PD
+    description: SR memory power done register
+    addressOffset: 104
+    size: 32
+    fields:
+      - name: SR_MEM_CLK_ENA
+        description: Set this bit to force clock enable of scaling and rotating engine's data memory.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: SR_MEM_FORCE_PD
+        description: Set this bit to force power down scaling and rotating engine's data memory.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: SR_MEM_FORCE_PU
+        description: Set this bit to force power up scaling and rotating engine's data memory.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+  - name: REG_CONF
+    description: Register clock enable register
+    addressOffset: 108
+    size: 32
+    fields:
+      - name: CLK_EN
+        description: PPA register clock gate enable signal.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+  - name: CLUT_CNT
+    description: BLEND CLUT write counter register
+    addressOffset: 112
+    size: 32
+    fields:
+      - name: BLEND0_CLUT_CNT
+        description: The write data counter of BLEND0 CLUT in fifo mode.
+        bitOffset: 0
+        bitWidth: 9
+        access: read-only
+      - name: BLEND1_CLUT_CNT
+        description: The write data counter of BLEND1 CLUT in fifo mode.
+        bitOffset: 9
+        bitWidth: 9
+        access: read-only
+  - name: BLEND_ST
+    description: Blending engine status register
+    addressOffset: 116
+    size: 32
+    fields:
+      - name: BLEND_SIZE_DIFF_ST
+        description: '1: indicate the size of two image is different.'
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+  - name: SR_PARAM_ERR_ST
+    description: Scaling and rotating coefficient error register
+    addressOffset: 120
+    size: 32
+    fields:
+      - name: TX_DSCR_VB_ERR_ST
+        description: The error is that the scaled VB plus the offset of Y coordinate in 2DDMA receive descriptor is larger than VA in 2DDMA receive descriptor.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: TX_DSCR_HB_ERR_ST
+        description: The error is that the scaled HB plus the offset of X coordinate in 2DDMA receive descriptor is larger than HA in 2DDMA receive descriptor.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-only
+      - name: Y_RX_SCAL_EQUAL_0_ERR_ST
+        description: The error is that the PPA_SR_SCAL_Y_INT and PPA_SR_CAL_Y_FRAG both are 0.
+        bitOffset: 2
+        bitWidth: 1
+        access: read-only
+      - name: RX_DSCR_VB_ERR_ST
+        description: The error is that VB in 2DDMA receive descriptor plus the offset of Y coordinate in 2DDMA transmit descriptor is larger than VA in 2DDMA transmit descriptor
+        bitOffset: 3
+        bitWidth: 1
+        access: read-only
+      - name: YDST_LEN_TOO_SAMLL_ERR_ST
+        description: The error is that the scaled image width is 0. For example.  when source width is 14. scaled value is 1/16. and no rotate operation. then scaled width would be 0 as the result would be floored.
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: YDST_LEN_TOO_LARGE_ERR_ST
+        description: The error is that the scaled width is larger than (2^13 - 1).
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+      - name: X_RX_SCAL_EQUAL_0_ERR_ST
+        description: The error is that the scaled image height is 0.
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: RX_DSCR_HB_ERR_ST
+        description: The error is that the HB in 2DDMA transmit descriptor plus the offset of X coordinate in 2DDMA transmit descriptor is larger than HA in 2DDMA transmit descriptor.
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: XDST_LEN_TOO_SAMLL_ERR_ST
+        description: The error is that the scaled image height is 0. For example.  when source height is 14. scaled value is 1/16. and no rotate operation. then scaled height would be 0 as the result would be floored.
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+      - name: XDST_LEN_TOO_LARGE_ERR_ST
+        description: The error is that the scaled image height is larger than (2^13 - 1).
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+      - name: X_YUV420_RX_SCALE_ERR_ST
+        description: The error is that the ha/hb/x param in dma2d descriptor is an odd num when enable yuv420 rx
+        bitOffset: 10
+        bitWidth: 1
+        access: read-only
+      - name: Y_YUV420_RX_SCALE_ERR_ST
+        description: The error is that the va/vb/y param in dma2d descriptor is an odd num when enable yuv420 rx
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: X_YUV420_TX_SCALE_ERR_ST
+        description: The error is that the ha/hb/x param in dma2d descriptor is an odd num when enable yuv420 tx
+        bitOffset: 12
+        bitWidth: 1
+        access: read-only
+      - name: Y_YUV420_TX_SCALE_ERR_ST
+        description: The error is that the va/vb/y param in dma2d descriptor is an odd num when enable yuv420 tx
+        bitOffset: 13
+        bitWidth: 1
+        access: read-only
+  - name: SR_STATUS
+    description: SR FSM register
+    addressOffset: 124
+    size: 32
+    fields:
+      - name: SR_RX_DSCR_SAMPLE_STATE
+        description: Reserved.
+        bitOffset: 0
+        bitWidth: 2
+        access: read-only
+      - name: SR_RX_SCAN_STATE
+        description: Reserved.
+        bitOffset: 2
+        bitWidth: 2
+        access: read-only
+      - name: SR_TX_DSCR_SAMPLE_STATE
+        description: Reserved.
+        bitOffset: 4
+        bitWidth: 2
+        access: read-only
+      - name: SR_TX_SCAN_STATE
+        description: Reserved.
+        bitOffset: 6
+        bitWidth: 3
+        access: read-only
+  - name: ECO_LOW
+    description: Reserved.
+    addressOffset: 128
+    size: 32
+    fields:
+      - name: RND_ECO_LOW
+        description: Reserved.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: ECO_HIGH
+    description: Reserved.
+    addressOffset: 132
+    size: 32
+    resetValue: 4294967295
+    fields:
+      - name: RND_ECO_HIGH
+        description: Reserved.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+  - name: ECO_CELL_CTRL
+    description: Reserved.
+    addressOffset: 136
+    size: 32
+    fields:
+      - name: RDN_RESULT
+        description: Reserved.
+        bitOffset: 0
+        bitWidth: 1
+        access: read-only
+      - name: RDN_ENA
+        description: Reserved.
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+  - name: SRAM_CTRL
+    description: SRAM Control Register
+    addressOffset: 140
+    size: 32
+    resetValue: 4896
+    fields:
+      - name: MEM_AUX_CTRL
+        description: Control signals
+        bitOffset: 0
+        bitWidth: 14
+        access: read-write
+  - name: DATE
+    description: Version register
+    addressOffset: 256
+    size: 32
+    resetValue: 36716609
+    fields:
+      - name: DATE
+        description: register version.
+        bitOffset: 0
+        bitWidth: 32
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 136
+    usage: registers
+interrupts:
+  - name: INTR

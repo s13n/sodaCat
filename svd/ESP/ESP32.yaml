@@ -1,0 +1,542 @@
+# Consolidated configuration for Espressif ESP32 model extraction.
+# SVD files sourced from https://github.com/espressif/svd
+
+svd:
+  source: https://github.com/espressif/svd
+  release: "2024-05-09"
+  version: "2"
+
+families:
+  P4:
+    svd:
+      file: esp32p4.svd
+      version: "2"
+      date: "2024-05-09"
+    subfamilies:
+      ESP32_P4:
+        chips: [ESP32-P4]
+        ref_manual:
+          name: ESP32-P4 TRM
+          rev: "0.2"
+          date: "2025-10-23"
+          url: https://www.espressif.com/sites/default/files/documentation/esp32-p4_technical_reference_manual_en.pdf
+
+    blocks:
+      # ====================================================================
+      # Communication
+      # ====================================================================
+      UART:
+        from: ESP32-P4.UART0
+        instances: [UART0, UART1, UART2, UART3, UART4]
+        interrupts:
+          UART0: INTR
+          UART1: INTR
+          UART2: INTR
+          UART3: INTR
+          UART4: INTR
+
+      I2C:
+        from: ESP32-P4.I2C0
+        instances: [I2C0, I2C1]
+        interrupts:
+          I2C0: INTR
+          I2C1: INTR
+
+      I2S:
+        from: ESP32-P4.I2S0
+        instances: [I2S0, I2S1, I2S2]
+        interrupts:
+          I2S0: INTR
+          I2S1: INTR
+          I2S2: INTR
+
+      SpiMem:
+        from: ESP32-P4.SPI0
+        instances: [SPI0, SPI1]
+        # Auto-strip removes SPI_ (base of SPI0); explicit transform removes
+        # remaining MEM_ prefix: SPI_MEM_CMD -> MEM_CMD -> CMD
+        transforms:
+          - {type: renameRegisters, pattern: "^MEM_", replacement: ""}
+
+      SPI:
+        from: ESP32-P4.SPI2
+        instances: [SPI2, SPI3]
+        # Auto-strip removes SPI_ (base of SPI2): SPI_CMD -> CMD
+        interrupts:
+          SPI2: INTR
+          SPI3: INTR
+
+      I3C_MST:
+        from: ESP32-P4.I3C_MST
+        instances: [I3C_MST]
+        interrupts:
+          I3C: INTR
+
+      I3C_MST_MEM:
+        from: ESP32-P4.I3C_MST_MEM
+        instances: [I3C_MST_MEM]
+
+      I3C_SLV:
+        from: ESP32-P4.I3C_SLV
+        instances: [I3C_SLV]
+        interrupts:
+          I3C_SLV: INTR
+
+      UHCI:
+        from: ESP32-P4.UHCI0
+        instances: [UHCI0]
+        interrupts:
+          UHCI0: INTR
+
+      PARL_IO:
+        from: ESP32-P4.PARL_IO
+        instances: [PARL_IO]
+        interrupts:
+          PARLIO_RX: RX
+          PARLIO_TX: TX
+
+      # ====================================================================
+      # Timer / Counter
+      # ====================================================================
+      TIMG:
+        from: ESP32-P4.TIMG0
+        instances: [TIMG0, TIMG1]
+        # Note: T1 timer registers are missing from SVD (see SVD_ERRATA.md)
+        interrupts:
+          TG0_T0: T0
+          TG0_T1: T1
+          TG0_WDT: WDT
+          TG1_T0: T0
+          TG1_T1: T1
+          TG1_WDT: WDT
+
+      MCPWM:
+        from: ESP32-P4.MCPWM0
+        instances: [MCPWM0, MCPWM1]
+        interrupts:
+          PWM0: INTR
+          PWM1: INTR
+
+      SYSTIMER:
+        from: ESP32-P4.SYSTIMER
+        instances: [SYSTIMER]
+        interrupts:
+          SYSTIMER_TARGET0: TARGET0
+          SYSTIMER_TARGET1: TARGET1
+          SYSTIMER_TARGET2: TARGET2
+
+      RMT:
+        from: ESP32-P4.RMT
+        instances: [RMT]
+        interrupts:
+          RMT: INTR
+
+      PCNT:
+        from: ESP32-P4.PCNT
+        instances: [PCNT]
+        interrupts:
+          PCNT: INTR
+
+      LEDC:
+        from: ESP32-P4.LEDC
+        instances: [LEDC]
+        interrupts:
+          LEDC: INTR
+
+      # ====================================================================
+      # CAN
+      # ====================================================================
+      TWAI:
+        from: ESP32-P4.TWAI0
+        instances: [TWAI0, TWAI1, TWAI2]
+        interrupts:
+          TWAI0: INTR
+          TWAI1: INTR
+          TWAI2: INTR
+
+      # ====================================================================
+      # GPIO / IO
+      # ====================================================================
+      GPIO:
+        from: ESP32-P4.GPIO
+        instances: [GPIO]
+        # Note: FUNC255_IN_SEL_CFG missing from SVD (see SVD_ERRATA.md)
+        interrupts:
+          GPIO_INT0: INT0
+          GPIO_INT1: INT1
+          GPIO_INT2: INT2
+          GPIO_INT3: INT3
+          GPIO_PAD_COMP: PAD_COMP
+
+      GPIO_SD:
+        from: ESP32-P4.GPIO_SD
+        instances: [GPIO_SD]
+
+      IO_MUX:
+        from: ESP32-P4.IO_MUX
+        instances: [IO_MUX]
+        # Note: GPIO54 register missing from SVD (see SVD_ERRATA.md)
+
+      # ====================================================================
+      # DMA
+      # ====================================================================
+      AHB_DMA:
+        from: ESP32-P4.AHB_DMA
+        instances: [AHB_DMA]
+        # SVD puts all 12 DMA interrupts (AHB+AXI) on AHB_DMA.
+        # Only AHB channels listed here; AXI channels fixed via chip_interrupts.
+        interrupts:
+          AHB_PDMA_IN_CH0: IN_CH0
+          AHB_PDMA_IN_CH1: IN_CH1
+          AHB_PDMA_IN_CH2: IN_CH2
+          AHB_PDMA_OUT_CH0: OUT_CH0
+          AHB_PDMA_OUT_CH1: OUT_CH1
+          AHB_PDMA_OUT_CH2: OUT_CH2
+
+      AXI_DMA:
+        from: ESP32-P4.AXI_DMA
+        instances: [AXI_DMA]
+        # Interrupts misattributed to AHB_DMA in SVD; injected via chip_interrupts.
+        interrupts:
+          AXI_PDMA_IN_CH0: IN_CH0
+          AXI_PDMA_IN_CH1: IN_CH1
+          AXI_PDMA_IN_CH2: IN_CH2
+          AXI_PDMA_OUT_CH0: OUT_CH0
+          AXI_PDMA_OUT_CH1: OUT_CH1
+          AXI_PDMA_OUT_CH2: OUT_CH2
+
+      DMA2D:
+        from: ESP32-P4.DMA
+        instances: [DMA]
+        interrupts:
+          DMA: INTR
+
+      H264_DMA:
+        from: ESP32-P4.H264_DMA
+        instances: [H264_DMA]
+        interrupts:
+          H264_DMA2D_OUT_CH0: OUT_CH0
+          H264_DMA2D_OUT_CH1: OUT_CH1
+          H264_DMA2D_OUT_CH2: OUT_CH2
+          H264_DMA2D_OUT_CH3: OUT_CH3
+          H264_DMA2D_OUT_CH4: OUT_CH4
+          H264_DMA2D_IN_CH0: IN_CH0
+          H264_DMA2D_IN_CH1: IN_CH1
+          H264_DMA2D_IN_CH2: IN_CH2
+          H264_DMA2D_IN_CH3: IN_CH3
+          H264_DMA2D_IN_CH4: IN_CH4
+          H264_DMA2D_IN_CH5: IN_CH5
+
+      # ====================================================================
+      # Crypto
+      # ====================================================================
+      AES:
+        from: ESP32-P4.AES
+        instances: [AES]
+        interrupts:
+          AES: INTR
+
+      RSA:
+        from: ESP32-P4.RSA
+        instances: [RSA]
+        interrupts:
+          RSA: INTR
+
+      SHA:
+        from: ESP32-P4.SHA
+        instances: [SHA]
+        interrupts:
+          SHA: INTR
+
+      ECC:
+        from: ESP32-P4.ECC
+        instances: [ECC]
+        interrupts:
+          ECC: INTR
+
+      ECDSA:
+        from: ESP32-P4.ECDSA
+        instances: [ECDSA]
+
+      DS:
+        from: ESP32-P4.DS
+        instances: [DS]
+
+      HMAC:
+        from: ESP32-P4.HMAC
+        instances: [HMAC]
+
+      # ====================================================================
+      # Media / Imaging
+      # ====================================================================
+      H264:
+        from: ESP32-P4.H264
+        instances: [H264]
+        interrupts:
+          H264_REG: INTR
+
+      JPEG:
+        from: ESP32-P4.JPEG
+        instances: [JPEG]
+        interrupts:
+          JPEG: INTR
+
+      ISP:
+        from: ESP32-P4.ISP
+        instances: [ISP]
+        interrupts:
+          ISP: INTR
+
+      PPA:
+        from: ESP32-P4.PPA
+        instances: [PPA]
+        interrupts:
+          PPA: INTR
+
+      LCD_CAM:
+        from: ESP32-P4.LCD_CAM
+        instances: [LCD_CAM]
+
+      MIPI_CSI_HOST:
+        from: ESP32-P4.MIPI_CSI_HOST
+        instances: [MIPI_CSI_HOST]
+        interrupts:
+          CSI: INTR
+
+      MIPI_CSI_BRIDGE:
+        from: ESP32-P4.MIPI_CSI_BRIDGE
+        instances: [MIPI_CSI_BRIDGE]
+        interrupts:
+          CSI_BRIDGE: INTR
+
+      MIPI_DSI_HOST:
+        from: ESP32-P4.MIPI_DSI_HOST
+        instances: [MIPI_DSI_HOST]
+        interrupts:
+          DSI: INTR
+
+      MIPI_DSI_BRIDGE:
+        from: ESP32-P4.MIPI_DSI_BRIDGE
+        instances: [MIPI_DSI_BRIDGE]
+        interrupts:
+          DSI_BRIDGE: INTR
+
+      # ====================================================================
+      # USB / Storage
+      # ====================================================================
+      SDHOST:
+        from: ESP32-P4.SDHOST
+        instances: [SDHOST]
+        # Missing fields per TRM (see SVD_ERRATA.md):
+        #   CTRL[25]: USE_INTERNAL_DMAC
+        #   UHS[1:0]: VOLT_REG
+        transforms:
+          - type: patchFields
+            register: CTRL
+            fields:
+              - {name: USE_INTERNAL_DMAC, bitOffset: 25, bitWidth: 1, access: read-write, description: "DMA mode select (0=external, 1=internal)"}
+          - type: patchFields
+            register: UHS
+            fields:
+              - {name: VOLT_REG, bitOffset: 0, bitWidth: 2, access: read-write, description: "Voltage switch per card (0=3.3V, 1=1.8V)"}
+
+      USB_DEVICE:
+        from: ESP32-P4.USB_DEVICE
+        instances: [USB_DEVICE]
+        interrupts:
+          USB_DEVICE: INTR
+
+      USB_WRAP:
+        from: ESP32-P4.USB_WRAP
+        instances: [USB_WRAP]
+
+      # ====================================================================
+      # ADC / Sensors
+      # ====================================================================
+      ADC:
+        from: ESP32-P4.ADC
+        instances: [ADC]
+        # Note: SAR_PATT_TAB fields are 24-bit, should be 32-bit (see SVD_ERRATA.md)
+
+      # ====================================================================
+      # Low-Power Domain
+      # ====================================================================
+      LP_ADC:
+        from: ESP32-P4.LP_ADC
+        instances: [LP_ADC]
+        interrupts:
+          LP_ADC: INTR
+
+      LP_GPIO:
+        from: ESP32-P4.LP_GPIO
+        instances: [LP_GPIO]
+        interrupts:
+          LP_GPIO: INTR
+
+      LP_I2C:
+        from: ESP32-P4.LP_I2C0
+        instances: [LP_I2C0]
+        interrupts:
+          LP_I2C0: INTR
+
+      LP_I2S:
+        from: ESP32-P4.LP_I2S0
+        instances: [LP_I2S0]
+        interrupts:
+          LP_I2S0: INTR
+
+      LP_UART:
+        from: ESP32-P4.LP_UART
+        instances: [LP_UART]
+        interrupts:
+          LP_UART: INTR
+
+      LP_TIMER:
+        from: ESP32-P4.LP_TIMER
+        instances: [LP_TIMER]
+        interrupts:
+          LP_TIMER0: TIMER0
+          LP_TIMER1: TIMER1
+
+      LP_WDT:
+        from: ESP32-P4.LP_WDT
+        instances: [LP_WDT]
+        interrupts:
+          LP_WDT: INTR
+
+      LP_TOUCH:
+        from: ESP32-P4.LP_TOUCH
+        instances: [LP_TOUCH]
+        interrupts:
+          LP_TOUCH: INTR
+
+      LP_TSENS:
+        from: ESP32-P4.LP_TSENS
+        instances: [LP_TSENS]
+        interrupts:
+          LP_TSENS: INTR
+
+      LP_IO_MUX:
+        from: ESP32-P4.LP_IO_MUX
+        instances: [LP_IO_MUX]
+
+      LP_INTR:
+        from: ESP32-P4.LP_INTR
+        instances: [LP_INTR]
+
+      LP_SYS:
+        from: ESP32-P4.LP_SYS
+        instances: [LP_SYS]
+        interrupts:
+          LP_SYS: INTR
+
+      LP_PERI:
+        from: ESP32-P4.LP_PERI
+        instances: [LP_PERI]
+
+      LP_AON_CLKRST:
+        from: ESP32-P4.LP_AON_CLKRST
+        instances: [LP_AON_CLKRST]
+
+      LP_ANA_PERI:
+        from: ESP32-P4.LP_ANA_PERI
+        instances: [LP_ANA_PERI]
+        interrupts:
+          LP_ANA: INTR
+
+      LP_HUK:
+        from: ESP32-P4.LP_HUK
+        instances: [LP_HUK]
+        interrupts:
+          LP_HUK: INTR
+
+      LP_I2C_ANA_MST:
+        from: ESP32-P4.LP_I2C_ANA_MST
+        instances: [LP_I2C_ANA_MST]
+
+      # ====================================================================
+      # System / Debug
+      # ====================================================================
+      INTERRUPT_CORE:
+        from: ESP32-P4.INTERRUPT_CORE0
+        instances: [INTERRUPT_CORE0, INTERRUPT_CORE1]
+
+      TRACE:
+        from: ESP32-P4.TRACE0
+        instances: [TRACE0, TRACE1]
+
+      HP_SYS:
+        from: ESP32-P4.HP_SYS
+        instances: [HP_SYS]
+        interrupts:
+          HP_SYS: INTR
+
+      HP_SYS_CLKRST:
+        from: ESP32-P4.HP_SYS_CLKRST
+        instances: [HP_SYS_CLKRST]
+
+      PMU:
+        from: ESP32-P4.PMU
+        instances: [PMU]
+        interrupts:
+          PMU0: PMU0
+          PMU1: PMU1
+
+      SOC_ETM:
+        from: ESP32-P4.SOC_ETM
+        instances: [SOC_ETM]
+
+      PAU:
+        from: ESP32-P4.PAU
+        instances: [PAU]
+        interrupts:
+          PAU: INTR
+
+      PVT:
+        from: ESP32-P4.PVT
+        instances: [PVT]
+
+      ASSIST_DEBUG:
+        from: ESP32-P4.ASSIST_DEBUG
+        instances: [ASSIST_DEBUG]
+        interrupts:
+          ASSIST_DEBUG: INTR
+
+      EFUSE:
+        from: ESP32-P4.EFUSE
+        instances: [EFUSE]
+
+      CACHE:
+        from: ESP32-P4.CACHE
+        instances: [CACHE]
+        interrupts:
+          CACHE: INTR
+
+      # ====================================================================
+      # Misc
+      # ====================================================================
+      AXI_ICM:
+        from: ESP32-P4.AXI_ICM
+        instances: [AXI_ICM]
+
+      BITSCRAMBLER:
+        from: ESP32-P4.BITSCRAMBLER
+        instances: [BITSCRAMBLER]
+
+    # ==================================================================
+    # Base address overrides (fix SVD bugs documented in SVD_ERRATA.md)
+    # ==================================================================
+    address_overrides:
+      RMT: 0x500A2000        # SVD: 0x500D4000, TRM Table 7.3-2 + ESP-IDF
+      DS: 0x50093000         # SVD: 0x50094000 (3-way rotation with HMAC/ECC)
+      HMAC: 0x50094000       # SVD: 0x50095000
+      ECC: 0x50095000        # SVD: 0x50093000
+
+    # ==================================================================
+    # Interrupt overrides (fix SVD misattributions)
+    # ==================================================================
+    chip_interrupts:
+      ESP32_P4:
+        _all:
+          # AXI_DMA interrupts are misattributed to AHB_DMA in SVD
+          AXI_DMA: {IN_CH0: 62, IN_CH1: 63, IN_CH2: 64, OUT_CH0: 65, OUT_CH1: 66, OUT_CH2: 67}
