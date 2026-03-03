@@ -8,17 +8,18 @@ import STM32H757_CM7;
 #include "STM32H757_CM7.hpp"
 #endif
 
-using namespace stm32h7;
+using namespace stm32h7::DMA;
+using namespace stm32h7::MDMA;
 
 int main() {
-    auto &mdma = *i_MDMA.registers;         // MDMA register set
-    auto &dma = *i_DMA1.registers;          // DMA register set
+    auto &mdma = *stm32h7::i_MDMA.registers;         // MDMA register set
+    auto &dma = *stm32h7::i_DMA1.registers;          // DMA register set
 
-    i_MDMA.registers->GISR0.set(0);         // Using the smart pointer directly
+    stm32h7::i_MDMA.registers->GISR0.set(0);         // Using the smart pointer directly
     auto ξ = dma.S2CR.val();                // read CR register as 32-bit integer
     uint32_t d = dma.S2CR;                  // dto.
     auto b = mdma.C6CR.get();               // read CR register as bitfield struct
-    MDMA_::C6CR c = mdma.C6CR;             // dto., must disambiguate between CR registers
+    C6CR c = mdma.C6CR;              // must disambiguate between CR registers
     auto e = mdma.C6CR.get().EN;            // read individual bitfield
     auto f = get(mdma.C6CR).EN;             // dto.
     auto ma1 = get(dma.S1M1AR).M1A;        // dto.

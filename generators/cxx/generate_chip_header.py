@@ -18,7 +18,7 @@ class ChipFormatter:
         self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$model$incl_suffix"'))
         self.instanceDeclTemplate = Template(keywords.get('instanceDecl', """
 /** Integration parameters for $name */
-EXPORT constexpr struct $ns::integration::${model} i_$name = {$params$ints$init};
+EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
 """))
     
     def createParameters(self, instance):

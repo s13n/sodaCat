@@ -38,18 +38,16 @@ class PerFormatter:
         self.parameterTemplate = Template(keywords.get('parameter', '\tuint16_t $name:$bits;\t//!< $description\n'))
         self.headerTemplate    = Template(keywords.get('header', """
 $prefix
-inline namespace ${name}_ {$enums
+namespace ${name} {$enums
 $types
 /** $description */
 EXPORT struct $name {$regs
 }; // size = $size
-} // inline namespace ${name}_
 
 /** Integration of peripheral in the SoC. */
-namespace integration {
-EXPORT struct $name {
+EXPORT struct Intgr {
 $params$ints$blocks};
-} // namespace integration
+} // namespace ${name}
 $postfix"""))
                                                        
     def formatEnumList(self, enums:list):
@@ -149,7 +147,10 @@ $postfix"""))
                     fields, enum = self.formatFieldList(reg['fields'], type)
                     enums += self.regEnumsTemplate.substitute(reg, name=typeName, enums=enum) if enum else ''
                     structs += self.fieldsTemplate.substitute(reg, name=typeName, fields=fields, description=description)
-                line = self.fieldTemplate.substitute(reg, name=names, type=self.typeTemplate.substitute(reg, name=typeName), description=description)
+                    regType = self.typeTemplate.substitute(reg, name=typeName)
+                else:
+                    regType = type
+                line = self.fieldTemplate.substitute(reg, name=names, type=regType, description=description)
                 list.append([line, addressOffset, (size>>3)*dim_total])
 
         list.sort(key=lambda r:r[1])
@@ -181,7 +182,7 @@ $postfix"""))
         """ Generate definitions for the parameterization of a peripheral """
         blocks = ''
         for block in per.get('addressBlocks', []):
-            type = (f'HwPtr<struct {per['name']}_::{per['name']} volatile> ') if block['usage'] == 'registers' else 'std::span<std::byte> '
+            type = (f'HwPtr<struct {per['name']} volatile> ') if block['usage'] == 'registers' else 'std::span<std::byte> '
             blocks += self.addressTemplate.substitute(block, type=type)
         ints = ''
         for int in per.get('interrupts', []):
@@ -201,7 +202,7 @@ $postfix"""))
                 ptype = {'string': 'const char*'}.get(par.get('type', 'int'), 'uint32_t')
                 params += f'\t{ptype} {par["name"]};\t//!< {desc}\n'
         return blocks, ints, params
-            
+
     def formatPeripheral(self, per:dict, prefix:str, postfix:str):
         """ Generate definitions for a peripheral """
         defaultSize = per.get('size', 32) >> 3
