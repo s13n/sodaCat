@@ -592,6 +592,20 @@ attributed to HRTIM_TIMA instead of their proper sub-peripherals:
 Vectors 104–108 (TIMA–TIME) are correctly on HRTIM_TIMA. Worked around via
 `chip_interrupts` (all 7 interrupts injected on the unified HRTIM_Master instance).
 
+### RCC (H745_H757 dual-core)
+
+**STM32H745_CM4 / STM32H757_CM4 (SVD v1.7 / v2.8):**
+
+| Register   | Field  | Bug     | RM0399 says                          |
+|------------|--------|---------|--------------------------------------|
+| APB3ENR    | DSIEN  | Missing | Bit 4, DSI peripheral clock enable (Table 65, p.450) |
+| APB3LPENR  | DSILPEN| Missing | Bit 4, DSI peripheral clock enable during CSleep (Table 66, p.453) |
+
+All four dual-core SVDs (H745, H747, H755, H757) are identically affected.
+The H747/H757 have a DSIHOST peripheral but the corresponding RCC clock enable
+bits are absent. H745/H755 lack DSI hardware so the bit is reserved on those chips.
+Worked around via `patchFields` transforms on the H745_H757 RCC variant.
+
 
 ## ST STM32F3
 
