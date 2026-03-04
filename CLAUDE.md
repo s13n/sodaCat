@@ -138,7 +138,7 @@ Additionally, `tools/generic_transform.py` provides a standalone `Transformation
 
 ## CI
 
-A GitHub Actions workflow validates clock-tree specs: `tools/validate_clock_specs.py` checks `spec/clock-tree/**/*.yaml` against `schemas/clock-tree.schema.yaml`. Triggered on changes to `schemas/`, `spec/clock-tree/`, or the validator script.
+A GitHub Actions workflow validates clock-tree specs: `tools/validate_clocks.py` checks `spec/clock-tree/**/*.yaml` against `schemas/clock-tree.schema.yaml`. Triggered on changes to `schemas/`, `spec/clock-tree/`, or the validator script.
 
 ## Key conventions
 

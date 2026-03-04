@@ -188,6 +188,6 @@ like this: `frequencies: [0, 12000000, 36000000, 60000000]`
    from the information found in the previous step.
 4. Run validation:
    ```bash
-   python tools/validate_clock_specs.py --schema schemas/clock-tree.schema.yaml --docs "models/**/*clocks.y*ml"
+   python tools/validate_clocks.py --schema schemas/clock-tree.schema.yaml --docs "models/**/*clocks.y*ml"
    ```
 5. Open PR with a short note: RM ID, sections used, and known device caveats.

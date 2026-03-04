@@ -5,7 +5,7 @@ echo "== Checking required files =="
 missing=0
 for p in \
   schemas/clock-tree.schema.yaml \
-  tools/validate_clock_specs.py \
+  tools/validate_clocks.py \
   .github/workflows/clock-spec.yml \
   tasks/clock-tree-task.md \
   models
@@ -26,7 +26,7 @@ echo "== Installing Python deps in $VENV_DIR =="
 "$VENV_DIR/bin/pip" install -q PyYAML jsonschema
 
 echo "== Validating specs =="
-"$VENV_DIR/bin/python" tools/validate_clock_specs.py \
+"$VENV_DIR/bin/python" tools/validate_clocks.py \
   --schema schemas/clock-tree.schema.yaml \
   --docs "models/**/*clocks.y*ml"
 
