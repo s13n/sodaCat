@@ -3,15 +3,31 @@ description: Universal synchronous/asynchronous receiver transmitter
 groupName: USART
 source: STM32N645 SVD v1.0
 params:
+  - name: lpbaud
+    type: bool
+    default: false
+    description: Low-power baud rate generation (BRR_LP variant; no OVER8/ONEBIT/GTPR/RTOR; no RTOIE/RTOEN/RTOF/RTOCF; no TECLREN in AUTOCR)
   - name: synchronous
     type: int
     default: 3
     max: 3
-    description: 'Synchronous/smartcard capability: 0=none, 1=synchronous only, 2=sync+smartcard, 3=sync+smartcard+TCBGT'
+    description: 'Synchronous/smartcard capability: 0=none, 1=synchronous+SPI slave (CLKEN/CPHA/CPOL/LBCL/SLVEN/DIS_NSS/UDR/UDRCF/TXFECF), 2=sync+smartcard (NACK/SCEN/SCARCNT/EOBIE/EOBF/EOBCF), 3=sync+smartcard+TCBGT'
+  - name: irda
+    type: bool
+    default: true
+    description: IrDA mode (IREN/IRLP in CR3; PSC prescaler in GTPR)
+  - name: lin
+    type: bool
+    default: true
+    description: LIN mode (LBDL/LBDIE/LINEN in CR2; LBDF in ISR; LBDCF in ICR)
+  - name: autobaud
+    type: bool
+    default: true
+    description: Auto baud rate detection (ABREN/ABRMOD in CR2; ABRRQ in RQR; ABRE/ABRF in ISR)
   - name: has_fifo
     type: bool
     default: true
-    description: FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR; TXFECF in ICR). Also implies PRESC register and SPI slave fields (SLVEN, DIS_NSS, UDR, UDRCF).
+    description: FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR). Also implies PRESC register.
   - name: has_wakeup
     type: bool
     default: true
@@ -1117,6 +1133,20 @@ registers:
         bitOffset: 0
         bitWidth: 16
         access: read-write
+  - name: BRR_LP
+    displayName: BRR_LP
+    description: Baud rate register [low-power variant]
+    addressOffset: 12
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BRR
+        description: LPUART baud rate division (LPUARTDIV)
+        bitOffset: 0
+        bitWidth: 20
+        access: read-write
+    alternateRegister: BRR
   - name: GTPR
     displayName: GTPR
     description: Guard time and prescaler register

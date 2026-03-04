@@ -195,12 +195,26 @@ shared_blocks:
     from: STM32N645.USART1
     interrupts:
       USART1: {name: INTR, description: Global interrupt}
+      LPUART1: {name: INTR, description: Global interrupt}
     params:
-      - {name: synchronous, type: int, default: 3, max: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous only, 2=sync+smartcard, 3=sync+smartcard+TCBGT'}
-      - {name: has_fifo, type: bool, default: true, description: 'FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR; TXFECF in ICR). Also implies PRESC register and SPI slave fields (SLVEN, DIS_NSS, UDR, UDRCF).'}
+      - {name: lpbaud, type: bool, default: false, description: 'Low-power baud rate generation (BRR_LP variant; no OVER8/ONEBIT/GTPR/RTOR; no RTOIE/RTOEN/RTOF/RTOCF; no TECLREN in AUTOCR)'}
+      - {name: synchronous, type: int, default: 3, max: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous+SPI slave (CLKEN/CPHA/CPOL/LBCL/SLVEN/DIS_NSS/UDR/UDRCF/TXFECF), 2=sync+smartcard (NACK/SCEN/SCARCNT/EOBIE/EOBF/EOBCF), 3=sync+smartcard+TCBGT'}
+      - {name: irda, type: bool, default: true, description: 'IrDA mode (IREN/IRLP in CR3; PSC prescaler in GTPR)'}
+      - {name: lin, type: bool, default: true, description: 'LIN mode (LBDL/LBDIE/LINEN in CR2; LBDF in ISR; LBDCF in ICR)'}
+      - {name: autobaud, type: bool, default: true, description: 'Auto baud rate detection (ABREN/ABRMOD in CR2; ABRRQ in RQR; ABRE/ABRF in ISR)'}
+      - {name: has_fifo, type: bool, default: true, description: 'FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR). Also implies PRESC register.'}
       - {name: has_wakeup, type: bool, default: true, description: 'Wakeup from Stop mode interrupt flag selection (WUS/WUFIE in CR3; WUF in ISR; WUCF in ICR)'}
       - {name: has_autocr, type: bool, default: false, description: 'Autonomous mode (AUTOCR register at 0x30)'}
     transforms:
+      # Add BRR_LP alternate register for LPUART baud rate (20-bit BRR)
+      - {type: cloneRegister, source: BRR, name: BRR_LP}
+      - type: patchRegisters
+        registers:
+          - {name: BRR_LP, description: 'Baud rate register [low-power variant]', alternateRegister: BRR}
+      - type: patchFields
+        register: BRR_LP
+        fields:
+          - {name: BRR, bitOffset: 0, bitWidth: 20, description: 'LPUART baud rate division (LPUARTDIV)'}
       # Add AUTOCR register for autonomous mode (U3/U5 only)
       - type: patchRegisters
         registers:
@@ -218,33 +232,6 @@ shared_blocks:
               - {name: IDLEDIS, description: Idle disable, bitOffset: 18, bitWidth: 1}
               - {name: TRIGSEL, description: Trigger selection, bitOffset: 19, bitWidth: 4}
               - {name: TECLREN, description: Transfer complete clear enable, bitOffset: 31, bitWidth: 1}
-  LPUART:
-    from: STM32N645.LPUART1
-    interrupts:
-      LPUART1: {name: INTR, description: Global interrupt}
-    params:
-      - {name: has_fifo, type: bool, default: true, description: 'FIFO mode (FIFOEN/TXFEIE/RXFFIE in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR). Also implies PRESC register and TXFRQ in RQR.'}
-      - {name: has_wakeup, type: bool, default: true, description: 'Wakeup from Stop mode (WUS/WUFIE in CR3; WUF in ISR; WUCF in ICR)'}
-      - {name: has_autocr, type: bool, default: false, description: 'Autonomous mode (AUTOCR register at 0x30)'}
-    transforms:
-      # Add AUTOCR register for autonomous mode (U3/U5 only)
-      - type: patchRegisters
-        registers:
-          - name: AUTOCR
-            description: Autonomous mode control register
-            displayName: AUTOCR
-            addressOffset: 48
-            size: 32
-            access: read-write
-            resetValue: 2147483648
-            fields:
-              - {name: TDN, description: Transmit data number, bitOffset: 0, bitWidth: 16}
-              - {name: TRIGPOL, description: Trigger polarity, bitOffset: 16, bitWidth: 1}
-              - {name: TRIGEN, description: Trigger enable, bitOffset: 17, bitWidth: 1}
-              - {name: IDLEDIS, description: Idle disable, bitOffset: 18, bitWidth: 1}
-              - {name: TRIGSEL, description: Trigger selection, bitOffset: 19, bitWidth: 4}
-      - type: patchAddressBlock
-        size: 1024
   LPOPAMP:
     # LPOTR-type OPAMP: L4, L4+, L5, U0, U5 share this model
     # HSOTR-type families use HSOPAMP; G4/L1 are distinct IPs; U3 has different VM_SEL width
@@ -2326,7 +2313,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART, LPUART1, LPUART2]
       PWR:
         from: STM32G030.PWR
@@ -2382,6 +2369,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           USB: {has_ddisc: false}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           SPI1: {has_i2s: true}
           CRS: {trim_width: 7}
           TIM2: {width32: true, encoder: 1}
@@ -2532,7 +2520,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1]
       OPAMP:
         from: STM32G431.OPAMP
@@ -2594,6 +2582,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           USB: {has_lpmcsr: false}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           SPI2: {has_i2s: true}
@@ -2830,7 +2819,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM1_S, LPTIM2, LPTIM2_S, LPTIM3, LPTIM4, LPTIM5, LPTIM6]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART, LPUART_S]
       OCTOSPI:
         uses: OCTOSPI
@@ -2966,6 +2955,7 @@ families:
           RNG: {gen: 3}
           HASH: {gen: 1}
           CRS: {trim_width: 7}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           OPAMP: {single: true}
           GPIO: {has_hslvr: true}
           SAI: {has_pdm: true, has_mcken: true}
@@ -3272,7 +3262,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4, LPTIM5]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1]
       LTDC:
         from: STM32H723.LTDC
@@ -3455,6 +3445,7 @@ families:
           GPIO: {has_brr: false}
           RTC: {has_itsf: true}
           OCTOSPI: {has_maxtran: true}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -3680,7 +3671,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4, LPTIM5]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1]
       LTDC:
         from: STM32H7S.LTDC
@@ -3796,6 +3787,7 @@ families:
           CRYP: {gen: 2}
           HASH: {gen: 2}
           DMA2D: {gen: 3}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -3911,7 +3903,7 @@ families:
         uses: LPTIM
         instances: [LPTIM]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1, LPUSART1]
       PWR:
         instances: [PWR]
@@ -3977,7 +3969,7 @@ families:
           CRC: {idr32: false}
           RTC: {backup_regs: 5, tampers: 2}
           USART: {has_fifo: false, synchronous: 2}
-          LPUART: {has_fifo: false}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false, has_fifo: false}
           SPI: {has_fifo: false}
           SPI2: {has_i2s: true}
           TIM2: {width32: true, encoder: 1}
@@ -4296,7 +4288,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1]
       OPAMP:
         uses: LPOPAMP
@@ -4376,7 +4368,7 @@ families:
           DMA2D: {gen: 1}
           TSC: {groups: 7}
           USART: {has_fifo: false, synchronous: 2}
-          LPUART: {has_fifo: false}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false, has_fifo: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
@@ -4571,7 +4563,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1]
       LTDC:
         from: STM32L4P5.LTCD
@@ -4659,6 +4651,7 @@ families:
         _all:
           CRC: {idr32: false}
           DMA2D: {gen: 1}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
@@ -4814,7 +4807,7 @@ families:
           LPTIM1: INTR
           LPTIM2: INTR2
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1]
       OCTOSPI:
         uses: OCTOSPI
@@ -4889,6 +4882,7 @@ families:
         _all:
           RNG: {gen: 2}
           CRS: {trim_width: 7}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 1}
@@ -5087,7 +5081,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4, LPTIM5]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1]
       LTDC:
         from: STM32N645.LTDC
@@ -5208,6 +5202,7 @@ families:
           CRYP: {gen: 2}
           HASH: {gen: 2}
           DMA2D: {gen: 3}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART7: {synchronous: 0}
@@ -5331,7 +5326,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1, LPUART2, LPUART3]
       OPAMP:
         uses: LPOPAMP
@@ -5385,6 +5380,7 @@ families:
           CRC: {has_rtype: true}
           TSC: {groups: 7}
           OPAMP: {single: true}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
           TIM2: {width32: true, encoder: 1}
@@ -5517,7 +5513,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART]
       OCTOSPI:
         uses: OCTOSPI
@@ -5605,7 +5601,7 @@ families:
           CRS: {trim_width: 7}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
-          LPUART: {has_wakeup: false, has_autocr: true}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false, has_wakeup: false, has_autocr: true}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 3, sms_preload: 2}
@@ -5810,7 +5806,7 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3, LPTIM4]
       LPUART:
-        uses: LPUART
+        uses: USART
         instances: [LPUART1]
       LTDC:
         from: STM32U599.LTDC
@@ -5930,7 +5926,7 @@ families:
           OCTOSPI: {has_maxtran: true}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
-          LPUART: {has_wakeup: false, has_autocr: true}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false, has_wakeup: false, has_autocr: true}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           TIM2: {width32: true, encoder: 2, sms_preload: 2}
