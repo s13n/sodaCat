@@ -592,6 +592,47 @@ attributed to HRTIM_TIMA instead of their proper sub-peripherals:
 Vectors 104–108 (TIMA–TIME) are correctly on HRTIM_TIMA. Worked around via
 `chip_interrupts` (all 7 interrupts injected on the unified HRTIM_Master instance).
 
+### SYSCFG (H7 subfamily differences)
+
+The H7 SYSCFG register set varies significantly across subfamilies. The SVD files
+correctly reflect these differences (four distinct register maps), but the model was
+previously sourced only from STM32H723, missing registers present on other subfamilies.
+Now uses per-subfamily variants.
+
+**STM32H743 (SVD v2.8) vs STM32H723 — H742_H753 additions:**
+
+| Register | Field       | Difference                                   |
+|----------|-------------|----------------------------------------------|
+| PMCR     | BOOSTVDDSEL | Present at bit 9 (missing from H723)         |
+| PWRCR    | ODEN        | New register at 0x2C; SVD: 4-bit [3:0]       |
+
+Note: PWRCR ODEN is 4-bit in the SVD. RM0433 may document it as 1-bit — needs verification.
+
+**STM32H745_CM7 (SVD v2.8) vs STM32H723 — H745_H757 additions (dual-core):**
+
+| Register | Field       | Difference                                   |
+|----------|-------------|----------------------------------------------|
+| PMCR     | BOOSTVDDSEL | Present at bit 9                             |
+| CFGR     | (new)       | Lock bits at 0x18 (CM4L, CM7L, PVDL, FLASHL, BKRAML, SRAMxL, DTCML, ITCML, AXISRAML) |
+| PWRCR    | ODEN        | New register at 0x2C; 1-bit [0:0]            |
+| UR1      | (new)       | Boot config at 0x304 (BCM4, BCM7)            |
+| UR2      | BCM7_ADD0   | Replaces BOOT_ADD0 (dual-core naming)        |
+| UR3      | BCM4_ADD1   | New field at [15:0]; BCM7_ADD1 replaces BOOT_ADD1 |
+| UR4      | BCM4_ADD1   | New field at [15:0] (duplicate of UR3 — possible SVD bug) |
+| UR5      | WRPS_1      | Renamed from WRPN_1                          |
+| UR9      | WRPS_2      | Renamed from WRPN_2                          |
+| UR12     | IWDG2M      | New field at bit 0                           |
+| UR14     | D2SBRST     | New field at bit 16                          |
+| UR15     | D2STPRST    | New field at bit 0                           |
+
+**STM32H7A3 (SVD v2.8) vs STM32H723 — H7A3_B differences:**
+
+| Register     | Difference                                         |
+|--------------|----------------------------------------------------|
+| BRK_LOCKUPR  | New register at 0x118 (replaces all URx registers) |
+| PKGR         | Absent                                             |
+| UR0–UR17     | All absent (no option byte readout via SYSCFG)     |
+
 ### RCC (H745_H757 dual-core)
 
 **STM32H745_CM4 / STM32H757_CM4 (SVD v1.7 / v2.8):**
