@@ -96,7 +96,7 @@ function(ensure_model model_path)
     # Check for transitive dependencies (models: key in YAML)
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c
-            "import yaml; d=yaml.safe_load(open('${model_file}')); m=d.get('models',{}); print(';'.join(m.values()) if m else '')"
+            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); m=d.get('models',{}); print(';'.join(m.values()) if m else '')"
         OUTPUT_VARIABLE model_deps
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
@@ -137,7 +137,7 @@ function(generate_header target language namespace model_path suffix)
     # Recursively generate headers for model dependencies
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c
-            "import yaml; d=yaml.safe_load(open('${model_file}')); m=d.get('models',{}); print(';'.join(m.values()) if m else '')"
+            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); m=d.get('models',{}); print(';'.join(m.values()) if m else '')"
         OUTPUT_VARIABLE model_deps
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
