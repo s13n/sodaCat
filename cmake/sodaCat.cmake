@@ -8,70 +8,46 @@ else()
     message(WARNING "Variable SODACAT_URL_BASE not defined. Can't download models.")
 endif()
 
-# Function to download files listed in the manifest file
-# Parameters:
-#   overwrite  - TRUE to overwrite existing files, FALSE to skip
-#   manifest   - manifest file path
-function(download_models overwrite manifest)
-    # Read the list of relative paths from the manifest file
-    file(READ "${manifest}" path_list)
-
-    # Normalize line endings
-    string(REGEX REPLACE "[\r\n]" ";" paths ${path_list})
-
-    # Counters
-    set(success_count 0)
-    set(skip_count 0)
-    set(fail_count 0)
-
-    # Loop over each relative path
-    foreach(relpath IN LISTS paths)
-        # Trim whitespace
-        string(STRIP "${relpath}" relpath)
-
-        # Skip empty lines and comment lines
-        if(relpath STREQUAL "" OR relpath MATCHES "^#")
-            continue()
-        endif()
-
-        # Construct full URL
-        string(CONCAT url "${SODACAT_URL_BASE}" "/" "${relpath}")
-
-        # Extract filename (flattened target folder)
-        get_filename_component(fname "${relpath}" NAME)
-        set(dest "${SODACAT_LOCAL_DIR}/${fname}")
-
-        # Check if file exists
-        if(EXISTS "${dest}" AND NOT overwrite)
-            message(STATUS "Skipping existing file: ${dest}")
-            math(EXPR skip_count "${skip_count} + 1")
-        else()
-            message(STATUS "Downloading ${url} -> ${dest}")
-
-            # Attempt download with error handling
-            file(DOWNLOAD "${url}" "${dest}" STATUS status)
-
-            list(GET status 0 status_code)
-            if(status_code EQUAL 0)
-                math(EXPR success_count "${success_count} + 1")
-            else()
-                file(REMOVE "${dest}")  # delete empty file
-                list(GET status 1 status_message)
-                message(WARNING "Failed to download ${url}: ${status_message}")
-                math(EXPR fail_count "${fail_count} + 1")
-            endif()
-        endif()
-    endforeach()
-
-    # Print summary
-    message(STATUS "Download summary:")
-    message(STATUS "  Downloaded: ${success_count}")
-    message(STATUS "  Skipped:    ${skip_count}")
-    message(STATUS "  Failed:     ${fail_count}")
-endfunction()
-
-
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+# Ensure a model file exists locally, downloading it (and any transitive
+# dependencies listed in its `models:` section) if SODACAT_URL_BASE is set.
+function(ensure_model model_path)
+    set(model_file "${SODACAT_LOCAL_DIR}/${model_path}.yaml")
+    if(EXISTS "${model_file}")
+        return()
+    endif()
+
+    if(NOT SODACAT_URL_BASE)
+        message(FATAL_ERROR "Model ${model_path}.yaml not found and SODACAT_URL_BASE not set")
+    endif()
+
+    # Create parent directory and download
+    get_filename_component(parent_dir "${model_file}" DIRECTORY)
+    file(MAKE_DIRECTORY "${parent_dir}")
+    string(CONCAT url "${SODACAT_URL_BASE}" "/" "${model_path}.yaml")
+    message(STATUS "Downloading ${url}")
+    file(DOWNLOAD "${url}" "${model_file}" STATUS status)
+    list(GET status 0 status_code)
+    if(NOT status_code EQUAL 0)
+        file(REMOVE "${model_file}")
+        list(GET status 1 status_message)
+        message(FATAL_ERROR "Failed to download ${url}: ${status_message}")
+    endif()
+
+    # Check for transitive dependencies (models: key in YAML)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c
+            "import yaml; d=yaml.safe_load(open('${model_file}')); m=d.get('models',{}); print(';'.join(m.values()) if m else '')"
+        OUTPUT_VARIABLE model_deps
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(model_deps)
+        foreach(dep IN LISTS model_deps)
+            ensure_model("${dep}")
+        endforeach()
+    endif()
+endfunction()
 
 # Macro to generate a header file for a target
 # Parameters:
@@ -83,13 +59,16 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 macro(generate_header target generator namespace model_path suffix)
     # Extract model name from path (last component)
     get_filename_component(model "${model_path}" NAME)
-    
+
     # Construct the full model file path
     set(model_file "${SODACAT_LOCAL_DIR}/${model_path}.yaml")
-    
+
+    # Ensure model (and dependencies) are available
+    ensure_model("${model_path}")
+
     # Generator script path
     set(generator_script "${CMAKE_SOURCE_DIR}/generators/cxx/${generator}.py")
-    
+
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
         COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${namespace} ${model} ${suffix}
         MAIN_DEPENDENCY "${model_file}"

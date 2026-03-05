@@ -983,6 +983,11 @@ def main():
     # interrupt order to the peripheral model's struct field order.
     # Keys: model_name (str) for shared/common, (block_name, subfamily) for variants.
     model_interrupt_order = {}
+    # Model output paths relative to models root (without .yaml extension).
+    # Same key scheme as model_interrupt_order.
+    # Includes vendor prefix (output_dir.name) so paths work across vendors.
+    model_paths = {}
+    vendor_prefix = output_dir.name  # e.g. "ST", "NXP"
 
     def _format_block_source(entry):
         name = entry.get('svd_path', entry.get('chip', ''))
@@ -1033,6 +1038,7 @@ def main():
             svd.dumpModel(block_data, output_dir / shared_name)
             model_interrupt_order[shared_name] = [
                 irq['name'] for irq in block_data.get('interrupts', [])]
+            model_paths[shared_name] = f"{vendor_prefix}/{shared_name}"
             print(f"  * {shared_name:20} -> top-level (cross-family shared)")
             continue
 
@@ -1065,6 +1071,7 @@ def main():
                 svd.dumpModel(block_data, family_dir / block_name)
                 model_interrupt_order[(block_name, fam_name)] = [
                     irq['name'] for irq in block_data.get('interrupts', [])]
+                model_paths[(block_name, fam_name)] = f"{vendor_prefix}/{family_code}/{fam_name}/{block_name}"
 
         # Non-variant subfamilies -> shared or subfamily-specific placement
         default_present = {f for f in families_present if f not in variants}
@@ -1092,25 +1099,32 @@ def main():
                 family_dir.mkdir(parents=True, exist_ok=True)
                 svd.dumpModel(block_data, family_dir / block_name)
                 model_interrupt_order[(block_name, fam_name)] = intr_order
+                model_paths[(block_name, fam_name)] = f"{vendor_prefix}/{family_code}/{fam_name}/{block_name}"
             else:
                 common_count += 1
                 svd.dumpModel(block_data, common_blocks_dir / block_name)
                 model_interrupt_order[block_name] = intr_order
+                model_paths[block_name] = f"{vendor_prefix}/{family_code}/{block_name}"
                 print(f"  + {block_name:20} -> {family_code} (shared)")
 
-    # Fill in interrupt orders for models not written in this run (uses: blocks)
+    # Fill in interrupt orders and paths for models not written in this run
+    # (uses: blocks referencing shared models from other families)
     yaml_loader = YAML(typ='safe')
     for bt, bc in blocks_config.items():
         model_name = bc.get('uses') or bt
         if model_name not in model_interrupt_order:
             model_path = output_dir / f"{model_name}.yaml"
+            rel_path = f"{vendor_prefix}/{model_name}"
             if not model_path.exists():
                 model_path = output_dir / family_code / f"{model_name}.yaml"
+                rel_path = f"{vendor_prefix}/{family_code}/{model_name}"
             if model_path.exists():
                 model = yaml_loader.load(model_path)
                 if model:
                     model_interrupt_order[model_name] = [
                         irq['name'] for irq in model.get('interrupts', [])]
+                    if model_name not in model_paths:
+                        model_paths[model_name] = rel_path
 
     # ==========================================================================
     # PASS 3: Generate chip models
@@ -1232,6 +1246,16 @@ def main():
                     'parameters': params_list,
                 }
 
+            # Build models index: unique model names -> relative paths
+            models_index = {}
+            for inst_info in instances.values():
+                mn = inst_info['model']
+                if mn not in models_index:
+                    path = (model_paths.get((mn, subfamily_name))
+                            or model_paths.get(mn))
+                    if path:
+                        models_index[mn] = path
+
             # Assemble chip model
             source_name = summary.get('svd_path', chip_name)
             source = ext.format_source(
@@ -1243,6 +1267,7 @@ def main():
                 'interruptOffset': interrupt_offset,
                 'interrupts': dict(sorted(interrupt_table.items())),
                 'instances': dict(sorted(instances.items())),
+                'models': dict(sorted(models_index.items())),
             }
 
             # Write chip model
