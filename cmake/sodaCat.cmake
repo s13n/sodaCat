@@ -20,7 +20,7 @@ function(sodacat_fetch_generator language)
     # If generators exist locally (sodaCat repo checkout), use them directly
     set(local_dir "${CMAKE_SOURCE_DIR}/generators/${language}")
     if(EXISTS "${local_dir}/generate_header.py")
-        set(SODACAT_GENERATOR_${lang_upper} "${local_dir}" CACHE INTERNAL "")
+        set(SODACAT_GENERATOR_${lang_upper} "${local_dir}" CACHE INTERNAL "" FORCE)
         return()
     endif()
 
@@ -30,7 +30,7 @@ function(sodacat_fetch_generator language)
 
     set(generator_dir "${CMAKE_BINARY_DIR}/_generators/${language}")
     if(EXISTS "${generator_dir}/generate_header.py")
-        set(SODACAT_GENERATOR_${lang_upper} "${generator_dir}" CACHE INTERNAL "")
+        set(SODACAT_GENERATOR_${lang_upper} "${generator_dir}" CACHE INTERNAL "" FORCE)
         return()
     endif()
 
@@ -65,7 +65,7 @@ function(sodacat_fetch_generator language)
     endforeach()
     message(STATUS "Fetched ${language} generator (${file_list})")
 
-    set(SODACAT_GENERATOR_${lang_upper} "${generator_dir}" CACHE INTERNAL "")
+    set(SODACAT_GENERATOR_${lang_upper} "${generator_dir}" CACHE INTERNAL "" FORCE)
 endfunction()
 
 # Ensure a model file exists locally, downloading it (and any transitive
@@ -150,6 +150,9 @@ function(generate_header target language namespace model_path suffix)
     # Resolve generator directory
     string(TOUPPER "${language}" lang_upper)
     set(generator_dir "${SODACAT_GENERATOR_${lang_upper}}")
+    if(NOT generator_dir)
+        message(FATAL_ERROR "Generator '${language}' not configured. Call sodacat_fetch_generator(${language}) first.")
+    endif()
     set(generator_script "${generator_dir}/generate_header.py")
 
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
