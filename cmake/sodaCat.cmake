@@ -155,6 +155,15 @@ function(generate_header target language namespace model_path suffix)
     endif()
     set(generator_script "${generator_dir}/generate_header.py")
 
+    # Ensure the output and generator directories are in the target's include path
+    get_target_property(_inc_dirs ${target} INCLUDE_DIRECTORIES)
+    if(NOT "${CMAKE_CURRENT_BINARY_DIR}" IN_LIST _inc_dirs)
+        target_include_directories(${target} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
+    endif()
+    if(NOT "${generator_dir}" IN_LIST _inc_dirs)
+        target_include_directories(${target} PUBLIC "${generator_dir}")
+    endif()
+
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
         COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${namespace} ${model} ${suffix}
         MAIN_DEPENDENCY "${model_file}"
