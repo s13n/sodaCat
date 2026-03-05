@@ -83,7 +83,7 @@ function(ensure_model model_path)
     # Create parent directory and download
     get_filename_component(parent_dir "${model_file}" DIRECTORY)
     file(MAKE_DIRECTORY "${parent_dir}")
-    string(CONCAT url "${SODACAT_URL_BASE}" "/" "${model_path}.yaml")
+    string(CONCAT url "${SODACAT_URL_BASE}" "/models/" "${model_path}.yaml")
     message(STATUS "Downloading ${url}")
     file(DOWNLOAD "${url}" "${model_file}" STATUS status)
     list(GET status 0 status_code)
