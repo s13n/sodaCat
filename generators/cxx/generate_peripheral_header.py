@@ -236,14 +236,15 @@ postfixTemplate = Template("""} // namespace $ns
 
 #undef EXPORT""")
 
-yaml= YAML(typ='safe')
-per = yaml.load(Path(sys.argv[1]))
-if per:
-    fmt = PerFormatter()
-    prefix = prefixTemplate.substitute(ns=sys.argv[2], mod=sys.argv[3])
-    postfix = postfixTemplate.substitute(ns=sys.argv[2])
-    txt = fmt.formatPeripheral(per, prefix, postfix)
-    filename = sys.argv[3]+sys.argv[4]
-    print(txt, file=open(filename, mode = 'w'))
-else:
-    print(f"No model loaded: {sys.argv[1]}")
+if __name__ == "__main__":
+    yaml= YAML(typ='safe')
+    per = yaml.load(Path(sys.argv[1]))
+    if per:
+        fmt = PerFormatter()
+        prefix = prefixTemplate.substitute(ns=sys.argv[2], mod=sys.argv[3])
+        postfix = postfixTemplate.substitute(ns=sys.argv[2])
+        txt = fmt.formatPeripheral(per, prefix, postfix)
+        filename = sys.argv[3]+sys.argv[4]
+        print(txt, file=open(filename, mode = 'w'))
+    else:
+        print(f"No model loaded: {sys.argv[1]}")

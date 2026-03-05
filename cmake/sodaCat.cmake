@@ -10,6 +10,45 @@ endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+# Fetch a generator language directory (e.g. "cxx") via SVN export from GitHub.
+# Uses FetchContent with SVN_REPOSITORY to download generators/<language>/ into the
+# build tree. Sets SODACAT_GENERATOR_<LANGUAGE> to the local path.
+# No-op if the directory already exists locally under CMAKE_SOURCE_DIR.
+function(sodacat_fetch_generator language)
+    string(TOUPPER "${language}" lang_upper)
+
+    # If generators exist locally (sodaCat repo checkout), use them directly
+    set(local_dir "${CMAKE_SOURCE_DIR}/generators/${language}")
+    if(EXISTS "${local_dir}/generate_header.py")
+        set(SODACAT_GENERATOR_${lang_upper} "${local_dir}" CACHE INTERNAL "")
+        return()
+    endif()
+
+    if(NOT SODACAT_URL_BASE)
+        message(FATAL_ERROR "Generator '${language}' not found locally and SODACAT_URL_BASE not set")
+    endif()
+
+    # Derive SVN URL from SODACAT_URL_BASE
+    # raw.githubusercontent.com/<user>/<repo>/<ref> → github.com/<user>/<repo>/trunk
+    # For branches: .../branches/<ref>/generators/<language>
+    string(REGEX REPLACE "raw\\.githubusercontent\\.com" "github.com" svn_base "${SODACAT_URL_BASE}")
+    string(REGEX MATCH "/([^/]+)$" _match "${svn_base}")
+    set(ref "${CMAKE_MATCH_1}")
+    string(REGEX REPLACE "/[^/]+$" "" svn_base "${svn_base}")
+    if(ref STREQUAL "main" OR ref STREQUAL "master")
+        set(svn_url "${svn_base}/trunk/generators/${language}")
+    else()
+        set(svn_url "${svn_base}/branches/${ref}/generators/${language}")
+    endif()
+
+    include(FetchContent)
+    FetchContent_Declare(sodacat_${language}
+        SVN_REPOSITORY "${svn_url}"
+    )
+    FetchContent_MakeAvailable(sodacat_${language})
+    set(SODACAT_GENERATOR_${lang_upper} "${sodacat_${language}_SOURCE_DIR}" CACHE INTERNAL "")
+endfunction()
+
 # Ensure a model file exists locally, downloading it (and any transitive
 # dependencies listed in its `models:` section) if SODACAT_URL_BASE is set.
 function(ensure_model model_path)
@@ -49,16 +88,26 @@ function(ensure_model model_path)
     endif()
 endfunction()
 
-# Macro to generate a header file for a target
+# Generate a header file for a target, recursively generating headers for any
+# model dependencies (listed under the `models:` key in the YAML file).
+# The generator auto-detects the model type (peripheral, chip, clock tree).
 # Parameters:
 #   target      - Target to which the generated header is added as a source file
-#   generator   - Generator script in python
+#   language    - Generator language (e.g. "cxx"); must be fetched first via sodacat_fetch_generator()
 #   namespace   - Namespace name for the generated header
 #   model_path  - Path to model file relative to SODACAT_LOCAL_DIR (e.g., ST/H757/H757)
 #   suffix      - File name suffix of generated header file
-macro(generate_header target generator namespace model_path suffix)
+function(generate_header target language namespace model_path suffix)
     # Extract model name from path (last component)
     get_filename_component(model "${model_path}" NAME)
+
+    # Deduplicate: skip if this model path already has a header being generated
+    string(REPLACE "/" "_" dedup_key "${model_path}")
+    get_property(already_generated GLOBAL PROPERTY _SODACAT_HDR_${dedup_key})
+    if(already_generated)
+        return()
+    endif()
+    set_property(GLOBAL PROPERTY _SODACAT_HDR_${dedup_key} TRUE)
 
     # Construct the full model file path
     set(model_file "${SODACAT_LOCAL_DIR}/${model_path}.yaml")
@@ -66,16 +115,31 @@ macro(generate_header target generator namespace model_path suffix)
     # Ensure model (and dependencies) are available
     ensure_model("${model_path}")
 
-    # Generator script path
-    set(generator_script "${CMAKE_SOURCE_DIR}/generators/cxx/${generator}.py")
+    # Recursively generate headers for model dependencies
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c
+            "import yaml; d=yaml.safe_load(open('${model_file}')); m=d.get('models',{}); print(';'.join(m.values()) if m else '')"
+        OUTPUT_VARIABLE model_deps
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(model_deps)
+        foreach(dep IN LISTS model_deps)
+            generate_header(${target} ${language} ${namespace} ${dep} ${suffix})
+        endforeach()
+    endif()
+
+    # Resolve generator directory
+    string(TOUPPER "${language}" lang_upper)
+    set(generator_dir "${SODACAT_GENERATOR_${lang_upper}}")
+    set(generator_script "${generator_dir}/generate_header.py")
 
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
         COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${namespace} ${model} ${suffix}
         MAIN_DEPENDENCY "${model_file}"
         DEPENDS "${generator_script}"
-        COMMENT "Generating ${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix} in namespace ${namespace}"
+        COMMENT "Generating ${model}${suffix} in namespace ${namespace}"
     )
     target_sources(${target} PUBLIC
         "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
     )
-endmacro()
+endfunction()
