@@ -10,9 +10,9 @@ endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
-# Fetch a generator language directory (e.g. "cxx") via SVN export from GitHub.
-# Uses FetchContent with SVN_REPOSITORY to download generators/<language>/ into the
-# build tree. Sets SODACAT_GENERATOR_<LANGUAGE> to the local path.
+# Fetch a generator language directory (e.g. "cxx") from the sodaCat repository.
+# Uses the GitHub Contents API to list files, then downloads each one.
+# Sets SODACAT_GENERATOR_<LANGUAGE> to the local path.
 # No-op if the directory already exists locally under CMAKE_SOURCE_DIR.
 function(sodacat_fetch_generator language)
     string(TOUPPER "${language}" lang_upper)
@@ -28,25 +28,44 @@ function(sodacat_fetch_generator language)
         message(FATAL_ERROR "Generator '${language}' not found locally and SODACAT_URL_BASE not set")
     endif()
 
-    # Derive SVN URL from SODACAT_URL_BASE
-    # raw.githubusercontent.com/<user>/<repo>/<ref> → github.com/<user>/<repo>/trunk
-    # For branches: .../branches/<ref>/generators/<language>
-    string(REGEX REPLACE "raw\\.githubusercontent\\.com" "github.com" svn_base "${SODACAT_URL_BASE}")
-    string(REGEX MATCH "/([^/]+)$" _match "${svn_base}")
-    set(ref "${CMAKE_MATCH_1}")
-    string(REGEX REPLACE "/[^/]+$" "" svn_base "${svn_base}")
-    if(ref STREQUAL "main" OR ref STREQUAL "master")
-        set(svn_url "${svn_base}/trunk/generators/${language}")
-    else()
-        set(svn_url "${svn_base}/branches/${ref}/generators/${language}")
+    set(generator_dir "${CMAKE_BINARY_DIR}/_generators/${language}")
+    if(EXISTS "${generator_dir}/generate_header.py")
+        set(SODACAT_GENERATOR_${lang_upper} "${generator_dir}" CACHE INTERNAL "")
+        return()
     endif()
 
-    include(FetchContent)
-    FetchContent_Declare(sodacat_${language}
-        SVN_REPOSITORY "${svn_url}"
+    # List files via GitHub Contents API and download each one
+    # SODACAT_URL_BASE is https://raw.githubusercontent.com/<owner>/<repo>/<ref>
+    string(REGEX MATCH "raw\\.githubusercontent\\.com/([^/]+)/([^/]+)/([^/]+)" _match "${SODACAT_URL_BASE}")
+    set(owner "${CMAKE_MATCH_1}")
+    set(repo "${CMAKE_MATCH_2}")
+    set(ref "${CMAKE_MATCH_3}")
+
+    message(STATUS "Fetching generator '${language}' from ${owner}/${repo}@${ref}")
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c
+            "import json,urllib.request; data=json.loads(urllib.request.urlopen('https://api.github.com/repos/${owner}/${repo}/contents/generators/${language}?ref=${ref}').read()); print(';'.join(f['name'] for f in data if f['type']=='file'))"
+        OUTPUT_VARIABLE file_list
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE result
     )
-    FetchContent_MakeAvailable(sodacat_${language})
-    set(SODACAT_GENERATOR_${lang_upper} "${sodacat_${language}_SOURCE_DIR}" CACHE INTERNAL "")
+    if(NOT result EQUAL 0 OR NOT file_list)
+        message(FATAL_ERROR "Failed to list generator files for '${language}' from GitHub API")
+    endif()
+
+    file(MAKE_DIRECTORY "${generator_dir}")
+    foreach(file IN LISTS file_list)
+        string(CONCAT url "${SODACAT_URL_BASE}" "/generators/${language}/${file}")
+        file(DOWNLOAD "${url}" "${generator_dir}/${file}" STATUS status)
+        list(GET status 0 status_code)
+        if(NOT status_code EQUAL 0)
+            list(GET status 1 status_message)
+            message(FATAL_ERROR "Failed to download ${url}: ${status_message}")
+        endif()
+    endforeach()
+    message(STATUS "Fetched ${language} generator (${file_list})")
+
+    set(SODACAT_GENERATOR_${lang_upper} "${generator_dir}" CACHE INTERNAL "")
 endfunction()
 
 # Ensure a model file exists locally, downloading it (and any transitive
