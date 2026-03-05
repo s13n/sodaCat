@@ -1,12 +1,103 @@
 # C++ header generation
 
-The C++ header file generator is included as an example. It generates C++20
-modules compatible code that can also be used with older compilers, depending on
-whether macro `REGISTERS_MODULE` is defined.
+The C++ header file generator produces C++20 modules compatible code that can
+also be used with older compilers, depending on whether the macro
+`REGISTERS_MODULE` is defined.
 
-See the project in the `test` folder to see how this is used.
+Note that the Python generator scripts require `ruamel.yaml` to be installed.
 
-Note that the Python generator scripts require `ruamel` to be installed.
+## CMake integration
+
+The `sodaCat.cmake` module provides everything needed to generate C++ headers
+from YAML models in a downstream project. It can fetch both the generator
+scripts and model files automatically from a remote repository.
+
+### Setup
+
+```cmake
+cmake_minimum_required(VERSION 3.28)
+project(my_firmware CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+
+# Point to the sodaCat models — either a local checkout or a download directory
+set(SODACAT_LOCAL_DIR "${CMAKE_SOURCE_DIR}/models")
+
+# Optional: enable auto-download of models and generators from a remote repo
+set(SODACAT_URL_BASE "https://raw.githubusercontent.com/<owner>/sodaCat/main")
+
+# Include the integration module and fetch the C++ generator
+list(APPEND CMAKE_MODULE_PATH "<path-to-sodacat>/cmake")
+include(sodaCat)
+sodacat_fetch_generator(cxx)
+```
+
+`sodacat_fetch_generator(cxx)` locates the generator scripts. When they exist
+locally (e.g. in a sodaCat checkout), they are used directly. Otherwise, if
+`SODACAT_URL_BASE` is set, they are downloaded from the remote repository.
+
+### Generating headers
+
+Use `generate_header()` to turn a YAML model into a C++ header and add it to
+a target:
+
+```cmake
+generate_header(<target> <language> <namespace> <model_path> <suffix>)
+```
+
+Parameters:
+- **target** — CMake target to attach the generated header to
+- **language** — Generator language directory (e.g. `cxx`)
+- **namespace** — C++ namespace for the generated code
+- **model_path** — Path to the YAML model relative to `SODACAT_LOCAL_DIR`,
+  without the `.yaml` extension
+- **suffix** — File extension for the generated header (e.g. `.hpp`)
+
+Example for an STM32H757 project:
+
+```cmake
+add_library(soc-data OBJECT)
+
+# Chip model — automatically pulls in block model dependencies
+generate_header(soc-data cxx stm32h7 ST/H7/H745_H757/STM32H757_CM7 .hpp)
+
+# Individual block models
+generate_header(soc-data cxx stm32h7 ST/H7/H745_H757/RCC .hpp)
+generate_header(soc-data cxx stm32h7 ST/GPIO .hpp)
+generate_header(soc-data cxx stm32h7 ST/USART .hpp)
+```
+
+The function handles deduplication — calling `generate_header` for the same
+model path more than once is safe and only generates the header once.
+
+### Model auto-download
+
+When `SODACAT_URL_BASE` is set and a model file is not found under
+`SODACAT_LOCAL_DIR`, it is downloaded automatically. Chip models contain a
+`models:` section listing their block model dependencies, and these are fetched
+transitively — so generating a chip header downloads all referenced block
+models as well.
+
+### Minimal downstream example
+
+```cmake
+cmake_minimum_required(VERSION 3.28)
+project(my_firmware CXX)
+set(CMAKE_CXX_STANDARD 20)
+
+set(SODACAT_LOCAL_DIR "${CMAKE_SOURCE_DIR}/models")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/third_party/sodaCat/cmake")
+include(sodaCat)
+sodacat_fetch_generator(cxx)
+
+add_library(hw-registers OBJECT)
+generate_header(hw-registers cxx myns ST/H7/H745_H757/STM32H757_CM7 .hpp)
+generate_header(hw-registers cxx myns ST/USART .hpp)
+generate_header(hw-registers cxx myns ST/GPIO .hpp)
+
+add_executable(firmware main.cpp)
+target_link_libraries(firmware PRIVATE hw-registers)
+```
 
 ### C++ scoping rules
 
@@ -63,7 +154,7 @@ confused with type names.
 // UART.hpp
 #include "registers.hpp"  // where HwReg template is defined
 namespace chipFamily {
-inline namespace UART_ {
+namespace UART {
 struct CR {
     uint32_t WL:2,        //!< Wordlength selection
     uint32_t PE:1,        //!< Parity enable
@@ -89,27 +180,29 @@ struct UART {
 ```
 
 With this style of definitions, there's only a namespace name in the surrounding
-scope (in the example it's namespace UART). Since it is an inline namespace, the
-namespace name can be omitted unless there's an ambiguity. It could be used like
-this:
+scope (in the example it's namespace UART). One would usually have a `using
+namespace chipFamily::UART` declaration in the driver source. It could be used
+like this:
 
 ```c++
 // UartDriver.hpp
-namespace chipFamily { inline namespace UART_ {
+namespace chipFamily { namespace UART {
     struct UART;       // forward declaration, no need for #include here
 }}
 
 class UartDriver : InterruptHandler {
 public:
-    UartDriver(chipFamily::UART volatile *hw) : hw_{hw} {}
+    UartDriver(chipFamily::UART::UART volatile *hw) : hw_{hw} {}
 private:
     void isr() override;                // from InterruptHandler
-    chipFamily::UART volatile *hw_;     // pointer to register set of peripheral
+    chipFamily::UART::UART volatile *hw_;     // pointer to register set of peripheral
 };
 
 // UartDriver.cpp
 #include "UartDriver.hpp"
 #include "UART.hpp"
+
+using namespace chipFamily::UART;
 
 void UartDriver::isr() {
     if(hw_->SR.get().RDRF)
