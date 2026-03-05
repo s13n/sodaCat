@@ -647,6 +647,17 @@ The H747/H757 have a DSIHOST peripheral but the corresponding RCC clock enable
 bits are absent. H745/H755 lack DSI hardware so the bit is reserved on those chips.
 Worked around via `patchFields` transforms on the H745_H757 RCC variant.
 
+**WWDG2 clock enable missing:**
+
+| Register   | Field      | Bug     | RM0399 says                            |
+|------------|------------|---------|----------------------------------------|
+| APB1LENR   | WWDG2EN   | Missing | Bit 11, WWDG2 peripheral clock enable (Section 9.7.40, p.498) |
+| APB1LLPENR | WWDG2LPEN | Missing | Bit 11, WWDG2 clock enable during CSleep (Section 9.7.46, p.520) |
+
+The WWDG2 peripheral exists (at 0x40002C00) and has its own interrupt, but the
+SVD omits its clock enable bits. RM0399 Section 47.3.1 confirms WWDG2 requires
+explicit clock enable via RCC_APB1LENR bit 11. Worked around via `patchFields`.
+
 
 ## ST STM32F3
 

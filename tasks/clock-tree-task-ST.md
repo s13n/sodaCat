@@ -29,5 +29,14 @@ Ensure:
 - All connections between blocks (e.g., input/output signals) are preserved.
 - The YAML is valid and matches the schema.
 
+**Important:** After extraction, all `reg` and `field` names must be reconciled
+against the corresponding block model YAML (e.g., `models/ST/H7/H745_H757/RCC.yaml`).
+CubeMX uses different names than the SVD-derived block models in several cases:
+- Field renames from SVD transforms (e.g., `HSI48ON` → `RC48ON`, `RTCSEL` → `RTCSRC`,
+  `CECEN` → `HDMICECEN`, `UART7EN` → `USART7EN`)
+- Cluster-qualified register paths for dual-core chips (e.g., `AHB1ENR` → `C[0].AHB1ENR`
+  where ENR/LPENR registers are inside a per-CPU cluster array)
+- Missing SVD fields that need `patchFields` transforms before they appear in the model
+
 The goal is to enable recursive frequency computation from any signal back to
 its source, considering all intermediate blocks.

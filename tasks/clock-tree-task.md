@@ -143,10 +143,17 @@ like this: `frequencies: [0, 12000000, 36000000, 60000000]`
 
 ### Choice of names
 
-- Register and bitfield names are usually obtained directly from the register
-  description in the reference manual. If available, also provide as the
-  `instance` field the name of the functional block or peripheral that contains
-  the register. Preserve the case used in the manual.
+- Register and bitfield names **must match the block model** (`models/` YAML
+  files) for the peripheral that contains the register, not the reference manual
+  or CubeMX names. The block models are extracted from SVD files and may have
+  been renamed by transforms (e.g. `HSI48ON` → `RC48ON`, `RTCSEL` → `RTCSRC`).
+- When registers live inside a cluster array in the block model (e.g. the H7
+  dual-core RCC wraps ENR/LPENR registers into a `C[%s]` cluster), reference
+  the specific cluster index: `C[0].AHB1ENR` rather than bare `AHB1ENR`.
+  Use `C[0]` (the "own CPU" bank) unless a specific CPU bank is intended.
+- If available, also provide as the `instance` field the name of the functional
+  block or peripheral that contains the register. Preserve the case used in the
+  block model.
 - Names should be suitable as identifiers in the most common programming
   languages, i.e. they shouldn't start with a digit, and should contain only
   digits, letters and the underscore. Warn when this is not the case.
@@ -162,6 +169,8 @@ like this: `frequencies: [0, 12000000, 36000000, 60000000]`
 
 - YAML validates against `schemas/clock-tree.schema.yaml`.
 - No missing `reg/field/bit` for muxes/dividers/gates.
+- All `reg`/`field` references resolve against the corresponding block model
+  YAML (register names, field names, and cluster paths must match exactly).
 - All producing nodes with limits include `frequency`/`frequency_limit`.
 - A minimal set of kernel examples (at least one timer/serial/storage/USB or ETH).
 
