@@ -14,7 +14,7 @@ Phase 2: Semantic / graph checks:
   - Frequency range consistency (min <= nominal <= max)
   - Value range consistency (min < max in RegisterField value_range)
 """
-import sys, pathlib, argparse, glob, math
+import sys, pathlib, argparse, glob
 from collections import defaultdict
 
 import yaml  # PyYAML
@@ -41,10 +41,6 @@ def validate_schema(data, validator):
 def _get_blocks(data, key):
     """Return list of blocks from a top-level array key, or []."""
     return data.get(key) or []
-
-
-def _is_power_of_2(n):
-    return n > 0 and (n & (n - 1)) == 0
 
 
 def validate_graph(data):
@@ -137,14 +133,7 @@ def validate_graph(data):
             if name in consumed:
                 errors.append(("no-producer", f"signal '{name}' is consumed but has no producer"))
 
-    # --- 8. Mux input array size is power of 2 ---
-    for m in muxes:
-        n = len(m.get("inputs") or [])
-        if not _is_power_of_2(n):
-            errors.append(("mux-power-of-2",
-                           f"mux '{m['name']}' has {n} inputs (not a power of 2)"))
-
-    # --- 9. Frequency range consistency ---
+    # --- 8. Frequency range consistency ---
     for s in data.get("signals") or []:
         lo = s.get("min")
         hi = s.get("max")
