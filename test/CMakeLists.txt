@@ -88,7 +88,7 @@ generate_header(soc-data-modules cxx stm32u3 ST/RTC_V2 .hpp)
 generate_header(soc-data-modules cxx stm32f4 ST/SDIO .hpp)
 generate_header(soc-data-modules cxx stm32h7 ST/SDMMC .hpp)
 generate_header(soc-data-modules cxx stm32h7 ST/SWPMI .hpp)
-generate_header(soc-data-modules cxx stm32h7 ST/H7/SYSCFG .hpp)
+generate_header(soc-data-modules cxx stm32h7 ST/H7/H73x/SYSCFG .hpp)
 generate_header(soc-data-modules cxx stm32h7 ST/VREFBUF .hpp)
 
 generate_header(soc-data-modules cxx stm32h7 ARM/NVIC .hpp)
