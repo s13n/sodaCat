@@ -1,0 +1,1273 @@
+name: SCB
+description: System Control Block
+source: ATSAMV71Q21B.svd (Cortex-M7), STM32L0x1.svd (Cortex-M0+), RP2350.svd (Cortex-M33), CMSIS 6 core_cm55.h/core_cm85.h (v8.1-M); ARM Architecture Reference Manual
+registers:
+  # ---- Universal registers (all Cortex-M cores) ----
+  - name: CPUID
+    description: CPUID Base Register
+    addressOffset: 0
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: REVISION
+        description: Implementation-defined revision number
+        bitOffset: 0
+        bitWidth: 4
+      - name: PARTNO
+        description: Part number of the processor
+        bitOffset: 4
+        bitWidth: 12
+      - name: ARCHITECTURE
+        description: Architecture version (0xC for ARMv6-M, 0xF for ARMv7-M/v8-M)
+        bitOffset: 16
+        bitWidth: 4
+      - name: VARIANT
+        description: Implementation-defined variant number
+        bitOffset: 20
+        bitWidth: 4
+      - name: IMPLEMENTER
+        description: Implementer code (0x41 = ARM)
+        bitOffset: 24
+        bitWidth: 8
+  - name: ICSR
+    description: Interrupt Control and State Register
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    fields:
+      - name: VECTACTIVE
+        description: Active exception number (0 = Thread mode)
+        bitOffset: 0
+        bitWidth: 9
+        access: read-only
+      - name: RETTOBASE
+        description: No preempted active exceptions (v7-M/v8-M only)
+        bitOffset: 11
+        bitWidth: 1
+        access: read-only
+      - name: VECTPENDING
+        description: Exception number of highest priority pending enabled exception
+        bitOffset: 12
+        bitWidth: 9
+        access: read-only
+      - name: ISRPENDING
+        description: External interrupt pending (excludes NMI and faults)
+        bitOffset: 22
+        bitWidth: 1
+        access: read-only
+      - name: ISRPREEMPT
+        description: Indicates whether a pending exception will be serviced on exit from debug halt
+        bitOffset: 23
+        bitWidth: 1
+        access: read-only
+      - name: PENDSTCLR
+        description: Clear SysTick exception pending bit
+        bitOffset: 25
+        bitWidth: 1
+        access: write-only
+      - name: PENDSTSET
+        description: Set SysTick exception pending, or read current state
+        bitOffset: 26
+        bitWidth: 1
+      - name: PENDSVCLR
+        description: Clear PendSV exception pending bit
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: PENDSVSET
+        description: Set PendSV exception pending, or read current state
+        bitOffset: 28
+        bitWidth: 1
+      - name: STTNS
+        description: SysTick targets Non-secure (v8-M with TrustZone only)
+        bitOffset: 24
+        bitWidth: 1
+      - name: NMIPENDSET
+        description: Set NMI exception pending, or read current state
+        bitOffset: 31
+        bitWidth: 1
+  - name: VTOR
+    description: Vector Table Offset Register
+    addressOffset: 8
+    size: 32
+    resetValue: 0
+    fields:
+      - name: TBLOFF
+        description: "Bits [31:7] of the vector table address"
+        bitOffset: 7
+        bitWidth: 25
+  - name: AIRCR
+    description: Application Interrupt and Reset Control Register
+    addressOffset: 12
+    size: 32
+    resetValue: 0
+    fields:
+      - name: VECTRESET
+        description: "Local system reset (v7-M debug only, not on v8-M)"
+        bitOffset: 0
+        bitWidth: 1
+        access: write-only
+      - name: VECTCLRACTIVE
+        description: Clear all active state information for exceptions
+        bitOffset: 1
+        bitWidth: 1
+        access: write-only
+      - name: SYSRESETREQ
+        description: System reset request
+        bitOffset: 2
+        bitWidth: 1
+        access: write-only
+      - name: SYSRESETREQS
+        description: System reset request Secure-only (v8-M with TrustZone only)
+        bitOffset: 3
+        bitWidth: 1
+      - name: PRIGROUP
+        description: Interrupt priority grouping (v7-M/v8-M only)
+        bitOffset: 8
+        bitWidth: 3
+      - name: BFHFNMINS
+        description: BusFault, HardFault, and NMI target Non-secure (v8-M with TrustZone only)
+        bitOffset: 13
+        bitWidth: 1
+      - name: PRIS
+        description: Prioritize Secure exceptions (v8-M with TrustZone only)
+        bitOffset: 14
+        bitWidth: 1
+      - name: ENDIANNESS
+        description: Data endianness (0 = little-endian)
+        bitOffset: 15
+        bitWidth: 1
+        access: read-only
+      - name: VECTKEY
+        description: "Write: 0x05FA key required. Read: returns 0xFA05."
+        bitOffset: 16
+        bitWidth: 16
+  - name: SCR
+    description: System Control Register
+    addressOffset: 16
+    size: 32
+    resetValue: 0
+    fields:
+      - name: SLEEPONEXIT
+        description: Sleep on exit from ISR when returning to Thread mode at base level
+        bitOffset: 1
+        bitWidth: 1
+      - name: SLEEPDEEP
+        description: Controls whether the processor uses sleep or deep sleep as its low-power mode
+        bitOffset: 2
+        bitWidth: 1
+      - name: SLEEPDEEPS
+        description: Deep sleep Secure-only (v8-M with TrustZone only)
+        bitOffset: 3
+        bitWidth: 1
+      - name: SEVONPEND
+        description: Send Event on Pending bit
+        bitOffset: 4
+        bitWidth: 1
+  - name: CCR
+    description: Configuration and Control Register
+    addressOffset: 20
+    size: 32
+    resetValue: 0
+    fields:
+      - name: NONBASETHRDENA
+        description: Controls whether the processor can enter Thread mode with exceptions active
+        bitOffset: 0
+        bitWidth: 1
+      - name: USERSETMPEND
+        description: Enables unprivileged software access to the STIR
+        bitOffset: 1
+        bitWidth: 1
+      - name: UNALIGN_TRP
+        description: Enables unaligned access traps
+        bitOffset: 3
+        bitWidth: 1
+      - name: DIV_0_TRP
+        description: Enables faulting on divide-by-zero (SDIV/UDIV)
+        bitOffset: 4
+        bitWidth: 1
+      - name: BFHFNMIGN
+        description: Enables handlers with priority -1 or -2 to ignore data BusFaults
+        bitOffset: 8
+        bitWidth: 1
+      - name: STKALIGN
+        description: On exception entry, SP is adjusted to 8-byte alignment
+        bitOffset: 9
+        bitWidth: 1
+      - name: STKOFHFNMIGN
+        description: Stack overflow in HardFault and NMI ignore (v8-M only)
+        bitOffset: 10
+        bitWidth: 1
+      - name: DC
+        description: Data cache enable (cores with cache only)
+        bitOffset: 16
+        bitWidth: 1
+      - name: IC
+        description: Instruction cache enable (cores with cache only)
+        bitOffset: 17
+        bitWidth: 1
+      - name: BP
+        description: Branch prediction enable (cores with cache only)
+        bitOffset: 18
+        bitWidth: 1
+      - name: LOB
+        description: Low Overhead Branch cache enable (v8.1-M only)
+        bitOffset: 19
+        bitWidth: 1
+      - name: TRD
+        description: Trailing zeros result determination enable (v8.1-M only)
+        bitOffset: 20
+        bitWidth: 1
+  # ---- Fault handling registers (v7-M and v8-M only, not v6-M) ----
+  - name: SHPR1
+    description: System Handler Priority Register 1
+    addressOffset: 24
+    size: 32
+    resetValue: 0
+    fields:
+      - name: PRI_4
+        description: Priority of MemManage handler
+        bitOffset: 0
+        bitWidth: 8
+      - name: PRI_5
+        description: Priority of BusFault handler
+        bitOffset: 8
+        bitWidth: 8
+      - name: PRI_6
+        description: Priority of UsageFault handler
+        bitOffset: 16
+        bitWidth: 8
+      - name: PRI_7
+        description: Priority of SecureFault handler (v8-M with TrustZone only)
+        bitOffset: 24
+        bitWidth: 8
+  - name: SHPR2
+    description: System Handler Priority Register 2
+    addressOffset: 28
+    size: 32
+    resetValue: 0
+    fields:
+      - name: PRI_11
+        description: Priority of SVCall handler
+        bitOffset: 24
+        bitWidth: 8
+  - name: SHPR3
+    description: System Handler Priority Register 3
+    addressOffset: 32
+    size: 32
+    resetValue: 0
+    fields:
+      - name: PRI_14
+        description: Priority of PendSV handler
+        bitOffset: 16
+        bitWidth: 8
+      - name: PRI_15
+        description: Priority of SysTick handler
+        bitOffset: 24
+        bitWidth: 8
+  - name: SHCSR
+    description: System Handler Control and State Register
+    addressOffset: 36
+    size: 32
+    resetValue: 0
+    fields:
+      - name: MEMFAULTACT
+        description: MemManage exception active
+        bitOffset: 0
+        bitWidth: 1
+      - name: BUSFAULTACT
+        description: BusFault exception active
+        bitOffset: 1
+        bitWidth: 1
+      - name: HARDFAULTACT
+        description: HardFault exception active (v8-M only)
+        bitOffset: 2
+        bitWidth: 1
+      - name: USGFAULTACT
+        description: UsageFault exception active
+        bitOffset: 3
+        bitWidth: 1
+      - name: SECUREFAULTACT
+        description: SecureFault exception active (v8-M with TrustZone only)
+        bitOffset: 4
+        bitWidth: 1
+      - name: NMIACT
+        description: NMI exception active (v8-M only)
+        bitOffset: 5
+        bitWidth: 1
+      - name: SVCALLACT
+        description: SVCall exception active
+        bitOffset: 7
+        bitWidth: 1
+      - name: MONITORACT
+        description: Debug Monitor exception active
+        bitOffset: 8
+        bitWidth: 1
+      - name: PENDSVACT
+        description: PendSV exception active
+        bitOffset: 10
+        bitWidth: 1
+      - name: SYSTICKACT
+        description: SysTick exception active
+        bitOffset: 11
+        bitWidth: 1
+      - name: USGFAULTPENDED
+        description: UsageFault exception pending
+        bitOffset: 12
+        bitWidth: 1
+      - name: MEMFAULTPENDED
+        description: MemManage exception pending
+        bitOffset: 13
+        bitWidth: 1
+      - name: BUSFAULTPENDED
+        description: BusFault exception pending
+        bitOffset: 14
+        bitWidth: 1
+      - name: SVCALLPENDED
+        description: SVCall exception pending
+        bitOffset: 15
+        bitWidth: 1
+      - name: MEMFAULTENA
+        description: Enable MemManage fault
+        bitOffset: 16
+        bitWidth: 1
+      - name: BUSFAULTENA
+        description: Enable BusFault
+        bitOffset: 17
+        bitWidth: 1
+      - name: USGFAULTENA
+        description: Enable UsageFault
+        bitOffset: 18
+        bitWidth: 1
+      - name: SECUREFAULTENA
+        description: Enable SecureFault (v8-M with TrustZone only)
+        bitOffset: 19
+        bitWidth: 1
+      - name: SECUREFAULTPENDED
+        description: SecureFault exception pending (v8-M with TrustZone only)
+        bitOffset: 20
+        bitWidth: 1
+      - name: HARDFAULTPENDED
+        description: HardFault exception pending (v8-M only)
+        bitOffset: 21
+        bitWidth: 1
+  - name: CFSR
+    description: Configurable Fault Status Register (MMFSR + BFSR + UFSR)
+    addressOffset: 40
+    size: 32
+    resetValue: 0
+    fields:
+      # MemManage Fault Status (bits [7:0])
+      - name: IACCVIOL
+        description: Instruction access violation
+        bitOffset: 0
+        bitWidth: 1
+      - name: DACCVIOL
+        description: Data access violation
+        bitOffset: 1
+        bitWidth: 1
+      - name: MUNSTKERR
+        description: MemManage fault on unstacking for exception return
+        bitOffset: 3
+        bitWidth: 1
+      - name: MSTKERR
+        description: MemManage fault on stacking for exception entry
+        bitOffset: 4
+        bitWidth: 1
+      - name: MLSPERR
+        description: MemManage fault during FP lazy state preservation
+        bitOffset: 5
+        bitWidth: 1
+      - name: MMARVALID
+        description: MMFAR holds a valid fault address
+        bitOffset: 7
+        bitWidth: 1
+      # BusFault Status (bits [15:8])
+      - name: IBUSERR
+        description: Instruction bus error
+        bitOffset: 8
+        bitWidth: 1
+      - name: PRECISERR
+        description: Precise data bus error
+        bitOffset: 9
+        bitWidth: 1
+      - name: IMPRECISERR
+        description: Imprecise data bus error
+        bitOffset: 10
+        bitWidth: 1
+      - name: UNSTKERR
+        description: BusFault on unstacking for exception return
+        bitOffset: 11
+        bitWidth: 1
+      - name: STKERR
+        description: BusFault on stacking for exception entry
+        bitOffset: 12
+        bitWidth: 1
+      - name: LSPERR
+        description: BusFault during FP lazy state preservation
+        bitOffset: 13
+        bitWidth: 1
+      - name: BFARVALID
+        description: BFAR holds a valid fault address
+        bitOffset: 15
+        bitWidth: 1
+      # UsageFault Status (bits [25:16])
+      - name: UNDEFINSTR
+        description: Undefined instruction
+        bitOffset: 16
+        bitWidth: 1
+      - name: INVSTATE
+        description: Invalid state (e.g., attempting ARM instruction execution)
+        bitOffset: 17
+        bitWidth: 1
+      - name: INVPC
+        description: Invalid PC load via EXC_RETURN
+        bitOffset: 18
+        bitWidth: 1
+      - name: NOCP
+        description: No coprocessor (attempted coprocessor instruction with no coprocessor)
+        bitOffset: 19
+        bitWidth: 1
+      - name: STKOF
+        description: Stack overflow (v8-M only)
+        bitOffset: 20
+        bitWidth: 1
+      - name: UNALIGNED
+        description: Unaligned memory access
+        bitOffset: 24
+        bitWidth: 1
+      - name: DIVBYZERO
+        description: Divide by zero
+        bitOffset: 25
+        bitWidth: 1
+  - name: HFSR
+    description: HardFault Status Register
+    addressOffset: 44
+    size: 32
+    resetValue: 0
+    fields:
+      - name: VECTTBL
+        description: Bus fault on vector table read during exception processing
+        bitOffset: 1
+        bitWidth: 1
+      - name: FORCED
+        description: Configurable-priority exception escalated to HardFault
+        bitOffset: 30
+        bitWidth: 1
+      - name: DEBUGEVT
+        description: Debug event occurred (e.g., halt request or breakpoint with debug not enabled)
+        bitOffset: 31
+        bitWidth: 1
+  - name: DFSR
+    description: Debug Fault Status Register
+    addressOffset: 48
+    size: 32
+    resetValue: 0
+    fields:
+      - name: HALTED
+        description: Halt request debug event
+        bitOffset: 0
+        bitWidth: 1
+      - name: BKPT
+        description: Breakpoint debug event
+        bitOffset: 1
+        bitWidth: 1
+      - name: DWTTRAP
+        description: DWT watchpoint debug event
+        bitOffset: 2
+        bitWidth: 1
+      - name: VCATCH
+        description: Vector catch debug event
+        bitOffset: 3
+        bitWidth: 1
+      - name: EXTERNAL
+        description: External debug request
+        bitOffset: 4
+        bitWidth: 1
+  - name: MMFAR
+    description: MemManage Fault Address Register
+    addressOffset: 52
+    size: 32
+    resetValue: 0
+    fields:
+      - name: ADDRESS
+        description: Address that caused the MemManage fault
+        bitOffset: 0
+        bitWidth: 32
+  - name: BFAR
+    description: BusFault Address Register
+    addressOffset: 56
+    size: 32
+    resetValue: 0
+    fields:
+      - name: ADDRESS
+        description: Address that caused the BusFault
+        bitOffset: 0
+        bitWidth: 32
+  - name: AFSR
+    description: Auxiliary Fault Status Register (implementation defined)
+    addressOffset: 60
+    size: 32
+    resetValue: 0
+    fields:
+      - name: IMPDEF
+        description: Implementation-defined fault status
+        bitOffset: 0
+        bitWidth: 32
+  # ---- ID registers (v8-M only) ----
+  - name: ID_PFR0
+    description: Processor Feature Register 0
+    addressOffset: 64
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: STATE0
+        description: A32 instruction set support
+        bitOffset: 0
+        bitWidth: 4
+      - name: STATE1
+        description: T32 instruction set support
+        bitOffset: 4
+        bitWidth: 4
+  - name: ID_PFR1
+    description: Processor Feature Register 1
+    addressOffset: 68
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: MPROGMOD
+        description: M-profile programmers' model support
+        bitOffset: 8
+        bitWidth: 4
+      - name: SECURITY
+        description: Security Extension support
+        bitOffset: 4
+        bitWidth: 4
+  - name: ID_DFR0
+    description: Debug Feature Register 0
+    addressOffset: 72
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: MPROFDBG
+        description: M-profile debug architecture support
+        bitOffset: 20
+        bitWidth: 4
+  - name: ID_AFR0
+    description: Auxiliary Feature Register 0
+    addressOffset: 76
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: IMPDEF0
+        description: Implementation-defined meaning
+        bitOffset: 0
+        bitWidth: 4
+      - name: IMPDEF1
+        description: Implementation-defined meaning
+        bitOffset: 4
+        bitWidth: 4
+      - name: IMPDEF2
+        description: Implementation-defined meaning
+        bitOffset: 8
+        bitWidth: 4
+      - name: IMPDEF3
+        description: Implementation-defined meaning
+        bitOffset: 12
+        bitWidth: 4
+  - name: ID_MMFR0
+    description: Memory Model Feature Register 0
+    addressOffset: 80
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: PMSA
+        description: Protected memory system architecture support
+        bitOffset: 4
+        bitWidth: 4
+      - name: OUTERSHR
+        description: Outermost shareability domain implemented
+        bitOffset: 8
+        bitWidth: 4
+      - name: SHARELVL
+        description: Number of shareability levels implemented
+        bitOffset: 12
+        bitWidth: 4
+      - name: TCM
+        description: Tightly-coupled memory support
+        bitOffset: 16
+        bitWidth: 4
+      - name: AUXREG
+        description: Auxiliary register support
+        bitOffset: 20
+        bitWidth: 4
+  - name: ID_MMFR1
+    description: Memory Model Feature Register 1
+    addressOffset: 84
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: ID_MMFR1
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 32
+  - name: ID_MMFR2
+    description: Memory Model Feature Register 2
+    addressOffset: 88
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: WFISTALL
+        description: WFI stalling support
+        bitOffset: 24
+        bitWidth: 4
+  - name: ID_MMFR3
+    description: Memory Model Feature Register 3
+    addressOffset: 92
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: CMAINTVA
+        description: Cache maintenance by address support
+        bitOffset: 0
+        bitWidth: 4
+      - name: CMAINTSW
+        description: Cache maintenance by set/way support
+        bitOffset: 4
+        bitWidth: 4
+      - name: BPMAINT
+        description: Branch predictor maintenance support
+        bitOffset: 8
+        bitWidth: 4
+  - name: ID_ISAR0
+    description: Instruction Set Attributes Register 0
+    addressOffset: 96
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: BITCOUNT
+        description: Bit count instructions
+        bitOffset: 4
+        bitWidth: 4
+      - name: BITFIELD
+        description: Bit field instructions
+        bitOffset: 8
+        bitWidth: 4
+      - name: CMPBRANCH
+        description: Compare and branch instructions
+        bitOffset: 12
+        bitWidth: 4
+      - name: COPROC
+        description: Coprocessor instructions
+        bitOffset: 16
+        bitWidth: 4
+      - name: DEBUG
+        description: Debug instructions
+        bitOffset: 20
+        bitWidth: 4
+      - name: DIVIDE
+        description: Divide instructions
+        bitOffset: 24
+        bitWidth: 4
+  - name: ID_ISAR1
+    description: Instruction Set Attributes Register 1
+    addressOffset: 100
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: EXTEND
+        description: Extend instructions
+        bitOffset: 12
+        bitWidth: 4
+      - name: IFTHEN
+        description: If-Then instructions
+        bitOffset: 16
+        bitWidth: 4
+      - name: IMMEDIATE
+        description: Data-processing instructions with long immediate
+        bitOffset: 20
+        bitWidth: 4
+      - name: INTERWORK
+        description: Interworking instructions
+        bitOffset: 24
+        bitWidth: 4
+  - name: ID_ISAR2
+    description: Instruction Set Attributes Register 2
+    addressOffset: 104
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: LOADSTORE
+        description: Additional load/store instructions
+        bitOffset: 0
+        bitWidth: 4
+      - name: MEMHINT
+        description: Memory hint instructions
+        bitOffset: 4
+        bitWidth: 4
+      - name: MULTIACCESSINT
+        description: Interruptible multi-access instructions
+        bitOffset: 8
+        bitWidth: 4
+      - name: MULT
+        description: Additional multiply instructions
+        bitOffset: 12
+        bitWidth: 4
+      - name: MULTS
+        description: Advanced signed multiply instructions
+        bitOffset: 16
+        bitWidth: 4
+      - name: MULTU
+        description: Advanced unsigned multiply instructions
+        bitOffset: 20
+        bitWidth: 4
+      - name: REVERSAL
+        description: Reversal instructions
+        bitOffset: 28
+        bitWidth: 4
+  - name: ID_ISAR3
+    description: Instruction Set Attributes Register 3
+    addressOffset: 108
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: SATURATE
+        description: Saturating instructions
+        bitOffset: 0
+        bitWidth: 4
+      - name: SIMD
+        description: SIMD instructions
+        bitOffset: 4
+        bitWidth: 4
+      - name: SVC
+        description: SVC instructions
+        bitOffset: 8
+        bitWidth: 4
+      - name: SYNCHPRIM
+        description: Synchronization primitive instructions (with ID_ISAR4.SYNCPRIM_FRAC)
+        bitOffset: 12
+        bitWidth: 4
+      - name: TABBRANCH
+        description: Table branch instructions
+        bitOffset: 16
+        bitWidth: 4
+      - name: T32COPY
+        description: T32 non-flag-setting MOV instructions
+        bitOffset: 20
+        bitWidth: 4
+      - name: TRUENOP
+        description: True NOP instructions
+        bitOffset: 24
+        bitWidth: 4
+  - name: ID_ISAR4
+    description: Instruction Set Attributes Register 4
+    addressOffset: 112
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: UNPRIV
+        description: Unprivileged instructions
+        bitOffset: 0
+        bitWidth: 4
+      - name: WITHSHIFTS
+        description: Instructions with shifts
+        bitOffset: 4
+        bitWidth: 4
+      - name: WRITEBACK
+        description: Writeback addressing modes
+        bitOffset: 8
+        bitWidth: 4
+      - name: BARRIER
+        description: Barrier instructions
+        bitOffset: 16
+        bitWidth: 4
+      - name: SYNCPRIM_FRAC
+        description: Synchronization primitive fractional field
+        bitOffset: 20
+        bitWidth: 4
+      - name: PSR_M
+        description: M-profile instructions to modify PSRs
+        bitOffset: 24
+        bitWidth: 4
+  - name: ID_ISAR5
+    description: Instruction Set Attributes Register 5
+    addressOffset: 116
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: ID_ISAR5
+        description: Reserved
+        bitOffset: 0
+        bitWidth: 32
+  # ---- Cache identification (cores with cache: CM7, CM52, CM55, CM85) ----
+  - name: CLIDR
+    description: Cache Level ID Register
+    addressOffset: 120
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: CL1
+        description: Cache type at level 1
+        bitOffset: 0
+        bitWidth: 3
+      - name: CL2
+        description: Cache type at level 2
+        bitOffset: 3
+        bitWidth: 3
+      - name: CL3
+        description: Cache type at level 3
+        bitOffset: 6
+        bitWidth: 3
+      - name: CL4
+        description: Cache type at level 4
+        bitOffset: 9
+        bitWidth: 3
+      - name: CL5
+        description: Cache type at level 5
+        bitOffset: 12
+        bitWidth: 3
+      - name: CL6
+        description: Cache type at level 6
+        bitOffset: 15
+        bitWidth: 3
+      - name: CL7
+        description: Cache type at level 7
+        bitOffset: 18
+        bitWidth: 3
+      - name: LoUIS
+        description: Level of Unification Inner Shareable
+        bitOffset: 21
+        bitWidth: 3
+      - name: LoC
+        description: Level of Coherency
+        bitOffset: 24
+        bitWidth: 3
+      - name: LoU
+        description: Level of Unification
+        bitOffset: 27
+        bitWidth: 3
+  - name: CTR
+    description: Cache Type Register
+    addressOffset: 124
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: IMINLINE
+        description: "Log2 of the minimum number of words in an instruction cache line"
+        bitOffset: 0
+        bitWidth: 4
+      - name: DMINLINE
+        description: "Log2 of the minimum number of words in a data/unified cache line"
+        bitOffset: 16
+        bitWidth: 4
+      - name: ERG
+        description: Exclusives Reservation Granule
+        bitOffset: 20
+        bitWidth: 4
+      - name: CWG
+        description: Cache Writeback Granule
+        bitOffset: 24
+        bitWidth: 4
+      - name: FORMAT
+        description: Register format (reads as 0x4)
+        bitOffset: 29
+        bitWidth: 3
+  - name: CCSIDR
+    description: Cache Size ID Register (selected by CSSELR)
+    addressOffset: 128
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: LINESIZE
+        description: "Log2(words per cache line) - 2"
+        bitOffset: 0
+        bitWidth: 3
+      - name: ASSOCIATIVITY
+        description: Associativity (number of ways - 1)
+        bitOffset: 3
+        bitWidth: 10
+      - name: NUMSETS
+        description: Number of sets - 1
+        bitOffset: 13
+        bitWidth: 15
+      - name: WA
+        description: Write-Allocate support
+        bitOffset: 28
+        bitWidth: 1
+      - name: RA
+        description: Read-Allocate support
+        bitOffset: 29
+        bitWidth: 1
+      - name: WB
+        description: Write-Back support
+        bitOffset: 30
+        bitWidth: 1
+      - name: WT
+        description: Write-Through support
+        bitOffset: 31
+        bitWidth: 1
+  - name: CSSELR
+    description: Cache Size Selection Register
+    addressOffset: 132
+    size: 32
+    resetValue: 0
+    fields:
+      - name: IND
+        description: "Selects instruction (1) or data/unified (0) cache"
+        bitOffset: 0
+        bitWidth: 1
+      - name: LEVEL
+        description: Cache level (0 = Level 1)
+        bitOffset: 1
+        bitWidth: 3
+  - name: CPACR
+    description: Coprocessor Access Control Register
+    addressOffset: 136
+    size: 32
+    resetValue: 0
+    fields:
+      - name: CP0
+        description: Access privileges for coprocessor 0
+        bitOffset: 0
+        bitWidth: 2
+      - name: CP1
+        description: Access privileges for coprocessor 1
+        bitOffset: 2
+        bitWidth: 2
+      - name: CP2
+        description: Access privileges for coprocessor 2
+        bitOffset: 4
+        bitWidth: 2
+      - name: CP3
+        description: Access privileges for coprocessor 3
+        bitOffset: 6
+        bitWidth: 2
+      - name: CP4
+        description: Access privileges for coprocessor 4
+        bitOffset: 8
+        bitWidth: 2
+      - name: CP5
+        description: Access privileges for coprocessor 5
+        bitOffset: 10
+        bitWidth: 2
+      - name: CP6
+        description: Access privileges for coprocessor 6
+        bitOffset: 12
+        bitWidth: 2
+      - name: CP7
+        description: Access privileges for coprocessor 7
+        bitOffset: 14
+        bitWidth: 2
+      - name: CP10
+        description: Access privileges for FP Extension (must match CP11)
+        bitOffset: 20
+        bitWidth: 2
+      - name: CP11
+        description: Access privileges for FP Extension (must match CP10)
+        bitOffset: 22
+        bitWidth: 2
+  - name: NSACR
+    description: Non-secure Access Control Register (v8-M with TrustZone only)
+    addressOffset: 140
+    size: 32
+    resetValue: 0
+    fields:
+      - name: CP0
+        description: Enables Non-secure access to coprocessor 0
+        bitOffset: 0
+        bitWidth: 1
+      - name: CP1
+        description: Enables Non-secure access to coprocessor 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: CP2
+        description: Enables Non-secure access to coprocessor 2
+        bitOffset: 2
+        bitWidth: 1
+      - name: CP3
+        description: Enables Non-secure access to coprocessor 3
+        bitOffset: 3
+        bitWidth: 1
+      - name: CP4
+        description: Enables Non-secure access to coprocessor 4
+        bitOffset: 4
+        bitWidth: 1
+      - name: CP5
+        description: Enables Non-secure access to coprocessor 5
+        bitOffset: 5
+        bitWidth: 1
+      - name: CP6
+        description: Enables Non-secure access to coprocessor 6
+        bitOffset: 6
+        bitWidth: 1
+      - name: CP7
+        description: Enables Non-secure access to coprocessor 7
+        bitOffset: 7
+        bitWidth: 1
+      - name: CP10
+        description: Enables Non-secure access to FP Extension
+        bitOffset: 10
+        bitWidth: 1
+      - name: CP11
+        description: Enables Non-secure access to FP Extension
+        bitOffset: 11
+        bitWidth: 1
+  # ---- Cache maintenance operations (cores with cache: CM7, CM52, CM55, CM85) ----
+  - name: ICIALLU
+    description: Instruction Cache Invalidate All to PoU
+    addressOffset: 0x250
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: ICIALLU
+        description: Write to invalidate entire instruction cache
+        bitOffset: 0
+        bitWidth: 32
+  - name: ICIMVAU
+    description: Instruction Cache Invalidate by MVA to PoU
+    addressOffset: 0x258
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: ICIMVAU
+        description: Address to invalidate (virtual address)
+        bitOffset: 0
+        bitWidth: 32
+  - name: DCIMVAC
+    description: Data Cache Invalidate by MVA to PoC
+    addressOffset: 0x25C
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: DCIMVAC
+        description: Address to invalidate (virtual address)
+        bitOffset: 0
+        bitWidth: 32
+  - name: DCISW
+    description: Data Cache Invalidate by Set-Way
+    addressOffset: 0x260
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: SET
+        description: Set index
+        bitOffset: 5
+        bitWidth: 9
+      - name: WAY
+        description: Way index
+        bitOffset: 30
+        bitWidth: 2
+  - name: DCCMVAU
+    description: Data Cache Clean by MVA to PoU
+    addressOffset: 0x264
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: DCCMVAU
+        description: Address to clean (virtual address)
+        bitOffset: 0
+        bitWidth: 32
+  - name: DCCMVAC
+    description: Data Cache Clean by MVA to PoC
+    addressOffset: 0x268
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: DCCMVAC
+        description: Address to clean (virtual address)
+        bitOffset: 0
+        bitWidth: 32
+  - name: DCCSW
+    description: Data Cache Clean by Set-Way
+    addressOffset: 0x26C
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: SET
+        description: Set index
+        bitOffset: 5
+        bitWidth: 9
+      - name: WAY
+        description: Way index
+        bitOffset: 30
+        bitWidth: 2
+  - name: DCCIMVAC
+    description: Data Cache Clean and Invalidate by MVA to PoC
+    addressOffset: 0x270
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: DCCIMVAC
+        description: Address to clean and invalidate (virtual address)
+        bitOffset: 0
+        bitWidth: 32
+  - name: DCCISW
+    description: Data Cache Clean and Invalidate by Set-Way
+    addressOffset: 0x274
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: SET
+        description: Set index
+        bitOffset: 5
+        bitWidth: 9
+      - name: WAY
+        description: Way index
+        bitOffset: 30
+        bitWidth: 2
+  - name: BPIALL
+    description: Branch Predictor Invalidate All
+    addressOffset: 0x278
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: BPIALL
+        description: Write to invalidate entire branch predictor
+        bitOffset: 0
+        bitWidth: 32
+  # ---- Software Trigger Interrupt Register (v7-M/v8-M only) ----
+  - name: STIR
+    description: Software Trigger Interrupt Register
+    addressOffset: 0x200
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: INTID
+        description: Interrupt ID to trigger (0-239)
+        bitOffset: 0
+        bitWidth: 9
+  # ---- RAS Fault Status Register (v8.1-M only) ----
+  - name: RFSR
+    description: RAS Fault Status Register (v8.1-M only)
+    addressOffset: 0x204
+    size: 32
+    resetValue: 0
+    fields:
+      - name: RFSR
+        description: Implementation-defined RAS fault status
+        bitOffset: 0
+        bitWidth: 32
+  # ---- Security Fault registers (v8-M with TrustZone only) ----
+  - name: SFSR
+    description: SecureFault Status Register (v8-M with TrustZone only)
+    addressOffset: 0xE4
+    size: 32
+    resetValue: 0
+    fields:
+      - name: INVEP
+        description: Invalid entry point (function call from NS without valid SG)
+        bitOffset: 0
+        bitWidth: 1
+      - name: INVIS
+        description: Invalid integrity signature in exception stack frame
+        bitOffset: 1
+        bitWidth: 1
+      - name: INVER
+        description: Invalid EXC_RETURN value
+        bitOffset: 2
+        bitWidth: 1
+      - name: AUVIOL
+        description: Attribution unit violation (access to Secure address from NS)
+        bitOffset: 3
+        bitWidth: 1
+      - name: INVTRAN
+        description: Invalid transition (lazy state preservation error)
+        bitOffset: 4
+        bitWidth: 1
+      - name: LSPERR
+        description: Lazy state preservation error
+        bitOffset: 5
+        bitWidth: 1
+      - name: SFARVALID
+        description: SFAR holds a valid fault address
+        bitOffset: 6
+        bitWidth: 1
+      - name: LSERR
+        description: Lazy state error during activation/deactivation
+        bitOffset: 7
+        bitWidth: 1
+  - name: SFAR
+    description: SecureFault Address Register (v8-M with TrustZone only)
+    addressOffset: 0xE8
+    size: 32
+    resetValue: 0
+    fields:
+      - name: ADDRESS
+        description: Address that caused the SecureFault
+        bitOffset: 0
+        bitWidth: 32
+  # ---- Debug Security Control and Status (v8-M only) ----
+  - name: DSCSR
+    description: Debug Security Control and Status Register (v8-M only)
+    addressOffset: 0x108
+    size: 32
+    resetValue: 0
+    fields:
+      - name: SBRSELEN
+        description: Controls whether SBRSEL or current security state selects banked registers for debug access
+        bitOffset: 0
+        bitWidth: 1
+      - name: SBRSEL
+        description: "If SBRSELEN=1, selects Non-secure (0) or Secure (1) banked registers"
+        bitOffset: 1
+        bitWidth: 1
+      - name: CDS
+        description: Current Security state of the processor (0=Non-secure, 1=Secure)
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: CDSKEY
+        description: Write key for CDS (must be 1 to write CDS)
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+addressBlocks:
+  - offset: 0
+    size: 0x27C
+    usage: registers
+params:
+  - name: has_faults
+    type: bool
+    default: true
+    description: "Configurable fault handling (CFSR, HFSR, SHPR1, etc.) — false only for ARMv6-M (CM0/CM0+) and CM23"
+  - name: has_cache
+    type: bool
+    default: false
+    description: "Cache control (CLIDR, CTR, CCSIDR, CSSELR, cache maintenance ops, DC/IC/BP in CCR) — CM7, CM52, CM55, CM85 (optional on v8.1-M)"
+  - name: has_trustzone
+    type: bool
+    default: false
+    description: "TrustZone security extensions (NSACR, SFSR/SFAR, DSCSR, security fields in AIRCR/SHCSR) — true for ARMv8-M/v8.1-M with Security Extension"
+  - name: has_v81m
+    type: bool
+    default: false
+    description: "ARMv8.1-M additions (RFSR, CCR.LOB, CCR.TRD) — true for CM52, CM55, CM85"
