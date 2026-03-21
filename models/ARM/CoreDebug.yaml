@@ -1,0 +1,260 @@
+name: CoreDebug
+description: Debug Control Block (CMSIS CoreDebug_Type / DCB)
+source: ARMv7-M DDI 0403; ARMv8-M DDI 0553; CMSIS 6 core_cm7.h / core_cm33.h
+qemu: partial (DHCSR/DCRSR/DCRDR/DEMCR implemented in armv7m_nvic.c; DAUTHCTRL/DSCSR stubbed)
+registers:
+  - name: DHCSR
+    description: Debug Halting Control and Status Register
+    addressOffset: 0
+    size: 32
+    resetValue: 0
+    fields:
+      # Control bits (read-write via DBGKEY)
+      - name: C_DEBUGEN
+        description: Enable halting debug
+        bitOffset: 0
+        bitWidth: 1
+      - name: C_HALT
+        description: Halt the processor
+        bitOffset: 1
+        bitWidth: 1
+      - name: C_STEP
+        description: Single-step the processor
+        bitOffset: 2
+        bitWidth: 1
+      - name: C_MASKINTS
+        description: Mask interrupts while stepping
+        bitOffset: 3
+        bitWidth: 1
+      - name: C_SNAPSTALL
+        description: Force memory access completion when processor is halted (v7-M only)
+        bitOffset: 5
+        bitWidth: 1
+      # Status bits (read-only)
+      - name: S_REGRDY
+        description: Register read/write via DCRSR/DCRDR available
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: S_HALT
+        description: Processor is in Debug state
+        bitOffset: 17
+        bitWidth: 1
+        access: read-only
+      - name: S_SLEEP
+        description: Processor is in sleep mode
+        bitOffset: 18
+        bitWidth: 1
+        access: read-only
+      - name: S_LOCKUP
+        description: Processor is locked up
+        bitOffset: 19
+        bitWidth: 1
+        access: read-only
+      - name: S_SDE
+        description: Secure debug enabled (v8-M only)
+        bitOffset: 20
+        bitWidth: 1
+        access: read-only
+      - name: S_RETIRE_ST
+        description: "At least one instruction retired since last read (sticky, clears on read)"
+        bitOffset: 24
+        bitWidth: 1
+        access: read-only
+      - name: S_RESET_ST
+        description: "Processor has been reset since last read (sticky, clears on read)"
+        bitOffset: 25
+        bitWidth: 1
+        access: read-only
+      - name: S_RESTART_ST
+        description: "Processor restarted since last read (v8-M only, sticky, clears on read)"
+        bitOffset: 26
+        bitWidth: 1
+        access: read-only
+  # Write-view overlay: bits [31:16] are DBGKEY on write
+  - name: DHCSR_WR
+    description: "Debug Halting Control and Status Register (write view: bits [31:16] are DBGKEY)"
+    addressOffset: 0
+    size: 32
+    resetValue: 0
+    access: write-only
+    fields:
+      - name: C_DEBUGEN
+        description: Enable halting debug
+        bitOffset: 0
+        bitWidth: 1
+      - name: C_HALT
+        description: Halt the processor
+        bitOffset: 1
+        bitWidth: 1
+      - name: C_STEP
+        description: Single-step the processor
+        bitOffset: 2
+        bitWidth: 1
+      - name: C_MASKINTS
+        description: Mask interrupts while stepping
+        bitOffset: 3
+        bitWidth: 1
+      - name: C_SNAPSTALL
+        description: Force memory access completion when processor is halted (v7-M only)
+        bitOffset: 5
+        bitWidth: 1
+      - name: DBGKEY
+        description: "Write key: must write 0xA05F to enable writes to control bits"
+        bitOffset: 16
+        bitWidth: 16
+  - name: DCRSR
+    description: Debug Core Register Selector Register
+    addressOffset: 4
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: REGSEL
+        description: "Register selector: 0-12=R0-R12, 13=SP, 14=LR, 15=DebugReturnAddress, 16=xPSR, 17=MSP, 18=PSP, 20=CONTROL/FAULTMASK/BASEPRI/PRIMASK, 33-64=FP regs"
+        bitOffset: 0
+        bitWidth: 7
+      - name: REGWnR
+        description: "0=read register to DCRDR, 1=write DCRDR to register"
+        bitOffset: 16
+        bitWidth: 1
+  - name: DCRDR
+    description: Debug Core Register Data Register
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: DBGTMP
+        description: Data value for register transfer via DCRSR
+        bitOffset: 0
+        bitWidth: 32
+  - name: DEMCR
+    description: Debug Exception and Monitor Control Register
+    addressOffset: 0xC
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: VC_CORERESET
+        description: Halt on reset vector catch
+        bitOffset: 0
+        bitWidth: 1
+      - name: VC_MMERR
+        description: Halt on MemManage fault
+        bitOffset: 4
+        bitWidth: 1
+      - name: VC_NOCPERR
+        description: Halt on UsageFault caused by coprocessor access
+        bitOffset: 5
+        bitWidth: 1
+      - name: VC_CHKERR
+        description: Halt on UsageFault caused by checking error
+        bitOffset: 6
+        bitWidth: 1
+      - name: VC_STATERR
+        description: Halt on UsageFault caused by invalid state
+        bitOffset: 7
+        bitWidth: 1
+      - name: VC_BUSERR
+        description: Halt on BusFault
+        bitOffset: 8
+        bitWidth: 1
+      - name: VC_INTERR
+        description: Halt on exception entry or return fault
+        bitOffset: 9
+        bitWidth: 1
+      - name: VC_HARDERR
+        description: Halt on HardFault
+        bitOffset: 10
+        bitWidth: 1
+      - name: VC_SFERR
+        description: Halt on SecureFault (v8-M with TrustZone only)
+        bitOffset: 11
+        bitWidth: 1
+      - name: MON_EN
+        description: Enable Debug Monitor exception
+        bitOffset: 16
+        bitWidth: 1
+      - name: MON_PEND
+        description: Pend Debug Monitor exception
+        bitOffset: 17
+        bitWidth: 1
+      - name: MON_STEP
+        description: Single-step using Debug Monitor
+        bitOffset: 18
+        bitWidth: 1
+      - name: MON_REQ
+        description: Debug Monitor semaphore bit (handshake between monitor and debugger)
+        bitOffset: 19
+        bitWidth: 1
+      - name: SDME
+        description: Secure DebugMonitor enable (v8-M only)
+        bitOffset: 20
+        bitWidth: 1
+        access: read-only
+      - name: TRCENA
+        description: Global enable for DWT and ITM
+        bitOffset: 24
+        bitWidth: 1
+  # ---- v8-M extensions ----
+  - name: DAUTHCTRL
+    description: Debug Authentication Control Register (v8-M only)
+    addressOffset: 0x14
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: SPIDENSEL
+        description: Secure invasive debug authentication override select
+        bitOffset: 0
+        bitWidth: 1
+      - name: INTSPIDEN
+        description: Secure invasive debug authentication override value
+        bitOffset: 1
+        bitWidth: 1
+      - name: SPNIDENSEL
+        description: Secure non-invasive debug authentication override select
+        bitOffset: 2
+        bitWidth: 1
+      - name: INTSPNIDEN
+        description: Secure non-invasive debug authentication override value
+        bitOffset: 3
+        bitWidth: 1
+      - name: UIDEN
+        description: Unprivileged invasive debug enable (v8.1-M only)
+        bitOffset: 4
+        bitWidth: 1
+      - name: UIDAPEN
+        description: Unprivileged invasive debug allowed by DAP (v8.1-M only)
+        bitOffset: 5
+        bitWidth: 1
+        access: read-only
+  - name: DSCSR
+    description: Debug Security Control and Status Register (v8-M only)
+    addressOffset: 0x18
+    size: 32
+    resetValue: 0
+    fields:
+      - name: SBRSELEN
+        description: Controls whether SBRSEL or current security state selects banked registers for debug access
+        bitOffset: 0
+        bitWidth: 1
+      - name: SBRSEL
+        description: "If SBRSELEN=1, selects Non-secure (0) or Secure (1) banked registers"
+        bitOffset: 1
+        bitWidth: 1
+      - name: CDS
+        description: Current Security state of the processor (0=Non-secure, 1=Secure)
+        bitOffset: 16
+        bitWidth: 1
+        access: read-only
+      - name: CDSKEY
+        description: Write key for CDS (must be 1 to write CDS)
+        bitOffset: 17
+        bitWidth: 1
+        access: write-only
+addressBlocks:
+  - offset: 0
+    size: 0x1C
+    usage: registers
