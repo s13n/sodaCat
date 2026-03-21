@@ -1,0 +1,114 @@
+name: ITM
+description: Instrumentation Trace Macrocell (CMSIS ITM_Type)
+source: ARM CoreSight ITM Technical Reference Manual; ARMv7-M DDI 0403; ARMv8-M DDI 0553
+qemu: partial (stimulus port 0 writes forwarded to chardev; other ports and control registers stubbed)
+registers:
+  - name: PORT
+    description: Stimulus Port Register (write data to emit trace packet; read bit 0 for FIFO ready)
+    addressOffset: 0
+    size: 32
+    dim: 32
+    dimIncrement: 4
+    resetValue: 0
+    fields:
+      - name: STIMULUS
+        description: "Write: trace data (8/16/32-bit). Read bit 0: 1=port ready, 0=FIFO full."
+        bitOffset: 0
+        bitWidth: 32
+  - name: TER
+    description: Trace Enable Register
+    addressOffset: 0xE00
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: STIMENA
+        description: "Bit N enables stimulus port N (0-31)"
+        bitOffset: 0
+        bitWidth: 32
+  - name: TPR
+    description: Trace Privilege Register
+    addressOffset: 0xE40
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: PRIVMASK
+        description: "Bit N: 1=ports [8N+7:8N] accessible only from privileged code"
+        bitOffset: 0
+        bitWidth: 4
+  - name: TCR
+    description: Trace Control Register
+    addressOffset: 0xE80
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: ITMENA
+        description: Global ITM enable
+        bitOffset: 0
+        bitWidth: 1
+      - name: TSENA
+        description: Local timestamp generation enable
+        bitOffset: 1
+        bitWidth: 1
+      - name: SYNCENA
+        description: Synchronization packet transmission enable
+        bitOffset: 2
+        bitWidth: 1
+      - name: TXENA
+        description: Hardware event forwarding enable (DWT packets)
+        bitOffset: 3
+        bitWidth: 1
+      - name: TSPRESCALE
+        description: "Local timestamp prescaler: 0=none, 1=/4, 2=/16, 3=/64"
+        bitOffset: 8
+        bitWidth: 2
+      - name: GTSFREQ
+        description: "Global timestamp frequency: 0=disabled, 1=~128 cycles, 2=~8192, 3=on every packet"
+        bitOffset: 10
+        bitWidth: 2
+      - name: TRACEBUSID
+        description: ATB trace bus ID for ITM source identification
+        bitOffset: 16
+        bitWidth: 7
+      - name: BUSY
+        description: ITM busy (transmitting or pending)
+        bitOffset: 23
+        bitWidth: 1
+        access: read-only
+  # ---- CoreSight management registers ----
+  - name: LAR
+    description: Lock Access Register (write 0xC5ACCE55 to unlock)
+    addressOffset: 0xFB0
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: KEY
+        description: "Write 0xC5ACCE55 to unlock write access to ITM registers"
+        bitOffset: 0
+        bitWidth: 32
+  - name: LSR
+    description: Lock Status Register
+    addressOffset: 0xFB4
+    size: 32
+    access: read-only
+    resetValue: 3
+    fields:
+      - name: SLI
+        description: "Software Lock implemented (1=lock mechanism present)"
+        bitOffset: 0
+        bitWidth: 1
+      - name: SLK
+        description: "Software Lock status (1=locked)"
+        bitOffset: 1
+        bitWidth: 1
+      - name: nTT
+        description: "Not thirty-two bit (0=32-bit access required for LAR)"
+        bitOffset: 2
+        bitWidth: 1
+addressBlocks:
+  - offset: 0
+    size: 0xFB8
+    usage: registers
