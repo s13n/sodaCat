@@ -1,0 +1,213 @@
+name: PL022
+description: ARM PrimeCell Synchronous Serial Port (PL022)
+source: IOTKit_CM33.svd; ARM DDI0194 (PL022 TRM)
+qemu: partial (pl022; basic SPI transfers, no DMA, no peripheral mode)
+ipPedigree:
+  designer: ARM
+  ipName: PL022
+  trm: DDI0194
+interrupts:
+  - INTR
+registers:
+  - name: CR0
+    description: Control Register 0
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: DSS
+        description: "Data size select: 0000-0010=reserved, 0011=4-bit, ..., 1111=16-bit"
+        bitOffset: 0
+        bitWidth: 4
+      - name: FRF
+        description: "Frame format: 00=SPI, 01=TI SSI, 10=Microwire, 11=reserved"
+        bitOffset: 4
+        bitWidth: 2
+      - name: SPO
+        description: "SSPCLKOUT polarity (SPI mode only): 0=low between frames, 1=high"
+        bitOffset: 6
+        bitWidth: 1
+      - name: SPH
+        description: "SSPCLKOUT phase (SPI mode only): 0=capture on first edge, 1=second edge"
+        bitOffset: 7
+        bitWidth: 1
+      - name: SCR
+        description: "Serial clock rate divisor: SSPCLKOUT = SSPCLK / (CPSDVSR * (1+SCR))"
+        bitOffset: 8
+        bitWidth: 8
+  - name: CR1
+    description: Control Register 1
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: LBM
+        description: Loopback mode
+        bitOffset: 0
+        bitWidth: 1
+      - name: SSE
+        description: Synchronous serial port enable
+        bitOffset: 1
+        bitWidth: 1
+      - name: MS
+        description: "Master or slave: 0=master, 1=slave"
+        bitOffset: 2
+        bitWidth: 1
+      - name: SOD
+        description: Slave mode output disable
+        bitOffset: 3
+        bitWidth: 1
+  - name: DR
+    description: Data Register (TX on write, RX on read)
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: Data
+        description: Transmit/Receive FIFO data
+        bitOffset: 0
+        bitWidth: 16
+  - name: SR
+    description: Status Register
+    addressOffset: 12
+    size: 32
+    access: read-only
+    resetValue: 0x00000003
+    fields:
+      - name: TFE
+        description: Transmit FIFO empty
+        bitOffset: 0
+        bitWidth: 1
+      - name: TNF
+        description: Transmit FIFO not full
+        bitOffset: 1
+        bitWidth: 1
+      - name: RNE
+        description: Receive FIFO not empty
+        bitOffset: 2
+        bitWidth: 1
+      - name: RFF
+        description: Receive FIFO full
+        bitOffset: 3
+        bitWidth: 1
+      - name: BSY
+        description: SSP busy flag
+        bitOffset: 4
+        bitWidth: 1
+  - name: CPSR
+    description: Clock Prescale Register
+    addressOffset: 16
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CPSDVSR
+        description: Clock prescale divisor (must be even, 2-254)
+        bitOffset: 0
+        bitWidth: 8
+  - name: IMSC
+    description: Interrupt Mask Set or Clear Register
+    addressOffset: 20
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: RORIM
+        description: Receive overrun interrupt mask
+        bitOffset: 0
+        bitWidth: 1
+      - name: RTIM
+        description: Receive timeout interrupt mask
+        bitOffset: 1
+        bitWidth: 1
+      - name: RXIM
+        description: Receive FIFO interrupt mask
+        bitOffset: 2
+        bitWidth: 1
+      - name: TXIM
+        description: Transmit FIFO interrupt mask
+        bitOffset: 3
+        bitWidth: 1
+  - name: RIS
+    description: Raw Interrupt Status Register
+    addressOffset: 24
+    size: 32
+    access: read-only
+    resetValue: 0x00000008
+    fields:
+      - name: RORRIS
+        description: Raw overrun interrupt status
+        bitOffset: 0
+        bitWidth: 1
+      - name: RTRIS
+        description: Raw timeout interrupt status
+        bitOffset: 1
+        bitWidth: 1
+      - name: RXRIS
+        description: Raw receive FIFO interrupt status
+        bitOffset: 2
+        bitWidth: 1
+      - name: TXRIS
+        description: Raw transmit FIFO interrupt status
+        bitOffset: 3
+        bitWidth: 1
+  - name: MIS
+    description: Masked Interrupt Status Register
+    addressOffset: 28
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: RORMIS
+        description: Masked overrun interrupt status
+        bitOffset: 0
+        bitWidth: 1
+      - name: RTMIS
+        description: Masked timeout interrupt status
+        bitOffset: 1
+        bitWidth: 1
+      - name: RXMIS
+        description: Masked receive FIFO interrupt status
+        bitOffset: 2
+        bitWidth: 1
+      - name: TXMIS
+        description: Masked transmit FIFO interrupt status
+        bitOffset: 3
+        bitWidth: 1
+  - name: ICR
+    description: Interrupt Clear Register
+    addressOffset: 32
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: RORIC
+        description: Write 1 to clear receive overrun interrupt
+        bitOffset: 0
+        bitWidth: 1
+      - name: RTIC
+        description: Write 1 to clear receive timeout interrupt
+        bitOffset: 1
+        bitWidth: 1
+  - name: DMACR
+    description: DMA Control Register
+    addressOffset: 36
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: RXDMAE
+        description: Receive DMA enable
+        bitOffset: 0
+        bitWidth: 1
+      - name: TXDMAE
+        description: Transmit DMA enable
+        bitOffset: 1
+        bitWidth: 1
+addressBlocks:
+  - offset: 0
+    size: 40
+    usage: registers
