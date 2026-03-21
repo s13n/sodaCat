@@ -8,6 +8,8 @@ sodaCat is a hardware description database for microcontrollers and SoCs. It ext
 
 **Three-stage pipeline:** SVD (XML) → YAML models → C++20 headers
 
+**Web explorer:** [sodaCat-explorer](https://github.com/s13n/sodaCat-explorer) ([live site](https://s13n.github.io/sodaCat-explorer/)) is a static website generator that renders the YAML models for browsing. Its `build.py` auto-discovers vendors by scanning `svd/*/` for YAML config files with a `families` section.
+
 ## Build Commands
 
 ```bash
