@@ -1,0 +1,288 @@
+name: DWT
+description: Data Watchpoint and Trace Unit (CMSIS DWT_Type)
+source: ARM CoreSight DWT Technical Reference Manual; ARMv7-M DDI 0403; ARMv8-M DDI 0553
+qemu: minimal (PCSR reads as 0; comparators and trace not implemented)
+registers:
+  - name: CTRL
+    description: Control Register
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CYCCNTENA
+        description: Enable CYCCNT cycle counter
+        bitOffset: 0
+        bitWidth: 1
+      - name: POSTPRESET
+        description: Reload value for POSTCNT when it reaches zero
+        bitOffset: 1
+        bitWidth: 4
+      - name: POSTCNT
+        description: Post-scalar counter for CYCTAP-based PC sampling
+        bitOffset: 5
+        bitWidth: 4
+      - name: CYCTAP
+        description: "CYCCNT tap select: 0=bit 6 (every 64 cycles), 1=bit 10 (every 1024 cycles)"
+        bitOffset: 9
+        bitWidth: 1
+      - name: SYNCTAP
+        description: "Sync packet rate: 0=disabled, 1=every 2^24, 2=every 2^26, 3=every 2^28 cycles"
+        bitOffset: 10
+        bitWidth: 2
+      - name: PCSAMPLENA
+        description: Enable periodic PC sampling using POSTCNT
+        bitOffset: 12
+        bitWidth: 1
+      - name: EXCTRCENA
+        description: Enable exception trace packets
+        bitOffset: 16
+        bitWidth: 1
+      - name: CPIEVTENA
+        description: Enable CPI count event
+        bitOffset: 17
+        bitWidth: 1
+      - name: EXCEVTENA
+        description: Enable exception overhead count event
+        bitOffset: 18
+        bitWidth: 1
+      - name: SLEEPEVTENA
+        description: Enable sleep count event
+        bitOffset: 19
+        bitWidth: 1
+      - name: LSUEVTENA
+        description: Enable LSU count event
+        bitOffset: 20
+        bitWidth: 1
+      - name: FOLDEVTENA
+        description: Enable folded-instruction count event
+        bitOffset: 21
+        bitWidth: 1
+      - name: CYCEVTENA
+        description: Enable cycle count event
+        bitOffset: 22
+        bitWidth: 1
+      - name: NOPRFCNT
+        description: "1=profiling counters not supported (read-only)"
+        bitOffset: 24
+        bitWidth: 1
+        access: read-only
+      - name: NOCYCCNT
+        description: "1=cycle counter not supported (read-only)"
+        bitOffset: 25
+        bitWidth: 1
+        access: read-only
+      - name: NOEXTTRIG
+        description: "1=external match signals not supported (read-only)"
+        bitOffset: 26
+        bitWidth: 1
+        access: read-only
+      - name: NOTRCPKT
+        description: "1=trace sampling and exception trace not supported (read-only)"
+        bitOffset: 27
+        bitWidth: 1
+        access: read-only
+      - name: NUMCOMP
+        description: Number of comparators implemented (read-only)
+        bitOffset: 28
+        bitWidth: 4
+        access: read-only
+  - name: CYCCNT
+    description: Cycle Count Register (32-bit free-running counter)
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 0
+  - name: CPICNT
+    description: CPI Count Register (extra cycles for multi-cycle instructions)
+    addressOffset: 8
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: CPICNT
+        description: CPI event counter (8-bit, generates event on overflow)
+        bitOffset: 0
+        bitWidth: 8
+  - name: EXCCNT
+    description: Exception Overhead Count Register
+    addressOffset: 0xC
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: EXCCNT
+        description: Exception overhead event counter (8-bit, generates event on overflow)
+        bitOffset: 0
+        bitWidth: 8
+  - name: SLEEPCNT
+    description: Sleep Count Register
+    addressOffset: 0x10
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: SLEEPCNT
+        description: Sleep cycle event counter (8-bit, generates event on overflow)
+        bitOffset: 0
+        bitWidth: 8
+  - name: LSUCNT
+    description: LSU Count Register (extra cycles for load/store operations)
+    addressOffset: 0x14
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: LSUCNT
+        description: LSU event counter (8-bit, generates event on overflow)
+        bitOffset: 0
+        bitWidth: 8
+  - name: FOLDCNT
+    description: Folded-instruction Count Register
+    addressOffset: 0x18
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - name: FOLDCNT
+        description: Folded-instruction event counter (8-bit, generates event on overflow)
+        bitOffset: 0
+        bitWidth: 8
+  - name: PCSR
+    description: Program Counter Sample Register (reads current PC)
+    addressOffset: 0x1C
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: EIASAMPLE
+        description: Execution instruction address sample value
+        bitOffset: 0
+        bitWidth: 32
+  # ---- Comparator registers (4 comparators at 16-byte stride) ----
+  - name: COMP
+    description: Comparator Register (address or data value to match)
+    addressOffset: 0x20
+    size: 32
+    access: read-write
+    resetValue: 0
+    dim: 4
+    dimIncrement: 16
+  - name: MASK
+    description: Mask Register (ignore low-order address bits)
+    addressOffset: 0x24
+    size: 32
+    access: read-write
+    resetValue: 0
+    dim: 4
+    dimIncrement: 16
+    fields:
+      - name: MASK
+        description: "Ignore low-order address bits: comparator matches on address & ~((1 << MASK) - 1)"
+        bitOffset: 0
+        bitWidth: 5
+  - name: FUNCTION
+    description: Function Register (comparator action and match configuration, v7-M layout)
+    addressOffset: 0x28
+    size: 32
+    access: read-write
+    resetValue: 0
+    dim: 4
+    dimIncrement: 16
+    fields:
+      - name: FUNCTION
+        description: "Comparator function: 0=disabled, others select watchpoint/trigger/trace action"
+        bitOffset: 0
+        bitWidth: 4
+      - name: EMITRANGE
+        description: Emit data trace address-offset packets for range comparisons
+        bitOffset: 5
+        bitWidth: 1
+      - name: DATAVMATCH
+        description: "1=COMP holds data value (not address); DATAVADDR0 selects address comparator"
+        bitOffset: 8
+        bitWidth: 1
+      - name: LNK1ENA
+        description: Second linked comparator supported (read-only)
+        bitOffset: 9
+        bitWidth: 1
+        access: read-only
+      - name: DATAVSIZE
+        description: "Data value comparison size: 0=byte, 1=halfword, 2=word"
+        bitOffset: 10
+        bitWidth: 2
+      - name: DATAVADDR0
+        description: Comparator number for linked address (when DATAVMATCH=1)
+        bitOffset: 12
+        bitWidth: 4
+      - name: DATAVADDR1
+        description: Second linked address comparator (when LNK1ENA=1)
+        bitOffset: 16
+        bitWidth: 4
+      - name: MATCHED
+        description: Comparator match event flag (read-only, cleared on read)
+        bitOffset: 24
+        bitWidth: 1
+        access: read-only
+  # ---- v8-M comparator function register (overlapping offset for union) ----
+  - name: FUNCTION_V8M
+    description: Function Register (comparator action and match configuration, v8-M layout)
+    addressOffset: 0x28
+    size: 32
+    access: read-write
+    resetValue: 0
+    dim: 4
+    dimIncrement: 16
+    fields:
+      - name: MATCH
+        description: "Match behavior: 0=disabled, 4=instruction addr, 5=data addr R, 6=data addr W, 7=data addr RW, etc."
+        bitOffset: 0
+        bitWidth: 4
+      - name: ACTION
+        description: "Action on match: 0=trigger only, 1=debug event, 2=trace data value packet"
+        bitOffset: 4
+        bitWidth: 2
+      - name: DATAVSIZE
+        description: "Data value comparison size: 0=byte, 1=halfword, 2=word"
+        bitOffset: 10
+        bitWidth: 2
+      - name: ID
+        description: Comparator capabilities identifier (read-only)
+        bitOffset: 27
+        bitWidth: 5
+        access: read-only
+  # ---- CoreSight management registers ----
+  - name: LAR
+    description: Lock Access Register (write 0xC5ACCE55 to unlock)
+    addressOffset: 0xFB0
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: KEY
+        description: "Write 0xC5ACCE55 to unlock write access to DWT registers"
+        bitOffset: 0
+        bitWidth: 32
+  - name: LSR
+    description: Lock Status Register
+    addressOffset: 0xFB4
+    size: 32
+    access: read-only
+    resetValue: 3
+    fields:
+      - name: SLI
+        description: "Software Lock implemented (1=lock mechanism present)"
+        bitOffset: 0
+        bitWidth: 1
+      - name: SLK
+        description: "Software Lock status (1=locked)"
+        bitOffset: 1
+        bitWidth: 1
+      - name: nTT
+        description: "Not thirty-two bit (0=32-bit access required for LAR)"
+        bitOffset: 2
+        bitWidth: 1
+addressBlocks:
+  - offset: 0
+    size: 0xFB8
+    usage: registers
