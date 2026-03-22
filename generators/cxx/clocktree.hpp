@@ -159,7 +159,8 @@ private:
         size_t index = get_sel ? get_sel(static_cast<Base const*>(this)) : 0;
         if (index >= mux.inputs.size()) [[unlikely]]
             return 0;
-        return getFrequency(*std::next(mux.inputs.begin(), index));
+        typename Base::S sel = *std::next(mux.inputs.begin(), index);
+        return getFrequency(sel);
     }
 };
 } // namespace

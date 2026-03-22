@@ -136,7 +136,13 @@ def formatFields(field_list, instance):
         values = f.get("values", None)
         if state:
             states[state] = f.get("default", 0)
-            f_get = f'''[](void const *ctx) -> uint32_t {{
+            if reg and field:
+                f_get = f'''[](void const *ctx) -> uint32_t {{
+                return i_{inst}.registers->{reg}.get().{field}
+                    ? static_cast<Clocks const*>(ctx)->state.{state} : 0;
+            }}'''
+            else:
+                f_get = f'''[](void const *ctx) -> uint32_t {{
                 return static_cast<Clocks const*>(ctx)->state.{state};
             }}'''
             f_set = f'''[](void *ctx, uint32_t val){{
