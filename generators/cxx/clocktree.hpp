@@ -147,10 +147,11 @@ private:
     uint32_t get_frequency(typename Base::Di const &div) const {
         uint64_t input_freq = getFrequency(div.input);
         auto *get_factor = Base::register_fields[size_t(div.factor)].get;
-        uint32_t factor = (get_factor ? get_factor(static_cast<Base const*>(this)) : 0) + div.value;
+        uint32_t factor = get_factor ? get_factor(static_cast<Base const*>(this)) : 0;
         auto *get_denom = Base::register_fields[size_t(div.denominator)].get;
-        uint32_t denom = get_denom ? get_denom(static_cast<Base const*>(this)) : 1; 
-        return factor == 0 ? 0 : uint32_t(input_freq * denom / factor);
+        uint32_t denom = get_denom ? get_denom(static_cast<Base const*>(this)) : 1;
+        uint32_t total = factor + div.value * denom;
+        return total == 0 ? 0 : uint32_t(input_freq * denom / total);
     }
 
     uint32_t get_frequency(typename Base::Mu const &mux) const {
