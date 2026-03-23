@@ -1,0 +1,510 @@
+name: USBDCD
+description: USBDCD
+groupName: USBDCD
+source: MCXN947/MCXN947_cm33_core0.xml v1.0 (MCUX_2.16.100)
+registers:
+  - name: CONTROL
+    description: Control
+    addressOffset: 0
+    size: 32
+    access: read-write
+    resetValue: 196608
+    resetMask: 4294967295
+    fields:
+      - name: IACK
+        description: Interrupt Acknowledge
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: INT_NOCLEAR
+            description: Do not clear the interrupt.
+            value: 0
+          - name: INT_CLEAR
+            description: Clear the IF field (interrupt flag).
+            value: 1
+      - name: IF
+        description: Interrupt Flag
+        bitOffset: 8
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: INT_PEND
+            description: No interrupt is pending.
+            value: 0
+          - name: INT_NOPEND
+            description: An interrupt is pending.
+            value: 1
+      - name: IE
+        description: Interrupt Enable
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: DIS_INT
+            description: Disable interrupts to the system.
+            value: 0
+          - name: EN_INT
+            description: Enable interrupts to the system.
+            value: 1
+      - name: BC12
+        description: Battery Charging Revision 1.2 Compatibility
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: BC11
+            description: Compatible with BC1.1
+            value: 0
+          - name: BC12
+            description: Compatible with BC1.2 (default)
+            value: 1
+      - name: START
+        description: Start Change Detection Sequence
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_START
+            description: Do not start the sequence. Writes of this value have no effect.
+            value: 0
+          - name: START
+            description: Initiate the charger detection sequence. If the sequence is already running, writes of this value have no effect.
+            value: 1
+      - name: SR
+        description: Software Reset
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_RESET
+            description: Do not perform a software reset.
+            value: 0
+          - name: SW_RESET
+            description: Perform a software reset.
+            value: 1
+  - name: CLOCK
+    description: Clock
+    addressOffset: 4
+    size: 32
+    access: read-write
+    resetValue: 97
+    resetMask: 4294967295
+    fields:
+      - name: CLOCK_UNIT
+        description: Unit of Measurement Encoding for Clock Speed
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: KHZ_CLK
+            description: kHz Speed (between 4 kHz and 1023 kHz)
+            value: 0
+          - name: MHZ_CLK
+            description: MHz Speed (between 1 MHz and 1023 MHz)
+            value: 1
+      - name: CLOCK_SPEED
+        description: Numerical Value of Clock Speed in Binary
+        bitOffset: 2
+        bitWidth: 10
+        access: read-write
+  - name: STATUS
+    description: Status
+    addressOffset: 8
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SEQ_RES
+        description: Charger Detection Sequence Results
+        bitOffset: 16
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: NO_RESULT
+            description: No results to report.
+            value: 0
+          - name: CONN_SDP
+            description: Attached to an SDP. Must comply with USB 2.0 by drawing only 2.5 mA (max) until connected.
+            value: 1
+          - name: CONN_CP
+            description: 'Attached to a charging port. The exact meaning depends on the STATUS[SEQ_STAT] field (value 0: Attached to either a CDP or a DCP. The charger type detection has not completed. value 1: Attached to a CDP. The charger type detection has completed.)'
+            value: 2
+          - name: CONN_DCP
+            description: Attached to a DCP.
+            value: 3
+      - name: SEQ_STAT
+        description: Charger Detection Sequence Status
+        bitOffset: 18
+        bitWidth: 2
+        access: read-only
+        enumeratedValues:
+          - name: NO_DATA_PIN_CONN
+            description: The module is either not enabled, or the module is enabled but the data pins have not yet been detected.
+            value: 0
+          - name: DATA_PIN_CONN
+            description: Data pin contact detection is complete.
+            value: 1
+          - name: CP_DET_DONE
+            description: Charging port detection is complete.
+            value: 2
+          - name: CT_DET_DONE
+            description: Charger type detection is complete.
+            value: 3
+      - name: ERR
+        description: Error Flag
+        bitOffset: 20
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: NO_SEQ_ERR
+            description: No sequence errors.
+            value: 0
+          - name: SEQ_ERR
+            description: Error in the detection sequence.
+            value: 1
+      - name: TO
+        description: Timeout Flag
+        bitOffset: 21
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: NO_TIMEOUT
+            description: The detection sequence is not running for over 1 s.
+            value: 0
+          - name: TIMEOUT
+            description: It is over 1 s since the data pin contact was detected and debounced.
+            value: 1
+      - name: ACTIVE
+        description: Active Status Indicator
+        bitOffset: 22
+        bitWidth: 1
+        access: read-only
+        enumeratedValues:
+          - name: SEQ_NOT_RUNNING
+            description: The sequence is not running.
+            value: 0
+          - name: SEQ_RUNNING
+            description: The sequence is running.
+            value: 1
+  - name: SIGNAL_OVERRIDE
+    description: Signal Override
+    addressOffset: 12
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PS
+        description: Phase Selection
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+        enumeratedValues:
+          - name: NO_OVERRIDE
+            description: No overrides. Field must remain at this value during normal USB data communication to prevent unexpected conditions on USB_DP and USB_DM pins. (Default)
+            value: 0
+          - name: PRI_DET_OVERRIDE
+            description: Enables VDP_SRC voltage source for the USB_DP pin and IDM_SINK current source for the USB_DM pin.
+            value: 2
+          - name: CDP_ADVERT
+            description: Enables VDM_SRC voltage source only.
+            value: 4
+  - name: TIMER0
+    description: TIMER0
+    addressOffset: 16
+    size: 32
+    access: read-write
+    resetValue: 1048576
+    resetMask: 4294967295
+    fields:
+      - name: TUNITCON
+        description: Unit Connection Timer Elapse (in ms)
+        bitOffset: 0
+        bitWidth: 12
+        access: read-only
+      - name: TSEQ_INIT
+        description: Sequence Initiation Time
+        bitOffset: 16
+        bitWidth: 10
+        access: read-write
+        enumeratedValues:
+          - name: MS_0
+            description: 0 ms - 1023 ms
+            value: 0
+          - name: MS_1
+            description: 0 ms - 1023 ms
+            value: 1
+          - name: MS_2
+            description: 0 ms - 1023 ms
+            value: 2
+          - name: MS_3
+            description: 0 ms - 1023 ms
+            value: 3
+          - name: MS_4
+            description: 0 ms - 1023 ms
+            value: 4
+          - name: MS_5
+            description: 0 ms - 1023 ms
+            value: 5
+          - name: MS_6
+            description: 0 ms - 1023 ms
+            value: 6
+          - name: MS_7
+            description: 0 ms - 1023 ms
+            value: 7
+          - name: MS_8
+            description: 0 ms - 1023 ms
+            value: 8
+          - name: MS_9
+            description: 0 ms - 1023 ms
+            value: 9
+  - name: TIMER1
+    description: TIMER1
+    addressOffset: 20
+    size: 32
+    access: read-write
+    resetValue: 655400
+    resetMask: 4294967295
+    fields:
+      - name: TVDPSRC_ON
+        description: Time Period Comparator Enabled
+        bitOffset: 0
+        bitWidth: 10
+        access: read-write
+        enumeratedValues:
+          - name: MS_1
+            description: 1 ms - 1023 ms
+            value: 1
+          - name: MS_2
+            description: 1 ms - 1023 ms
+            value: 2
+          - name: MS_3
+            description: 1 ms - 1023 ms
+            value: 3
+          - name: MS_4
+            description: 1 ms - 1023 ms
+            value: 4
+          - name: MS_5
+            description: 1 ms - 1023 ms
+            value: 5
+          - name: MS_6
+            description: 1 ms - 1023 ms
+            value: 6
+          - name: MS_7
+            description: 1 ms - 1023 ms
+            value: 7
+          - name: MS_8
+            description: 1 ms - 1023 ms
+            value: 8
+          - name: MS_9
+            description: 1 ms - 1023 ms
+            value: 9
+          - name: MS_10
+            description: 1 ms - 1023 ms
+            value: 10
+      - name: TDCD_DBNC
+        description: Time Period to Debounce D+ Signal
+        bitOffset: 16
+        bitWidth: 10
+        access: read-write
+        enumeratedValues:
+          - name: MS_1
+            description: 1 ms - 1023 ms
+            value: 1
+          - name: MS_2
+            description: 1 ms - 1023 ms
+            value: 2
+          - name: MS_3
+            description: 1 ms - 1023 ms
+            value: 3
+          - name: MS_4
+            description: 1 ms - 1023 ms
+            value: 4
+          - name: MS_5
+            description: 1 ms - 1023 ms
+            value: 5
+          - name: MS_6
+            description: 1 ms - 1023 ms
+            value: 6
+          - name: MS_7
+            description: 1 ms - 1023 ms
+            value: 7
+          - name: MS_8
+            description: 1 ms - 1023 ms
+            value: 8
+          - name: MS_9
+            description: 1 ms - 1023 ms
+            value: 9
+          - name: MS_10
+            description: 1 ms - 1023 ms
+            value: 10
+  - name: TIMER2_BC11
+    description: TIMER2_BC11
+    alternateGroup: BC11
+    addressOffset: 24
+    size: 32
+    access: read-write
+    resetValue: 2621441
+    resetMask: 4294967295
+    fields:
+      - name: CHECK_DM
+        description: Time Before Check of D- Line
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+        enumeratedValues:
+          - name: MS_1
+            description: 1 ms - 15 ms
+            value: 1
+          - name: MS_2
+            description: 1 ms - 15 ms
+            value: 2
+          - name: MS_3
+            description: 1 ms - 15 ms
+            value: 3
+          - name: MS_4
+            description: 1 ms - 15 ms
+            value: 4
+          - name: MS_5
+            description: 1 ms - 15 ms
+            value: 5
+          - name: MS_6
+            description: 1 ms - 15 ms
+            value: 6
+          - name: MS_7
+            description: 1 ms - 15 ms
+            value: 7
+          - name: MS_8
+            description: 1 ms - 15 ms
+            value: 8
+          - name: MS_9
+            description: 1 ms - 15 ms
+            value: 9
+          - name: MS_10
+            description: 1 ms - 15 ms
+            value: 10
+      - name: TVDPSRC_CON
+        description: Time Period Before Enabling D+ Pullup
+        bitOffset: 16
+        bitWidth: 10
+        access: read-write
+        enumeratedValues:
+          - name: MS_1
+            description: 1 ms - 1023 ms
+            value: 1
+          - name: MS_2
+            description: 1 ms - 1023 ms
+            value: 2
+          - name: MS_3
+            description: 1 ms - 1023 ms
+            value: 3
+          - name: MS_4
+            description: 1 ms - 1023 ms
+            value: 4
+          - name: MS_5
+            description: 1 ms - 1023 ms
+            value: 5
+          - name: MS_6
+            description: 1 ms - 1023 ms
+            value: 6
+          - name: MS_7
+            description: 1 ms - 1023 ms
+            value: 7
+          - name: MS_8
+            description: 1 ms - 1023 ms
+            value: 8
+          - name: MS_9
+            description: 1 ms - 1023 ms
+            value: 9
+          - name: MS_10
+            description: 1 ms - 1023 ms
+            value: 10
+  - name: TIMER2_BC12
+    description: TIMER2_BC12
+    alternateGroup: BC12
+    addressOffset: 24
+    size: 32
+    access: read-write
+    resetValue: 65576
+    resetMask: 4294967295
+    fields:
+      - name: TVDMSRC_ON
+        description: TVDMSRC_ON
+        bitOffset: 0
+        bitWidth: 10
+        access: read-write
+        enumeratedValues:
+          - name: MS_0
+            description: 0 ms - 40 ms
+            value: 0
+          - name: MS_1
+            description: 0 ms - 40 ms
+            value: 1
+          - name: MS_2
+            description: 0 ms - 40 ms
+            value: 2
+          - name: MS_3
+            description: 0 ms - 40 ms
+            value: 3
+          - name: MS_4
+            description: 0 ms - 40 ms
+            value: 4
+          - name: MS_5
+            description: 0 ms - 40 ms
+            value: 5
+          - name: MS_6
+            description: 0 ms - 40 ms
+            value: 6
+          - name: MS_7
+            description: 0 ms - 40 ms
+            value: 7
+          - name: MS_8
+            description: 0 ms - 40 ms
+            value: 8
+          - name: MS_9
+            description: 0 ms - 40 ms
+            value: 9
+      - name: TWAIT_AFTER_PRD
+        description: TWAIT_AFTER_PRD
+        bitOffset: 16
+        bitWidth: 10
+        access: read-write
+        enumeratedValues:
+          - name: MS_1
+            description: 1 ms - 1023 ms
+            value: 1
+          - name: MS_2
+            description: 1 ms - 1023 ms
+            value: 2
+          - name: MS_3
+            description: 1 ms - 1023 ms
+            value: 3
+          - name: MS_4
+            description: 1 ms - 1023 ms
+            value: 4
+          - name: MS_5
+            description: 1 ms - 1023 ms
+            value: 5
+          - name: MS_6
+            description: 1 ms - 1023 ms
+            value: 6
+          - name: MS_7
+            description: 1 ms - 1023 ms
+            value: 7
+          - name: MS_8
+            description: 1 ms - 1023 ms
+            value: 8
+          - name: MS_9
+            description: 1 ms - 1023 ms
+            value: 9
+          - name: MS_10
+            description: 1 ms - 1023 ms
+            value: 10
+addressBlocks:
+  - offset: 0
+    size: 28
+    usage: registers
+interrupts:
+  - name: DCD

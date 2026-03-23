@@ -1,0 +1,776 @@
+name: eDMA_TCD
+description: DMA TCD
+groupName: DMA_TCD
+source: MCXN947/MCXN947_cm33_core0.xml v1.0 (MCUX_2.16.100)
+params:
+  - name: channels
+    type: int
+    default: 16
+    description: Number of TCD channels
+registers:
+  - dim: 16
+    dimIncrement: 4096
+    name: TCD[%s]
+    description: 'Array of registers: CH_CSR, CH_ES, CH_INT, CH_PRI, CH_SBR, CH_MUX, TCD_SADDR, TCD_SOFF, TCD_ATTR, TCD_NBYTES_MLOFFNO, TCD_NBYTES_MLOFFYES, TCD_SLAST_SDA, TCD_DADDR, TCD_CITER_ELINKYES, TCD_CITER_ELINKNO, TCD_DOFF, TCD_DLAST_SGA, TCD_BITER_ELINKYES, TCD_BITER_ELINKNO, TCD_CSR'
+    addressOffset: 0
+    registers:
+      - name: CH_CSR
+        description: Channel Control and Status
+        addressOffset: 0
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: ERQ
+            description: Enable DMA Request
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: DMA hardware request signal for corresponding channel disabled
+                value: 0
+              - name: ENABLE
+                description: DMA hardware request signal for corresponding channel enabled
+                value: 1
+          - name: EARQ
+            description: Enable Asynchronous DMA Request
+            bitOffset: 1
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Disable asynchronous DMA request for the channel
+                value: 0
+              - name: ENABLE
+                description: Enable asynchronous DMA request for the channel
+                value: 1
+          - name: EEI
+            description: Enable Error Interrupt
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: NO_ERROR
+                description: Error signal for corresponding channel does not generate error interrupt
+                value: 0
+              - name: ERROR
+                description: Assertion of error signal for corresponding channel generates error interrupt request
+                value: 1
+          - name: EBW
+            description: Enable Buffered Writes
+            bitOffset: 3
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Buffered writes on system bus disabled
+                value: 0
+              - name: ENABLE
+                description: Buffered writes on system bus enabled
+                value: 1
+          - name: DONE
+            description: Channel Done
+            bitOffset: 30
+            bitWidth: 1
+            access: read-write
+            modifiedWriteValues: oneToClear
+          - name: ACTIVE
+            description: Channel Active
+            bitOffset: 31
+            bitWidth: 1
+            access: read-only
+      - name: CH_ES
+        description: Channel Error Status
+        addressOffset: 4
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: DBE
+            description: Destination Bus Error
+            bitOffset: 0
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: NO_ERROR
+                description: No destination bus error
+                value: 0
+              - name: ERROR
+                description: Last recorded error was bus error on destination write
+                value: 1
+          - name: SBE
+            description: Source Bus Error
+            bitOffset: 1
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: NO_ERROR
+                description: No source bus error
+                value: 0
+              - name: ERROR
+                description: Last recorded error was bus error on source read
+                value: 1
+          - name: SGE
+            description: Scatter/Gather Configuration Error
+            bitOffset: 2
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: NO_ERROR
+                description: No scatter/gather configuration error
+                value: 0
+              - name: ERROR
+                description: Last recorded error was a configuration error detected in the TCDn_DLAST_SGA field
+                value: 1
+          - name: NCE
+            description: NBYTES/CITER Configuration Error
+            bitOffset: 3
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: NO_ERROR
+                description: No NBYTES/CITER configuration error
+                value: 0
+              - name: ERROR
+                description: Last recorded error was a configuration error detected in the TCDn_NBYTES or TCDn_CITER fields
+                value: 1
+          - name: DOE
+            description: Destination Offset Error
+            bitOffset: 4
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: NO_ERROR
+                description: No destination offset configuration error
+                value: 0
+              - name: ERROR
+                description: Last recorded error was a configuration error detected in the TCDn_DOFF field
+                value: 1
+          - name: DAE
+            description: Destination Address Error
+            bitOffset: 5
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: NO_ERROR
+                description: No destination address configuration error
+                value: 0
+              - name: ERROR
+                description: Last recorded error was a configuration error detected in the TCDn_DADDR field
+                value: 1
+          - name: SOE
+            description: Source Offset Error
+            bitOffset: 6
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: NO_ERROR
+                description: No source offset configuration error
+                value: 0
+              - name: ERROR
+                description: Last recorded error was a configuration error detected in the TCDn_SOFF field
+                value: 1
+          - name: SAE
+            description: Source Address Error
+            bitOffset: 7
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: NO_ERROR
+                description: No source address configuration error
+                value: 0
+              - name: ERROR
+                description: Last recorded error was a configuration error detected in the TCDn_SADDR field
+                value: 1
+          - name: ERR
+            description: Error In Channel
+            bitOffset: 31
+            bitWidth: 1
+            access: read-write
+            modifiedWriteValues: oneToClear
+            enumeratedValues:
+              - name: NO_ERROR
+                description: An error in this channel has not occurred
+                value: 0
+              - name: ERROR
+                description: An error in this channel has occurred
+                value: 1
+      - name: CH_INT
+        description: Channel Interrupt Status
+        addressOffset: 8
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        modifiedWriteValues: oneToClear
+        fields:
+          - name: INT
+            description: Interrupt Request
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+            modifiedWriteValues: oneToClear
+            enumeratedValues:
+              - name: INTERRUPT_CLEARED
+                description: Interrupt request for corresponding channel cleared
+                value: 0
+              - name: INTERRUPT_ACTIVE
+                description: Interrupt request for corresponding channel active
+                value: 1
+      - name: CH_SBR
+        description: Channel System Bus
+        addressOffset: 12
+        size: 32
+        access: read-write
+        resetValue: 6
+        resetMask: 4294967295
+        fields:
+          - name: MID
+            description: Master ID
+            bitOffset: 0
+            bitWidth: 5
+            access: read-only
+          - name: SEC
+            description: Security Level
+            bitOffset: 14
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: NONSECURE_PROTECTION
+                description: Nonsecure protection level for DMA transfers
+                value: 0
+              - name: SECURE_PROTECTION
+                description: Secure protection level for DMA transfers
+                value: 1
+          - name: PAL
+            description: Privileged Access Level
+            bitOffset: 15
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: USER_PROTECTION
+                description: User protection level for DMA transfers
+                value: 0
+              - name: PRIVILEGED_PROTECTION
+                description: Privileged protection level for DMA transfers
+                value: 1
+          - name: EMI
+            description: Enable Master ID Replication
+            bitOffset: 16
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Master ID replication is disabled
+                value: 0
+              - name: ENABLE
+                description: Master ID replication is enabled
+                value: 1
+      - name: CH_PRI
+        description: Channel Priority
+        addressOffset: 16
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: APL
+            description: Arbitration Priority Level
+            bitOffset: 0
+            bitWidth: 3
+            access: read-write
+          - name: DPA
+            description: Disable Preempt Ability
+            bitOffset: 30
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: SUSPEND
+                description: Channel can suspend a lower-priority channel
+                value: 0
+              - name: CANNOT_SUSPEND
+                description: Channel cannot suspend any other channel, regardless of channel priority
+                value: 1
+          - name: ECP
+            description: Enable Channel Preemption
+            bitOffset: 31
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: CANNOT_SUSPEND
+                description: Channel cannot be suspended by a higher-priority channel's service request
+                value: 0
+              - name: SUSPEND
+                description: Channel can be temporarily suspended by a higher-priority channel's service request
+                value: 1
+      - name: CH_MUX
+        description: Channel Multiplexor Configuration
+        addressOffset: 20
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: SRC
+            description: Service Request Source
+            bitOffset: 0
+            bitWidth: 7
+            access: read-write
+      - name: TCD_SADDR
+        description: TCD Source Address
+        addressOffset: 32
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: SADDR
+            description: Source Address
+            bitOffset: 0
+            bitWidth: 32
+            access: read-write
+      - name: TCD_SOFF
+        description: TCD Signed Source Address Offset
+        addressOffset: 36
+        size: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: SOFF
+            description: Source Address Signed Offset
+            bitOffset: 0
+            bitWidth: 16
+            access: read-write
+      - name: TCD_ATTR
+        description: TCD Transfer Attributes
+        addressOffset: 38
+        size: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: DSIZE
+            description: Destination Data Transfer Size
+            bitOffset: 0
+            bitWidth: 3
+            access: read-write
+          - name: DMOD
+            description: Destination Address Modulo
+            bitOffset: 3
+            bitWidth: 5
+            access: read-write
+          - name: SSIZE
+            description: Source Data Transfer Size
+            bitOffset: 8
+            bitWidth: 3
+            access: read-write
+            enumeratedValues:
+              - name: EIGHT_BIT
+                description: 8-bit
+                value: 0
+              - name: SIXTEEN_BIT
+                description: 16-bit
+                value: 1
+              - name: THIRTYTWO_BIT
+                description: 32-bit
+                value: 2
+              - name: SIXTYFOUR_BIT
+                description: 64-bit
+                value: 3
+              - name: SIXTEEN_BYTE
+                description: 16-byte
+                value: 4
+              - name: THIRTYTWO_BYTE
+                description: 32-byte
+                value: 5
+          - name: SMOD
+            description: Source Address Modulo
+            bitOffset: 11
+            bitWidth: 5
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Source address modulo feature disabled
+                value: 0
+              - name: ENABLE
+                description: Source address modulo feature enabled for any non-zero value [1-31]
+                value: 1
+      - name: TCD_NBYTES_MLOFFNO
+        description: TCD Transfer Size Without Minor Loop Offsets
+        alternateGroup: MLOFFNO
+        addressOffset: 40
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: NBYTES
+            description: Number of Bytes To Transfer Per Service Request
+            bitOffset: 0
+            bitWidth: 30
+            access: read-write
+          - name: DMLOE
+            description: Destination Minor Loop Offset Enable
+            bitOffset: 30
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: OFFSET_NOT_APPLIED
+                description: Minor loop offset not applied to DADDR
+                value: 0
+              - name: OFFSET_APPLIED
+                description: Minor loop offset applied to DADDR
+                value: 1
+          - name: SMLOE
+            description: Source Minor Loop Offset Enable
+            bitOffset: 31
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: OFFSET_NOT_APPLIED
+                description: Minor loop offset not applied to SADDR
+                value: 0
+              - name: OFFSET_APPLIED
+                description: Minor loop offset applied to SADDR
+                value: 1
+      - name: TCD_NBYTES_MLOFFYES
+        description: TCD Transfer Size with Minor Loop Offsets
+        alternateGroup: MLOFFYES
+        addressOffset: 40
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: NBYTES
+            description: Number of Bytes To Transfer Per Service Request
+            bitOffset: 0
+            bitWidth: 10
+            access: read-write
+          - name: MLOFF
+            description: Minor Loop Offset
+            bitOffset: 10
+            bitWidth: 20
+            access: read-write
+          - name: DMLOE
+            description: Destination Minor Loop Offset Enable
+            bitOffset: 30
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: OFFSET_NOT_APPLIED
+                description: Minor loop offset not applied to DADDR
+                value: 0
+              - name: OFFSET_APPLIED
+                description: Minor loop offset applied to DADDR
+                value: 1
+          - name: SMLOE
+            description: Source Minor Loop Offset Enable
+            bitOffset: 31
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: OFFSET_NOT_APPLIED
+                description: Minor loop offset not applied to SADDR
+                value: 0
+              - name: OFFSET_APPLIED
+                description: Minor loop offset applied to SADDR
+                value: 1
+      - name: TCD_SLAST_SDA
+        description: TCD Last Source Address Adjustment / Store DADDR Address
+        addressOffset: 44
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: SLAST_SDA
+            description: Last Source Address Adjustment / Store DADDR Address
+            bitOffset: 0
+            bitWidth: 32
+            access: read-write
+      - name: TCD_DADDR
+        description: TCD Destination Address
+        addressOffset: 48
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: DADDR
+            description: Destination Address
+            bitOffset: 0
+            bitWidth: 32
+            access: read-write
+      - name: TCD_DOFF
+        description: TCD Signed Destination Address Offset
+        addressOffset: 52
+        size: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: DOFF
+            description: Destination Address Signed Offset
+            bitOffset: 0
+            bitWidth: 16
+            access: read-write
+      - name: TCD_CITER_ELINKNO
+        description: TCD Current Major Loop Count (Minor Loop Channel Linking Disabled)
+        alternateGroup: ELINKNO
+        addressOffset: 54
+        size: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: CITER
+            description: Current Major Iteration Count
+            bitOffset: 0
+            bitWidth: 15
+            access: read-write
+          - name: ELINK
+            description: Enable Link
+            bitOffset: 15
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Channel-to-channel linking disabled
+                value: 0
+              - name: ENABLE
+                description: Channel-to-channel linking enabled
+                value: 1
+      - name: TCD_CITER_ELINKYES
+        description: TCD Current Major Loop Count (Minor Loop Channel Linking Enabled)
+        alternateGroup: ELINKYES
+        addressOffset: 54
+        size: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: CITER
+            description: Current Major Iteration Count
+            bitOffset: 0
+            bitWidth: 9
+            access: read-write
+          - name: LINKCH
+            description: Minor Loop Link Channel Number
+            bitOffset: 9
+            bitWidth: 4
+            access: read-write
+          - name: ELINK
+            description: Enable Link
+            bitOffset: 15
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Channel-to-channel linking disabled
+                value: 0
+              - name: ENABLE
+                description: Channel-to-channel linking enabled
+                value: 1
+      - name: TCD_DLAST_SGA
+        description: TCD Last Destination Address Adjustment / Scatter Gather Address
+        addressOffset: 56
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: DLAST_SGA
+            description: Last Destination Address Adjustment / Scatter Gather Address
+            bitOffset: 0
+            bitWidth: 32
+            access: read-write
+      - name: TCD_CSR
+        description: TCD Control and Status
+        addressOffset: 60
+        size: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 1
+        fields:
+          - name: START
+            description: Channel Start
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: CHANNEL_NOT_STARTED
+                description: Channel not explicitly started
+                value: 0
+              - name: CHANNEL_STARTED
+                description: Channel explicitly started via a software-initiated service request
+                value: 1
+          - name: INTMAJOR
+            description: Enable Interrupt If Major count complete
+            bitOffset: 1
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: End-of-major loop interrupt disabled
+                value: 0
+              - name: ENABLE
+                description: End-of-major loop interrupt enabled
+                value: 1
+          - name: INTHALF
+            description: Enable Interrupt If Major Counter Half-complete
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Halfway point interrupt disabled
+                value: 0
+              - name: ENABLE
+                description: Halfway point interrupt enabled
+                value: 1
+          - name: DREQ
+            description: Disable Request
+            bitOffset: 3
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: CHANNEL_NOT_AFFECTED
+                description: No operation
+                value: 0
+              - name: ERQ_FIELD_CLEAR
+                description: Clear the ERQ field to 0 upon major loop completion, thus disabling hardware service requests
+                value: 1
+          - name: ESG
+            description: Enable Scatter/Gather Processing
+            bitOffset: 4
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: NORMAL_FORMAT
+                description: Current channel's TCD is normal format
+                value: 0
+              - name: SCATTER_GATHER_FORMAT
+                description: Current channel's TCD specifies scatter/gather format.
+                value: 1
+          - name: MAJORELINK
+            description: Enable Link When Major Loop Complete
+            bitOffset: 5
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Channel-to-channel linking disabled
+                value: 0
+              - name: ENABLE
+                description: Channel-to-channel linking enabled
+                value: 1
+          - name: EEOP
+            description: Enable End-Of-Packet Processing
+            bitOffset: 6
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: End-of-packet operation disabled
+                value: 0
+              - name: ENABLE
+                description: End-of-packet hardware input signal enabled
+                value: 1
+          - name: ESDA
+            description: Enable Store Destination Address
+            bitOffset: 7
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Ability to store destination address to system memory disabled
+                value: 0
+              - name: ENABLE
+                description: Ability to store destination address to system memory enabled
+                value: 1
+          - name: MAJORLINKCH
+            description: Major Loop Link Channel Number
+            bitOffset: 8
+            bitWidth: 4
+            access: read-write
+          - name: BWC
+            description: Bandwidth Control
+            bitOffset: 14
+            bitWidth: 2
+            access: read-write
+            enumeratedValues:
+              - name: NO_STALL
+                description: No eDMA engine stalls
+                value: 0
+              - name: ENGINE_STALLS_FOUR
+                description: eDMA engine stalls for 4 cycles after each R/W
+                value: 2
+              - name: ENGINE_STALLS_EIGHT
+                description: eDMA engine stalls for 8 cycles after each R/W
+                value: 3
+      - name: TCD_BITER_ELINKNO
+        description: TCD Beginning Major Loop Count (Minor Loop Channel Linking Disabled)
+        alternateGroup: ELINKNO
+        addressOffset: 62
+        size: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: BITER
+            description: Starting Major Iteration Count
+            bitOffset: 0
+            bitWidth: 15
+            access: read-write
+          - name: ELINK
+            description: Enables Link
+            bitOffset: 15
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Channel-to-channel linking disabled
+                value: 0
+              - name: ENABLE
+                description: Channel-to-channel linking enabled
+                value: 1
+      - name: TCD_BITER_ELINKYES
+        description: TCD Beginning Major Loop Count (Minor Loop Channel Linking Enabled)
+        alternateGroup: ELINKYES
+        addressOffset: 62
+        size: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 0
+        fields:
+          - name: BITER
+            description: Starting Major Iteration Count
+            bitOffset: 0
+            bitWidth: 9
+            access: read-write
+          - name: LINKCH
+            description: Link Channel Number
+            bitOffset: 9
+            bitWidth: 4
+            access: read-write
+          - name: ELINK
+            description: Enable Link
+            bitOffset: 15
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLE
+                description: Channel-to-channel linking disabled
+                value: 0
+              - name: ENABLE
+                description: Channel-to-channel linking enabled
+                value: 1
+addressBlocks:
+  - offset: 0
+    size: 61504
+    usage: registers

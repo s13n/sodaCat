@@ -1,4 +1,4 @@
-# CMakeLists.txt for NXP LPC SVD-based model generation
+# CMakeLists.txt for NXP SVD-based model generation (LPC + MCX)
 cmake_minimum_required(VERSION 3.28)
 
 include(FetchContent)
@@ -17,6 +17,7 @@ set(NXP_SVD_DIR "${nxp_svd_SOURCE_DIR}" CACHE PATH
     "Path to NXP SVD repository checkout")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/lpc-extraction.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/mcx-extraction.cmake)
 
 # ============================================================================
 # LPC Family Registrations
@@ -28,9 +29,18 @@ lpc_add_family(ID 8   CODE LPC8   DISPLAY "LPC8xx")
 lpc_add_family(ID 54  CODE LPC54  DISPLAY "LPC54xxx")
 
 # ============================================================================
+# MCX Family Registrations
+# ============================================================================
+# Each call creates targets: mcx<id>-models, rebuild-mcx<id>-models,
+# audit-mcx<id>-models.
+
+mcx_add_family(ID n  CODE MCXN  DISPLAY "MCX N")
+
+# ============================================================================
 # Summary
 # ============================================================================
 lpc_print_families()
+mcx_print_families()
 
 # ============================================================================
 # Transform Audit (not built by default)
@@ -43,6 +53,13 @@ add_custom_target(audit-lpc-models
 )
 foreach(_id IN LISTS _LPC_FAMILY_IDS)
     add_dependencies(audit-lpc-models audit-lpc${_id}-models)
+endforeach()
+
+add_custom_target(audit-mcx-models
+    COMMENT "Auditing all MCX transforms for no-ops..."
+)
+foreach(_id IN LISTS _MCX_FAMILY_IDS)
+    add_dependencies(audit-mcx-models audit-mcx${_id}-models)
 endforeach()
 
 # ============================================================================

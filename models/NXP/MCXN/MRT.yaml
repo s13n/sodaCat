@@ -1,0 +1,213 @@
+name: MRT
+description: Multi-Rate Timer (MRT)
+groupName: MRT
+source: MCXN947/MCXN947_cm33_core0.xml v1.0 (MCUX_2.16.100)
+registers:
+  - dim: 4
+    dimIncrement: 16
+    name: CHANNEL[%s]
+    description: 'Array of registers: INTVAL, TIMER, CTRL, STAT'
+    addressOffset: 0
+    registers:
+      - name: INTVAL
+        description: Time Interval Value
+        addressOffset: 0
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 2164260863
+        fields:
+          - name: IVALUE
+            description: Time Interval Load Value.
+            bitOffset: 0
+            bitWidth: 24
+            access: read-write
+          - name: LOAD
+            description: Force Load Enable
+            bitOffset: 31
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: NO_FORCE_LOAD
+                description: No force load
+                value: 0
+              - name: FORCE_LOAD
+                description: Force load
+                value: 1
+      - name: TIMER
+        description: Timer
+        addressOffset: 4
+        size: 32
+        access: read-only
+        resetValue: 16777215
+        resetMask: 16777215
+        fields:
+          - name: VALUE
+            description: Current Timer Value
+            bitOffset: 0
+            bitWidth: 24
+            access: read-only
+      - name: CTRL
+        description: Control
+        addressOffset: 8
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 7
+        fields:
+          - name: INTEN
+            description: Interrupt request
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: DISABLED
+                description: Disabled
+                value: 0
+              - name: ENABLED
+                description: Enabled
+                value: 1
+          - name: MODE
+            description: MRT Operating mode
+            bitOffset: 1
+            bitWidth: 2
+            access: read-write
+            enumeratedValues:
+              - name: REPEAT_INTERRUPT_MODE
+                description: Repeat Interrupt mode
+                value: 0
+              - name: ONE_SHOT_INTERRUPT_MODE
+                description: One-Shot Interrupt mode
+                value: 1
+              - name: ONE_SHOT_STALL_MODE
+                description: One-Shot Stall mode
+                value: 2
+      - name: STAT
+        description: Status
+        addressOffset: 12
+        size: 32
+        access: read-write
+        resetValue: 0
+        resetMask: 7
+        fields:
+          - name: INTFLAG
+            description: Interrupt Flag
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: NO_PENDING_INTERRUPT
+                description: No pending interrupt.
+                value: 0
+              - name: PENDING_INTERRUPT
+                description: Pending interrupt.
+                value: 1
+          - name: RUN
+            description: Timer n State
+            bitOffset: 1
+            bitWidth: 1
+            access: read-only
+            enumeratedValues:
+              - name: IDLE_STATE
+                description: Idle state.
+                value: 0
+              - name: RUNNING
+                description: Running.
+                value: 1
+          - name: INUSE
+            description: Channel-In-Use flag
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+            modifiedWriteValues: oneToClear
+            enumeratedValues:
+              - name: 'NO'
+                description: This timer channel is not in use.
+                value: 0
+              - name: 'YES'
+                description: This timer channel is in use.
+                value: 1
+  - name: MODCFG
+    description: Module Configuration
+    addressOffset: 240
+    size: 32
+    access: read-write
+    resetValue: 388
+    resetMask: 2147484159
+    fields:
+      - name: NOC
+        description: Number of Channels
+        bitOffset: 0
+        bitWidth: 4
+        access: read-write
+      - name: NOB
+        description: Number of Bits
+        bitOffset: 4
+        bitWidth: 5
+        access: read-write
+      - name: MULTITASK
+        description: MULTITASK
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: HARDWARE_STATUS_MODE
+            description: Hardware status mode.
+            value: 0
+          - name: MULTI_TASK_MODE
+            description: Multitask mode
+            value: 1
+  - name: IDLE_CH
+    description: Idle Channel
+    addressOffset: 244
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 240
+    fields:
+      - name: CHAN
+        description: Idle Channel
+        bitOffset: 4
+        bitWidth: 4
+        access: read-only
+  - name: IRQ_FLAG
+    description: Global Interrupt Flag
+    addressOffset: 248
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 15
+    fields:
+      - name: GFLAG0
+        description: Interrupt Flag
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: NO_PENDING_INTERRUPT
+            description: No pending interrupt.
+            value: 0
+          - name: PENDING_INTERRUPT
+            description: Pending interrupt
+            value: 1
+      - name: GFLAG1
+        description: Interrupt Flag
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: GFLAG2
+        description: Interrupt Flag
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: GFLAG3
+        description: Interrupt Flag
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+addressBlocks:
+  - offset: 0
+    size: 252
+    usage: registers
+interrupts:
+  - name: MRT

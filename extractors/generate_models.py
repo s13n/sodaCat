@@ -30,6 +30,7 @@ from transform import renameEntries, createClusterArray, createArray, create2DAr
 VENDORS = {
     'stm32': 'vendors.stm32',
     'lpc': 'vendors.lpc',
+    'mcx': 'vendors.mcx',
     'esp': 'vendors.esp',
 }
 

@@ -210,3 +210,36 @@ availability correct: SPI1 and USART2 are LPC812-only (absent from LPC810/LPC811
 ## LPC54xxx
 
 (none known yet)
+
+## MCX N (MCUX_2.16.100)
+
+### Cross-attributed interrupts
+
+| IRQ | SVD owner | SVD name | Actual owner | Notes |
+|-----|-----------|----------|--------------|-------|
+| 99 | TDET0 | VBAT0 | VBAT0 | VBAT wakeup interrupt attributed to tamper detect peripheral. Handled by mapping on VBAT0 instance; appears as unmatched on TDET. |
+| 149 | SYSCON0 | ETB0 | (debug) | Embedded Trace Buffer interrupt. CoreSight debug; no corresponding peripheral model. |
+| 155 | SYSCON0 | CTI0 | (debug) | Cross Trigger Interface interrupt. CoreSight debug; no corresponding peripheral model. |
+
+### Shared base addresses (by design, not bugs)
+
+Multiple SVD peripherals share the same base address when they represent different
+register views of the same hardware block:
+
+| Address | Peripherals | Notes |
+|---------|-------------|-------|
+| 0x40092000–0x400B9000 | LP_FLEXCOMMn, LPSPIn, LPUARTn, LPI2Cn | LP FlexComm multiplexed address space; each channel's four sub-peripherals overlap |
+| 0x4001B000 | CACHE64_CTRL0, CACHE64_POLSEL0 | Cache controller and policy select are different register views |
+| 0x4004C000 | RTC0, RTC_SUBSYSTEM0 | RTC time registers and subsystem control registers |
+| 0x4002C000 | PUF, PUF_CTRL | PUF data interface and control registers |
+| 0x40043000 | FMU0, FMU0TEST | Flash management unit and test-mode registers (FMU0TEST not modeled) |
+
+### Peripherals not modeled
+
+| Peripheral | Reason |
+|------------|--------|
+| FMU0TEST | Test-mode flash registers; not useful for application code |
+| GPIOx_ALIAS1 | Nonsecure alias of GPIO registers (TrustZone); same register layout at offset +0x1000 |
+| AHBSC_ALIAS1–3 | Security controller aliases |
+| ELS_ALIAS1–3 | Crypto engine aliases |
+| PUF_ALIAS1–3, PUF_CTRL_ALIAS1–3 | PUF aliases |
