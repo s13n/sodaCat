@@ -2,6 +2,11 @@ name: WWDT
 description: LPC84x Windowed Watchdog Timer (WWDT)
 groupName: WWDT
 source: LPC865/LPC865.xml v1.0 (MCUX_2.16.100)
+params:
+  - name: has_debug_en
+    type: bool
+    default: false
+    description: Has DEBUG_EN field in MOD register
 registers:
   - name: MOD
     description: Watchdog mode register. This register contains the basic mode and status of the Watchdog Timer.
@@ -40,11 +45,18 @@ registers:
         bitOffset: 2
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: CLEAR, description: No watchdog event, value: 0}
+          - {name: RESET, description: Watchdog event occurred, value: 1}
       - name: WDINT
         description: Warning interrupt flag. Set when the timer is at or below the value in WDWARNINT. Cleared by software writing a 1 to this bit position. Note that this bit cannot be cleared while the WARNINT value is equal to the value of the TV register. This can occur if the value of WARNINT is 0 and the WDRESET bit is 0 when TV decrements to 0.
         bitOffset: 3
         bitWidth: 1
         access: read-write
+        modifiedWriteValues: oneToClear
+        enumeratedValues:
+          - {name: NO_FLAG, description: No flag, value: 0}
+          - {name: FLAG, description: Flag, value: 1}
       - name: WDPROTECT
         description: Watchdog update mode. This bit can be set once by software and is only cleared by a reset.
         bitOffset: 4
@@ -62,6 +74,18 @@ registers:
         bitOffset: 5
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: NO_LOCK, description: No Lock, value: 0}
+          - {name: LOCK, description: Lock, value: 1}
+      - name: DEBUG_EN
+        description: Debug Enable
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - {name: DISABLE, description: Disabled, value: 0}
+          - {name: ENABLE, description: Enabled, value: 1}
+
   - name: TC
     description: Watchdog timer constant register. This 24-bit register determines the time-out value.
     addressOffset: 4

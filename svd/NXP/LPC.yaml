@@ -9,9 +9,39 @@ svd:
 shared_blocks:
   WWDT:
     from: LPC865.WWDT
+    params:
+      - {name: has_debug_en, type: bool, default: false, description: Has DEBUG_EN field in MOD register}
     interrupts:
       WDT: INTR
       WDT_BOD: INTR
+      WWDT: INTR
+      WWDT0: INTR
+      WWDT1: INTR
+    transforms:
+      - type: patchFields
+        register: MOD
+        fields:
+          - name: WDTOF
+            enumeratedValues:
+              - {name: CLEAR, description: No watchdog event, value: 0}
+              - {name: RESET, description: Watchdog event occurred, value: 1}
+          - name: WDINT
+            modifiedWriteValues: oneToClear
+            enumeratedValues:
+              - {name: NO_FLAG, description: No flag, value: 0}
+              - {name: FLAG, description: Flag, value: 1}
+          - name: LOCK
+            enumeratedValues:
+              - {name: NO_LOCK, description: No Lock, value: 0}
+              - {name: LOCK, description: Lock, value: 1}
+          - name: DEBUG_EN
+            description: Debug Enable
+            bitOffset: 6
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - {name: DISABLE, description: Disabled, value: 0}
+              - {name: ENABLE, description: Enabled, value: 1}
 
   GPIO:
     from: LPC54S018.GPIO
@@ -921,10 +951,8 @@ families:
           USB0: USB
           USB1: USB
       WWDT:
-        from: LPC43xx_43Sxx.WWDT
+        uses: WWDT
         instances: [WWDT]
-        interrupts:
-          WWDT: INTR
     chip_params:
       _all:
         _all:
