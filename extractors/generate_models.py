@@ -1111,8 +1111,9 @@ def main():
                 model_paths[block_name] = f"{vendor_prefix}/{family_code}/{block_name}"
                 print(f"  + {block_name:20} -> {family_code} (shared)")
 
-    # Fill in interrupt orders and paths for models not written in this run
-    # (uses: blocks referencing shared models from other families)
+    # Fill in interrupt orders, paths, and param declarations for models not
+    # written in this run (uses: blocks referencing shared models from other
+    # families/configs)
     yaml_loader = YAML(typ='safe')
     for bt, bc in blocks_config.items():
         model_name = bc.get('uses') or bt
@@ -1129,6 +1130,11 @@ def main():
                         irq['name'] for irq in model.get('interrupts', [])]
                     if model_name not in model_paths:
                         model_paths[model_name] = rel_path
+                    # Import param declarations for cross-config uses: blocks
+                    if (bc.get('uses') and model_name not in shared_blocks
+                            and model.get('params')):
+                        shared_blocks[model_name] = {
+                            'params': model['params']}
 
     # ==========================================================================
     # PASS 3: Generate chip models

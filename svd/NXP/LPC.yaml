@@ -26,11 +26,101 @@ shared_blocks:
   SCT:
     from: LPC54S018.SCT0
     params:
-      - {name: match_channels, type: int, default: 16, description: Number of match/capture channels}
-      - {name: events, type: int, default: 16, description: Number of events}
-      - {name: outputs, type: int, default: 10, description: Number of output channels}
+      - {name: match_channels, type: int, default: 16, max: 16, description: Number of match/capture channels}
+      - {name: events, type: int, default: 16, max: 16, description: Number of events}
+      - {name: outputs, type: int, default: 10, max: 16, description: Number of output channels}
+      - {name: has_fractional_match, type: bool, default: false, description: Has DITHER and FRACMAT registers for fractional match}
     interrupts:
       SCT0: INTR
+      SCT: INTR
+    transforms:
+      - type: patchRegisters
+        registers:
+          - name: DITHER
+            description: Dither Condition
+            addressOffset: 24
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: DITHER_L, description: Dither Low, bitOffset: 0, bitWidth: 16, access: read-write}
+              - {name: DITHER_H, description: Dither High, bitOffset: 16, bitWidth: 16, access: read-write}
+          - name: FRACMAT[%s]
+            dim: 16
+            dimIncrement: 4
+            description: Fractional Match
+            addressOffset: 320
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: FRACMAT_L, description: Fractional Match Low, bitOffset: 0, bitWidth: 4, access: read-write}
+              - {name: FRACMAT_H, description: Fractional Match High, bitOffset: 16, bitWidth: 4, access: read-write}
+          - name: FRACMATREL[%s]
+            dim: 16
+            dimIncrement: 4
+            description: Fractional Match Reload
+            addressOffset: 576
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: RELFRAC_L, description: Reload Fractional Match Low, bitOffset: 0, bitWidth: 4, access: read-write}
+              - {name: RELFRAC_H, description: Reload Fractional Match High, bitOffset: 16, bitWidth: 4, access: read-write}
+      - type: patchFields
+        register: DMAREQ0
+        fields:
+          - {name: DRQ0, access: read-only}
+      - type: patchFields
+        register: DMAREQ1
+        fields:
+          - {name: DRQ1, access: read-only}
+      - type: patchFields
+        register: CONFIG
+        fields:
+          - name: NORELOAD_L
+            enumeratedValues:
+              - {name: RELOAD, description: Reloaded, value: 0}
+              - {name: NO_RELOAD, description: Not reloaded, value: 1}
+          - name: NORELOAD_H
+            enumeratedValues:
+              - {name: RELOAD_H, description: Reloaded, value: 0}
+              - {name: NO_RELOAD_H, description: Not reloaded, value: 1}
+          - name: AUTOLIMIT_L
+            enumeratedValues:
+              - {name: DISABLE, description: Disables, value: 0}
+              - {name: ENABLE, description: Enables, value: 1}
+          - name: AUTOLIMIT_H
+            enumeratedValues:
+              - {name: DISABLE, description: Disables, value: 0}
+              - {name: ENABLE, description: Enables, value: 1}
+      - type: patchFields
+        register: CTRL
+        fields:
+          - name: DOWN_L
+            enumeratedValues:
+              - {name: UP, description: Up, value: 0}
+              - {name: DOWN, description: Down, value: 1}
+          - name: STOP_L
+            enumeratedValues:
+              - {name: DISABLE, description: Disabled, value: 0}
+              - {name: ENABLE, description: Enabled, value: 1}
+          - name: HALT_L
+            enumeratedValues:
+              - {name: DISABLE, description: Disabled, value: 0}
+              - {name: ENABLE, description: Enabled, value: 1}
+          - name: DOWN_H
+            enumeratedValues:
+              - {name: UP, description: Up, value: 0}
+              - {name: DOWN, description: Down, value: 1}
+          - name: STOP_H
+            enumeratedValues:
+              - {name: DISABLE, description: Disabled, value: 0}
+              - {name: ENABLE, description: Enabled, value: 1}
+          - name: HALT_H
+            enumeratedValues:
+              - {name: DISABLE, description: Disable, value: 0}
+              - {name: ENABLE, description: Enable, value: 1}
 
   CRC:
     from: LPC865.CRC
@@ -771,7 +861,7 @@ families:
         interrupts:
           RTC: INTR
       SCT:
-        from: LPC43xx_43Sxx.SCT
+        uses: SCT
         instances: [SCT]
         interrupts:
           SCT: INTR
@@ -835,3 +925,7 @@ families:
         instances: [WWDT]
         interrupts:
           WWDT: INTR
+    chip_params:
+      _all:
+        _all:
+          SCT: {match_channels: 8, events: 8, outputs: 7, has_fractional_match: true}

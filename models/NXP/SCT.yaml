@@ -6,15 +6,22 @@ params:
   - name: match_channels
     type: int
     default: 16
+    max: 16
     description: Number of match/capture channels
   - name: events
     type: int
     default: 16
+    max: 16
     description: Number of events
   - name: outputs
     type: int
     default: 10
+    max: 16
     description: Number of output channels
+  - name: has_fractional_match
+    type: bool
+    default: false
+    description: Has DITHER and FRACMAT registers for fractional match
 registers:
   - name: CONFIG
     description: Configuration register
@@ -113,11 +120,17 @@ registers:
         bitOffset: 7
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: RELOAD, description: Reloaded, value: 0}
+          - {name: NO_RELOAD, description: Not reloaded, value: 1}
       - name: NORELOAD_H
         description: A 1 in this bit prevents the higher match registers from being reloaded from their respective reload registers. Setting this bit eliminates the need to write to the reload registers MATCHREL if the match values are fixed. Software can write to set or clear this bit at any time. This bit is not used when the UNIFY bit is set.
         bitOffset: 8
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: RELOAD_H, description: Reloaded, value: 0}
+          - {name: NO_RELOAD_H, description: Not reloaded, value: 1}
       - name: INSYNC
         description: 'Synchronization for input N (bit 9 = input 0, bit 10 = input 1,, bit 12 = input 3); all other bits are reserved. A 1 in one of these bits subjects the corresponding input to synchronization to the SCT clock, before it is used to create an event. If an input is known to already be synchronous to the SCT clock, this bit may be set to 0 for faster input response. (Note: The SCT clock is the system clock for CKMODEs 0-2. It is the selected, asynchronous SCT input clock for CKMODE3). Note that the INSYNC field only affects inputs used for event generation. It does not apply to the clock input specified in the CKSEL field.'
         bitOffset: 9
@@ -128,11 +141,17 @@ registers:
         bitOffset: 17
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: DISABLE, description: Disables, value: 0}
+          - {name: ENABLE, description: Enables, value: 1}
       - name: AUTOLIMIT_H
         description: A one in this bit will cause a match on match register 0 to be treated as a de-facto LIMIT condition without the need to define an associated event. As with any LIMIT event, this automatic limit causes the counter to be cleared to zero in unidirectional mode or to change the direction of count in bi-directional mode. Software can write to set or clear this bit at any time. This bit is not used when the UNIFY bit is set.
         bitOffset: 18
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: DISABLE, description: Disables, value: 0}
+          - {name: ENABLE, description: Enables, value: 1}
   - name: CTRL
     description: Control register
     addressOffset: 4
@@ -146,16 +165,25 @@ registers:
         bitOffset: 0
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: UP, description: Up, value: 0}
+          - {name: DOWN, description: Down, value: 1}
       - name: STOP_L
         description: When this bit is 1 and HALT is 0, the L or unified counter does not run, but I/O events related to the counter can occur. If a designated start event occurs, this bit is cleared and counting resumes.
         bitOffset: 1
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: DISABLE, description: Disabled, value: 0}
+          - {name: ENABLE, description: Enabled, value: 1}
       - name: HALT_L
         description: When this bit is 1, the L or unified counter does not run and no events can occur. A reset sets this bit. When the HALT_L bit is one, the STOP_L bit is cleared. It is possible to remove the halt condition while keeping the SCT in the stop condition (not running) with a single write to this register to simultaneously clear the HALT bit and set the STOP bit. Once set, only software can clear this bit to restore counter operation. This bit is set on reset.
         bitOffset: 2
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: DISABLE, description: Disabled, value: 0}
+          - {name: ENABLE, description: Enabled, value: 1}
       - name: CLRCTR_L
         description: Writing a 1 to this bit clears the L or unified counter. This bit always reads as 0.
         bitOffset: 3
@@ -183,16 +211,26 @@ registers:
         bitOffset: 16
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: UP, description: Up, value: 0}
+          - {name: DOWN, description: Down, value: 1}
       - name: STOP_H
         description: When this bit is 1 and HALT is 0, the H counter does not, run but I/O events related to the counter can occur. If such an event matches the mask in the Start register, this bit is cleared and counting resumes.
         bitOffset: 17
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: DISABLE, description: Disabled, value: 0}
+          - {name: ENABLE, description: Enabled, value: 1}
       - name: HALT_H
         description: When this bit is 1, the H counter does not run and no events can occur. A reset sets this bit. When the HALT_H bit is one, the STOP_H bit is cleared. It is possible to remove the halt condition while keeping the SCT in the stop condition (not running) with a single write to this register to simultaneously clear the HALT bit and set the STOP bit. Once set, this bit can only be cleared by software to restore counter operation. This bit is set on reset.
         bitOffset: 18
         bitWidth: 1
         access: read-write
+        enumeratedValues:
+          - {name: DISABLE, description: Disable, value: 0}
+          - {name: ENABLE, description: Enable, value: 1}
+
       - name: CLRCTR_H
         description: Writing a 1 to this bit clears the H counter. This bit always reads as 0.
         bitOffset: 19
@@ -1088,7 +1126,7 @@ registers:
         description: This read-only bit indicates the state of DMA Request 0. Note that if the related DMA channel is enabled and properly set up, it is unlikely that software will see this flag, it will be cleared rapidly by the DMA service. The flag remaining set could point to an issue with DMA setup.
         bitOffset: 31
         bitWidth: 1
-        access: read-write
+        access: read-only
   - name: DMAREQ1
     description: DMA request 1 register
     addressOffset: 96
@@ -1111,7 +1149,7 @@ registers:
         description: This read-only bit indicates the state of DMA Request 1. Note that if the related DMA channel is enabled and properly set up, it is unlikely that software will see this flag, it will be cleared rapidly by the DMA service. The flag remaining set could point to an issue with DMA setup.
         bitOffset: 31
         bitWidth: 1
-        access: read-write
+        access: read-only
   - name: EVEN
     description: Event interrupt enable register
     addressOffset: 240
@@ -2556,6 +2594,37 @@ registers:
             bitOffset: 0
             bitWidth: 16
             access: read-write
+  - name: DITHER
+    description: Dither Condition
+    addressOffset: 24
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - {name: DITHER_L, description: Dither Low, bitOffset: 0, bitWidth: 16, access: read-write}
+      - {name: DITHER_H, description: Dither High, bitOffset: 16, bitWidth: 16, access: read-write}
+  - name: FRACMAT[%s]
+    dim: 16
+    dimIncrement: 4
+    description: Fractional Match
+    addressOffset: 320
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - {name: FRACMAT_L, description: Fractional Match Low, bitOffset: 0, bitWidth: 4, access: read-write}
+      - {name: FRACMAT_H, description: Fractional Match High, bitOffset: 16, bitWidth: 4, access: read-write}
+  - name: FRACMATREL[%s]
+    dim: 16
+    dimIncrement: 4
+    description: Fractional Match Reload
+    addressOffset: 576
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - {name: RELFRAC_L, description: Reload Fractional Match Low, bitOffset: 0, bitWidth: 4, access: read-write}
+      - {name: RELFRAC_H, description: Reload Fractional Match High, bitOffset: 16, bitWidth: 4, access: read-write}
 addressBlocks:
   - offset: 0
     size: 1360
