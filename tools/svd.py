@@ -4,7 +4,31 @@
 import xmltodict
 from collections import defaultdict
 from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import SingleQuotedScalarString
 import re
+
+# Strings that YAML parsers interpret as booleans (YAML 1.1 spec).
+# Must be quoted to preserve their string type through a dump/load roundtrip.
+_YAML_BOOL_LITERALS = frozenset({
+    'true', 'false', 'yes', 'no', 'on', 'off',
+    'True', 'False', 'Yes', 'No', 'On', 'Off',
+    'TRUE', 'FALSE', 'YES', 'NO', 'ON', 'OFF',
+})
+
+_YAML_NUMERIC_RE = re.compile(
+    r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$'  # int, float, scientific
+    r'|^0[xX][0-9a-fA-F]+$'                       # hex
+    r'|^0[oO]?[0-7]+$'                             # octal
+    r'|^\d+:\d+(:\d+)*$'                           # sexagesimal (YAML 1.1)
+)
+
+def _yaml_safe_str(s):
+    """Wrap a string in quotes if YAML would misinterpret it as a non-string type."""
+    if not isinstance(s, str):
+        return s
+    if s in _YAML_BOOL_LITERALS or _YAML_NUMERIC_RE.match(s):
+        return SingleQuotedScalarString(s)
+    return s
 from pathlib import Path
 
 def _safe_int(s, base=0):
@@ -78,6 +102,11 @@ def collateEnums(field:dict):
     if field.get('enumeratedValues'):
         field['enumeratedValues'] = asArray(field['enumeratedValues'].get('enumeratedValue'))
         for e in field['enumeratedValues']:
+            # Quote name/description values that are YAML boolean literals
+            # (e.g. "true"/"false") so they survive a dump/load roundtrip.
+            for k in ('name', 'description'):
+                if k in e:
+                    e[k] = _yaml_safe_str(e[k])
             # we need to treat the values specially, because they may contain don't care bits
             val = re.sub(r'^#', '0b', e['value'].lower())
             if val[0:2] == "0b":
@@ -110,12 +139,15 @@ def collateFields(fields:dict):
         else:
             f['bitWidth'] = 1
         toNumber(f, [ "bitOffset", "dim", "dimIncrement" ])
+        for k in ('name', 'description'):
+            if k in f:
+                f[k] = _yaml_safe_str(f[k])
         collateEnums(f)
         flds.append(f)
     if 'field' in fields:
         del fields['field']
     flds.sort(key=lambda x: x['bitOffset'])
-    return flds if flds else None   # return nil instead of empty table
+    return flds
 
 def collateRegisters(cluster:dict):
     """ Go through the cluster and collate the registers.
@@ -132,6 +164,9 @@ def collateRegisters(cluster:dict):
     ints = [ "addressOffset", "size", "resetMask", "resetValue", "dim", "dimIncrement" ]
     for r in reg:
         toNumber(r, ints)
+        for k in ('name', 'description'):
+            if k in r:
+                r[k] = _yaml_safe_str(r[k])
         r['fields'] = collateFields(r.get('fields', {}))
         regs.append(r)
     if 'register' in cluster:
