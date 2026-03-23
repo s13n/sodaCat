@@ -1,0 +1,111 @@
+name: DAC
+description: Digital-to-Analog Converter (DAC)
+groupName: DAC
+source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+registers:
+  - name: CR
+    description: Register. Holds the conversion data.
+    addressOffset: 0
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 6
+      - name: VALUE
+        description: After the selected settling time after this field is written with a new VALUE, the voltage on the DACOUT pin (with respect to VSSA) is VALUE/1024 X VDDA.
+        bitOffset: 6
+        bitWidth: 10
+      - name: BIAS
+        description: Settling time
+        enumeratedValues:
+          - name: SHORT
+            description: The settling time of the DAC is 1 micros max, and the maximum current is 700 microA.
+            value: 0
+          - name: LONG
+            description: The settling time of the DAC is 2.5 micros and the maximum current is 350 microA.
+            value: 1
+        bitOffset: 16
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 17
+        bitWidth: 15
+  - name: CTRL
+    description: Control register.
+    addressOffset: 4
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: INT_DMA_REQ
+        description: DMA request
+        enumeratedValues:
+          - name: CLR
+            description: This bit is cleared on any write to the DACR register.
+            value: 0
+          - name: SET
+            description: This bit is set by hardware when the timer times out.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: DBLBUF_ENA
+        description: DMA double-buffering
+        enumeratedValues:
+          - name: DISABLED
+            description: DACR double-buffering is disabled.
+            value: 0
+          - name: ENABLED
+            description: When this bit and the CNT_ENA bit are both set, the double-buffering feature in the DACR register will be enabled. Writes to the DACR register are written to a pre-buffer and then transferred to the DACR on the next time-out of the counter.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: CNT_ENA
+        description: DMA time-out
+        enumeratedValues:
+          - name: DISABLED
+            description: Time-out counter operation is disabled.
+            value: 0
+          - name: ENABLED
+            description: Time-out counter operation is enabled.
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: DMA_ENA
+        description: DMA enable
+        enumeratedValues:
+          - name: DISABLED
+            description: DMA access is disabled.
+            value: 0
+          - name: ENABLED
+            description: DMA Burst Request Input 15 is enabled for the DAC (see Table 136).
+            value: 1
+        bitOffset: 3
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: CNTVAL
+    description: Counter value register.
+    addressOffset: 8
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: VALUE
+        description: 16-bit reload value for the DAC interrupt/DMA timer.
+        bitOffset: 0
+        bitWidth: 16
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 16
+        bitWidth: 16
+addressBlocks:
+  - offset: 0
+    size: 4095
+    usage: registers
+interrupts:
+  - name: INTR

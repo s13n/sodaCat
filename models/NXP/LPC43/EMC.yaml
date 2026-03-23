@@ -1,0 +1,780 @@
+name: EMC
+description: External Memory Controller (EMC)
+groupName: EMC
+source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+registers:
+  - name: CONTROL
+    description: Controls operation of the memory controller.
+    addressOffset: 0
+    access: read-write
+    resetValue: 3
+    resetMask: 4294967295
+    fields:
+      - name: E
+        description: EMC Enable. Indicates if the EMC is enabled or disabled.Disabling the EMC reduces power consumption. When the memory controller is disabled the memory is not refreshed. The memory controller is enabled by setting the enable bit, or by reset. This bit must only be modified when the EMC is in idle state.[1]
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled
+            value: 0
+          - name: ENABLED
+            description: Enabled. (POR and warm reset value).
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: M
+        description: Address mirror. Indicates normal or reset memory map. On POR, CS1 is mirrored to both CS0 and DYCS0 memory areas. Clearing the M bit enables CS0 and DYCS0 memory to be accessed.
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal. Normal memory map.
+            value: 0
+          - name: RESET
+            description: Reset. Reset memory map. Static memory CS1 is mirrored onto CS0 and DYCS0 (POR reset value).
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: L
+        description: Low-power mode. Indicates normal, or low-power mode. Entering low-power mode reduces memory controller power consumption. Dynamic memory is refreshed as necessary. The memory controller returns to normal functional mode by clearing the low-power mode bit (L), or by POR. This bit must only be modified when the EMC is in idle state.[1]
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal. Normal mode (warm reset value).
+            value: 0
+          - name: LOW_POWER_MODE
+            description: Low-power mode.
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 3
+        bitWidth: 29
+  - name: STATUS
+    description: Provides EMC status information.
+    addressOffset: 4
+    access: read-only
+    resetValue: 5
+    resetMask: 4294967295
+    fields:
+      - name: B
+        description: 'Busy indicator. This bit is used to ensure that the memory controller enters the low-power or disabled mode cleanly by determining if the memory controller is busy or not:'
+        enumeratedValues:
+          - name: IDLE
+            description: Idle. EMC is idle (warm reset value).
+            value: 0
+          - name: BUSY
+            description: Busy. EMC is busy performing memory transactions, commands, auto-refresh cycles, or is in self-refresh mode (POR reset value).
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: S
+        description: 'Write buffer status. This bit enables the EMC to enter low-power mode or disabled mode cleanly:'
+        enumeratedValues:
+          - name: EMPTY
+            description: Empty. Write buffers empty (POR reset value)
+            value: 0
+          - name: DATA
+            description: Data. Write buffers contain data.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: SA
+        description: 'Self-refresh acknowledge. This bit indicates the operating mode of the EMC:'
+        enumeratedValues:
+          - name: NORMAL_MODE
+            description: Normal mode.
+            value: 0
+          - name: SELF_REFRESH_MODE
+            description: Self-refresh mode. (POR reset value.)
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 3
+        bitWidth: 29
+  - name: CONFIG
+    description: Configures operation of the memory controller.
+    addressOffset: 8
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: EM
+        description: Endian mode.
+        enumeratedValues:
+          - name: LITTLE_ENDIAN_MODE
+            description: Little-endian mode. (POR reset value.)
+            value: 0
+          - name: BIG_ENDIAN_MODE
+            description: Big-endian mode.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 1
+        bitWidth: 7
+      - name: RESERVED
+        description: Reserved. Always write a 0 to this bit.
+        bitOffset: 8
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 9
+        bitWidth: 23
+  - name: DYNAMICCONTROL
+    description: Controls dynamic memory operation.
+    addressOffset: 32
+    access: read-write
+    resetValue: 6
+    resetMask: 4294967295
+    fields:
+      - name: CE
+        description: Dynamic memory clock enable.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Clock enable of idle devices are deasserted to save power (POR reset value).
+            value: 0
+          - name: ENABLED
+            description: Enabled. All clock enables are driven HIGH continuously.[1]
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: CS
+        description: Dynamic memory clock control. When clock control is LOW the output clock CLKOUT is stopped when there are no SDRAM transactions. The clock is also stopped during self-refresh mode.
+        enumeratedValues:
+          - name: STOP
+            description: Stop. CLKOUT stops when all SDRAMs are idle and during self-refresh mode.
+            value: 0
+          - name: RUN
+            description: Run. CLKOUT runs continuously (POR reset value).
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: SR
+        description: Self-refresh request, EMC SREFREQ. By writing 1 to this bit self-refresh can be entered under software control. Writing 0 to this bit returns the EMC to normal mode. The self-refresh acknowledge bit in the Status register must be polled to discover the current operating mode of the EMC.[2]
+        enumeratedValues:
+          - name: NORMAL_MODE
+            description: Normal mode.
+            value: 0
+          - name: SELF_REFRESH
+            description: Self-refresh. Enter self-refresh mode (POR reset value).
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 3
+        bitWidth: 2
+      - name: MMC
+        description: Memory clock control.
+        enumeratedValues:
+          - name: ENABLED
+            description: Enabled. CLKOUT enabled (POR reset value).
+            value: 0
+          - name: DISABLED
+            description: Disabled. CLKOUT disabled.[3]
+            value: 1
+        bitOffset: 5
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 6
+        bitWidth: 1
+      - name: I
+        description: SDRAM initialization.
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal. Issue SDRAM NORMAL operation command (POR reset value).
+            value: 0
+          - name: MODE
+            description: Mode. Issue SDRAM MODE command.
+            value: 1
+          - name: PALL
+            description: PALL. Issue SDRAM PALL (precharge all) command.
+            value: 2
+          - name: NOP
+            description: NOP. Issue SDRAM NOP (no operation) command)
+            value: 3
+        bitOffset: 7
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 9
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 14
+        bitWidth: 18
+  - name: DYNAMICREFRESH
+    description: Configures dynamic memory refresh operation.
+    addressOffset: 36
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: REFRESH
+        description: 'Refresh timer. Indicates the multiple of 16 EMC_CCLKs between SDRAM refresh cycles. 0x0 = Refresh disabled (POR reset value). 0x1 - 0x7FF = n x16 = 16n EMC_CCLKs between SDRAM refresh cycles. For example: 0x1 = 1 x 16 = 16 EMC_CCLKs between SDRAM refresh cycles. 0x8 = 8 x 16 = 128 EMC_CCLKs between SDRAM refresh cycles'
+        bitOffset: 0
+        bitWidth: 11
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 11
+        bitWidth: 21
+  - name: DYNAMICREADCONFIG
+    description: Configures the dynamic memory read strategy.
+    addressOffset: 40
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RD
+        description: Read data strategy.
+        enumeratedValues:
+          - name: DO_NOT_USE
+            description: Do not use. POR reset value.
+            value: 0
+          - name: HALF
+            description: Command delayed by 1/2 EMC_CCLK.
+            value: 1
+          - name: HALFPLUSONE
+            description: Command delayed by 1/2 EMC_CCLK plus one clock cycle.
+            value: 2
+          - name: HALFPLUSTWO
+            description: Command delayed by1/2 EMC_CCLK plus two clock cycles,
+            value: 3
+        bitOffset: 0
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 2
+        bitWidth: 30
+  - name: DYNAMICRP
+    description: Selects the precharge command period.
+    addressOffset: 48
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: TRP
+        description: Precharge command period. 0x0 - 0xE = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0xF = 16 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: DYNAMICRAS
+    description: Selects the active to precharge command period.
+    addressOffset: 52
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: TRAS
+        description: Active to precharge command period. 0x0 - 0xE = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0xF = 16 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: DYNAMICSREX
+    description: Selects the self-refresh exit time.
+    addressOffset: 56
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: TSREX
+        description: Self-refresh exit time. 0x0 - 0xE = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0xF = 16 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: DYNAMICAPR
+    description: Selects the last-data-out to active command time.
+    addressOffset: 60
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: TAPR
+        description: Last-data-out to active command time. 0x0 - 0xE = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0xF = 16 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: DYNAMICDAL
+    description: Selects the data-in to active command time.
+    addressOffset: 64
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: TDAL
+        description: Data-in to active command. 0x0 - 0xE = n clock cycles. The delay is in EMC_CCLK cycles. 0xF = 15 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: DYNAMICWR
+    description: Selects the write recovery time.
+    addressOffset: 68
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: TWR
+        description: Write recovery time. 0x0 - 0xE = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0xF = 16 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: DYNAMICRC
+    description: Selects the active to active command period.
+    addressOffset: 72
+    access: read-write
+    resetValue: 31
+    resetMask: 4294967295
+    fields:
+      - name: TRC
+        description: Active to active command period. 0x0 - 0x1E = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0x1F = 32 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - name: DYNAMICRFC
+    description: Selects the auto-refresh period.
+    addressOffset: 76
+    access: read-write
+    resetValue: 31
+    resetMask: 4294967295
+    fields:
+      - name: TRFC
+        description: Auto-refresh period and auto-refresh to active command period. 0x0 - 0x1E = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0x1F = 32 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - name: DYNAMICXSR
+    description: Selects the exit self-refresh to active command time.
+    addressOffset: 80
+    access: read-write
+    resetValue: 31
+    resetMask: 4294967295
+    fields:
+      - name: TXSR
+        description: Exit self-refresh to active command time. 0x0 - 0x1E = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0x1F = 32 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - name: DYNAMICRRD
+    description: Selects the active bank A to active bank B latency.
+    addressOffset: 84
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: TRRD
+        description: Active bank A to active bank B latency 0x0 - 0xE = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0xF = 16 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: DYNAMICMRD
+    description: Selects the load mode register to active command time.
+    addressOffset: 88
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: TMRD
+        description: Load mode register to active command time. 0x0 - 0xE = n + 1 clock cycles. The delay is in EMC_CCLK cycles. 0xF = 16 clock cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: STATICEXTENDEDWAIT
+    description: Selects time for long static memory read and write transfers.
+    addressOffset: 128
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: EXTENDEDWAIT
+        description: Extended wait time out. 16 clock cycles (POR reset value). The delay is in EMC_CCLK cycles. 0x0 = 16 clock cycles. 0x1 - 0x3FF = (n+1) x16 clock cycles.
+        bitOffset: 0
+        bitWidth: 10
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 10
+        bitWidth: 22
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: DYNAMICCONFIG%s
+    description: Selects the configuration information for dynamic memory chip select 0.
+    addressOffset: 256
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 3
+      - name: MD
+        description: Memory device.
+        enumeratedValues:
+          - name: SDRAM
+            description: SDRAM (POR reset value).
+            value: 0
+          - name: RESERVED
+            description: Reserved.
+            value: 1
+          - name: RESERVED
+            description: Reserved.
+            value: 2
+          - name: RESERVED
+            description: Reserved.
+            value: 3
+        bitOffset: 3
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 2
+      - name: AM0
+        description: Address mapping. See Table 382. 000000 = reset value.[1]
+        bitOffset: 7
+        bitWidth: 6
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 13
+        bitWidth: 1
+      - name: AM1
+        description: Address mapping See Table 382. 0 = reset value.
+        bitOffset: 14
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 15
+        bitWidth: 4
+      - name: B
+        description: Buffer enable.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Buffer disabled for accesses to this chip select (POR reset value).
+            value: 0
+          - name: ENABLED
+            description: Enabled. Buffer enabled for accesses to this chip select. After configuration of the dynamic memory, the buffer must be enabled for normal operation. [2]
+            value: 1
+        bitOffset: 19
+        bitWidth: 1
+      - name: P
+        description: Write protect.
+        enumeratedValues:
+          - name: NONE
+            description: None. Writes not protected (POR reset value).
+            value: 0
+          - name: PROTECTED
+            description: Protected. Writes protected.
+            value: 1
+        bitOffset: 20
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 21
+        bitWidth: 11
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: DYNAMICRASCAS%s
+    description: Selects the RAS and CAS latencies for dynamic memory chip select 0.
+    addressOffset: 260
+    access: read-write
+    resetValue: 771
+    resetMask: 4294967295
+    fields:
+      - name: RAS
+        description: RAS latency (active to read/write delay).
+        enumeratedValues:
+          - name: RESERVED
+            description: Reserved.
+            value: 0
+          - name: ONE_EMC_CCLK_CYCLE
+            description: One EMC_CCLK cycle.
+            value: 1
+          - name: TWO_EMC_CCLK_CYCLES
+            description: Two EMC_CCLK cycles.
+            value: 2
+          - name: THREE_EMC_CCLK_CYCLE
+            description: Three EMC_CCLK cycles (POR reset value).
+            value: 3
+        bitOffset: 0
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 2
+        bitWidth: 6
+      - name: CAS
+        description: CAS latency.
+        enumeratedValues:
+          - name: RESERVED
+            description: Reserved.
+            value: 0
+          - name: ONE_EMC_CCLK_CYCLE
+            description: One EMC_CCLK cycle.
+            value: 1
+          - name: TWO_EMC_CCLK_CYCLES
+            description: Two EMC_CCLK cycles.
+            value: 2
+          - name: THREE_EMC_CCLK_CYCLE
+            description: Three EMC_CCLK cycles (POR reset value).
+            value: 3
+        bitOffset: 8
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 10
+        bitWidth: 22
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: STATICCONFIG%s
+    description: Selects the memory configuration for static chip select 0.
+    addressOffset: 512
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MW
+        description: Memory width.
+        enumeratedValues:
+          - name: 8_BIT
+            description: 8 bit (POR reset value).
+            value: 0
+          - name: 16_BIT
+            description: 16 bit.
+            value: 1
+          - name: 32_BIT
+            description: 32 bit.
+            value: 2
+          - name: RESERVED
+            description: Reserved.
+            value: 3
+        bitOffset: 0
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 2
+        bitWidth: 1
+      - name: PM
+        description: Page mode. In page mode the EMC can burst up to four external accesses. Therefore devices with asynchronous page mode burst four or higher devices are supported. Asynchronous page mode burst two devices are not supported and must be accessed normally.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. (POR reset value.)
+            value: 0
+          - name: ENABLED
+            description: Enabled. Async page mode enabled (page length four).
+            value: 1
+        bitOffset: 3
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 2
+      - name: PC
+        description: Chip select polarity. The value of the chip select polarity on power-on reset is 0.
+        enumeratedValues:
+          - name: ACTIVE_LOW
+            description: Active LOW chip select.
+            value: 0
+          - name: ACTIVE_HIGH
+            description: Active HIGH chip select.
+            value: 1
+        bitOffset: 6
+        bitWidth: 1
+      - name: PB
+        description: Byte lane state. The byte lane state bit, PB, enables different types of memory to be connected. For byte-wide static memories the BLSn[3:0] signal from the EMC is usually connected to WE (write enable). In this case for reads all the BLSn[3:0] bits must be HIGH. This means that the byte lane state (PB) bit must be LOW. 16 bit wide static memory devices usually have the BLSn[3:0] signals connected to the UBn and LBn (upper byte and lower byte) signals in the static memory. In this case a write to a particular byte must assert the appropriate UBn or LBn signal LOW. For reads, all the UB and LB signals must be asserted LOW so that the bus is driven. In this case the byte lane state (PB) bit must be HIGH. When PB is set to 0, the WE signal is undefined or 0. You must set PB to 1, to use the WE signal.
+        enumeratedValues:
+          - name: HIGH
+            description: High. For reads all the bits in BLSn[3:0] are HIGH. For writes the respective active bits in BLSn[3:0] are LOW (POR reset value).
+            value: 0
+          - name: LOW
+            description: Low. For reads the respective active bits in BLSn[3:0] are LOW. For writes the respective active bits in BLSn[3:0] are LOW.
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: EW
+        description: Extended wait. Extended wait (EW) uses the StaticExtendedWait register to time both the read and write transfers rather than the StaticWaitRd and StaticWaitWr registers. This enables much longer transactions.[1]
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Extended wait disabled (POR reset value).
+            value: 0
+          - name: ENABLED
+            description: Enabled. Extended wait enabled.
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 9
+        bitWidth: 10
+      - name: B
+        description: Buffer enable [2].
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Buffer disabled (POR reset value).
+            value: 0
+          - name: ENABLED
+            description: Enabled. Buffer enabled.
+            value: 1
+        bitOffset: 19
+        bitWidth: 1
+      - name: P
+        description: Write protect.
+        enumeratedValues:
+          - name: NONE
+            description: None. Writes not protected (POR reset value).
+            value: 0
+          - name: PROTECT
+            description: Protect. Write protected.
+            value: 1
+        bitOffset: 20
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 21
+        bitWidth: 11
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: STATICWAITWEN%s
+    description: Selects the delay from chip select 0 to write enable.
+    addressOffset: 516
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WAITWEN
+        description: Wait write enable. Delay from chip select assertion to write enable. 0x0 = One EMC_CCLK cycle delay between assertion of chip select and write enable (POR reset value). 0x1 - 0xF = (n + 1) EMC_CCLK cycle delay. The delay is (WAITWEN +1) x tEMC_CCLK.
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: STATICWAITOEN%s
+    description: Selects the delay from chip select 0 or address change, whichever is later, to output enable.
+    addressOffset: 520
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WAITOEN
+        description: Wait output enable. Delay from chip select assertion to output enable. 0x0 = No delay (POR reset value). 0x1 - 0xF = n cycle delay. The delay is WAITOEN x tEMC_CCLK.
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: STATICWAITRD%s
+    description: Selects the delay from chip select 0 to a read access.
+    addressOffset: 524
+    access: read-write
+    resetValue: 31
+    resetMask: 4294967295
+    fields:
+      - name: WAITRD
+        description: 'Non-page mode read wait states or asynchronous page mode read first access wait state. Non-page mode read or asynchronous page mode read, first read only: 0x0 - 0x1E = (n + 1) EMC_CCLK cycles for read accesses. For non-sequential reads, the wait state time is (WAITRD + 1) x tEMC_CCLK. 0x1F = 32 EMC_CCLK cycles for read accesses (POR reset value).'
+        bitOffset: 0
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: STATICWAITPAGE%s
+    description: Selects the delay for asynchronous page mode sequential accesses for chip select 0.
+    addressOffset: 528
+    access: read-write
+    resetValue: 31
+    resetMask: 4294967295
+    fields:
+      - name: WAITPAGE
+        description: 'Asynchronous page mode read after the first read wait states. Number of wait states for asynchronous page mode read accesses after the first read: 0x0 - 0x1E = (n+ 1) EMC_CCLK cycle read access time. For asynchronous page mode read for sequential reads, the wait state time for page mode accesses after the first read is (WAITPAGE + 1) x tEMC_CCLK. 0x1F = 32 EMC_CCLK cycle read access time (POR reset value).'
+        bitOffset: 0
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: STATICWAITWR%s
+    description: Selects the delay from chip select 0 to a write access.
+    addressOffset: 532
+    access: read-write
+    resetValue: 31
+    resetMask: 4294967295
+    fields:
+      - name: WAITWR
+        description: 'Write wait states. SRAM wait state time for write accesses after the first read: 0x0 - 0x1E = (n + 2) EMC_CCLK cycle write access time. The wait state time for write accesses after the first read is WAITWR (n + 2) x tEMC_CCLK. 0x1F = 33 EMC_CCLK cycle write access time (POR reset value).'
+        bitOffset: 0
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - dim: 4
+    dimIncrement: 32
+    dimIndex: 0-3
+    name: STATICWAITTURN%s
+    description: Selects the number of bus turnaround cycles for chip select 0.
+    addressOffset: 536
+    access: read-write
+    resetValue: 15
+    resetMask: 4294967295
+    fields:
+      - name: WAITTURN
+        description: Bus turnaround cycles. 0x0 - 0xE = (n + 1) EMC_CCLK turnaround cycles. Bus turnaround time is (WAITTURN + 1) x tEMC_CCLK. 0xF = 16 EMC_CCLK turnaround cycles (POR reset value).
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+addressBlocks:
+  - offset: 0
+    size: 4095
+    usage: registers

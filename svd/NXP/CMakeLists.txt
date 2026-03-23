@@ -26,6 +26,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/mcx-extraction.cmake)
 # audit-lpc<id>-models.
 
 lpc_add_family(ID 8   CODE LPC8   DISPLAY "LPC8xx")
+lpc_add_family(ID 43  CODE LPC43  DISPLAY "LPC43xx")
 lpc_add_family(ID 54  CODE LPC54  DISPLAY "LPC54xxx")
 
 # ============================================================================

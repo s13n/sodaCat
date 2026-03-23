@@ -105,8 +105,9 @@ def load_family_config(family_code, config_file):
         address_overrides[inst] = int(addr) if isinstance(addr, str) else addr
 
     svd_tag = full_config.get('svd', {}).get('tag', '')
+    svd_chip = config.get('svd_chip')
 
-    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag, address_overrides
+    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag, address_overrides, svd_chip
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -863,7 +864,7 @@ def main():
 
     config_file = ext.config_path(args)
     families, blocks_config, chip_params, chip_interrupts, shared_blocks, svd_tag, \
-        address_overrides = load_family_config(family_code, config_file)
+        address_overrides, svd_chip = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
     family_chips = set()
@@ -917,6 +918,8 @@ def main():
         for chip_name in family_info['chips']:
             try:
                 result = ext.open_svd(args, chip_name)
+                if result is None and svd_chip:
+                    result = ext.open_svd(args, svd_chip)
                 if result is None:
                     print(f"  {chip_name}: SVD not found, skipping")
                     continue

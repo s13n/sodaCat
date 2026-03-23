@@ -1,0 +1,99 @@
+name: RITIMER
+description: Repetitive Interrupt Timer (RIT)
+groupName: RITIMER
+source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+registers:
+  - name: COMPVAL
+    description: Compare register
+    addressOffset: 0
+    access: read-write
+    resetValue: 4294967295
+    resetMask: 4294967295
+    fields:
+      - name: RICOMP
+        description: Compare register. Holds the compare value which is compared to the counter.
+        bitOffset: 0
+        bitWidth: 32
+  - name: MASK
+    description: Mask register. This register holds the 32-bit mask value. A 1 written to any bit will force a compare on the corresponding bit of the counter and compare register.
+    addressOffset: 4
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RIMASK
+        description: Mask register. This register holds the 32-bit mask value. A one written to any bit overrides the result of the comparison for the corresponding bit of the counter and compare register (causes the comparison of the register bits to be always true).
+        bitOffset: 0
+        bitWidth: 32
+  - name: CTRL
+    description: Control register.
+    addressOffset: 8
+    access: read-write
+    resetValue: 12
+    resetMask: 4294967295
+    fields:
+      - name: RITINT
+        description: Interrupt flag
+        enumeratedValues:
+          - name: THIS_BIT_IS_SET_TO_1
+            description: This bit is set to 1 by hardware whenever the counter value equals the masked compare value specified by the contents of RICOMPVAL and RIMASK registers. Writing a 1 to this bit will clear it to 0. Writing a 0 has no effect.
+            value: 1
+          - name: THE_COUNTER_VALUE_DO
+            description: The counter value does not equal the masked compare value.
+            value: 0
+        bitOffset: 0
+        bitWidth: 1
+      - name: RITENCLR
+        description: Timer enable clear
+        enumeratedValues:
+          - name: THE_TIMER_WILL_BE_CL
+            description: The timer will be cleared to 0 whenever the counter value equals the masked compare value specified by the contents of RICOMPVAL and RIMASK registers. This will occur on the same clock that sets the interrupt flag.
+            value: 1
+          - name: THE_TIMER_WILL_NOT_B
+            description: The timer will not be cleared to 0.
+            value: 0
+        bitOffset: 1
+        bitWidth: 1
+      - name: RITENBR
+        description: Timer enable for debug
+        enumeratedValues:
+          - name: THE_TIMER_IS_HALTED_
+            description: The timer is halted when the processor is halted for debugging.
+            value: 1
+          - name: DEBUG_HAS_NO_EFFECT_
+            description: Debug has no effect on the timer operation.
+            value: 0
+        bitOffset: 2
+        bitWidth: 1
+      - name: RITEN
+        description: Timer enable.
+        enumeratedValues:
+          - name: TIMER_ENABLED_THIS_
+            description: Timer enabled. This can be overruled by a debug halt if enabled in bit 2.
+            value: 1
+          - name: TIMER_DISABLED_
+            description: Timer disabled.
+            value: 0
+        bitOffset: 3
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 28
+  - name: COUNTER
+    description: 32-bit counter
+    addressOffset: 12
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RICOUNTER
+        description: 32-bit up counter. Counts continuously unless RITEN bit in RICTRL register is cleared or debug mode is entered (if enabled by the RITNEBR bit in RICTRL). Can be loaded to any value in software.
+        bitOffset: 0
+        bitWidth: 32
+addressBlocks:
+  - offset: 0
+    size: 4095
+    usage: registers
+interrupts:
+  - name: INTR

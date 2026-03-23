@@ -1,0 +1,624 @@
+name: LCD
+description: Controller
+groupName: LCD
+source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+registers:
+  - name: TIMH
+    description: Horizontal Timing Control register
+    addressOffset: 0
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 2
+      - name: PPL
+        description: Pixels-per-line. The PPL bit field specifies the number of pixels in each line or row of the screen. PPL is a 6-bit value that represents between 16 and 1024 pixels per line. PPL counts the number of pixel clocks that occur before the HFP is applied. Program the value required divided by 16, minus 1. Actual pixels-per-line = 16 * (PPL + 1). For example, to obtain 320 pixels per line, program PPL as (320/16) -1 = 19.
+        bitOffset: 2
+        bitWidth: 6
+      - name: HSW
+        description: Horizontal synchronization pulse width. The 8-bit HSW field specifies the pulse width of the line clock in passive mode, or the horizontal synchronization pulse in active mode. Program with desired value minus 1.
+        bitOffset: 8
+        bitWidth: 8
+      - name: HFP
+        description: Horizontal front porch. The 8-bit HFP field sets the number of pixel clock intervals at the end of each line or row of pixels, before the LCD line clock is pulsed. When a complete line of pixels is transmitted to the LCD driver, the value in HFP counts the number of pixel clocks to wait before asserting the line clock. HFP can generate a period of 1-256 pixel clock cycles. Program with desired value minus 1.
+        bitOffset: 16
+        bitWidth: 8
+      - name: HBP
+        description: Horizontal back porch. The 8-bit HBP field is used to specify the number of pixel clock periods inserted at the beginning of each line or row of pixels. After the line clock for the previous line has been deasserted, the value in HBP counts the number of pixel clocks to wait before starting the next display line. HBP can generate a delay of 1-256 pixel clock cycles. Program with desired value minus 1.
+        bitOffset: 24
+        bitWidth: 8
+  - name: TIMV
+    description: Vertical Timing Control register
+    addressOffset: 4
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LPP
+        description: Lines per panel. This is the number of active lines per screen. The LPP field specifies the total number of lines or rows on the LCD panel being controlled. LPP is a 10 bit value allowing between 1 and 1024 lines. Program the register with the number of lines per LCD panel, minus 1. For dual panel displays, program the register with the number of lines on each of the upper and lower panels.
+        bitOffset: 0
+        bitWidth: 10
+      - name: VSW
+        description: Vertical synchronization pulse width. This is the number of horizontal synchronization lines. The 6 bit VSW field specifies the pulse width of the vertical synchronization pulse. Program the register with the number of lines required, minus one. The number of horizontal synchronization lines must be small (for example, program to zero) for passive STN LCDs. The higher the value the worse the contrast on STN LCDs.
+        bitOffset: 10
+        bitWidth: 6
+      - name: VFP
+        description: Vertical front porch. This is the number of inactive lines at the end of a frame, before the vertical synchronization period. The 8 bit VFP field specifies the number of line clocks to insert at the end of each frame. When a complete frame of pixels is transmitted to the LCD display, the value in VFP is used to count the number of line clock periods to wait. After the count has elapsed, the vertical synchronization signal, LCDFP, is asserted in active mode, or extra line clocks are inserted as specified by the VSW bit field in passive mode. VFP generates 0-255 line clock cycles. Program to zero on passive displays for improved contrast.
+        bitOffset: 16
+        bitWidth: 8
+      - name: VBP
+        description: Vertical back porch. This is the number of inactive lines at the start of a frame, after the vertical synchronization period. The 8 bit VBP field specifies the number of line clocks inserted at the beginning of each frame. The VBP count starts immediately after the vertical synchronization signal for the previous frame has been negated for active mode, or the extra line clocks have been inserted as specified by the VSW bit field in passive mode. After this has occurred, the count value in VBP sets the number of line clock periods inserted before the next frame. VBP generates 0-255 extra line clock cycles. Program to zero on passive displays for improved contrast.
+        bitOffset: 24
+        bitWidth: 8
+  - name: POL
+    description: Clock and Signal Polarity Control register
+    addressOffset: 8
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PCD_LO
+        description: 'Lower five bits of panel clock divisor. The ten-bit PCD field, comprising PCD_HI (bits 31:27 of this register) and PCD_LO, is used to derive the LCD panel clock frequency LCDDCLK from the input clock, LCDDCLK = LCDCLK/(PCD+2). For monochrome STN displays with a 4 or 8-bit interface, the panel clock is a factor of four and eight down from the actual individual pixel clock rate. For color STN displays, 22/3 pixels are output per LCDDCLK cycle, so the panel clock is 0.375 times the pixel rate. For TFT displays, the pixel clock divider can be bypassed by setting the BCD bit in this register. Note: data path latency forces some restrictions on the usable minimum values for the panel clock divider in STN modes: Single panel color mode, PCD = 1 (LCDDCLK = LCDCLK/3). Dual panel color mode, PCD = 4 (LCDDCLK = LCDCLK/6). Single panel monochrome 4-bit interface mode, PCD = 2(LCDDCLK = LCDCLK/4). Dual panel monochrome 4-bit interface mode and single panel monochrome 8-bit interface mode, PCD = 6(LCDDCLK = LCDCLK/8). Dual panel monochrome 8-bit interface mode, PCD = 14(LCDDCLK = LCDCLK/16).'
+        bitOffset: 0
+        bitWidth: 5
+      - name: CLKSEL
+        description: Clock Select. This bit controls the selection of the source for LCDCLK. 0 = the clock source for the LCD block is CCLK. 1 = the clock source for the LCD block is LCDCLKIN (external clock input for the LVD).
+        bitOffset: 5
+        bitWidth: 1
+      - name: ACB
+        description: AC bias pin frequency. The AC bias pin frequency is only applicable to STN displays. These require the pixel voltage polarity to periodically reverse to prevent damage caused by DC charge accumulation. Program this field with the required value minus one to apply the number of line clocks between each toggle of the AC bias pin, LCDENAB. This field has no effect if the LCD is operating in TFT mode, when the LCDENAB pin is used as a data enable signal.
+        bitOffset: 6
+        bitWidth: 5
+      - name: IVS
+        description: Invert vertical synchronization. The IVS bit inverts the polarity of the LCDFP signal. 0 = LCDFP pin is active HIGH and inactive LOW. 1 = LCDFP pin is active LOW and inactive HIGH.
+        bitOffset: 11
+        bitWidth: 1
+      - name: IHS
+        description: Invert horizontal synchronization. The IHS bit inverts the polarity of the LCDLP signal. 0 = LCDLP pin is active HIGH and inactive LOW. 1 = LCDLP pin is active LOW and inactive HIGH.
+        bitOffset: 12
+        bitWidth: 1
+      - name: IPC
+        description: Invert panel clock. The IPC bit selects the edge of the panel clock on which pixel data is driven out onto the LCD data lines. 0 = Data is driven on the LCD data lines on the rising edge of LCDDCLK. 1 = Data is driven on the LCD data lines on the falling edge of LCDDCLK.
+        bitOffset: 13
+        bitWidth: 1
+      - name: IOE
+        description: Invert output enable. This bit selects the active polarity of the output enable signal in TFT mode. In this mode, the LCDENAB pin is used as an enable that indicates to the LCD panel when valid display data is available. In active display mode, data is driven onto the LCD data lines at the programmed edge of LCDDCLK when LCDENAB is in its active state. 0 = LCDENAB output pin is active HIGH in TFT mode. 1 = LCDENAB output pin is active LOW in TFT mode.
+        bitOffset: 14
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 15
+        bitWidth: 1
+      - name: CPL
+        description: Clocks per line. This field specifies the number of actual LCDDCLK clocks to the LCD panel on each line. This is the number of PPL divided by either 1 (for TFT), 4 or 8 (for monochrome passive), 2 2/3 (for color passive), minus one. This must be correctly programmed in addition to the PPL bit in the TIMH register for the LCD display to work correctly.
+        bitOffset: 16
+        bitWidth: 10
+      - name: BCD
+        description: Bypass pixel clock divider. Setting this to 1 bypasses the pixel clock divider logic. This is mainly used for TFT displays.
+        bitOffset: 26
+        bitWidth: 1
+      - name: PCD_HI
+        description: Upper five bits of panel clock divisor. See description for PCD_LO, in bits [4:0] of this register.
+        bitOffset: 27
+        bitWidth: 5
+  - name: LE
+    description: Line End Control register
+    addressOffset: 12
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LED
+        description: Line-end delay. Controls Line-end signal delay from the rising-edge of the last panel clock, LCDDCLK. Program with number of LCDCLK clock periods minus 1.
+        bitOffset: 0
+        bitWidth: 7
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 7
+        bitWidth: 9
+      - name: LEE
+        description: LCD Line end enable. 0 = LCDLE disabled (held LOW). 1 = LCDLE signal active.
+        bitOffset: 16
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 17
+        bitWidth: 15
+  - name: UPBASE
+    description: Upper Panel Frame Base Address register
+    addressOffset: 16
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 3
+      - name: LCDUPBASE
+        description: LCD upper panel base address. This is the start address of the upper panel frame data in memory and is doubleword aligned.
+        bitOffset: 3
+        bitWidth: 29
+  - name: LPBASE
+    description: Lower Panel Frame Base Address register
+    addressOffset: 20
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 3
+      - name: LCDLPBASE
+        description: LCD lower panel base address. This is the start address of the lower panel frame data in memory and is doubleword aligned.
+        bitOffset: 3
+        bitWidth: 29
+  - name: CTRL
+    description: Control register
+    addressOffset: 24
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LCDEN
+        description: LCD enable control bit. 0 = LCD disabled. Signals LCDLP, LCDDCLK, LCDFP, LCDENAB, and LCDLE are low. 1 = LCD enabled. Signals LCDLP, LCDDCLK, LCDFP, LCDENAB, and LCDLE are high. See LCD power-up and power-down sequence for details on LCD power sequencing.
+        bitOffset: 0
+        bitWidth: 1
+      - name: LCDBPP
+        description: 'LCD bits per pixel: Selects the number of bits per LCD pixel: 000 = 1 bpp. 001 = 2 bpp. 010 = 4 bpp. 011 = 8 bpp. 100 = 16 bpp. 101 = 24 bpp (TFT panel only). 110 = 16 bpp, 5:6:5 mode. 111 = 12 bpp, 4:4:4 mode.'
+        bitOffset: 1
+        bitWidth: 3
+      - name: LCDBW
+        description: STN LCD monochrome/color selection. 0 = STN LCD is color. 1 = STN LCD is monochrome. This bit has no meaning in TFT mode.
+        bitOffset: 4
+        bitWidth: 1
+      - name: LCDTFT
+        description: LCD panel TFT type selection. 0 = LCD is an STN display. Use gray scaler. 1 = LCD is a TFT display. Do not use gray scaler.
+        bitOffset: 5
+        bitWidth: 1
+      - name: LCDMONO8
+        description: Monochrome LCD interface width. This bit controls whether a monochrome STN LCD uses a 4 or 8-bit parallel interface. It has no meaning in other modes and must be programmed to zero. 0 = monochrome LCD uses a 4-bit interface. 1 = monochrome LCD uses a 8-bit interface.
+        bitOffset: 6
+        bitWidth: 1
+      - name: LCDDUAL
+        description: 'Single or Dual LCD panel selection. STN LCD interface is: 0 = single-panel. 1 = dual-panel.'
+        bitOffset: 7
+        bitWidth: 1
+      - name: BGR
+        description: 'Color format selection. 0 = RGB: normal output. 1 = BGR: red and blue swapped.'
+        bitOffset: 8
+        bitWidth: 1
+      - name: BEBO
+        description: 'Big-endian Byte Order. Controls byte ordering in memory: 0 = little-endian byte order. 1 = big-endian byte order.'
+        bitOffset: 9
+        bitWidth: 1
+      - name: BEPO
+        description: 'Big-Endian Pixel Ordering. Controls pixel ordering within a byte: 0 = little-endian ordering within a byte. 1 = big-endian pixel ordering within a byte. The BEPO bit selects between little and big-endian pixel packing for 1, 2, and 4 bpp display modes, it has no effect on 8 or 16 bpp pixel formats.  See Pixel serializer for more information on the data format.'
+        bitOffset: 10
+        bitWidth: 1
+      - name: LCDPWR
+        description: LCD power enable. 0 = power not gated through to LCD panel and LCDV[23:0] signals disabled, (held LOW). 1 = power gated through to LCD panel and LCDV[23:0] signals enabled, (active).  See LCD power-up and power-down sequence for details on LCD power sequencing.
+        bitOffset: 11
+        bitWidth: 1
+      - name: LCDVCOMP
+        description: 'LCD Vertical Compare Interrupt. Generate VComp interrupt at: 00 = start of vertical synchronization. 01 = start of back porch. 10 = start of active video. 11 = start of front porch.'
+        bitOffset: 12
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 14
+        bitWidth: 2
+      - name: WATERMARK
+        description: 'LCD DMA FIFO watermark level. Controls when DMA requests are generated: 0 = An LCD DMA request is generated when either of the DMA FIFOs have four or more empty locations. 1 = An LCD DMA request is generated when either of the DMA FIFOs have eight or more empty locations.'
+        bitOffset: 16
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 17
+        bitWidth: 15
+  - name: INTMSK
+    description: Interrupt Mask register
+    addressOffset: 28
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 1
+      - name: FUFIM
+        description: 'FIFO underflow interrupt enable. 0: The FIFO underflow interrupt is disabled. 1: Interrupt will be generated when the FIFO underflows.'
+        bitOffset: 1
+        bitWidth: 1
+      - name: LNBUIM
+        description: 'LCD next base address update interrupt enable. 0: The base address update interrupt is disabled. 1: Interrupt will be generated when the LCD base address registers have been updated from the next address registers.'
+        bitOffset: 2
+        bitWidth: 1
+      - name: VCOMPIM
+        description: 'Vertical compare interrupt enable. 0: The vertical compare time interrupt is disabled. 1: Interrupt will be generated when the vertical compare time (as defined by LcdVComp field in the CTRL register) is reached.'
+        bitOffset: 3
+        bitWidth: 1
+      - name: BERIM
+        description: 'AHB master error interrupt enable. 0: The AHB Master error interrupt is disabled. 1: Interrupt will be generated when an AHB Master error occurs.'
+        bitOffset: 4
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - name: INTRAW
+    description: Raw Interrupt Status register
+    addressOffset: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 1
+      - name: FUFRIS
+        description: FIFO underflow raw interrupt status. Set when either the upper or lower DMA FIFOs have been read accessed when empty causing an underflow condition to occur. Generates an interrupt if the FUFIM bit in the INTMSK register is set.
+        bitOffset: 1
+        bitWidth: 1
+      - name: LNBURIS
+        description: LCD next address base update raw interrupt status. Mode dependent. Set when the current base address registers have been successfully updated by the next address registers. Signifies that a new next address can be loaded if double buffering is in use. Generates an interrupt if the LNBUIM bit in the INTMSK register is set.
+        bitOffset: 2
+        bitWidth: 1
+      - name: VCOMPRIS
+        description: Vertical compare raw interrupt status. Set when one of the four vertical regions is reached, as selected by the LcdVComp bits in the CTRL register. Generates an interrupt if the VCompIM bit in the INTMSK register is set.
+        bitOffset: 3
+        bitWidth: 1
+      - name: BERRAW
+        description: AHB master bus error raw interrupt status. Set when the AHB master interface receives a bus error response from a slave. Generates an interrupt if the BERIM bit in the INTMSK register is set.
+        bitOffset: 4
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - name: INTSTAT
+    description: Masked Interrupt Status register
+    addressOffset: 36
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 1
+      - name: FUFMIS
+        description: FIFO underflow masked interrupt status. Set when the both the FUFRIS bit in the INTRAW register and the FUFIM bit in the INTMSK register are set.
+        bitOffset: 1
+        bitWidth: 1
+      - name: LNBUMIS
+        description: LCD next address base update masked interrupt status. Set when the both the LNBURIS bit in the INTRAW register and the LNBUIM bit in the INTMSK register are set.
+        bitOffset: 2
+        bitWidth: 1
+      - name: VCOMPMIS
+        description: Vertical compare masked interrupt status. Set when the both the VCompRIS bit in the INTRAW register and the VCompIM bit in the INTMSK register are set.
+        bitOffset: 3
+        bitWidth: 1
+      - name: BERMIS
+        description: AHB master bus error masked interrupt status. Set when the both the BERRAW bit in the INTRAW register and the BERIM bit in the INTMSK register are set.
+        bitOffset: 4
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - name: INTCLR
+    description: Interrupt Clear register
+    addressOffset: 40
+    access: write-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 1
+      - name: FUFIC
+        description: FIFO underflow interrupt clear. Writing a 1 to this bit clears the FIFO underflow interrupt.
+        bitOffset: 1
+        bitWidth: 1
+      - name: LNBUIC
+        description: LCD next address base update interrupt clear. Writing a 1 to this bit clears the LCD next address base update interrupt.
+        bitOffset: 2
+        bitWidth: 1
+      - name: VCOMPIC
+        description: Vertical compare interrupt clear. Writing a 1 to this bit clears the vertical compare interrupt.
+        bitOffset: 3
+        bitWidth: 1
+      - name: BERIC
+        description: AHB master error interrupt clear. Writing a 1 to this bit clears the AHB master error interrupt.
+        bitOffset: 4
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 5
+        bitWidth: 27
+  - name: UPCURR
+    description: Upper Panel Current Address Value register
+    addressOffset: 44
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LCDUPCURR
+        description: LCD Upper Panel Current Address. Contains the current LCD upper panel data DMA address.
+        bitOffset: 0
+        bitWidth: 32
+  - name: LPCURR
+    description: Lower Panel Current Address Value register
+    addressOffset: 48
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LCDLPCURR
+        description: LCD Lower Panel Current Address. Contains the current LCD lower panel data DMA address.
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 256
+    dimIncrement: 4
+    dimIndex: 0-255
+    name: PAL[%s]
+    description: 256x16-bit Color Palette registers
+    addressOffset: 512
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: R04_0
+        description: Red palette data. For STN displays, only the four MSBs, bits [4:1], are used. For monochrome displays only the red palette data is used. All of the palette registers have the same bit fields.
+        bitOffset: 0
+        bitWidth: 5
+      - name: G04_0
+        description: Green palette data.
+        bitOffset: 5
+        bitWidth: 5
+      - name: B04_0
+        description: Blue palette data.
+        bitOffset: 10
+        bitWidth: 5
+      - name: I0
+        description: Intensity / unused bit. Can be used as the LSB of the R, G, and B inputs to a 6:6:6 TFT display, doubling the number of colors to 64K, where each color has two different intensities.
+        bitOffset: 15
+        bitWidth: 1
+      - name: R14_0
+        description: Red palette data. For STN displays, only the four MSBs, bits [4:1], are used. For monochrome displays only the red palette data is used. All of the palette registers have the same bit fields.
+        bitOffset: 16
+        bitWidth: 5
+      - name: G14_0
+        description: Green palette data.
+        bitOffset: 21
+        bitWidth: 5
+      - name: B14_0
+        description: Blue palette data.
+        bitOffset: 26
+        bitWidth: 5
+      - name: I1
+        description: Intensity / unused bit. Can be used as the LSB of the R, G, and B inputs to a 6:6:6 TFT display, doubling the number of colors to 64K, where each color has two different intensities.
+        bitOffset: 31
+        bitWidth: 1
+  - dim: 256
+    dimIncrement: 4
+    dimIndex: 0-255
+    name: CRSR_IMG[%s]
+    description: Cursor Image registers
+    addressOffset: 2048
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRSR_IMG
+        description: Cursor Image data. The 256 words of the cursor image registers define the appearance of either one 64x64 cursor or 4 32x32 cursors.
+        bitOffset: 0
+        bitWidth: 32
+  - name: CRSR_CTRL
+    description: Cursor Control register
+    addressOffset: 3072
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CrsrOn
+        description: Cursor enable. 0 = Cursor is not displayed. 1 = Cursor is displayed.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 1
+        bitWidth: 3
+      - name: CRSRNUM1_0
+        description: 'Cursor image number. If the selected cursor size is 6x64, this field has no effect. If the selected cursor size is 32x32: 00 = Cursor0. 01 = Cursor1. 10 = Cursor2. 11 = Cursor3.'
+        bitOffset: 4
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 6
+        bitWidth: 26
+  - name: CRSR_CFG
+    description: Cursor Configuration register
+    addressOffset: 3076
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CrsrSize
+        description: Cursor size selection. 0 = 32x32 pixel cursor. Allows for 4 defined cursors. 1 = 64x64 pixel cursor.
+        bitOffset: 0
+        bitWidth: 1
+      - name: FRAMESYNC
+        description: Cursor frame synchronization type. 0 = Cursor coordinates are asynchronous. 1 = Cursor coordinates are synchronized to the frame synchronization pulse.
+        bitOffset: 1
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 2
+        bitWidth: 30
+  - name: CRSR_PAL0
+    description: Cursor Palette register 0
+    addressOffset: 3080
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RED
+        description: Red color component
+        bitOffset: 0
+        bitWidth: 8
+      - name: GREEN
+        description: Green color component
+        bitOffset: 8
+        bitWidth: 8
+      - name: BLUE
+        description: Blue color component.
+        bitOffset: 16
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 24
+        bitWidth: 8
+  - name: CRSR_PAL1
+    description: Cursor Palette register 1
+    addressOffset: 3084
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RED
+        description: Red color component
+        bitOffset: 0
+        bitWidth: 8
+      - name: GREEN
+        description: Green color component
+        bitOffset: 8
+        bitWidth: 8
+      - name: BLUE
+        description: Blue color component.
+        bitOffset: 16
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 24
+        bitWidth: 8
+  - name: CRSR_XY
+    description: Cursor XY Position register
+    addressOffset: 3088
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRSRX
+        description: X ordinate of the cursor origin measured in pixels. When 0, the left edge of the cursor is at the left of the display.
+        bitOffset: 0
+        bitWidth: 10
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 10
+        bitWidth: 6
+      - name: CRSRY
+        description: Y ordinate of the cursor origin measured in pixels. When 0, the top edge of the cursor is at the top of the display.
+        bitOffset: 16
+        bitWidth: 10
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 26
+        bitWidth: 6
+  - name: CRSR_CLIP
+    description: Cursor Clip Position register
+    addressOffset: 3092
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRSRCLIPX
+        description: Cursor clip position for X direction. Distance from the left edge of the cursor image to the first displayed pixel in the cursor. When 0, the first pixel of the cursor line is displayed.
+        bitOffset: 0
+        bitWidth: 6
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 6
+        bitWidth: 2
+      - name: CRSRCLIPY
+        description: Cursor clip position for Y direction. Distance from the top of the cursor image to the first displayed pixel in the cursor. When 0, the first displayed pixel is from the top line of the cursor image.
+        bitOffset: 8
+        bitWidth: 6
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 14
+        bitWidth: 18
+  - name: CRSR_INTMSK
+    description: Cursor Interrupt Mask register
+    addressOffset: 3104
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRSRIM
+        description: Cursor interrupt mask. When clear, the cursor never interrupts the processor. When set, the cursor interrupts the processor immediately after reading of the last word of cursor image.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 1
+        bitWidth: 31
+  - name: CRSR_INTCLR
+    description: Cursor Interrupt Clear register
+    addressOffset: 3108
+    access: write-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRSRIC
+        description: Cursor interrupt clear. Writing a 0 to this bit has no effect. Writing a 1 to this bit causes the cursor interrupt status to be cleared.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 1
+        bitWidth: 31
+  - name: CRSR_INTRAW
+    description: Cursor Raw Interrupt Status register
+    addressOffset: 3112
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRSRRIS
+        description: Cursor raw interrupt status. The cursor interrupt status is set immediately after the last data is read from the cursor image for the current frame. This bit is cleared by writing to the CrsrIC bit in the CRSR_INTCLR register.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 1
+        bitWidth: 31
+  - name: CRSR_INTSTAT
+    description: Cursor Masked Interrupt Status register
+    addressOffset: 3116
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CRSRMIS
+        description: Cursor masked interrupt status. The cursor interrupt status is set immediately after the last data read from the cursor image for the current frame, providing that the corresponding bit in the CRSR_INTMSK register is set. The bit remains clear if the CRSR_INTMSK register is clear. This bit is cleared by writing to the CRSR_INTCLR register.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 1
+        bitWidth: 31
+addressBlocks:
+  - offset: 0
+    size: 65535
+    usage: registers
+interrupts:
+  - name: INTR

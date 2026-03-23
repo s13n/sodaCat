@@ -1,0 +1,941 @@
+name: USART
+description: USART0_2_3
+groupName: USART
+source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+registers:
+  - name: RBR
+    description: Receiver Buffer Register. Contains the next received character to be read (DLAB = 0).
+    addressOffset: 0
+    access: read-only
+    resetValue: 0
+    resetMask: 0
+    readAction: modify
+    fields:
+      - name: RBR
+        description: Receiver buffer. The USART Receiver Buffer Register contains the oldest received byte in the USART RX FIFO.
+        bitOffset: 0
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 8
+        bitWidth: 24
+  - name: THR
+    description: Transmit Holding Register. The next character to be transmitted is written here (DLAB = 0).
+    alternateRegister: RBR
+    addressOffset: 0
+    access: write-only
+    resetValue: 0
+    resetMask: 0
+    readAction: modify
+    fields:
+      - name: THR
+        description: Transmit Holding Register. Writing to the USART Transmit Holding Register causes the data to be stored in the USART transmit FIFO. The byte will be sent when it reaches the bottom of the FIFO and the transmitter is available.
+        bitOffset: 0
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 8
+        bitWidth: 24
+  - name: DLL
+    description: Divisor Latch LSB. Least significant byte of the baud rate divisor value. The full divisor is used to generate a baud rate from the fractional rate divider (DLAB = 1).
+    alternateRegister: RBR
+    addressOffset: 0
+    access: read-write
+    resetValue: 1
+    resetMask: 4294967295
+    fields:
+      - name: DLLSB
+        description: Divisor latch LSB. The USART Divisor Latch LSB Register, along with the DLM register, determines the baud rate of the USART.
+        bitOffset: 0
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 8
+        bitWidth: 24
+  - name: DLM
+    description: Divisor Latch MSB. Most significant byte of the baud rate divisor value. The full divisor is used to generate a baud rate from the fractional rate divider (DLAB = 1).
+    addressOffset: 4
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DLMSB
+        description: Divisor latch MSB.  The USART Divisor Latch MSB Register, along with the DLL register, determines the baud rate of the USART.
+        bitOffset: 0
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 8
+        bitWidth: 24
+  - name: IER
+    description: Interrupt Enable Register. Contains individual interrupt enable bits for the 7 potential USART interrupts (DLAB = 0).
+    alternateRegister: DLM
+    addressOffset: 4
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RBRIE
+        description: RBR Interrupt Enable. Enables the Receive Data Available interrupt for USART. It also controls the Character Receive Time-out interrupt.
+        enumeratedValues:
+          - name: DISABLE
+            description: Disable. Disable the RDA interrupt.
+            value: 0
+          - name: ENABLE
+            description: Enable. Enable the RDA interrupt.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: THREIE
+        description: THRE Interrupt Enable. Enables the THRE interrupt for USART. The status of this interrupt can be read from LSR[5].
+        enumeratedValues:
+          - name: DISABLE
+            description: Disable. Disable the THRE interrupt.
+            value: 0
+          - name: ENABLE
+            description: Enable. Enable the THRE interrupt.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: RXIE
+        description: RX Line Interrupt Enable. Enables the USART RX line status interrupts. The status of this interrupt can be read from LSR[4:1].
+        enumeratedValues:
+          - name: DISABLE
+            description: Disable. Disable the RX line status interrupts.
+            value: 0
+          - name: ENABLE
+            description: Enable. Enable the RX line status interrupts.
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 3
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 3
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 7
+        bitWidth: 1
+      - name: ABEOINTEN
+        description: Enables the end of auto-baud interrupt.
+        enumeratedValues:
+          - name: DISABLE
+            description: Disable. Disable end of auto-baud Interrupt.
+            value: 0
+          - name: ENABLE
+            description: Enable. Enable end of auto-baud Interrupt.
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: ABTOINTEN
+        description: Enables the auto-baud time-out interrupt.
+        enumeratedValues:
+          - name: DISABLE
+            description: Disable. Disable auto-baud time-out Interrupt.
+            value: 0
+          - name: ENABLE
+            description: Enable. Enable auto-baud time-out Interrupt.
+            value: 1
+        bitOffset: 9
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 10
+        bitWidth: 22
+  - name: IIR
+    description: Interrupt ID Register. Identifies which interrupt(s) are pending.
+    addressOffset: 8
+    access: read-only
+    resetValue: 1
+    resetMask: 4294967295
+    fields:
+      - name: INTSTATUS
+        description: Interrupt status.  Note that IIR[0] is active low. The pending interrupt can be determined by evaluating IIR[3:1].
+        enumeratedValues:
+          - name: INTERRUPT_PENDING
+            description: Interrupt pending. At least one interrupt is pending.
+            value: 0
+          - name: NOT_PENDING
+            description: Not pending. No interrupt is pending.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: INTID
+        description: Interrupt identification.  IER[3:1] identifies an interrupt corresponding to the USART Rx FIFO. All other combinations of IER[3:1] not listed below are reserved (100,101,111).
+        enumeratedValues:
+          - name: RLS
+            description: RLS. Priority 1 (highest). (Highest) Receive Line Status (RLS).
+            value: 3
+          - name: RDA
+            description: RDA. Priority 2 - Receive Data Available (RDA).
+            value: 2
+          - name: CTI
+            description: CTI. Priority 2 - Character Time-out Indicator (CTI).
+            value: 6
+          - name: THRE
+            description: THRE. Priority 3 - THRE Interrupt.
+            value: 1
+          - name: RESERVED
+            description: Reserved. Priority 4 (lowest) - Reserved.
+            value: 0
+        bitOffset: 1
+        bitWidth: 3
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 2
+      - name: FIFOENABLE
+        description: Copies of FCR[0].
+        bitOffset: 6
+        bitWidth: 2
+      - name: ABEOINT
+        description: End of auto-baud interrupt.  True if auto-baud has finished successfully and interrupt is enabled.
+        bitOffset: 8
+        bitWidth: 1
+      - name: ABTOINT
+        description: Auto-baud time-out interrupt.  True if auto-baud has timed out and interrupt is enabled.
+        bitOffset: 9
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 10
+        bitWidth: 22
+  - name: FCR
+    description: FIFO Control Register. Controls USART FIFO usage and modes.
+    addressOffset: 8
+    access: write-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FIFOEN
+        description: FIFO Enable.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. USART FIFOs are disabled. Must not be used in the application.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Active high enable for both USART Rx and TX FIFOs and FCR[7:1] access. This bit must be set for proper USART operation. Any transition on this bit will automatically clear the USART FIFOs.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: RXFIFORES
+        description: RX FIFO Reset.
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect. No impact on either of USART FIFOs.
+            value: 0
+          - name: CLEAR
+            description: Clear. Writing a logic 1 to FCR[1] will clear all bytes in USART Rx FIFO, reset the pointer logic. This bit is self-clearing.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: TXFIFORES
+        description: TX FIFO Reset.
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect. No impact on either of USART FIFOs.
+            value: 0
+          - name: CLEAR
+            description: Clear. Writing a logic 1 to FCR[2] will clear all bytes in USART TX FIFO, reset the pointer logic. This bit is self-clearing.
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: DMAMODE
+        description: DMA Mode Select. When the FIFO enable bit (bit 0 of this register) is set, this bit selects the DMA mode.
+        bitOffset: 3
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 4
+        bitWidth: 2
+      - name: RXTRIGLVL
+        description: RX Trigger Level. These two bits determine how many receiver USART FIFO characters must be written before an interrupt is activated.
+        enumeratedValues:
+          - name: LEVEL_0
+            description: Level 0. Trigger level 0 (1 character or 0x01).
+            value: 0
+          - name: LEVEL_1
+            description: Level 1. Trigger level 1 (4 characters or 0x04).
+            value: 1
+          - name: LEVEL_2
+            description: Level 2. Trigger level 2 (8 characters or 0x08).
+            value: 2
+          - name: LEVEL_3
+            description: Level 3. Trigger level 3 (14 characters or 0x0E).
+            value: 3
+        bitOffset: 6
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 8
+        bitWidth: 24
+  - name: LCR
+    description: Line Control Register. Contains controls for frame formatting and break generation.
+    addressOffset: 12
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: WLS
+        description: Word Length Select.
+        enumeratedValues:
+          - name: 5_BIT_CHARACTER_LENG
+            description: 5-bit character length.
+            value: 0
+          - name: 6_BIT_CHARACTER_LENG
+            description: 6-bit character length.
+            value: 1
+          - name: 7_BIT_CHARACTER_LENG
+            description: 7-bit character length.
+            value: 2
+          - name: 8_BIT_CHARACTER_LENG
+            description: 8-bit character length.
+            value: 3
+        bitOffset: 0
+        bitWidth: 2
+      - name: SBS
+        description: Stop Bit Select.
+        enumeratedValues:
+          - name: 1_STOP_BIT
+            description: 1 stop bit.
+            value: 0
+          - name: 2_STOP_BITS_1
+            description: 2 stop bits (1.5 if LCR[1:0]=00).
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: PE
+        description: Parity Enable
+        enumeratedValues:
+          - name: DISABLE_PARITY_GENER
+            description: Disable parity generation and checking.
+            value: 0
+          - name: ENABLE_PARITY_GENERA
+            description: Enable parity generation and checking.
+            value: 1
+        bitOffset: 3
+        bitWidth: 1
+      - name: PS
+        description: Parity Select.
+        enumeratedValues:
+          - name: ODD_PARITY
+            description: Odd parity. Number of 1s in the transmitted character and the attached parity bit will be odd.
+            value: 0
+          - name: EVEN_PARITY
+            description: Even Parity. Number of 1s in the transmitted character and the attached parity bit will be even.
+            value: 1
+          - name: FORCE_HIGH
+            description: Force HIGH. Forced 1 stick parity.
+            value: 2
+          - name: FORCE_LOW
+            description: Force LOW. Forced 0 stick parity.
+            value: 3
+        bitOffset: 4
+        bitWidth: 2
+      - name: BC
+        description: Break Control.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Disable break transmission.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Enable break transmission. Output pin USART TXD is forced to logic 0 when LCR[6] is active high.
+            value: 1
+        bitOffset: 6
+        bitWidth: 1
+      - name: DLAB
+        description: Divisor Latch Access Bit.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Disable access to Divisor Latches.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Enable access to Divisor Latches.
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 8
+        bitWidth: 24
+  - name: LSR
+    description: Line Status Register. Contains flags for transmit and receive status, including line errors.
+    addressOffset: 20
+    access: read-only
+    resetValue: 96
+    resetMask: 4294967295
+    readAction: modify
+    fields:
+      - name: RDR
+        description: Receiver Data Ready. LSR[0] is set when the RBR holds an unread character and is cleared when the USART RBR FIFO is empty.
+        enumeratedValues:
+          - name: EMPTY
+            description: Empty. RBR is empty.
+            value: 0
+          - name: DATA
+            description: Data. RBR contains valid data.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: OE
+        description: Overrun Error. The overrun error condition is set as soon as it occurs. A LSR read clears LSR[1]. LSR[1] is set when USART RSR has a new character assembled and the USART RBR FIFO is full. In this case, the USART RBR FIFO will not be overwritten and the character in the USART RSR will be lost.
+        enumeratedValues:
+          - name: INACTIVE
+            description: Inactive. Overrun error status is inactive.
+            value: 0
+          - name: ACTIVE
+            description: Active. Overrun error status is active.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: PE
+        description: 'Parity Error. When the parity bit of a received character is in the wrong state, a parity error occurs. A LSR read clears LSR[2]. Time of parity error detection is dependent on FCR[0]. Note: A parity error is associated with the character at the top of the USART RBR FIFO.'
+        enumeratedValues:
+          - name: INACTIVE
+            description: Inactive. Parity error status is inactive.
+            value: 0
+          - name: ACTIVE
+            description: Active. Parity error status is active.
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: FE
+        description: 'Framing Error. When the stop bit of a received character is a logic 0, a framing error occurs. A LSR read clears LSR[3]. The time of the framing error detection is dependent on FCR0. Upon detection of a framing error, the RX will attempt to re-synchronize to the data and assume that the bad stop bit is actually an early start bit. However, it cannot be assumed that the next received byte will be correct even if there is no Framing Error. Note: A framing error is associated with the character at the top of the USART RBR FIFO.'
+        enumeratedValues:
+          - name: INACTIVE
+            description: Inactive. Framing error status is inactive.
+            value: 0
+          - name: ACTIVE
+            description: Active. Framing error status is active.
+            value: 1
+        bitOffset: 3
+        bitWidth: 1
+      - name: BI
+        description: 'Break Interrupt. When RXD1 is held in the spacing state (all zeros) for one full character transmission (start, data, parity, stop), a break interrupt occurs. Once the break condition has been detected, the receiver goes idle until RXD1 goes to marking state (all ones). A LSR read clears this status bit. The time of break detection is dependent on FCR[0]. Note: The break interrupt is associated with the character at the top of the USART RBR FIFO.'
+        enumeratedValues:
+          - name: INACTIVE
+            description: Inactive. Break interrupt status is inactive.
+            value: 0
+          - name: ACTIVE
+            description: Active. Break interrupt status is active.
+            value: 1
+        bitOffset: 4
+        bitWidth: 1
+      - name: THRE
+        description: Transmitter Holding Register Empty. THRE is set immediately upon detection of an empty USART THR and is cleared on a THR write.
+        enumeratedValues:
+          - name: NOT_EMPTY
+            description: Not empty. THR contains valid data.
+            value: 0
+          - name: EMPTY
+            description: Empty. THR is empty.
+            value: 1
+        bitOffset: 5
+        bitWidth: 1
+      - name: TEMT
+        description: Transmitter Empty. TEMT is set when both THR and TSR are empty; TEMT is cleared when either the TSR or the THR contain valid data.
+        enumeratedValues:
+          - name: NOT_EMPTY
+            description: Not empty. THR and/or the TSR contains valid data.
+            value: 0
+          - name: EMPTY
+            description: Empty. THR and the TSR are empty.
+            value: 1
+        bitOffset: 6
+        bitWidth: 1
+      - name: RXFE
+        description: Error in RX FIFO. LSR[7] is set when a character with a RX error such as framing error, parity error or break interrupt, is loaded into the RBR. This bit is cleared when the LSR register is read and there are no subsequent errors in the USART FIFO.
+        enumeratedValues:
+          - name: NO_ERROR
+            description: No error. RBR contains no USART RX errors or FCR[0]=0.
+            value: 0
+          - name: ERROR
+            description: Error. USART RBR contains at least one USART RX error.
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: TXERR
+        description: Error in transmitted character.   A NACK response is given by the receiver in Smart card T=0 mode. This bit is cleared when the LSR register is read.
+        enumeratedValues:
+          - name: NO_ERROR
+            description: No error. No error (normal default condition).
+            value: 0
+          - name: NACK
+            description: NACK. A NACK response is received during Smart card T=0 operation.
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 9
+        bitWidth: 23
+  - name: SCR
+    description: Scratch Pad Register. Eight-bit temporary storage for software.
+    addressOffset: 28
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PAD
+        description: Scratch pad. A readable, writable byte.
+        bitOffset: 0
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 8
+        bitWidth: 24
+  - name: ACR
+    description: Auto-baud Control Register. Contains controls for the auto-baud feature.
+    addressOffset: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: START
+        description: Start bit. This bit is automatically cleared after auto-baud completion.
+        enumeratedValues:
+          - name: STOP
+            description: Stop. Auto-baud stop (auto-baud is not running).
+            value: 0
+          - name: START
+            description: Start. Auto-baud start (auto-baud is running). Auto-baud run bit. This bit is automatically cleared after auto-baud completion.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: MODE
+        description: Auto-baud mode select bit.
+        enumeratedValues:
+          - name: MODE_0
+            description: Mode 0.
+            value: 0
+          - name: MODE_1
+            description: Mode 1.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: AUTORESTART
+        description: Restart bit.
+        enumeratedValues:
+          - name: NO_RESTART
+            description: No restart.
+            value: 0
+          - name: RESTART
+            description: Restart. Restart in case of time-out (counter restarts at next USART Rx falling edge)
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 3
+        bitWidth: 5
+      - name: ABEOINTCLR
+        description: End of auto-baud interrupt clear bit (write-only).
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect. Writing a 0 has no impact.
+            value: 0
+          - name: CLEAR
+            description: Clear. Writing a 1 will clear the corresponding interrupt in the IIR.
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: ABTOINTCLR
+        description: Auto-baud time-out interrupt clear bit (write-only).
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect. Writing a 0 has no impact.
+            value: 0
+          - name: CLEAR
+            description: Clear. Writing a 1 will clear the corresponding interrupt in the IIR.
+            value: 1
+        bitOffset: 9
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 10
+        bitWidth: 22
+  - name: ICR
+    description: IrDA control register (USART3 only)
+    addressOffset: 36
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IRDAEN
+        description: IrDA mode enable.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. IrDA mode on USART3 is disabled, USART3 acts as a standard USART.
+            value: 0
+          - name: ENABLED
+            description: Enabled. IrDA mode on USART3 is enabled.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: IRDAINV
+        description: Serial input direction.
+        enumeratedValues:
+          - name: NOT_INVERTED
+            description: Not inverted. The serial input is not inverted.
+            value: 0
+          - name: INVERTED
+            description: Inverted. The serial input is inverted. This has no effect on the serial output.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: FIXPULSEEN
+        description: IrDA fixed pulse width mode.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. IrDA fixed pulse width mode disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. IrDA fixed pulse width mode enabled.
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: PULSEDIV
+        description: Configures the pulse when FixPulseEn = 1. See Table 885 for details.
+        bitOffset: 3
+        bitWidth: 3
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 6
+        bitWidth: 26
+  - name: FDR
+    description: Fractional Divider Register. Generates a clock input for the baud rate divider.
+    addressOffset: 40
+    access: read-write
+    resetValue: 16
+    resetMask: 4294967295
+    fields:
+      - name: DIVADDVAL
+        description: Baud rate generation pre-scaler divisor value.  If this field is 0, fractional baud rate generator will not impact the USART baud rate.
+        bitOffset: 0
+        bitWidth: 4
+      - name: MULVAL
+        description: Baud rate pre-scaler multiplier value.  This field must be greater or equal 1 for USART to operate properly, regardless of whether the fractional baud rate generator is used or not.
+        bitOffset: 4
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 8
+        bitWidth: 24
+  - name: OSR
+    description: Oversampling Register. Controls the degree of oversampling during each bit time.
+    addressOffset: 44
+    access: read-write
+    resetValue: 240
+    resetMask: 4294967295
+    fields:
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 0
+        bitWidth: 1
+      - name: OSFRAC
+        description: Fractional part of the oversampling ratio, in units of 1/8th of an input clock period. (001 = 0.125, ..., 111 = 0.875)
+        bitOffset: 1
+        bitWidth: 3
+      - name: OSINT
+        description: Integer part of the oversampling ratio, minus 1. The reset values equate to the normal operating mode of 16 input clocks per bit time.
+        bitOffset: 4
+        bitWidth: 4
+      - name: FDINT
+        description: In Smart Card mode, these bits act as a more-significant extension of the OSint field, allowing an oversampling ratio up to 2048 as required by ISO7816-3. In Smart Card mode, bits 14:4 should initially be set to 371, yielding an oversampling ratio of 372.
+        bitOffset: 8
+        bitWidth: 7
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 15
+        bitWidth: 17
+  - name: HDEN
+    description: Half-duplex enable Register
+    addressOffset: 64
+    access: read-write
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: HDEN
+        description: Half-duplex mode enable
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Disable half-duplex mode.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Enable half-duplex mode.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 1
+        bitWidth: 31
+  - name: SCICTRL
+    description: Smart card interface control register
+    addressOffset: 72
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SCIEN
+        description: Smart Card Interface Enable.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Smart card interface disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. synchronous half duplex smart card interface is enabled.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: NACKDIS
+        description: NACK response disable. Only applicable in T=0.
+        enumeratedValues:
+          - name: ENABLED
+            description: Enabled. A NACK response is enabled.
+            value: 0
+          - name: DISABLED
+            description: Disabled. A NACK response is inhibited.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: PROTSEL
+        description: Protocol selection as defined in the ISO7816-3 standard.
+        enumeratedValues:
+          - name: T_EQ_0
+            description: T = 0
+            value: 0
+          - name: T_EQ_1
+            description: T = 1
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 3
+        bitWidth: 2
+      - name: TXRETRY
+        description: Maximum number of retransmissions in case of a negative acknowledge (protocol T=0). When the retry counter is exceeded, the USART will be locked until the FIFO is cleared. A TX error interrupt is generated when enabled.
+        bitOffset: 5
+        bitWidth: 3
+      - name: GUARDTIME
+        description: Extra guard time. No extra guard time (0x0) results in a standard guard time as defined in ISO 7816-3, depending on the protocol type. A guard time of 0xFF indicates a minimal guard time as defined for the selected protocol.
+        bitOffset: 8
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 16
+        bitWidth: 16
+  - name: RS485CTRL
+    description: RS-485/EIA-485 Control. Contains controls to configure various aspects of RS-485/EIA-485 modes.
+    addressOffset: 76
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: NMMEN
+        description: NMM enable.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. RS-485/EIA-485 Normal Multidrop Mode (NMM) is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. RS-485/EIA-485 Normal Multidrop Mode (NMM) is enabled. In this mode, an address is detected when a received byte causes the USART to set the parity error and generate an interrupt.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: RXDIS
+        description: Receiver enable.
+        enumeratedValues:
+          - name: ENABLED
+            description: Enabled. The receiver is enabled.
+            value: 0
+          - name: DISABLED
+            description: Disabled.The receiver is disabled.
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: AADEN
+        description: AAD enable
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Auto Address Detect (AAD) is disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Auto Address Detect (AAD) is enabled.
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 3
+        bitWidth: 1
+      - name: DCTRL
+        description: Direction control for DIR pin.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Disable Auto Direction Control.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Enable Auto Direction Control.
+            value: 1
+        bitOffset: 4
+        bitWidth: 1
+      - name: OINV
+        description: Direction control pin polarity. This bit reverses the polarity of the direction control signal on the DIR pin.
+        enumeratedValues:
+          - name: LOW
+            description: Low. The direction control pin will be driven to logic 0 when the transmitter has data to be sent. It will be driven to logic 1 after the last bit of data has been transmitted.
+            value: 0
+          - name: HIGH
+            description: High. The direction control pin will be driven to logic 1 when the transmitter has data to be sent. It will be driven to logic 0 after the last bit of data has been transmitted.
+            value: 1
+        bitOffset: 5
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 6
+        bitWidth: 26
+  - name: RS485ADRMATCH
+    description: RS-485/EIA-485 address match. Contains the address match value for RS-485/EIA-485 mode.
+    addressOffset: 80
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ADRMATCH
+        description: Contains the address match value.
+        bitOffset: 0
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 8
+        bitWidth: 24
+  - name: RS485DLY
+    description: RS-485/EIA-485 direction control delay.
+    addressOffset: 84
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DLY
+        description: Contains the direction control delay value. This register works in conjunction with an 8-bit counter.
+        bitOffset: 0
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 8
+        bitWidth: 24
+  - name: SYNCCTRL
+    description: Synchronous mode control register.
+    addressOffset: 88
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SYNC
+        description: Enables synchronous mode.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled.
+            value: 0
+          - name: ENABLED
+            description: Enabled.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: CSRC
+        description: Clock source select.
+        enumeratedValues:
+          - name: SLAVE_MODE
+            description: Slave mode. Synchronous slave mode (SCLK in)
+            value: 0
+          - name: MASTER_MODE
+            description: Master mode. Synchronous master mode (SCLK out)
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: FES
+        description: Edge sampling.
+        enumeratedValues:
+          - name: RISING
+            description: Rising. RxD is sampled on the rising edge of SCLK.
+            value: 0
+          - name: FALLING
+            description: Falling. RxD is sampled on the falling edge of SCLK.
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: TSBYPASS
+        description: Transmit synchronization bypass in synchronous slave mode.
+        enumeratedValues:
+          - name: SYNCHRONIZED
+            description: Synchronized. The input clock is synchronized prior to being used in clock edge detection logic.
+            value: 0
+          - name: NOT_SYNCHRONIZED
+            description: Not synchronized. The input clock is not synchronized prior to being used in clock edge detection logic. This allows for a high er input clock rate at the expense of potential metastability.
+            value: 1
+        bitOffset: 3
+        bitWidth: 1
+      - name: CSCEN
+        description: Continuous master clock enable (used only when CSRC is 1)
+        enumeratedValues:
+          - name: ON_CHARACTER
+            description: On character. SCLK cycles only when characters are being sent on TxD.
+            value: 0
+          - name: CONTINUOUSLY
+            description: Continuously. SCLK runs continuously (characters can be received on RxD independently from transmission on TxD).
+            value: 1
+        bitOffset: 4
+        bitWidth: 1
+      - name: SSSDIS
+        description: Start/stop bits
+        enumeratedValues:
+          - name: SEND
+            description: Send. Send start and stop bits as in other modes.
+            value: 0
+          - name: DO_NOT_SEND
+            description: Do not send. Do not send start/stop bits.
+            value: 1
+        bitOffset: 5
+        bitWidth: 1
+      - name: CCCLR
+        description: Continuous clock clear
+        enumeratedValues:
+          - name: SOFTWARE
+            description: Software. CSCEN is under software control.
+            value: 0
+          - name: HARDWARE
+            description: Hardware. Hardware clears CSCEN after each character is received.
+            value: 1
+        bitOffset: 6
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved. The value read from a reserved bit is not defined.
+        bitOffset: 7
+        bitWidth: 25
+  - name: TER
+    description: Transmit Enable Register. Turns off USART transmitter for use with software flow control.
+    addressOffset: 92
+    access: read-write
+    resetValue: 1
+    resetMask: 4294967295
+    fields:
+      - name: TXEN
+        description: Transmit enable.  After reset transmission is enabled. When the TXEN bit is de-asserted, no data will be transmitted although data may be pending in the TSR or THR.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved, user software should not write ones to reserved bits. The value read from a reserved bit is not defined.
+        bitOffset: 1
+        bitWidth: 31
+addressBlocks:
+  - offset: 0
+    size: 768
+    usage: registers
+interrupts:
+  - name: USART

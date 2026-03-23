@@ -63,9 +63,18 @@ def open_svd(args, chip_name):
                 break
 
     if svd_path is None:
+        # Fallback: standalone SVD files in svd/NXP/ directory
+        standalone_dir = Path(__file__).parent.parent.parent / 'svd' / 'NXP'
+        for ext in ('.svd', '.xml'):
+            candidate = standalone_dir / f"{chip_name}{ext}"
+            if candidate.exists():
+                svd_path = candidate
+                break
+
+    if svd_path is None:
         return None
 
-    relpath = svd_path.relative_to(svd_dir).as_posix()
+    relpath = svd_path.relative_to(svd_dir).as_posix() if svd_path.is_relative_to(svd_dir) else svd_path.name
     root = svd.parse(str(svd_path))
     return root, {'svd_path': relpath}
 

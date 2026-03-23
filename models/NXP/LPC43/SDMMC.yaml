@@ -1,0 +1,1198 @@
+name: SDMMC
+description: SD/MMC
+groupName: SDMMC
+source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+registers:
+  - name: CTRL
+    description: Control Register
+    addressOffset: 0
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CONTROLLER_RESET
+        description: 'Controller reset. To reset controller, software should set bit to 1. This bit is auto-cleared after two AHB and two cclk_in clock cycles. This resets:  - BIU/CIU interface - CIU and state machines  - abort_read_data, send_irq_response, and read_wait bits of Control register  - start_cmd bit of Command register  Does not affect any registers or DMA interface, or FIFO. or host interrupts.'
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: RESET
+            description: Reset. Reset SD/MMC controller
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: FIFO_RESET
+        description: Fifo reset. To reset FIFO, software should set bit to 1. This bit is auto-cleared after completion of reset operation. auto-cleared after two AHB clocks.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: RESET
+            description: Reset. Reset to data FIFO To reset FIFO pointers
+            value: 1
+        bitOffset: 1
+        bitWidth: 1
+      - name: DMA_RESET
+        description: Dma reset. To reset DMA interface, software should set bit to 1. This bit is auto-cleared after two AHB clocks.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: RESET
+            description: Reset. Reset internal DMA interface control logic
+            value: 1
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 3
+        bitWidth: 1
+      - name: INT_ENABLE
+        description: Global interrupt enable/disable bit. The int port is 1 only when this bit is 1 and one or more unmasked interrupts are set.
+        enumeratedValues:
+          - name: DISABLE_INTERRUPTS
+            description: Disable interrupts
+            value: 0
+          - name: ENABLE_INTERRUPTS
+            description: Enable interrupts
+            value: 1
+        bitOffset: 4
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved. Always write this bit as 0.
+        bitOffset: 5
+        bitWidth: 1
+      - name: READ_WAIT
+        description: Read/wait. For sending read-wait to SDIO cards.
+        enumeratedValues:
+          - name: CLEAR_READ_WAIT
+            description: Clear read wait
+            value: 0
+          - name: ASSERT_READ_WAIT
+            description: Assert read wait
+            value: 1
+        bitOffset: 6
+        bitWidth: 1
+      - name: SEND_IRQ_RESPONSE
+        description: Send irq response. This bit automatically clears once response is sent. To wait for MMC card interrupts, the host issues CMD40, and the SD/MMC controller waits for an interrupt response from the MMC card. In the meantime, if the host wants the SD/MMC interface to exit waiting for interrupt state, it can set this bit, at which time the SD/MMC interface command state-machine sends a CMD40 response on the bus and returns to idle state.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change
+            value: 0
+          - name: SEND_AUTO_IRQ_RESPON
+            description: Send auto IRQ response
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: ABORT_READ_DATA
+        description: Abort read data. Used in SDIO card suspend sequence.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change
+            value: 0
+          - name: ABORT
+            description: Abort. After suspend command is issued during read-transfer, software polls card to find when suspend happened. Once suspend occurs, software sets bit to reset data state-machine, which is waiting for next block of data. This bit automatically clears once data state machine resets to idle. Used in SDIO card suspend sequence.
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: SEND_CCSD
+        description: 'Send ccsd. When set, the SD/MMC controller sends CCSD to the CE-ATA device. Software sets this bit only if current command is expecting CCS (that is, RW_BLK) and interrupts are enabled in CE-ATA device. Once the CCSD pattern is sent to device, the SD/MMC interface automatically clears send_ccsd bit. It also sets Command Done (CD) bit in RINTSTS register and generates interrupt to host if Command Done interrupt is not masked.  NOTE: Once send_ccsd bit is set, it takes two card clock cycles to drive the CCSD on the CMD line. Due to this, during the boundary conditions it may happen that CCSD is sent to the CE-ATA device, even if the device signalled CCS.'
+        enumeratedValues:
+          - name: CLEAR_BIT
+            description: Clear bit if the SD/MMC controller does not reset the bit.
+            value: 0
+          - name: SEND_COMMAND_COMPLET
+            description: Send Command Completion Signal Disable (CCSD) to CE-ATA device
+            value: 1
+        bitOffset: 9
+        bitWidth: 1
+      - name: SEND_AUTO_STOP
+        description: 'Send auto stop ccsd. NOTE: Always set send_auto_stop_ccsd and send_ccsd bits together; send_auto_stop_ccsd should not be set independent of send_ccsd. When set, the SD/MMC interface automatically sends internallygenerated STOP command (CMD12) to CE-ATA device. After sending internally-generated STOP command, Auto Command Done (ACD) bit in RINTSTS is set and generates interrupt to host if Auto Command Done interrupt is not masked. After sending the CCSD, the SD/MMC interface automatically clears send_auto_stop_ccsd bit.'
+        enumeratedValues:
+          - name: CLEAR_THIS_BIT_IF_TH
+            description: Clear this bit if the SD/MMC controller does not reset the bit.
+            value: 0
+          - name: SEND_INTERNALLY_GENE
+            description: Send internally generated STOP after sending CCSD to CE-ATA device.
+            value: 1
+        bitOffset: 10
+        bitWidth: 1
+      - name: CEATA_DEVICE_INTERRUPT_STATUS
+        description: CEATA device interrupt status. Software should appropriately write to this bit after power-on reset or any other reset to CE-ATA device. After reset, usually CE-ATA device interrupt is disabled (nIEN = 1). If the host enables CE-ATA device interrupt, then software should set this bit.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Interrupts not enabled in CE-ATA device (nIEN = 1 in ATA control register)
+            value: 0
+          - name: ENABLED
+            description: Enabled. Interrupts are enabled in CE-ATA device (nIEN = 0 in ATA control register)
+            value: 1
+        bitOffset: 11
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 12
+        bitWidth: 4
+      - name: CARD_VOLTAGE_A0
+        description: Controls the state of the SD_VOLT0 pin. SD/MMC card voltage control is not implemented.
+        bitOffset: 16
+        bitWidth: 1
+      - name: CARD_VOLTAGE_A1
+        description: Controls the state of the SD_VOLT1 pin. SD/MMC card voltage control is not implemented.
+        bitOffset: 17
+        bitWidth: 1
+      - name: CARD_VOLTAGE_A2
+        description: Controls the state of the SD_VOLT2 pin. SD/MMC card voltage control is not implemented.
+        bitOffset: 18
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 19
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved. Always write this bit as 0.
+        bitOffset: 24
+        bitWidth: 1
+      - name: USE_INTERNAL_DMAC
+        description: SD/MMC DMA use.
+        enumeratedValues:
+          - name: HOST
+            description: Host. The host performs data transfers through the slave interface
+            value: 0
+          - name: DMA
+            description: DMA. Internal DMA used for data transfer
+            value: 1
+        bitOffset: 25
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 26
+        bitWidth: 6
+  - name: PWREN
+    description: Power Enable Register
+    addressOffset: 4
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: POWER_ENABLE
+        description: 'Power on/off switch for card; once power is turned on, software should wait for regulator/switch ramp-up time before trying to initialize card.  0 - power off  1 - power on  Optional feature: port can be used as general-purpose output on the SD_POW pin.'
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 1
+        bitWidth: 31
+  - name: CLKDIV
+    description: Clock Divider Register
+    addressOffset: 8
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CLK_DIVIDER0
+        description: Clock divider-0 value. Clock division is 2*n. For example, value of 0 means divide by 2*0 = 0 (no division, bypass), value of 1 means divide by 2*1 = 2, value of   ff means divide by 2*255 = 510, and so on.
+        bitOffset: 0
+        bitWidth: 8
+      - name: CLK_DIVIDER1
+        description: Clock divider-1 value. Clock division is 2*n. For example, value of 0 means divide by 2*0 = 0 (no division, bypass), value of 1 means divide by 2*1 = 2, value of   ff means divide by 2*255 = 510, and so on. In MMC-Ver3.3-only mode, bits not implemented because only one clock divider is supported.
+        bitOffset: 8
+        bitWidth: 8
+      - name: CLK_DIVIDER2
+        description: Clock divider-2 value. Clock division is 2*n. For example, value of 0 means divide by 2*0 = 0 (no division, bypass), value of 1 means divide by 2*1 = 2, value of   ff means divide by 2*255 = 510, and so on. In MMC-Ver3.3-only mode, bits not implemented because only one clock divider is supported.
+        bitOffset: 16
+        bitWidth: 8
+      - name: CLK_DIVIDER3
+        description: Clock divider-3 value. Clock division is 2*n. For example, value of 0 means divide by 2*0 = 0 (no division, bypass), a value of 1 means divide by 2*1 = 2, a value of   ff means divide by 2*255 = 510, and so on.  In MMC-Ver3.3-only mode, bits not implemented because only one clock divider is supported. divide by 2*0 = 0 (no division, bypass), value of 1 means divide by 2*1 = 2, value of   ff means divide by 2*255 = 510, and so on. In MMC-Ver3.3-only mode, bits not implemented because only one clock divider is supported.
+        bitOffset: 24
+        bitWidth: 8
+  - name: CLKSRC
+    description: SD Clock Source Register
+    addressOffset: 12
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CLK_SOURCE
+        description: Clock divider source for SD card.  00 - Clock divider 0  01 - Clock divider 1  10 - Clock divider 2  11 - Clock divider 3 In MMC-Ver3.3-only controller, only one clock divider supported. The cclk_out is always from clock divider 0, and this register is not implemented.
+        bitOffset: 0
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 1
+        bitWidth: 31
+  - name: CLKENA
+    description: Clock Enable Register
+    addressOffset: 16
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CCLK_ENABLE
+        description: Clock-enable control for SD card clock. One MMC card clock supported.  0 - Clock disabled  1 - Clock enabled
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 1
+        bitWidth: 15
+      - name: CCLK_LOW_POWER
+        description: Low-power control for SD card clock. One MMC card clock supported.  0 - Non-low-power mode  1 - Low-power mode;  stop clock when card in IDLE (should be normally set to only MMC and SD memory cards; for SDIO cards, if interrupts must be detected, clock should not be stopped).
+        bitOffset: 16
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 17
+        bitWidth: 15
+  - name: TMOUT
+    description: Time-out Register
+    addressOffset: 20
+    access: read-write
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: RESPONSE_TIMEOUT
+        description: Response time-out value. Value is in number of card output clocks - cclk_out.
+        bitOffset: 0
+        bitWidth: 8
+      - name: DATA_TIMEOUT
+        description: Value for card Data Read time-out; same value also used for Data Starvation by Host time-out. Value is in number of card output clocks - cclk_out of selected card. Starvation by Host time-out. Value is in number of card output clocks - cclk_out of selected card.
+        bitOffset: 8
+        bitWidth: 24
+  - name: CTYPE
+    description: Card Type Register
+    addressOffset: 24
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CARD_WIDTH0
+        description: 'Indicates if card is 1-bit or 4-bit:  0 - 1-bit mode  1 - 4-bit mode  1 and 4-bit modes only work when 8-bit mode in CARD_WIDTH1 is not enabled (bit 16 in this register is set to 0).'
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 1
+        bitWidth: 15
+      - name: CARD_WIDTH1
+        description: 'Indicates if card is 8-bit:  0 - Non 8-bit mode  1 - 8-bit mode.'
+        bitOffset: 16
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 17
+        bitWidth: 15
+  - name: BLKSIZ
+    description: Block Size Register
+    addressOffset: 28
+    access: read-write
+    resetValue: 512
+    resetMask: 4294967295
+    fields:
+      - name: BLOCK_SIZE
+        description: Block size
+        bitOffset: 0
+        bitWidth: 16
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 16
+  - name: BYTCNT
+    description: Byte Count Register
+    addressOffset: 32
+    access: read-write
+    resetValue: 512
+    resetMask: 4294967295
+    fields:
+      - name: BYTE_COUNT
+        description: Number of bytes to be transferred; should be integer multiple of Block Size for block transfers. For undefined number of byte transfers, byte count should be set to 0. When byte count is set to 0, it is responsibility of host to explicitly send stop/abort command to terminate data transfer.
+        bitOffset: 0
+        bitWidth: 32
+  - name: INTMASK
+    description: Interrupt Mask Register
+    addressOffset: 36
+    access: read-write
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: CDET
+        description: Card detect. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RE
+        description: Response error. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 1
+        bitWidth: 1
+      - name: CDONE
+        description: Command done. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 2
+        bitWidth: 1
+      - name: DTO
+        description: Data transfer over. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 3
+        bitWidth: 1
+      - name: TXDR
+        description: Transmit FIFO data request. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 4
+        bitWidth: 1
+      - name: RXDR
+        description: Receive FIFO data request. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 5
+        bitWidth: 1
+      - name: RCRC
+        description: Response CRC error. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 6
+        bitWidth: 1
+      - name: DCRC
+        description: Data CRC error. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 7
+        bitWidth: 1
+      - name: RTO
+        description: Response time-out. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 8
+        bitWidth: 1
+      - name: DRTO
+        description: Data read time-out. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 9
+        bitWidth: 1
+      - name: HTO
+        description: Data starvation-by-host time-out (HTO) /Volt_switch_int. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 10
+        bitWidth: 1
+      - name: FRUN
+        description: FIFO underrun/overrun error. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 11
+        bitWidth: 1
+      - name: HLE
+        description: Hardware locked write error. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 12
+        bitWidth: 1
+      - name: SBE
+        description: Start-bit error. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 13
+        bitWidth: 1
+      - name: ACD
+        description: Auto command done. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 14
+        bitWidth: 1
+      - name: EBE
+        description: End-bit error (read)/Write no CRC. Bits used to mask unwanted interrupts. Value of 0 masks interrupt; value of 1 enables interrupt.
+        bitOffset: 15
+        bitWidth: 1
+      - name: SDIO_INT_MASK
+        description: Mask SDIO interrupt. When masked, SDIO interrupt detection for card is disabled. A 0 masks an interrupt, and 1 enables an interrupt. In MMC-Ver3.3-only mode, this bit is always 0.
+        bitOffset: 16
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 17
+        bitWidth: 15
+  - name: CMDARG
+    description: Command Argument Register
+    addressOffset: 40
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CMD_ARG
+        description: Value indicates command argument to be passed to card.
+        bitOffset: 0
+        bitWidth: 32
+  - name: CMD
+    description: Command Register
+    addressOffset: 44
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CMD_INDEX
+        description: Command index
+        bitOffset: 0
+        bitWidth: 6
+      - name: RESPONSE_EXPECT
+        description: Response expect
+        enumeratedValues:
+          - name: NONE
+            description: None. No response expected from card
+            value: 0
+          - name: EXPECTED
+            description: Expected. Response expected from card
+            value: 1
+        bitOffset: 6
+        bitWidth: 1
+      - name: RESPONSE_LENGTH
+        description: Response length
+        enumeratedValues:
+          - name: SHORT
+            description: Short. Short response expected from card
+            value: 0
+          - name: LONG
+            description: Long. Long response expected from card
+            value: 1
+        bitOffset: 7
+        bitWidth: 1
+      - name: CHECK_RESPONSE_CRC
+        description: Check response crc. Some of command responses do not return valid CRC bits. Software should disable CRC checks for those commands in order to disable CRC checking by controller.
+        enumeratedValues:
+          - name: DO_NOT_CHECK_RESPONS
+            description: Do not check response CRC
+            value: 0
+          - name: CHECK_RESPONSE_CRC
+            description: Check response CRC
+            value: 1
+        bitOffset: 8
+        bitWidth: 1
+      - name: DATA_EXPECTED
+        description: Data expected
+        enumeratedValues:
+          - name: NONE
+            description: None. No data transfer expected (read/write)
+            value: 0
+          - name: DATA
+            description: Data. Data transfer expected (read/write)
+            value: 1
+        bitOffset: 9
+        bitWidth: 1
+      - name: READ_WRITE
+        description: read/write. Don't care if no data expected from card.
+        enumeratedValues:
+          - name: READ_FROM_CARD
+            description: Read from card
+            value: 0
+          - name: WRITE_TO_CARD
+            description: Write to card
+            value: 1
+        bitOffset: 10
+        bitWidth: 1
+      - name: TRANSFER_MODE
+        description: Transfer mode. Don't care if no data expected.
+        enumeratedValues:
+          - name: BLOCK_DATA_TRANSFER
+            description: Block data transfer command
+            value: 0
+          - name: STREAM_DATA_TRANSFER
+            description: Stream data transfer command
+            value: 1
+        bitOffset: 11
+        bitWidth: 1
+      - name: SEND_AUTO_STOP
+        description: "Send auto stop. When set, the SD/MMC interface sends stop command to SD_MMC_CEATA cards at end of data transfer. Refer to Table 339 to determine:  - when send_auto_stop bit should be set, since some data transfers do not need explicit stop commands  - open-ended transfers that software should explicitly send to stop command  Additionally, when   resume is sent to resume - suspended memory access of SD-Combo card - bit should be set correctly if suspended data transfer needs send_auto_stop. Don't care if no data expected from card."
+        enumeratedValues:
+          - name: NO_STOP_COMMAND_SENT
+            description: No stop command sent at end of data transfer
+            value: 0
+          - name: SEND_STOP_COMMAND_AT
+            description: Send stop command at end of data transfer
+            value: 1
+        bitOffset: 12
+        bitWidth: 1
+      - name: WAIT_PRVDATA_COMPLETE
+        description: Wait prvdata complete. The wait_prvdata_complete = 0 option typically used to query status of card during data transfer or to stop current data transfer; card_number should be same as in previous command.
+        enumeratedValues:
+          - name: SEND
+            description: Send. Send command at once, even if previous data transfer has not completed.
+            value: 0
+          - name: WAIT
+            description: Wait. Wait for previous data transfer completion before sending command.
+            value: 1
+        bitOffset: 13
+        bitWidth: 1
+      - name: STOP_ABORT_CMD
+        description: Stop abort command. When open-ended or predefined data transfer is in progress, and host issues stop or abort command to stop data transfer, bit should be set so that command/data state-machines of CIU can return correctly to idle state. This is also applicable for Boot mode transfers. To Abort boot mode, this bit should be set along with CMD[26] = disable_boot.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Neither stop nor abort command to stop current data transfer in progress. If abort is sent to function-number currently selected or not in data-transfer mode, then bit should be set to 0.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Stop or abort command intended to stop current data transfer in progress.
+            value: 1
+        bitOffset: 14
+        bitWidth: 1
+      - name: SEND_INITIALIZATION
+        description: Send initialization. After power on, 80 clocks must be sent to card for initialization before sending any commands to card. Bit should be set while sending first command to card so that controller will initialize clocks before sending command to card. This bit should not be set for either of the boot modes (alternate or mandatory).
+        enumeratedValues:
+          - name: 'NO'
+            description: No. Do not send initialization sequence (80 clocks of 1) before sending this command.
+            value: 0
+          - name: SEND
+            description: Send. Send initialization sequence before sending this command.
+            value: 1
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved. Always write as 0.
+        bitOffset: 16
+        bitWidth: 5
+      - name: UPDATE_CLOCK_REGISTERS_ONLY
+        description: 'Update clock registers only. Following register values transferred into card clock domain: CLKDIV, CLRSRC, CLKENA. Changes card clocks (change frequency, truncate off or on, and set low-frequency mode); provided in order to change clock frequency or stop clock without having to send command to cards. During normal command sequence, when update_clock_registers_only = 0, following control registers are transferred from BIU to CIU: CMD, CMDARG, TMOUT, CTYPE, BLKSIZ, BYTCNT. CIU uses new register values for new command sequence to card(s). When bit is set, there are no Command Done interrupts because no command is sent to SD_MMC_CEATA cards.'
+        enumeratedValues:
+          - name: NORMAL
+            description: Normal. Normal command sequence
+            value: 0
+          - name: 'NO'
+            description: No. Do not send commands, just update clock register value into card clock domain
+            value: 1
+        bitOffset: 21
+        bitWidth: 1
+      - name: READ_CEATA_DEVICE
+        description: Read ceata device. Software should set this bit to indicate that CE-ATA device is being accessed for read transfer. This bit is used to disable read data time-out indication while performing CE-ATA read transfers. Maximum value of I/O transmission delay can be no less than 10 seconds.The SD/MMC interface should not indicate read data time-out while waiting for data from CE-ATA device.
+        enumeratedValues:
+          - name: NO_READ
+            description: No read. Host is not performing read access (RW_REG or RW_BLK) towards CE-ATA device.
+            value: 0
+          - name: READ
+            description: Read. Host is performing read access (RW_REG or RW_BLK) towards CE-ATA device.
+            value: 1
+        bitOffset: 22
+        bitWidth: 1
+      - name: CCS_EXPECTED
+        description: CCS expected. If the command expects Command Completion Signal (CCS) from the CE-ATA device, the software should set this control bit. The SD/MMC controller sets the Data Transfer Over (DTO) bit in the RINTSTS register and generates an interrupt to the host if the Data Transfer Over interrupt is not masked.
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. Interrupts are not enabled in CE-ATA device (nIEN = 1 in ATA control register), or command does not expect CCS from device.
+            value: 0
+          - name: ENABLED
+            description: Enabled. Interrupts are enabled in CE-ATA device (nIEN = 0), and RW_BLK command expects command completion signal from CE-ATA device.
+            value: 1
+        bitOffset: 23
+        bitWidth: 1
+      - name: ENABLE_BOOT
+        description: Enable Boot - this bit should be set only for mandatory boot mode. When Software sets this bit along with start_cmd, CIU starts the boot sequence for the corresponding card by asserting the CMD line low. Do NOT set disable_boot and enable_boot together.
+        bitOffset: 24
+        bitWidth: 1
+      - name: EXPECT_BOOT_ACK
+        description: Expect Boot Acknowledge. When Software sets this bit along with enable_boot, CIU expects a boot acknowledge start pattern of 0-1-0 from the selected card.
+        bitOffset: 25
+        bitWidth: 1
+      - name: DISABLE_BOOT
+        description: Disable Boot. When software sets this bit along with start_cmd, CIU terminates the boot operation. Do NOT set disable_boot and enable_boot together.
+        bitOffset: 26
+        bitWidth: 1
+      - name: BOOT_MODE
+        description: Boot Mode
+        enumeratedValues:
+          - name: MANDATORY_BOOT_OPERA
+            description: Mandatory Boot operation
+            value: 0
+          - name: ALTERNATE_BOOT_OPERA
+            description: Alternate Boot operation
+            value: 1
+        bitOffset: 27
+        bitWidth: 1
+      - name: VOLT_SWITCH
+        description: Voltage switch bit
+        enumeratedValues:
+          - name: DISABLED
+            description: Disabled. No voltage switching
+            value: 0
+          - name: ENABLED
+            description: Enabled. Voltage switching enabled; must be set for CMD11 only
+            value: 1
+        bitOffset: 28
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 29
+        bitWidth: 2
+      - name: START_CMD
+        description: Start command. Once command is taken by CIU, this bit is cleared. When bit is set, host should not attempt to write to any command registers. If write is attempted, hardware lock error is set in raw interrupt register. Once command is sent and response is received from SD_MMC_CEATA cards, Command Done bit is set in the raw interrupt register.
+        bitOffset: 31
+        bitWidth: 1
+  - name: RESP0
+    description: Response Register 0
+    addressOffset: 48
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESPONSE0
+        description: Bit[31:0] of response
+        bitOffset: 0
+        bitWidth: 32
+  - name: RESP1
+    description: Response Register 1
+    addressOffset: 52
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESPONSE1
+        description: Register represents bit[63:32] of long response. When CIU sends auto-stop command, then response is saved in register. Response for previous command sent by host is still preserved in Response 0 register. Additional auto-stop issued only for data transfer commands, and response type is always   short for them. For information on when CIU sends auto-stop commands, refer to   Auto-Stop .
+        bitOffset: 0
+        bitWidth: 32
+  - name: RESP2
+    description: Response Register 2
+    addressOffset: 56
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESPONSE2
+        description: Bit[95:64] of long response
+        bitOffset: 0
+        bitWidth: 32
+  - name: RESP3
+    description: Response Register 3
+    addressOffset: 60
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RESPONSE3
+        description: Bit[127:96] of long response
+        bitOffset: 0
+        bitWidth: 32
+  - name: MINTSTS
+    description: Masked Interrupt Status Register
+    addressOffset: 64
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CDET
+        description: Card detect. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RE
+        description: Response error. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 1
+        bitWidth: 1
+      - name: CDONE
+        description: Command done. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 2
+        bitWidth: 1
+      - name: DTO
+        description: Data transfer over. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 3
+        bitWidth: 1
+      - name: TXDR
+        description: Transmit FIFO data request. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 4
+        bitWidth: 1
+      - name: RXDR
+        description: Receive FIFO data request. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 5
+        bitWidth: 1
+      - name: RCRC
+        description: Response CRC error. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 6
+        bitWidth: 1
+      - name: DCRC
+        description: Data CRC error. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 7
+        bitWidth: 1
+      - name: RTO
+        description: Response time-out. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 8
+        bitWidth: 1
+      - name: DRTO
+        description: Data read time-out. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 9
+        bitWidth: 1
+      - name: HTO
+        description: Data starvation-by-host time-out (HTO). Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 10
+        bitWidth: 1
+      - name: FRUN
+        description: FIFO underrun/overrun error. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 11
+        bitWidth: 1
+      - name: HLE
+        description: Hardware locked write error. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 12
+        bitWidth: 1
+      - name: SBE
+        description: Start-bit error. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 13
+        bitWidth: 1
+      - name: ACD
+        description: Auto command done. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 14
+        bitWidth: 1
+      - name: EBE
+        description: End-bit error (read)/write no CRC. Interrupt enabled only if corresponding bit in interrupt mask register is set.
+        bitOffset: 15
+        bitWidth: 1
+      - name: SDIO_INTERRUPT
+        description: Interrupt from SDIO card. SDIO interrupt for card enabled only if corresponding sdio_int_mask bit is set in Interrupt mask register (mask bit 1 enables interrupt; 0 masks interrupt).  0 - No SDIO interrupt from card  1 - SDIO interrupt from card  In MMC-Ver3.3-only mode, this bit is always 0.
+        bitOffset: 16
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 17
+        bitWidth: 15
+  - name: RINTSTS
+    description: Raw Interrupt Status Register
+    addressOffset: 68
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CDET
+        description: Card detect. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RE
+        description: Response error. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 1
+        bitWidth: 1
+      - name: CDONE
+        description: Command done. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 2
+        bitWidth: 1
+      - name: DTO
+        description: Data transfer over. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 3
+        bitWidth: 1
+      - name: TXDR
+        description: Transmit FIFO data request. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 4
+        bitWidth: 1
+      - name: RXDR
+        description: Receive FIFO data request. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 5
+        bitWidth: 1
+      - name: RCRC
+        description: Response CRC error. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 6
+        bitWidth: 1
+      - name: DCRC
+        description: Data CRC error. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 7
+        bitWidth: 1
+      - name: RTO_BAR
+        description: Response time-out (RTO)/Boot Ack Received (BAR). Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 8
+        bitWidth: 1
+      - name: DRTO_BDS
+        description: Data read time-out (DRTO)/Boot Data Start (BDS). Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 9
+        bitWidth: 1
+      - name: HTO
+        description: Data starvation-by-host time-out (HTO). Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status./Volt_switch_int
+        bitOffset: 10
+        bitWidth: 1
+      - name: FRUN
+        description: FIFO underrun/overrun error. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 11
+        bitWidth: 1
+      - name: HLE
+        description: Hardware locked write error. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 12
+        bitWidth: 1
+      - name: SBE
+        description: Start-bit error. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 13
+        bitWidth: 1
+      - name: ACD
+        description: Auto command done. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 14
+        bitWidth: 1
+      - name: EBE
+        description: End-bit error (read)/write no CRC. Writes to bits clear status bit. Value of 1 clears status bit, and value of 0 leaves bit intact. Bits are logged regardless of interrupt mask status.
+        bitOffset: 15
+        bitWidth: 1
+      - name: SDIO_INTERRUPT
+        description: Interrupt from SDIO card. Writes to these bits clear them. Value of 1 clears bit and 0 leaves bit intact.  0 - No SDIO interrupt from card  1 - SDIO interrupt from card  In MMC-Ver3.3-only mode, bits always 0. Bits are logged regardless of interrupt-mask status.
+        bitOffset: 16
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 17
+        bitWidth: 15
+  - name: STATUS
+    description: Status Register
+    addressOffset: 72
+    access: read-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: FIFO_RX_WATERMARK
+        description: FIFO reached Receive watermark level; not qualified with data transfer.
+        bitOffset: 0
+        bitWidth: 1
+      - name: FIFO_TX_WATERMARK
+        description: FIFO reached Transmit watermark level; not qualified with data transfer.
+        bitOffset: 1
+        bitWidth: 1
+      - name: FIFO_EMPTY
+        description: FIFO is empty status
+        bitOffset: 2
+        bitWidth: 1
+      - name: FIFO_FULL
+        description: FIFO is full status
+        bitOffset: 3
+        bitWidth: 1
+      - name: CMDFSMSTATES
+        description: 'Command FSM states:  0 - Idle  1 - Send init sequence  2 - Tx cmd start bit  3 - Tx cmd tx bit  4 - Tx cmd index + arg  5 - Tx cmd crc7  6 - Tx cmd end bit  7 - Rx resp start bit  8 - Rx resp IRQ response  9 - Rx resp tx bit  10 - Rx resp cmd idx  11 - Rx resp data  12 - Rx resp crc7  13 - Rx resp end bit  14 - Cmd path wait NCC  15 - Wait; CMD-to-response turnaround  NOTE: The command FSM state is represented using 19 bits. The STATUS Register(7:4) has 4 bits to represent the command FSM states. Using these 4 bits, only 16 states can be represented. Thus three states cannot be represented in the STATUS(7:4) register. The three states that are not represented in the STATUS Register(7:4) are:  - Bit 16 - Wait for CCS - Bit 17 - Send CCSD  - Bit 18 - Boot Mode  Due to this, while command FSM is in   Wait for CCS state or   Send CCSD or   Boot Mode, the Status register indicates status as 0 for the bit field 7:4.'
+        bitOffset: 4
+        bitWidth: 4
+      - name: DATA_3_STATUS
+        description: Raw selected card_data[3]; checks whether card is present  0 - card not present  1 - card present
+        bitOffset: 8
+        bitWidth: 1
+      - name: DATA_BUSY
+        description: Inverted version of raw selected card_data[0]  0 - card data not busy  1 - card data busy
+        bitOffset: 9
+        bitWidth: 1
+      - name: DATA_STATE_MC_BUSY
+        description: Data transmit or receive state-machine is busy
+        bitOffset: 10
+        bitWidth: 1
+      - name: RESPONSE_INDEX
+        description: Index of previous response, including any auto-stop sent by core.
+        bitOffset: 11
+        bitWidth: 6
+      - name: FIFO_COUNT
+        description: FIFO count - Number of filled locations in FIFO
+        bitOffset: 17
+        bitWidth: 13
+      - name: DMA_ACK
+        description: DMA acknowledge signal state
+        bitOffset: 30
+        bitWidth: 1
+      - name: DMA_REQ
+        description: DMA request signal state
+        bitOffset: 31
+        bitWidth: 1
+  - name: FIFOTH
+    description: FIFO Threshold Watermark Register
+    addressOffset: 76
+    access: read-write
+    resetValue: 260046848
+    resetMask: 4294967295
+    fields:
+      - name: TX_WMARK
+        description: 'FIFO threshold watermark level when transmitting data to card. When FIFO data count is less than or equal to this number, DMA/FIFO request is raised. If Interrupt is enabled, then interrupt occurs. During end of packet, request or interrupt is generated, regardless of threshold programming. In non-DMA mode, when transmit FIFO threshold (TXDR) interrupt is enabled, then interrupt is generated instead of DMA request. During end of packet, on last interrupt, host is responsible for filling FIFO with only required remaining bytes (not before FIFO is full or after CIU completes data transfers, because FIFO may not be empty). In DMA mode, at end of packet, if last transfer is less than burst size, DMA controller does single cycles until required bytes are transferred. 12 bits - 1 bit less than FIFO-count of status register, which is 13 bits. Limitation: TX_WMark >= 1; Recommended value: TX_WMARK = 16; (means less than or equal to FIFO_DEPTH/2).'
+        bitOffset: 0
+        bitWidth: 12
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 12
+        bitWidth: 4
+      - name: RX_WMARK
+        description: 'FIFO threshold watermark level when receiving data to card. When FIFO data count reaches greater than this number, DMA/FIFO request is raised. During end of packet, request is generated regardless of threshold programming in order to complete any remaining data. In non-DMA mode, when receiver FIFO threshold (RXDR) interrupt is enabled, then interrupt is generated instead of DMA request. During end of packet, interrupt is not generated if threshold programming is larger than any remaining data. It is responsibility of host to read remaining bytes on seeing Data Transfer Done interrupt. In DMA mode, at end of packet, even if remaining bytes are less than threshold, DMA request does single transfers to flush out any remaining bytes before Data Transfer Done interrupt is set. 12 bits - 1 bit less than FIFO-count of status register, which is 13 bits. Limitation: RX_WMark less than FIFO_DEPTH-2 Recommended: RX_WMARK = 15; (means greater than (FIFO_DEPTH/2) - 1)  NOTE: In DMA mode during CCS time-out, the DMA does not generate the request at the end of packet, even if remaining bytes are less than threshold. In this case, there will be some data left in the FIFO. It is the responsibility of the application to reset the FIFO after the CCS time-out.'
+        bitOffset: 16
+        bitWidth: 12
+      - name: DMA_MTS
+        description: 'Burst size of multiple transaction; should be programmed same as DW-DMA controller multiple-transaction-size SRC/DEST_MSIZE.The units for transfers is the H_DATA_WIDTH parameter. A single transfer (dw_dma_single assertion in case of Non DW DMA interface) would be signalled based on this value. Value should be sub-multiple of (RX_WMark + 1) and (32 - TX_WMark). For example, if FIFO_DEPTH = 16, FDATA_WIDTH = H_DATA_WIDTH  Allowed combinations for MSize and TX_WMark are:  MSize = 1, TX_WMARK = 1-15  MSize = 4, TX_WMark = 8  MSize = 4, TX_WMark = 4  MSize = 4, TX_WMark = 12  MSize = 8, TX_WMark = 8  MSize = 8, TX_WMark = 4.  Allowed combinations for MSize and RX_WMark are:  MSize = 1, RX_WMARK = 0-14  MSize = 4, RX_WMark = 3  MSize = 4, RX_WMark = 7  MSize = 4, RX_WMark = 11  MSize = 8, RX_WMark = 7  MSize = 8, RX_WMark = 11  Recommended: MSize = 8, TX_WMark = 8, RX_WMark = 7'
+        enumeratedValues:
+          - name: 1_TRANSFER
+            description: 1 transfer
+            value: 0
+          - name: 4_TRANSFERS
+            description: 4 transfers
+            value: 1
+          - name: 8_TRANSFERS
+            description: 8 transfers
+            value: 2
+          - name: 16_TRANSFERS
+            description: 16 transfers
+            value: 3
+          - name: 32_TRANSFERS
+            description: 32 transfers
+            value: 4
+          - name: 64_TRANSFERS
+            description: 64 transfers
+            value: 5
+          - name: 128_TRANSFERS
+            description: 128 transfers
+            value: 6
+          - name: 256_TRANSFERS
+            description: 256 transfers
+            value: 7
+        bitOffset: 28
+        bitWidth: 3
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 31
+        bitWidth: 1
+  - name: CDETECT
+    description: Card Detect Register
+    addressOffset: 80
+    access: read-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: CARD_DETECT
+        description: Card detect. 0 represents presence of card.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 1
+        bitWidth: 31
+  - name: WRTPRT
+    description: Write Protect Register
+    addressOffset: 84
+    access: read-only
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: WRITE_PROTECT
+        description: Write protect. 1 represents write protection.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 1
+        bitWidth: 31
+  - name: TCBCNT
+    description: Transferred CIU Card Byte Count Register
+    addressOffset: 92
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: TRANS_CARD_BYTE_COUNT
+        description: Number of bytes transferred by CIU unit to card.  Register should be read only after data transfer completes; during data transfer, register returns 0.
+        bitOffset: 0
+        bitWidth: 32
+  - name: TBBCNT
+    description: Transferred Host to BIU-FIFO Byte Count Register
+    addressOffset: 96
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: TRANS_FIFO_BYTE_COUNT
+        description: Number of bytes transferred between Host/DMA memory and BIU FIFO.
+        bitOffset: 0
+        bitWidth: 32
+  - name: DEBNCE
+    description: Debounce Count Register
+    addressOffset: 100
+    access: read-write
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: DEBOUNCE_COUNT
+        description: Number of host clocks (clk) used by debounce filter logic for card detect; typical debounce time is 5-25 ms.
+        bitOffset: 0
+        bitWidth: 24
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 24
+        bitWidth: 8
+  - name: RST_N
+    description: Hardware Reset
+    addressOffset: 120
+    access: read-write
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: CARD_RESET
+        description: Hardware reset.  1 - Active mode 0 - Reset  Toggles state on SD_RST pin. This bit causes the card to enter pre-idle state, which requires it to be re-initialized.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 1
+        bitWidth: 31
+  - name: BMOD
+    description: Bus Mode Register
+    addressOffset: 128
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SWR
+        description: Software Reset. When set, the DMA Controller resets all its internal registers. SWR is read/write. It is automatically cleared after 1 clock cycle.
+        bitOffset: 0
+        bitWidth: 1
+      - name: FB
+        description: Fixed Burst. Controls whether the AHB Master interface performs fixed burst transfers or not. When set, the AHB will use only SINGLE, INCR4, INCR8 or INCR16 during start of normal burst transfers. When reset, the AHB will use SINGLE and INCR burst transfer operations. FB is read/write.
+        bitOffset: 1
+        bitWidth: 1
+      - name: DSL
+        description: Descriptor Skip Length. Specifies the number of HWord/Word/Dword to skip between two unchained descriptors. This is applicable only for dual buffer structure. DSL is read/write.
+        bitOffset: 2
+        bitWidth: 5
+      - name: DE
+        description: SD/MMC DMA Enable. When set, the SD/MMC DMA is enabled. DE is read/write.
+        bitOffset: 7
+        bitWidth: 1
+      - name: PBL
+        description: Programmable Burst Length. These bits indicate the maximum number of beats to be performed in one SD/MMC DMA transaction. The SD/MMC DMA will always attempt to burst as specified in PBL each time it starts a Burst transfer on the host bus. The permissible values are 1, 4, 8, 16, 32, 64, 128 and 256. This value is the mirror of MSIZE of FIFOTH register. In order to change this value, write the required value to FIFOTH register. This is an encode value as follows.Transfer unit is 32 bit. PBL is a read-only value.
+        enumeratedValues:
+          - name: 1_TRANSFER
+            description: 1 transfer
+            value: 0
+          - name: 4_TRANSFERS
+            description: 4 transfers
+            value: 1
+          - name: 8_TRANSFERS
+            description: 8 transfers
+            value: 2
+          - name: 16_TRANSFERS
+            description: 16 transfers
+            value: 3
+          - name: 32_TRANSFERS
+            description: 32 transfers
+            value: 4
+          - name: 64_TRANSFERS
+            description: 64 transfers
+            value: 5
+          - name: 128_TRANSFERS
+            description: 128 transfers
+            value: 6
+          - name: 256_TRANSFERS
+            description: 256 transfers
+            value: 7
+        bitOffset: 8
+        bitWidth: 3
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 11
+        bitWidth: 21
+  - name: PLDMND
+    description: Poll Demand Register
+    addressOffset: 132
+    access: write-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PD
+        description: Poll Demand. If the OWN bit of a descriptor is not set, the FSM goes to the Suspend state. The host needs to write any value into this register for the SD/MMC DMA state machine to resume normal descriptor fetch operation. This is a write only register. PD bit is write-only.
+        bitOffset: 0
+        bitWidth: 32
+  - name: DBADDR
+    description: Descriptor List Base Address Register
+    addressOffset: 136
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SDL
+        description: Start of Descriptor List. Contains the base address of the First Descriptor. The LSB bits [1:0] are ignored and taken as all-zero by the SD/MMC DMA internally. Hence these LSB bits are read-only.
+        bitOffset: 0
+        bitWidth: 32
+  - name: IDSTS
+    description: Internal DMAC Status Register
+    addressOffset: 140
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: TI
+        description: Transmit Interrupt. Indicates that data transmission is finished for a descriptor. Writing a 1 clears this bit.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RI
+        description: Receive Interrupt. Indicates the completion of data reception for a descriptor. Writing a 1 clears this bit.
+        bitOffset: 1
+        bitWidth: 1
+      - name: FBE
+        description: Fatal Bus Error Interrupt. Indicates that a Bus Error occurred (IDSTS[12:10]). When this bit is set, the DMA disables all its bus accesses. Writing a 1 clears this bit.
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 3
+        bitWidth: 1
+      - name: DU
+        description: Descriptor Unavailable Interrupt. This bit is set when the descriptor is unavailable due to OWN bit = 0 (DES0[31] =0). Writing a 1 clears this bit.
+        bitOffset: 4
+        bitWidth: 1
+      - name: CES
+        description: 'Card Error Summary. Indicates the status of the transaction to/from the card; also present in RINTSTS. Indicates the logical OR of the following bits:  EBE - End Bit Error  RTO - Response Time-out/Boot Ack Time-out  RCRC - Response CRC  SBE - Start Bit Error  DRTO - Data Read Time-out/BDS time-out  DCRC - Data CRC for Receive  RE - Response Error  Writing a 1 clears this bit.'
+        bitOffset: 5
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 6
+        bitWidth: 2
+      - name: NIS
+        description: 'Normal Interrupt Summary. Logical OR of the following: IDSTS[0] - Transmit Interrupt IDSTS[1] - Receive Interrupt Only unmasked bits affect this bit. This is a sticky bit and must be cleared each time a corresponding bit that causes NIS to be set is cleared. Writing a 1 clears this bit.'
+        bitOffset: 8
+        bitWidth: 1
+      - name: AIS
+        description: 'Abnormal Interrupt Summary. Logical OR of the following: IDSTS[2] - Fatal Bus Interrupt IDSTS[4] - DU bit Interrupt IDSTS[5] - Card Error Summary Interrupt Only unmasked bits affect this bit. This is a sticky bit and must be cleared each time a corresponding bit that causes AIS to be set is cleared. Writing a 1 clears this bit.'
+        bitOffset: 9
+        bitWidth: 1
+      - name: EB
+        description: 'Error Bits. Indicates the type of error that caused a Bus Error. Valid only with Fatal Bus Error bit (IDSTS[2]) set. This field does not generate an interrupt.  001 - Host Abort received during transmission  010 - Host Abort received during reception  Others: Reserved EB is read-only.'
+        bitOffset: 10
+        bitWidth: 3
+      - name: FSM
+        description: DMAC state machine present state.  0 - DMA_IDLE  1 - DMA_SUSPEND  2 - DESC_RD  3 - DESC_CHK  4 - DMA_RD_REQ_WAIT  5 - DMA_WR_REQ_WAIT  6 - DMA_RD  7 - DMA_WR  8 - DESC_CLOSE  This bit is read-only.
+        bitOffset: 13
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 17
+        bitWidth: 15
+  - name: IDINTEN
+    description: Internal DMAC Interrupt Enable Register
+    addressOffset: 144
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: TI
+        description: Transmit Interrupt Enable. When set with Normal Interrupt Summary Enable, Transmit Interrupt is enabled. When reset, Transmit Interrupt is disabled.
+        bitOffset: 0
+        bitWidth: 1
+      - name: RI
+        description: Receive Interrupt Enable. When set with Normal Interrupt Summary Enable, Receive Interrupt is enabled. When reset, Receive Interrupt is disabled.
+        bitOffset: 1
+        bitWidth: 1
+      - name: FBE
+        description: Fatal Bus Error Enable. When set with Abnormal Interrupt Summary Enable, the Fatal Bus Error Interrupt is enabled. When reset, Fatal Bus Error Enable Interrupt is disabled.
+        bitOffset: 2
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 3
+        bitWidth: 1
+      - name: DU
+        description: Descriptor Unavailable Interrupt. When set along with Abnormal Interrupt Summary Enable, the DU interrupt is enabled.
+        bitOffset: 4
+        bitWidth: 1
+      - name: CES
+        description: Card Error summary Interrupt Enable. When set, it enables the Card Interrupt summary.
+        bitOffset: 5
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 6
+        bitWidth: 2
+      - name: NIS
+        description: 'Normal Interrupt Summary Enable. When set, a normal interrupt is enabled. When reset, a normal interrupt is disabled. This bit enables the following bits: IDINTEN[0] - Transmit Interrupt IDINTEN[1] - Receive Interrupt'
+        bitOffset: 8
+        bitWidth: 1
+      - name: AIS
+        description: 'Abnormal Interrupt Summary Enable. When set, an abnormal interrupt is enabled. This bit enables the following bits: IDINTEN[2] - Fatal Bus Error Interrupt IDINTEN[4] - DU Interrupt IDINTEN[5] - Card Error Summary Interrupt'
+        bitOffset: 9
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 10
+        bitWidth: 22
+  - name: DSCADDR
+    description: Current Host Descriptor Address Register
+    addressOffset: 148
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: HDA
+        description: Host Descriptor Address Pointer. Cleared on reset. Pointer updated by IDMAC during operation. This register points to the start address of the current descriptor read by the SD/MMC DMA.
+        bitOffset: 0
+        bitWidth: 32
+  - name: BUFADDR
+    description: Current Buffer Descriptor Address Register
+    addressOffset: 152
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: HBA
+        description: Host Buffer Address Pointer. Cleared on Reset. Pointer updated by IDMAC during operation. This register points to the current Data Buffer Address being accessed by the SD/MMC DMA.
+        bitOffset: 0
+        bitWidth: 32
+addressBlocks:
+  - offset: 0
+    size: 4095
+    usage: registers
+interrupts:
+  - name: INTR

@@ -1,0 +1,1937 @@
+name: SCT
+description: State Configurable Timer (SCT) with dither engine
+groupName: SCT
+source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+registers:
+  - name: CONFIG
+    description: Configuration register
+    addressOffset: 0
+    access: read-write
+    resetValue: 32256
+    resetMask: 4294967295
+    fields:
+      - name: UNIFY
+        description: SCT operation
+        enumeratedValues:
+          - name: 16_BIT
+            description: 16-bit.The SCT operates as two 16-bit counters named L and H.
+            value: 0
+          - name: 32_BIT
+            description: 32-bit. The SCT operates as a unified 32-bit counter.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+      - name: CLKMODE
+        description: SCT clock mode
+        enumeratedValues:
+          - name: BUS_CLOCK
+            description: Bus clock. The bus clock clocks the SCT and prescalers.
+            value: 0
+          - name: PRESCALED_BUS_CLOCK
+            description: Prescaled bus clock. The SCT clock is the bus clock, but the prescalers are  enabled to count only when sampling of the input selected by  the CKSEL field finds the selected edge. The minimum pulse  width on the clock input is 1 bus clock period. This mode is the high-performance  sampled-clock mode.
+            value: 1
+          - name: SCT_INPUT
+            description: SCT Input. The input selected by  CKSEL clocks the SCT and prescalers. The input is synchronized to the bus clock and possibly inverted.  The minimum pulse width on the clock input is 1 bus clock  period. This mode is the low-power sampled-clock mode.
+            value: 2
+          - name: RESERVED
+            description: Reserved.
+            value: 3
+        bitOffset: 1
+        bitWidth: 2
+      - name: CKSEL
+        description: SCT clock select
+        enumeratedValues:
+          - name: RISING_EDGES_ON_INPU
+            description: Rising edges on input 0.
+            value: 0
+          - name: FALLING_EDGES_ON_INP
+            description: Falling edges on input 0.
+            value: 1
+          - name: RISING_EDGES_ON_INPU
+            description: Rising edges on input 1.
+            value: 2
+          - name: FALLING_EDGES_ON_INP
+            description: Falling edges on input 1.
+            value: 3
+          - name: RISING_EDGES_ON_INPU
+            description: Rising edges on input 2.
+            value: 4
+          - name: FALLING_EDGES_ON_INP
+            description: Falling edges on input 2.
+            value: 5
+          - name: RISING_EDGES_ON_INPU
+            description: Rising edges on input 3.
+            value: 6
+          - name: FALLING_EDGES_ON_INP
+            description: Falling edges on input 3.
+            value: 7
+          - name: RISING_EDGES_ON_INPU
+            description: Rising edges on input 4.
+            value: 8
+          - name: FALLING_EDGES_ON_INP
+            description: Falling edges on input 4.
+            value: 9
+          - name: RISING_EDGES_ON_INPU
+            description: Rising edges on input 5.
+            value: 10
+          - name: FALLING_EDGES_ON_INP
+            description: Falling edges on input 5.
+            value: 11
+          - name: RISING_EDGES_ON_INPU
+            description: Rising edges on input 6.
+            value: 12
+          - name: FALLING_EDGES_ON_INP
+            description: Falling edges on input 6.
+            value: 13
+          - name: RISING_EDGES_ON_INPU
+            description: Rising edges on input 7.
+            value: 14
+          - name: FALLING_EDGES_ON_INP
+            description: Falling edges on input 7.
+            value: 15
+        bitOffset: 3
+        bitWidth: 4
+      - name: NORELAOD_L
+        description: A 1 in this bit prevents the lower match and fractional match registers from being  reloaded from their respective reload registers. Software can  write to set or clear this bit at any time. This bit applies to both the  higher and lower registers when the UNIFY bit is set.
+        bitOffset: 7
+        bitWidth: 1
+      - name: NORELOAD_H
+        description: A 1 in this bit prevents the higher match and fractional match registers from being  reloaded from their respective reload registers. Software can  write to set or clear this bit at any time. This bit is not used when  the UNIFY bit is set.
+        bitOffset: 8
+        bitWidth: 1
+      - name: INSYNC
+        description: Synchronization for input n (bit 9 = input 0, bit 10 = input 1,..., bit 16 = input 7). A 1 in one of these bits subjects the corresponding input to  synchronization to the SCT clock, before it is used to create an  event. If an input is synchronous to the SCT clock, keep its bit 0 for  faster response. When the CKMODE field is 1x, the bit in this field, corresponding  to the input selected by the CKSEL field, is not used.
+        bitOffset: 9
+        bitWidth: 8
+      - name: AUTOLIMIT_L
+        description: A one in this bit causes a match on match register 0 to be treated  as a de-facto LIMIT condition without the need to define an  associated event. As with any LIMIT event, this automatic limit causes the  counter to be cleared to zero in uni-directional mode or to change  the direction of count in bi-directional mode. Software can write to set or clear this bit at any time. This bit  applies to both the higher and lower registers when the UNIFY bit  is set.
+        bitOffset: 17
+        bitWidth: 1
+      - name: AUTOLIMIT_H
+        description: A one in this bit will cause a match on match register 0 to be treated  as a de-facto LIMIT condition without the need to define an  associated event. As with any LIMIT event, this automatic limit causes the  counter to be cleared to zero in uni-directional mode or to change  the direction of count in bi-directional mode. Software can write to set or clear this bit at any time. This bit is  not used when the UNIFY bit is set.
+        bitOffset: 18
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 19
+        bitWidth: 13
+  - name: CTRL
+    description: Control register
+    addressOffset: 4
+    access: read-write
+    resetValue: 262148
+    resetMask: 4294967295
+    fields:
+      - name: DOWN_L
+        description: This bit is 1 when the L or unified counter is counting down. Hardware sets this bit   when the counter limit is reached and BIDIR is 1. Hardware clears this bit when the counter reaches 0 or when the counter is counting down and a limit condition occurs.
+        bitOffset: 0
+        bitWidth: 1
+      - name: STOP_L
+        description: When this bit is 1 and HALT is 0, the L or unified counter does not run but I/O  events related to the counter can occur. If such an event matches  the mask in the Start register, this bit is cleared and counting  resumes.
+        bitOffset: 1
+        bitWidth: 1
+      - name: HALT_L
+        description: When this bit is 1, the L or unified counter does not run and no events can occur.  A reset sets this bit. When the HALT_L bit is one, the STOP_L bit is cleared. If you want to remove the halt condition and keep the SCT in the stop condition (not running), then you can change the halt and stop condition with one single write to this register. Once set, only software can clear this bit to restore counter operation.
+        bitOffset: 2
+        bitWidth: 1
+      - name: CLRCTR_L
+        description: Writing a 1 to this bit clears the L or unified counter. This bit always reads as 0.
+        bitOffset: 3
+        bitWidth: 1
+      - name: BIDIR_L
+        description: L or unified counter direction select
+        enumeratedValues:
+          - name: UP
+            description: Up. The counter counts up to its limit condition, then is cleared to zero.
+            value: 0
+          - name: UPDOWN
+            description: Up-down. The counter counts up to its limit, then counts down to a limit condition or to 0.
+            value: 1
+        bitOffset: 4
+        bitWidth: 1
+      - name: PRE_L
+        description: Specifies the factor by which the SCT clock is prescaled to produce the  L or unified counter clock. The counter clock is clocked at the rate of the SCT  clock divided by PRE_L+1. Clear the counter (by writing a 1  to the CLRCTR bit) whenever changing the PRE value.
+        bitOffset: 5
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 13
+        bitWidth: 3
+      - name: DOWN_H
+        description: This bit is 1 when the H counter is counting down. Hardware sets this bit   when the counter limit is reached and BIDIR is 1. Hardware clears this bit when the counter reaches 0 or when the counter is counting down and a limit condition occurs.
+        bitOffset: 16
+        bitWidth: 1
+      - name: STOP_H
+        description: When this bit is 1 and HALT is 0, the H counter does not run but I/O  events related to the counter can occur. If such an event matches  the mask in the Start register, this bit is cleared and counting  resumes.
+        bitOffset: 17
+        bitWidth: 1
+      - name: HALT_H
+        description: When this bit is 1, the H counter does not run and no events can occur.  A reset sets this bit. When the HALT_H bit is one, the STOP_H bit is cleared. If you want to remove the halt condition and keep the SCT in the stop condition (not running), then you can change the halt and stop condition with one single write to this register. Once set, this bit can only be cleared by software to restore counter operation.
+        bitOffset: 18
+        bitWidth: 1
+      - name: CLRCTR_H
+        description: Writing a 1 to this bit clears the H counter. This bit always reads as 0.
+        bitOffset: 19
+        bitWidth: 1
+      - name: BIDIR_H
+        description: Direction select
+        enumeratedValues:
+          - name: UP
+            description: Up. The H counter counts up to its limit condition, then is cleared to zero.
+            value: 0
+          - name: UPDOWN
+            description: Up-down. The H counter counts up to its limit, then counts down to a limit condition or to 0.
+            value: 1
+        bitOffset: 20
+        bitWidth: 1
+      - name: PRE_H
+        description: Specifies the factor by which the SCT clock is prescaled to produce the  H counter clock. The counter clock is clocked at the rate of the SCT  clock divided by PRELH+1. Clear the counter (by writing a 1  to the CLRCTR bit) whenever changing the PRE value.
+        bitOffset: 21
+        bitWidth: 8
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 29
+        bitWidth: 3
+  - name: LIMIT
+    description: Limit register
+    addressOffset: 8
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: LIMMSK_L
+        description: If bit n is one, event n is used as a counter limit event for the L or unified counter (event 0 = bit 0, event 1 = bit 1, event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 16
+      - name: LIMMSK_H
+        description: If bit n is one, event n is used as a counter limit event for the H counter (event 0 = bit 16, event 1 = bit 17, event 15 = bit 31).
+        bitOffset: 16
+        bitWidth: 16
+  - name: HALT
+    description: Halt condition register
+    addressOffset: 12
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: HALTMSK_L
+        description: If bit n is one, event n sets the HALT_L bit in the CTRL register (event 0 = bit 0, event 1 = bit 1, event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 16
+      - name: HALTMSK_H
+        description: If bit n is one, event n sets the HALT_H bit in the CTRL register (event 0 = bit 16, event 1 = bit 17, event 15 = bit 31).
+        bitOffset: 16
+        bitWidth: 16
+  - name: STOP
+    description: Stop condition register
+    addressOffset: 16
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: STOPMSK_L
+        description: If bit n is one, event n sets the STOP_L bit in the CTRL register (event 0 = bit 0, event 1 = bit 1, event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 16
+      - name: STOPMSK_H
+        description: If bit n is one, event n sets the STOP_H bit in the CTRL register (event 0 = bit 16, event 1 = bit 17, event 15 = bit 31).
+        bitOffset: 16
+        bitWidth: 16
+  - name: START
+    description: Start condition register
+    addressOffset: 20
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: STARTMSK_L
+        description: If bit n is one, event n clears the STOP_L bit in the CTRL register (event 0 = bit 0, event 1 = bit 1, event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 16
+      - name: STARTMSK_H
+        description: If bit n is one, event n clears the STOP_H bit in the CTRL register (event 0 = bit 16, event 1 = bit 17, event 15 = bit 31).
+        bitOffset: 16
+        bitWidth: 16
+  - name: DITHER
+    description: Dither condition register
+    addressOffset: 24
+    access: read-write
+    resetValue: 0
+    resetMask: 0
+    fields:
+      - name: DITHMSK_L
+        description: If bit n is one, the event n causes the dither engine to advance to the next element in the dither pattern at the start of the next counter cycle of the 16-bit low counter or the unified counter (event 0 = bit 0, event 1 = bit 1, event 15 = bit 15). If all bits are set to 0, the dither pattern automatically advances at the start of every new counter cycle.
+        bitOffset: 0
+        bitWidth: 16
+      - name: DITHMSK_H
+        description: If bit n is one, the event n causes the dither engine to advance to the next element in the dither pattern at the start of the next counter cycle of the 16-bit high counter (event 0 = bit 0, event 1 = bit 1, event 15 = bit 15). If all bits are set to 0, the dither pattern automatically advances at the start of every new counter cycle.
+        bitOffset: 16
+        bitWidth: 16
+  - name: COUNT
+    description: Counter register
+    addressOffset: 64
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CTR_L
+        description: When UNIFY = 0, read or write the 16-bit L counter value. When UNIFY = 1, read or write the lower 16 bits of the 32-bit unified counter.
+        bitOffset: 0
+        bitWidth: 16
+      - name: CTR_H
+        description: When UNIFY = 0, read or write the 16-bit H counter value. When UNIFY = 1, read or write the upper 16 bits of the 32-bit unified counter.
+        bitOffset: 16
+        bitWidth: 16
+  - name: STATE
+    description: State register
+    addressOffset: 68
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: STATE_L
+        description: State variable.
+        bitOffset: 0
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 5
+        bitWidth: 11
+      - name: STATE_H
+        description: State variable.
+        bitOffset: 16
+        bitWidth: 5
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 21
+        bitWidth: 11
+  - name: INPUT
+    description: Input register
+    addressOffset: 72
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: AIN0
+        description: Real-time status of input 0.
+        bitOffset: 0
+        bitWidth: 1
+      - name: AIN1
+        description: Real-time status of input 1.
+        bitOffset: 1
+        bitWidth: 1
+      - name: AIN2
+        description: Real-time status of input 2.
+        bitOffset: 2
+        bitWidth: 1
+      - name: AIN3
+        description: Real-time status of input 3.
+        bitOffset: 3
+        bitWidth: 1
+      - name: AIN4
+        description: Real-time status of input 4.
+        bitOffset: 4
+        bitWidth: 1
+      - name: AIN5
+        description: Real-time status of input 5.
+        bitOffset: 5
+        bitWidth: 1
+      - name: AIN6
+        description: Real-time status of input 6.
+        bitOffset: 6
+        bitWidth: 1
+      - name: AIN7
+        description: Real-time status of input 7.
+        bitOffset: 7
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 8
+        bitWidth: 8
+      - name: SIN0
+        description: Input 0 state synchronized to the SCT clock.
+        bitOffset: 16
+        bitWidth: 1
+      - name: SIN1
+        description: Input 1 state synchronized to the SCT clock.
+        bitOffset: 17
+        bitWidth: 1
+      - name: SIN2
+        description: Input 2 state synchronized to the SCT clock.
+        bitOffset: 18
+        bitWidth: 1
+      - name: SIN3
+        description: Input 3 state synchronized to the SCT clock.
+        bitOffset: 19
+        bitWidth: 1
+      - name: SIN4
+        description: Input 4 state synchronized to the SCT clock.
+        bitOffset: 20
+        bitWidth: 1
+      - name: SIN5
+        description: Input 5 state synchronized to the SCT clock.
+        bitOffset: 21
+        bitWidth: 1
+      - name: SIN6
+        description: Input 6 state synchronized to the SCT clock.
+        bitOffset: 22
+        bitWidth: 1
+      - name: SIN7
+        description: Input 7 state synchronized to the SCT clock.
+        bitOffset: 23
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 24
+        bitWidth: 8
+  - name: REGMODE
+    description: Match/capture registers mode register
+    addressOffset: 76
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: REGMOD_L
+        description: Each bit controls one pair of match/capture registers (register 0 = bit 0, register 1 = bit 1,..., register 15 = bit 15).  0 = registers operate as match registers. 1 = registers operate as capture registers.
+        bitOffset: 0
+        bitWidth: 16
+      - name: REGMOD_H
+        description: Each bit controls one pair of match/capture registers (register 0 = bit 16, register 1 = bit 17,..., register 15 = bit 31). 0 = registers operate as match registers. 1 = registers operate as capture registers.
+        bitOffset: 16
+        bitWidth: 16
+  - name: OUTPUT
+    description: Output register
+    addressOffset: 80
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: OUT
+        description: Writing a 1 to bit n makes the corresponding output HIGH. 0 makes the corresponding output LOW (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 16
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 16
+  - name: OUTPUTDIRCTRL
+    description: Output counter direction control register
+    addressOffset: 84
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SETCLR0
+        description: Set/clear operation on output 0. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 0
+        bitWidth: 2
+      - name: SETCLR1
+        description: Set/clear operation on output 1. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 2
+        bitWidth: 2
+      - name: SETCLR2
+        description: Set/clear operation on output 2. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 4
+        bitWidth: 2
+      - name: SETCLR3
+        description: Set/clear operation on output 3. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 6
+        bitWidth: 2
+      - name: SETCLR4
+        description: Set/clear operation on output 4. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 8
+        bitWidth: 2
+      - name: SETCLR5
+        description: Set/clear operation on output 5. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 10
+        bitWidth: 2
+      - name: SETCLR6
+        description: Set/clear operation on output 6. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 12
+        bitWidth: 2
+      - name: SETCLR7
+        description: Set/clear operation on output 7. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 14
+        bitWidth: 2
+      - name: SETCLR8
+        description: Set/clear operation on output 8. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 16
+        bitWidth: 2
+      - name: SETCLR9
+        description: Set/clear operation on output 9. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 18
+        bitWidth: 2
+      - name: SETCLR10
+        description: Set/clear operation on output 5. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 20
+        bitWidth: 2
+      - name: SETCLR11
+        description: Set/clear operation on output 11. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 22
+        bitWidth: 2
+      - name: SETCLR12
+        description: Set/clear operation on output 12. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 24
+        bitWidth: 2
+      - name: SETCLR13
+        description: Set/clear operation on output 13. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 26
+        bitWidth: 2
+      - name: SETCLR14
+        description: Set/clear operation on output 14. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 28
+        bitWidth: 2
+      - name: SETCLR15
+        description: Set/clear operation on output 15. Value 0x3 is reserved. Do not program this value.
+        enumeratedValues:
+          - name: INDEPENDENT
+            description: Independent. Set and clear do not depend on any counter.
+            value: 0
+          - name: L_COUNTER
+            description: L counter. Set and clear are reversed when counter L or the unified counter is counting down.
+            value: 1
+          - name: H_COUNTER
+            description: H counter. Set and clear are reversed when counter H is counting down. Do not use if UNIFY = 1.
+            value: 2
+        bitOffset: 30
+        bitWidth: 2
+  - name: RES
+    description: Conflict resolution register
+    addressOffset: 88
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: O0RES
+        description: Effect of simultaneous set and clear on output 0.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR0 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR0 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 0
+        bitWidth: 2
+      - name: O1RES
+        description: Effect of simultaneous set and clear on output 1.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR1 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR1 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 2
+        bitWidth: 2
+      - name: O2RES
+        description: Effect of simultaneous set and clear on output 2.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR2 field).
+            value: 1
+          - name: CLEAR_OUTPUT_N_OR_S
+            description: Clear output n (or set based on the SETCLR2 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 4
+        bitWidth: 2
+      - name: O3RES
+        description: Effect of simultaneous set and clear on output 3.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR3 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR3 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 6
+        bitWidth: 2
+      - name: O4RES
+        description: Effect of simultaneous set and clear on output 4.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR4 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR4 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 8
+        bitWidth: 2
+      - name: O5RES
+        description: Effect of simultaneous set and clear on output 5.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR5 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR5 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 10
+        bitWidth: 2
+      - name: O6RES
+        description: Effect of simultaneous set and clear on output 6.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR6 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR6 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 12
+        bitWidth: 2
+      - name: O7RES
+        description: Effect of simultaneous set and clear on output 7.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR7 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR7 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 14
+        bitWidth: 2
+      - name: O8RES
+        description: Effect of simultaneous set and clear on output 8.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR8 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR8 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 16
+        bitWidth: 2
+      - name: O9RES
+        description: Effect of simultaneous set and clear on output 9.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR9 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR9 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 18
+        bitWidth: 2
+      - name: O10RES
+        description: Effect of simultaneous set and clear on output 10.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR10 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR10 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 20
+        bitWidth: 2
+      - name: O11RES
+        description: Effect of simultaneous set and clear on output 11.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR11 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR11 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 22
+        bitWidth: 2
+      - name: O12RES
+        description: Effect of simultaneous set and clear on output 12.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR12 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR12 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 24
+        bitWidth: 2
+      - name: O13RES
+        description: Effect of simultaneous set and clear on output 13.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR13 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR13 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 26
+        bitWidth: 2
+      - name: O14RES
+        description: Effect of simultaneous set and clear on output 14.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR14 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR14 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 28
+        bitWidth: 2
+      - name: O15RES
+        description: Effect of simultaneous set and clear on output 15.
+        enumeratedValues:
+          - name: NO_CHANGE
+            description: No change.
+            value: 0
+          - name: SET_OUTPUT_OR_CLEAR
+            description: Set output (or clear based on the SETCLR15 field).
+            value: 1
+          - name: CLEAR_OUTPUT_OR_SET
+            description: Clear output (or set based on the SETCLR15 field).
+            value: 2
+          - name: TOGGLE_OUTPUT
+            description: Toggle output.
+            value: 3
+        bitOffset: 30
+        bitWidth: 2
+  - name: DMAREQ0
+    description: DMA request 0 register
+    addressOffset: 92
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DEV_00
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 1
+      - name: DEV_01
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 1
+        bitWidth: 1
+      - name: DEV_02
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 2
+        bitWidth: 1
+      - name: DEV_03
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 3
+        bitWidth: 1
+      - name: DEV_04
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 4
+        bitWidth: 1
+      - name: DEV_05
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 5
+        bitWidth: 1
+      - name: DEV_06
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 6
+        bitWidth: 1
+      - name: DEV_07
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 7
+        bitWidth: 1
+      - name: DEV_08
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 8
+        bitWidth: 1
+      - name: DEV_09
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 9
+        bitWidth: 1
+      - name: DEV_010
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 10
+        bitWidth: 1
+      - name: DEV_011
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 11
+        bitWidth: 1
+      - name: DEV_012
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 12
+        bitWidth: 1
+      - name: DEV_013
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 13
+        bitWidth: 1
+      - name: DEV_014
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 14
+        bitWidth: 1
+      - name: DEV_015
+        description: If bit n is one, event n sets DMA request 0 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 14
+      - name: DRL0
+        description: A 1 in this bit makes the SCT set DMA request 0 when it loads the  Match_L/Unified registers from the Reload_L/Unified registers.
+        bitOffset: 30
+        bitWidth: 1
+      - name: DRQ0
+        description: This read-only bit indicates the state of DMA Request 0
+        bitOffset: 31
+        bitWidth: 1
+  - name: DMAREQ1
+    description: DMA request 1 register
+    addressOffset: 96
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: DEV_10
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 1
+      - name: DEV_11
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 1
+        bitWidth: 1
+      - name: DEV_12
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 2
+        bitWidth: 1
+      - name: DEV_13
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 3
+        bitWidth: 1
+      - name: DEV_14
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 4
+        bitWidth: 1
+      - name: DEV_15
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 5
+        bitWidth: 1
+      - name: DEV_16
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 6
+        bitWidth: 1
+      - name: DEV_17
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 7
+        bitWidth: 1
+      - name: DEV_18
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 8
+        bitWidth: 1
+      - name: DEV_19
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 9
+        bitWidth: 1
+      - name: DEV_110
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 10
+        bitWidth: 1
+      - name: DEV_111
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 11
+        bitWidth: 1
+      - name: DEV_112
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 12
+        bitWidth: 1
+      - name: DEV_113
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 13
+        bitWidth: 1
+      - name: DEV_114
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 14
+        bitWidth: 1
+      - name: DEV_115
+        description: If bit n is one, event n sets DMA request 1 (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 14
+      - name: DRL1
+        description: A 1 in this bit makes the SCT set DMA request 1 when it loads the  Match L/Unified registers from the Reload L/Unified registers.
+        bitOffset: 30
+        bitWidth: 1
+      - name: DRQ1
+        description: This read-only bit indicates the state of DMA Request 1.
+        bitOffset: 31
+        bitWidth: 1
+  - name: EVEN
+    description: Event enable register
+    addressOffset: 240
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IEN0
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 1
+      - name: IEN1
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 1
+        bitWidth: 1
+      - name: IEN2
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 2
+        bitWidth: 1
+      - name: IEN3
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 3
+        bitWidth: 1
+      - name: IEN4
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 4
+        bitWidth: 1
+      - name: IEN5
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 5
+        bitWidth: 1
+      - name: IEN6
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 6
+        bitWidth: 1
+      - name: IEN7
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 7
+        bitWidth: 1
+      - name: IEN8
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 8
+        bitWidth: 1
+      - name: IEN9
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 9
+        bitWidth: 1
+      - name: IEN10
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 10
+        bitWidth: 1
+      - name: IEN11
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 11
+        bitWidth: 1
+      - name: IEN12
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 12
+        bitWidth: 1
+      - name: IEN13
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 13
+        bitWidth: 1
+      - name: IEN14
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 14
+        bitWidth: 1
+      - name: IEN15
+        description: The SCT requests interrupt when bit n of this register and the event flag register are both one (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 16
+  - name: EVFLAG
+    description: Event flag register
+    addressOffset: 244
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FLAG0
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 1
+      - name: FLAG1
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 1
+        bitWidth: 1
+      - name: FLAG2
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 2
+        bitWidth: 1
+      - name: FLAG3
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 3
+        bitWidth: 1
+      - name: FLAG4
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 4
+        bitWidth: 1
+      - name: FLAG5
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 5
+        bitWidth: 1
+      - name: FLAG6
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 6
+        bitWidth: 1
+      - name: FLAG7
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 7
+        bitWidth: 1
+      - name: FLAG8
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 8
+        bitWidth: 1
+      - name: FLAG9
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 9
+        bitWidth: 1
+      - name: FLAG10
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 10
+        bitWidth: 1
+      - name: FLAG11
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 11
+        bitWidth: 1
+      - name: FLAG12
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 12
+        bitWidth: 1
+      - name: FLAG13
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 13
+        bitWidth: 1
+      - name: FLAG14
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 14
+        bitWidth: 1
+      - name: FLAG15
+        description: Bit n is one if event n has occurred since reset or a 1 was last written to this bit (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 16
+  - name: CONEN
+    description: Conflict enable register
+    addressOffset: 248
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: NCEN0
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 1
+      - name: NCEN1
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 1
+        bitWidth: 1
+      - name: NCEN2
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 2
+        bitWidth: 1
+      - name: NCEN3
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 3
+        bitWidth: 1
+      - name: NCEN4
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 4
+        bitWidth: 1
+      - name: NCEN5
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 5
+        bitWidth: 1
+      - name: NCEN6
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 6
+        bitWidth: 1
+      - name: NCEN7
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 7
+        bitWidth: 1
+      - name: NCEN8
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 8
+        bitWidth: 1
+      - name: NCEN9
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 9
+        bitWidth: 1
+      - name: NCEN10
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 10
+        bitWidth: 1
+      - name: NCEN11
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 11
+        bitWidth: 1
+      - name: NCEN12
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 12
+        bitWidth: 1
+      - name: NCEN13
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 13
+        bitWidth: 1
+      - name: NCEN14
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 14
+        bitWidth: 1
+      - name: NCEN15
+        description: The SCT requests interrupt when bit n of this register and the SCT conflict flag register are both one (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 16
+  - name: CONFLAG
+    description: Conflict flag register
+    addressOffset: 252
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: NCFLAG0
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 1
+      - name: NCFLAG1
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 1
+        bitWidth: 1
+      - name: NCFLAG2
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 2
+        bitWidth: 1
+      - name: NCFLAG3
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 3
+        bitWidth: 1
+      - name: NCFLAG4
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 4
+        bitWidth: 1
+      - name: NCFLAG5
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 5
+        bitWidth: 1
+      - name: NCFLAG6
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 6
+        bitWidth: 1
+      - name: NCFLAG7
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 7
+        bitWidth: 1
+      - name: NCFLAG8
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 8
+        bitWidth: 1
+      - name: NCFLAG9
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 9
+        bitWidth: 1
+      - name: NCFLAG10
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 10
+        bitWidth: 1
+      - name: NCFLAG11
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 11
+        bitWidth: 1
+      - name: NCFLAG12
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 12
+        bitWidth: 1
+      - name: NCFLAG13
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 13
+        bitWidth: 1
+      - name: NCFLAG14
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 14
+        bitWidth: 1
+      - name: NCFLAG15
+        description: Bit n is one if a no-change conflict event occurred on output n since  reset or a 1 was last written to this bit (output 0 = bit 0, output 1 = bit 1,..., output 15 = bit 15).
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 16
+        bitWidth: 14
+      - name: BUSERRL
+        description: The most recent bus error from this SCT involved writing CTR  L/Unified, STATE L/Unified, MATCH L/Unified, or the Output register when the  L/U counter was not halted. A word write to certain L  and H registers can be half successful and half unsuccessful.
+        bitOffset: 30
+        bitWidth: 1
+      - name: BUSERRH
+        description: The most recent bus error from this SCT involved writing CTR H,  STATE H, MATCH H, or the Output register when the H  counter was not halted.
+        bitOffset: 31
+        bitWidth: 1
+  - dim: 16
+    dimIncrement: 4
+    dimIndex: 0-15
+    name: MATCH%s
+    description: Match value register of match channels 0 to 15; REGMOD0 to REGMODE15 = 0
+    addressOffset: 256
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCH_L
+        description: When UNIFY = 0, read or write the 16-bit value to be  compared to the L counter. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 0
+        bitWidth: 16
+      - name: MATCH_H
+        description: When UNIFY = 0, read or write the 16-bit value to be  compared to the H counter. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be compared to the unified counter.
+        bitOffset: 16
+        bitWidth: 16
+  - dim: 16
+    dimIncrement: 4
+    dimIndex: 0-15
+    name: CAP%s
+    description: Capture register of capture channel 0 to 15; REGMOD0 to REGMODE15 = 1
+    alternateRegister: MATCH%s
+    addressOffset: 256
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAP_L
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the lower 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 0
+        bitWidth: 16
+      - name: CAP_H
+        description: When UNIFY = 0, read the 16-bit counter value at which this register was last captured. When UNIFY = 1, read the upper 16 bits of the 32-bit value at which this register was last captured.
+        bitOffset: 16
+        bitWidth: 16
+  - dim: 6
+    dimIncrement: 4
+    dimIndex: 0-5
+    name: FRACMAT%s
+    description: Fractional match registers 0 to 5 for SCT match value registers 0 to 5.
+    addressOffset: 320
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: FRACMAT_L
+        description: When UNIFY = 0, read or write the 4-bit value specifying the dither pattern to be applied to the corresponding MATCHn_L register (n = 0 to 5). When UNIFY = 1, the value applies to the unified, 32-bit fractional match register.
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 4
+        bitWidth: 12
+      - name: FRACMAT_H
+        description: When UNIFY = 0, read or write 4-bit value specifying the dither pattern to be applied to the corresponding MATCHn_H register (n = 0 to 5).
+        bitOffset: 16
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 20
+        bitWidth: 12
+  - dim: 16
+    dimIncrement: 4
+    dimIndex: 0-15
+    name: MATCHREL%s
+    description: Match reload value register 0 to 15; REGMOD0 = 0 to REGMODE15 = 0
+    addressOffset: 512
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELOAD_L
+        description: When UNIFY = 0, read or write the 16-bit value to be loaded into the MATCHn_L register. When UNIFY = 1, read or write the lower 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 0
+        bitWidth: 16
+      - name: RELOAD_H
+        description: When UNIFY = 0, read or write the 16-bit to be loaded into the MATCHn_H register. When UNIFY = 1, read or write the upper 16 bits of the 32-bit value to be loaded into the MATCHn register.
+        bitOffset: 16
+        bitWidth: 16
+  - dim: 16
+    dimIncrement: 4
+    dimIndex: 0-15
+    name: CAPCTRL%s
+    description: Capture control register 0 to 15; REGMOD0 = 1 to REGMODE15 = 1
+    alternateRegister: MATCHREL%s
+    addressOffset: 512
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CAPCON_L
+        description: If bit m is one, event m causes the CAPn_L (UNIFY = 0) or the CAPn (UNIFY = 1) register to be loaded (event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15).
+        bitOffset: 0
+        bitWidth: 16
+      - name: CAPCON_H
+        description: If bit m is one, event m causes the CAPn_H (UNIFY = 0) register to be loaded (event 0 = bit 16, event 1 = bit 17,..., event 15 = bit 31).
+        bitOffset: 16
+        bitWidth: 16
+  - dim: 6
+    dimIncrement: 4
+    dimIndex: 0-5
+    name: FRACMATREL%s
+    description: Fractional match reload registers 0 to 5 for SCT match value registers 0 to 5.
+    addressOffset: 576
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: RELFRAC_L
+        description: When UNIFY = 0, read or write the 4-bit value to be loaded into the FRACMATn_L register. When UNIFY = 1, read or write the lower 4 bits to be loaded into the FRACMATn register.
+        bitOffset: 0
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 4
+        bitWidth: 12
+      - name: RELFRAC_H
+        description: When UNIFY = 0, read or write the 4-bit value to be loaded into the FRACMATn_H register. When UNIFY = 1, read or write the upper 4 bits with the 4-bit value to be loaded into the FRACMATn register.
+        bitOffset: 16
+        bitWidth: 4
+      - name: RESERVED
+        description: Reserved.
+        bitOffset: 20
+        bitWidth: 12
+  - dim: 16
+    dimIncrement: 8
+    dimIndex: 0-15
+    name: EV%s_STATE
+    description: Event state register 0
+    addressOffset: 768
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: STATEMSK0
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 0
+        bitWidth: 1
+      - name: STATEMSK1
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 1
+        bitWidth: 1
+      - name: STATEMSK2
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 2
+        bitWidth: 1
+      - name: STATEMSK3
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 3
+        bitWidth: 1
+      - name: STATEMSK4
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 4
+        bitWidth: 1
+      - name: STATEMSK5
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 5
+        bitWidth: 1
+      - name: STATEMSK6
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 6
+        bitWidth: 1
+      - name: STATEMSK7
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 7
+        bitWidth: 1
+      - name: STATEMSK8
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 8
+        bitWidth: 1
+      - name: STATEMSK9
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 9
+        bitWidth: 1
+      - name: STATEMSK10
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 10
+        bitWidth: 1
+      - name: STATEMSK11
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 11
+        bitWidth: 1
+      - name: STATEMSK12
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 12
+        bitWidth: 1
+      - name: STATEMSK13
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 13
+        bitWidth: 1
+      - name: STATEMSK14
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 14
+        bitWidth: 1
+      - name: STATEMSK15
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 15
+        bitWidth: 1
+      - name: STATEMSK16
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 16
+        bitWidth: 1
+      - name: STATEMSK17
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 17
+        bitWidth: 1
+      - name: STATEMSK18
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 18
+        bitWidth: 1
+      - name: STATEMSK19
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 19
+        bitWidth: 1
+      - name: STATEMSK20
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 20
+        bitWidth: 1
+      - name: STATEMSK21
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 21
+        bitWidth: 1
+      - name: STATEMSK22
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 22
+        bitWidth: 1
+      - name: STATEMSK23
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 23
+        bitWidth: 1
+      - name: STATEMSK24
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 24
+        bitWidth: 1
+      - name: STATEMSK25
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 25
+        bitWidth: 1
+      - name: STATEMSK26
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 26
+        bitWidth: 1
+      - name: STATEMSK27
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 27
+        bitWidth: 1
+      - name: STATEMSK28
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 28
+        bitWidth: 1
+      - name: STATEMSK29
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 29
+        bitWidth: 1
+      - name: STATEMSK30
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 30
+        bitWidth: 1
+      - name: STATEMSK31
+        description: If bit m is one, event n (n= 0 to 15) happens in state m of the counter selected by the HEVENT bit (m = state number; state 0 = bit 0, state 1= bit 1,..., state 31 = bit 31).
+        bitOffset: 31
+        bitWidth: 1
+  - dim: 16
+    dimIncrement: 8
+    dimIndex: 0-15
+    name: EV%s_CTRL
+    description: Event control register 0
+    addressOffset: 772
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MATCHSEL
+        description: Selects the Match register associated with this event (if any). A  match can occur only when the counter selected by the HEVENT  bit is running.
+        bitOffset: 0
+        bitWidth: 4
+      - name: HEVENT
+        description: Select L/H counter. Do not set this bit if UNIFY = 1.
+        enumeratedValues:
+          - name: L_STATE
+            description: L state. Selects the L state and the L match register selected by MATCHSEL.
+            value: 0
+          - name: H_STATE
+            description: H state. Selects the H state and the H match register selected by MATCHSEL.
+            value: 1
+        bitOffset: 4
+        bitWidth: 1
+      - name: OUTSEL
+        description: Input/output select
+        enumeratedValues:
+          - name: INPUT
+            description: Input. Selects the input selected by IOSEL.
+            value: 0
+          - name: OUTPUT
+            description: Output. Selects the output selected by IOSEL.
+            value: 1
+        bitOffset: 5
+        bitWidth: 1
+      - name: IOSEL
+        description: Selects the input or output signal associated with this event (if  any). Do not select an input in this register, if CKMODE is 1x. In this case the clock input is an implicit ingredient of  every event.
+        bitOffset: 6
+        bitWidth: 4
+      - name: IOCOND
+        description: Selects the I/O condition for event n. (The detection of edges on outputs lags the conditions that switch the outputs by one SCT clock). In order to guarantee proper edge/state detection, an input must have a minimum pulse width of at least one SCT  clock period .
+        enumeratedValues:
+          - name: LOW
+            description: LOW
+            value: 0
+          - name: RISE
+            description: Rise
+            value: 1
+          - name: FALL
+            description: Fall
+            value: 2
+          - name: HIGH
+            description: HIGH
+            value: 3
+        bitOffset: 10
+        bitWidth: 2
+      - name: COMBMODE
+        description: Selects how the specified match and I/O condition are used and combined.
+        enumeratedValues:
+          - name: OR
+            description: OR. The event occurs when either the specified match or I/O condition occurs.
+            value: 0
+          - name: MATCH
+            description: MATCH. Uses the specified match only.
+            value: 1
+          - name: IO
+            description: IO. Uses the specified I/O condition only.
+            value: 2
+          - name: AND
+            description: AND. The event occurs when the specified match and I/O condition occur simultaneously.
+            value: 3
+        bitOffset: 12
+        bitWidth: 2
+      - name: STATELD
+        description: This bit controls how the STATEV value modifies the state  selected by HEVENT when this event is the highest-numbered  event occurring for that state.
+        enumeratedValues:
+          - name: STATEV_VALUE_IS_ADDE
+            description: STATEV value is added into STATE (the carry-out is ignored).
+            value: 0
+          - name: STATEV_VALUE_IS_LOAD
+            description: STATEV value is loaded into STATE.
+            value: 1
+        bitOffset: 14
+        bitWidth: 1
+      - name: STATEV
+        description: This value is loaded into or added to the state selected by  HEVENT, depending on STATELD, when this event is the  highest-numbered event occurring for that state. If STATELD and  STATEV are both zero, there is no change to the STATE value.
+        bitOffset: 15
+        bitWidth: 5
+      - name: MATCHMEM
+        description: If this bit is one and the COMBMODE field specifies a match  component to the triggering of this event, then a match is considered to be active whenever the counter value is  GREATER THAN OR EQUAL TO the value specified in the  match register when counting up, LESS THEN OR EQUAL TO  the match value when counting down. If this bit is zero, a match is only be active during the cycle  when the counter is equal to the match value.
+        bitOffset: 20
+        bitWidth: 1
+      - name: DIRECTION
+        description: Direction qualifier for event generation. This field only applies when the counters are operating in BIDIR  mode. If BIDIR = 0, the SCT ignores this field. Value 0x3 is reserved.
+        enumeratedValues:
+          - name: DIRECTION_INDEPENDEN
+            description: Direction independent. This event is triggered regardless of the count direction.
+            value: 0
+          - name: COUNTING_UP
+            description: Counting up. This event is triggered only during up-counting when BIDIR = 1.
+            value: 1
+          - name: COUNTING_DOWN
+            description: Counting down. This event is triggered only during down-counting when BIDIR = 1.
+            value: 2
+        bitOffset: 21
+        bitWidth: 2
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 23
+        bitWidth: 9
+  - dim: 16
+    dimIncrement: 8
+    dimIndex: 0-15
+    name: OUT%s_SET
+    description: Output 0 set register
+    addressOffset: 1280
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SET0
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 0
+        bitWidth: 1
+      - name: SET1
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 1
+        bitWidth: 1
+      - name: SET2
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 2
+        bitWidth: 1
+      - name: SET3
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 3
+        bitWidth: 1
+      - name: SET4
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 4
+        bitWidth: 1
+      - name: SET5
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 5
+        bitWidth: 1
+      - name: SET6
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 6
+        bitWidth: 1
+      - name: SET7
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 7
+        bitWidth: 1
+      - name: SET8
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 8
+        bitWidth: 1
+      - name: SET9
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 9
+        bitWidth: 1
+      - name: SET10
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 10
+        bitWidth: 1
+      - name: SET11
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 11
+        bitWidth: 1
+      - name: SET12
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 12
+        bitWidth: 1
+      - name: SET13
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 13
+        bitWidth: 1
+      - name: SET14
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 14
+        bitWidth: 1
+      - name: SET15
+        description: A 1 in bit m selects event m to set output n (or clear it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 16
+  - dim: 16
+    dimIncrement: 8
+    dimIndex: 0-15
+    name: OUT%s_CLR
+    description: Output 0 clear register
+    addressOffset: 1284
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: CLR0
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 0
+        bitWidth: 1
+      - name: CLR1
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 1
+        bitWidth: 1
+      - name: CLR2
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 2
+        bitWidth: 1
+      - name: CLR3
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 3
+        bitWidth: 1
+      - name: CLR4
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 4
+        bitWidth: 1
+      - name: CLR5
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 5
+        bitWidth: 1
+      - name: CLR6
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 6
+        bitWidth: 1
+      - name: CLR7
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 7
+        bitWidth: 1
+      - name: CLR8
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 8
+        bitWidth: 1
+      - name: CLR9
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 9
+        bitWidth: 1
+      - name: CLR10
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 10
+        bitWidth: 1
+      - name: CLR11
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 11
+        bitWidth: 1
+      - name: CLR12
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 12
+        bitWidth: 1
+      - name: CLR13
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 13
+        bitWidth: 1
+      - name: CLR14
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 14
+        bitWidth: 1
+      - name: CLR15
+        description: A 1 in bit m selects event m to clear output n (or set it if SETCLRn = 0x1 or 0x2) event 0 = bit 0, event 1 = bit 1,..., event 15 = bit 15.
+        bitOffset: 15
+        bitWidth: 1
+      - name: RESERVED
+        description: Reserved
+        bitOffset: 16
+        bitWidth: 16
+addressBlocks:
+  - offset: 0
+    size: 4095
+    usage: registers
+interrupts:
+  - name: INTR
