@@ -523,6 +523,25 @@ Note: The HSOTR register description also says "low-power mode" instead of
 are copy-pasted from the LPOTR-type OPAMP IP (L4/L5/U5) but the HSOTR-type
 IP uses genuinely different trim registers for high-speed mode.
 
+### Ethernet MAC
+
+**All H7 SVDs (STM32H723 v2.1, STM32H743 v2.4, STM32H745_CM4 v1.7):**
+
+| Register | Bug                          | Correct (Linux dwmac4.h + other STM32 SVDs) |
+|----------|------------------------------|----------------------------------------------|
+| MACARPAR | addressOffset 0x0AE0         | 0x0210                                       |
+| MACHWF0R | Missing                      | Present at 0x011C                            |
+| MACHWF3R | Missing                      | Present at 0x0128                            |
+
+The ARP Address Register (MACARPAR) is at offset 0x0AE0 in all H7 SVDs, but the
+correct offset is 0x0210. Confirmed by: the Linux kernel `dwmac4.h` (`GMAC_ARP_ADDR
+= 0x00000210`), the H7RS SVD (STM32H7S v1.3), the H5 SVD (STM32H563), and the N6
+SVD (STM32N657) — all of which use 0x0210.
+
+The H7 SVDs also omit MACHWF0R (HW Feature 0, 0x011C) and MACHWF3R (HW Feature 3,
+0x0128), which are standard DWC EQOS registers present in H7RS/H5/N6 SVDs and the
+Linux kernel driver (`GMAC_HW_FEATURE0` through `GMAC_HW_FEATURE3`).
+
 ### NVIC interrupt vector bugs (RM0399 cross-check)
 
 Cross-checked against RM0399 Rev.4 Table 149 (vector table) and Table 7

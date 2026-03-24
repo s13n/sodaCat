@@ -805,6 +805,75 @@ shared_blocks:
       - {name: idma_list, type: bool, default: false, description: "IDMA linked-list mode (vs double-buffer)"}
       - {name: idma_buf_align64, type: bool, default: false, description: "IDMA 64-byte buffer alignment (11-bit IDMABNDT at [16:6] vs 12-bit at [16:5])"}
       - {name: has_version_id, type: bool, default: false, description: "VER and ID identification registers present"}
+  ETH:
+    # Synopsys DWC Ethernet QoS (EQOS): H5, H7, H7RS
+    from: STM32H563.ETH
+    interrupts:
+      ETH: INTR
+      ETH_WKUP: WKUP
+    description: Ethernet MAC (Synopsys DWC EQOS)
+    transforms:
+      # Split MAC address fields into individual bytes and add MBC/SA to MACA0HR
+      - type: patchFields
+        register: MACA0LR
+        fields:
+          - {name: ADDRLO}
+          - {name: ADDR0, description: "MAC address byte 0", bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR1, description: "MAC address byte 1", bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR2, description: "MAC address byte 2", bitOffset: 16, bitWidth: 8, access: read-write}
+          - {name: ADDR3, description: "MAC address byte 3", bitOffset: 24, bitWidth: 8, access: read-write}
+      - type: patchFields
+        register: MACA0HR
+        fields:
+          - {name: ADDRHI}
+          - {name: ADDR4, description: "MAC address byte 4", bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR5, description: "MAC address byte 5", bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: MBC, description: "Mask byte control", bitOffset: 24, bitWidth: 6, access: read-write}
+          - {name: SA, description: "Source address", bitOffset: 30, bitWidth: 1, access: read-write}
+      - type: patchFields
+        register: MACA1LR
+        fields:
+          - {name: ADDRLO}
+          - {name: ADDR0, description: "MAC address byte 0", bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR1, description: "MAC address byte 1", bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR2, description: "MAC address byte 2", bitOffset: 16, bitWidth: 8, access: read-write}
+          - {name: ADDR3, description: "MAC address byte 3", bitOffset: 24, bitWidth: 8, access: read-write}
+      - type: patchFields
+        register: MACA1HR
+        fields:
+          - {name: ADDRHI}
+          - {name: ADDR4, description: "MAC address byte 4", bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR5, description: "MAC address byte 5", bitOffset: 8, bitWidth: 8, access: read-write}
+      - type: patchFields
+        register: MACA2LR
+        fields:
+          - {name: ADDRLO}
+          - {name: ADDR0, description: "MAC address byte 0", bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR1, description: "MAC address byte 1", bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR2, description: "MAC address byte 2", bitOffset: 16, bitWidth: 8, access: read-write}
+          - {name: ADDR3, description: "MAC address byte 3", bitOffset: 24, bitWidth: 8, access: read-write}
+      - type: patchFields
+        register: MACA2HR
+        fields:
+          - {name: ADDRHI}
+          - {name: ADDR4, description: "MAC address byte 4", bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR5, description: "MAC address byte 5", bitOffset: 8, bitWidth: 8, access: read-write}
+      - type: patchFields
+        register: MACA3LR
+        fields:
+          - {name: ADDRLO}
+          - {name: ADDR0, description: "MAC address byte 0", bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR1, description: "MAC address byte 1", bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR2, description: "MAC address byte 2", bitOffset: 16, bitWidth: 8, access: read-write}
+          - {name: ADDR3, description: "MAC address byte 3", bitOffset: 24, bitWidth: 8, access: read-write}
+      - type: patchFields
+        register: MACA3HR
+        fields:
+          - {name: ADDRHI}
+          - {name: ADDR4, description: "MAC address byte 4", bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR5, description: "MAC address byte 5", bitOffset: 8, bitWidth: 8, access: read-write}
+      # Collapse MACA0-3 into cluster array (template: MACA1 has MBC/SA superset)
+      - {type: createClusterArray, pattern: 'MACA(\d+)(HR|LR)', name: MACA, description: "MAC address filter", template: 1}
   DFSDM:
     # Digital Filter for Sigma-Delta Modulators: F4, F7, H7, L4, L4P, L5
     # H7A3 is superset: 8 channels, 8 filters, CHyDLYR delay register
@@ -2728,11 +2797,8 @@ families:
         from: STM32H523.DTS_S
         instances: [DTS_S]
       ETH:
-        from: STM32H563.ETH
+        uses: ETH
         instances: [ETH]
-        interrupts:
-          ETH: INTR
-          ETH_WKUP: WKUP
       EXTI:
         from: STM32H503.EXTI
         instances: [EXTI]
@@ -3147,11 +3213,8 @@ families:
           - {type: renameRegisters, pattern: ^DSI_, replacement: ''}
         description: MIPI DSI host controller (Synopsys DesignWare)
       ETH:
-        from: STM32H750.ETH
-        instances: [ETH]
-        interrupts:
-          ETH: INTR
-          ETH_WKUP: WKUP
+        uses: ETH
+        instances: [ETH, Ethernet_MAC]
       EXTI:
         from: STM32H723.EXTI
         instances: [EXTI]
@@ -3166,18 +3229,6 @@ families:
           FPU: FPU
           ECC_DIAG_IT: ECC_DIAG_IT
           TEMP_IT: TEMP_IT
-      Ethernet_DMA:
-        from: STM32H742.Ethernet_DMA
-        instances: [Ethernet_DMA]
-        description: Ethernet DMA (Synopsys GMAC)
-      Ethernet_MAC:
-        from: STM32H723.Ethernet_MAC
-        instances: [Ethernet_MAC]
-        description: Ethernet MAC (Synopsys GMAC)
-      Ethernet_MTL:
-        from: STM32H742.Ethernet_MTL
-        instances: [Ethernet_MTL]
-        description: Ethernet MTL (Synopsys GMAC)
       FDCAN:
         from: STM32H7A3.FDCAN
         instances: [FDCAN, FDCAN1, FDCAN2]
@@ -3584,10 +3635,8 @@ families:
         interrupts:
           DTS: INTR
       ETH:
-        from: STM32H7S.ETH
+        uses: ETH
         instances: [ETH]
-        interrupts:
-          ETH: INTR
       EXTI:
         from: STM32H7S.EXTI
         instances: [EXTI]
