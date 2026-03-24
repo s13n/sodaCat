@@ -1,0 +1,120 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: Chip Model
+description: Chip-level integration model mapping peripheral instances to block models
+type: object
+required:
+- name
+- cpu
+- interruptOffset
+- interrupts
+- instances
+- models
+additionalProperties: false
+properties:
+  name:
+    type: string
+    description: Chip name (e.g. STM32H563, MCXN947)
+  source:
+    type: string
+    description: SVD source identification (e.g. "STM32H563 SVD v1.8")
+  cpu:
+    type: object
+    required:
+    - name
+    - revision
+    - endian
+    - mpuPresent
+    - fpuPresent
+    - nvicPrioBits
+    - vendorSystickConfig
+    properties:
+      name:
+        type: string
+        description: CPU core name (e.g. CM7, CM33, CM4)
+      revision:
+        type: string
+        description: Core revision (e.g. r0p1)
+      endian:
+        type: string
+        enum: [little, big]
+      mpuPresent:
+        type: boolean
+      fpuPresent:
+        type: boolean
+      vtorPresent:
+        type: boolean
+      nvicPrioBits:
+        type: integer
+        minimum: 0
+        maximum: 8
+      vendorSystickConfig:
+        type: boolean
+    additionalProperties: false
+  interruptOffset:
+    type: integer
+    description: Offset added to NVIC interrupt numbers (typically 16 for Cortex-M)
+  interrupts:
+    type: object
+    description: "Interrupt vector table: IRQ number -> list of instance.signal assignments"
+    additionalProperties:
+      type: array
+      items:
+        type: string
+        pattern: ^[A-Za-z0-9_]+\.[A-Za-z0-9_]+$
+  instances:
+    type: object
+    description: Peripheral instances keyed by instance name
+    additionalProperties:
+      $ref: '#/definitions/instance'
+  models:
+    type: object
+    description: "Block type -> model path mapping (e.g. ADC: ST/H7/ADC)"
+    additionalProperties:
+      type: string
+definitions:
+  instance:
+    type: object
+    required:
+    - baseAddress
+    - model
+    - interrupts
+    - parameters
+    additionalProperties: false
+    properties:
+      baseAddress:
+        type: integer
+        description: Peripheral base address
+      model:
+        type: string
+        description: Block type name referencing the models table
+      interrupts:
+        type: array
+        items:
+          type: object
+          required:
+          - name
+          - value
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              description: Canonical interrupt signal name
+            value:
+              type: integer
+              description: NVIC interrupt number
+      parameters:
+        type: array
+        items:
+          type: object
+          required:
+          - name
+          - value
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+            value:
+              oneOf:
+              - type: integer
+              - type: boolean
+              - type: string
