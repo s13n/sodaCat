@@ -83,29 +83,29 @@ shared_blocks:
       - {name: gen, type: int, default: 0, max: 3, description: 'DMA2D generation: 0=basic, 1=+AI/RBS, 2=+LOM/wideMode/wideLO/SB/OCOLR variants, 3=+CSS'}
     transforms:
       - {type: patchAddressBlock, size: 3072}
-      - {type: createArray, pattern: 'FGCLUT(\d+)', name: FGCLUT, description: Foreground CLUT}
-      - {type: createArray, pattern: 'BGCLUT(\d+)', name: BGCLUT, description: Background CLUT}
+      - {type: createArray, pattern: FGCLUT(\d+), name: FGCLUT, description: Foreground CLUT}
+      - {type: createArray, pattern: BGCLUT(\d+), name: BGCLUT, description: Background CLUT}
   JPEG:
     # JPEG codec: F7, H7, H7RS, N6, U5
     from: STM32N645.JPEG
     interrupts:
       JPEG: INTR
     transforms:
-      - {type: createArray, pattern: 'DHTMEM(\d+)', name: DHTMEM, description: DHT memory}
-      - {type: createArray, pattern: 'HUFFBASE(\d+)', name: HUFFBASE, description: Huffman base}
-      - {type: createArray, pattern: 'HUFFSYMB(\d+)', name: HUFFSYMB, description: Huffman symbol}
-      - {type: createArray, pattern: 'HUFFENC_AC0_(\d+)', name: HUFFENC_AC0, description: Huffman encoder AC table 0}
-      - {type: createArray, pattern: 'HUFFENC_AC1_(\d+)', name: HUFFENC_AC1, description: Huffman encoder AC table 1}
-      - {type: createArray, pattern: 'HUFFENC_DC0_(\d+)', name: HUFFENC_DC0, description: Huffman encoder DC table 0}
-      - {type: createArray, pattern: 'HUFFENC_DC1_(\d+)', name: HUFFENC_DC1, description: Huffman encoder DC table 1}
-      - {type: create2DArray, pattern: 'QMEM(\d+)_(\d+)', name: QMEM, description: Quantization memory}
-      - {type: create2DArray, pattern: 'HUFFMIN(\d+)_(\d+)', name: HUFFMIN, description: Huffman min}
+      - {type: createArray, pattern: DHTMEM(\d+), name: DHTMEM, description: DHT memory}
+      - {type: createArray, pattern: HUFFBASE(\d+), name: HUFFBASE, description: Huffman base}
+      - {type: createArray, pattern: HUFFSYMB(\d+), name: HUFFSYMB, description: Huffman symbol}
+      - {type: createArray, pattern: HUFFENC_AC0_(\d+), name: HUFFENC_AC0, description: Huffman encoder AC table 0}
+      - {type: createArray, pattern: HUFFENC_AC1_(\d+), name: HUFFENC_AC1, description: Huffman encoder AC table 1}
+      - {type: createArray, pattern: HUFFENC_DC0_(\d+), name: HUFFENC_DC0, description: Huffman encoder DC table 0}
+      - {type: createArray, pattern: HUFFENC_DC1_(\d+), name: HUFFENC_DC1, description: Huffman encoder DC table 1}
+      - {type: create2DArray, pattern: QMEM(\d+)_(\d+), name: QMEM, description: Quantization memory}
+      - {type: create2DArray, pattern: HUFFMIN(\d+)_(\d+), name: HUFFMIN, description: Huffman min}
   HRTIM:
     # High Resolution Timer — unified block: Master (11 regs) + Timer cluster (29 regs × 6)
     # + Common (36 regs). G4 superset (6 timers, FLTINR3/4, ADC post-scaler).
     # Families: F3, G4, H7. Model is hand-maintained (no from:).
     params:
-      - {name: timers, type: int, default: 5, description: "Number of timer units (5=A-E, 6=A-F)"}
+      - {name: timers, type: int, default: 5, description: 'Number of timer units (5=A-E, 6=A-F)'}
     interrupts:
       HRTIM1_MST: MST
       HRTIM_Master_IRQn: MST
@@ -156,9 +156,9 @@ shared_blocks:
       # N6 SVD naming normalization
       - {type: renameFields, register: SMCR, pattern: ^SMS_1$, replacement: SMS_3}
       - {type: renameFields, register: SMCR, pattern: ^TS_1$, replacement: TS_4_3}
-      - {type: renameFields, register: CCMR1_Output, pattern: OC(\d)M_1$, replacement: 'OC\1M_3'}
-      - {type: renameFields, register: CCMR2_Output, pattern: OC(\d)M_1$, replacement: 'OC\1M_3'}
-      - {type: renameFields, register: CCMR3, pattern: OC(\d)M_1$, replacement: 'OC\1M_3'}
+      - {type: renameFields, register: CCMR1_Output, pattern: OC(\d)M_1$, replacement: OC\1M_3}
+      - {type: renameFields, register: CCMR2_Output, pattern: OC(\d)M_1$, replacement: OC\1M_3}
+      - {type: renameFields, register: CCMR3, pattern: OC(\d)M_1$, replacement: OC\1M_3}
       - {type: renameFields, register: CR2, pattern: ^MMS_1$, replacement: MMS_3}
       # Widen counter/compare fields to 32-bit (TIM1 source has 16/20-bit)
       - {type: patchFields, register: CNT, fields: [{name: CNT, bitWidth: 31}]}
@@ -197,14 +197,14 @@ shared_blocks:
       USART1: {name: INTR, description: Global interrupt}
       LPUART1: {name: INTR, description: Global interrupt}
     params:
-      - {name: lpbaud, type: bool, default: false, description: 'Low-power baud rate generation (BRR_LP variant; no OVER8/ONEBIT/GTPR/RTOR; no RTOIE/RTOEN/RTOF/RTOCF; no TECLREN in AUTOCR)'}
+      - {name: lpbaud, type: bool, default: false, description: Low-power baud rate generation (BRR_LP variant; no OVER8/ONEBIT/GTPR/RTOR; no RTOIE/RTOEN/RTOF/RTOCF; no TECLREN in AUTOCR)}
       - {name: synchronous, type: int, default: 3, max: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous+SPI slave (CLKEN/CPHA/CPOL/LBCL/SLVEN/DIS_NSS/UDR/UDRCF/TXFECF), 2=sync+smartcard (NACK/SCEN/SCARCNT/EOBIE/EOBF/EOBCF), 3=sync+smartcard+TCBGT'}
-      - {name: irda, type: bool, default: true, description: 'IrDA mode (IREN/IRLP in CR3; PSC prescaler in GTPR)'}
-      - {name: lin, type: bool, default: true, description: 'LIN mode (LBDL/LBDIE/LINEN in CR2; LBDF in ISR; LBDCF in ICR)'}
-      - {name: autobaud, type: bool, default: true, description: 'Auto baud rate detection (ABREN/ABRMOD in CR2; ABRRQ in RQR; ABRE/ABRF in ISR)'}
-      - {name: has_fifo, type: bool, default: true, description: 'FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR). Also implies PRESC register.'}
-      - {name: has_wakeup, type: bool, default: true, description: 'Wakeup from Stop mode interrupt flag selection (WUS/WUFIE in CR3; WUF in ISR; WUCF in ICR)'}
-      - {name: has_autocr, type: bool, default: false, description: 'Autonomous mode (AUTOCR register at 0x30)'}
+      - {name: irda, type: bool, default: true, description: IrDA mode (IREN/IRLP in CR3; PSC prescaler in GTPR)}
+      - {name: lin, type: bool, default: true, description: LIN mode (LBDL/LBDIE/LINEN in CR2; LBDF in ISR; LBDCF in ICR)}
+      - {name: autobaud, type: bool, default: true, description: Auto baud rate detection (ABREN/ABRMOD in CR2; ABRRQ in RQR; ABRE/ABRF in ISR)}
+      - {name: has_fifo, type: bool, default: true, description: FIFO mode (FIFOEN in CR1; TXFTIE/RXFTCFG/RXFTIE/TXFTCFG in CR3; TXFE/RXFF/RXFT/TXFT in ISR). Also implies PRESC register.}
+      - {name: has_wakeup, type: bool, default: true, description: Wakeup from Stop mode interrupt flag selection (WUS/WUFIE in CR3; WUF in ISR; WUCF in ICR)}
+      - {name: has_autocr, type: bool, default: false, description: Autonomous mode (AUTOCR register at 0x30)}
     transforms:
       # Add BRR_LP alternate register for LPUART baud rate (20-bit BRR)
       - {type: cloneRegister, source: BRR, name: BRR_LP}
@@ -214,7 +214,7 @@ shared_blocks:
       - type: patchFields
         register: BRR_LP
         fields:
-          - {name: BRR, bitOffset: 0, bitWidth: 20, description: 'LPUART baud rate division (LPUARTDIV)'}
+          - {name: BRR, bitOffset: 0, bitWidth: 20, description: LPUART baud rate division (LPUARTDIV)}
       # Add AUTOCR register for autonomous mode (U3/U5 only)
       - type: patchRegisters
         registers:
@@ -237,28 +237,28 @@ shared_blocks:
     # HSOTR-type families use HSOPAMP; G4/L1 are distinct IPs; U3 has different VM_SEL width
     from: STM32U535.OPAMP
     params:
-      - {name: single, type: bool, default: false, description: "Single operational amplifier (no second amplifier registers)"}
+      - {name: single, type: bool, default: false, description: Single operational amplifier (no second amplifier registers)}
     transforms:
-      - {type: renameRegisters, pattern: '^OPAMP1_', replacement: ''}
-      - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
+      - {type: renameRegisters, pattern: ^OPAMP1_, replacement: ''}
+      - {type: renameRegisters, pattern: ^OPAMP2_(.+), replacement: \g<1>2}
       # U5/L5 SVD typo: OPAMP2_CRS instead of OPAMP2_CSR
-      - {type: renameRegisters, pattern: '^CRS', replacement: CSR}
+      - {type: renameRegisters, pattern: ^CRS, replacement: CSR}
   HSOPAMP:
     # HSOTR-type OPAMP: H7 and H5 share this model
     # LPOTR-type families use LPOPAMP; G4/L1 are distinct IPs; U3 has different VM_SEL width
     from: STM32H723.OPAMP
     params:
-      - {name: single, type: bool, default: false, description: "Single operational amplifier (no second amplifier registers)"}
+      - {name: single, type: bool, default: false, description: Single operational amplifier (no second amplifier registers)}
     transforms:
-      - {type: renameRegisters, pattern: '^OPAMP1_', replacement: ''}
-      - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
+      - {type: renameRegisters, pattern: ^OPAMP1_, replacement: ''}
+      - {type: renameRegisters, pattern: ^OPAMP2_(.+), replacement: \g<1>2}
       # SVD bug: HSOTR fields named TRIMLP* instead of TRIMHS* (confirmed in all H7 RMs)
-      - {type: renameFields, register: HSOTR, pattern: '^TRIMLP', replacement: TRIMHS}
-      - {type: renameFields, register: HSOTR2, pattern: '^TRIMLP', replacement: TRIMHS}
+      - {type: renameFields, register: HSOTR, pattern: ^TRIMLP, replacement: TRIMHS}
+      - {type: renameFields, register: HSOTR2, pattern: ^TRIMLP, replacement: TRIMHS}
       # SVD bug: CSR2 missing VP_SEL field (present in RM0468, RM0399, RM0433, RM0455)
-      - {type: patchFields, register: CSR2, fields: [{name: VP_SEL, description: "Non inverted input selection", bitOffset: 2, bitWidth: 2}]}
+      - {type: patchFields, register: CSR2, fields: [{name: VP_SEL, description: Non inverted input selection, bitOffset: 2, bitWidth: 2}]}
       # SVD bug: OR register missing (all reserved, present in all H7/H5 RMs at offset 0x0C)
-      - {type: patchRegisters, registers: [{name: OR, displayName: OR, description: "OPAMP option register", addressOffset: 12, size: 32, access: read-write, resetValue: 0}]}
+      - {type: patchRegisters, registers: [{name: OR, displayName: OR, description: OPAMP option register, addressOffset: 12, size: 32, access: read-write, resetValue: 0}]}
   LPTIM:
     from: STM32U031.LPTIM1
     interrupts:
@@ -270,7 +270,7 @@ shared_blocks:
       - {name: has_counter_reset, type: bool, default: true, description: COUNTRST/RSTARE in CR}
       - {name: has_repetition, type: bool, default: true, description: RCR register and UE/REPOK status bits}
       - {name: has_cfgr2, type: bool, default: true, description: CFGR2 input selection register}
-      - {name: or_type, type: int, default: 0, max: 2, description: "OR register variant (0=none, 1=L4 2-bit option, 2=G4 6-bit input mux)"}
+      - {name: or_type, type: int, default: 0, max: 2, description: 'OR register variant (0=none, 1=L4 2-bit option, 2=G4 6-bit input mux)'}
     transforms:
       # Widen TRIGSEL from 3-bit to 4-bit (G4 has 16 trigger sources)
       - {type: patchFields, register: CFGR, fields: [{name: TRIGSEL, bitWidth: 4}]}
@@ -354,8 +354,8 @@ shared_blocks:
       SPI1: INTR
     params:
       - {name: has_tser, type: bool, default: false, description: 'TSER transfer reload (H7): TSER in CR2, TSERFIE/TSERF/TSERFC, UDRDET/UDRCFG widened in CFG1'}
-      - {name: has_autocr, type: bool, default: false, description: 'Autonomous mode (AUTOCR register at 0x1C)'}
-      - {name: has_i2s, type: bool, default: false, description: 'I2S audio capability (per-instance)'}
+      - {name: has_autocr, type: bool, default: false, description: Autonomous mode (AUTOCR register at 0x1C)}
+      - {name: has_i2s, type: bool, default: false, description: I2S audio capability (per-instance)}
     transforms:
       # H7: TSER field in CR2 for transfer extension reload
       - type: patchFields
@@ -406,8 +406,8 @@ shared_blocks:
       SPI3: INTR
     params:
       - {name: has_fifo, type: bool, default: true, description: 'FIFO capability (DS/FRXTH/LDMA_RX/LDMA_TX/NSSP in CR2, FRLVL/FTLVL in SR)'}
-      - {name: has_i2s, type: bool, default: false, description: 'I2S audio capability (per-instance)'}
-      - {name: has_astrten, type: bool, default: false, description: 'Asynchronous start enable (ASTRTEN in I2SCFGR)'}
+      - {name: has_i2s, type: bool, default: false, description: I2S audio capability (per-instance)}
+      - {name: has_astrten, type: bool, default: false, description: Asynchronous start enable (ASTRTEN in I2SCFGR)}
     transforms:
       # Fix G0 SVD typo: SE2 should be I2SE
       - {type: renameFields, register: I2SCFGR, pattern: ^SE2$, replacement: I2SE}
@@ -425,9 +425,9 @@ shared_blocks:
       SAI1_A: A
       SAI1_B: B
     params:
-      - {name: has_gcr, type: bool, default: true, description: 'GCR register (inter-SAI synchronization)'}
-      - {name: has_pdm, type: bool, default: false, description: 'PDM support (PDMCR/PDMDLY registers + OSR in xCR1)'}
-      - {name: has_mcken, type: bool, default: false, description: 'Master clock enable (MCKEN + 6-bit MCKDIV in xCR1)'}
+      - {name: has_gcr, type: bool, default: true, description: GCR register (inter-SAI synchronization)}
+      - {name: has_pdm, type: bool, default: false, description: PDM support (PDMCR/PDMDLY registers + OSR in xCR1)}
+      - {name: has_mcken, type: bool, default: false, description: Master clock enable (MCKEN + 6-bit MCKDIV in xCR1)}
     transforms:
       # Normalize enable field names to generic SAIXEN
       - {type: renameFields, register: ACR1, pattern: ^SAIAEN$, replacement: SAIXEN}
@@ -440,18 +440,18 @@ shared_blocks:
     # Families: all except N6 (N6 has 20+ extended registers)
     from: STM32U375.GPIOA
     params:
-      - {name: has_brr, type: bool, default: true, description: 'BRR register (port bit reset)'}
-      - {name: has_hslvr, type: bool, default: false, description: 'HSLVR register (high-speed low-voltage)'}
-      - {name: has_seccfgr, type: bool, default: false, description: 'SECCFGR register (security configuration)'}
-      - {name: pins, type: int, default: 65535, max: 65535, description: 'Bitmask of implemented pins (uint16_t)'}
+      - {name: has_brr, type: bool, default: true, description: BRR register (port bit reset)}
+      - {name: has_hslvr, type: bool, default: false, description: HSLVR register (high-speed low-voltage)}
+      - {name: has_seccfgr, type: bool, default: false, description: SECCFGR register (security configuration)}
+      - {name: pins, type: int, default: 65535, max: 65535, description: Bitmask of implemented pins (uint16_t)}
   QUADSPI:
     # Quad-SPI flash memory interface
     # Families: F4, F7, G4, H7, L4
     from: STM32F412.QUADSPI
     params:
-      - {name: base, type: int, default: 144, max: 255, description: 'Top 8 bits of memory-mapped base address (0x90 = 0x90000000)'}
-      - {name: logsize, type: int, default: 28, max: 31, description: 'Memory window size as log2 (28 = 256 MB)'}
-      - {name: dual, type: bool, default: false, description: 'Dual-flash mode support (DFM bit in CR)'}
+      - {name: base, type: int, default: 144, max: 255, description: Top 8 bits of memory-mapped base address (0x90 = 0x90000000)}
+      - {name: logsize, type: int, default: 28, max: 31, description: Memory window size as log2 (28 = 256 MB)}
+      - {name: dual, type: bool, default: false, description: Dual-flash mode support (DFM bit in CR)}
     interrupts:
       QUADSPI: INTR
   OCTOSPI:
@@ -461,7 +461,7 @@ shared_blocks:
     interrupts:
       OCTOSPI1: INTR
     params:
-      - {name: has_maxtran, type: bool, default: false, description: 'DCR3 maximum transfer field'}
+      - {name: has_maxtran, type: bool, default: false, description: DCR3 maximum transfer field}
   SPDIFRX:
     # S/PDIF audio receiver interface
     # Families: F4, F7, H7, H7RS, N6
@@ -571,7 +571,7 @@ shared_blocks:
       GPDMA1_CHannel31: CH31
     description: General-purpose DMA controller
     transforms:
-      - {type: createClusterArray, pattern: 'C(\d+)(.+)', name: C, description: DMA channel, template: 12}
+      - {type: createClusterArray, pattern: C(\d+)(.+), name: C, description: DMA channel, template: 12}
     params:
       - {name: max_channel, type: int, default: 15, max: 31, description: Highest DMA channel index (0-based)}
       - {name: enhanced_channels, type: int, default: 4, max: 32, description: Number of enhanced channels with 2D transfer support (last N channels)}
@@ -595,13 +595,13 @@ shared_blocks:
       OTG_HS_EP1_IN: EP1_IN
     description: USB on-the-go (Synopsys DWC2)
     params:
-      - {name: max_in_endpoint, type: int, default: 8, max: 15, description: "Highest device IN endpoint index (DIEPCTL registers, 0=EP0 only)"}
-      - {name: max_out_endpoint, type: int, default: 8, max: 15, description: "Highest device OUT endpoint index (DOEPCTL registers, 0=EP0 only)"}
-      - {name: max_channel, type: int, default: 15, max: 15, description: "Highest host channel index (HCCHAR registers)"}
-      - {name: max_tx_fifo, type: int, default: 7, max: 14, description: "Highest dedicated TX FIFO index (DIEPTXF registers, 1-based)"}
-      - {name: has_dma, type: bool, default: true, description: "DMA support (HBSTLEN/DMAEN in GAHBCFG, DMA registers)"}
-      - {name: has_lpm, type: bool, default: true, description: "Link Power Management (GLPMCFG register, ERRATIM/DEVLNSTS)"}
-      - {name: gccfg, type: int, default: 2, max: 2, description: "GCCFG register variant: 0=vbus (F4-old/L4/L4P), 1=bcd (F4-BCD/F7/H7/U5), 2=cdp (H7RS/N6)"}
+      - {name: max_in_endpoint, type: int, default: 8, max: 15, description: 'Highest device IN endpoint index (DIEPCTL registers, 0=EP0 only)'}
+      - {name: max_out_endpoint, type: int, default: 8, max: 15, description: 'Highest device OUT endpoint index (DOEPCTL registers, 0=EP0 only)'}
+      - {name: max_channel, type: int, default: 15, max: 15, description: Highest host channel index (HCCHAR registers)}
+      - {name: max_tx_fifo, type: int, default: 7, max: 14, description: 'Highest dedicated TX FIFO index (DIEPTXF registers, 1-based)'}
+      - {name: has_dma, type: bool, default: true, description: 'DMA support (HBSTLEN/DMAEN in GAHBCFG, DMA registers)'}
+      - {name: has_lpm, type: bool, default: true, description: 'Link Power Management (GLPMCFG register, ERRATIM/DEVLNSTS)'}
+      - {name: gccfg, type: int, default: 2, max: 2, description: 'GCCFG register variant: 0=vbus (F4-old/L4/L4P), 1=bcd (F4-BCD/F7/H7/U5), 2=cdp (H7RS/N6)'}
     transforms:
       # Patch base GCCFG: add N6-specific fields to make superset
       - type: patchFields
@@ -614,9 +614,7 @@ shared_blocks:
       - type: cloneRegister
         source: GCCFG
         name: GCCFG_BCD
-        removeFields: [CHGDET, FSVPLUS, FSVMINUS, SESSVLD, VBUSVLD, HCDPEN, HCDPDETEN,
-                        HVDMSRCEN, DCDEN, PDEN, VBDEN, SDEN, VBVALOVAL, VBVALOVEN,
-                        FORCEHOSTPD, BCDEN, IDPULLUPDIS]
+        removeFields: [CHGDET, FSVPLUS, FSVMINUS, SESSVLD, VBUSVLD, HCDPEN, HCDPDETEN, HVDMSRCEN, DCDEN, PDEN, VBDEN, SDEN, VBVALOVAL, VBVALOVEN, FORCEHOSTPD, BCDEN, IDPULLUPDIS]
       - type: patchFields
         register: GCCFG_BCD
         fields:
@@ -634,9 +632,7 @@ shared_blocks:
       - type: cloneRegister
         source: GCCFG
         name: GCCFG_VBUS
-        removeFields: [CHGDET, FSVPLUS, FSVMINUS, SESSVLD, VBUSVLD, HCDPEN, HCDPDETEN,
-                        HVDMSRCEN, DCDEN, PDEN, VBDEN, SDEN, VBVALOVAL, VBVALOVEN,
-                        FORCEHOSTPD, BCDEN, IDPULLUPDIS]
+        removeFields: [CHGDET, FSVPLUS, FSVMINUS, SESSVLD, VBUSVLD, HCDPEN, HCDPDETEN, HVDMSRCEN, DCDEN, PDEN, VBDEN, SDEN, VBVALOVAL, VBVALOVEN, FORCEHOSTPD, BCDEN, IDPULLUPDIS]
       - type: patchFields
         register: GCCFG_VBUS
         fields:
@@ -646,14 +642,14 @@ shared_blocks:
           - {name: VBUSBSEN, description: Enable the VBUS sensing B device, bitOffset: 19, bitWidth: 1}
           - {name: SOFOUTEN, description: SOF output enable, bitOffset: 20, bitWidth: 1}
           - {name: NOVBUSSENS, description: VBUS sensing disable, bitOffset: 21, bitWidth: 1}
-      - {type: createClusterArray, pattern: 'HC(\D+)(\d+)', name: HC, description: Host channel}
+      - {type: createClusterArray, pattern: HC(\D+)(\d+), name: HC, description: Host channel}
       - {type: renameRegisters, pattern: ^HPTXFSIZ$, replacement: DIEPTXF0}
-      - {type: createArray, pattern: 'DIEPTXF(\d+)', name: TXSAFD, description: "Transmit FIFO start address and depth (index 0 is host periodic TX FIFO)", template: 1}
-      - {type: renameRegisters, pattern: '^DTXFSTS', replacement: DIEPTXFSTS}
-      - {type: renameRegisters, pattern: 'DIEPCTL(\d+)_(\w+)', replacement: 'DIEPCTL_\2\1'}
-      - {type: createClusterArray, pattern: 'DIEP(\D+)(\d+)', name: DIEP, description: Device IN endpoint, template: 1}
-      - {type: renameRegisters, pattern: 'DOEPCTL(\d+)_(\w+)', replacement: 'DOEPCTL_\2\1'}
-      - {type: createClusterArray, pattern: 'DOEP(\D+)(\d+)', name: DOEP, description: Device OUT endpoint, template: 1}
+      - {type: createArray, pattern: DIEPTXF(\d+), name: TXSAFD, description: Transmit FIFO start address and depth (index 0 is host periodic TX FIFO), template: 1}
+      - {type: renameRegisters, pattern: ^DTXFSTS, replacement: DIEPTXFSTS}
+      - {type: renameRegisters, pattern: DIEPCTL(\d+)_(\w+), replacement: DIEPCTL_\2\1}
+      - {type: createClusterArray, pattern: DIEP(\D+)(\d+), name: DIEP, description: Device IN endpoint, template: 1}
+      - {type: renameRegisters, pattern: DOEPCTL(\d+)_(\w+), replacement: DOEPCTL_\2\1}
+      - {type: createClusterArray, pattern: DOEP(\D+)(\d+), name: DOEP, description: Device OUT endpoint, template: 1}
       - {type: patchAddressBlock, size: 3592}
   USB_DRD:
     # USB full-speed dual-role device (CHEPnR, PMA-based): C0, G0, H5, U0, U3
@@ -663,8 +659,8 @@ shared_blocks:
       USB_FS: INTR
     description: USB full-speed dual-role device interface (PMA-based, CHEPnR)
     params:
-      - {name: has_ddisc, type: bool, default: true, description: "Device disconnection detection (DDISCM in CNTR, DDISC in ISTR)"}
-      - {name: has_dcd, type: bool, default: true, description: "Data contact detection (DCDEN/DCDET in BCDR)"}
+      - {name: has_ddisc, type: bool, default: true, description: 'Device disconnection detection (DDISCM in CNTR, DDISC in ISTR)'}
+      - {name: has_dcd, type: bool, default: true, description: Data contact detection (DCDEN/DCDET in BCDR)}
   USB_DEV:
     # USB full-speed device (EPnR, PMA-based): F3, G4, L0, L1, L5
     from: STM32L552.USB
@@ -678,28 +674,28 @@ shared_blocks:
       USB_FS: INTR
     description: USB full-speed device interface (PMA-based, EPnR)
     params:
-      - {name: has_lpm, type: bool, default: true, description: "LPM support (L1RESUME/L1REQM in CNTR, L1REQ in ISTR)"}
-      - {name: has_lpmcsr, type: bool, default: true, description: "LPMCSR and BCDR registers present"}
+      - {name: has_lpm, type: bool, default: true, description: 'LPM support (L1RESUME/L1REQM in CNTR, L1REQ in ISTR)'}
+      - {name: has_lpmcsr, type: bool, default: true, description: LPMCSR and BCDR registers present}
   CRC:
     # CRC calculation unit (modern IP with INIT/POL): all except F3, F4, L1
     from: STM32U375.CRC
     params:
-      - {name: idr32, type: bool, default: true, description: 'IDR register is 32-bit (false = 8-bit)'}
-      - {name: has_rtype, type: bool, default: false, description: 'CR register includes RTYPE_IN and RTYPE_OUT reversal type fields'}
+      - {name: idr32, type: bool, default: true, description: IDR register is 32-bit (false = 8-bit)}
+      - {name: has_rtype, type: bool, default: false, description: CR register includes RTYPE_IN and RTYPE_OUT reversal type fields}
   CRS:
     # Clock Recovery System: C0, G4, H5, H7, H7RS, L0, L4, L4P, L5, U0, U3, U5
     from: STM32U375.CRS
     interrupts:
       CRS: INTR
     params:
-      - {name: trim_width, type: int, default: 6, description: 'TRIM field width in CR register (6 or 7 bits)'}
+      - {name: trim_width, type: int, default: 6, description: TRIM field width in CR register (6 or 7 bits)}
   PSSI:
     # Parallel Synchronous Slave Interface: H5, H7, H7RS, N6, U5
     from: STM32H7S.PSSI
     interrupts:
       PSSI: INTR
     params:
-      - {name: has_cksrc, type: bool, default: false, description: 'CKSRC field in CR for clock source selection'}
+      - {name: has_cksrc, type: bool, default: false, description: CKSRC field in CR for clock source selection}
   CEC:
     # Gen2 HDMI-CEC: F4, F7, G0, H7, H7RS (F3 Gen1 stays separate)
     from: STM32H723.CEC
@@ -713,7 +709,7 @@ shared_blocks:
       DCMI: INTR
       DCMI_PSSI: INTR
     params:
-      - {name: has_pixel_select, type: bool, default: true, description: 'BSM/OEBS/LSM/OELS fields in CR for byte/line selection'}
+      - {name: has_pixel_select, type: bool, default: true, description: BSM/OEBS/LSM/OELS fields in CR for byte/line selection}
   bxCAN:
     # Basic Extended CAN: F3, F4, F7, L4, L4P
     from: STM32F446.CAN1
@@ -727,7 +723,7 @@ shared_blocks:
       CAN_RX1: RX1
       CAN_SCE: SCE
     params:
-      - {name: filter_banks, type: int, default: 28, description: 'Number of CAN filter banks (14 or 28)'}
+      - {name: filter_banks, type: int, default: 28, description: Number of CAN filter banks (14 or 28)}
       - {name: linked_to_slave, type: string, default: '', description: Instance name of slave CAN sharing this master filter banks}
       - {name: linked_to_master, type: string, default: '', description: Instance name of master CAN whose filter banks this slave uses}
     description: Controller area network (Bosch C_CAN)
@@ -748,8 +744,8 @@ shared_blocks:
             bitWidth: 1
             access: read-write
             enumeratedValues:
-              - {name: B_0x0, description: 'Voltage reference set to VREF_OUT1 (around 2.048 V).', value: 0}
-              - {name: B_0x1, description: 'Voltage reference set to VREF_OUT2 (around 2.5 V).', value: 1}
+              - {name: B_0x0, description: Voltage reference set to VREF_OUT1 (around 2.048 V)., value: 0}
+              - {name: B_0x1, description: Voltage reference set to VREF_OUT2 (around 2.5 V)., value: 1}
   FDCAN:
     # Basic FDCAN (37-register Bosch M_CAN): C0, G0, G4, H5, H7RS, L5, U3, U5
     from: STM32H523.FDCAN
@@ -764,8 +760,8 @@ shared_blocks:
       SDIO: INTR
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
     params:
-      - {name: has_ceata, type: bool, default: true, description: "CE-ATA support fields in CMD/STA/ICR/MASK"}
-      - {name: has_stbiterr, type: bool, default: true, description: "Start bit error detection in STA/ICR/MASK"}
+      - {name: has_ceata, type: bool, default: true, description: CE-ATA support fields in CMD/STA/ICR/MASK}
+      - {name: has_stbiterr, type: bool, default: true, description: Start bit error detection in STA/ICR/MASK}
   SDMMC:
     # Modern SDMMC with IDMA: H5, H7, H7RS, L4P, L5, N6, U3, U5
     from: STM32H743.SDMMC1
@@ -787,10 +783,10 @@ shared_blocks:
             access: read-write
             resetValue: 0
             fields:
-              - {name: IDMALA, description: "Word aligned linked list item address offset", bitOffset: 2, bitWidth: 14}
-              - {name: ABR, description: "Acknowledge linked list buffer ready", bitOffset: 29, bitWidth: 1}
-              - {name: ULS, description: "Update IDMABSIZE from next linked list", bitOffset: 30, bitWidth: 1}
-              - {name: ULA, description: "Update IDMALAR from linked list", bitOffset: 31, bitWidth: 1}
+              - {name: IDMALA, description: Word aligned linked list item address offset, bitOffset: 2, bitWidth: 14}
+              - {name: ABR, description: Acknowledge linked list buffer ready, bitOffset: 29, bitWidth: 1}
+              - {name: ULS, description: Update IDMABSIZE from next linked list, bitOffset: 30, bitWidth: 1}
+              - {name: ULA, description: Update IDMALAR from linked list, bitOffset: 31, bitWidth: 1}
           - name: IDMABAR
             displayName: IDMABAR
             description: IDMA linked list memory base register
@@ -799,15 +795,15 @@ shared_blocks:
             access: read-write
             resetValue: 0
             fields:
-              - {name: IDMABA, description: "Word aligned linked list memory base address", bitOffset: 2, bitWidth: 30}
+              - {name: IDMABA, description: Word aligned linked list memory base address, bitOffset: 2, bitWidth: 30}
       - {type: patchAddressBlock, size: 1024}
     params:
-      - {name: idma_list, type: bool, default: false, description: "IDMA linked-list mode (vs double-buffer)"}
-      - {name: idma_buf_align64, type: bool, default: false, description: "IDMA 64-byte buffer alignment (11-bit IDMABNDT at [16:6] vs 12-bit at [16:5])"}
-      - {name: has_version_id, type: bool, default: false, description: "VER and ID identification registers present"}
+      - {name: idma_list, type: bool, default: false, description: IDMA linked-list mode (vs double-buffer)}
+      - {name: idma_buf_align64, type: bool, default: false, description: 'IDMA 64-byte buffer alignment (11-bit IDMABNDT at [16:6] vs 12-bit at [16:5])'}
+      - {name: has_version_id, type: bool, default: false, description: VER and ID identification registers present}
   ETH:
-    # Synopsys DWC Ethernet QoS (EQOS): H5, H7, H7RS
-    from: STM32H563.ETH
+    # Synopsys DWC Ethernet QoS (EQOS): H5, H7, H7RS, C5
+    from: STM32H5E5.ETH
     interrupts:
       ETH: INTR
       ETH_WKUP: WKUP
@@ -818,74 +814,74 @@ shared_blocks:
         register: MACA0LR
         fields:
           - {name: ADDRLO}
-          - {name: ADDR0, description: "MAC address byte 0", bitOffset: 0, bitWidth: 8, access: read-write}
-          - {name: ADDR1, description: "MAC address byte 1", bitOffset: 8, bitWidth: 8, access: read-write}
-          - {name: ADDR2, description: "MAC address byte 2", bitOffset: 16, bitWidth: 8, access: read-write}
-          - {name: ADDR3, description: "MAC address byte 3", bitOffset: 24, bitWidth: 8, access: read-write}
+          - {name: ADDR0, description: MAC address byte 0, bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR1, description: MAC address byte 1, bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR2, description: MAC address byte 2, bitOffset: 16, bitWidth: 8, access: read-write}
+          - {name: ADDR3, description: MAC address byte 3, bitOffset: 24, bitWidth: 8, access: read-write}
       - type: patchFields
         register: MACA0HR
         fields:
           - {name: ADDRHI}
-          - {name: ADDR4, description: "MAC address byte 4", bitOffset: 0, bitWidth: 8, access: read-write}
-          - {name: ADDR5, description: "MAC address byte 5", bitOffset: 8, bitWidth: 8, access: read-write}
-          - {name: MBC, description: "Mask byte control", bitOffset: 24, bitWidth: 6, access: read-write}
-          - {name: SA, description: "Source address", bitOffset: 30, bitWidth: 1, access: read-write}
+          - {name: ADDR4, description: MAC address byte 4, bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR5, description: MAC address byte 5, bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: MBC, description: Mask byte control, bitOffset: 24, bitWidth: 6, access: read-write}
+          - {name: SA, description: Source address, bitOffset: 30, bitWidth: 1, access: read-write}
       - type: patchFields
         register: MACA1LR
         fields:
           - {name: ADDRLO}
-          - {name: ADDR0, description: "MAC address byte 0", bitOffset: 0, bitWidth: 8, access: read-write}
-          - {name: ADDR1, description: "MAC address byte 1", bitOffset: 8, bitWidth: 8, access: read-write}
-          - {name: ADDR2, description: "MAC address byte 2", bitOffset: 16, bitWidth: 8, access: read-write}
-          - {name: ADDR3, description: "MAC address byte 3", bitOffset: 24, bitWidth: 8, access: read-write}
+          - {name: ADDR0, description: MAC address byte 0, bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR1, description: MAC address byte 1, bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR2, description: MAC address byte 2, bitOffset: 16, bitWidth: 8, access: read-write}
+          - {name: ADDR3, description: MAC address byte 3, bitOffset: 24, bitWidth: 8, access: read-write}
       - type: patchFields
         register: MACA1HR
         fields:
           - {name: ADDRHI}
-          - {name: ADDR4, description: "MAC address byte 4", bitOffset: 0, bitWidth: 8, access: read-write}
-          - {name: ADDR5, description: "MAC address byte 5", bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR4, description: MAC address byte 4, bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR5, description: MAC address byte 5, bitOffset: 8, bitWidth: 8, access: read-write}
       - type: patchFields
         register: MACA2LR
         fields:
           - {name: ADDRLO}
-          - {name: ADDR0, description: "MAC address byte 0", bitOffset: 0, bitWidth: 8, access: read-write}
-          - {name: ADDR1, description: "MAC address byte 1", bitOffset: 8, bitWidth: 8, access: read-write}
-          - {name: ADDR2, description: "MAC address byte 2", bitOffset: 16, bitWidth: 8, access: read-write}
-          - {name: ADDR3, description: "MAC address byte 3", bitOffset: 24, bitWidth: 8, access: read-write}
+          - {name: ADDR0, description: MAC address byte 0, bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR1, description: MAC address byte 1, bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR2, description: MAC address byte 2, bitOffset: 16, bitWidth: 8, access: read-write}
+          - {name: ADDR3, description: MAC address byte 3, bitOffset: 24, bitWidth: 8, access: read-write}
       - type: patchFields
         register: MACA2HR
         fields:
           - {name: ADDRHI}
-          - {name: ADDR4, description: "MAC address byte 4", bitOffset: 0, bitWidth: 8, access: read-write}
-          - {name: ADDR5, description: "MAC address byte 5", bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR4, description: MAC address byte 4, bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR5, description: MAC address byte 5, bitOffset: 8, bitWidth: 8, access: read-write}
       - type: patchFields
         register: MACA3LR
         fields:
           - {name: ADDRLO}
-          - {name: ADDR0, description: "MAC address byte 0", bitOffset: 0, bitWidth: 8, access: read-write}
-          - {name: ADDR1, description: "MAC address byte 1", bitOffset: 8, bitWidth: 8, access: read-write}
-          - {name: ADDR2, description: "MAC address byte 2", bitOffset: 16, bitWidth: 8, access: read-write}
-          - {name: ADDR3, description: "MAC address byte 3", bitOffset: 24, bitWidth: 8, access: read-write}
+          - {name: ADDR0, description: MAC address byte 0, bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR1, description: MAC address byte 1, bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR2, description: MAC address byte 2, bitOffset: 16, bitWidth: 8, access: read-write}
+          - {name: ADDR3, description: MAC address byte 3, bitOffset: 24, bitWidth: 8, access: read-write}
       - type: patchFields
         register: MACA3HR
         fields:
           - {name: ADDRHI}
-          - {name: ADDR4, description: "MAC address byte 4", bitOffset: 0, bitWidth: 8, access: read-write}
-          - {name: ADDR5, description: "MAC address byte 5", bitOffset: 8, bitWidth: 8, access: read-write}
+          - {name: ADDR4, description: MAC address byte 4, bitOffset: 0, bitWidth: 8, access: read-write}
+          - {name: ADDR5, description: MAC address byte 5, bitOffset: 8, bitWidth: 8, access: read-write}
       # Collapse MACA0-3 into cluster array (template: MACA1 has MBC/SA superset)
-      - {type: createClusterArray, pattern: 'MACA(\d+)(HR|LR)', name: MACA, description: "MAC address filter", template: 1}
+      - {type: createClusterArray, pattern: MACA(\d+)(HR|LR), name: MACA, description: MAC address filter, template: 1}
   DFSDM:
     # Digital Filter for Sigma-Delta Modulators: F4, F7, H7, L4, L4P, L5
     # H7A3 is superset: 8 channels, 8 filters, CHyDLYR delay register
     from: STM32H7A3.DFSDM1
     params:
-      - {name: channels, type: int, default: 8, max: 8, description: "Number of serial channels (2, 4, or 8)"}
-      - {name: filters, type: int, default: 4, max: 8, description: "Number of digital filter units (1, 2, 4, or 8)"}
+      - {name: channels, type: int, default: 8, max: 8, description: 'Number of serial channels (2, 4, or 8)'}
+      - {name: filters, type: int, default: 4, max: 8, description: 'Number of digital filter units (1, 2, 4, or 8)'}
       - {name: has_dlyr, type: bool, default: true, description: CHyDLYR delay register present}
     transforms:
       - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
-      - {type: createClusterArray, pattern: 'CH(\d+)(.+)', name: CH, description: Serial channel}
-      - {type: createClusterArray, pattern: 'FLT(\d+)(.+)', name: FLT, description: Digital filter}
+      - {type: createClusterArray, pattern: CH(\d+)(.+), name: CH, description: Serial channel}
+      - {type: createClusterArray, pattern: FLT(\d+)(.+), name: FLT, description: Digital filter}
     interrupts:
       DFSDM1_FLT0: FLT0
       DFSDM1_FLT1: FLT1
@@ -902,13 +898,13 @@ shared_blocks:
     # F3 excluded: unique PC13/14/15 GPIO bits in TAFCR
     from: STM32H723.RTC
     params:
-      - {name: has_tampcr, type: bool, default: true, description: "TAMPCR layout (false = legacy TAFCR)"}
-      - {name: has_calibr, type: bool, default: false, description: "Legacy CALIBR register at offset 0x18"}
-      - {name: has_or, type: bool, default: true, description: "OR output routing register present"}
-      - {name: or_f7, type: bool, default: false, description: "F7-style OR layout (TSINSEL+ALARM_TYPE at different bits)"}
-      - {name: has_itsf, type: bool, default: false, description: "Internal timestamp flag (ISR.ITSF) and enable (CR.ITSE)"}
-      - {name: backup_regs, type: int, default: 32, max: 32, description: "Number of backup registers (5, 20, or 32)"}
-      - {name: tampers, type: int, default: 3, max: 3, description: "Tamper detection channels (2 or 3)"}
+      - {name: has_tampcr, type: bool, default: true, description: TAMPCR layout (false = legacy TAFCR)}
+      - {name: has_calibr, type: bool, default: false, description: Legacy CALIBR register at offset 0x18}
+      - {name: has_or, type: bool, default: true, description: OR output routing register present}
+      - {name: or_f7, type: bool, default: false, description: F7-style OR layout (TSINSEL+ALARM_TYPE at different bits)}
+      - {name: has_itsf, type: bool, default: false, description: Internal timestamp flag (ISR.ITSF) and enable (CR.ITSE)}
+      - {name: backup_regs, type: int, default: 32, max: 32, description: 'Number of backup registers (5, 20, or 32)'}
+      - {name: tampers, type: int, default: 3, max: 3, description: Tamper detection channels (2 or 3)}
     transforms:
       - type: cloneRegister
         source: TAMPCR
@@ -979,13 +975,13 @@ shared_blocks:
     # L5 uses SMCR (XXDPROT naming) instead of SECCFGR (XXSEC naming)
     from: STM32U375.RTC
     params:
-      - {name: has_wutr, type: bool, default: true, description: "Wakeup timer + Alarm B registers (WUTR, ALRMBR, ALRMBSSR)"}
-      - {name: has_binary, type: bool, default: false, description: "Binary mode: ALRABINR/ALRBBINR registers"}
-      - {name: has_privcfgr, type: bool, default: false, description: "Privilege configuration register (PRIVCFGR)"}
-      - {name: has_seccfgr, type: bool, default: false, description: "Security configuration register (SECCFGR or SMCR)"}
-      - {name: smcr, type: bool, default: false, description: "Use SMCR naming for security config (L5 variant)"}
-      - {name: has_smisr, type: bool, default: false, description: "Secure masked interrupt status register"}
-      - {name: has_tamptscr, type: bool, default: false, description: "TAMPTSCR + TSIDR tamper timestamp registers"}
+      - {name: has_wutr, type: bool, default: true, description: 'Wakeup timer + Alarm B registers (WUTR, ALRMBR, ALRMBSSR)'}
+      - {name: has_binary, type: bool, default: false, description: 'Binary mode: ALRABINR/ALRBBINR registers'}
+      - {name: has_privcfgr, type: bool, default: false, description: Privilege configuration register (PRIVCFGR)}
+      - {name: has_seccfgr, type: bool, default: false, description: Security configuration register (SECCFGR or SMCR)}
+      - {name: smcr, type: bool, default: false, description: Use SMCR naming for security config (L5 variant)}
+      - {name: has_smisr, type: bool, default: false, description: Secure masked interrupt status register}
+      - {name: has_tamptscr, type: bool, default: false, description: TAMPTSCR + TSIDR tamper timestamp registers}
     transforms:
       - type: cloneRegister
         source: SECCFGR
@@ -1034,8 +1030,8 @@ families:
   C0:
     svd:
       zip: stm32c0-svd.zip
-      version: "1.5"
-      date: "2025-07-22"
+      version: '1.5'
+      date: '2025-07-22'
     subfamilies:
       C0xx:
         ref_manual:
@@ -1185,8 +1181,8 @@ families:
   C5:
     svd:
       zip: stm32c5-svd.zip  # Not yet available from ST
-      version: ""
-      date: ""
+      version: ''
+      date: ''
     subfamilies:
       C53x_C542:
         ref_manual:
@@ -1330,52 +1326,52 @@ families:
           PKA: INTR
       # --- Family-specific blocks (need SVD extraction) ---
       ADC:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [ADC1, ADC2, ADC3]
         interrupts:
           ADC1: INTR
           ADC2: INTR
           ADC3: INTR
       ADC_Common:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [ADCC12, ADCC3]
       AES:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [AES]
         interrupts:
           AES: INTR
       COMP:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [COMP]
         interrupts:
           COMP1: INTR
           COMP2: INTR
       DAC:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [DAC]
         interrupts:
           DAC1: INTR
       EXTI:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [EXTI]
       Flash:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [FLASH]
         interrupts:
           FLASH: INTR
       I3C:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [I3C1]
         interrupts:
           I3C1_EV: EV
           I3C1_ER: ER
       ICACHE:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [ICACHE]
         interrupts:
           ICACHE: INTR
       LPDMA:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [LPDMA1, LPDMA2]
         interrupts:
           LPDMA1_CH0: CH0
@@ -1395,25 +1391,25 @@ families:
           LPDMA2_CH6: CH6
           LPDMA2_CH7: CH7
       OPAMP:
-        from: ""  # TBD: G4-style OPAMP (CSR+TCMR, no OTR)
+        from: ''  # TBD: G4-style OPAMP (CSR+TCMR, no OTR)
         instances: [OPAMP1]
       PWR:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [PWR]
         interrupts:
           PVD: INTR
       RAMCFG:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [RAMCFG]
         interrupts:
           RAMCFG: INTR
       RCC:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [RCC]
         interrupts:
           RCC: INTR
       RNG:
-        from: ""  # TBD: newer RNG gen with expanded health test regs
+        from: ''  # TBD: newer RNG gen with expanded health test regs
         instances: [RNG]
         interrupts:
           RNG: INTR
@@ -1423,36 +1419,37 @@ families:
         interrupts:
           RTC: INTR
       SAES:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [SAES]
         interrupts:
           SAES: INTR
       SBS:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [SBS]
       TAMP:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [TAMP]
         interrupts:
           TAMP: INTR
       DBGMCU:
-        from: ""  # TBD: pending SVD
+        from: ''  # TBD: pending SVD
         instances: [DBGMCU]
       # --- C59x/C5A3 only ---
       CCB:
-        from: ""  # TBD: pending SVD, C59x/C5A3 only
+        from: ''  # TBD: pending SVD, C59x/C5A3 only
         instances: [CCB]
       DLYB:
-        from: ""  # TBD: pending SVD, C59x/C5A3 only
+        from: ''  # TBD: pending SVD, C59x/C5A3 only
         instances: [DLYB]
       XSPI:
-        from: ""  # TBD: pending SVD, C59x/C5A3 only
+        from: ''  # TBD: pending SVD, C59x/C5A3 only
         instances: [XSPI1]
         interrupts:
           XSPI1: INTR
     chip_params:
       _all:
         _all:
+          IWDG: {gen: 3}
           WWDG: {cfr_version: 2}
           CRC: {has_rtype: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
@@ -1466,11 +1463,20 @@ families:
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           LPTIM1: {max_channel: 1}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
+          UART7: {synchronous: 0}
+          LPUART1: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
+          SPI: {has_i2s: true}
+          PKA: {gen: 3}
+          HASH: {gen: 2}
+          CRS: {trim_width: 7}
+          RTC: {has_binary: true, has_privcfgr: true}
   F3:
     svd:
       zip: stm32f3-svd.zip
-      version: "1.3"
-      date: "2023-03-28"
+      version: '1.3'
+      date: '2023-03-28'
     subfamilies:
       F301:
         ref_manual: {name: RM0366, url: https://www.st.com/resource/en/reference_manual/rm0366-stm32f301x68-and-stm32f318x8-advanced-armbased-32bit-mcus-stmicroelectronics.pdf}
@@ -1764,8 +1770,8 @@ families:
   F4:
     svd:
       zip: stm32f4-svd.zip
-      version: "2.0"
-      date: "2024-02-12"
+      version: '2.0'
+      date: '2024-02-12'
     subfamilies:
       F401:
         ref_manual: {name: RM0368, url: https://www.st.com/resource/en/reference_manual/rm0368-stm32f401xbc-and-stm32f401xde-advanced-armbased-32bit-mcus-stmicroelectronics.pdf, rev: '6', date: 2025-01}
@@ -2168,8 +2174,8 @@ families:
   F7:
     svd:
       zip: stm32f7-svd.zip
-      version: "1.0"
-      date: "2023-03-22"
+      version: '1.0'
+      date: '2023-03-22'
     subfamilies:
       F72x_F73x:
         ref_manual: {name: RM0431, url: https://www.st.com/resource/en/reference_manual/rm0431-stm32f72xxx-and-stm32f73xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf, rev: '4', date: 2025-02}
@@ -2570,8 +2576,8 @@ families:
   G0:
     svd:
       zip: stm32g0-svd.zip
-      version: "1.6"
-      date: "2024-02-12"
+      version: '1.6'
+      date: '2024-02-12'
     subfamilies:
       G0x0:
         ref_manual: {name: RM0454, url: https://www.st.com/resource/en/reference_manual/rm0454-stm32g0x0-advanced-armbased-32bit-mcus-stmicroelectronics.pdf, rev: '5', date: 2020-11}
@@ -2748,8 +2754,8 @@ families:
   G4:
     svd:
       zip: stm32g4_svd.zip
-      version: "3.0"
-      date: "2025-07-22"
+      version: '3.0'
+      date: '2025-07-22'
     subfamilies:
       G4xx:
         ref_manual:
@@ -2985,8 +2991,8 @@ families:
   H5:
     svd:
       zip: stm32h5-svd.zip
-      version: "1.9"
-      date: "2025-07-22"
+      version: '2.0'
+      date: '2026-03-12'
     subfamilies:
       H503:
         ref_manual: {name: RM0492, url: https://www.st.com/resource/en/reference_manual/rm0492-stm32h5-series-armbased-32bit-mcus-stmicroelectronics.pdf, rev: '2', date: 2023-03}
@@ -3000,6 +3006,13 @@ families:
           - STM32H562
           - STM32H563
           - STM32H573
+      H5Ex_H5Fx:
+        ref_manual: {name: RM0517, url: https://www.st.com/resource/en/reference_manual/rm0517-stm32h5e45f4-and-stm32h5e55f5-armbased-32bit-mcus-stmicroelectronics.pdf, rev: '1', date: 2026-02}
+        chips:
+          - STM32H5E4
+          - STM32H5E5
+          - STM32H5F4
+          - STM32H5F5
     blocks:
       ADC:
         from: STM32H503.ADC
@@ -3352,8 +3365,8 @@ families:
   H7:
     svd:
       zip: stm32h7-svd.zip
-      version: "2.8"
-      date: "2025-07-22"
+      version: '2.8'
+      date: '2025-07-22'
     subfamilies:
       H73x:
         ref_manual: {name: RM0468, url: https://www.st.com/resource/en/reference_manual/rm0468-stm32h723733-stm32h725735-and-stm32h730-value-line-advanced-armbased-32bit-mcus-stmicroelectronics.pdf, rev: '3', date: 2021-12}
@@ -3489,7 +3502,7 @@ families:
           DMA_STR6: STR6
           DMA1_STR7: STR7
         transforms:
-          - {type: createClusterArray, pattern: 'S(\d+)(\w+)', name: S, description: DMA stream}
+          - {type: createClusterArray, pattern: S(\d+)(\w+), name: S, description: DMA stream}
       DSIHOST:
         from: STM32H745_CM4.DSIHOST
         instances: [DSIHOST]
@@ -3618,9 +3631,9 @@ families:
         interrupts:
           MDMA: INTR
         transforms:
-          - {type: renameFields, register: C0ISR, pattern: '0$', replacement: ''}
-          - {type: renameFields, register: C0IFCR, pattern: '0$', replacement: ''}
-          - {type: createClusterArray, pattern: 'C(\d+)(\w+)', name: C, description: MDMA channel}
+          - {type: renameFields, register: C0ISR, pattern: 0$, replacement: ''}
+          - {type: renameFields, register: C0IFCR, pattern: 0$, replacement: ''}
+          - {type: createClusterArray, pattern: C(\d+)(\w+), name: C, description: MDMA channel}
       OCTOSPI:
         uses: OCTOSPI
         instances: [OCTOSPI1, OCTOSPI2]
@@ -3698,17 +3711,17 @@ families:
           H745_H757:
             from: STM32H745_CM4.RCC
             transforms:
-              - {type: patchFields, register: APB3ENR, fields: [{name: DSIEN, bitOffset: 4, bitWidth: 1, description: 'DSI peripheral clock enable'}]}
-              - {type: patchFields, register: C1_APB3ENR, fields: [{name: DSIEN, bitOffset: 4, bitWidth: 1, description: 'DSI peripheral clock enable'}]}
-              - {type: patchFields, register: APB3LPENR, fields: [{name: DSILPEN, bitOffset: 4, bitWidth: 1, description: 'DSI peripheral clock enable during CSleep mode'}]}
-              - {type: patchFields, register: C1_APB3LPENR, fields: [{name: DSILPEN, bitOffset: 4, bitWidth: 1, description: 'DSI peripheral clock enable during CSleep mode'}]}
-              - {type: patchFields, register: APB1LENR, fields: [{name: WWDG2EN, bitOffset: 11, bitWidth: 1, description: 'WWDG2 peripheral clock enable'}]}
-              - {type: patchFields, register: C1_APB1LENR, fields: [{name: WWDG2EN, bitOffset: 11, bitWidth: 1, description: 'WWDG2 peripheral clock enable'}]}
-              - {type: patchFields, register: APB1LLPENR, fields: [{name: WWDG2LPEN, bitOffset: 11, bitWidth: 1, description: 'WWDG2 peripheral clock enable during CSleep mode'}]}
-              - {type: patchFields, register: C1_APB1LLPENR, fields: [{name: WWDG2LPEN, bitOffset: 11, bitWidth: 1, description: 'WWDG2 peripheral clock enable during CSleep mode'}]}
-              - {type: renameRegisters, pattern: '^(RSR|(?:AHB[1-4]|APB[1-4][LH]?)(?:ENR|LPENR))$', replacement: 'C0_\1'}
+              - {type: patchFields, register: APB3ENR, fields: [{name: DSIEN, bitOffset: 4, bitWidth: 1, description: DSI peripheral clock enable}]}
+              - {type: patchFields, register: C1_APB3ENR, fields: [{name: DSIEN, bitOffset: 4, bitWidth: 1, description: DSI peripheral clock enable}]}
+              - {type: patchFields, register: APB3LPENR, fields: [{name: DSILPEN, bitOffset: 4, bitWidth: 1, description: DSI peripheral clock enable during CSleep mode}]}
+              - {type: patchFields, register: C1_APB3LPENR, fields: [{name: DSILPEN, bitOffset: 4, bitWidth: 1, description: DSI peripheral clock enable during CSleep mode}]}
+              - {type: patchFields, register: APB1LENR, fields: [{name: WWDG2EN, bitOffset: 11, bitWidth: 1, description: WWDG2 peripheral clock enable}]}
+              - {type: patchFields, register: C1_APB1LENR, fields: [{name: WWDG2EN, bitOffset: 11, bitWidth: 1, description: WWDG2 peripheral clock enable}]}
+              - {type: patchFields, register: APB1LLPENR, fields: [{name: WWDG2LPEN, bitOffset: 11, bitWidth: 1, description: WWDG2 peripheral clock enable during CSleep mode}]}
+              - {type: patchFields, register: C1_APB1LLPENR, fields: [{name: WWDG2LPEN, bitOffset: 11, bitWidth: 1, description: WWDG2 peripheral clock enable during CSleep mode}]}
+              - {type: renameRegisters, pattern: '^(RSR|(?:AHB[1-4]|APB[1-4][LH]?)(?:ENR|LPENR))$', replacement: C0_\1}
               - {type: patchRegisters, registers: [{name: C2_RSR, addressOffset: 400, size: 32, access: read-write, resetValue: 0}]}
-              - {type: createClusterArray, pattern: 'C(\d+)_(.+)', name: C, description: 'Per-CPU register bank'}
+              - {type: createClusterArray, pattern: C(\d+)_(.+), name: C, description: Per-CPU register bank}
           H7A3_B:
             from: STM32H7A3.RCC
       RNG:
@@ -3853,8 +3866,8 @@ families:
   H7RS:
     svd:
       zip: stm32h7rs-svd.zip
-      version: "1.3"
-      date: "2025-07-08"
+      version: '1.3'
+      date: '2025-07-08'
     subfamilies:
       H7R_H7S:
         ref_manual:
@@ -4054,7 +4067,7 @@ families:
         from: STM32H7S.RAMCFG
         instances: [RAMCFG]
         transforms:
-          - {type: renameRegisters, pattern: '^RAMECC_', replacement: ''}
+          - {type: renameRegisters, pattern: ^RAMECC_, replacement: ''}
       RCC:
         from: STM32H7S.RCC
         instances: [RCC]
@@ -4164,8 +4177,8 @@ families:
   L0:
     svd:
       zip: stm32l0-svd.zip
-      version: "1.4"
-      date: "2023-12-14"
+      version: '1.4'
+      date: '2023-12-14'
     subfamilies:
       L0x0:
         ref_manual: {name: RM0451, url: https://www.st.com/resource/en/reference_manual/rm0451-ultralowpower-stm32l0x0-advanced-armbased-32bit-mcus-stmicroelectronics.pdf, rev: '3', date: 2022-01}
@@ -4334,8 +4347,8 @@ families:
   L1:
     svd:
       zip: stm32l1_svd.zip
-      version: "1.4"
-      date: "2023-08-11"
+      version: '1.4'
+      date: '2023-08-11'
     subfamilies:
       L1xx:
         ref_manual:
@@ -4499,8 +4512,8 @@ families:
   L4:
     svd:
       zip: stm32l4_svd.zip
-      version: "1.9"
-      date: "2025-07-22"
+      version: '1.9'
+      date: '2025-07-22'
     subfamilies:
       L41x_L42x:
         ref_manual: {name: RM0394, url: https://www.st.com/resource/en/reference_manual/rm0394-stm32l41xxx42xxx43xxx44xxx45xxx46xxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf, rev: '5', date: 2024-12}
@@ -4748,8 +4761,8 @@ families:
   L4P:
     svd:
       zip: stm32l4plus-svd.zip
-      version: "1.6"
-      date: "2025-07-22"
+      version: '1.6'
+      date: '2025-07-22'
     subfamilies:
       L4Px_L4Qx:
         ref_manual:
@@ -5021,8 +5034,8 @@ families:
   L5:
     svd:
       zip: stm32l5-svd.zip
-      version: "1.0"
-      date: "2024-11-12"
+      version: '1.0'
+      date: '2024-11-12'
     subfamilies:
       L55x_L56x:
         ref_manual:
@@ -5251,8 +5264,8 @@ families:
   N6:
     svd:
       zip: stm32n6-svd.zip
-      version: "1.0"
-      date: "2025-01-07"
+      version: '1.0'
+      date: '2025-01-07'
     subfamilies:
       N6xx:
         ref_manual:
@@ -5584,8 +5597,8 @@ families:
   U0:
     svd:
       zip: stm32u0-svd.zip
-      version: "1.0"
-      date: "2024-05-28"
+      version: '1.0'
+      date: '2024-05-28'
     subfamilies:
       U0xx:
         ref_manual:
@@ -5742,8 +5755,8 @@ families:
   U3:
     svd:
       zip: stm32u3-svd.zip
-      version: "1.1"
-      date: "2025-07-16"
+      version: '1.1'
+      date: '2025-07-16'
     subfamilies:
       U3xx:
         ref_manual:
@@ -5870,10 +5883,10 @@ families:
         from: STM32U375.OPAMP
         instances: [OPAMP]
         transforms:
-          - {type: renameRegisters, pattern: '^OPAMP1_', replacement: ''}
-          - {type: renameRegisters, pattern: '^OPAMP2_(.+)', replacement: '\g<1>2'}
+          - {type: renameRegisters, pattern: ^OPAMP1_, replacement: ''}
+          - {type: renameRegisters, pattern: ^OPAMP2_(.+), replacement: \g<1>2}
           # U3 SVD typo: OPAMP2_CRS instead of OPAMP2_CSR
-          - {type: renameRegisters, pattern: '^CRS', replacement: CSR}
+          - {type: renameRegisters, pattern: ^CRS, replacement: CSR}
       PKA:
         uses: PKA
         instances: [PKA]
@@ -5971,8 +5984,8 @@ families:
   U5:
     svd:
       zip: stm32u5_svd.zip
-      version: "1.3"
-      date: "2023-09-27"
+      version: '1.3'
+      date: '2023-09-27'
     subfamilies:
       U5xx:
         ref_manual:
