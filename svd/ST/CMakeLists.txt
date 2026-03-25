@@ -10,6 +10,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/stm32-extraction.cmake)
 # audit-stm32<id>-models.  ZIP filenames must match svd.zip in ./STM32.yaml.
 
 stm32_add_family(ID c0     CODE C0  DISPLAY "STM32C0"  ZIP stm32c0-svd.zip)
+stm32_add_family(ID c5     CODE C5  DISPLAY "STM32C5"  ZIP stm32c5-svd.zip)
 stm32_add_family(ID f3     CODE F3  DISPLAY "STM32F3"  ZIP stm32f3-svd.zip)
 stm32_add_family(ID f4     CODE F4  DISPLAY "STM32F4"  ZIP stm32f4-svd.zip)
 stm32_add_family(ID f7     CODE F7  DISPLAY "STM32F7"  ZIP stm32f7-svd.zip)
