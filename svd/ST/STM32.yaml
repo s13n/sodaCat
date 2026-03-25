@@ -1028,6 +1028,31 @@ shared_blocks:
       RTC_WKUP: WKUP
       RTC_ALARM: ALARM
       RTC_S: S
+  I3C:
+    # Improved Inter-Integrated Circuit: C5, H5, N6, U3
+    from: STM32U375.I3C1
+    interrupts:
+      I3C1_EV: EV
+      I3C1_ER: ER
+      I3C1_ERR: ERR
+    description: Improved Inter-Integrated Circuit (I3C)
+    transforms:
+      # Fix mixed-case register names (U3 SVD bug)
+      - {type: renameRegisters, pattern: ^MAxRLR$, replacement: MAXRLR}
+      - {type: renameRegisters, pattern: ^MAxWLR$, replacement: MAXWLR}
+      - {type: renameRegisters, pattern: ^GETMxDSR$, replacement: GETMXDSR}
+      # Fix mixed-case field names (U3 SVD bug)
+      - {type: renameFields, register: CFGR, pattern: ^ExITPTRN$, replacement: EXITPTRN}
+      - {type: renameFields, register: CFGR, pattern: ^Rx, replacement: RX}
+      - {type: renameFields, register: CFGR, pattern: ^Tx, replacement: TX}
+      - {type: renameFields, register: SR, pattern: ^xDCNT$, replacement: XDCNT}
+      - {type: renameFields, register: EVR, pattern: ^Rx, replacement: RX}
+      - {type: renameFields, register: EVR, pattern: ^Tx, replacement: TX}
+      - {type: renameFields, register: IER, pattern: ^Rx, replacement: RX}
+      - {type: renameFields, register: IER, pattern: ^Tx, replacement: TX}
+      - {type: renameFields, register: CEVR, pattern: ^CRx, replacement: CRX}
+      - {type: renameFields, register: MISR, pattern: ^Rx, replacement: RX}
+      - {type: renameFields, register: MISR, pattern: ^Tx, replacement: TX}
   SAES:
     # Secure AES coprocessor: C5, H5, H7RS, N6, U3, U5
     from: STM32H533.SAES
@@ -1368,11 +1393,8 @@ families:
         interrupts:
           FLASH: INTR
       I3C:
-        from: ''  # TBD: pending SVD
+        uses: I3C
         instances: [I3C1]
-        interrupts:
-          I3C1_EV: EV
-          I3C1_ER: ER
       ICACHE:
         from: ''  # TBD: pending SVD
         instances: [ICACHE]
@@ -3170,11 +3192,10 @@ families:
         uses: I2C
         instances: [I2C, I2C1, I2C2, I2C2_S, I2C3, I2C3_S, I2C4, I2C_S]
       I3C:
-        from: STM32H523.I3C
+        uses: I3C
         instances: [I3C, I3C1, I3C2, I3C2_S, I3C_S]
         interrupts:
           I3C1_ERR: ERR
-          I3C1_EV: EV
       ICACHE:
         from: STM32H503.ICACHE
         instances: [ICACHE]
@@ -5434,11 +5455,8 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
       I3C:
-        from: STM32N645.I3C1
+        uses: I3C
         instances: [I3C1, I3C2]
-        interrupts:
-          I3C1_EV: EV
-          I3C1_ER: ER
       IWDG:
         from: STM32N645.IWDG
         instances: [IWDG]
@@ -5867,11 +5885,8 @@ families:
         uses: I2C
         instances: [I2C1, I2C2, I2C3]
       I3C:
-        from: STM32U375.I3C1
+        uses: I3C
         instances: [I3C1, I3C2]
-        interrupts:
-          I3C1_ER: ER
-          I3C1_EV: EV
       IWDG:
         uses: IWDG
         instances: [IWDG]
