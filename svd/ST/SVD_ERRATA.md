@@ -1205,6 +1205,21 @@ suffix renaming, this becomes `CRS2` instead of `CSR2`. Fixed by renameRegisters
 transform in the shared LPOPAMP block definition and the U3 family OPAMP block.
 
 
+## ST STM32U5
+
+References:
+- RM0456 Rev.6 — STM32U5 series
+
+### DCACHE: RMMONR field name typo
+
+**All U5 SVDs (SVD v1.3):**
+
+In the DCACHE_RMMONR (read-miss monitor) register, the field is named `MRISSMON`
+instead of `RMISSMON`. The WMMONR register has the correct field name `WMISSMON`.
+Not worked around — the shared DCACHE model is sourced from H5 which has the
+correct name.
+
+
 ## ST STM32H7RS
 
 References:
