@@ -425,6 +425,10 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                 for rf in t.get('renameFields', []):
                     renameEntries(clone.get('fields', []), 'name',
                                   rf['pattern'], rf['replacement'])
+                if 'addressOffset' in t:
+                    clone['addressOffset'] = t['addressOffset']
+                if 'description' in t:
+                    clone['description'] = t['description']
                 idx = regs.index(src)
                 regs.insert(idx + 1, clone)
         elif typ == 'patchAddressBlock':

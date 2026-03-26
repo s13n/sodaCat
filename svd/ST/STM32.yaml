@@ -528,11 +528,52 @@ shared_blocks:
     interrupts:
       FMAC: INTR
   FMC:
-    # Flexible Memory Controller (NOR/SRAM/NAND/SDRAM): H7, H7RS
-    from: STM32H723.FMC
+    # Flexible Memory Controller (NOR/SRAM/NAND/SDRAM): F3, F4, F7, G4, H5, H7, H7RS, L4, L4P, L5, U5
+    from: STM32H523.FMC
     interrupts:
       FMC: INTR
     description: Flexible Memory Controller
+    params:
+      - {name: sdram, type: bool, default: false, description: "SDRAM controller present"}
+      - {name: nand_banks, type: int, default: 1, description: "Number of NAND flash banks (1 or 3)"}
+      - {name: pcscntr, type: bool, default: false, description: "PSRAM chip-select counter register present"}
+    transforms:
+      # Add BMAP field to BCR1-4 (H7/H7RS: bank remapping control, bits [25:24])
+      - {type: patchFields, register: BCR1, fields: [{name: BMAP, description: "FMC bank mapping", bitOffset: 24, bitWidth: 2}]}
+      - {type: patchFields, register: BCR2, fields: [{name: BMAP, description: "FMC bank mapping", bitOffset: 24, bitWidth: 2}]}
+      - {type: patchFields, register: BCR3, fields: [{name: BMAP, description: "FMC bank mapping", bitOffset: 24, bitWidth: 2}]}
+      - {type: patchFields, register: BCR4, fields: [{name: BMAP, description: "FMC bank mapping", bitOffset: 24, bitWidth: 2}]}
+      # Add CLKDIV/DATLAT to BWTR1-4 (F3: synchronous write timing, bits [23:20] and [27:24])
+      - {type: patchFields, register: BWTR1, fields: [{name: CLKDIV, description: "Clock divide ratio", bitOffset: 20, bitWidth: 4}, {name: DATLAT, description: "Data latency", bitOffset: 24, bitWidth: 4}]}
+      - {type: patchFields, register: BWTR2, fields: [{name: CLKDIV, description: "Clock divide ratio", bitOffset: 20, bitWidth: 4}, {name: DATLAT, description: "Data latency", bitOffset: 24, bitWidth: 4}]}
+      - {type: patchFields, register: BWTR3, fields: [{name: CLKDIV, description: "Clock divide ratio", bitOffset: 20, bitWidth: 4}, {name: DATLAT, description: "Data latency", bitOffset: 24, bitWidth: 4}]}
+      - {type: patchFields, register: BWTR4, fields: [{name: CLKDIV, description: "Clock divide ratio", bitOffset: 20, bitWidth: 4}, {name: DATLAT, description: "Data latency", bitOffset: 24, bitWidth: 4}]}
+      # Clone NAND bank 2 registers (F3/F4: 3-bank NAND)
+      - {type: cloneRegister, source: PCR, name: PCR2, addressOffset: 96}
+      - {type: cloneRegister, source: SR, name: SR2, addressOffset: 100}
+      - {type: cloneRegister, source: PMEM, name: PMEM2, addressOffset: 104}
+      - {type: cloneRegister, source: PATT, name: PATT2, addressOffset: 108}
+      - {type: cloneRegister, source: ECCR, name: ECCR2, addressOffset: 116}
+      # Clone NAND bank 4 registers (F3/F4: 3-bank NAND)
+      - {type: cloneRegister, source: PCR, name: PCR4, addressOffset: 160}
+      - {type: cloneRegister, source: SR, name: SR4, addressOffset: 164}
+      - {type: cloneRegister, source: PMEM, name: PMEM4, addressOffset: 168}
+      - {type: cloneRegister, source: PATT, name: PATT4, addressOffset: 172}
+      # Add PIO4 register (F3/F4: bank 4 I/O space timing)
+      - type: patchRegisters
+        registers:
+          - name: PIO4
+            displayName: PIO4
+            description: "I/O space timing register 4"
+            addressOffset: 176
+            size: 32
+            access: read-write
+            resetValue: 4244438268
+            fields:
+              - {name: IOSETx, description: "I/O setup time", bitOffset: 0, bitWidth: 8}
+              - {name: IOWAITx, description: "I/O wait time", bitOffset: 8, bitWidth: 8}
+              - {name: IOHOLDx, description: "I/O hold time", bitOffset: 16, bitWidth: 8}
+              - {name: IOHIZx, description: "I/O Hi-Z time", bitOffset: 24, bitWidth: 8}
   GPDMA:
     # General-purpose DMA: H5, H7RS, N6, U3, U5
     from: STM32N645.GPDMA
@@ -1974,10 +2015,8 @@ families:
           F334:
             from: STM32F3x4.EXTI
       FMC:
-        from: STM32F302.FMC
+        uses: FMC
         instances: [FMC]
-        interrupts:
-          FMC: INTR
       Flash:
         instances: [Flash]
         interrupts:
@@ -2118,6 +2157,7 @@ families:
           TIM3: {encoder: 1}
           TIM4: {encoder: 1}
           TIM19: {encoder: 1}
+          FMC: {nand_banks: 3}
       F301:
         _all:
           TSC: {groups: 6}
@@ -2276,10 +2316,8 @@ families:
         instances: [Ethernet_PTP]
         description: Ethernet PTP (Synopsys GMAC)
       FMC:
-        from: STM32F427.FMC
+        uses: FMC
         instances: [FMC]
-        interrupts:
-          FMC: INTR
       FMPI2C:
         from: STM32F446.FMPI2C
         instances: [FMPI2C]
@@ -2468,6 +2506,7 @@ families:
           OTG_FS: {gccfg: 0, max_in_endpoint: 3, max_out_endpoint: 3, max_channel: 7, max_tx_fifo: 2, has_dma: false, has_lpm: false}
           OTG_HS: {gccfg: 0, max_in_endpoint: 7, max_out_endpoint: 3, max_tx_fifo: 6, has_lpm: false}
           DFSDM: {has_dlyr: false}
+          FMC: {sdram: true, nand_banks: 3}
       F401:
         _all:
           PWR: {power_mode: lvds}
@@ -2684,15 +2723,10 @@ families:
         instances: [Ethernet_PTP]
         description: Ethernet PTP (Synopsys GMAC)
       FMC:
-        from: STM32F722.FMC
+        uses: FMC
         instances: [FMC]
         interrupts:
           FSMC: INTR
-        transforms:
-          - type: patchFields
-            register: SDSR
-            fields:
-              - {name: RE, description: Refresh error flag, bitOffset: 0, bitWidth: 1, access: read-only}
       Flash:
         from: STM32F767.FLASH
         instances: [FLASH, Flash]
@@ -2902,6 +2936,7 @@ families:
           OTG_FS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 5, max_channel: 11, max_tx_fifo: 5, has_dma: false}
           OTG_HS: {gccfg: 1, max_in_endpoint: 7, max_out_endpoint: 7, max_tx_fifo: 7}
           DFSDM: {has_dlyr: false}
+          FMC: {sdram: true}
       F72x_F73x:
         _all:
           DMA: {channel_count: 8}
@@ -3196,10 +3231,8 @@ families:
         uses: FMAC
         instances: [FMAC]
       FMC:
-        from: STM32G473.FMC
+        uses: FMC
         instances: [FMC]
-        interrupts:
-          FMC: INTR
       Flash:
         from: STM32G474.FLASH
         instances: [FLASH]
@@ -3306,6 +3339,7 @@ families:
           LPTIM: {has_repetition: false, has_cfgr2: false, or_type: 2}
           SAI: {has_gcr: false, has_pdm: true, has_mcken: true}
           HRTIM_Master: {timers: 6}
+          FMC: {pcscntr: true}
       G4xx:
         STM32G431:
           Flash: {pages: 64}
@@ -3471,10 +3505,8 @@ families:
         uses: FMAC
         instances: [FMAC]
       FMC:
-        from: STM32H523.FMC
+        uses: FMC
         instances: [FMC]
-        interrupts:
-          FMC: INTR
       FMC_S:
         from: STM32H523.FMC_S
         instances: [FMC_S]
@@ -3693,6 +3725,7 @@ families:
           GPDMA: {max_channel: 7, enhanced_channels: 2}
           SDMMC: {idma_list: true}
           RTC: {has_binary: true, has_privcfgr: true}
+          FMC: {sdram: true, pcscntr: true}
       H5Ex_H5Fx:
         _all:
           ETH: {has_mdio_intr: true}
@@ -4166,6 +4199,7 @@ families:
           SAI: {has_pdm: true}
           SDMMC: {has_version_id: true}
           OTG_HS: {gccfg: 1, max_in_endpoint: 7, max_out_endpoint: 7}
+          FMC: {sdram: true}
       H742_H753:
         _all:
           DFSDM: {has_dlyr: false}
@@ -4493,6 +4527,7 @@ families:
           GPDMA: {has_trustzone: false}
           SDMMC: {idma_list: true}
           RTC: {has_binary: true, has_privcfgr: true}
+          FMC: {sdram: true}
   L0:
     svd:
       zip: stm32l0-svd.zip
@@ -4929,10 +4964,8 @@ families:
           EXTI9_5: INTR9_5
           EXTI15_10: INTR15_10
       FMC:
-        from: STM32L471.FMC
+        uses: FMC
         instances: [FMC]
-        interrupts:
-          FMC: INTR
       Flash:
         from: STM32L412.FLASH
         instances: [FLASH]
@@ -5194,10 +5227,9 @@ families:
           EXTI9_5: INTR9_5
           EXTI15_10: INTR15_10
       FMC:
-        from: STM32L4P5.FMC
+        uses: FMC
         instances: [FMC]
         interrupts:
-          FMC: INTR
           FPU: FPU
       Flash:
         instances: [FLASH]
@@ -5439,10 +5471,8 @@ families:
         instances: [FDCAN1]
         description: Controller area network with flexible data-rate (Bosch M_CAN)
       FMC:
-        from: STM32L552.FMC
+        uses: FMC
         instances: [FMC]
-        interrupts:
-          FMC: INTR
       Flash:
         from: STM32L552.FLASH
         instances: [FLASH]
@@ -5563,6 +5593,7 @@ families:
           SDMMC: {has_version_id: true}
           VREFBUF: {vrs_wide: false}
           RTC: {has_privcfgr: true, has_seccfgr: true, smcr: true, has_smisr: true}
+          FMC: {pcscntr: true}
   N6:
     svd:
       zip: stm32n6-svd.zip
@@ -6373,10 +6404,8 @@ families:
         uses: FMAC
         instances: [FMAC]
       FMC:
-        from: STM32U5Fx.FMC
+        uses: FMC
         instances: [FMC]
-        interrupts:
-          FMC: INTR
       Flash:
         from: STM32U5Fx.FLASH
         instances: [FLASH]
@@ -6566,3 +6595,4 @@ families:
           OTG_FS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 5, max_channel: 11, max_tx_fifo: 4, has_dma: false}
           OTG_HS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 8, max_channel: 11, has_lpm: false}
           RTC: {has_binary: true, has_privcfgr: true, has_seccfgr: true, has_smisr: true}
+          FMC: {pcscntr: true}
