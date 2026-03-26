@@ -1,40 +1,38 @@
 name: ADF
-description: Register block
+description: Audio Digital Filter
 groupName: ADF
-source: STM32U375 SVD v1.0
+source: STM32H7S SVD v1.3
 registers:
   - name: GCR
     displayName: GCR
     description: Global control register
     addressOffset: 0
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: TRGO
-        description: Trigger output control
+        description: "Trigger output control\nThis bit is set by software and reset by hardware. It is used to start the acquisition of several filters synchronously. It is also used to synchronize several ADF together by controlling the adf_trgo signal."
         bitOffset: 0
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Write 0 has no effect.
+            description: Write 0 has no effect. Read 0 means that the trigger can be set again to 1.
             value: 0
           - name: B_0x1
-            description: Write 1 generates a positive pulse on the adf_trgo signal and triggers the acquisition on enabled filter having their ACQMOD[2:0] = 01x and selecting TRGO as trigger.
+            description: Write 1 generates a positive pulse on the adf_trgo signal and triggers the acquisition on enabled filter having their ACQMOD[2:0] = 01x and selecting TRGO as trigger. Read 1 means that the trigger pulse is still active.
             value: 1
   - name: CKGCR
     displayName: CKGCR
     description: Clock generator control register
     addressOffset: 4
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: CKGDEN
-        description: CKGEN dividers enable
+        description: "CKGEN dividers enable\nThis bit is set and reset by software. It is used to enable/disable the clock dividers of the CKGEN: PROCDIV and CCKDIV."
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -46,7 +44,7 @@ registers:
             description: CKGEN dividers enabled
             value: 1
       - name: CCK0EN
-        description: ADF_CCK0 clock enable
+        description: "ADF_CCK0 clock enable\nThis bit is set and reset by software. It is used to control the generation of the bitstream clock on the ADF_CCK0 pin."
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -58,7 +56,7 @@ registers:
             description: Bitstream clock generated on the ADF_CCK0 pin
             value: 1
       - name: CCK1EN
-        description: ADF_CCK1 clock enable
+        description: "ADF_CCK1 clock enable\nThis bit is set and reset by software. It is used to control the generation of the bitstream clock on the ADF_CCK1 pin."
         bitOffset: 2
         bitWidth: 1
         access: read-write
@@ -70,7 +68,7 @@ registers:
             description: Bitstream clock generated on the ADF_CCK1 pin.
             value: 1
       - name: CKGMOD
-        description: Clock generator mode
+        description: "Clock generator mode\nThis bit is set and reset by software. It is used to define the way the clock generator is enabled. This bit must not be changed if the filter is enabled (DFTEN = 1).\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 4
         bitWidth: 1
         access: read-write
@@ -82,7 +80,7 @@ registers:
             description: The kernel clock is provided to the dividers when CKGDEN is set to 1 and the trigger condition met.
             value: 1
       - name: CCK0DIR
-        description: ADF_CCK0 direction
+        description: "ADF_CCK0 direction\nThis bit is set and reset by software. It is used to control the direction of the ADF_CCK0 pin.\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 5
         bitWidth: 1
         access: read-write
@@ -94,7 +92,7 @@ registers:
             description: The ADF_CCK0 pin direction is in output.
             value: 1
       - name: CCK1DIR
-        description: ADF_CCK1 direction
+        description: "ADF_CCK1 direction\nThis bit is set and reset by software. It is used to control the direction of the ADF_CCK1 pin.\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 6
         bitWidth: 1
         access: read-write
@@ -106,7 +104,7 @@ registers:
             description: The ADF_CCK1 pin direction is in output.
             value: 1
       - name: TRGSENS
-        description: CKGEN trigger sensitivity selection
+        description: "CKGEN trigger sensitivity selection\nThis bit is set and cleared by software. It is used to select the trigger sensitivity of the trigger signals. This bit is not significant if the CKGMOD = 0.\nNote: When the trigger source is TRGO, the sensitivity is forced to falling edge, thus TRGSENS value is not taken into account. This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 8
         bitWidth: 1
         access: read-write
@@ -118,7 +116,7 @@ registers:
             description: A falling edge even triggers the activation of CKGEN dividers.
             value: 1
       - name: TRGSRC
-        description: Digital filter trigger signal selection
+        description: "Digital filter trigger signal selection\nThis field is set and cleared by software. It is used to select which external signals trigger the corresponding filter. This field is not significant if the CKGMOD = 0.\n000x: TRGO selected\nothers: reserved\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 12
         bitWidth: 4
         access: read-write
@@ -127,7 +125,7 @@ registers:
             description: adf_trg1 selected
             value: 2
       - name: CCKDIV
-        description: Divider to control the ADF_CCK clock
+        description: "Divider to control the ADF_CCK clock\nThis field is set and reset by software. It is used to adjust the frequency of the ADF_CCK clock. The input clock of this divider is the clock provided to the SITF. More globally, the frequency of the ADF_CCK is given by the following formula:\nThis field must not be changed if the filter is enabled (DFTEN = 1).\n...\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 16
         bitWidth: 4
         access: read-write
@@ -145,7 +143,7 @@ registers:
             description: The ADF_CCK clock is adf_proc_ck / 16.
             value: 15
       - name: PROCDIV
-        description: Divider to control the serial interface clock
+        description: "Divider to control the serial interface clock\nthis field is set and reset by software. It is used to adjust the frequency of the clock provided to the SITF.\nThis field must not be changed if the filter is enabled (DFTEN = 1).\n...\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 24
         bitWidth: 7
         access: read-write
@@ -157,7 +155,7 @@ registers:
             description: adf_ker_ck / 2 provided to the SITF
             value: 1
       - name: CKGACTIVE
-        description: Clock generator active flag
+        description: "Clock generator active flag\nThis bit is set and cleared by hardware. Ii is used by the application to check if the clock generator is effectively enabled (active) or not. The protected fields of this function can only be updated when CKGACTIVE = 0 (see Section 46.4.13: Register protection for details). \nThe delay between a transition on CKGDEN and a transition on CKGACTIVE is two periods of AHB clock and two 2 periods of adf_proc_ck."
         bitOffset: 31
         bitWidth: 1
         access: read-only
@@ -168,44 +166,16 @@ registers:
           - name: B_0x1
             description: The clock generator is active and protected fields cannot be configured.
             value: 1
-  - name: TRGISEL
-    displayName: TRGISEL
-    description: Trigger input selection register
-    addressOffset: 32
-    size: 32
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: TRGISEL
-        description: Input selection for adf_trgi
-        bitOffset: 0
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: exti15 is selected (default after reset)
-            value: 0
-          - name: B_0x1
-            description: tim1_trgo is selected
-            value: 1
-          - name: B_0x2
-            description: tim3_trgo is selected
-            value: 2
-          - name: B_0x3
-            description: tim6_trgo is selected
-            value: 3
   - name: SITF0CR
     displayName: SITF0CR
     description: Serial interface control register 0
     addressOffset: 128
     size: 32
-    access: read-write
     resetValue: 7936
     resetMask: 4294967295
     fields:
       - name: SITFEN
-        description: Serial interface enable
+        description: "Serial interface enable\nThis bit is set and cleared by software. It is used to enable/disable the serial interface."
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -217,7 +187,7 @@ registers:
             description: Serial interface enabled
             value: 1
       - name: SCKSRC
-        description: Serial clock source
+        description: "Serial clock source\nThis field is set and cleared by software. It is used to select the clock source of the serial interface.\nothers: reserved\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 1
         bitWidth: 2
         access: read-write
@@ -229,7 +199,7 @@ registers:
             description: Serial clock source is ADF_CCK1.
             value: 1
       - name: SITFMOD
-        description: Serial interface type
+        description: "Serial interface type\nThis field is set and cleared by software. It is used to define the serial interface type.\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 4
         bitWidth: 2
         access: read-write
@@ -247,12 +217,12 @@ registers:
             description: 'Manchester mode: rising edge = logic 1, falling edge = logic 0'
             value: 3
       - name: STH
-        description: Manchester symbol threshold/SPI threshold
+        description: "Manchester symbol threshold/SPI threshold\nThis field is set and cleared by software. It is used for Manchester mode to define the expected symbol threshold levels (seer to Manchester mode for details on computation).\nIn addition this field is used to define the timeout value for the clock absence detection in Normal SPI mode. STH[4:0] values lower than four are invalid.\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 8
         bitWidth: 5
         access: read-write
       - name: SITFACTIVE
-        description: Serial interface active flag
+        description: "Serial interface active flag\nThis bit is set and cleared by hardware. It is used by the application to check if the serial interface is effectively enabled (active) or not. The protected fields of this function can only be updated when SITFACTIVE is set to 0 (see Section 46.4.13: Register protection for details). \nThe delay between a transition on SITFEN and a transition on SITFACTIVE is two periods of AHB clock and two periods of adf_proc_ck."
         bitOffset: 31
         bitWidth: 1
         access: read-only
@@ -263,17 +233,16 @@ registers:
           - name: B_0x1
             description: The serial interface is active and protected fields cannot be configured.
             value: 1
-  - name: BSMx0CR
-    displayName: BSMx0CR
+  - name: BSMX0CR
+    displayName: BSMX0CR
     description: Bitstream matrix control register 0
     addressOffset: 132
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: BSSEL
-        description: Bitstream selection
+        description: "Bitstream selection\nThis field is set and cleared by software. It is used to select the bitstream to be processed for DFLT0.\nothers: reserved\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 0
         bitWidth: 5
         access: read-write
@@ -284,29 +253,28 @@ registers:
           - name: B_0x1
             description: bs0_f provided to DFLT0
             value: 1
-      - name: BSMxACTIVE
-        description: BSMx active flag
+      - name: BSMXACTIVE
+        description: "BSMX active flag\nThis bit is set and cleared by hardware. It is used by the application to check if the BSMX is effectively enabled (active) or not. BSSEL[4:0] can only be updated when BSMXACTIVE is set to 0. This BSMXACTIVE flag cannot go to 0 if DFLT0 is enabled."
         bitOffset: 31
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: BSMx is not active and can be configured if needed.
+            description: BSMX is not active and can be configured if needed.
             value: 0
           - name: B_0x1
-            description: BSMx is active and protected fields cannot be configured.
+            description: BSMX is active and protected fields cannot be configured.
             value: 1
   - name: DFLT0CR
     displayName: DFLT0CR
     description: Digital filter control register 0
     addressOffset: 136
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: DFLTEN
-        description: DFLT0 enable
+        description: "DFLT0 enable\nThis bit is set and cleared by software. It is used to control the start of acquisition of the DFLT0 path. This bit behavior depends on ACQMOD[2:0] and external events. The serial or parallel interface delivering the samples must be enabled as well."
         bitOffset: 0
         bitWidth: 1
         access: write-only
@@ -318,7 +286,7 @@ registers:
             description: Acquisition immediately started if ACQMOD[2:0] = 00x or 101, or acquisition started when the proper trigger event occurs if ACQMOD[2:0] = 01x.
             value: 1
       - name: DMAEN
-        description: DMA requests enable
+        description: "DMA requests enable\nThis bit is set and cleared by software. It is used to control the generation of DMA request to transfer the processed samples into the memory.\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -330,19 +298,19 @@ registers:
             description: DMA interface for the corresponding digital filter enabled
             value: 1
       - name: FTH
-        description: RxFIFO threshold selection
+        description: "RXFIFO threshold selection\nThis bit is set and cleared by software. It is used to select the RXFIFO threshold. \nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 2
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: RxFIFO threshold event generated when the RxFIFO is not empty
+            description: RXFIFO threshold event generated when the RXFIFO is not empty
             value: 0
           - name: B_0x1
-            description: RxFIFO threshold event generated when the RxFIFO is half-full
+            description: RXFIFO threshold event generated when the RXFIFO is half-full
             value: 1
       - name: ACQMOD
-        description: DFLT0 trigger mode
+        description: "DFLT0 trigger mode\nThis field is set and cleared by software. It is used to select the filter trigger mode.\nothers: same as 000\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details).."
         bitOffset: 4
         bitWidth: 3
         access: read-write
@@ -363,7 +331,7 @@ registers:
             description: Window continuous acquisition mode
             value: 4
       - name: TRGSENS
-        description: DFLT0 trigger sensitivity selection
+        description: "DFLT0 trigger sensitivity selection\nThis field is set and cleared by software. It is used to select the trigger sensitivity of the external signals\nWhen the trigger source is TRGO, TRGSENS value is not taken into account. When TRGO is selected, the sensitivity is forced to falling edge.\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 8
         bitWidth: 1
         access: read-write
@@ -375,7 +343,7 @@ registers:
             description: A falling edge even triggers the acquisition.
             value: 1
       - name: TRGSRC
-        description: DFLT0 trigger signal selection
+        description: "DFLT0 trigger signal selection\nThis field is set and cleared by software. It is used to select which external signals trigger DFLT0.\nothers: Reserved\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 12
         bitWidth: 4
         access: read-write
@@ -387,7 +355,7 @@ registers:
             description: adf_trgi selected
             value: 2
       - name: NBDIS
-        description: Number of samples to be discarded
+        description: "Number of samples to be discarded\nThis field is set and cleared by software. It is used to define the number of samples to be discarded every time DFLT0 is re-started.\n...\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 20
         bitWidth: 8
         access: read-write
@@ -399,7 +367,7 @@ registers:
             description: 1 sample discarded
             value: 1
       - name: DFLTRUN
-        description: DFLT0 run status flag
+        description: "DFLT0 run status flag\nThis bit is set and cleared by hardware. It indicates if DFLT0 is running or not."
         bitOffset: 30
         bitWidth: 1
         access: read-only
@@ -411,7 +379,7 @@ registers:
             description: DFLT0running
             value: 1
       - name: DFLTACTIVE
-        description: DFLT0 active flag
+        description: "DFLT0 active flag\nThis bit is set and cleared by hardware. It indicates if DFLT0 is active: can be running or waiting for events."
         bitOffset: 31
         bitWidth: 1
         access: read-only
@@ -427,12 +395,11 @@ registers:
     description: Digital filer configuration register 0
     addressOffset: 140
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: DATSRC
-        description: Source data for the digital filter
+        description: "Source data for the digital filter\nThis field is set and cleared by software.\n0x: Stream coming from the BSMX selected\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 0
         bitWidth: 2
         access: read-write
@@ -444,19 +411,19 @@ registers:
             description: Stream coming from the ADCITF2 selected
             value: 3
       - name: CICMOD
-        description: Select the CIC order
+        description: "Select the CIC order\nThis field is set and cleared by software. It is used to select the order of the MCIC.\nothers: reserved\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 4
         bitWidth: 3
         access: read-write
         enumeratedValues:
           - name: B_0x4
-            description: MCIC configured in single Sincless thansup>4less than/sup> filter
+            description: MCIC configured in single Sinc<sup>4</sup> filter
             value: 4
           - name: B_0x5
-            description: MCIC configured in single Sincless thansup>5less than/sup> filter
+            description: MCIC configured in single Sinc<sup>5</sup> filter
             value: 5
       - name: MCICD
-        description: CIC decimation ratio selection
+        description: "CIC decimation ratio selection\nThis field is set and cleared by software.It is used to select the CIC decimation ratio. A decimation ratio smaller than two is not allowed. The decimation ratio is given by (CICDEC+1).\n...\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 8
         bitWidth: 8
         access: read-write
@@ -468,7 +435,7 @@ registers:
             description: Decimation ratio is 2.
             value: 1
       - name: MCICD8
-        description: CIC decimation ratio selection
+        description: "CIC decimation ratio selection\nThis field is set and cleared by software.It is used to select the CIC decimation ratio. A decimation ratio smaller than two is not allowed. The decimation ratio is given by (CICDEC+1).\n...\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 16
         bitWidth: 1
         access: read-write
@@ -480,7 +447,7 @@ registers:
             description: Decimation ratio is 2.
             value: 1
       - name: SCALE
-        description: Scaling factor selection
+        description: "Scaling factor selection\nThis field is set and cleared by software. It is used to select the gain to be applied at CIC output (see Table 419 for details). If the application attempts to write a new gain value while the previous one is not yet applied, this new gain value is ignored. Reading back this field informs the application on the current gain value.\n...\n...\nothers: Reserved"
         bitOffset: 20
         bitWidth: 6
         access: read-write
@@ -489,7 +456,7 @@ registers:
             description: 0 dB
             value: 0
           - name: B_0x1
-            description: + 3.
+            description: + 3.5 dB
             value: 1
           - name: B_0x2
             description: + 6 dB or shift left by 1 bit
@@ -498,34 +465,33 @@ registers:
             description: + 72 dB or shift left by 12 bits
             value: 24
           - name: B_0x20
-            description: '- 48.'
+            description: '- 48.2 dB or shift right by 8 bits (default value)'
             value: 32
           - name: B_0x21
-            description: '- 44.'
+            description: '- 44.6 dB'
             value: 33
           - name: B_0x22
-            description: '- 42.'
+            description: '- 42.1 dB or shift right by 7 bits'
             value: 34
           - name: B_0x23
-            description: '- 38.'
+            description: '- 38.6 dB'
             value: 35
           - name: B_0x2E
             description: -6 dB or shift right by 1 bit
             value: 46
           - name: B_0x2F
-            description: '-2.'
+            description: -2.5 dB
             value: 47
   - name: DFLT0RSFR
     displayName: DFLT0RSFR
     description: Reshape filter configuration register 0
     addressOffset: 144
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: RSFLTBYP
-        description: Reshaper filter bypass
+        description: "Reshaper filter bypass\nThis bit is set and cleared by software. It is used to bypass the reshape filter and its decimation block.\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -537,7 +503,7 @@ registers:
             description: Reshape filter bypassed
             value: 1
       - name: RSFLTD
-        description: Reshaper filter decimation ratio
+        description: "Reshaper filter decimation ratio\nThis bit is set and cleared by software. It is used to select the decimation ratio for the reshape filter\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 4
         bitWidth: 1
         access: read-write
@@ -549,7 +515,7 @@ registers:
             description: Decimation ratio is 1.
             value: 1
       - name: HPFBYP
-        description: High-pass filter bypass
+        description: "High-pass filter bypass\nThis bit is set and cleared by software. It is used to bypass the high-pass filter.\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 7
         bitWidth: 1
         access: read-write
@@ -561,34 +527,33 @@ registers:
             description: HPF bypassed
             value: 1
       - name: HPFC
-        description: High-pass filter cut-off frequency
+        description: "High-pass filter cut-off frequency\nThis field is set and cleared by software. it is used to select the cut-off frequency of the high-pass filter. F<sub>PCM</sub> represents the sampling frequency at HPF input.\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 8
         bitWidth: 2
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Cut-off frequency = 0.
+            description: Cut-off frequency = 0.000625 x FPCM
             value: 0
           - name: B_0x1
-            description: Cut-off frequency = 0.
+            description: Cut-off frequency = 0.00125 x FPCM
             value: 1
           - name: B_0x2
-            description: Cut-off frequency = 0.
+            description: Cut-off frequency = 0.00250 x FPCM
             value: 2
           - name: B_0x3
-            description: Cut-off frequency = 0.
+            description: Cut-off frequency = 0.00950 x FPCM
             value: 3
   - name: DLY0CR
     displayName: DLY0CR
     description: Delay control register 0
     addressOffset: 164
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SKPDLY
-        description: Delay to apply to a bitstream
+        description: "Delay to apply to a bitstream\nThis field is set and cleared by software. It defines the number of input samples that are skipped. Skipping is applied immediately after writing to this field, if SKPBF = 0 and DFLTEN = 1. If SKPBF = 1, the value written into the register is ignored by the delay state machine.\n..."
         bitOffset: 0
         bitWidth: 7
         access: read-write
@@ -600,7 +565,7 @@ registers:
             description: 1 input sample skipped
             value: 1
       - name: SKPBF
-        description: Skip busy flag
+        description: "Skip busy flag\nThis bit is set and cleared by hardware. It is used to control if the delay sequence is completed."
         bitOffset: 31
         bitWidth: 1
         access: read-only
@@ -616,24 +581,23 @@ registers:
     description: DFLT0 interrupt enable register
     addressOffset: 172
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: FTHIE
-        description: RxFIFO threshold interrupt enable
+        description: "RXFIFO threshold interrupt enable\nThis bit is set and cleared by software."
         bitOffset: 0
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: RxFIFO threshold interrupt disabled
+            description: RXFIFO threshold interrupt disabled
             value: 0
           - name: B_0x1
-            description: RxFIFO threshold interrupt enabled
+            description: RXFIFO threshold interrupt enabled
             value: 1
       - name: DOVRIE
-        description: Data overflow interrupt enable
+        description: "Data overflow interrupt enable\nThis bit is set and cleared by software."
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -645,7 +609,7 @@ registers:
             description: Data overflow interrupt enabled
             value: 1
       - name: SATIE
-        description: Saturation detection interrupt enable
+        description: "Saturation detection interrupt enable\nThis bit is set and cleared by software."
         bitOffset: 9
         bitWidth: 1
         access: read-write
@@ -657,7 +621,7 @@ registers:
             description: Saturation interrupt enabled
             value: 1
       - name: CKABIE
-        description: Clock absence detection interrupt enable
+        description: "Clock absence detection interrupt enable\nThis bit is set and cleared by software."
         bitOffset: 10
         bitWidth: 1
         access: read-write
@@ -669,7 +633,7 @@ registers:
             description: Clock absence interrupt enabled
             value: 1
       - name: RFOVRIE
-        description: Reshape filter overrun interrupt enable
+        description: "Reshape filter overrun interrupt enable\nThis bit is set and cleared by software."
         bitOffset: 11
         bitWidth: 1
         access: read-write
@@ -681,7 +645,7 @@ registers:
             description: Reshape filter overrun interrupt enabled
             value: 1
       - name: SDDETIE
-        description: Sound activity detection interrupt enable
+        description: "Sound activity detection interrupt enable\nThis bit is set and cleared by software."
         bitOffset: 12
         bitWidth: 1
         access: read-write
@@ -693,7 +657,7 @@ registers:
             description: Sound-trigger interrupt enabled
             value: 1
       - name: SDLVLIE
-        description: SAD sound-level value ready enable
+        description: "SAD sound-level value ready enable\nThis bit is set and cleared by software."
         bitOffset: 13
         bitWidth: 1
         access: read-write
@@ -709,117 +673,115 @@ registers:
     description: DFLT0 interrupt status register 0
     addressOffset: 176
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: FTHF
-        description: RxFIFO threshold flag
+        description: "RXFIFO threshold flag\nThis bit is set by hardware, and cleared by the hardware when the RXFIFO level is lower than the threshold."
         bitOffset: 0
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: RxFIFO threshold not reached
+            description: RXFIFO threshold not reached
             value: 0
           - name: B_0x1
-            description: RxFIFO threshold reached
+            description: RXFIFO threshold reached
             value: 1
       - name: DOVRF
-        description: Data overflow flag
+        description: "Data overflow flag\nThis bit is set by hardware and cleared by software by writing this bit to 1."
         bitOffset: 1
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Read 0 means that no overflow is detected.
+            description: Read 0 means that no overflow is detected. Write 0 has no effect.
             value: 0
           - name: B_0x1
             description: Read 1 means that an overflow is detected; Write 1 clears this flag.
             value: 1
-      - name: RxNEF
-        description: RxFIFO not empty flag
+      - name: RXNEF
+        description: "RXFIFO not empty flag\nThis bit is set and cleared by hardware according to the RXFIFO level."
         bitOffset: 3
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: RxFIFO empty
+            description: RXFIFO empty
             value: 0
           - name: B_0x1
-            description: RxFIFO not empty
+            description: RXFIFO not empty
             value: 1
       - name: SATF
-        description: Saturation detection flag
+        description: "Saturation detection flag\nThis bit is set by hardware and cleared by software by writing this bit to 1."
         bitOffset: 9
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Read 0 means that no saturation is detected.
+            description: Read 0 means that no saturation is detected. Write 0 has no effect.
             value: 0
           - name: B_0x1
-            description: Read 1 means that a saturation is detected.
+            description: Read 1 means that a saturation is detected. Write 1 clears this flag.
             value: 1
       - name: CKABF
-        description: Clock absence detection flag
+        description: "Clock absence detection flag\nThis bit is set by hardware and cleared by software by writing this bit to 1."
         bitOffset: 10
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Read 0 means that no clock absence is detected.
+            description: Read 0 means that no clock absence is detected. Write 0 has no effect.
             value: 0
           - name: B_0x1
-            description: Read 1 means that a clock absence is detected.
+            description: Read 1 means that a clock absence is detected. Write 1 clears this flag.
             value: 1
       - name: RFOVRF
-        description: Reshape filter overrun detection flag
+        description: "Reshape filter overrun detection flag\nThis bit is set by hardware and cleared by software by writing this bit to 1."
         bitOffset: 11
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Read 0 means that no reshape filter overrun is detected.
+            description: Read 0 means that no reshape filter overrun is detected. Write 0 has no effect.
             value: 0
           - name: B_0x1
-            description: Read 1 means that reshape filter overrun is detected.
+            description: Read 1 means that reshape filter overrun is detected. Write 1 clears this flag.
             value: 1
       - name: SDDETF
-        description: Sound activity detection flag
+        description: "Sound activity detection flag\nThis bit is set by hardware and cleared by software by writing this bit to 1."
         bitOffset: 12
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Read 0 means that no sound activity is detected.
+            description: Read 0 means that no sound activity is detected. Write 0 has no effect.
             value: 0
           - name: B_0x1
-            description: Read 1 means that sound activity is detected.
+            description: Read 1 means that sound activity is detected. Write 1 clears this flag.
             value: 1
       - name: SDLVLF
-        description: Sound level value ready flag
+        description: "Sound level value ready flag\nThis bit is set by hardware and cleared by software by writing this bit to 1."
         bitOffset: 13
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Read 0 means that new sound level value is not ready.
+            description: Read 0 means that new sound level value is not ready. Write 0 has no effect.
             value: 0
           - name: B_0x1
-            description: Read 1 means that new sound level value is ready.
+            description: Read 1 means that new sound level value is ready. Write 1 clears this flag.
             value: 1
   - name: SADCR
     displayName: SADCR
     description: SAD control register
     addressOffset: 184
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SADEN
-        description: Sound activity detector enable
+        description: "Sound activity detector enable\nThis bit is set and cleared by software. It is used to enable/disable the SAD."
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -831,7 +793,7 @@ registers:
             description: SAD enabled
             value: 1
       - name: DATCAP
-        description: Data capture mode
+        description: "Data capture mode\nThis field is set and cleared by software. It is used to define in which conditions, the samples provided by DLFT0 are stored into the memory.\n1x: Samples from DFLT0 transfered into memory when SAD and DFLT0 are enabled\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 1
         bitWidth: 2
         access: read-write
@@ -843,7 +805,7 @@ registers:
             description: Samples from DFLT0 transfered into the memory when SAD is in DETECT state
             value: 1
       - name: DETCFG
-        description: Sound trigger event configuration
+        description: "Sound trigger event configuration\nThis bit is set and cleared by software. It is used to define if the sddet_evt event is generated only when the SAD enters to MONITOR state or when the SAD enters or exits the DETECT state. \nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 3
         bitWidth: 1
         access: read-write
@@ -855,7 +817,7 @@ registers:
             description: sddet_evt generated when SAD enters or exits the DETECT state
             value: 1
       - name: SADST
-        description: SAD state
+        description: "SAD state\nThis field is set and cleared by hardware. It indicates the SAD state and is meaningful only when SADEN = 1. The SAD state can be:\n- LEARN when the SAD is in learning phase or in SDLVL computation mode\n- MONITOR when the SAD is in monitoring phase\n- DETECT when the SAD detects a sound"
         bitOffset: 4
         bitWidth: 2
         access: read-only
@@ -870,19 +832,19 @@ registers:
             description: SAD in DETECT state
             value: 3
       - name: HYSTEN
-        description: Hysteresis enable
+        description: "Hysteresis enable\nThis bit is set and cleared by software. It is used to enable/disable the hysteresis function (see Table 419 for details). This bit must be kept to 0 when SADMOD[1:0] = 1x.\nNote: This bit can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 7
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: Hysteresis function disabled.
+            description: Hysteresis function disabled. THR<sub>H</sub> is always used.
             value: 0
           - name: B_0x1
-            description: Hysteresis function enabled.
+            description: Hysteresis function enabled. THR<sub>H</sub> is used for MONITOR to DETECT transition and THR<sub>L</sub> is used for DETECT to MONITOR transition.
             value: 1
       - name: FRSIZE
-        description: Frame size
+        description: "Frame size\nThis field is set and cleared by software. it is used to define the size of one frame and also to define how many samples are taken into account to compute the short-term signal level.\n11x: 512 PCM samples used to compute the short-term signal level\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 8
         bitWidth: 3
         access: read-write
@@ -906,7 +868,7 @@ registers:
             description: 256 PCM samples used to compute the short-term signal level
             value: 5
       - name: SADMOD
-        description: SAD working mode
+        description: "SAD working mode\nThis field is set and cleared by software. It is used to define the way the SAD works.\nThe SAD triggers when the sound level (SDLVL) is bigger than the defined threshold. In this mode, the SAD works like a voice activity detector.\nThe SAD triggers when the sound level (SDLVL) is bigger than the defined threshold. In this mode, the SAD works like a sound detector.\n1x: Threshold value given by 4 x ANMIN[12:0]\nThe SAD triggers when the estimated ambient noise (ANLVL), multiplied by the gain selected by SNTHR[3:0] is bigger than the defined threshold. In this mode, the SAD is working like an ambient noise estimator. Hysteresis function cannot be used in this mode.\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 12
         bitWidth: 2
         access: read-write
@@ -918,7 +880,7 @@ registers:
             description: Threshold value equal to ANMIN[12:0], multiplied by the gain selected by SNTHR[3:0]
             value: 1
       - name: SADACTIVE
-        description: SAD Active flag
+        description: "SAD Active flag\nThis bit is set and cleared by hardware. It is used to check if the SAD is effectively enabled (active) or not. The protected fields and registers of this function can only be updated when the SADACTIVE is set to 0 (see Section 46.4.13: Register protection for details). \nThe delay between a transition on SADEN and a transition on SADACTIVE is two periods of AHB clock and two periods of adf_proc_ck."
         bitOffset: 31
         bitWidth: 1
         access: read-only
@@ -934,53 +896,52 @@ registers:
     description: SAD configuration register
     addressOffset: 188
     size: 32
-    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SNTHR
-        description: Signal to noise threshold
+        description: "Signal to noise threshold\nThis field is set and cleared by software. It is used to define THR<sub>H </sub>(and THR<sub>L</sub> if hysteresis is enabled). See Table 419 for details.\nothers: Reserved\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 0
         bitWidth: 4
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: THRless thansub>H less than/sub>is 3.
+            description: THR<sub>H </sub>is 3.5 dB higher than ANLVL
             value: 0
           - name: B_0x1
-            description: THRless thansub>H less than/sub>is 6.
+            description: THR<sub>H </sub>is 6.0 dB higher than ANLVL
             value: 1
           - name: B_0x2
-            description: THRless thansub>H less than/sub>is 9.
+            description: THR<sub>H </sub>is 9.5 dB higher than ANLVL
             value: 2
           - name: B_0x3
-            description: THRless thansub>H less than/sub>is 12 dB higher than ANLVL
+            description: THR<sub>H </sub>is 12 dB higher than ANLVL
             value: 3
           - name: B_0x4
-            description: THRless thansub>H less than/sub>is 15.
+            description: THR<sub>H </sub>is 15.6 dB higher than ANLVL
             value: 4
           - name: B_0x5
-            description: THRless thansub>H less than/sub>is 18 dB higher than ANLVL
+            description: THR<sub>H </sub>is 18 dB higher than ANLVL
             value: 5
           - name: B_0x6
-            description: THRless thansub>H less than/sub>is 21.
+            description: THR<sub>H </sub>is 21.6 dB higher than ANLVL
             value: 6
           - name: B_0x7
-            description: THRless thansub>H less than/sub>is 24.
+            description: THR<sub>H </sub>is 24.1 dB higher than ANLVL
             value: 7
           - name: B_0x8
-            description: THRless thansub>H less than/sub>is 27.
+            description: THR<sub>H </sub>is 27.6 dB higher than ANLVL
             value: 8
           - name: B_0x9
-            description: THRless thansub>H less than/sub>is 30.
+            description: THR<sub>H </sub>is 30.1dB higher than ANLVL
             value: 9
       - name: ANSLP
-        description: Ambient noise slope control
+        description: "Ambient noise slope control \nThis field is set and cleared by software. It is used to define the positive and negative slope of the noise estimator, in charge of updating the ANLVL (see Ambient noise estimation (ANLVL) for information about programming this field).\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 4
         bitWidth: 3
         access: read-write
       - name: LFRNB
-        description: Number of learning frames
+        description: "Number of learning frames\nThis field is set and cleared by software. It is used to define the number of learning frames to perform the first estimate of the noise level.\n1xx: 32 frames used to compute the initial noise level\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 8
         bitWidth: 3
         access: read-write
@@ -998,7 +959,7 @@ registers:
             description: 16 frames used to compute the initial noise level
             value: 3
       - name: HGOVR
-        description: Hangover time window
+        description: "Hangover time window\nThis field is set and cleared by software. Once the SAD state is DETECT, this parameter is used to define the amount of time the sound is allowed to remain below the threshold, before switching the SAD to MONITOR state (see FRSIZE field for the description of a frame).\nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 12
         bitWidth: 3
         access: read-write
@@ -1028,7 +989,7 @@ registers:
             description: SAD back to MONITOR state if sound is below threshold for 512 frames
             value: 7
       - name: ANMIN
-        description: Minimum noise level
+        description: "Minimum noise level\nThis field is set and cleared by software. It is used to define the minimum noise level and then the sensitivity. It represents a positive number. \nNote: This field can be write-protected (see Section 46.4.13: Register protection for details)."
         bitOffset: 16
         bitWidth: 13
         access: read-write
@@ -1037,12 +998,11 @@ registers:
     description: SAD sound level register
     addressOffset: 192
     size: 32
-    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SDLVL
-        description: Short term sound level
+        description: "Short term sound level\nThis field is set by hardware. It contains the latest sound level computed by the SAD. To refresh this value, SDLVLF must be cleared."
         bitOffset: 0
         bitWidth: 15
         access: read-only
@@ -1051,12 +1011,11 @@ registers:
     description: SAD ambient noise level register
     addressOffset: 196
     size: 32
-    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: ANLVL
-        description: Ambient noise level estimation
+        description: "Ambient noise level estimation\nThis field is set by hardware. It contains the latest ambient noise level computed by the SAD. To refresh this field, the SDLVLF flag must be cleared."
         bitOffset: 0
         bitWidth: 15
         access: read-only
@@ -1065,7 +1024,6 @@ registers:
     description: Digital filter data register 0
     addressOffset: 240
     size: 32
-    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1074,10 +1032,18 @@ registers:
         bitOffset: 8
         bitWidth: 24
         access: read-only
+  - name: TRGISEL
+    description: Trigger input selection register
+    addressOffset: 32
+    size: 32
+    access: read-write
+    resetValue: 0
+    fields:
+      - {name: TRGISEL, description: Input selection for adf_trgi, bitOffset: 0, bitWidth: 2, access: read-write}
 addressBlocks:
   - offset: 0
-    size: 1024
+    size: 244
     usage: registers
 interrupts:
   - name: INTR
-    description: ADF1 interrupt
+    description: Filter 0 global interrupt

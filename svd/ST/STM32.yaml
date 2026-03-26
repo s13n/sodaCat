@@ -1130,6 +1130,28 @@ shared_blocks:
       LTDC: INTR
       LTDC_ER: ER
     description: LCD-TFT Display Controller (standard 2-layer)
+  ADF:
+    # Audio Digital Filter: H7RS, N6, U3, U5
+    # 15 registers: global (GCR/CKGCR), serial interface (SITF0CR), bitstream mux
+    # (BSMX0CR), digital filter (DFLT0CR/DFLT0CICR/DFLT0RSFR/DFLT0DR), delay
+    # (DLY0CR), interrupts (DFLT0IER/DFLT0ISR), sound activity (SADCR/SADCFGR/
+    # SADSDLVR/SADANLVR). U3 adds TRGISEL (trigger input selection).
+    from: STM32H7S.ADF
+    interrupts:
+      ADF1_FLT0: INTR
+      ADF1: INTR
+    description: Audio Digital Filter
+    transforms:
+      - type: patchRegisters
+        registers:
+          - name: TRGISEL
+            description: Trigger input selection register
+            addressOffset: 32
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: TRGISEL, description: Input selection for adf_trgi, bitOffset: 0, bitWidth: 2, access: read-write}
 families:
   C0:
     svd:
@@ -3985,10 +4007,8 @@ families:
         interrupts:
           ADC1_2: INTR
       ADF:
-        from: STM32H7S.ADF
+        uses: ADF
         instances: [ADF]
-        interrupts:
-          ADF1_FLT0: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -5364,10 +5384,8 @@ families:
         interrupts:
           ADC12: INTR
       ADF:
-        from: STM32N645.ADF
+        uses: ADF
         instances: [ADF]
-        interrupts:
-          ADF1_FLT0: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7, TIM18]
@@ -5844,10 +5862,8 @@ families:
         from: STM32U375.ADC12
         instances: [ADC12]
       ADF:
-        from: STM32U375.ADF
+        uses: ADF
         instances: [ADF]
-        interrupts:
-          ADF1: INTR
       AES:
         uses: AES_V3
         instances: [AES]
@@ -6074,10 +6090,8 @@ families:
         from: STM32U5Fx.ADC12
         instances: [ADC12, ADC12_Common]
       ADF:
-        from: STM32U535.ADF1
+        uses: ADF
         instances: [ADF1]
-        interrupts:
-          ADF1_FLT0: INTR
       AES:
         uses: AES_V3
         instances: [AES]
