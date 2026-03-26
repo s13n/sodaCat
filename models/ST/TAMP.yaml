@@ -1,7 +1,24 @@
 name: TAMP
-description: Tamper and backup registers
+description: Tamper detection
 groupName: TAMP
 source: STM32N645 SVD v1.0
+params:
+  - name: pom
+    type: bool
+    default: false
+    description: 'CR2/CR3 tamper output control: false=NOER (no-erase), true=POM (potential output masking)'
+  - name: sec
+    type: int
+    default: 0
+    description: 'Security config register at 0x020: 0=none, 1=SECCFGR (TrustZone), 2=CFGR (zone boundaries), 3=SMCR (L5 DPROT naming)'
+  - name: or_reg
+    type: int
+    default: 0
+    description: 'Option register at 0x050: 0=none, 1=OR (VCOREMEN/BSEN), 2=OR_Remap (IN2/IN3_RMP), 3=MONCFGR (monitoring config)'
+  - name: rpcfg
+    type: int
+    default: 0
+    description: 'Resource protection at 0x054: 0=none, 1=RPCFGR (multi-resource), 2=ERCFGR (single-resource)'
 registers:
   - name: CR1
     displayName: CR1
@@ -215,6 +232,22 @@ registers:
           - name: B_0x1
             description: Internal tamper 11 enabled.
             value: 1
+      - name: TAMP8E
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP12E
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP13E
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP15E
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
   - name: CR2
     displayName: CR2
     description: Control register 2
@@ -444,6 +477,195 @@ registers:
           - name: B_0x1
             description: If TAMPFLT different 00 tamper 7 input staying high triggers a tamper detection event.
             value: 1
+      - name: TAMP8POM
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: TAMP8TRG
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: CR2_NOER
+    displayName: CR2_NOER
+    description: Control register 2
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: TAMP1MSK
+        description: Tamper 1 mask
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Tamper 1 event generates a trigger event and TAMP1F must be cleared by software to allow next tamper event detection.
+            value: 0
+          - name: B_0x1
+            description: Tamper 1 event generates a trigger event. TAMP1F is masked and internally cleared by hardware. The backup registers and device secrets less than sup>(1) less than /sup> are not erased.
+            value: 1
+      - name: TAMP2MSK
+        description: Tamper 2 mask
+        bitOffset: 17
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Tamper 2 event generates a trigger event and TAMP2F must be cleared by software to allow next tamper event detection.
+            value: 0
+          - name: B_0x1
+            description: Tamper 2 event generates a trigger event. TAMP2F is masked and internally cleared by hardware. The backup registers and device secrets less than sup>(1) less than /sup> are not erased.
+            value: 1
+      - name: TAMP3MSK
+        description: Tamper 3 mask
+        bitOffset: 18
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Tamper 3 event generates a trigger event and TAMP3F must be cleared by software to allow next tamper event detection.
+            value: 0
+          - name: B_0x1
+            description: Tamper 3 event generates a trigger event. TAMP3F is masked and internally cleared by hardware. The backup registers and device secrets less than sup>(1) less than /sup> are not erased.
+            value: 1
+      - name: BKBLOCK
+        description: Backup registers and device secrets less than sup>(1) less than /sup> access blocked
+        bitOffset: 22
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: backup registers and device secrets less than sup>(1) less than /sup> can be accessed if no tamper flag is set
+            value: 0
+          - name: B_0x1
+            description: backup registers and device secrets less than sup>(1) less than /sup> cannot be accessed
+            value: 1
+      - name: BKERASE
+        description: Backup registers and device secrets less than sup>(1) less than /sup> erase
+        bitOffset: 23
+        bitWidth: 1
+        access: write-only
+      - name: TAMP1TRG
+        description: Active level for tamper 1 input
+        bitOffset: 24
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If TAMPFLT different 00 tamper 1 input staying low triggers a tamper detection event.
+            value: 0
+          - name: B_0x1
+            description: If TAMPFLT different 00 tamper 1 input staying high triggers a tamper detection event.
+            value: 1
+      - name: TAMP2TRG
+        description: Active level for tamper 2 input
+        bitOffset: 25
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If TAMPFLT different 00 tamper 2 input staying low triggers a tamper detection event.
+            value: 0
+          - name: B_0x1
+            description: If TAMPFLT different 00 tamper 2 input staying high triggers a tamper detection event.
+            value: 1
+      - name: TAMP3TRG
+        description: Active level for tamper 3 input
+        bitOffset: 26
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If TAMPFLT different 00 tamper 3 input staying low triggers a tamper detection event.
+            value: 0
+          - name: B_0x1
+            description: If TAMPFLT different 00 tamper 3 input staying high triggers a tamper detection event.
+            value: 1
+      - name: TAMP4TRG
+        description: Active level for tamper 4 input (active mode disabled)
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If TAMPFLT different 00 tamper 4 input staying low triggers a tamper detection event.
+            value: 0
+          - name: B_0x1
+            description: If TAMPFLT different 00 tamper 4 input staying high triggers a tamper detection event.
+            value: 1
+      - name: TAMP5TRG
+        description: Active level for tamper 5 input (active mode disabled)
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If TAMPFLT different 00 tamper 5 input staying low triggers a tamper detection event.
+            value: 0
+          - name: B_0x1
+            description: If TAMPFLT different 00 tamper 5 input staying high triggers a tamper detection event.
+            value: 1
+      - name: TAMP6TRG
+        description: Active level for tamper 6 input (active mode disabled)
+        bitOffset: 29
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If TAMPFLT different 00 tamper 6 input staying low triggers a tamper detection event.
+            value: 0
+          - name: B_0x1
+            description: If TAMPFLT different 00 tamper 6 input staying high triggers a tamper detection event.
+            value: 1
+      - name: TAMP7TRG
+        description: Active level for tamper 7 input (active mode disabled)
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: If TAMPFLT different 00 tamper 7 input staying low triggers a tamper detection event.
+            value: 0
+          - name: B_0x1
+            description: If TAMPFLT different 00 tamper 7 input staying high triggers a tamper detection event.
+            value: 1
+      - name: TAMP8TRG
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+      - name: TAMP1NOER
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TAMP2NOER
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: TAMP3NOER
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: TAMP4NOER
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: TAMP5NOER
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: TAMP6NOER
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: TAMP7NOER
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: TAMP8NOER
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
   - name: CR3
     displayName: CR3
     description: Control register 3
@@ -572,6 +794,74 @@ registers:
           - name: B_0x1
             description: Internal tamper 11 event detection is in potential mode less than sup>(2) less than /sup>.
             value: 1
+      - name: ITAMP12POM
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP13POM
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+  - name: CR3_NOER
+    displayName: CR3_NOER
+    description: Control register 3
+    addressOffset: 8
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ITAMP1NOER
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP2NOER
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP3NOER
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP4NOER
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP5NOER
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP6NOER
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP7NOER
+        bitOffset: 6
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP8NOER
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP9NOER
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP11NOER
+        bitOffset: 10
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP12NOER
+        bitOffset: 11
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP13NOER
+        bitOffset: 12
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP15NOER
+        bitOffset: 14
+        bitWidth: 1
+        access: read-write
   - name: FLTCR
     displayName: FLTCR
     description: Filter control register
@@ -856,6 +1146,10 @@ registers:
           - name: B_0x1
             description: 'Active tamper filtering enable: a tamper event is detected when 2 comparison mismatches occur out of 4 consecutive samples.'
             value: 1
+      - name: TAMP8AM
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
   - name: ATSEEDR
     displayName: ATSEEDR
     description: Active tamper seed register
@@ -1110,6 +1404,10 @@ registers:
           - name: B_0x7
             description: TAMPOUTSEL7 = TAMP_OUT8
             value: 7
+      - name: ATOSEL8
+        bitOffset: 29
+        bitWidth: 3
+        access: read-write
   - name: SECCFGR
     displayName: SECCFGR
     description: Secure configuration register
@@ -1163,6 +1461,66 @@ registers:
             value: 0
           - name: B_0x1
             description: Tamper configuration and interrupt can be written only when the APB access is secure.
+            value: 1
+  - name: SMCR
+    displayName: SMCR
+    description: Secure configuration register
+    addressOffset: 32
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BKPRWDPROT
+        description: Backup registers read/write protection offset
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: BKPWDPROT
+        description: Backup registers write protection offset
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: TAMPDPROT
+        description: Tamper protection (excluding monotonic counters and backup registers)
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Tamper configuration and interrupt can be written when the APB access is secure or non-secure.
+            value: 0
+          - name: B_0x1
+            description: Tamper configuration and interrupt can be written only when the APB access is secure.
+            value: 1
+  - name: CFGR
+    displayName: CFGR
+    description: Secure configuration register
+    addressOffset: 32
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: BKPRW
+        description: Backup registers read/write protection offset
+        bitOffset: 0
+        bitWidth: 8
+        access: read-write
+      - name: BKPW
+        description: Backup registers write protection offset
+        bitOffset: 16
+        bitWidth: 8
+        access: read-write
+      - name: BHKLOCK
+        description: Boot hardware key lock
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: The Backup registers from TAMP_BKP0R to TAMP_BKP7R can be accessed according to the Protection zone they belong to.
+            value: 0
+          - name: B_0x1
+            description: The backup registers from TAMP_BKP0R to TAMP_BKP7R cannot be accessed neither in read nor in write (they are read as 0 and write ignore).
             value: 1
   - name: PRIVCFGR
     displayName: PRIVCFGR
@@ -1432,6 +1790,22 @@ registers:
           - name: B_0x1
             description: Internal tamper 11 interrupt enabled.
             value: 1
+      - name: TAMP8IE
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP12IE
+        bitOffset: 27
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP13IE
+        bitOffset: 28
+        bitWidth: 1
+        access: read-write
+      - name: ITAMP15IE
+        bitOffset: 30
+        bitWidth: 1
+        access: read-write
   - name: SR
     displayName: SR
     description: Status register
@@ -1523,6 +1897,22 @@ registers:
       - name: ITAMP11F
         description: Internal tamper 11 flag
         bitOffset: 26
+        bitWidth: 1
+        access: read-only
+      - name: TAMP8F
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: ITAMP12F
+        bitOffset: 27
+        bitWidth: 1
+        access: read-only
+      - name: ITAMP13F
+        bitOffset: 28
+        bitWidth: 1
+        access: read-only
+      - name: ITAMP15F
+        bitOffset: 30
         bitWidth: 1
         access: read-only
   - name: MISR
@@ -1618,6 +2008,22 @@ registers:
         bitOffset: 26
         bitWidth: 1
         access: read-only
+      - name: TAMP8MF
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: ITAMP12MF
+        bitOffset: 27
+        bitWidth: 1
+        access: read-only
+      - name: ITAMP13MF
+        bitOffset: 28
+        bitWidth: 1
+        access: read-only
+      - name: ITAMP15MF
+        bitOffset: 30
+        bitWidth: 1
+        access: read-only
   - name: SMISR
     displayName: SMISR
     description: Secure masked interrupt status register
@@ -1709,6 +2115,18 @@ registers:
       - name: ITAMP11MF
         description: internal tamper 11 secure interrupt masked flag
         bitOffset: 26
+        bitWidth: 1
+        access: read-only
+      - name: TAMP8MF
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+      - name: ITAMP12MF
+        bitOffset: 27
+        bitWidth: 1
+        access: read-only
+      - name: ITAMP13MF
+        bitOffset: 28
         bitWidth: 1
         access: read-only
   - name: SCR
@@ -1804,6 +2222,22 @@ registers:
         bitOffset: 26
         bitWidth: 1
         access: write-only
+      - name: CTAMP8F
+        bitOffset: 7
+        bitWidth: 1
+        access: write-only
+      - name: CITAMP12F
+        bitOffset: 27
+        bitWidth: 1
+        access: write-only
+      - name: CITAMP13F
+        bitOffset: 28
+        bitWidth: 1
+        access: write-only
+      - name: CITAMP15F
+        bitOffset: 30
+        bitWidth: 1
+        access: write-only
   - name: COUNT1R
     displayName: COUNT1R
     description: Monotonic counter 1 register
@@ -1849,6 +2283,52 @@ registers:
           - name: B_0x1
             description: Boundary scan is enabled
             value: 1
+  - name: MONCFGR
+    displayName: MONCFGR
+    description: Option register
+    addressOffset: 80
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: OUT3_RMP
+        description: TAMP_OUT3 mapping
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: TMONEN
+        description: Tamper monitoring enable
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: VMONEN
+        description: Voltage monitoring enable
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: WUTMONEN
+        description: Wakeup timer monitoring enable
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+  - name: OR_Remap
+    displayName: OR_Remap
+    description: Option register
+    addressOffset: 80
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: IN2_RMP
+        description: TAMP_IN2 pin select
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: IN3_RMP
+        description: TAMP_IN3 pin select
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
   - name: RPCFGR
     displayName: RPCFGR
     description: Resources protection configuration register
@@ -1869,6 +2349,43 @@ registers:
           - name: B_0x1
             description: Resource 0 is included in the device secrets protected by TAMP peripheral
             value: 1
+      - name: RPCFG1
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: RPCFG2
+        bitOffset: 2
+        bitWidth: 1
+        access: read-write
+      - name: RPCFG3
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+      - name: RPCFG4
+        bitOffset: 4
+        bitWidth: 1
+        access: read-write
+      - name: RPCFG5
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: RPCFG31
+        bitOffset: 31
+        bitWidth: 1
+        access: read-write
+  - name: ERCFGR
+    displayName: ERCFGR
+    description: Resources protection configuration register
+    addressOffset: 84
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: ERCFG0
+        description: Configurable device secrets configuration
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
   - name: BKP0R
     displayName: BKP0R
     description: Backup 0 register
@@ -2291,4 +2808,4 @@ addressBlocks:
     usage: registers
 interrupts:
   - name: INTR
-    description: TAMP secure and non-secure synchronous interrupt line
+    description: Secure and non-secure synchronous interrupt line

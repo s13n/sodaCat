@@ -1189,6 +1189,181 @@ shared_blocks:
         pattern: ^TCLKZEO$
         replacement: TCLKZERO
 
+  TAMP:
+    # Tamper detection: C5, G0, G4, H5, H7(A3), H7RS, L5, N6, U0, U3, U5
+    # Core registers: CR1/CR2/FLTCR (tamper config), IER/SR/MISR/SCR (interrupt/
+    # status), BKP0R-31R (backup). Extended: CR3 (internal tamper config),
+    # ATCR1/ATSEEDR/ATOR/ATCR2 (active tamper), SECCFGR/PRIVCFGR (security/
+    # privilege), SMISR (secure masked interrupt), COUNT1R (monotonic counter),
+    # OR (option), RPCFGR (resource protection). Unions: CR2/CR2_NOER and
+    # CR3/CR3_NOER (POM vs NOER tamper output control), SECCFGR/CFGR/SMCR
+    # (TrustZone/non-TZ/L5 naming at 0x020), OR/OR_Remap/MONCFGR (option
+    # register variants at 0x050), RPCFGR/ERCFGR (resource protection at 0x054).
+    from: STM32N645.TAMP
+    interrupts:
+      TAMP: INTR
+    description: Tamper detection
+    params:
+      - {name: pom, type: bool, default: false, description: 'CR2/CR3 tamper output control: false=NOER (no-erase), true=POM (potential output masking)'}
+      - {name: sec, type: int, default: 0, description: 'Security config register at 0x020: 0=none, 1=SECCFGR (TrustZone), 2=CFGR (zone boundaries), 3=SMCR (L5 DPROT naming)'}
+      - {name: or_reg, type: int, default: 0, description: 'Option register at 0x050: 0=none, 1=OR (VCOREMEN/BSEN), 2=OR_Remap (IN2/IN3_RMP), 3=MONCFGR (monitoring config)'}
+      - {name: rpcfg, type: int, default: 0, description: 'Resource protection at 0x054: 0=none, 1=RPCFGR (multi-resource), 2=ERCFGR (single-resource)'}
+    transforms:
+      # --- Superset field additions (N6 has 7 ext tampers; add TAMP8/ITAMP12-15) ---
+      - type: patchFields
+        register: CR1
+        fields:
+          - {name: TAMP8E, bitOffset: 7, bitWidth: 1, access: read-write}
+          - {name: ITAMP12E, bitOffset: 27, bitWidth: 1, access: read-write}
+          - {name: ITAMP13E, bitOffset: 28, bitWidth: 1, access: read-write}
+          - {name: ITAMP15E, bitOffset: 30, bitWidth: 1, access: read-write}
+      - type: patchFields
+        register: CR2
+        fields:
+          - {name: TAMP8POM, bitOffset: 7, bitWidth: 1, access: read-write}
+          - {name: TAMP8TRG, bitOffset: 31, bitWidth: 1, access: read-write}
+      - type: patchFields
+        register: CR3
+        fields:
+          - {name: ITAMP12POM, bitOffset: 11, bitWidth: 1, access: read-write}
+          - {name: ITAMP13POM, bitOffset: 12, bitWidth: 1, access: read-write}
+      - type: patchFields
+        register: ATCR1
+        fields:
+          - {name: TAMP8AM, bitOffset: 7, bitWidth: 1, access: read-write}
+      - type: patchFields
+        register: ATCR2
+        fields:
+          - {name: ATOSEL8, bitOffset: 29, bitWidth: 3, access: read-write}
+      - type: patchFields
+        register: IER
+        fields:
+          - {name: TAMP8IE, bitOffset: 7, bitWidth: 1, access: read-write}
+          - {name: ITAMP12IE, bitOffset: 27, bitWidth: 1, access: read-write}
+          - {name: ITAMP13IE, bitOffset: 28, bitWidth: 1, access: read-write}
+          - {name: ITAMP15IE, bitOffset: 30, bitWidth: 1, access: read-write}
+      - type: patchFields
+        register: SR
+        fields:
+          - {name: TAMP8F, bitOffset: 7, bitWidth: 1, access: read-only}
+          - {name: ITAMP12F, bitOffset: 27, bitWidth: 1, access: read-only}
+          - {name: ITAMP13F, bitOffset: 28, bitWidth: 1, access: read-only}
+          - {name: ITAMP15F, bitOffset: 30, bitWidth: 1, access: read-only}
+      - type: patchFields
+        register: MISR
+        fields:
+          - {name: TAMP8MF, bitOffset: 7, bitWidth: 1, access: read-only}
+          - {name: ITAMP12MF, bitOffset: 27, bitWidth: 1, access: read-only}
+          - {name: ITAMP13MF, bitOffset: 28, bitWidth: 1, access: read-only}
+          - {name: ITAMP15MF, bitOffset: 30, bitWidth: 1, access: read-only}
+      - type: patchFields
+        register: SMISR
+        fields:
+          - {name: TAMP8MF, bitOffset: 7, bitWidth: 1, access: read-only}
+          - {name: ITAMP12MF, bitOffset: 27, bitWidth: 1, access: read-only}
+          - {name: ITAMP13MF, bitOffset: 28, bitWidth: 1, access: read-only}
+      - type: patchFields
+        register: SCR
+        fields:
+          - {name: CTAMP8F, bitOffset: 7, bitWidth: 1, access: write-only}
+          - {name: CITAMP12F, bitOffset: 27, bitWidth: 1, access: write-only}
+          - {name: CITAMP13F, bitOffset: 28, bitWidth: 1, access: write-only}
+          - {name: CITAMP15F, bitOffset: 30, bitWidth: 1, access: write-only}
+      - type: patchFields
+        register: RPCFGR
+        fields:
+          - {name: RPCFG1, bitOffset: 1, bitWidth: 1, access: read-write}
+          - {name: RPCFG2, bitOffset: 2, bitWidth: 1, access: read-write}
+          - {name: RPCFG3, bitOffset: 3, bitWidth: 1, access: read-write}
+          - {name: RPCFG4, bitOffset: 4, bitWidth: 1, access: read-write}
+          - {name: RPCFG5, bitOffset: 5, bitWidth: 1, access: read-write}
+          - {name: RPCFG31, bitOffset: 31, bitWidth: 1, access: read-write}
+      # --- Union: CR2_NOER (NOER variant for H5/H7RS/L5/U5/H7A3/G0/G4) ---
+      - type: cloneRegister
+        source: CR2
+        name: CR2_NOER
+        removeFields: [TAMP1POM, TAMP2POM, TAMP3POM, TAMP4POM, TAMP5POM, TAMP6POM, TAMP7POM, TAMP8POM]
+      - type: patchFields
+        register: CR2_NOER
+        fields:
+          - {name: TAMP1NOER, bitOffset: 0, bitWidth: 1, access: read-write}
+          - {name: TAMP2NOER, bitOffset: 1, bitWidth: 1, access: read-write}
+          - {name: TAMP3NOER, bitOffset: 2, bitWidth: 1, access: read-write}
+          - {name: TAMP4NOER, bitOffset: 3, bitWidth: 1, access: read-write}
+          - {name: TAMP5NOER, bitOffset: 4, bitWidth: 1, access: read-write}
+          - {name: TAMP6NOER, bitOffset: 5, bitWidth: 1, access: read-write}
+          - {name: TAMP7NOER, bitOffset: 6, bitWidth: 1, access: read-write}
+          - {name: TAMP8NOER, bitOffset: 7, bitWidth: 1, access: read-write}
+      # --- Union: CR3_NOER (NOER variant for H5/H7RS/L5/U5) ---
+      - type: cloneRegister
+        source: CR3
+        name: CR3_NOER
+        removeFields: [ITAMP1POM, ITAMP2POM, ITAMP3POM, ITAMP4POM, ITAMP5POM, ITAMP6POM, ITAMP7POM, ITAMP8POM, ITAMP9POM, ITAMP11POM, ITAMP12POM, ITAMP13POM]
+      - type: patchFields
+        register: CR3_NOER
+        fields:
+          - {name: ITAMP1NOER, bitOffset: 0, bitWidth: 1, access: read-write}
+          - {name: ITAMP2NOER, bitOffset: 1, bitWidth: 1, access: read-write}
+          - {name: ITAMP3NOER, bitOffset: 2, bitWidth: 1, access: read-write}
+          - {name: ITAMP4NOER, bitOffset: 3, bitWidth: 1, access: read-write}
+          - {name: ITAMP5NOER, bitOffset: 4, bitWidth: 1, access: read-write}
+          - {name: ITAMP6NOER, bitOffset: 5, bitWidth: 1, access: read-write}
+          - {name: ITAMP7NOER, bitOffset: 6, bitWidth: 1, access: read-write}
+          - {name: ITAMP8NOER, bitOffset: 7, bitWidth: 1, access: read-write}
+          - {name: ITAMP9NOER, bitOffset: 8, bitWidth: 1, access: read-write}
+          - {name: ITAMP11NOER, bitOffset: 10, bitWidth: 1, access: read-write}
+          - {name: ITAMP12NOER, bitOffset: 11, bitWidth: 1, access: read-write}
+          - {name: ITAMP13NOER, bitOffset: 12, bitWidth: 1, access: read-write}
+          - {name: ITAMP15NOER, bitOffset: 14, bitWidth: 1, access: read-write}
+      # --- Union: CFGR (non-TrustZone variant of SECCFGR for H5/H7RS/C5) ---
+      - type: cloneRegister
+        source: SECCFGR
+        name: CFGR
+        removeFields: [CNT1SEC, TAMPSEC]
+        renameFields:
+          - {pattern: ^BKPRWSEC$, replacement: BKPRW}
+          - {pattern: ^BKPWSEC$, replacement: BKPW}
+      # --- Union: SMCR (L5 variant of SECCFGR with DPROT naming) ---
+      - type: cloneRegister
+        source: SECCFGR
+        name: SMCR
+        removeFields: [CNT1SEC, BHKLOCK]
+        renameFields:
+          - {pattern: ^BKPRWSEC$, replacement: BKPRWDPROT}
+          - {pattern: ^BKPWSEC$, replacement: BKPWDPROT}
+          - {pattern: ^TAMPSEC$, replacement: TAMPDPROT}
+      # --- Union: OR_Remap (C5 variant of OR with pin remapping) ---
+      - type: cloneRegister
+        source: OR
+        name: OR_Remap
+        removeFields: [VCOREMEN, BSEN]
+      - type: patchFields
+        register: OR_Remap
+        fields:
+          - {name: IN2_RMP, description: TAMP_IN2 pin select, bitOffset: 0, bitWidth: 1, access: read-write}
+          - {name: IN3_RMP, description: TAMP_IN3 pin select, bitOffset: 2, bitWidth: 1, access: read-write}
+      # --- Union: MONCFGR (L5/H7A3 monitoring config variant of OR at 0x050) ---
+      - type: cloneRegister
+        source: OR
+        name: MONCFGR
+        removeFields: [VCOREMEN, BSEN]
+      - type: patchFields
+        register: MONCFGR
+        fields:
+          - {name: OUT3_RMP, description: TAMP_OUT3 mapping, bitOffset: 0, bitWidth: 1, access: read-write}
+          - {name: TMONEN, description: Tamper monitoring enable, bitOffset: 1, bitWidth: 1, access: read-write}
+          - {name: VMONEN, description: Voltage monitoring enable, bitOffset: 2, bitWidth: 1, access: read-write}
+          - {name: WUTMONEN, description: Wakeup timer monitoring enable, bitOffset: 3, bitWidth: 1, access: read-write}
+      # --- Union: ERCFGR (H5/U5 variant of RPCFGR) ---
+      - type: cloneRegister
+        source: RPCFGR
+        name: ERCFGR
+        removeFields: [RPCFG0, RPCFG1, RPCFG2, RPCFG3, RPCFG4, RPCFG5, RPCFG31]
+      - type: patchFields
+        register: ERCFGR
+        fields:
+          - {name: ERCFG0, description: Configurable device secrets configuration, bitOffset: 0, bitWidth: 1, access: read-write}
+
 families:
   C0:
     svd:
@@ -1607,10 +1782,8 @@ families:
         from: ''  # TBD: pending SVD
         instances: [SBS]
       TAMP:
-        from: ''  # TBD: pending SVD
+        uses: TAMP
         instances: [TAMP]
-        interrupts:
-          TAMP: INTR
       DBGMCU:
         from: ''  # TBD: pending SVD
         instances: [DBGMCU]
@@ -1632,6 +1805,7 @@ families:
           IWDG: {gen: 3}
           WWDG: {cfr_version: 2}
           CRC: {has_rtype: true}
+          TAMP: {pom: true, sec: 2, or_reg: 2, rpcfg: 1}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM2: {width32: true, encoder: 3, sms_preload: 2}
@@ -2877,7 +3051,7 @@ families:
         from: STM32G031.SYSCFG_ITLINE
         instances: [SYSCFG_ITLINE]
       TAMP:
-        from: STM32G030.TAMP
+        uses: TAMP
         instances: [TAMP]
       UCPD:
         uses: UCPD
@@ -3086,7 +3260,7 @@ families:
         from: STM32G431.SYSCFG
         instances: [SYSCFG]
       TAMP:
-        from: STM32G431.TAMP
+        uses: TAMP
         instances: [TAMP]
       UCPD:
         uses: UCPD
@@ -3429,10 +3603,8 @@ families:
         uses: ModernSPI
         instances: [SPI, SPI1, SPI2, SPI2_S, SPI3, SPI3_S, SPI4, SPI4_S, SPI5, SPI6, SPI_S]
       TAMP:
-        from: STM32H503.TAMP
+        uses: TAMP
         instances: [TAMP]
-        interrupts:
-          TAMP: INTR
       TAMP_S:
         from: STM32H523.TAMP_S
         instances: [TAMP_S]
@@ -3474,6 +3646,7 @@ families:
           RNG: {gen: 3}
           HASH: {gen: 1}
           CRS: {trim_width: 7}
+          TAMP: {sec: 2, rpcfg: 2}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           OPAMP: {single: true}
           GPIO: {has_hslvr: true}
@@ -3920,7 +4093,7 @@ families:
           H7A3_B:
             from: STM32H7A3.SYSCFG
       TAMP:
-        from: STM32H7A3.TAMP
+        uses: TAMP
         instances: [TAMP]
       TT_FDCAN:
         from: STM32H7A3.TT_FDCAN
@@ -3958,6 +4131,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           GPIO: {has_brr: false}
+          TAMP: {or_reg: 3}
           RTC: {has_itsf: true}
           OCTOSPI: {has_maxtran: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
@@ -4253,10 +4427,8 @@ families:
         uses: ModernSPI
         instances: [SPI1, SPI2, SPI3, SPI4, SPI5, SPI6]
       TAMP:
-        from: STM32H7S.TAMP
+        uses: TAMP
         instances: [TAMP]
-        interrupts:
-          TAMP: INTR
       UCPD:
         uses: UCPD
         instances: [UCPD]
@@ -4292,6 +4464,7 @@ families:
           CRYP: {gen: 2}
           HASH: {gen: 2}
           DMA2D: {gen: 3}
+          TAMP: {sec: 2}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -5344,7 +5517,7 @@ families:
         from: STM32L552.SYSCFG
         instances: [SYSCFG]
       TAMP:
-        from: STM32L552.TAMP
+        uses: TAMP
         instances: [TAMP]
       TSC:
         uses: TSC
@@ -5369,6 +5542,7 @@ families:
         _all:
           RNG: {gen: 2}
           CRS: {trim_width: 7}
+          TAMP: {sec: 3, or_reg: 3}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -5634,10 +5808,8 @@ families:
         from: STM32N645.SYSCFG
         instances: [SYSCFG]
       TAMP:
-        from: STM32N645.TAMP
+        uses: TAMP
         instances: [TAMP]
-        interrupts:
-          TAMP: INTR
       UCPD:
         uses: UCPD
         instances: [UCPD]
@@ -5673,6 +5845,7 @@ families:
           CRYP: {gen: 2}
           HASH: {gen: 2}
           DMA2D: {gen: 3}
+          TAMP: {pom: true, sec: 1, or_reg: 1, rpcfg: 1}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -5823,7 +5996,7 @@ families:
         from: STM32U073.SYSCFG
         instances: [SYSCFG]
       TAMP:
-        from: STM32U031.TAMP
+        uses: TAMP
         instances: [TAMP]
       TSC:
         uses: TSC
@@ -5848,6 +6021,7 @@ families:
           RNG: {gen: 3}
           CRC: {has_rtype: true}
           TSC: {groups: 7}
+          TAMP: {pom: true}
           OPAMP: {single: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
@@ -6033,10 +6207,8 @@ families:
         from: STM32U375.SYSCFG
         instances: [SYSCFG]
       TAMP:
-        from: STM32U375.TAMP
+        uses: TAMP
         instances: [TAMP]
-        interrupts:
-          TAMP: INTR
       TSC:
         uses: TSC
         instances: [TSC]
@@ -6059,6 +6231,7 @@ families:
           IWDG: {gen: 2}
           CRC: {has_rtype: true}
           CRS: {trim_width: 7}
+          TAMP: {pom: true, sec: 1, rpcfg: 1}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false, has_wakeup: false, has_autocr: true}
@@ -6342,10 +6515,8 @@ families:
         from: STM32U5Fx.SYSCFG
         instances: [SYSCFG]
       TAMP:
-        from: STM32U5Fx.TAMP
+        uses: TAMP
         instances: [TAMP]
-        interrupts:
-          TAMP: INTR
       TSC:
         uses: TSC
         instances: [TSC]
@@ -6368,6 +6539,7 @@ families:
           IWDG: {gen: 2}
           RNG: {gen: 3}
           DMA2D: {gen: 2}
+          TAMP: {sec: 1, rpcfg: 2}
           OCTOSPI: {has_maxtran: true}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
