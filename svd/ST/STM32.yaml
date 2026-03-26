@@ -52,6 +52,32 @@ shared_blocks:
     interrupts: {CRYP: INTR}
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'CRYP generation: 0=basic, 1=+NPBLB, 2=+KMOD/IPRST/KERF/KEYVALID'}
+  AES_V1:
+    # AES co-processor V1 (basic, AES-128 only): L0, L1, F4, L4, L4+
+    # 12 registers: CR(flag clear+interrupt in-band), SR{CCF,RDERR,WRERR}, DINR, DOUTR, KEYR0-3, IVR0-3
+    from: STM32L431.AES
+    interrupts:
+      AES: INTR
+      CRYPTO: INTR
+      AES_RNG_LPUART1: INTR
+    description: AES co-processor V1 (basic, 128-bit key)
+  AES_V2:
+    # AES co-processor V2 (extended, 256-bit key + GCM/CCM + suspend): F7, G0, G4, L5
+    # 24 registers: V1 + GCMPH/CHMOD2/KEYSIZE/NPBLB in CR, BUSY in SR, KEYR4-7, SUSP0R-7
+    from: STM32G431.AES
+    interrupts:
+      AES: INTR
+      AES_RNG: INTR
+    description: AES co-processor V2 (256-bit key, GCM/CCM, suspend)
+  AES_V3:
+    # AES co-processor V3 (restructured interrupts): H5, U0, U3, U5, C5
+    # 27 registers: V2 base + KMOD/IPRST in CR, KEYVALID in SR, separate IER/ISR/ICR at 0x300+
+    # Flag clear/interrupt enable moved from CR to dedicated IER/ISR/ICR registers
+    from: STM32H533.AES
+    interrupts:
+      AES: INTR
+      AES_RNG: INTR
+    description: AES co-processor V3 (separate IER/ISR/ICR, key mode)
   HASH:
     # Hash processor (Gen 0-2 superset chain)
     # Gen 0 (basic): CR{ALGO0[7]+ALGO1[18] split}, SR{DINIS,DCIS,DMAS,BUSY} — F4, F7, H7, L4, L4+, L5
@@ -1392,10 +1418,8 @@ families:
         from: ''  # TBD: pending SVD
         instances: [ADCC12, ADCC3]
       AES:
-        from: ''  # TBD: pending SVD
+        uses: AES_V3
         instances: [AES]
-        interrupts:
-          AES: INTR
       COMP:
         from: ''  # TBD: pending SVD
         instances: [COMP1, COMP12]
@@ -1899,10 +1923,8 @@ families:
         transforms:
           - {type: patchAddressBlock, size: 12}
       AES:
-        from: STM32F413.AES
+        uses: AES_V1
         instances: [AES]
-        interrupts:
-          CRYPTO: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -2288,10 +2310,8 @@ families:
           - {type: renameFields, register: CCR, pattern: ^MULT$, replacement: MULTI}
           - {type: patchAddressBlock, size: 12}
       AES:
-        from: STM32F730.AES
+        uses: AES_V2
         instances: [AES]
-        interrupts:
-          AES: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -2675,10 +2695,8 @@ families:
         interrupts:
           ADC: INTR
       AES:
-        from: STM32G041.AES
+        uses: AES_V2
         instances: [AES]
-        interrupts:
-          AES_RNG: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -2855,10 +2873,8 @@ families:
         from: STM32G431.ADC12_Common
         instances: [ADC12_Common, ADC345_Common]
       AES:
-        from: STM32G431.AES
+        uses: AES_V2
         instances: [AES]
-        interrupts:
-          AES: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -3096,10 +3112,8 @@ families:
         transforms:
           - {type: renameRegisters, pattern: ^ADC_, replacement: ''}
       AES:
-        from: STM32H533.AES
+        uses: AES_V3
         instances: [AES]
-        interrupts:
-          AES: INTR
       AES_S:
         from: STM32H533.AES_S
         instances: [AES_S]
@@ -4273,10 +4287,8 @@ families:
         params:
           - {name: vlcd_channel, type: bool, default: false, description: VLCD pin connected to ADC input channel for LCD voltage measurement}
       AES:
-        from: STM32L0x1.AES
+        uses: AES_V1
         instances: [AES]
-        interrupts:
-          AES_RNG_LPUART1: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -4434,10 +4446,8 @@ families:
         interrupts:
           ADC1: INTR
       AES:
-        from: STM32L100.AES
+        uses: AES_V1
         instances: [AES]
-        interrupts:
-          AES: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -4616,10 +4626,8 @@ families:
         from: STM32L471.ADC_Common
         instances: [ADC123_Common, ADC12_Common, ADC_Common]
       AES:
-        from: STM32L431.AES
+        uses: AES_V1
         instances: [AES]
-        interrupts:
-          AES: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -4875,10 +4883,8 @@ families:
         from: STM32L4P5.ADC_Common
         instances: [ADC_Common]
       AES:
-        from: STM32L4P5.AES
+        uses: AES_V1
         instances: [AES]
-        interrupts:
-          AES: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -5120,10 +5126,8 @@ families:
         from: STM32L552.ADC_Common
         instances: [ADC_Common]
       AES:
-        from: STM32L562.AES
+        uses: AES_V2
         instances: [AES]
-        interrupts:
-          AES: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -5678,10 +5682,8 @@ families:
         interrupts:
           ADC_COMP: INTR
       AES:
-        from: STM32U083.AES
+        uses: AES_V3
         instances: [AES]
-        interrupts:
-          AES_RNG: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -5843,10 +5845,8 @@ families:
         interrupts:
           ADF1: INTR
       AES:
-        from: STM32U385.AES
+        uses: AES_V3
         instances: [AES]
-        interrupts:
-          AES: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
@@ -6075,10 +6075,8 @@ families:
         interrupts:
           ADF1_FLT0: INTR
       AES:
-        from: STM32U5Gx.AES
+        uses: AES_V3
         instances: [AES]
-        interrupts:
-          AES: INTR
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
