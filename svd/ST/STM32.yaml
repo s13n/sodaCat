@@ -677,6 +677,22 @@ shared_blocks:
       - {type: renameRegisters, pattern: DOEPCTL(\d+)_(\w+), replacement: DOEPCTL_\2\1}
       - {type: createClusterArray, pattern: DOEP(\D+)(\d+), name: DOEP, description: Device OUT endpoint, template: 1}
       - {type: patchAddressBlock, size: 3592}
+  UCPD:
+    # USB Type-C Power Delivery: G0, G4, H5, H7RS, L5, N6, U5
+    # 18 registers: config (CFG1/CFG2/CFG3), control (CR), interrupts (IMR/SR/ICR),
+    # TX (TX_ORDSET/TX_PAYSZ/TXDR), RX (RX_ORDSET/RX_PAYSZ/RXDR/RX_ORDEXT1/RX_ORDEXT2),
+    # ID (IPVER/IPID/MID). G0 source is superset (DBATTEN in CR, all CFG3 trim fields, ID regs)
+    from: STM32G070.UCPD1
+    interrupts:
+      UCPD1_UCPD2: INTR
+      UCPD1: INTR
+      UCPD: INTR
+    description: USB Type-C Power Delivery controller
+    transforms:
+      - type: patchFields
+        register: CFG2
+        fields:
+          - {name: RXAFILTEN, description: Rx analog filter enable, bitOffset: 8, bitWidth: 1, access: read-write}
   USB_DRD:
     # USB full-speed dual-role device (CHEPnR, PMA-based): C0, G0, H5, U0, U3
     from: STM32H503.USB
@@ -2809,10 +2825,8 @@ families:
         from: STM32G030.TAMP
         instances: [TAMP]
       UCPD:
-        from: STM32G070.UCPD1
+        uses: UCPD
         instances: [UCPD1, UCPD2]
-        interrupts:
-          UCPD1_UCPD2: INTR
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, USART4, USART5, USART6]
@@ -3020,10 +3034,8 @@ families:
         from: STM32G431.TAMP
         instances: [TAMP]
       UCPD:
-        from: STM32G431.UCPD1
+        uses: UCPD
         instances: [UCPD1]
-        interrupts:
-          UCPD1: INTR
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
@@ -3370,10 +3382,8 @@ families:
         from: STM32H523.TAMP_S
         instances: [TAMP_S]
       UCPD:
-        from: STM32H523.UCPD
+        uses: UCPD
         instances: [UCPD, UCPD1, UCPD_S]
-        interrupts:
-          UCPD1: INTR
       USART:
         uses: USART
         instances: [UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART8, UART9, USART, USART1, USART10, USART11, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
@@ -4195,10 +4205,8 @@ families:
         interrupts:
           TAMP: INTR
       UCPD:
-        from: STM32H7S.UCPD
+        uses: UCPD
         instances: [UCPD]
-        interrupts:
-          UCPD1: INTR
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, UART4, UART5, UART7, UART8]
@@ -5292,10 +5300,8 @@ families:
         uses: TSC
         instances: [TSC]
       UCPD:
-        from: STM32L552.UCPD1
+        uses: UCPD
         instances: [UCPD1]
-        interrupts:
-          UCPD1: INTR
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
@@ -5592,10 +5598,8 @@ families:
         interrupts:
           TAMP: INTR
       UCPD:
-        from: STM32N645.UCPD
+        uses: UCPD
         instances: [UCPD]
-        interrupts:
-          UCPD: INTR
       USART:
         uses: USART
         instances: [UART4, UART5, UART7, UART8, UART9, USART1, USART10, USART2, USART3, USART6]
@@ -6316,10 +6320,8 @@ families:
         uses: TSC
         instances: [TSC]
       UCPD:
-        from: STM32U5Fx.UCPD1
+        uses: UCPD
         instances: [UCPD1]
-        interrupts:
-          UCPD1: INTR
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3, USART6]
