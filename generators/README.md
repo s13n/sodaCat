@@ -102,6 +102,14 @@ applied selectively to individual register declarations, which is much more
 verbose. Furthermore, by appplying the `volatile` to the pointer, it is easy to
 choose non-volatile accesses by merely using a different pointer type.
 
+## Clock tree header
+
+Microcontrollers have increasingly complex clock distribution infrastructure,
+which includes multiple clock sources, and various gates, dividers, multiplexers
+etc. to selectively feed clocks to function blocks. This structure can be
+described by a separate YAML file, and from this a header can be generated,
+which can trace the path of a clock signal to determine its frequency.
+
 ## SVD generation
 
 The `svd/` subfolder contains a generator that produces CMSIS-SVD (System View
@@ -128,11 +136,3 @@ When multiple peripheral instances share the same block model, the generator
 uses SVD's `derivedFrom` mechanism to avoid redundant register definitions.
 Multi-dimensional arrays (a sodaCat model extension) are automatically flattened
 to single-dimension arrays for SVD compatibility.
-
-## Clock tree header
-
-Microcontrollers have increasingly complex clock distribution infrastructure,
-which includes multiple clock sources, and various gates, dividers, multiplexers
-etc. to selectively feed clocks to function blocks. This structure can be
-described by a separate YAML file, and from this a header can be generated,
-which can trace the path of a clock signal to determine its frequency.
