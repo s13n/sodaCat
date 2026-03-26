@@ -1,10 +1,10 @@
-# Header generation
+# Generators
 
-Header generation is the generation of source code for programming languages
-from the data models. Different languages are possible, such as C, C++ or Rust.
-Other kinds of generation targets are also conceivable, such as debug support
-files and documentation. The generators are python scripts in this folder.
-Generators for each target language are in language-specific subfolders.
+Generators produce output files from the YAML data models. The primary use case
+is generating source code headers for programming languages such as C, C++ or
+Rust. Other kinds of generation targets are also possible, such as SVD files,
+debug support files and documentation. The generators are python scripts in this
+folder, organized in target-specific subfolders.
 
 Generating a header from a YAML file requires some considerations which are to
 be discussed here. The requirements can be summarized as follows:
@@ -101,6 +101,33 @@ most convenient declaration style. Otherwise the `volatile` would have to be
 applied selectively to individual register declarations, which is much more
 verbose. Furthermore, by appplying the `volatile` to the pointer, it is easy to
 choose non-volatile accesses by merely using a different pointer type.
+
+## SVD generation
+
+The `svd/` subfolder contains a generator that produces CMSIS-SVD (System View
+Description) XML files from the YAML models. This is the reverse of the normal
+extraction pipeline: instead of SVD → YAML, this goes YAML → SVD, producing
+"fixed" SVD files that incorporate all transformations applied during model
+creation. These corrected SVD files can be used with third-party tools that
+consume SVD, such as debuggers, code generators, or documentation tools.
+
+The subfolder is self-contained: a client project can download `generate_svd.py`
+and `CMSIS-SVD.xsd` into its own build tree, just like the C++ generator. The
+only external dependency is ruamel.yaml (`pip install ruamel.yaml`) or PyYAML
+(`pip install PyYAML`); lxml is optional and only needed for `--validate`.
+Missing dependencies produce a clear error message.
+
+Usage:
+
+    python3 generators/svd/generate_svd.py <chip_model.yaml> [-o <output.svd>] [--validate]
+
+The `--validate` flag checks the output against the official CMSIS-SVD XSD
+schema (the `CMSIS-SVD.xsd` file shipped alongside the script; requires lxml).
+
+When multiple peripheral instances share the same block model, the generator
+uses SVD's `derivedFrom` mechanism to avoid redundant register definitions.
+Multi-dimensional arrays (a sodaCat model extension) are automatically flattened
+to single-dimension arrays for SVD compatibility.
 
 ## Clock tree header
 
