@@ -488,6 +488,20 @@ shared_blocks:
       OCTOSPI1: INTR
     params:
       - {name: has_maxtran, type: bool, default: false, description: DCR3 maximum transfer field}
+  XSPI:
+    # Extended-SPI flash memory interface (next-gen OCTOSPI with DLL calibration)
+    # Families: H7RS, N6 (C5 pending SVD)
+    from: STM32N645.XSPI1
+    interrupts:
+      XSPI1: INTR
+      OSPI1: INTR
+    description: Extended-SPI flash memory interface
+    params:
+      - {name: has_dll, type: bool, default: true, description: "DLL calibration registers present (CALFCR/CALMR/CALSOR/CALSIR)"}
+      - {name: has_maxtran, type: bool, default: true, description: "DCR3 maximum transfer field present"}
+    transforms:
+      # N6 SVD marks DCR1.CKMODE as read-only, but it's read-write per RM0486
+      - {type: patchFields, register: DCR1, fields: [{name: CKMODE, access: read-write}]}
   SPDIFRX:
     # S/PDIF audio receiver interface
     # Families: F4, F7, H7, H7RS, N6
@@ -4480,7 +4494,7 @@ families:
         uses: WWDG
         instances: [WWDG]
       XSPI:
-        from: STM32H7S.XSPI1
+        uses: XSPI
         instances: [XSPI1, XSPI2]
         interrupts:
           OSPI1: INTR
@@ -5863,7 +5877,7 @@ families:
         uses: WWDG
         instances: [WWDG]
       XSPI:
-        from: STM32N645.XSPI1
+        uses: XSPI
         instances: [XSPI1, XSPI2, XSPI3]
         interrupts:
           XSPI1: INTR
