@@ -8,6 +8,27 @@ Use `cmake --build <dir> --target audit-stm32-models` to detect transforms
 that have become no-ops after an SVD update.
 
 
+## ST STM32C5
+
+References:
+- RM0522 Rev.1 — STM32C5 series
+
+### Ethernet (ETH)
+
+**All C5 SVDs (STM32C531–STM32C5A3, SVD v1.0.0):**
+
+The ETH peripheral has no interrupt entries in the SVD. RM0522 Table 114 documents
+two interrupts:
+
+| Vector | Name      | Description                              |
+|--------|-----------|------------------------------------------|
+| 94     | ETH1      | Ethernet global interrupt                |
+| 95     | ETH1_WKUP | Ethernet wakeup interrupt through EXTI   |
+
+ETH is present only on C59x/C5A3 chips. Worked around via `chip_interrupts`
+(INTR at 94, WKUP at 95).
+
+
 ## ST STM32F7
 
 References:
