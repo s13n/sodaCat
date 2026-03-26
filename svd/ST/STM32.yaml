@@ -1169,6 +1169,26 @@ shared_blocks:
       MDF1_FLT5: FLT5
     description: Multi-function Digital Filter
 
+  DSI:
+    # MIPI DSI host controller (Synopsys DesignWare): F4, F7, L4+
+    # 72 registers: version (VR), core config (CR/CCR/PCR/MCR), video mode
+    # (VMCR/VPCR/VCCR/VNPCR/VH*/VV*), command mode (LCCR/CMCR), generic
+    # (GHCR/GPDR/GPSR), timing (TCCR0-5), PHY (CLCR/CLTCR/DLTCR/PCTLR/
+    # PCONFR/PUCR/PTTCR/PSR), interrupt (ISR0/1/IER0/1/FIR0/1), current
+    # config (LCVCIDR/LCCCR/LPMCCR/VMCCR/VP*/VC*/VN*/VH*/VV*), wrapper
+    # (WCFGR/WCR/WIER/WISR/WIFCR/WPCR1-5/WRPCR). U5 has newer revision
+    # with different PLL/PHY fields — stays family-specific.
+    from: STM32F767.DSI
+    interrupts:
+      DSIHOST: INTR
+      DSIHSOT: INTR
+    description: MIPI DSI host controller (Synopsys DesignWare)
+    transforms:
+      - type: renameFields
+        register: WPCR3
+        pattern: ^TCLKZEO$
+        replacement: TCLKZERO
+
 families:
   C0:
     svd:
@@ -2042,9 +2062,8 @@ families:
         uses: DMA2D
         instances: [DMA2D]
       DSI:
-        from: STM32F469.DSIHOST
+        uses: DSI
         instances: [DSIHOST]
-        description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32F401.EXTI
         instances: [EXTI]
@@ -2449,11 +2468,8 @@ families:
         uses: DMA2D
         instances: [DMA2D]
       DSI:
-        from: STM32F767.DSI
+        uses: DSI
         instances: [DSI]
-        interrupts:
-          DSIHOST: INTR
-        description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32F722.EXTI
         instances: [EXTI]
@@ -4988,11 +5004,8 @@ families:
         interrupts:
           DMAMUX1_OVR: INTR
       DSI:
-        from: STM32L4R9.DSI
+        uses: DSI
         instances: [DSI]
-        interrupts:
-          DSIHSOT: INTR
-        description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32L4P5.EXTI
         instances: [EXTI]
