@@ -480,28 +480,25 @@ shared_blocks:
       - {name: dual, type: bool, default: true, description: Dual-flash mode support (DFM bit in CR)}
     interrupts:
       QUADSPI: INTR
-  OCTOSPI:
-    # Octo-SPI flash memory interface
-    # Families: H5, H7, L5, U3, U5 (L4P has different IP variants, stays family-specific)
-    from: STM32U5Fx.OCTOSPI1
-    interrupts:
-      OCTOSPI1: INTR
-    params:
-      - {name: has_maxtran, type: bool, default: false, description: DCR3 maximum transfer field}
   XSPI:
-    # Extended-SPI flash memory interface (next-gen OCTOSPI with DLL calibration)
-    # Families: H7RS, N6 (C5 pending SVD)
+    # Extended-SPI flash memory interface (unified OCTOSPI/XSPI)
+    # Families: H5, H7, H7RS, L5, N6, U3, U5 (L4P has different IP variants, stays family-specific)
     from: STM32N645.XSPI1
     interrupts:
+      OCTOSPI1: INTR
       XSPI1: INTR
       OSPI1: INTR
     description: Extended-SPI flash memory interface
     params:
-      - {name: has_dll, type: bool, default: true, description: "DLL calibration registers present (CALFCR/CALMR/CALSOR/CALSIR)"}
-      - {name: has_maxtran, type: bool, default: true, description: "DCR3 maximum transfer field present"}
+      - {name: is_xspi, type: bool, default: false, description: "XSPI variant (adds CSSEL/MSEL/EXTENDMEM, removes FSEL/DLYBYP)"}
+      - {name: has_dll, type: bool, default: false, description: "DLL calibration registers present (CALFCR/CALMR/CALSOR/CALSIR)"}
+      - {name: has_maxtran, type: bool, default: false, description: "DCR3 maximum transfer field present"}
     transforms:
       # N6 SVD marks DCR1.CKMODE as read-only, but it's read-write per RM0486
       - {type: patchFields, register: DCR1, fields: [{name: CKMODE, access: read-write}]}
+      # Add OCTOSPI-only fields (not in XSPI SVD source but needed for OCTOSPI families)
+      - {type: patchFields, register: CR, fields: [{name: FSEL, description: FLASH memory selection, bitOffset: 7, bitWidth: 1}]}
+      - {type: patchFields, register: DCR1, fields: [{name: DLYBYP, description: Delay block bypass, bitOffset: 3, bitWidth: 1}]}
   SPDIFRX:
     # S/PDIF audio receiver interface
     # Families: F4, F7, H7, H7RS, N6
@@ -3571,7 +3568,7 @@ families:
         uses: USART
         instances: [LPUART, LPUART_S]
       OCTOSPI:
-        uses: OCTOSPI
+        uses: XSPI
         instances: [OCTOSPI]
       OCTOSPI_S:
         from: STM32H523.OCTOSPI_S
@@ -4011,7 +4008,7 @@ families:
           - {type: renameFields, register: C0IFCR, pattern: 0$, replacement: ''}
           - {type: createClusterArray, pattern: C(\d+)(\w+), name: C, description: MDMA channel}
       OCTOSPI:
-        uses: OCTOSPI
+        uses: XSPI
         instances: [OCTOSPI1, OCTOSPI2]
       OPAMP:
         uses: HSOPAMP
@@ -4515,6 +4512,7 @@ families:
           HASH: {gen: 2}
           DMA2D: {gen: 3}
           TAMP: {sec: 2}
+          XSPI: {is_xspi: true, has_dll: true, has_maxtran: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -5527,7 +5525,7 @@ families:
         uses: USART
         instances: [LPUART1]
       OCTOSPI:
-        uses: OCTOSPI
+        uses: XSPI
         instances: [OCTOSPI1]
       OPAMP:
         uses: LPOPAMP
@@ -5902,6 +5900,7 @@ families:
           HASH: {gen: 2}
           DMA2D: {gen: 3}
           TAMP: {pom: true, sec: 1, or_reg: 1, rpcfg: 1}
+          XSPI: {is_xspi: true, has_dll: true, has_maxtran: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -6208,7 +6207,7 @@ families:
         uses: USART
         instances: [LPUART]
       OCTOSPI:
-        uses: OCTOSPI
+        uses: XSPI
         instances: [OCTOSPI]
       OPAMP:
         from: STM32U375.OPAMP
@@ -6501,7 +6500,7 @@ families:
         uses: MDF
         instances: [MDF1]
       OCTOSPI:
-        uses: OCTOSPI
+        uses: XSPI
         instances: [OCTOSPI1, OCTOSPI2, OCTOSPIM]
       OPAMP:
         uses: LPOPAMP
