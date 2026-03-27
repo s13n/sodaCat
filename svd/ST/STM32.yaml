@@ -488,17 +488,19 @@ shared_blocks:
       OCTOSPI1: INTR
       XSPI1: INTR
       OSPI1: INTR
+      HSPI1: INTR
     description: Extended-SPI flash memory interface
     params:
-      - {name: is_xspi, type: bool, default: false, description: "XSPI variant; false = OCTOSPI (adds CSSEL/MSEL/EXTENDMEM, removes FSEL/DLYBYP)"}
+      - {name: variant, type: int, default: 0, description: "IP variant: 0 = OCTOSPI, 1 = HSPI, 2 = XSPI"}
       - {name: has_dll, type: bool, default: false, description: "DLL calibration registers present (CALFCR/CALMR/CALSOR/CALSIR)"}
       - {name: has_maxtran, type: bool, default: false, description: "DCR3 maximum transfer field present"}
     transforms:
       # N6 SVD marks DCR1.CKMODE as read-only, but it's read-write per RM0486
       - {type: patchFields, register: DCR1, fields: [{name: CKMODE, access: read-write}]}
-      # Add OCTOSPI-only fields (not in XSPI SVD source but needed for OCTOSPI families)
+      # Add OCTOSPI/HSPI-only fields (not in XSPI SVD source but needed for older variants)
       - {type: patchFields, register: CR, fields: [{name: FSEL, description: FLASH memory selection, bitOffset: 7, bitWidth: 1}]}
       - {type: patchFields, register: DCR1, fields: [{name: DLYBYP, description: Delay block bypass, bitOffset: 3, bitWidth: 1}]}
+      - {type: patchFields, register: CCR, fields: [{name: SIOO, description: Send instruction only once mode, bitOffset: 31, bitWidth: 1}]}
   SPDIFRX:
     # S/PDIF audio receiver interface
     # Families: F4, F7, H7, H7RS, N6
@@ -4512,7 +4514,7 @@ families:
           HASH: {gen: 2}
           DMA2D: {gen: 3}
           TAMP: {sec: 2}
-          XSPI: {is_xspi: true, has_dll: true, has_maxtran: true}
+          XSPI: {variant: 2, has_dll: true, has_maxtran: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -5900,7 +5902,7 @@ families:
           HASH: {gen: 2}
           DMA2D: {gen: 3}
           TAMP: {pom: true, sec: 1, or_reg: 1, rpcfg: 1}
-          XSPI: {is_xspi: true, has_dll: true, has_maxtran: true}
+          XSPI: {variant: 2, has_dll: true, has_maxtran: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -6458,10 +6460,8 @@ families:
         uses: HASH
         instances: [HASH]
       HSPI:
-        from: STM32U599.HSPI1
+        uses: XSPI
         instances: [HSPI1]
-        interrupts:
-          HSPI1: INTR
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4, I2C5, I2C6]
@@ -6594,6 +6594,7 @@ families:
           DMA2D: {gen: 2}
           TAMP: {sec: 1, rpcfg: 2}
           OCTOSPI: {has_maxtran: true}
+          HSPI1: {variant: 1, has_dll: true, has_maxtran: true}
           SPI: {has_autocr: true}
           USART: {has_wakeup: false, has_autocr: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false, has_wakeup: false, has_autocr: true}
