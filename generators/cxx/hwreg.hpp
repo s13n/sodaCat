@@ -198,6 +198,13 @@ struct HwReg {
         set(val);
     }
 
+    /** Return a reference to the register's bitfield representation.
+     * Keep in mind that this may need to be byteswapped on access.
+     */
+    constexpr BitField &ref() noexcept {
+        return *std::bit_cast<BitField*>(&reg_);
+    }
+
     /** Cast to a user-typed reference.
      * This is for cases when the register needs to be accessed
      * as a different type. You need to use this responsibly,
