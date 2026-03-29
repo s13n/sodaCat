@@ -126,7 +126,10 @@ $postfix"""))
                 types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4, innerPrefix)
                 enums += enum
                 structs += self.registersTemplate.substitute(name=name, regs=regs, types=types, description=description, size=size)
-                names = reg['name'] % dim_fmt
+                if '[%s]' in reg['name']:
+                    names = reg['name'] % dim_fmt
+                else:
+                    names = reg['name']
                 line = self.fieldTemplate.substitute(name=names, type='struct ' + name, description=description)
                 list.append([line, addressOffset, size*dim_total])
             else:
