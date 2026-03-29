@@ -67,6 +67,30 @@ families:
                   - {name: OFFSET_512, value: 2}
                   - {name: OFFSET_1024, value: 3}
           - {type: createClusterArray, pattern: EP(\d+)_((?:IN|OUT)_BUFFER_CONTROL), name: EP_BUF, description: Endpoint buffer control}
+          - {type: renameRegisters, pattern: ^SETUP_PACKET_LOW$, replacement: EP0_IN_CONTROL}
+          - {type: renameRegisters, pattern: ^SETUP_PACKET_HIGH$, replacement: EP0_OUT_CONTROL}
+          - {type: createClusterArray, pattern: EP(\d+)_((?:IN|OUT)_CONTROL), name: EP_CTRL, description: Endpoint control, template: 1}
+          - type: patchRegisters
+            registers:
+              - name: SETUP_PACKET
+                addressOffset: 0
+                description: Setup packet from host (overlaps EP_CTRL[0])
+                registers:
+                  - name: LOW
+                    addressOffset: 0
+                    description: Bytes 0-3 of the SETUP packet from the host.
+                    resetValue: 0
+                    fields:
+                      - {name: BMREQUESTTYPE, access: read-write, bitOffset: 0, bitWidth: 8}
+                      - {name: BREQUEST, access: read-write, bitOffset: 8, bitWidth: 8}
+                      - {name: WVALUE, access: read-write, bitOffset: 16, bitWidth: 16}
+                  - name: HIGH
+                    addressOffset: 4
+                    description: Bytes 4-7 of the setup packet from the host.
+                    resetValue: 0
+                    fields:
+                      - {name: WINDEX, access: read-write, bitOffset: 0, bitWidth: 16}
+                      - {name: WLENGTH, access: read-write, bitOffset: 16, bitWidth: 16}
 
       RESETS:
         from: RP2040.RESETS
