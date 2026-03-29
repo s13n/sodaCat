@@ -391,12 +391,14 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     renameEntries(r['registers'], 'name', t['pattern'], t['replacement'])
                     renameEntries(r['registers'], 'displayName', t['pattern'], t['replacement'])
         elif typ == 'renameFields':
-            reg = next((r for r in block_data.get('registers', [])
-                        if r.get('name') == t['register']), None)
-            if reg and reg.get('fields'):
-                renameEntries(reg['fields'], 'name', t['pattern'], t['replacement'])
-            elif reg is None:
-                print(f"  WARNING: renameFields: register '{t['register']}' not found")
+            matched = False
+            for reg in block_data.get('registers', []):
+                if re.match(t['register'], reg.get('name', '')):
+                    matched = True
+                    if reg.get('fields'):
+                        renameEntries(reg['fields'], 'name', t['pattern'], t['replacement'])
+            if not matched:
+                print(f"  WARNING: renameFields: no registers match '{t['register']}'")
         elif typ == 'patchFields':
             if 'register_pattern' in t:
                 matched = False
