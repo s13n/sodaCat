@@ -32,6 +32,7 @@ VENDORS = {
     'lpc': 'vendors.lpc',
     'mcx': 'vendors.mcx',
     'esp': 'vendors.esp',
+    'raspberry': 'vendors.raspberry',
 }
 
 
@@ -747,6 +748,11 @@ def _build_config_interrupt_mapping(blocks_config, shared_blocks):
         for raw, canonical_spec in interrupt_map.items():
             canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
             mapping[(bt, raw)] = canonical
+        # Also include interrupt mappings from variants
+        for variant_cfg in (bc.get('variants') or {}).values():
+            for raw, canonical_spec in (variant_cfg.get('interrupts') or {}).items():
+                canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
+                mapping[(bt, raw)] = canonical
     for bt, bc in shared_blocks.items():
         for raw, canonical_spec in (bc.get('interrupts') or {}).items():
             canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec

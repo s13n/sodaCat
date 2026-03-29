@@ -1,0 +1,359 @@
+# Consolidated configuration for Raspberry Pi model extraction.
+# SVD files sourced from https://github.com/raspberrypi/pico-sdk (via datasheets)
+
+svd:
+  source: https://datasheets.raspberrypi.com/
+  version: "0.1"
+
+families:
+  RP:
+    svd:
+      version: "0.1"
+    subfamilies:
+      RP2040:
+        chips: [RP2040]
+        ref_manual:
+          name: RP2040 Datasheet
+          url: https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf
+      RP2350:
+        chips: [RP2350]
+        ref_manual:
+          name: RP2350 Datasheet
+          url: https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf
+
+    blocks:
+      # ====================================================================
+      # Shared blocks — identical register sets across RP2040 and RP2350
+      # ====================================================================
+
+      ADC:
+        from: RP2040.ADC
+        instances: [ADC]
+        interrupts:
+          ADC_IRQ_FIFO: FIFO
+
+      I2C:
+        from: RP2040.I2C0
+        instances: [I2C0, I2C1]
+        interrupts:
+          I2C0_IRQ: IRQ
+          I2C1_IRQ: IRQ
+
+      SPI:
+        from: RP2040.SPI0
+        instances: [SPI0, SPI1]
+        interrupts:
+          SPI0_IRQ: IRQ
+          SPI1_IRQ: IRQ
+
+      UART:
+        from: RP2040.UART0
+        instances: [UART0, UART1]
+        interrupts:
+          UART0_IRQ: IRQ
+          UART1_IRQ: IRQ
+
+      USB_DPRAM:
+        from: RP2040.USB_DPRAM
+        instances: [USB_DPRAM]
+
+      RESETS:
+        from: RP2040.RESETS
+        instances: [RESETS]
+
+      PSM:
+        from: RP2040.PSM
+        instances: [PSM]
+
+      TBMAN:
+        from: RP2040.TBMAN
+        instances: [TBMAN]
+
+      PADS_QSPI:
+        from: RP2040.PADS_QSPI
+        instances: [PADS_QSPI]
+
+      # ====================================================================
+      # Variant blocks — exist in both chips but register sets differ
+      # ====================================================================
+
+      BUSCTRL:
+        from: RP2040.BUSCTRL
+        instances: [BUSCTRL]
+        variants:
+          RP2350:
+            from: RP2350.BUSCTRL
+
+      CLOCKS:
+        from: RP2040.CLOCKS
+        instances: [CLOCKS]
+        interrupts:
+          CLOCKS_IRQ: IRQ
+        variants:
+          RP2350:
+            from: RP2350.CLOCKS
+
+      DMA:
+        from: RP2040.DMA
+        instances: [DMA]
+        interrupts:
+          DMA_IRQ_0: IRQ_0
+          DMA_IRQ_1: IRQ_1
+        variants:
+          RP2350:
+            from: RP2350.DMA
+            interrupts:
+              DMA_IRQ_0: IRQ_0
+              DMA_IRQ_1: IRQ_1
+              DMA_IRQ_2: IRQ_2
+              DMA_IRQ_3: IRQ_3
+
+      IO_BANK0:
+        from: RP2040.IO_BANK0
+        instances: [IO_BANK0]
+        interrupts:
+          IO_IRQ_BANK0: IRQ
+        variants:
+          RP2350:
+            from: RP2350.IO_BANK0
+            interrupts:
+              IO_IRQ_BANK0: IRQ
+              IO_IRQ_BANK0_NS: IRQ_NS
+
+      IO_QSPI:
+        from: RP2040.IO_QSPI
+        instances: [IO_QSPI]
+        interrupts:
+          IO_IRQ_QSPI: IRQ
+        variants:
+          RP2350:
+            from: RP2350.IO_QSPI
+            interrupts:
+              IO_IRQ_QSPI: IRQ
+              IO_IRQ_QSPI_NS: IRQ_NS
+
+      PADS_BANK0:
+        from: RP2040.PADS_BANK0
+        instances: [PADS_BANK0]
+        variants:
+          RP2350:
+            from: RP2350.PADS_BANK0
+
+      PIO:
+        from: RP2040.PIO0
+        instances: [PIO0, PIO1]
+        interrupts:
+          PIO0_IRQ_0: IRQ_0
+          PIO0_IRQ_1: IRQ_1
+          PIO1_IRQ_0: IRQ_0
+          PIO1_IRQ_1: IRQ_1
+        variants:
+          RP2350:
+            from: RP2350.PIO0
+            instances: [PIO0, PIO1, PIO2]
+            interrupts:
+              PIO0_IRQ_0: IRQ_0
+              PIO0_IRQ_1: IRQ_1
+              PIO1_IRQ_0: IRQ_0
+              PIO1_IRQ_1: IRQ_1
+              PIO2_IRQ_0: IRQ_0
+              PIO2_IRQ_1: IRQ_1
+
+      PLL:
+        from: RP2040.PLL_SYS
+        instances: [PLL_SYS, PLL_USB]
+        variants:
+          RP2350:
+            from: RP2350.PLL_SYS
+            interrupts:
+              PLL_SYS_IRQ: IRQ
+              PLL_USB_IRQ: IRQ
+
+      PWM:
+        from: RP2040.PWM
+        instances: [PWM]
+        interrupts:
+          PWM_IRQ_WRAP: WRAP
+        variants:
+          RP2350:
+            from: RP2350.PWM
+            interrupts:
+              PWM_IRQ_WRAP_0: WRAP_0
+              PWM_IRQ_WRAP_1: WRAP_1
+
+      ROSC:
+        from: RP2040.ROSC
+        instances: [ROSC]
+        variants:
+          RP2350:
+            from: RP2350.ROSC
+
+      SIO:
+        from: RP2040.SIO
+        instances: [SIO]
+        interrupts:
+          SIO_IRQ_PROC0: PROC0
+          SIO_IRQ_PROC1: PROC1
+        variants:
+          RP2350:
+            from: RP2350.SIO
+            instances: [SIO, SIO_NS]
+            interrupts:
+              SIO_IRQ_FIFO: FIFO
+              SIO_IRQ_BELL: BELL
+              SIO_IRQ_FIFO_NS: FIFO_NS
+              SIO_IRQ_BELL_NS: BELL_NS
+              SIO_IRQ_MTIMECMP: MTIMECMP
+
+      SYSCFG:
+        from: RP2040.SYSCFG
+        instances: [SYSCFG]
+        variants:
+          RP2350:
+            from: RP2350.SYSCFG
+
+      SYSINFO:
+        from: RP2040.SYSINFO
+        instances: [SYSINFO]
+        variants:
+          RP2350:
+            from: RP2350.SYSINFO
+
+      Timer:
+        from: RP2040.TIMER
+        instances: [TIMER]
+        interrupts:
+          TIMER_IRQ_0: IRQ_0
+          TIMER_IRQ_1: IRQ_1
+          TIMER_IRQ_2: IRQ_2
+          TIMER_IRQ_3: IRQ_3
+        variants:
+          RP2350:
+            from: RP2350.TIMER0
+            instances: [TIMER0, TIMER1]
+            interrupts:
+              TIMER0_IRQ_0: IRQ_0
+              TIMER0_IRQ_1: IRQ_1
+              TIMER0_IRQ_2: IRQ_2
+              TIMER0_IRQ_3: IRQ_3
+              TIMER1_IRQ_0: IRQ_0
+              TIMER1_IRQ_1: IRQ_1
+              TIMER1_IRQ_2: IRQ_2
+              TIMER1_IRQ_3: IRQ_3
+
+      USB:
+        from: RP2040.USB
+        instances: [USB]
+        interrupts:
+          USBCTRL_IRQ: IRQ
+        variants:
+          RP2350:
+            from: RP2350.USB
+
+      WATCHDOG:
+        from: RP2040.WATCHDOG
+        instances: [WATCHDOG]
+        variants:
+          RP2350:
+            from: RP2350.WATCHDOG
+
+      XIP_CTRL:
+        from: RP2040.XIP_CTRL
+        instances: [XIP_CTRL]
+        interrupts:
+          XIP_IRQ: IRQ
+        variants:
+          RP2350:
+            from: RP2350.XIP_CTRL
+
+      XOSC:
+        from: RP2040.XOSC
+        instances: [XOSC]
+        variants:
+          RP2350:
+            from: RP2350.XOSC
+
+      # ====================================================================
+      # RP2040-only blocks
+      # ====================================================================
+
+      RTC:
+        from: RP2040.RTC
+        instances: [RTC]
+        interrupts:
+          RTC_IRQ: IRQ
+
+      SSI:
+        from: RP2040.SSI
+        instances: [SSI]
+
+      VREG_AND_CHIP_RESET:
+        from: RP2040.VREG_AND_CHIP_RESET
+        instances: [VREG_AND_CHIP_RESET]
+
+      # ====================================================================
+      # RP2350-only blocks
+      # ====================================================================
+
+      ACCESSCTRL:
+        from: RP2350.ACCESSCTRL
+        instances: [ACCESSCTRL]
+
+      BOOTRAM:
+        from: RP2350.BOOTRAM
+        instances: [BOOTRAM]
+
+      CORESIGHT_TRACE:
+        from: RP2350.CORESIGHT_TRACE
+        instances: [CORESIGHT_TRACE]
+
+      GLITCH_DETECTOR:
+        from: RP2350.GLITCH_DETECTOR
+        instances: [GLITCH_DETECTOR]
+
+      HSTX_CTRL:
+        from: RP2350.HSTX_CTRL
+        instances: [HSTX_CTRL]
+
+      HSTX_FIFO:
+        from: RP2350.HSTX_FIFO
+        instances: [HSTX_FIFO]
+
+      OTP:
+        from: RP2350.OTP
+        instances: [OTP]
+        interrupts:
+          OTP_IRQ: IRQ
+
+      OTP_DATA:
+        from: RP2350.OTP_DATA
+        instances: [OTP_DATA, OTP_DATA_RAW]
+
+      POWMAN:
+        from: RP2350.POWMAN
+        instances: [POWMAN]
+        interrupts:
+          POWMAN_IRQ_POW: POW
+          POWMAN_IRQ_TIMER: TIMER
+
+      QMI:
+        from: RP2350.QMI
+        instances: [QMI]
+
+      SHA256:
+        from: RP2350.SHA256
+        instances: [SHA256]
+
+      TICKS:
+        from: RP2350.TICKS
+        instances: [TICKS]
+
+      TRNG:
+        from: RP2350.TRNG
+        instances: [TRNG]
+        interrupts:
+          TRNG_IRQ: IRQ
+
+      XIP_AUX:
+        from: RP2350.XIP_AUX
+        instances: [XIP_AUX]
