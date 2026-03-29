@@ -205,12 +205,28 @@ struct HwReg {
         return *std::bit_cast<BitField*>(&reg_);
     }
 
+    /** Return a reference to the register's bitfield representation.
+     * Keep in mind that this may need to be byteswapped on access.
+     */
+    constexpr BitField &ref() volatile noexcept {
+        return *std::bit_cast<BitField*>(&reg_);
+    }
+
     /** Cast to a user-typed reference.
      * This is for cases when the register needs to be accessed
      * as a different type. You need to use this responsibly,
      * because it is easy to abuse it.
      */
     template<typename T> T &cast() noexcept {
+        return *std::bit_cast<T*>(&reg_);
+    }
+
+    /** Cast to a user-typed reference.
+     * This is for cases when the register needs to be accessed
+     * as a different type. You need to use this responsibly,
+     * because it is easy to abuse it.
+     */
+    template<typename T> T &cast() volatile noexcept {
         return *std::bit_cast<T*>(&reg_);
     }
 
