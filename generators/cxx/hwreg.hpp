@@ -198,6 +198,15 @@ struct HwReg {
         set(val);
     }
 
+    /** Cast to a user-typed reference.
+     * This is for cases when the register needs to be accessed
+     * as a different type. You need to use this responsibly,
+     * because it is easy to abuse it.
+     */
+    template<typename T> T &cast() noexcept {
+        return *std::bit_cast<T*>(&reg_);
+    }
+
     Native reg_;
 };
 
