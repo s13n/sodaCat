@@ -1,0 +1,581 @@
+family: RP2040
+devices:
+  - RP2040
+documents:
+  - id: rp2040-datasheet
+    title: RP2040 Datasheet
+    url: https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf
+
+# Default module instance for CLOCKS peripheral registers
+instance: CLOCKS
+
+signals:
+  # Free-running oscillators
+  - name: xosc
+    description: Crystal oscillator output
+    nominal: 12000000
+  - name: rosc
+    description: Ring oscillator output (undivided, before ROSC DIV)
+    min: 1000000
+    max: 130000000
+  - name: rosc_ph
+    description: Ring oscillator phase-shifted/divided output (rosc_clksrc_ph)
+    min: 1000000
+    max: 130000000
+  # External GPIO clock inputs
+  - name: gpin0
+    description: External clock input on GPIO20
+  - name: gpin1
+    description: External clock input on GPIO22
+  # PLL outputs
+  - name: pll_sys
+    description: System PLL output
+    max: 133000000
+  - name: pll_usb
+    description: USB PLL output
+    nominal: 48000000
+  # Generated clocks
+  - name: clk_ref
+    description: Reference clock, used by watchdog and timer. Typically 12MHz (XOSC).
+    max: 12000000
+  - name: clk_sys
+    description: Main system clock
+    max: 133000000
+  - name: clk_peri
+    description: Clock for UART, SPI peripherals
+    max: 133000000
+  - name: clk_usb
+    description: USB clock, must be 48MHz
+    nominal: 48000000
+  - name: clk_adc
+    description: ADC clock, must be 48MHz
+    nominal: 48000000
+  - name: clk_rtc
+    description: RTC clock, typically ~46kHz (48MHz / 1024)
+    max: 65536
+  - name: clk_gpout0
+    description: GPIO clock output 0
+  - name: clk_gpout1
+    description: GPIO clock output 1
+  - name: clk_gpout2
+    description: GPIO clock output 2
+  - name: clk_gpout3
+    description: GPIO clock output 3
+  # Intermediate signals (mux/divider interconnects)
+  - name: clk_ref_aux
+    description: Output of CLK_REF auxiliary mux (glitchy), feeds CLK_REF glitchless mux at SRC=1
+  - name: clk_ref_src
+    description: Output of CLK_REF glitchless source mux, feeds CLK_REF divider
+  - name: clk_sys_aux
+    description: Output of CLK_SYS auxiliary mux (glitchy), feeds CLK_SYS glitchless mux at SRC=1
+  - name: clk_sys_src
+    description: Output of CLK_SYS glitchless source mux, feeds CLK_SYS divider
+  - name: clk_peri_src
+    description: Output of CLK_PERI source mux, feeds CLK_PERI gate
+  - name: clk_usb_src
+    description: Output of CLK_USB source mux, feeds CLK_USB divider
+  - name: clk_usb_div_out
+    description: Output of CLK_USB divider, feeds CLK_USB gate
+  - name: clk_adc_src
+    description: Output of CLK_ADC source mux, feeds CLK_ADC divider
+  - name: clk_adc_div_out
+    description: Output of CLK_ADC divider, feeds CLK_ADC gate
+  - name: clk_rtc_src
+    description: Output of CLK_RTC source mux, feeds CLK_RTC divider
+  - name: clk_rtc_div_out
+    description: Output of CLK_RTC divider, feeds CLK_RTC gate
+  - name: clk_gpout0_src
+    description: Output of CLK_GPOUT0 source mux, feeds CLK_GPOUT0 divider
+  - name: clk_gpout0_div_out
+    description: Output of CLK_GPOUT0 divider, feeds CLK_GPOUT0 gate
+  - name: clk_gpout1_src
+    description: Output of CLK_GPOUT1 source mux, feeds CLK_GPOUT1 divider
+  - name: clk_gpout1_div_out
+    description: Output of CLK_GPOUT1 divider, feeds CLK_GPOUT1 gate
+  - name: clk_gpout2_src
+    description: Output of CLK_GPOUT2 source mux, feeds CLK_GPOUT2 divider
+  - name: clk_gpout2_div_out
+    description: Output of CLK_GPOUT2 divider, feeds CLK_GPOUT2 gate
+  - name: clk_gpout3_src
+    description: Output of CLK_GPOUT3 source mux, feeds CLK_GPOUT3 divider
+  - name: clk_gpout3_div_out
+    description: Output of CLK_GPOUT3 divider, feeds CLK_GPOUT3 gate
+
+generators:
+  - name: xosc
+    description: Crystal oscillator (12MHz typical)
+    output: xosc
+    control:
+      instance: XOSC
+      reg: CTRL
+      field: ENABLE
+      values: [3358, 4011]
+      default: 3358
+  - name: rosc
+    description: Ring oscillator
+    output: rosc
+    control:
+      instance: ROSC
+      reg: CTRL
+      field: ENABLE
+      values: [3358, 4011]
+      default: 4011
+  - name: gpin0
+    description: External clock input 0 (GPIO20)
+    output: gpin0
+  - name: gpin1
+    description: External clock input 1 (GPIO22)
+    output: gpin1
+
+plls:
+  - name: pll_sys
+    description: System PLL. fVCO = xosc / refdiv * fbdiv. fOut = fVCO / postdiv1 / postdiv2.
+    input: xosc
+    output: pll_sys
+    feedback_integer:
+      instance: PLL_SYS
+      reg: FBDIV_INT
+      field: FBDIV_INT
+      value_range: {min: 16, max: 320}
+    post_divider:
+      instance: PLL_SYS
+      reg: PRIM
+      field: POSTDIV1
+      value_range: {min: 1, max: 7}
+    vco_limits:
+      min: 750000000
+      max: 1600000000
+    notes: >
+      PRIM.POSTDIV2[14:12] provides a second post-divider stage (1-7).
+      CS.REFDIV[5:0] divides the reference input (default 1).
+      Full formula: fOut = xosc / REFDIV * FBDIV_INT / POSTDIV1 / POSTDIV2.
+  - name: pll_usb
+    description: USB PLL. Same structure as pll_sys. Typically configured for 48MHz output.
+    input: xosc
+    output: pll_usb
+    feedback_integer:
+      instance: PLL_USB
+      reg: FBDIV_INT
+      field: FBDIV_INT
+      value_range: {min: 16, max: 320}
+    post_divider:
+      instance: PLL_USB
+      reg: PRIM
+      field: POSTDIV1
+      value_range: {min: 1, max: 7}
+    vco_limits:
+      min: 750000000
+      max: 1600000000
+    notes: >
+      PRIM.POSTDIV2[14:12] provides a second post-divider stage (1-7).
+      CS.REFDIV[5:0] divides the reference input (default 1).
+      Typical configuration: 12MHz * 40 / 5 / 2 = 48MHz.
+
+dividers:
+  # ROSC internal divider — splits rosc into rosc (undivided) and rosc_ph (divided/phase-shifted)
+  - name: rosc_div
+    description: >
+      ROSC output divider. DIV[11:0] = 0xAA0 + n, where n=0 -> /32, n=1..31 -> /n.
+      Produces the rosc_ph (rosc_clksrc_ph) output used by most clock generators.
+    input: rosc
+    output: rosc_ph
+    factor:
+      instance: ROSC
+      reg: DIV
+      field: DIV
+      notes: >
+        Raw field encodes as 0xAA0 + divisor. Divisor 0 means divide by 32;
+        1-31 divide by that value; reset default is divide-by-16 (raw 0xAA0).
+
+  # CLK_REF divider (integer only, 2-bit)
+  - name: clk_ref_div
+    description: CLK_REF integer divider (1-3). No fractional part.
+    input: clk_ref_src
+    output: clk_ref
+    factor:
+      reg: CLK_REF_DIV
+      field: INT
+      value_range: {min: 1, max: 3, offset: 0}
+    notes: >
+      INT field is 2 bits at [9:8]. Raw value 0 = divide by 4 (2^2),
+      raw 1 = divide by 1, raw 2 = divide by 2, raw 3 = divide by 3.
+      In practice, CLK_REF is typically left undivided (INT=1).
+
+  # CLK_SYS fractional divider
+  - name: clk_sys_div
+    description: CLK_SYS divider with 8-bit fraction. Effective divisor = INT + FRAC/256.
+    input: clk_sys_src
+    output: clk_sys
+    factor:
+      reg: CLK_SYS_DIV
+      field: INT
+      value_range: {min: 1, max: 16777215}
+    denominator:
+      reg: CLK_SYS_DIV
+      field: FRAC
+    notes: >
+      INT is 24 bits at [31:8]; FRAC is 8 bits at [7:0].
+      Reset value 0x100 = INT=1, FRAC=0 (divide by 1).
+      Raw INT=0 means divide by 2^24 (maximum division).
+
+  # CLK_PERI has no divider (passthrough)
+
+  # CLK_USB integer divider (2-bit)
+  - name: clk_usb_div
+    description: CLK_USB integer divider (1-3).
+    input: clk_usb_src
+    output: clk_usb_div_out
+    factor:
+      reg: CLK_USB_DIV
+      field: INT
+      value_range: {min: 1, max: 3}
+    notes: INT field is 2 bits at [9:8]. Typically left at 1.
+
+  # CLK_ADC integer divider (2-bit)
+  - name: clk_adc_div
+    description: CLK_ADC integer divider (1-3).
+    input: clk_adc_src
+    output: clk_adc_div_out
+    factor:
+      reg: CLK_ADC_DIV
+      field: INT
+      value_range: {min: 1, max: 3}
+    notes: INT field is 2 bits at [9:8].
+
+  # CLK_RTC fractional divider
+  - name: clk_rtc_div
+    description: CLK_RTC divider with 8-bit fraction. Typically 48MHz / 1024 ≈ 46.875kHz.
+    input: clk_rtc_src
+    output: clk_rtc_div_out
+    factor:
+      reg: CLK_RTC_DIV
+      field: INT
+      value_range: {min: 1, max: 16777215}
+    denominator:
+      reg: CLK_RTC_DIV
+      field: FRAC
+    notes: INT is 24 bits at [31:8]; FRAC is 8 bits at [7:0].
+
+  # CLK_GPOUT0 fractional divider
+  - name: clk_gpout0_div
+    description: CLK_GPOUT0 divider with 8-bit fraction.
+    input: clk_gpout0_src
+    output: clk_gpout0_div_out
+    factor:
+      reg: CLK_GPOUT0_DIV
+      field: INT
+    denominator:
+      reg: CLK_GPOUT0_DIV
+      field: FRAC
+    notes: INT is 24 bits at [31:8]; FRAC is 8 bits at [7:0]. Reset value 0x100 = divide by 1.
+
+  - name: clk_gpout1_div
+    description: CLK_GPOUT1 divider with 8-bit fraction.
+    input: clk_gpout1_src
+    output: clk_gpout1_div_out
+    factor:
+      reg: CLK_GPOUT1_DIV
+      field: INT
+    denominator:
+      reg: CLK_GPOUT1_DIV
+      field: FRAC
+
+  - name: clk_gpout2_div
+    description: CLK_GPOUT2 divider with 8-bit fraction.
+    input: clk_gpout2_src
+    output: clk_gpout2_div_out
+    factor:
+      reg: CLK_GPOUT2_DIV
+      field: INT
+    denominator:
+      reg: CLK_GPOUT2_DIV
+      field: FRAC
+
+  - name: clk_gpout3_div
+    description: CLK_GPOUT3 divider with 8-bit fraction.
+    input: clk_gpout3_src
+    output: clk_gpout3_div_out
+    factor:
+      reg: CLK_GPOUT3_DIV
+      field: INT
+    denominator:
+      reg: CLK_GPOUT3_DIV
+      field: FRAC
+
+muxes:
+  # CLK_REF: glitchless 2-level mux
+  # SRC selects directly between ROSC, AUX output, or XOSC
+  - name: clk_ref_src
+    description: >
+      CLK_REF glitchless source mux. SRC=1 selects the AUX mux output.
+      Glitchless switching between ROSC and XOSC; switching through AUX may glitch.
+    inputs:
+      - rosc_ph    # 0: rosc_clksrc_ph
+      - clk_ref_aux  # 1: clksrc_clk_ref_aux (output of clk_ref_aux mux)
+      - xosc       # 2: xosc_clksrc
+    output: clk_ref_src
+    control:
+      reg: CLK_REF_CTRL
+      field: SRC
+    notes: SRC field is 2 bits at [1:0]. Default 0 (ROSC).
+
+  - name: clk_ref_aux
+    description: CLK_REF auxiliary mux (glitchy). Selected when CLK_REF_CTRL.SRC=1.
+    inputs:
+      - pll_usb    # 0: clksrc_pll_usb
+      - gpin0      # 1: clksrc_gpin0
+      - gpin1      # 2: clksrc_gpin1
+    output: clk_ref_aux
+    control:
+      reg: CLK_REF_CTRL
+      field: AUXSRC
+    notes: AUXSRC field is 2 bits at [6:5].
+
+  # CLK_SYS: glitchless 2-level mux
+  - name: clk_sys_src
+    description: >
+      CLK_SYS glitchless source mux. SRC=0 selects CLK_REF (safe fallback),
+      SRC=1 selects the AUX mux output (high-speed sources).
+    inputs:
+      - clk_ref        # 0: clk_ref
+      - clk_sys_aux    # 1: clksrc_clk_sys_aux
+    output: clk_sys_src
+    control:
+      reg: CLK_SYS_CTRL
+      field: SRC
+    notes: SRC field is 1 bit at [0]. Default 0 (CLK_REF).
+
+  - name: clk_sys_aux
+    description: CLK_SYS auxiliary mux (glitchy). Selected when CLK_SYS_CTRL.SRC=1.
+    inputs:
+      - pll_sys    # 0: clksrc_pll_sys
+      - pll_usb    # 1: clksrc_pll_usb
+      - rosc       # 2: rosc_clksrc
+      - xosc       # 3: xosc_clksrc
+      - gpin0      # 4: clksrc_gpin0
+      - gpin1      # 5: clksrc_gpin1
+    output: clk_sys_aux
+    control:
+      reg: CLK_SYS_CTRL
+      field: AUXSRC
+    notes: AUXSRC field is 3 bits at [7:5].
+
+  # CLK_PERI: AUX mux only (no glitchless SRC)
+  - name: clk_peri_src
+    description: >
+      CLK_PERI auxiliary source mux. CLK_PERI has no integer divider;
+      the selected source is gated directly.
+    inputs:
+      - clk_sys    # 0: clk_sys
+      - pll_sys    # 1: clksrc_pll_sys
+      - pll_usb    # 2: clksrc_pll_usb
+      - rosc_ph    # 3: rosc_clksrc_ph
+      - xosc       # 4: xosc_clksrc
+      - gpin0      # 5: clksrc_gpin0
+      - gpin1      # 6: clksrc_gpin1
+    output: clk_peri_src
+    control:
+      reg: CLK_PERI_CTRL
+      field: AUXSRC
+    notes: AUXSRC field is 3 bits at [7:5].
+
+  # CLK_USB: AUX mux only
+  - name: clk_usb_src
+    description: CLK_USB auxiliary source mux.
+    inputs:
+      - pll_usb    # 0: clksrc_pll_usb
+      - pll_sys    # 1: clksrc_pll_sys
+      - rosc_ph    # 2: rosc_clksrc_ph
+      - xosc       # 3: xosc_clksrc
+      - gpin0      # 4: clksrc_gpin0
+      - gpin1      # 5: clksrc_gpin1
+    output: clk_usb_src
+    control:
+      reg: CLK_USB_CTRL
+      field: AUXSRC
+    notes: AUXSRC field is 3 bits at [7:5].
+
+  # CLK_ADC: AUX mux only
+  - name: clk_adc_src
+    description: CLK_ADC auxiliary source mux.
+    inputs:
+      - pll_usb    # 0: clksrc_pll_usb
+      - pll_sys    # 1: clksrc_pll_sys
+      - rosc_ph    # 2: rosc_clksrc_ph
+      - xosc       # 3: xosc_clksrc
+      - gpin0      # 4: clksrc_gpin0
+      - gpin1      # 5: clksrc_gpin1
+    output: clk_adc_src
+    control:
+      reg: CLK_ADC_CTRL
+      field: AUXSRC
+    notes: AUXSRC field is 3 bits at [7:5].
+
+  # CLK_RTC: AUX mux only
+  - name: clk_rtc_src
+    description: CLK_RTC auxiliary source mux.
+    inputs:
+      - pll_usb    # 0: clksrc_pll_usb
+      - pll_sys    # 1: clksrc_pll_sys
+      - rosc_ph    # 2: rosc_clksrc_ph
+      - xosc       # 3: xosc_clksrc
+      - gpin0      # 4: clksrc_gpin0
+      - gpin1      # 5: clksrc_gpin1
+    output: clk_rtc_src
+    control:
+      reg: CLK_RTC_CTRL
+      field: AUXSRC
+    notes: AUXSRC field is 3 bits at [7:5].
+
+  # CLK_GPOUTx: AUX mux only
+  # Note: GPOUT0/1 use rosc_clksrc (index 4); GPOUT2/3 use rosc_clksrc_ph (index 4)
+  - name: clk_gpout0_src
+    description: CLK_GPOUT0 auxiliary source mux.
+    inputs:
+      - pll_sys    # 0: clksrc_pll_sys
+      - gpin0      # 1: clksrc_gpin0
+      - gpin1      # 2: clksrc_gpin1
+      - pll_usb    # 3: clksrc_pll_usb
+      - rosc       # 4: rosc_clksrc (undivided)
+      - xosc       # 5: xosc_clksrc
+      - clk_sys    # 6: clk_sys
+      - clk_usb    # 7: clk_usb
+      - clk_adc    # 8: clk_adc
+      - clk_rtc    # 9: clk_rtc
+      - clk_ref    # 10: clk_ref
+    output: clk_gpout0_src
+    control:
+      reg: CLK_GPOUT0_CTRL
+      field: AUXSRC
+    notes: AUXSRC field is 4 bits at [8:5].
+
+  - name: clk_gpout1_src
+    description: CLK_GPOUT1 auxiliary source mux. Same inputs as GPOUT0.
+    inputs:
+      - pll_sys    # 0
+      - gpin0      # 1
+      - gpin1      # 2
+      - pll_usb    # 3
+      - rosc       # 4: rosc_clksrc (undivided)
+      - xosc       # 5
+      - clk_sys    # 6
+      - clk_usb    # 7
+      - clk_adc    # 8
+      - clk_rtc    # 9
+      - clk_ref    # 10
+    output: clk_gpout1_src
+    control:
+      reg: CLK_GPOUT1_CTRL
+      field: AUXSRC
+
+  - name: clk_gpout2_src
+    description: >
+      CLK_GPOUT2 auxiliary source mux. Index 4 is rosc_clksrc_ph
+      (phase-shifted/divided) rather than rosc_clksrc.
+    inputs:
+      - pll_sys    # 0
+      - gpin0      # 1
+      - gpin1      # 2
+      - pll_usb    # 3
+      - rosc_ph    # 4: rosc_clksrc_ph (divided)
+      - xosc       # 5
+      - clk_sys    # 6
+      - clk_usb    # 7
+      - clk_adc    # 8
+      - clk_rtc    # 9
+      - clk_ref    # 10
+    output: clk_gpout2_src
+    control:
+      reg: CLK_GPOUT2_CTRL
+      field: AUXSRC
+
+  - name: clk_gpout3_src
+    description: >
+      CLK_GPOUT3 auxiliary source mux. Index 4 is rosc_clksrc_ph
+      (phase-shifted/divided) rather than rosc_clksrc.
+    inputs:
+      - pll_sys    # 0
+      - gpin0      # 1
+      - gpin1      # 2
+      - pll_usb    # 3
+      - rosc_ph    # 4: rosc_clksrc_ph (divided)
+      - xosc       # 5
+      - clk_sys    # 6
+      - clk_usb    # 7
+      - clk_adc    # 8
+      - clk_rtc    # 9
+      - clk_ref    # 10
+    output: clk_gpout3_src
+    control:
+      reg: CLK_GPOUT3_CTRL
+      field: AUXSRC
+
+gates:
+  # CLK_PERI gate
+  - name: clk_peri_gate
+    description: CLK_PERI enable gate. CLK_PERI has no divider; this gate follows the mux directly.
+    input: clk_peri_src
+    output: clk_peri
+    control:
+      reg: CLK_PERI_CTRL
+      field: ENABLE
+
+  # CLK_USB gate (after divider)
+  - name: clk_usb_gate
+    description: CLK_USB enable gate.
+    input: clk_usb_div_out
+    output: clk_usb
+    control:
+      reg: CLK_USB_CTRL
+      field: ENABLE
+
+  # CLK_ADC gate
+  - name: clk_adc_gate
+    description: CLK_ADC enable gate.
+    input: clk_adc_div_out
+    output: clk_adc
+    control:
+      reg: CLK_ADC_CTRL
+      field: ENABLE
+
+  # CLK_RTC gate
+  - name: clk_rtc_gate
+    description: CLK_RTC enable gate.
+    input: clk_rtc_div_out
+    output: clk_rtc
+    control:
+      reg: CLK_RTC_CTRL
+      field: ENABLE
+
+  # CLK_GPOUTx gates (after dividers)
+  - name: clk_gpout0_gate
+    description: CLK_GPOUT0 enable gate.
+    input: clk_gpout0_div_out
+    output: clk_gpout0
+    control:
+      reg: CLK_GPOUT0_CTRL
+      field: ENABLE
+
+  - name: clk_gpout1_gate
+    description: CLK_GPOUT1 enable gate.
+    input: clk_gpout1_div_out
+    output: clk_gpout1
+    control:
+      reg: CLK_GPOUT1_CTRL
+      field: ENABLE
+
+  - name: clk_gpout2_gate
+    description: CLK_GPOUT2 enable gate.
+    input: clk_gpout2_div_out
+    output: clk_gpout2
+    control:
+      reg: CLK_GPOUT2_CTRL
+      field: ENABLE
+
+  - name: clk_gpout3_gate
+    description: CLK_GPOUT3 enable gate.
+    input: clk_gpout3_div_out
+    output: clk_gpout3
+    control:
+      reg: CLK_GPOUT3_CTRL
+      field: ENABLE

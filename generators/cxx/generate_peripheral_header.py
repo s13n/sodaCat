@@ -21,6 +21,45 @@ from itertools import pairwise
 import sys
 import os
 
+# Names that must not appear as identifiers in generated C++ code.
+# C++ keywords are reserved by the language; NULL is a ubiquitous C macro that
+# conflicts if left as an enum value name.  Any matching name gets a trailing
+# underscore appended (e.g. NULL → NULL_).
+_RESERVED_NAMES = {
+    # C++ keywords (C++20)
+    'alignas', 'alignof', 'and', 'and_eq', 'asm', 'auto',
+    'bitand', 'bitor', 'bool', 'break',
+    'case', 'catch', 'char', 'char8_t', 'char16_t', 'char32_t', 'class',
+    'compl', 'concept', 'const', 'consteval', 'constexpr', 'constinit',
+    'const_cast', 'continue', 'co_await', 'co_return', 'co_yield',
+    'decltype', 'default', 'delete', 'do', 'double', 'dynamic_cast',
+    'else', 'enum', 'explicit', 'export', 'extern',
+    'false', 'float', 'for', 'friend',
+    'goto',
+    'if', 'inline', 'int',
+    'long',
+    'mutable',
+    'namespace', 'new', 'noexcept', 'not', 'not_eq', 'nullptr',
+    'operator', 'or', 'or_eq',
+    'private', 'protected', 'public',
+    'register', 'reinterpret_cast', 'requires', 'return',
+    'short', 'signed', 'sizeof', 'static', 'static_assert', 'static_cast',
+    'struct', 'switch',
+    'template', 'this', 'thread_local', 'throw', 'true', 'try', 'typedef',
+    'typeid', 'typename',
+    'union', 'unsigned', 'using',
+    'virtual', 'void', 'volatile',
+    'wchar_t', 'while',
+    'xor', 'xor_eq',
+    # Common macros that collide with user identifiers
+    'NULL',
+}
+
+def _safe_name(name: str) -> str:
+    """Return name unchanged, or with a trailing underscore if it is reserved."""
+    return name + '_' if name in _RESERVED_NAMES else name
+
+
 class PerFormatter:
     def __init__(self, **keywords):
         self.enumTemplate      = Template(keywords.get('enum'     , '\n\t/** $description */\n\t$name = $value,'))
@@ -56,7 +95,7 @@ $postfix"""))
         for enum in enums:
             value = enum.get('value', 1)
             description = enum.get('description', '')
-            txt = self.enumTemplate.substitute(enum, type=type, value=value, description=description)
+            txt = self.enumTemplate.substitute(enum, name=_safe_name(enum.get('name', '')), type=type, value=value, description=description)
             list.append(txt)
         return ''.join(list)
         
@@ -72,10 +111,10 @@ $postfix"""))
             if 'enumeratedValues' in field:
                 txt = self.formatEnumList(field['enumeratedValues'])
                 if txt:
-                    enum = self.enumsTemplate.substitute(field, enums=txt, type=type)
+                    enum = self.enumsTemplate.substitute(field, name=_safe_name(field.get('name', '')), enums=txt, type=type)
             width = field.get('bitWidth', 1)
             description = field.get('description', '')
-            txt = self.bitfieldTemplate.substitute(field, type=type, width=width, description=description)
+            txt = self.bitfieldTemplate.substitute(field, name=_safe_name(field.get('name', '')), type=type, width=width, description=description)
             list.append([txt, field['bitOffset'], width, enum])
             
         list.sort(key=lambda f:f[1])    # sort fields according to increasing offset
