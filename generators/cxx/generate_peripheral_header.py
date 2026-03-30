@@ -56,14 +56,17 @@ _RESERVED_NAMES = {
 }
 
 def _safe_name(name: str) -> str:
-    """Return name unchanged, or with a trailing underscore if it is reserved."""
+    """Return name unchanged, or with a trailing underscore if it is reserved,
+    or with an 'e' prefix if it starts with a digit."""
+    if name and name[0].isdigit():
+        return 'e' + name
     return name + '_' if name in _RESERVED_NAMES else name
 
 
 class PerFormatter:
     def __init__(self, **keywords):
         self.enumTemplate      = Template(keywords.get('enum'     , '\n\t/** $description */\n\t$name = $value,'))
-        self.enumsTemplate     = Template(keywords.get('enums'    , '\ninline namespace ${name}_ {\nEXPORT enum $name : $type {$enums\n};\n} // namespace ${name}_\n'))
+        self.enumsTemplate     = Template(keywords.get('enums'    , '\ninline namespace ${name}_ {\nEXPORT enum ${name}_e : $type {$enums\n};\n} // namespace ${name}_\n'))
         self.regEnumsTemplate  = Template(keywords.get('regEnums' , '\ninline namespace ${name}_ {$enums} // namespace ${name}_\n'))
         self.bitfieldTemplate  = Template(keywords.get('bitfield' , '\n\t/** $description */\n\t$type $name:$width;'))
         self.resBitsTemplate   = Template(keywords.get('resBits'  , '\n\t$type _$res:$width;\t// reserved'))
