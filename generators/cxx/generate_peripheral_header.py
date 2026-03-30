@@ -162,13 +162,17 @@ $postfix"""))
                 dim_total = 1
                 for d in dim: dim_total *= d
             if 'registers' in reg:
-                name = reg['name'].replace('[%s]', '')
+                dimIndex = reg.get('dimIndex', '')
+                # Derive the struct type name: strip [%s] or %s, drop trailing _
+                name = reg['name'].replace('[%s]', '').replace('%s', '').rstrip('_')
                 padSize = reg.get('dimIncrement', 0)
                 innerPrefix = structPrefix + name + '_'
                 types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4, innerPrefix)
                 enums += enum
                 structs += self.registersTemplate.substitute(name=name, regs=regs, types=types, description=description, size=size)
-                if '[%s]' in reg['name']:
+                if dimIndex:
+                    names = ','.join(reg['name'] % item for item in dimIndex.split(','))
+                elif '[%s]' in reg['name']:
                     names = reg['name'] % dim_fmt
                 else:
                     names = reg['name']
