@@ -1,753 +1,99 @@
 name: CLOCKS
 source: RP2350 SVD v0.1
 registers:
-  - name: CLK_GPOUT0_CTRL
+  - name: CLK_%s
     addressOffset: 0
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clksrc_pll_sys
-            value: 0
-          - name: clksrc_gpin0
-            value: 1
-          - name: clksrc_gpin1
-            value: 2
-          - name: clksrc_pll_usb
-            value: 3
-          - name: clksrc_pll_usb_primary_ref_opcg
-            value: 4
-          - name: rosc_clksrc
-            value: 5
-          - name: xosc_clksrc
-            value: 6
-          - name: lposc_clksrc
-            value: 7
-          - name: clk_sys
-            value: 8
-          - name: clk_usb
-            value: 9
-          - name: clk_adc
-            value: 10
-          - name: clk_ref
-            value: 11
-          - name: clk_peri
-            value: 12
-          - name: clk_hstx
-            value: 13
-          - name: otp_clk2fc
-            value: 14
-        bitOffset: 5
-        bitWidth: 4
-      - name: KILL
-        description: Asynchronously kills the clock generator, enable must be set low before deasserting kill
-        access: read-write
-        bitOffset: 10
-        bitWidth: 1
-      - name: ENABLE
-        description: Starts and stops the clock generator cleanly
-        access: read-write
-        bitOffset: 11
-        bitWidth: 1
-      - name: DC50
-        description: Enables duty cycle correction for odd divisors, can be changed on-the-fly
-        access: read-write
-        bitOffset: 12
-        bitWidth: 1
-      - name: PHASE
-        description: "This delays the enable signal by up to 3 cycles of the input clock \n                            This must be set before the clock is enabled to have any effect"
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-      - name: NUDGE
-        description: "An edge on this signal shifts the phase of the output by 1 cycle of the input clock \n                            This can be done at any time"
-        access: read-write
-        bitOffset: 20
-        bitWidth: 1
-      - name: ENABLED
-        description: clock generator is enabled
-        access: read-only
-        bitOffset: 28
-        bitWidth: 1
-  - name: CLK_GPOUT0_DIV
-    addressOffset: 4
-    resetValue: 65536
-    fields:
-      - name: FRAC
-        description: Fractional component of the divisor, can be changed on-the-fly
-        access: read-write
-        bitOffset: 0
-        bitWidth: 16
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 16
-  - name: CLK_GPOUT0_SELECTED
-    addressOffset: 8
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_GPOUT0_SELECTED
-        description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 1
-  - name: CLK_GPOUT1_CTRL
-    addressOffset: 12
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clksrc_pll_sys
-            value: 0
-          - name: clksrc_gpin0
-            value: 1
-          - name: clksrc_gpin1
-            value: 2
-          - name: clksrc_pll_usb
-            value: 3
-          - name: clksrc_pll_usb_primary_ref_opcg
-            value: 4
-          - name: rosc_clksrc
-            value: 5
-          - name: xosc_clksrc
-            value: 6
-          - name: lposc_clksrc
-            value: 7
-          - name: clk_sys
-            value: 8
-          - name: clk_usb
-            value: 9
-          - name: clk_adc
-            value: 10
-          - name: clk_ref
-            value: 11
-          - name: clk_peri
-            value: 12
-          - name: clk_hstx
-            value: 13
-          - name: otp_clk2fc
-            value: 14
-        bitOffset: 5
-        bitWidth: 4
-      - name: KILL
-        description: Asynchronously kills the clock generator, enable must be set low before deasserting kill
-        access: read-write
-        bitOffset: 10
-        bitWidth: 1
-      - name: ENABLE
-        description: Starts and stops the clock generator cleanly
-        access: read-write
-        bitOffset: 11
-        bitWidth: 1
-      - name: DC50
-        description: Enables duty cycle correction for odd divisors, can be changed on-the-fly
-        access: read-write
-        bitOffset: 12
-        bitWidth: 1
-      - name: PHASE
-        description: "This delays the enable signal by up to 3 cycles of the input clock \n                            This must be set before the clock is enabled to have any effect"
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-      - name: NUDGE
-        description: "An edge on this signal shifts the phase of the output by 1 cycle of the input clock \n                            This can be done at any time"
-        access: read-write
-        bitOffset: 20
-        bitWidth: 1
-      - name: ENABLED
-        description: clock generator is enabled
-        access: read-only
-        bitOffset: 28
-        bitWidth: 1
-  - name: CLK_GPOUT1_DIV
-    addressOffset: 16
-    resetValue: 65536
-    fields:
-      - name: FRAC
-        description: Fractional component of the divisor, can be changed on-the-fly
-        access: read-write
-        bitOffset: 0
-        bitWidth: 16
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 16
-  - name: CLK_GPOUT1_SELECTED
-    addressOffset: 20
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_GPOUT1_SELECTED
-        description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 1
-  - name: CLK_GPOUT2_CTRL
-    addressOffset: 24
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clksrc_pll_sys
-            value: 0
-          - name: clksrc_gpin0
-            value: 1
-          - name: clksrc_gpin1
-            value: 2
-          - name: clksrc_pll_usb
-            value: 3
-          - name: clksrc_pll_usb_primary_ref_opcg
-            value: 4
-          - name: rosc_clksrc_ph
-            value: 5
-          - name: xosc_clksrc
-            value: 6
-          - name: lposc_clksrc
-            value: 7
-          - name: clk_sys
-            value: 8
-          - name: clk_usb
-            value: 9
-          - name: clk_adc
-            value: 10
-          - name: clk_ref
-            value: 11
-          - name: clk_peri
-            value: 12
-          - name: clk_hstx
-            value: 13
-          - name: otp_clk2fc
-            value: 14
-        bitOffset: 5
-        bitWidth: 4
-      - name: KILL
-        description: Asynchronously kills the clock generator, enable must be set low before deasserting kill
-        access: read-write
-        bitOffset: 10
-        bitWidth: 1
-      - name: ENABLE
-        description: Starts and stops the clock generator cleanly
-        access: read-write
-        bitOffset: 11
-        bitWidth: 1
-      - name: DC50
-        description: Enables duty cycle correction for odd divisors, can be changed on-the-fly
-        access: read-write
-        bitOffset: 12
-        bitWidth: 1
-      - name: PHASE
-        description: "This delays the enable signal by up to 3 cycles of the input clock \n                            This must be set before the clock is enabled to have any effect"
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-      - name: NUDGE
-        description: "An edge on this signal shifts the phase of the output by 1 cycle of the input clock \n                            This can be done at any time"
-        access: read-write
-        bitOffset: 20
-        bitWidth: 1
-      - name: ENABLED
-        description: clock generator is enabled
-        access: read-only
-        bitOffset: 28
-        bitWidth: 1
-  - name: CLK_GPOUT2_DIV
-    addressOffset: 28
-    resetValue: 65536
-    fields:
-      - name: FRAC
-        description: Fractional component of the divisor, can be changed on-the-fly
-        access: read-write
-        bitOffset: 0
-        bitWidth: 16
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 16
-  - name: CLK_GPOUT2_SELECTED
-    addressOffset: 32
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_GPOUT2_SELECTED
-        description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 1
-  - name: CLK_GPOUT3_CTRL
-    addressOffset: 36
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clksrc_pll_sys
-            value: 0
-          - name: clksrc_gpin0
-            value: 1
-          - name: clksrc_gpin1
-            value: 2
-          - name: clksrc_pll_usb
-            value: 3
-          - name: clksrc_pll_usb_primary_ref_opcg
-            value: 4
-          - name: rosc_clksrc_ph
-            value: 5
-          - name: xosc_clksrc
-            value: 6
-          - name: lposc_clksrc
-            value: 7
-          - name: clk_sys
-            value: 8
-          - name: clk_usb
-            value: 9
-          - name: clk_adc
-            value: 10
-          - name: clk_ref
-            value: 11
-          - name: clk_peri
-            value: 12
-          - name: clk_hstx
-            value: 13
-          - name: otp_clk2fc
-            value: 14
-        bitOffset: 5
-        bitWidth: 4
-      - name: KILL
-        description: Asynchronously kills the clock generator, enable must be set low before deasserting kill
-        access: read-write
-        bitOffset: 10
-        bitWidth: 1
-      - name: ENABLE
-        description: Starts and stops the clock generator cleanly
-        access: read-write
-        bitOffset: 11
-        bitWidth: 1
-      - name: DC50
-        description: Enables duty cycle correction for odd divisors, can be changed on-the-fly
-        access: read-write
-        bitOffset: 12
-        bitWidth: 1
-      - name: PHASE
-        description: "This delays the enable signal by up to 3 cycles of the input clock \n                            This must be set before the clock is enabled to have any effect"
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-      - name: NUDGE
-        description: "An edge on this signal shifts the phase of the output by 1 cycle of the input clock \n                            This can be done at any time"
-        access: read-write
-        bitOffset: 20
-        bitWidth: 1
-      - name: ENABLED
-        description: clock generator is enabled
-        access: read-only
-        bitOffset: 28
-        bitWidth: 1
-  - name: CLK_GPOUT3_DIV
-    addressOffset: 40
-    resetValue: 65536
-    fields:
-      - name: FRAC
-        description: Fractional component of the divisor, can be changed on-the-fly
-        access: read-write
-        bitOffset: 0
-        bitWidth: 16
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 16
-  - name: CLK_GPOUT3_SELECTED
-    addressOffset: 44
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_GPOUT3_SELECTED
-        description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 1
-  - name: CLK_REF_CTRL
-    addressOffset: 48
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: SRC
-        description: Selects the clock source glitchlessly, can be changed on-the-fly
-        access: read-write
-        enumeratedValues:
-          - name: rosc_clksrc_ph
-            value: 0
-          - name: clksrc_clk_ref_aux
-            value: 1
-          - name: xosc_clksrc
-            value: 2
-          - name: lposc_clksrc
-            value: 3
-        bitOffset: 0
-        bitWidth: 2
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clksrc_pll_usb
-            value: 0
-          - name: clksrc_gpin0
-            value: 1
-          - name: clksrc_gpin1
-            value: 2
-          - name: clksrc_pll_usb_primary_ref_opcg
-            value: 3
-        bitOffset: 5
-        bitWidth: 2
-  - name: CLK_REF_DIV
-    addressOffset: 52
-    resetValue: 65536
-    fields:
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 8
-  - name: CLK_REF_SELECTED
-    addressOffset: 56
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_REF_SELECTED
-        description: The glitchless multiplexer does not switch instantaneously (to avoid glitches), so software should poll this register to wait for the switch to complete. This register contains one decoded bit for each of the clock sources enumerated in the CTRL SRC field. At most one of these bits will be set at any time, indicating that clock is currently present at the output of the glitchless mux. Whilst switching is in progress, this register may briefly show all-0s.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 4
-  - name: CLK_SYS_CTRL
-    addressOffset: 60
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 65
-    fields:
-      - name: SRC
-        description: Selects the clock source glitchlessly, can be changed on-the-fly
-        access: read-write
-        enumeratedValues:
-          - name: clk_ref
-            value: 0
-          - name: clksrc_clk_sys_aux
-            value: 1
-        bitOffset: 0
-        bitWidth: 1
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clksrc_pll_sys
-            value: 0
-          - name: clksrc_pll_usb
-            value: 1
-          - name: rosc_clksrc
-            value: 2
-          - name: xosc_clksrc
-            value: 3
-          - name: clksrc_gpin0
-            value: 4
-          - name: clksrc_gpin1
-            value: 5
-        bitOffset: 5
-        bitWidth: 3
-  - name: CLK_SYS_DIV
-    addressOffset: 64
-    resetValue: 65536
-    fields:
-      - name: FRAC
-        description: Fractional component of the divisor, can be changed on-the-fly
-        access: read-write
-        bitOffset: 0
-        bitWidth: 16
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 16
-  - name: CLK_SYS_SELECTED
-    addressOffset: 68
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_SYS_SELECTED
-        description: The glitchless multiplexer does not switch instantaneously (to avoid glitches), so software should poll this register to wait for the switch to complete. This register contains one decoded bit for each of the clock sources enumerated in the CTRL SRC field. At most one of these bits will be set at any time, indicating that clock is currently present at the output of the glitchless mux. Whilst switching is in progress, this register may briefly show all-0s.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 2
-  - name: CLK_PERI_CTRL
-    addressOffset: 72
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clk_sys
-            value: 0
-          - name: clksrc_pll_sys
-            value: 1
-          - name: clksrc_pll_usb
-            value: 2
-          - name: rosc_clksrc_ph
-            value: 3
-          - name: xosc_clksrc
-            value: 4
-          - name: clksrc_gpin0
-            value: 5
-          - name: clksrc_gpin1
-            value: 6
-        bitOffset: 5
-        bitWidth: 3
-      - name: KILL
-        description: Asynchronously kills the clock generator, enable must be set low before deasserting kill
-        access: read-write
-        bitOffset: 10
-        bitWidth: 1
-      - name: ENABLE
-        description: Starts and stops the clock generator cleanly
-        access: read-write
-        bitOffset: 11
-        bitWidth: 1
-      - name: ENABLED
-        description: clock generator is enabled
-        access: read-only
-        bitOffset: 28
-        bitWidth: 1
-  - name: CLK_PERI_DIV
-    addressOffset: 76
-    resetValue: 65536
-    fields:
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-  - name: CLK_PERI_SELECTED
-    addressOffset: 80
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_PERI_SELECTED
-        description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 1
-  - name: CLK_HSTX_CTRL
-    addressOffset: 84
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clk_sys
-            value: 0
-          - name: clksrc_pll_sys
-            value: 1
-          - name: clksrc_pll_usb
-            value: 2
-          - name: clksrc_gpin0
-            value: 3
-          - name: clksrc_gpin1
-            value: 4
-        bitOffset: 5
-        bitWidth: 3
-      - name: KILL
-        description: Asynchronously kills the clock generator, enable must be set low before deasserting kill
-        access: read-write
-        bitOffset: 10
-        bitWidth: 1
-      - name: ENABLE
-        description: Starts and stops the clock generator cleanly
-        access: read-write
-        bitOffset: 11
-        bitWidth: 1
-      - name: PHASE
-        description: "This delays the enable signal by up to 3 cycles of the input clock \n                            This must be set before the clock is enabled to have any effect"
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-      - name: NUDGE
-        description: "An edge on this signal shifts the phase of the output by 1 cycle of the input clock \n                            This can be done at any time"
-        access: read-write
-        bitOffset: 20
-        bitWidth: 1
-      - name: ENABLED
-        description: clock generator is enabled
-        access: read-only
-        bitOffset: 28
-        bitWidth: 1
-  - name: CLK_HSTX_DIV
-    addressOffset: 88
-    resetValue: 65536
-    fields:
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-  - name: CLK_HSTX_SELECTED
-    addressOffset: 92
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_HSTX_SELECTED
-        description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 1
-  - name: CLK_USB_CTRL
-    addressOffset: 96
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clksrc_pll_usb
-            value: 0
-          - name: clksrc_pll_sys
-            value: 1
-          - name: rosc_clksrc_ph
-            value: 2
-          - name: xosc_clksrc
-            value: 3
-          - name: clksrc_gpin0
-            value: 4
-          - name: clksrc_gpin1
-            value: 5
-        bitOffset: 5
-        bitWidth: 3
-      - name: KILL
-        description: Asynchronously kills the clock generator, enable must be set low before deasserting kill
-        access: read-write
-        bitOffset: 10
-        bitWidth: 1
-      - name: ENABLE
-        description: Starts and stops the clock generator cleanly
-        access: read-write
-        bitOffset: 11
-        bitWidth: 1
-      - name: PHASE
-        description: "This delays the enable signal by up to 3 cycles of the input clock \n                            This must be set before the clock is enabled to have any effect"
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-      - name: NUDGE
-        description: "An edge on this signal shifts the phase of the output by 1 cycle of the input clock \n                            This can be done at any time"
-        access: read-write
-        bitOffset: 20
-        bitWidth: 1
-      - name: ENABLED
-        description: clock generator is enabled
-        access: read-only
-        bitOffset: 28
-        bitWidth: 1
-  - name: CLK_USB_DIV
-    addressOffset: 100
-    resetValue: 65536
-    fields:
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 4
-  - name: CLK_USB_SELECTED
-    addressOffset: 104
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_USB_SELECTED
-        description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 1
-  - name: CLK_ADC_CTRL
-    addressOffset: 108
-    description: Clock control, can be changed on-the-fly (except for auxsrc)
-    resetValue: 0
-    fields:
-      - name: AUXSRC
-        description: Selects the auxiliary clock source, will glitch when switching
-        access: read-write
-        enumeratedValues:
-          - name: clksrc_pll_usb
-            value: 0
-          - name: clksrc_pll_sys
-            value: 1
-          - name: rosc_clksrc_ph
-            value: 2
-          - name: xosc_clksrc
-            value: 3
-          - name: clksrc_gpin0
-            value: 4
-          - name: clksrc_gpin1
-            value: 5
-        bitOffset: 5
-        bitWidth: 3
-      - name: KILL
-        description: Asynchronously kills the clock generator, enable must be set low before deasserting kill
-        access: read-write
-        bitOffset: 10
-        bitWidth: 1
-      - name: ENABLE
-        description: Starts and stops the clock generator cleanly
-        access: read-write
-        bitOffset: 11
-        bitWidth: 1
-      - name: PHASE
-        description: "This delays the enable signal by up to 3 cycles of the input clock \n                            This must be set before the clock is enabled to have any effect"
-        access: read-write
-        bitOffset: 16
-        bitWidth: 2
-      - name: NUDGE
-        description: "An edge on this signal shifts the phase of the output by 1 cycle of the input clock \n                            This can be done at any time"
-        access: read-write
-        bitOffset: 20
-        bitWidth: 1
-      - name: ENABLED
-        description: clock generator is enabled
-        access: read-only
-        bitOffset: 28
-        bitWidth: 1
-  - name: CLK_ADC_DIV
-    addressOffset: 112
-    resetValue: 65536
-    fields:
-      - name: INT
-        description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly
-        access: read-write
-        bitOffset: 16
-        bitWidth: 4
-  - name: CLK_ADC_SELECTED
-    addressOffset: 116
-    description: Indicates which src is currently selected (one-hot)
-    resetValue: 1
-    fields:
-      - name: CLK_ADC_SELECTED
-        description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
-        access: read-only
-        bitOffset: 0
-        bitWidth: 1
+    dim: 10
+    dimIndex: "GPOUT0,GPOUT1,GPOUT2,GPOUT3,REF,SYS,PERI,HSTX,USB,ADC"
+    dimIncrement: 12
+    description: "Clock generator (CTRL/DIV/SELECTED, stride 12). Field availability\
+      \ varies by instance: SRC present on REF [1:0] and SYS [0] only. AUXSRC is\
+      \ 4-bit on GPOUT0-3, 3-bit on SYS/PERI/HSTX/USB/ADC, 2-bit on REF.\
+      \ DC50 present on GPOUT0-3 only. KILL/ENABLE absent on REF and SYS.\
+      \ PHASE/NUDGE present on GPOUT0-3, HSTX, USB, ADC; absent on REF, SYS, PERI.\
+      \ ENABLED (read-only status) absent on REF and SYS.\
+      \ DIV.FRAC present on GPOUT0-3 and SYS; absent on others.\
+      \ DIV.INT always at [31:16]; effective width: 8-bit REF, 2-bit PERI/HSTX,\
+      \ 4-bit USB/ADC, 16-bit GPOUT0-3/SYS.\
+      \ GPOUT AUXSRC=5 is rosc_clksrc (undivided) for GPOUT0/1, rosc_clksrc_ph for GPOUT2/3."
+    registers:
+      - name: CTRL
+        addressOffset: 0
+        description: Clock control, can be changed on-the-fly (except for auxsrc)
+        resetValue: 0
+        fields:
+          - name: SRC
+            description: "Glitchless source mux. REF: [1:0] rosc_clksrc_ph/clksrc_clk_ref_aux/xosc_clksrc/lposc_clksrc.\
+              \ SYS: [0] clk_ref/clksrc_clk_sys_aux. Reserved on all others."
+            access: read-write
+            bitOffset: 0
+            bitWidth: 2
+          - name: AUXSRC
+            description: "Auxiliary source mux (glitchy when switching). Encoding is\
+              \ per-instance; see datasheet."
+            access: read-write
+            bitOffset: 5
+            bitWidth: 4
+          - name: KILL
+            description: Asynchronously kills the clock generator. Reserved on REF and SYS.
+            access: read-write
+            bitOffset: 10
+            bitWidth: 1
+          - name: ENABLE
+            description: Starts and stops the clock generator cleanly. Reserved on REF and SYS.
+            access: read-write
+            bitOffset: 11
+            bitWidth: 1
+          - name: DC50
+            description: Enables duty cycle correction for odd divisors. Present on GPOUT0-3 only.
+            access: read-write
+            bitOffset: 12
+            bitWidth: 1
+          - name: PHASE
+            description: "Delays the enable signal by up to 3 cycles of the input clock.\
+              \ Present on GPOUT0-3, HSTX, USB, ADC; absent on REF, SYS, PERI."
+            access: read-write
+            bitOffset: 16
+            bitWidth: 2
+          - name: NUDGE
+            description: "An edge shifts the phase of the output by 1 cycle of the input clock.\
+              \ Present on GPOUT0-3, HSTX, USB, ADC; absent on REF, SYS, PERI."
+            access: read-write
+            bitOffset: 20
+            bitWidth: 1
+          - name: ENABLED
+            description: Clock generator is enabled (read-only status). Absent on REF and SYS.
+            access: read-only
+            bitOffset: 28
+            bitWidth: 1
+      - name: DIV
+        addressOffset: 4
+        description: "Clock divisor. FRAC present on GPOUT0-3 and SYS only.\
+          \ INT always at [31:16]; effective width: 8-bit REF, 2-bit PERI/HSTX,\
+          \ 4-bit USB/ADC, 16-bit GPOUT0-3/SYS."
+        resetValue: 65536
+        fields:
+          - name: FRAC
+            description: Fractional component of the divisor. Present on GPOUT0-3 and SYS; reserved on others.
+            access: read-write
+            bitOffset: 0
+            bitWidth: 16
+          - name: INT
+            description: Integer part of clock divisor, 0 -> max+1, can be changed on-the-fly.
+            access: read-write
+            bitOffset: 16
+            bitWidth: 16
+      - name: SELECTED
+        addressOffset: 8
+        description: Indicates which src is currently selected (one-hot).
+        resetValue: 1
+        fields:
+          - name: SELECTED
+            description: "One-hot encoding of the currently active source. REF: 4-bit\
+              \ (glitchless mux). SYS: 2-bit (glitchless mux). All others: hardwired 0x1."
+            access: read-only
+            bitOffset: 0
+            bitWidth: 32
   - name: DFTCLK_XOSC_CTRL
     addressOffset: 120
     resetValue: 0
