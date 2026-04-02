@@ -903,6 +903,10 @@ shared_blocks:
       - {name: idma_list, type: bool, default: false, description: IDMA linked-list mode (vs double-buffer)}
       - {name: idma_buf_align64, type: bool, default: false, description: 'IDMA 64-byte buffer alignment (11-bit IDMABNDT at [16:6] vs 12-bit at [16:5])'}
       - {name: has_version_id, type: bool, default: false, description: VER and ID identification registers present}
+      - {name: dat8, type: bool, default: false, description: '8-bit data bus supported (D4–D7 pins present); otherwise 4-bit maximum'}
+      - {name: has_ckin, type: bool, default: false, description: Clock feedback input (SDMMC_CKIN pin) present for receive clock selection}
+      - {name: has_dir, type: bool, default: false, description: Direction control signals (D0DIR/D123DIR/CMDDIR) present for external voltage-translation buffer}
+      - {name: has_dlyb, type: bool, default: false, description: Paired delay block (DLYB) present for clock tuning}
   ETH:
     # Synopsys DWC Ethernet QoS (EQOS): H5, H7, H7RS, C5
     from: STM32H5E5.ETH
@@ -974,6 +978,10 @@ shared_blocks:
           - {name: ADDR5, description: MAC address byte 5, bitOffset: 8, bitWidth: 8, access: read-write}
       # Collapse MACA0-3 into cluster array (template: MACA1 has MBC/SA superset)
       - {type: createClusterArray, pattern: MACA(\d+)(HR|LR), name: MACA, description: MAC address filter, template: 1}
+  DLYB:
+    # Delay block (SDMMC/OCTOSPI/QUADSPI clock tuning): H5, H7, H7RS, U3, U5, C5
+    # Simple 2-register block (CR + CFGR) for delay line configuration
+    from: STM32H7S.DLYB1
   DFSDM:
     # Digital Filter for Sigma-Delta Modulators: F4, F7, H7, L4, L4P, L5
     # H7A3 is superset: 8 channels, 8 filters, CHyDLYR delay register
@@ -1852,7 +1860,7 @@ families:
         from: ''  # TBD: pending SVD, C59x/C5A3 only
         instances: [CCB]
       DLYB:
-        from: ''  # TBD: pending SVD, C59x/C5A3 only
+        uses: DLYB
         instances: [DLYB]
       XSPI:
         from: ''  # TBD: pending SVD, C59x/C5A3 only
@@ -3471,6 +3479,9 @@ families:
       DCMI_S:
         from: STM32H523.DCMI_S
         instances: [DCMI_S]
+      DLYB:
+        uses: DLYB
+        instances: [DLYBOS1, DLYBSD1, DLYBSD2]
       DTS:
         from: STM32H503.DTS
         instances: [DTS]
@@ -3740,9 +3751,13 @@ families:
           SDMMC2: {has_ckin: true, has_dir: false}
           RTC: {has_binary: true, has_privcfgr: true}
           FMC: {sdram: true, pcscntr: true}
+      H52x_H57x:
+        _all:
+          SDMMC: {has_dlyb: true}
       H5Ex_H5Fx:
         _all:
           ETH: {has_mdio_intr: true}
+          SDMMC: {has_dlyb: true}
   H7:
     svd:
       zip: stm32h7-svd.zip
@@ -3870,6 +3885,9 @@ families:
           DFSDM1_FLT1: FLT1
           DFSDM1_FLT2: FLT2
           DFSDM1_FLT3: FLT3
+      DLYB:
+        uses: DLYB
+        instances: [DELAY_Block_SDMMC1, DELAY_Block_SDMMC2, DELAY_Block_QUADSPI, Delay_Block_OCTOSPI1, Delay_Block_OCTOSPI2]
       DMA:
         from: STM32H723.DMA1
         instances: [DMA1, DMA2, DMA2D, DMAMUX1, DMAMUX2]
@@ -4211,7 +4229,7 @@ families:
           LPTIM: {has_repetition: false}
           PSSI: {has_cksrc: true}
           SAI: {has_pdm: true}
-          SDMMC: {has_version_id: true, dat8: true}
+          SDMMC: {has_version_id: true, dat8: true, has_dlyb: true}
           SDMMC1: {has_ckin: true, has_dir: true}
           OTG_HS: {gccfg: 1, max_in_endpoint: 7, max_out_endpoint: 7}
           FMC: {sdram: true}
@@ -4298,7 +4316,7 @@ families:
         interrupts:
           DCMIPP: INTR
       DLYB:
-        from: STM32H7S.DLYB1
+        uses: DLYB
         instances: [DLYB1, DLYB2]
       DMA2D:
         uses: DMA2D
@@ -4541,7 +4559,7 @@ families:
           LPTIM: {max_channel: 1}
           SAI: {has_pdm: true, has_mcken: true}
           GPDMA: {has_trustzone: false}
-          SDMMC: {idma_list: true, dat8: true}
+          SDMMC: {idma_list: true, dat8: true, has_dlyb: true}
           SDMMC1: {has_ckin: true, has_dir: true}
           RTC: {has_binary: true, has_privcfgr: true}
           FMC: {sdram: true}
@@ -6157,6 +6175,9 @@ families:
       DBGMCU:
         from: STM32U375.DBGMCU
         instances: [DBGMCU]
+      DLYB:
+        uses: DLYB
+        instances: [DLYBSD1, DLYBOS1]
       EXTI:
         from: STM32U375.ExTI
         instances: [ExTI]
@@ -6315,7 +6336,7 @@ families:
           PKA: {gen: 3}
           TSC: {groups: 7}
           GPDMA: {max_channel: 11, enhanced_channels: 2}
-          SDMMC: {idma_list: true, dat8: true, has_ckin: true, has_dir: true}
+          SDMMC: {idma_list: true, dat8: true, has_ckin: true, has_dir: true, has_dlyb: true}
           RTC: {has_binary: true, has_privcfgr: true, has_seccfgr: true, has_smisr: true, has_tamptscr: true}
   U5:
     svd:
@@ -6393,6 +6414,9 @@ families:
       DCMI:
         uses: DCMI
         instances: [DCMI]
+      DLYB:
+        uses: DLYB
+        instances: [DLYBOS, DLYBOS1, DLYBOS2, DLYBSD, DLYBSD1, DLYBSD2]
       DMA2D:
         uses: DMA2D
         instances: [DMA2D]
@@ -6621,7 +6645,7 @@ families:
           GPIO: {has_hslvr: true, has_seccfgr: true}
           HASH: {gen: 1}
           PKA: {gen: 1}
-          SDMMC: {idma_list: true, dat8: true, has_ckin: true, has_dir: true}
+          SDMMC: {idma_list: true, dat8: true, has_ckin: true, has_dir: true, has_dlyb: true}
           SDMMC2: {has_ckin: false, has_dir: false}
           OTG_FS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 5, max_channel: 11, max_tx_fifo: 4, has_dma: false}
           OTG_HS: {gccfg: 1, max_in_endpoint: 5, max_out_endpoint: 8, max_channel: 11, has_lpm: false}
