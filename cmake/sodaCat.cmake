@@ -174,3 +174,71 @@ function(generate_header target language namespace model_path suffix)
         "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
     )
 endfunction()
+
+# Pre-compile C++ standard library headers as header units.
+# This is required when using -fmodules-ts with GCC, because GCC does not
+# properly deduplicate standard library declarations between modules and
+# consumer translation units.  Building header units allows GCC to
+# transparently translate #include to import, avoiding redefinition errors.
+# Parameters:
+#   target      - Target that depends on the header units
+#   ARGN        - List of standard header names (e.g. cstdint type_traits)
+function(build_system_header_units target)
+    set(_stamp "${CMAKE_CURRENT_BINARY_DIR}/header_units.stamp")
+    separate_arguments(_cxx_flags NATIVE_COMMAND "${CMAKE_CXX_FLAGS}")
+    set(_cmds)
+    foreach(_hdr IN LISTS ARGN)
+        list(APPEND _cmds COMMAND ${CMAKE_CXX_COMPILER} ${_cxx_flags}
+            -std=gnu++20 -fmodules-ts
+            -fmodule-header=system -x c++-system-header ${_hdr})
+    endforeach()
+    # GCC places header unit .gcm files under gcm.cache/ (e.g.
+    # gcm.cache/usr/include/.../cstdint.gcm).  When CMake drives compilation
+    # with -fmodule-mapper=<file>, the mapper resolves unknown header units
+    # relative to $root (the build dir), expecting usr/include/... without
+    # the gcm.cache prefix.  Create a symlink so both paths work.
+    set(_gcm_link "${CMAKE_BINARY_DIR}/usr")
+    add_custom_command(OUTPUT "${_stamp}"
+        ${_cmds}
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            "${CMAKE_BINARY_DIR}/gcm.cache/usr" "${_gcm_link}"
+        COMMAND ${CMAKE_COMMAND} -E touch "${_stamp}"
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+        COMMENT "Building standard library header units"
+        VERBATIM
+    )
+    add_custom_target(${target}_header_units DEPENDS "${_stamp}")
+    add_dependencies(${target} ${target}_header_units)
+endfunction()
+
+# Register a generated header file as a C++20 module interface unit.
+# The header must contain REGISTERS_MODULE-guarded module declarations
+# (as produced by the sodaCat cxx generator).  The file is added to the
+# target's CXX_MODULES file set and compiled with -DREGISTERS_MODULE.
+# Parameters:
+#   target      - Target to which the module source is added
+#   header      - Absolute path to the generated header file
+function(generate_module target header)
+    set_source_files_properties("${header}" PROPERTIES
+        LANGUAGE CXX
+        COMPILE_DEFINITIONS REGISTERS_MODULE
+    )
+    target_sources(${target} PUBLIC
+        FILE_SET CXX_MODULES BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}" FILES "${header}"
+    )
+endfunction()
+
+# Like generate_module, but for a header from the generator support library
+# (e.g. hwreg.hpp) rather than a model-generated header.
+function(generate_support_module target language header_name)
+    string(TOUPPER "${language}" lang_upper)
+    set(generator_dir "${SODACAT_GENERATOR_${lang_upper}}")
+    set(header "${generator_dir}/${header_name}")
+    set_source_files_properties("${header}" PROPERTIES
+        LANGUAGE CXX
+        COMPILE_DEFINITIONS REGISTERS_MODULE
+    )
+    target_sources(${target} PUBLIC
+        FILE_SET CXX_MODULES BASE_DIRS "${generator_dir}" FILES "${header}"
+    )
+endfunction()
