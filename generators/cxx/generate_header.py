@@ -18,17 +18,20 @@ if not model:
     print(f"No model loaded: {sys.argv[1]}", file=sys.stderr)
     sys.exit(1)
 
+filename = sys.argv[3]+sys.argv[4]
+modid = Path(filename).stem  # module name derived from filename
+
 if 'registers' in model:
     from generate_peripheral_header import PerFormatter, prefixTemplate, postfixTemplate
     fmt = PerFormatter()
-    prefix = prefixTemplate.substitute(ns=sys.argv[2], mod=sys.argv[3])
+    prefix = prefixTemplate.substitute(ns=sys.argv[2], mod=modid)
     postfix = postfixTemplate.substitute(ns=sys.argv[2])
     txt = fmt.formatPeripheral(model, prefix, postfix)
-    print(txt, file=open(sys.argv[3]+sys.argv[4], mode='w'))
+    print(txt, file=open(filename, mode='w'))
 
 elif 'instances' in model:
     from generate_chip_header import generate_header
-    generate_header(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    generate_header(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], modid)
 
 elif 'signals' in model:
     from generate_clocktree_header import generate_header

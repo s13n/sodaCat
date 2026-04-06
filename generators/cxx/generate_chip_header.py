@@ -100,13 +100,15 @@ postfixTemplate = Template("""
 #undef EXPORT
 """)
 
-def generate_header(model_file, namespace, model_name, out_suffix):
+def generate_header(model_file, namespace, model_name, out_suffix, module_name=None):
     yaml = YAML(typ='safe')
     chip = yaml.load(Path(model_file))
     fmt  = ChipFormatter()
     nsfile = Path(namespace)
     namespaces = yaml.load(nsfile) if nsfile.exists() else namespace
-    header = fmt.createHeader(chip, namespaces, model_name, prefixTemplate, postfixTemplate)
+    if module_name is None:
+        module_name = Path(model_name + out_suffix).stem
+    header = fmt.createHeader(chip, namespaces, module_name, prefixTemplate, postfixTemplate)
     print(header, file=open(model_name+out_suffix, mode = 'w'))
 
 # Script arguments:
