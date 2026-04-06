@@ -266,10 +266,9 @@ prefixTemplate = Template("""// File was generated, do not edit!
 
 #ifndef EXPORT
 #include "hwreg.hpp"
+#include <cstdint>
 #define EXPORT
 #endif
-
-#include <cstdint>
 
 namespace $ns {""")
 
