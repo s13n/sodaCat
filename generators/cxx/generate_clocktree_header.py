@@ -60,7 +60,7 @@ def formatRegfieldEnum(entries):
     return "\n".join(txt)
 
 def formatGenerators(generators, instance, signal_enum_map):
-    txt = ["    static constexpr std::array generators = {"]
+    txt = ["    static const std::array generators = {"]
     for gen in generators:
         ctrl = gen.get("control")
         values = ctrl.get("values", []) if ctrl else []
@@ -108,7 +108,7 @@ def formatDividers(dividers, instance, signal_enum_map):
     return "\n".join(txt)
 
 def formatMuxes(muxes, instance, signal_enum_map):
-    txt = ["    static constexpr std::array muxes = {"]
+    txt = ["    static const std::array muxes = {"]
     for m in muxes:
         input_list = []
         for i in m['inputs']:
