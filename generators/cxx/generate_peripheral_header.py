@@ -262,22 +262,14 @@ $postfix"""))
     
          
 prefixTemplate = Template("""// File was generated, do not edit!
-#ifdef REGISTERS_MODULE
-module;
-#define EXPORT export
-#else
 #pragma once
+
+#ifndef EXPORT
 #include "hwreg.hpp"
-#undef EXPORT
 #define EXPORT
 #endif
 
 #include <cstdint>
-
-#ifdef REGISTERS_MODULE
-export module $mod;
-import hwreg;
-#endif
 
 namespace $ns {""")
 
@@ -285,15 +277,35 @@ postfixTemplate = Template("""} // namespace $ns
 
 #undef EXPORT""")
 
+moduleTemplate = Template("""// File was generated, do not edit!
+module;
+
+#include <cstdint>
+
+export module $mod;
+import hwreg;
+
+#define EXPORT export
+#include "$header"
+#undef EXPORT
+""")
+
+def generate_module(mod, header):
+    """Generate a .cppm module wrapper for a peripheral header."""
+    return moduleTemplate.substitute(mod=mod, header=header)
+
 if __name__ == "__main__":
     yaml= YAML(typ='safe')
     per = yaml.load(Path(sys.argv[1]))
     if per:
         fmt = PerFormatter()
-        prefix = prefixTemplate.substitute(ns=sys.argv[2], mod=sys.argv[3])
+        prefix = prefixTemplate.substitute(ns=sys.argv[2])
         postfix = postfixTemplate.substitute(ns=sys.argv[2])
         txt = fmt.formatPeripheral(per, prefix, postfix)
         filename = sys.argv[3]+sys.argv[4]
         print(txt, file=open(filename, mode = 'w'))
+        modid = Path(filename).stem
+        cppm = Path(filename).with_suffix('.cppm')
+        print(generate_module(modid, Path(filename).name), file=open(cppm, mode='w'))
     else:
         print(f"No model loaded: {sys.argv[1]}")

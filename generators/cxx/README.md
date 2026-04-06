@@ -1,8 +1,8 @@
 # C++ header generation
 
-The C++ header file generator produces C++20 modules compatible code that can
-also be used with older compilers, depending on whether the macro
-`REGISTERS_MODULE` is defined.
+The C++ header file generator produces standard C++ headers that can be used
+via `#include`. For C++20 module support, a `.cppm` module interface wrapper
+is generated alongside each `.hpp` header.
 
 Note that the Python generator scripts require `ruamel.yaml` to be installed.
 

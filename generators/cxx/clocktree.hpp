@@ -1,8 +1,6 @@
-#ifdef REGISTERS_MODULE
-module;
-#define EXPORT export
-#else
 #pragma once
+
+#ifndef EXPORT
 #define EXPORT
 #endif
 
@@ -12,10 +10,6 @@ module;
 #include <initializer_list>
 #include <span>
 #include <variant>
-
-#ifdef REGISTERS_MODULE
-export module clocktree;
-#endif
 
 namespace clocktree {
     /** Representation of a register field used to control a functional element. */

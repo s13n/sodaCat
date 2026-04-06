@@ -6,6 +6,8 @@
 #   - 'registers' key  → peripheral block header (generate_peripheral_header)
 #   - 'instances' key  → chip/SoC integration header (generate_chip_header)
 #   - 'signals' key    → clock tree header (generate_clocktree_header)
+#
+# Each invocation produces both a .hpp header and a .cppm module wrapper.
 
 from ruamel.yaml import YAML
 from pathlib import Path
@@ -22,12 +24,14 @@ filename = sys.argv[3]+sys.argv[4]
 modid = Path(filename).stem  # module name derived from filename
 
 if 'registers' in model:
-    from generate_peripheral_header import PerFormatter, prefixTemplate, postfixTemplate
+    from generate_peripheral_header import PerFormatter, prefixTemplate, postfixTemplate, generate_module
     fmt = PerFormatter()
-    prefix = prefixTemplate.substitute(ns=sys.argv[2], mod=modid)
+    prefix = prefixTemplate.substitute(ns=sys.argv[2])
     postfix = postfixTemplate.substitute(ns=sys.argv[2])
     txt = fmt.formatPeripheral(model, prefix, postfix)
     print(txt, file=open(filename, mode='w'))
+    cppm = Path(filename).with_suffix('.cppm')
+    print(generate_module(modid, Path(filename).name), file=open(cppm, mode='w'))
 
 elif 'instances' in model:
     from generate_chip_header import generate_header

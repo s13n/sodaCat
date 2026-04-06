@@ -56,7 +56,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         includes = [self.instanceInclTemplate.substitute(model=t, incl_suffix=sys.argv[4]) for t in types]
         return decl, ''.join(includes)
         
-    def createHeader(self, chip, namespaces, name, prefix, postfix):
+    def createHeader(self, chip, namespaces, prefix, postfix):
         namespace = namespaces
         inverse = {}
         if isinstance(namespaces, dict):
@@ -69,23 +69,19 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         imports = [re.search(r'"(\w+)\.hpp"', l).group(1) for l in incl.splitlines() if '#   include ' in l]
         interrupts = chip.get('interrupts', {})
         interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
-        return prefix.substitute(chip, ns=namespace, name=name, incl=incl, imp=';\nimport '.join(imports), interruptCount=interruptCount) + decl + postfix.substitute(ns=namespace)
+        header = prefix.substitute(chip, ns=namespace, incl=incl, interruptCount=interruptCount) + decl + postfix.substitute(ns=namespace)
+        return header, imports
                 
 prefixTemplate = Template("""// File was generated, do not edit!
-#ifdef REGISTERS_MODULE
-module;
-#define EXPORT export
-#else
 #pragma once
+
+#ifndef EXPORT
 $incl
-#undef EXPORT
+#include "hwreg.hpp"
 #define EXPORT
 #endif
-#ifdef REGISTERS_MODULE
-export module $name;
-import hwreg;
-import $imp;
-#endif
+
+#include <cstdint>
 
 namespace $ns {
 
@@ -100,6 +96,24 @@ postfixTemplate = Template("""
 #undef EXPORT
 """)
 
+moduleTemplate = Template("""// File was generated, do not edit!
+module;
+
+#include <cstdint>
+
+export module $mod;
+import hwreg;
+$imports
+#define EXPORT export
+#include "$header"
+#undef EXPORT
+""")
+
+def generate_module(mod, header, imports):
+    """Generate a .cppm module wrapper for a chip header."""
+    imp_lines = ''.join(f'import {i};\n' for i in imports)
+    return moduleTemplate.substitute(mod=mod, header=header, imports=imp_lines)
+
 def generate_header(model_file, namespace, model_name, out_suffix, module_name=None):
     yaml = YAML(typ='safe')
     chip = yaml.load(Path(model_file))
@@ -108,8 +122,11 @@ def generate_header(model_file, namespace, model_name, out_suffix, module_name=N
     namespaces = yaml.load(nsfile) if nsfile.exists() else namespace
     if module_name is None:
         module_name = Path(model_name + out_suffix).stem
-    header = fmt.createHeader(chip, namespaces, module_name, prefixTemplate, postfixTemplate)
-    print(header, file=open(model_name+out_suffix, mode = 'w'))
+    header, imports = fmt.createHeader(chip, namespaces, prefixTemplate, postfixTemplate)
+    filename = model_name + out_suffix
+    print(header, file=open(filename, mode='w'))
+    cppm = Path(filename).with_suffix('.cppm')
+    print(generate_module(module_name, Path(filename).name, imports), file=open(cppm, mode='w'))
 
 # Script arguments:
 #   argv[1] - Model (Name of yaml file)

@@ -1,11 +1,9 @@
 /**@file
  * Definitions for dealing with hardware registers in C++
  */
-#ifdef REGISTERS_MODULE
-module;
-#define EXPORT export
-#else
 #pragma once
+
+#ifndef EXPORT
 #define EXPORT
 #endif
 
@@ -15,10 +13,6 @@ module;
 #include <cstring>
 #include <type_traits>
 #include <version>
-
-#ifdef REGISTERS_MODULE
-export module hwreg;
-#endif
 
 inline namespace hwreg {
 

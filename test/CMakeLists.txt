@@ -19,7 +19,6 @@ sodacat_fetch_generator(cxx)
 
 add_library(soc-data-modules OBJECT)
 target_include_directories(soc-data-modules PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${SODACAT_GENERATOR_CXX})
-target_compile_definitions(soc-data-modules PUBLIC $<$<BOOL:${FOR_MODULES}>:REGISTERS_MODULE>)
 set_target_properties(soc-data-modules PROPERTIES
     CXX_SCAN_FOR_MODULES ${FOR_MODULES}
     LINKER_LANGUAGE "CXX"
@@ -101,4 +100,5 @@ generate_header(soc-data-modules cxx esp32p4 ESP/P4/ESP32_P4/SPI .hpp)
 
 add_executable(soc-data-test main.cpp)
 target_link_libraries(soc-data-test PRIVATE soc-data-modules)
+target_compile_definitions(soc-data-test PRIVATE $<$<BOOL:${FOR_MODULES}>:REGISTERS_MODULE>)
 target_compile_options(soc-data-test PUBLIC $<$<BOOL:${FOR_MODULES}>:-fmodules-ts>)

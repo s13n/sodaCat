@@ -164,7 +164,10 @@ function(generate_header target language namespace model_path suffix)
         target_include_directories(${target} PUBLIC "${generator_dir}")
     endif()
 
+    # The generator produces both a .hpp header and a .cppm module wrapper
+    get_filename_component(model_stem "${model}${suffix}" NAME_WE)
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
+                              "${CMAKE_CURRENT_BINARY_DIR}/${model_stem}.cppm"
         COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${namespace} ${model} ${suffix}
         MAIN_DEPENDENCY "${model_file}"
         DEPENDS "${generator_script}"
@@ -211,34 +214,29 @@ function(build_system_header_units target)
     add_dependencies(${target} ${target}_header_units)
 endfunction()
 
-# Register a generated header file as a C++20 module interface unit.
-# The header must contain REGISTERS_MODULE-guarded module declarations
-# (as produced by the sodaCat cxx generator).  The file is added to the
-# target's CXX_MODULES file set and compiled with -DREGISTERS_MODULE.
+# Register a generated .cppm module interface unit for a target.
+# The .cppm file is the module wrapper produced alongside the .hpp header
+# by the sodaCat cxx generator.
 # Parameters:
 #   target      - Target to which the module source is added
-#   header      - Absolute path to the generated header file
+#   header      - Absolute path to the generated .hpp header file (the .cppm
+#                 is derived by replacing the suffix)
 function(generate_module target header)
-    set_source_files_properties("${header}" PROPERTIES
-        LANGUAGE CXX
-        COMPILE_DEFINITIONS REGISTERS_MODULE
-    )
+    get_filename_component(_stem "${header}" NAME_WE)
+    get_filename_component(_dir "${header}" DIRECTORY)
+    set(_cppm "${_dir}/${_stem}.cppm")
     target_sources(${target} PUBLIC
-        FILE_SET CXX_MODULES BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}" FILES "${header}"
+        FILE_SET CXX_MODULES BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}" FILES "${_cppm}"
     )
 endfunction()
 
-# Like generate_module, but for a header from the generator support library
-# (e.g. hwreg.hpp) rather than a model-generated header.
-function(generate_support_module target language header_name)
+# Like generate_module, but for a support library .cppm from the generator
+# directory (e.g. hwreg.cppm, clocktree.cppm).
+function(generate_support_module target language module_name)
     string(TOUPPER "${language}" lang_upper)
     set(generator_dir "${SODACAT_GENERATOR_${lang_upper}}")
-    set(header "${generator_dir}/${header_name}")
-    set_source_files_properties("${header}" PROPERTIES
-        LANGUAGE CXX
-        COMPILE_DEFINITIONS REGISTERS_MODULE
-    )
+    set(cppm "${generator_dir}/${module_name}.cppm")
     target_sources(${target} PUBLIC
-        FILE_SET CXX_MODULES BASE_DIRS "${generator_dir}" FILES "${header}"
+        FILE_SET CXX_MODULES BASE_DIRS "${generator_dir}" FILES "${cppm}"
     )
 endfunction()
