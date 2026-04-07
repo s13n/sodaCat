@@ -252,6 +252,3 @@ private:
 EXPORT typedef uint16_t Exception;
 
 } // inline namespace hwreg
-
-// Bitfield mask for given bitfield
-#define FIELDMASK(t, f) []() constexpr { t r{}; r.f -= 1; return std::bit_cast<HwReg<t>::Native>(r); }()
