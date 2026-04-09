@@ -11,4 +11,7 @@ export module hwreg;
 
 #define EXPORT export
 #include "hwreg.hpp"
-#undef EXPORT
+
+#ifdef EXPORT
+#error "Header leaks EXPORT!"
+#endif

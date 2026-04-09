@@ -11,4 +11,7 @@ export module clocktree;
 
 #define EXPORT export
 #include "clocktree.hpp"
-#undef EXPORT
+
+#ifdef EXPORT
+#error "Header leaks EXPORT!"
+#endif

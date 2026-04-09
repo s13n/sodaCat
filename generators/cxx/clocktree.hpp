@@ -314,3 +314,5 @@ inline uint32_t pll_freq(void const* desc, uint8_t const* inputs, ClockTreeBase 
 }
 
 } // namespace clocktree
+
+#undef EXPORT

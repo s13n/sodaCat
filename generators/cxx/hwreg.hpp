@@ -252,3 +252,5 @@ private:
 EXPORT typedef uint16_t Exception;
 
 } // inline namespace hwreg
+
+#undef EXPORT
