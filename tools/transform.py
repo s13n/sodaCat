@@ -15,7 +15,7 @@ def renameEntries(array:list, key, pattern:str, replacement):
             e[key] = pat.sub(replacement, e[key])
 
     
-def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
+def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimIndex:list=None):
     """Convert a register list into a cluster array.
 
     This can be used to convert a linear list of registers of several identical
@@ -24,30 +24,51 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
     identical channels.
 
     The pattern given is a regex pattern with two captures:
-    - The array index that this register belongs to (must be zero-based numerical)
+    - The array index that this register belongs to. Numeric by default; when
+      `dimIndex` is supplied, this capture is an alphanumeric instance name
+      which must appear in the list (non-members are skipped).
     - The register name inside the cluster (can't be numerical)
 
     The initial dict to which the registers will be added is passed in cluster.
     This dict must include the cluster name, and should include a description.
 
-    The template parameter selects which instance index to use as the prototype
-    for the cluster's register set (default 0). Use a non-zero index when some
-    instances have additional registers (e.g. enhanced DMA channels with TR3/BR2).
+    The template parameter selects which instance to use as the prototype for
+    the cluster's register set. For numeric indices it is a zero-based int
+    (default 0); with named `dimIndex` it may be an int (position into the
+    list) or a str (instance name looked up in the list).
+
+    When `dimIndex` is given, the cluster is emitted with `name` as
+    `<cluster_name>_%s` (bare %s) and a comma-list `dimIndex` attribute so the
+    generator produces one flat struct member per instance (CLK_GPOUT0,
+    CLK_REF, ...). Without `dimIndex`, the original `<cluster_name>[%s]` form
+    is used.
 
     The initial register list is passed in reglist, and the function returns the modified
     register list that should be used to replace it.
     """
     pat = re.compile(pattern)
-    
+    named = dimIndex is not None
+    if named:
+        name_to_pos = {n: i for i, n in enumerate(dimIndex)}
+        if isinstance(template, str):
+            if template not in name_to_pos:
+                raise ValueError(f"template '{template}' not in dimIndex {dimIndex}")
+            template = name_to_pos[template]
+
     def indexName(reg, pat):
         match = pat.search(reg['name'])
-        if match:
-            try:
-                index = int(match.group(1))
-                return index, match.group(2)
-            except ValueError as ex:
-                return int(match.group(2)), match.group(1)
-        return None, None
+        if not match:
+            return None, None
+        if named:
+            pos = name_to_pos.get(match.group(1))
+            if pos is None:
+                return None, None
+            return pos, match.group(2)
+        try:
+            index = int(match.group(1))
+            return index, match.group(2)
+        except ValueError:
+            return int(match.group(2)), match.group(1)
     
     def findDimIncrement(a:list, b:list):
         """ figure out what the address increment is """
@@ -70,7 +91,11 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
     
     if (len(instances) >= 2) and all(instances):     # at least 2 instances starting with index 0
         cluster = cluster or {}
-        cluster['name'] += "[%s]"
+        if named:
+            cluster['name'] += "_%s"
+            cluster['dimIndex'] = ','.join(dimIndex)
+        else:
+            cluster['name'] += "[%s]"
         cluster['dim'] = len(instances)
         cluster['addressOffset'] = addressOffset
         # Compute stride from the template and its nearest neighbor.
@@ -82,10 +107,13 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
         # we now move the affected registers from the reglist array to the cluster array
         cluster['registers'] = []
         registers = []
-        for i,r in enumerate(reglist):
+        first_match_pos = None
+        for r in reglist:
             index, regname = indexName(r, pat)
             # fill the cluster with registers from the template instance
             if regname:         # register belongs to cluster
+                if first_match_pos is None:
+                    first_match_pos = len(registers)
                 if index == template:
                     r['name'] = regname
                     if 'displayName' in r:
@@ -98,8 +126,10 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template:int=0):
                     cluster['registers'].append(r)
             else:               # register doesn't belong to cluster
                 registers.append(r)
-        # we append the new cluster
-        registers.append(cluster)
+        # insert the cluster where the first matched register used to be
+        if first_match_pos is None:
+            first_match_pos = len(registers)
+        registers.insert(first_match_pos, cluster)
         reglist = registers
     else:
         print('Register set unsuitable for cluster')        

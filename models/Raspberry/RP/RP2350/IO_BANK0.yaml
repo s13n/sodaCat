@@ -1,6 +1,138 @@
 name: IO_BANK0
 source: RP2350 SVD v0.1
 registers:
+  - name: GPIO[%s]
+    description: GPIO pin
+    dim: 48
+    addressOffset: 0
+    dimIncrement: 8
+    registers:
+      - name: STATUS
+        addressOffset: 0
+        resetValue: 0
+        fields:
+          - name: OUTTOPAD
+            description: output signal to pad after register override is applied
+            access: read-only
+            bitOffset: 9
+            bitWidth: 1
+          - name: OETOPAD
+            description: output enable to pad after register override is applied
+            access: read-only
+            bitOffset: 13
+            bitWidth: 1
+          - name: INFROMPAD
+            description: input signal from pad, before filtering and override are applied
+            access: read-only
+            bitOffset: 17
+            bitWidth: 1
+          - name: IRQTOPROC
+            description: interrupt to processors, after override is applied
+            access: read-only
+            bitOffset: 26
+            bitWidth: 1
+      - name: CTRL
+        addressOffset: 4
+        resetValue: 31
+        fields:
+          - name: FUNCSEL
+            description: "0-31 -> selects pin function according to the gpio table \n                            31 == NULL"
+            access: read-write
+            enumeratedValues:
+              - name: jtag_tck
+                value: 0
+              - name: spi0_rx
+                value: 1
+              - name: uart0_tx
+                value: 2
+              - name: i2c0_sda
+                value: 3
+              - name: pwm_a_0
+                value: 4
+              - name: siob_proc_0
+                value: 5
+              - name: pio0_0
+                value: 6
+              - name: pio1_0
+                value: 7
+              - name: pio2_0
+                value: 8
+              - name: xip_ss_n_1
+                value: 9
+              - name: usb_muxing_overcurr_detect
+                value: 10
+              - name: 'null'
+                value: 31
+            bitOffset: 0
+            bitWidth: 5
+          - name: OUTOVER
+            access: read-write
+            enumeratedValues:
+              - name: NORMAL
+                value: 0
+                description: drive output from peripheral signal selected by funcsel
+              - name: INVERT
+                value: 1
+                description: drive output from inverse of peripheral signal selected by funcsel
+              - name: LOW
+                value: 2
+                description: drive output low
+              - name: HIGH
+                value: 3
+                description: drive output high
+            bitOffset: 12
+            bitWidth: 2
+          - name: OEOVER
+            access: read-write
+            enumeratedValues:
+              - name: NORMAL
+                value: 0
+                description: drive output enable from peripheral signal selected by funcsel
+              - name: INVERT
+                value: 1
+                description: drive output enable from inverse of peripheral signal selected by funcsel
+              - name: DISABLE
+                value: 2
+                description: disable output
+              - name: ENABLE
+                value: 3
+                description: enable output
+            bitOffset: 14
+            bitWidth: 2
+          - name: INOVER
+            access: read-write
+            enumeratedValues:
+              - name: NORMAL
+                value: 0
+                description: don't invert the peri input
+              - name: INVERT
+                value: 1
+                description: invert the peri input
+              - name: LOW
+                value: 2
+                description: drive peri input low
+              - name: HIGH
+                value: 3
+                description: drive peri input high
+            bitOffset: 16
+            bitWidth: 2
+          - name: IRQOVER
+            access: read-write
+            enumeratedValues:
+              - name: NORMAL
+                value: 0
+                description: don't invert the interrupt
+              - name: INVERT
+                value: 1
+                description: invert the interrupt
+              - name: LOW
+                value: 2
+                description: drive interrupt low
+              - name: HIGH
+                value: 3
+                description: drive interrupt high
+            bitOffset: 28
+            bitWidth: 2
   - name: IRQSUMMARY_PROC0_SECURE0
     addressOffset: 512
     resetValue: 0
@@ -1201,138 +1333,6 @@ registers:
         access: read-only
         bitOffset: 15
         bitWidth: 1
-  - name: GPIO[%s]
-    description: GPIO pin
-    dim: 48
-    addressOffset: 0
-    dimIncrement: 8
-    registers:
-      - name: STATUS
-        addressOffset: 0
-        resetValue: 0
-        fields:
-          - name: OUTTOPAD
-            description: output signal to pad after register override is applied
-            access: read-only
-            bitOffset: 9
-            bitWidth: 1
-          - name: OETOPAD
-            description: output enable to pad after register override is applied
-            access: read-only
-            bitOffset: 13
-            bitWidth: 1
-          - name: INFROMPAD
-            description: input signal from pad, before filtering and override are applied
-            access: read-only
-            bitOffset: 17
-            bitWidth: 1
-          - name: IRQTOPROC
-            description: interrupt to processors, after override is applied
-            access: read-only
-            bitOffset: 26
-            bitWidth: 1
-      - name: CTRL
-        addressOffset: 4
-        resetValue: 31
-        fields:
-          - name: FUNCSEL
-            description: "0-31 -> selects pin function according to the gpio table \n                            31 == NULL"
-            access: read-write
-            enumeratedValues:
-              - name: jtag_tck
-                value: 0
-              - name: spi0_rx
-                value: 1
-              - name: uart0_tx
-                value: 2
-              - name: i2c0_sda
-                value: 3
-              - name: pwm_a_0
-                value: 4
-              - name: siob_proc_0
-                value: 5
-              - name: pio0_0
-                value: 6
-              - name: pio1_0
-                value: 7
-              - name: pio2_0
-                value: 8
-              - name: xip_ss_n_1
-                value: 9
-              - name: usb_muxing_overcurr_detect
-                value: 10
-              - name: 'null'
-                value: 31
-            bitOffset: 0
-            bitWidth: 5
-          - name: OUTOVER
-            access: read-write
-            enumeratedValues:
-              - name: NORMAL
-                value: 0
-                description: drive output from peripheral signal selected by funcsel
-              - name: INVERT
-                value: 1
-                description: drive output from inverse of peripheral signal selected by funcsel
-              - name: LOW
-                value: 2
-                description: drive output low
-              - name: HIGH
-                value: 3
-                description: drive output high
-            bitOffset: 12
-            bitWidth: 2
-          - name: OEOVER
-            access: read-write
-            enumeratedValues:
-              - name: NORMAL
-                value: 0
-                description: drive output enable from peripheral signal selected by funcsel
-              - name: INVERT
-                value: 1
-                description: drive output enable from inverse of peripheral signal selected by funcsel
-              - name: DISABLE
-                value: 2
-                description: disable output
-              - name: ENABLE
-                value: 3
-                description: enable output
-            bitOffset: 14
-            bitWidth: 2
-          - name: INOVER
-            access: read-write
-            enumeratedValues:
-              - name: NORMAL
-                value: 0
-                description: don't invert the peri input
-              - name: INVERT
-                value: 1
-                description: invert the peri input
-              - name: LOW
-                value: 2
-                description: drive peri input low
-              - name: HIGH
-                value: 3
-                description: drive peri input high
-            bitOffset: 16
-            bitWidth: 2
-          - name: IRQOVER
-            access: read-write
-            enumeratedValues:
-              - name: NORMAL
-                value: 0
-                description: don't invert the interrupt
-              - name: INVERT
-                value: 1
-                description: invert the interrupt
-              - name: LOW
-                value: 2
-                description: drive interrupt low
-              - name: HIGH
-                value: 3
-                description: drive interrupt high
-            bitOffset: 28
-            bitWidth: 2
   - name: INTR[%s]
     addressOffset: 560
     description: Raw Interrupts

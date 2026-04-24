@@ -2,76 +2,81 @@ name: CLOCKS
 source: RP2040 SVD v0.1
 registers:
   - name: CLK_%s
-    addressOffset: 0
+    dimIndex: GPOUT0,GPOUT1,GPOUT2,GPOUT3,REF,SYS,PERI,USB,ADC,RTC
     dim: 10
-    dimIndex: "GPOUT0,GPOUT1,GPOUT2,GPOUT3,REF,SYS,PERI,USB,ADC,RTC"
+    addressOffset: 0
     dimIncrement: 12
-    description: "Clock generator (CTRL/DIV/SELECTED, stride 12). Field availability\
-      \ varies by instance: SRC present on REF [1:0] and SYS [0] only. AUXSRC is\
-      \ 4-bit on GPOUT0/1, 3-bit on GPOUT2/3/SYS/PERI/USB/ADC/RTC, 2-bit on REF.\
-      \ DC50 present on GPOUT0-3 only. KILL/ENABLE absent on REF and SYS.\
-      \ PHASE/NUDGE absent on REF, SYS, and PERI. DIV.FRAC absent on REF, USB, and ADC.\
-      \ DIV.INT is 2-bit on REF/USB/ADC, 24-bit on all others.\
-      \ GPOUT AUXSRC=4 is rosc_clksrc (undivided) for GPOUT0/1, rosc_clksrc_ph for GPOUT2/3."
     registers:
       - name: CTRL
         addressOffset: 0
         description: Clock control, can be changed on-the-fly (except for auxsrc)
         resetValue: 0
         fields:
-          - name: SRC
-            description: "Glitchless source mux. REF: [1:0] rosc_clksrc_ph/clksrc_clk_ref_aux/xosc_clksrc.\
-              \ SYS: [0] clk_ref/clksrc_clk_sys_aux. Reserved on all others."
-            access: read-write
-            bitOffset: 0
-            bitWidth: 2
           - name: AUXSRC
-            description: "Auxiliary source mux (glitchy when switching). Encoding is\
-              \ per-instance; see datasheet."
+            description: Selects the auxiliary clock source, will glitch when switching
             access: read-write
+            enumeratedValues:
+              - name: clksrc_pll_sys
+                value: 0
+              - name: clksrc_gpin0
+                value: 1
+              - name: clksrc_gpin1
+                value: 2
+              - name: clksrc_pll_usb
+                value: 3
+              - name: rosc_clksrc
+                value: 4
+              - name: xosc_clksrc
+                value: 5
+              - name: clk_sys
+                value: 6
+              - name: clk_usb
+                value: 7
+              - name: clk_adc
+                value: 8
+              - name: clk_rtc
+                value: 9
+              - name: clk_ref
+                value: 10
             bitOffset: 5
             bitWidth: 4
           - name: KILL
-            description: Asynchronously kills the clock generator. Reserved on REF and SYS.
+            description: Asynchronously kills the clock generator
             access: read-write
             bitOffset: 10
             bitWidth: 1
           - name: ENABLE
-            description: Starts and stops the clock generator cleanly. Reserved on REF and SYS.
+            description: Starts and stops the clock generator cleanly
             access: read-write
             bitOffset: 11
             bitWidth: 1
           - name: DC50
-            description: Enables duty cycle correction for odd divisors. Present on GPOUT0-3 only.
+            description: Enables duty cycle correction for odd divisors
             access: read-write
             bitOffset: 12
             bitWidth: 1
           - name: PHASE
-            description: "Delays the enable signal by up to 3 cycles of the input clock.\
-              \ Reserved on REF, SYS, and PERI."
+            description: "This delays the enable signal by up to 3 cycles of the input clock \n                            This must be set before the clock is enabled to have any effect"
             access: read-write
             bitOffset: 16
             bitWidth: 2
           - name: NUDGE
-            description: "An edge shifts the phase of the output by 1 cycle of the input clock.\
-              \ Reserved on REF, SYS, and PERI."
+            description: "An edge on this signal shifts the phase of the output by 1 cycle of the input clock \n                            This can be done at any time"
             access: read-write
             bitOffset: 20
             bitWidth: 1
       - name: DIV
         addressOffset: 4
-        description: "Clock divisor. FRAC absent on REF, USB, and ADC.\
-          \ INT is 2-bit on REF/USB/ADC, 24-bit on all others."
+        description: Clock divisor, can be changed on-the-fly
         resetValue: 256
         fields:
           - name: FRAC
-            description: Fractional component of the divisor. Reserved on REF, USB, and ADC.
+            description: Fractional component of the divisor
             access: read-write
             bitOffset: 0
             bitWidth: 8
           - name: INT
-            description: "Integer component of the divisor, 0 -> divide by 2^16.\
-              \ Effective width: 2 bits for REF/USB/ADC, 24 bits for all others."
+            description: Integer component of the divisor, 0 -> divide by 2^16
             access: read-write
             bitOffset: 8
             bitWidth: 24
@@ -81,8 +86,7 @@ registers:
         resetValue: 1
         fields:
           - name: SELECTED
-            description: "One-hot encoding of the currently active source. For generators\
-              \ without a glitchless mux this register is hardwired to 0x1."
+            description: This slice does not have a glitchless mux (only the AUX_SRC field is present, not SRC) so this register is hardwired to 0x1.
             access: read-only
             bitOffset: 0
             bitWidth: 32

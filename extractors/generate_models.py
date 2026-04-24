@@ -446,7 +446,8 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                 cluster['description'] = t['description']
             block_data['registers'] = createClusterArray(
                 block_data.get('registers', []), t['pattern'], cluster,
-                template=t.get('template', 0))
+                template=t.get('template', 0),
+                dimIndex=t.get('dimIndex'))
             # Strip instance-number prefix from cluster register descriptions
             for reg in cluster.get('registers', []):
                 desc = reg.get('description', '')
