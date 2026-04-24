@@ -164,21 +164,6 @@ function(generate_header target language namespace model_path suffix)
         target_include_directories(${target} PUBLIC "${generator_dir}")
     endif()
 
-    # Register the hwreg support module on the FIRST target that calls
-    # generate_header().  All other targets obtain it transitively through
-    # their link dependencies.  This avoids the "disagreement" error that
-    # CMake raises when multiple targets publicly provide the same module.
-    get_property(_hwreg_done GLOBAL PROPERTY _SODACAT_HWREG_REGISTERED)
-    if(NOT _hwreg_done)
-        set(_hwreg_cppm "${generator_dir}/hwreg.cppm")
-        if(EXISTS "${_hwreg_cppm}")
-            set_property(GLOBAL PROPERTY _SODACAT_HWREG_REGISTERED TRUE)
-            target_sources(${target} PUBLIC
-                FILE_SET CXX_MODULES BASE_DIRS "${generator_dir}" FILES "${_hwreg_cppm}"
-            )
-        endif()
-    endif()
-
     # The generator produces both a .hpp header and a .cppm module wrapper
     get_filename_component(model_stem "${model}${suffix}" NAME_WE)
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
@@ -249,25 +234,3 @@ function(generate_module target header)
     )
 endfunction()
 
-# Like generate_module, but for a support library .cppm from the generator
-# directory (e.g. hwreg.cppm, clocktree.cppm).
-function(generate_support_module target language module_name)
-    # Skip if generate_header() already registered hwreg globally
-    get_property(_done GLOBAL PROPERTY _SODACAT_HWREG_REGISTERED)
-    if(_done AND "${module_name}" STREQUAL "hwreg")
-        return()
-    endif()
-    string(TOUPPER "${language}" lang_upper)
-    set(generator_dir "${SODACAT_GENERATOR_${lang_upper}}")
-    set(cppm "${generator_dir}/${module_name}.cppm")
-    target_sources(${target} PUBLIC
-        FILE_SET CXX_MODULES BASE_DIRS "${generator_dir}" FILES "${cppm}"
-    )
-    # Mark hwreg as registered so generate_header()'s auto-registration skips.
-    # Without this, a later generate_header() call on a sibling target would
-    # double-register hwreg, triggering CMake's "Disagreement of the location
-    # of the 'hwreg' module" error.
-    if("${module_name}" STREQUAL "hwreg")
-        set_property(GLOBAL PROPERTY _SODACAT_HWREG_REGISTERED TRUE)
-    endif()
-endfunction()

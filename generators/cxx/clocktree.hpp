@@ -6,10 +6,6 @@
  */
 #pragma once
 
-#ifndef EXPORT
-#define EXPORT
-#endif
-
 #include <cstdint>
 #include <span>
 
@@ -184,7 +180,7 @@ inline uint32_t pll_freq(void const* desc, uint8_t const* inputs, ClockTreeBase 
  * constexpr data tables. ClockTree<Clocks> then inherits from this and
  * exposes the public API.
  */
-EXPORT class ClockTreeBase {
+class ClockTreeBase {
 public:
     /// Get frequency of given signal in Hz. Returns 0 for disabled/unknown signals.
     uint32_t getFrequency(uint8_t sig_id) const {
@@ -217,7 +213,7 @@ public:
 // ---------------------------------------------------------------------------
 
 /** ClockTree class template, parameterized with the generated Clocks struct. */
-EXPORT template<typename Clocks> class ClockTree : public Clocks {
+template<typename Clocks> class ClockTree : public Clocks {
 public:
     using S = typename Clocks::S;
 
@@ -314,5 +310,3 @@ inline uint32_t pll_freq(void const* desc, uint8_t const* inputs, ClockTreeBase 
 }
 
 } // namespace clocktree
-
-#undef EXPORT

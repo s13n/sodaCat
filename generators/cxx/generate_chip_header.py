@@ -99,9 +99,9 @@ moduleTemplate = Template("""// File was generated, do not edit!
 module;
 
 #include <cstdint>
+#include "hwreg.hpp"
 
 export module $mod;
-import hwreg;
 $imports
 #define EXPORT export
 #include "$header"

@@ -3,10 +3,6 @@
  */
 #pragma once
 
-#ifndef EXPORT
-#define EXPORT
-#endif
-
 #include <algorithm>
 #include <bit>
 #include <cstdint>
@@ -28,7 +24,7 @@ template<size_t N> using uint =
  * This is implemented depending on what's available in the standard library.
  * We can only handle big or little endian, not mixed endian.
  */
-EXPORT template<typename X> constexpr X byteswap(X x) noexcept {
+template<typename X> constexpr X byteswap(X x) noexcept {
     X res{};
     if constexpr (sizeof(x) == 1)
         res = x;
@@ -55,7 +51,7 @@ EXPORT template<typename X> constexpr X byteswap(X x) noexcept {
 }
 
 //! Concept for checking the bitfield type used with the Reg template.
-EXPORT template<typename T> concept RegBitfield = requires(T x) {
+template<typename T> concept RegBitfield = requires(T x) {
     std::has_unique_object_representations_v<T>;
     std::is_aggregate_v<T>;
     std::is_integral_v<uint<sizeof(T)>>;
@@ -72,7 +68,7 @@ EXPORT template<typename T> concept RegBitfield = requires(T x) {
  * often and in what order, because reading or writing a hardware register often
  * has side effects.
  */
-EXPORT template<RegBitfield R, std::endian E = std::endian::native>
+template<RegBitfield R, std::endian E = std::endian::native>
 struct HwReg {
     using BitField = R;
     using Native = uint<sizeof(R)>;
@@ -238,7 +234,7 @@ struct HwReg {
  * isn't. The initialization is done with a plain integer, so no explicit casts
  * need to be done by the user.
  */
-EXPORT template<typename T>
+template<typename T>
 struct HwPtr {
     using element_type = T;
     constexpr HwPtr(std::uintptr_t addr) : addr_{addr} {}
@@ -249,8 +245,6 @@ private:
 };
 
 //! Type for representing exceptions/interrupts.
-EXPORT typedef uint16_t Exception;
+typedef uint16_t Exception;
 
 } // inline namespace hwreg
-
-#undef EXPORT
