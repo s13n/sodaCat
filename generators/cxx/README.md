@@ -4,6 +4,12 @@ The C++ header file generator produces standard C++ headers that can be used
 via `#include`. For C++20 module support, a `.cppm` module interface wrapper
 is generated alongside each `.hpp` header.
 
+Generated files are placed in a per-namespace subdirectory of the build
+directory, so peripherals with the same name from different chips or vendors
+(`ADC.hpp`, `GPIO.hpp`, ...) don't collide. Clients include them as
+`#include "<namespace>/<name>.hpp"` and import them as `import <namespace>.<name>;`
+— the dotted module name is likewise globally unique.
+
 Note that the Python generator scripts require `ruamel.yaml` to be installed.
 
 ## CMake integration
@@ -68,7 +74,22 @@ generate_header(soc-data cxx stm32h7 ST/USART .hpp)
 ```
 
 The function handles deduplication — calling `generate_header` for the same
-model path more than once is safe and only generates the header once.
+model path and namespace more than once is safe and only generates the
+header once. Using the same model path under different namespaces does emit
+the header more than once, which is the intended behaviour when a peripheral
+is shared across chips in different C++ namespaces.
+
+Generated files land in `${CMAKE_CURRENT_BINARY_DIR}/<namespace>/`. The
+binary directory itself is added to the target's include path, so consuming
+code writes:
+
+```c++
+#include "stm32h7/STM32H757_CM7.hpp"   // chip header
+#include "stm32h7/USART.hpp"           // individual peripheral header
+
+import stm32h7.STM32H757_CM7;          // or the module form
+import stm32h7.USART;
+```
 
 ### Model auto-download
 
@@ -200,7 +221,7 @@ private:
 
 // UartDriver.cpp
 #include "UartDriver.hpp"
-#include "UART.hpp"
+#include "chipFamily/UART.hpp"
 
 using namespace chipFamily::UART;
 

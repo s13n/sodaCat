@@ -11,6 +11,7 @@
 
 from ruamel.yaml import YAML
 from pathlib import Path
+import re
 import sys
 
 yaml = YAML(typ='safe')
@@ -22,8 +23,12 @@ if not model:
 
 filename = sys.argv[3]+sys.argv[4]
 # Module names must be valid C++ identifiers; stems like "ESP32-P4" need
-# the hyphen replaced.
-modid = Path(filename).stem.replace('-', '_')
+# the hyphen replaced.  Prefix with the namespace so that module names are
+# globally unique across vendors (e.g. esp32p4.GPIO vs stm32h7.GPIO) — C++20
+# module names are a flat global space, and dotted names are legal.
+_stem = Path(filename).stem.replace('-', '_')
+_ns = sys.argv[2]
+modid = f'{_ns}.{_stem}' if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', _ns) else _stem
 
 if 'registers' in model:
     from generate_peripheral_header import PerFormatter, prefixTemplate, postfixTemplate, generate_module

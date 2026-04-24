@@ -121,7 +121,11 @@ function(generate_header target language namespace model_path suffix)
     get_filename_component(model "${model_path}" NAME)
 
     # Deduplicate: skip if this model path already has a header being generated
-    string(REPLACE "/" "_" dedup_key "${model_path}")
+    # for this namespace.  The same peripheral model may legitimately need to
+    # be emitted under multiple namespaces when it's shared by chips that live
+    # in different namespaces, so the dedup key includes the namespace.
+    string(REPLACE "/" "_" _path_key "${model_path}")
+    set(dedup_key "${namespace}_${_path_key}")
     get_property(already_generated GLOBAL PROPERTY _SODACAT_HDR_${dedup_key})
     if(already_generated)
         return()
@@ -155,7 +159,9 @@ function(generate_header target language namespace model_path suffix)
     endif()
     set(generator_script "${generator_dir}/generate_header.py")
 
-    # Ensure the output and generator directories are in the target's include path
+    # Ensure the output and generator directories are in the target's include path.
+    # Generated headers live in ${CMAKE_CURRENT_BINARY_DIR}/${namespace}/ so the
+    # binary-dir root is enough for clients to include them as "<namespace>/<name>.hpp".
     get_target_property(_inc_dirs ${target} INCLUDE_DIRECTORIES)
     if(NOT "${CMAKE_CURRENT_BINARY_DIR}" IN_LIST _inc_dirs)
         target_include_directories(${target} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
@@ -164,21 +170,27 @@ function(generate_header target language namespace model_path suffix)
         target_include_directories(${target} PUBLIC "${generator_dir}")
     endif()
 
+    # Output goes into a per-namespace subdirectory so that peripherals of the
+    # same name from different chips/vendors don't collide.
+    set(_out_dir "${CMAKE_CURRENT_BINARY_DIR}/${namespace}")
+    file(MAKE_DIRECTORY "${_out_dir}")
+
     # The generator produces both a .hpp header and a .cppm module wrapper
     get_filename_component(model_stem "${model}${suffix}" NAME_WE)
-    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
-                              "${CMAKE_CURRENT_BINARY_DIR}/${model_stem}.cppm"
+    add_custom_command(OUTPUT "${_out_dir}/${model}${suffix}"
+                              "${_out_dir}/${model_stem}.cppm"
         COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${namespace} ${model} ${suffix}
+        WORKING_DIRECTORY "${_out_dir}"
         MAIN_DEPENDENCY "${model_file}"
         DEPENDS "${generator_script}"
-        COMMENT "Generating ${model}${suffix} in namespace ${namespace}"
+        COMMENT "Generating ${namespace}/${model}${suffix}"
     )
     target_sources(${target} PUBLIC
-        "${CMAKE_CURRENT_BINARY_DIR}/${model}${suffix}"
+        "${_out_dir}/${model}${suffix}"
     )
     target_sources(${target} PUBLIC
         FILE_SET CXX_MODULES BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}" FILES
-            "${CMAKE_CURRENT_BINARY_DIR}/${model_stem}.cppm"
+            "${_out_dir}/${model_stem}.cppm"
     )
 endfunction()
 

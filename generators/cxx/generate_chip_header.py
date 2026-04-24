@@ -15,7 +15,7 @@ class ChipFormatter:
     def __init__(self, **keywords):
         self.instanceParamTemplate= Template(keywords.get('instanceParam',  '\n\t.$name = ${value}u,'))
         self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.ex$name = ${value}u + interruptOffset,'))
-        self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$model$incl_suffix"'))
+        self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$ns/$model$incl_suffix"'))
         self.instanceDeclTemplate = Template(keywords.get('instanceDecl', """
 /** Integration parameters for $name */
 EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
@@ -43,19 +43,27 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         return ints
         
     def createIntegration(self, instances, namespace, namespaces):
-        """ create list of integration structs """
-        types = {}
+        """ create list of integration structs.
+
+        Returns (decl, includes, model_to_ns) where model_to_ns maps each
+        referenced peripheral model name to its C++ namespace — needed both
+        for namespace-qualified `#include`s and for module import names.
+        """
+        model_to_ns = {}
         decl = ''
-        for k, i in instances.items():            
-            types[i['model']] = None
+        for k, i in instances.items():
             ns = namespaces.get(i['model'], namespace)
+            model_to_ns[i['model']] = ns
             params = self.createParameters(i)
             ints = self.createInterrupts(i)
             init = '\n\t.registers = %#Xu\n' % i['baseAddress']
             decl += self.instanceDeclTemplate.substitute(i, name=k, ns=ns, params=params, ints=ints, init=init)
-        includes = [self.instanceInclTemplate.substitute(model=t, incl_suffix=sys.argv[4]) for t in types]
-        return decl, ''.join(includes)
-        
+        includes = [
+            self.instanceInclTemplate.substitute(model=m, ns=ns, incl_suffix=sys.argv[4])
+            for m, ns in model_to_ns.items()
+        ]
+        return decl, ''.join(includes), model_to_ns
+
     def createHeader(self, chip, namespaces, prefix, postfix):
         namespace = namespaces
         inverse = {}
@@ -65,8 +73,8 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                 for v in vals:
                     if inverse.setdefault(v, k) != k:
                         raise ValueError(f"Duplicate value {v!r}")
-        decl, incl = self.createIntegration(chip['instances'], namespace, inverse)
-        imports = [re.search(r'"(\w+)\.hpp"', l).group(1) for l in incl.splitlines() if '#   include ' in l]
+        decl, incl, model_to_ns = self.createIntegration(chip['instances'], namespace, inverse)
+        imports = [f'{ns}.{m}' for m, ns in model_to_ns.items()]
         interrupts = chip.get('interrupts', {})
         interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
         header = prefix.substitute(chip, ns=namespace, incl=incl, interruptCount=interruptCount) + decl + postfix.substitute(ns=namespace)
@@ -121,8 +129,13 @@ def generate_header(model_file, namespace, model_name, out_suffix, module_name=N
     namespaces = yaml.load(nsfile) if nsfile.exists() else namespace
     if module_name is None:
         # Module names must be valid C++ identifiers; stems like "ESP32-P4"
-        # need the hyphen replaced.
-        module_name = Path(model_name + out_suffix).stem.replace('-', '_')
+        # need the hyphen replaced.  Prefix with the namespace when it's a
+        # plain identifier, so module names stay unique across vendors.
+        stem = Path(model_name + out_suffix).stem.replace('-', '_')
+        module_name = (f'{namespace}.{stem}'
+                       if isinstance(namespace, str)
+                       and re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
+                       else stem)
     header, imports = fmt.createHeader(chip, namespaces, prefixTemplate, postfixTemplate)
     filename = model_name + out_suffix
     print(header, file=open(filename, mode='w'))
