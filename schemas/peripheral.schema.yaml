@@ -60,12 +60,29 @@ definitions:
     - type: array
       items:
         type: integer
+  # Comma-separated list of identifier-safe tokens. Used when the array
+  # indices are not a contiguous 0..N-1 range; each token is substituted
+  # into the %s placeholder in the register name to produce one member.
+  # Range form (e.g. "0-N") is intentionally rejected: normalize it to
+  # a plain `dim` value with a bracketed `name: xxx[%s]` instead.
+  dimIndexValue:
+    type: string
+    pattern: ^[A-Za-z0-9_]+(,[A-Za-z0-9_]+)*$
+  # Register/cluster `name` must contain at least one %s placeholder
+  # when used inside an array/cluster. Further structural constraints
+  # (bracketed vs bare, matching dim arity, identifier-safe substitution)
+  # are enforced by tools/validate_peripherals.py.
+  arrayName:
+    type: string
+    pattern: '%s'
   register:
     type: object
     required:
     - name
     - addressOffset
-    - fields
+    not:
+      # Presence of `registers` makes an entry a cluster, not a register.
+      required: [registers]
     properties:
       name:
         type: string
@@ -88,6 +105,8 @@ definitions:
         $ref: '#/definitions/dimValue'
       dimIncrement:
         $ref: '#/definitions/dimValue'
+      dimIndex:
+        $ref: '#/definitions/dimIndexValue'
       fields:
         type: array
         items:
@@ -141,6 +160,8 @@ definitions:
         $ref: '#/definitions/dimValue'
       dimIncrement:
         $ref: '#/definitions/dimValue'
+      dimIndex:
+        $ref: '#/definitions/dimIndexValue'
       registers:
         type: array
         items:

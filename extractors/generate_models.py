@@ -647,6 +647,327 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
 
 
 # ============================================================================
+# Dim / dimIndex / name normalization
+# ============================================================================
+
+_DIMINDEX_RANGE_RE = re.compile(r'^(\d+)-(\d+)$')
+
+
+def _placeholder_at_end(name):
+    """True if `name` ends with a bare or bracketed %s placeholder and has
+    exactly one placeholder in total.  In that case the canonical form is
+    a C array (bracketed %s)."""
+    if name.count('%s') != 1:
+        return False
+    return name.endswith('%s') or name.endswith('[%s]')
+
+
+def _canonicalize_trailing_placeholder(name):
+    """If the name has a single trailing %s, return it in `[%s]` form."""
+    if name.endswith('[%s]'):
+        return name
+    if name.endswith('%s'):
+        return name[:-2] + '[%s]'
+    return name
+
+
+def _normalize_dim_entry(entry, block_name):
+    """Normalize one register or cluster entry in place.
+
+    Apply the schema's array-shape rules:
+      * dimIndex in range form "0-N" with dim == N+1: drop dimIndex, ensure
+        the name uses bracketed `[%s]` placeholders.
+      * dimIndex in range form "K-N" with K != 0 or size mismatch: raise
+        ValueError (ambiguous, requires manual conversion to comma-list).
+      * No dimIndex, name has a bare `%s`: rewrite to `[%s]`.
+    Comma-list dimIndex is left as-is; the validator enforces its invariants.
+    Returns a list of normalization-notes for logging.
+    """
+    notes = []
+    dim = entry.get('dim')
+    if dim is None:
+        return notes
+
+    name = entry.get('name', '')
+    dim_index = entry.get('dimIndex')
+
+    # If the name has a single trailing %s, canonical form is a C array
+    # (bracketed [%s]) with no dimIndex.  Otherwise it must carry a bare %s
+    # and a comma-list dimIndex so every substitution yields a valid
+    # identifier (the %s is in the middle of the name).
+    can_bracket = _placeholder_at_end(name)
+
+    if dim_index is not None and isinstance(dim_index, str):
+        m = _DIMINDEX_RANGE_RE.match(dim_index.strip())
+        if m:
+            lo, hi = int(m.group(1)), int(m.group(2))
+            if not isinstance(dim, int) or dim != hi - lo + 1:
+                raise ValueError(
+                    f"{block_name}: register '{name}' has dimIndex '{dim_index}' "
+                    f"but dim={dim}; mismatch")
+            if lo == 0 and can_bracket:
+                del entry['dimIndex']
+                new_name = _canonicalize_trailing_placeholder(name)
+                if new_name != name:
+                    entry['name'] = new_name
+                    dn = entry.get('displayName', '')
+                    if dn:
+                        entry['displayName'] = _canonicalize_trailing_placeholder(dn)
+                notes.append(
+                    f"{block_name}: '{name}' dimIndex '{dim_index}' dropped "
+                    f"(canonical 0..N-1 array)")
+                return notes
+            # Either non-zero start, or placeholder is mid-name: expand the
+            # range to a comma-list.  Name must carry a bare %s.
+            expanded = ','.join(str(i) for i in range(lo, hi + 1))
+            entry['dimIndex'] = expanded
+            new_name = name.replace('[%s]', '%s')
+            if new_name != name:
+                entry['name'] = new_name
+                dn = entry.get('displayName', '')
+                if dn and '[%s]' in dn:
+                    entry['displayName'] = dn.replace('[%s]', '%s')
+            notes.append(
+                f"{block_name}: '{name}' dimIndex '{dim_index}' expanded to "
+                f"{lo}..{hi} comma-list")
+            return notes
+
+    if dim_index is None and can_bracket:
+        # Single trailing %s (bare or already bracketed) -> canonicalize.
+        new_name = _canonicalize_trailing_placeholder(name)
+        if new_name != name:
+            entry['name'] = new_name
+            dn = entry.get('displayName', '')
+            if dn:
+                entry['displayName'] = _canonicalize_trailing_placeholder(dn)
+            notes.append(f"{block_name}: '{name}' bare '%s' -> bracketed")
+    # Mid-name %s cases are fully handled by _auto_cluster() (which wraps
+    # leftovers in single-member clusters or renames to trailing-%s arrays).
+    return notes
+
+
+def _normalize_dims(entries, block_name):
+    """Recursively normalize `dim`/`dimIndex`/`name` shape on a register list."""
+    notes = []
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+        notes.extend(_normalize_dim_entry(entry, block_name))
+        if 'registers' in entry:
+            notes.extend(_normalize_dims(entry['registers'], block_name))
+    return notes
+
+
+# Matches `prefix%s_suffix` forms where both the prefix (before %s, stripped of
+# a trailing underscore) and the suffix (after %s, stripped of a leading
+# underscore) are valid C identifiers.  Registers matching this pattern and
+# sharing (prefix, dim, dimIncrement) with siblings are likely a cluster that
+# the SVD flattened into separate arrays.
+_CLUSTER_SPLIT_RE = re.compile(r'^([A-Za-z_][A-Za-z0-9_]*?)_?%s_?([A-Za-z_][A-Za-z0-9_]*)$')
+
+
+def _bare_name(name):
+    """Strip `%s` / `[%s]` / array-index substitutions out of a name to get
+    the plain identifier used at the top level of the generated struct."""
+    return name.replace('[%s]', '').replace('%s', '')
+
+
+def _make_single_member_cluster(reg, prefix, suffix):
+    """Wrap `reg` in a cluster of one: `prefix[%s]` containing member `suffix`."""
+    member = dict(reg)
+    member.pop('dim', None)
+    member.pop('dimIncrement', None)
+    member['name'] = suffix
+    member['addressOffset'] = 0
+    dn = member.get('displayName', '')
+    if dn:
+        mdn = _CLUSTER_SPLIT_RE.match(dn)
+        if mdn:
+            member['displayName'] = mdn.group(2)
+    return {
+        'dim': reg['dim'],
+        'dimIncrement': reg['dimIncrement'],
+        'name': f'{prefix}[%s]',
+        'addressOffset': reg['addressOffset'],
+        'registers': [member],
+    }
+
+
+def _auto_cluster(registers, block_name):
+    """Fold `prefix%s_suffix` registers into clusters or rewritten arrays.
+
+    Three outcomes per candidate register:
+
+      1. Two or more candidates share `(prefix, dim, dimIncrement)` and their
+         offsets all fit within a single `dimIncrement` stride -> they are
+         collected into one cluster named `prefix[%s]`, each member renamed
+         to its suffix with cluster-relative `addressOffset`.
+
+      2. A candidate whose would-be `prefix[%s]` cluster name doesn't collide
+         with any already-used top-level name -> wrapped in a single-member
+         cluster (same shape as case 1 but with one member).  This is the
+         "degenerate cluster" case, kept uniform with the multi-member one.
+
+      3. The prefix is already taken (for example by a larger multi-member
+         cluster built in case 1).  The register is renamed to trailing-`%s`
+         form `prefix_suffix[%s]`, producing a plain C array — provided the
+         register's `dimIncrement` equals its own byte size (no padding
+         between elements).  If padding would be lost, fall back to a
+         numeric comma-list `dimIndex` so the generator emits distinct flat
+         members and the padding is preserved through addressOffsets.
+
+    Registers are mutated in place (the register list is rewritten).
+    Returns a list of notes describing the rewrites performed.
+    """
+    if not registers:
+        return []
+
+    # Collect candidates by (prefix, dim, dimIncrement).
+    groups = {}  # key -> list of (original_index, register, suffix)
+    for i, reg in enumerate(registers):
+        if not isinstance(reg, dict) or 'registers' in reg:
+            continue
+        if reg.get('dimIndex') is not None:
+            continue
+        dim = reg.get('dim')
+        dim_inc = reg.get('dimIncrement')
+        if not isinstance(dim, int) or not isinstance(dim_inc, int):
+            continue
+        name = reg.get('name', '')
+        m = _CLUSTER_SPLIT_RE.match(name)
+        if not m:
+            continue
+        prefix, suffix = m.group(1), m.group(2)
+        key = (prefix, dim, dim_inc)
+        groups.setdefault(key, []).append((i, reg, suffix))
+
+    # Track which top-level names are already taken at this level.  Start
+    # from the bare names of registers that are NOT cluster candidates (they
+    # will remain as-is).  We'll add cluster/rename names as we commit to
+    # them below — this way the set reflects the post-rewrite layout rather
+    # than the pre-rewrite one.
+    candidate_indices = {idx for members in groups.values() for idx, _, _ in members}
+    taken = {
+        _bare_name(r.get('name', ''))
+        for i, r in enumerate(registers)
+        if isinstance(r, dict) and i not in candidate_indices
+    }
+
+    to_remove = set()
+    replacements = {}   # original_index -> replacement entry
+    additions = {}      # original_index -> extra cluster to insert AT that slot
+    notes = []
+
+    # Pass A: multi-member clusters (span fits within one stride).
+    handled_groups = set()
+    for key, members in groups.items():
+        prefix, dim, dim_inc = key
+        if len(members) < 2:
+            continue
+        offsets = [reg['addressOffset'] for _, reg, _ in members]
+        base = min(offsets)
+        if max(offsets) - base >= dim_inc:
+            continue
+        handled_groups.add(key)
+        cluster_regs = []
+        for _, reg, suffix in members:
+            new_reg = dict(reg)
+            new_reg.pop('dim', None)
+            new_reg.pop('dimIncrement', None)
+            new_reg['name'] = suffix
+            new_reg['addressOffset'] = reg['addressOffset'] - base
+            dn = new_reg.get('displayName', '')
+            if dn:
+                mdn = _CLUSTER_SPLIT_RE.match(dn)
+                if mdn:
+                    new_reg['displayName'] = mdn.group(2)
+            cluster_regs.append(new_reg)
+        cluster = {
+            'dim': dim,
+            'dimIncrement': dim_inc,
+            'name': f'{prefix}[%s]',
+            'addressOffset': base,
+            'registers': cluster_regs,
+        }
+        first_idx = min(idx for idx, _, _ in members)
+        replacements[first_idx] = cluster
+        for idx, _, _ in members:
+            if idx != first_idx:
+                to_remove.add(idx)
+        taken.add(prefix)
+        member_names = ', '.join(s for _, _, s in members)
+        notes.append(
+            f"{block_name}: clustered '{prefix}[%s]' ({dim} x {len(members)} "
+            f"members: {member_names})")
+
+    # Pass B: leftover candidates — either size-1 groups, or members of groups
+    # that failed the stride check.  Each is handled individually.
+    for key, members in groups.items():
+        if key in handled_groups:
+            continue
+        prefix, dim, dim_inc = key
+        for idx, reg, suffix in members:
+            if prefix not in taken:
+                # Case 2: single-member cluster.
+                replacements[idx] = _make_single_member_cluster(reg, prefix, suffix)
+                taken.add(prefix)
+                notes.append(
+                    f"{block_name}: '{reg.get('name')}' -> single-member cluster "
+                    f"'{prefix}[%s]' (member {suffix!r})")
+            else:
+                # Case 3: cluster name would collide; fall back to a rename
+                # or comma-list.
+                reg_bits = reg.get('size', 32)
+                reg_bytes = (reg_bits + 7) // 8
+                flat_name = f'{prefix}_{suffix}'
+                if dim_inc == reg_bytes and flat_name not in taken:
+                    # Padding-free: rename to trailing-%s array.
+                    new_reg = dict(reg)
+                    new_reg['name'] = f'{flat_name}[%s]'
+                    dn = new_reg.get('displayName', '')
+                    if dn:
+                        mdn = _CLUSTER_SPLIT_RE.match(dn)
+                        if mdn:
+                            new_reg['displayName'] = f'{mdn.group(1)}_{mdn.group(2)}[%s]'
+                    replacements[idx] = new_reg
+                    taken.add(flat_name)
+                    notes.append(
+                        f"{block_name}: '{reg.get('name')}' -> trailing-%s "
+                        f"array '{flat_name}[%s]' (prefix collision)")
+                else:
+                    # Padding would be lost, or the flat name also collides;
+                    # emit a numeric comma-list so each element is a distinct
+                    # struct member with its own offset.
+                    new_reg = dict(reg)
+                    new_reg['dimIndex'] = ','.join(str(i) for i in range(dim))
+                    replacements[idx] = new_reg
+                    notes.append(
+                        f"{block_name}: '{reg.get('name')}' -> flat comma-list "
+                        f"dimIndex 0..{dim - 1} (prefix collision, padding present)")
+
+    if not replacements and not to_remove:
+        return notes
+
+    new_list = []
+    for i, reg in enumerate(registers):
+        if i in replacements:
+            new_list.append(replacements[i])
+        elif i not in to_remove:
+            new_list.append(reg)
+    registers[:] = new_list
+    return notes
+
+
+def _auto_cluster_recursive(entries, block_name):
+    """Apply _auto_cluster to every nesting level."""
+    notes = _auto_cluster(entries, block_name)
+    for entry in entries or []:
+        if isinstance(entry, dict) and 'registers' in entry:
+            notes.extend(_auto_cluster_recursive(entry['registers'], block_name))
+    return notes
+
+
+# ============================================================================
 # Model writing helpers
 # ============================================================================
 
@@ -946,6 +1267,21 @@ def main():
                     if '.' in from_spec:
                         inst = from_spec.split('.', 1)[1]
                         _strip_instance_prefix(bd, inst, bn)
+
+                # Fold prefix%s_suffix register families into proper clusters.
+                # SVDs often flatten clustered peripherals into per-field arrays
+                # (e.g. CH%s_CONF0, CH%s_DUTY sharing dim and dimIncrement); this
+                # pass reassembles them.  Must run before _normalize_dims so the
+                # synthesized cluster names go through the trailing-%s canonicalizer.
+                for bn, bd in blocks.items():
+                    for n in _auto_cluster_recursive(bd.get('registers', []), bn):
+                        print(f"  cluster:   {n}")
+
+                # Normalize dim/dimIndex/name shape so downstream YAML follows
+                # the canonical form (bracketed %s, no redundant dimIndex).
+                for bn, bd in blocks.items():
+                    for n in _normalize_dims(bd.get('registers'), bn):
+                        print(f"  normalize: {n}")
 
                 for block_name, block_data in blocks.items():
                     entry = {

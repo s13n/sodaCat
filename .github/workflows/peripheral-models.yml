@@ -1,0 +1,36 @@
+name: Peripheral model validation
+
+on:
+  push:
+    paths:
+      - "schemas/peripheral.schema.yaml"
+      - "models/**"
+      - "tools/validate_peripherals.py"
+  pull_request:
+    paths:
+      - "schemas/peripheral.schema.yaml"
+      - "models/**"
+      - "tools/validate_peripherals.py"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyYAML jsonschema
+
+      - name: Validate peripheral models
+        run: |
+          python tools/validate_peripherals.py \
+            --schema schemas/peripheral.schema.yaml \
+            --docs "models/**/*.yaml"
