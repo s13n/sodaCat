@@ -120,7 +120,9 @@ def generate_header(model_file, namespace, model_name, out_suffix, module_name=N
     nsfile = Path(namespace)
     namespaces = yaml.load(nsfile) if nsfile.exists() else namespace
     if module_name is None:
-        module_name = Path(model_name + out_suffix).stem
+        # Module names must be valid C++ identifiers; stems like "ESP32-P4"
+        # need the hyphen replaced.
+        module_name = Path(model_name + out_suffix).stem.replace('-', '_')
     header, imports = fmt.createHeader(chip, namespaces, prefixTemplate, postfixTemplate)
     filename = model_name + out_suffix
     print(header, file=open(filename, mode='w'))

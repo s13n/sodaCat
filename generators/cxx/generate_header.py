@@ -21,7 +21,9 @@ if not model:
     sys.exit(1)
 
 filename = sys.argv[3]+sys.argv[4]
-modid = Path(filename).stem  # module name derived from filename
+# Module names must be valid C++ identifiers; stems like "ESP32-P4" need
+# the hyphen replaced.
+modid = Path(filename).stem.replace('-', '_')
 
 if 'registers' in model:
     from generate_peripheral_header import PerFormatter, prefixTemplate, postfixTemplate, generate_module
