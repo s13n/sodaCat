@@ -2,10 +2,10 @@
 
 #include <cstdint>
 #if REGISTERS_MODULE
-import MDMA;
-import STM32H757_CM7;
+import stm32h7.MDMA;
+import stm32h7.STM32H757_CM7;
 #else
-#include "STM32H757_CM7.hpp"
+#include "stm32h7/STM32H757_CM7.hpp"
 #endif
 
 using namespace stm32h7::DMA;
