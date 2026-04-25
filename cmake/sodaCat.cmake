@@ -21,6 +21,7 @@ function(sodacat_fetch_generator language)
     set(local_dir "${CMAKE_SOURCE_DIR}/generators/${language}")
     if(EXISTS "${local_dir}/generate_header.py")
         set(SODACAT_GENERATOR_${lang_upper} "${local_dir}" CACHE INTERNAL "" FORCE)
+        _sodacat_collect_generator_scripts("${lang_upper}" "${local_dir}")
         return()
     endif()
 
@@ -31,6 +32,7 @@ function(sodacat_fetch_generator language)
     set(generator_dir "${CMAKE_BINARY_DIR}/_generators/${language}")
     if(EXISTS "${generator_dir}/generate_header.py")
         set(SODACAT_GENERATOR_${lang_upper} "${generator_dir}" CACHE INTERNAL "" FORCE)
+        _sodacat_collect_generator_scripts("${lang_upper}" "${generator_dir}")
         return()
     endif()
 
@@ -66,6 +68,19 @@ function(sodacat_fetch_generator language)
     message(STATUS "Fetched ${language} generator (${file_list})")
 
     set(SODACAT_GENERATOR_${lang_upper} "${generator_dir}" CACHE INTERNAL "" FORCE)
+    _sodacat_collect_generator_scripts("${lang_upper}" "${generator_dir}")
+endfunction()
+
+
+# Collect every .py file in the generator directory so that header-generation
+# custom commands depend on the whole generator, not just the dispatcher entry
+# point.  Without this, edits to per-language scripts (e.g. the peripheral or
+# chip generator) don't trigger header regeneration.  CONFIGURE_DEPENDS makes
+# CMake re-glob if scripts are added or removed.
+function(_sodacat_collect_generator_scripts lang_upper generator_dir)
+    file(GLOB scripts CONFIGURE_DEPENDS "${generator_dir}/*.py")
+    set(SODACAT_GENERATOR_${lang_upper}_SCRIPTS "${scripts}"
+        CACHE INTERNAL "" FORCE)
 endfunction()
 
 # Ensure a model file exists locally, downloading it (and any transitive
@@ -158,6 +173,7 @@ function(generate_header target language namespace model_path suffix)
         message(FATAL_ERROR "Generator '${language}' not configured. Call sodacat_fetch_generator(${language}) first.")
     endif()
     set(generator_script "${generator_dir}/generate_header.py")
+    set(generator_scripts "${SODACAT_GENERATOR_${lang_upper}_SCRIPTS}")
 
     # Ensure the output and generator directories are in the target's include path.
     # Generated headers live in ${CMAKE_CURRENT_BINARY_DIR}/${namespace}/ so the
@@ -182,7 +198,7 @@ function(generate_header target language namespace model_path suffix)
         COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${namespace} ${model} ${suffix}
         WORKING_DIRECTORY "${_out_dir}"
         MAIN_DEPENDENCY "${model_file}"
-        DEPENDS "${generator_script}"
+        DEPENDS ${generator_scripts}
         COMMENT "Generating ${namespace}/${model}${suffix}"
     )
     target_sources(${target} PUBLIC

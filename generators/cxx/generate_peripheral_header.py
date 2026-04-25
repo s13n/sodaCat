@@ -66,7 +66,7 @@ def _safe_name(name: str) -> str:
 class PerFormatter:
     def __init__(self, **keywords):
         self.enumTemplate      = Template(keywords.get('enum'     , '\n\t/** $description */\n\t$name = $value,'))
-        self.enumsTemplate     = Template(keywords.get('enums'    , '\ninline namespace ${name}_ {\nEXPORT enum ${name}_e : $type {$enums\n};\n} // namespace ${name}_\n'))
+        self.enumsTemplate     = Template(keywords.get('enums'    , '\ninline namespace ${name}_ {\nEXPORT enum ${sname}_${name} : $type {$enums\n};\n} // namespace ${name}_\n'))
         self.regEnumsTemplate  = Template(keywords.get('regEnums' , '\ninline namespace ${name}_ {$enums} // namespace ${name}_\n'))
         self.bitfieldTemplate  = Template(keywords.get('bitfield' , '\n\t/** $description */\n\t$type $name:$width;'))
         self.resBitsTemplate   = Template(keywords.get('resBits'  , '\n\t$type _$res:$width;\t// reserved'))
@@ -102,8 +102,13 @@ $postfix"""))
             list.append(txt)
         return ''.join(list)
         
-    def formatFieldList(self, fields:list, type:str):
+    def formatFieldList(self, fields:list, type:str, sname:str=''):
         """ Generate bitfield list
+
+        `sname` is the enclosing struct (register) name; it qualifies enum
+        type names so that two registers with same-named fields produce
+        distinct C++ enum types (e.g. CNTL_IE vs MASK_IE rather than two
+        unrelated `IE_e`).
         Returns:
         - the formatted list of bitfields as a multiline string
         - the formatted list of enum definitions as a multiline string
@@ -114,7 +119,7 @@ $postfix"""))
             if 'enumeratedValues' in field:
                 txt = self.formatEnumList(field['enumeratedValues'])
                 if txt:
-                    enum = self.enumsTemplate.substitute(field, name=_safe_name(field.get('name', '')), enums=txt, type=type)
+                    enum = self.enumsTemplate.substitute(field, sname=sname, name=_safe_name(field.get('name', '')), enums=txt, type=type)
             width = field.get('bitWidth', 1)
             description = field.get('description', '')
             txt = self.bitfieldTemplate.substitute(field, name=_safe_name(field.get('name', '')), type=type, width=width, description=description)
@@ -193,7 +198,7 @@ $postfix"""))
                 size = reg.get('size', defaultSize * 8)
                 type = reg.get('dataType', 'uint%s_t' % size)
                 if 'fields' in reg and reg['fields']:
-                    fields, enum = self.formatFieldList(reg['fields'], type)
+                    fields, enum = self.formatFieldList(reg['fields'], type, sname=typeName)
                     enums += self.regEnumsTemplate.substitute(reg, name=typeName, enums=enum) if enum else ''
                     structs += self.fieldsTemplate.substitute(reg, name=typeName, fields=fields, description=description)
                     regType = self.typeTemplate.substitute(reg, name=typeName)
