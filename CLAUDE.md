@@ -135,12 +135,35 @@ Per-block `transforms` lists in the family YAML config fix SVD bugs and naming i
 - `cloneRegister` — deep-copy a register with optional field removal/rename: `{type, register, newName, removeFields, renameFields}`. Enables overlapping register pairs at the same offset for union-style alternatives.
 - `createArray` — collapse numbered flat registers (e.g. FGCLUT0–255) into a single register with `dim`/`dimIncrement`: `{type, pattern, name, description?, template?}`. Pattern has one capture group for the zero-based index.
 - `createClusterArray` — group registers of identical subsystems into a cluster array with `dim`/`dimIncrement`: `{type, pattern, name, description?, template?}`. Pattern has two capture groups (index, register name).
+- `renameEnums` — override enum value names within one field: `{type, register, field, byValue?, byName?}`. `byValue` maps numeric enum value → new name; `byName` maps current name → new name; `byValue` is checked first when both are given. Used to fix the residual cases where the automatic enum-name simplifier (see "Enum name simplification" below) produces an awkward name.
 
 Additionally, `tools/generic_transform.py` provides a standalone `TransformationEngine` with broader transforms (`createArrays`, `setParameters`, `setHeaderStructName`, `addFields`) driven via separate YAML config files (see `extractors/stm32h7-transforms.yaml`). This engine is not currently used by the family generator.
 
+### Enum name simplification
+
+NXP's MCUXpresso SVD generator derives enum value names by uppercasing the description, replacing non-alphanumeric runs with `_`, and truncating at 20 characters. The result is ugly (`ENABLE_CAN_INTERRUPT`, `DISABLE_CAN_INTERRUP`) and frequently produces within-field name clashes. Vendor extensions can opt in to a heuristic that re-derives short names from the descriptions by setting `simplify_enums = True` (currently enabled for `lpc` and `mcx`, not for `stm32`).
+
+The simplifier (`tools/enum_namer.py`) runs in Pass 1 right after instance-prefix stripping. It only replaces a name when there is mechanical-truncation evidence — the name ends with `_`, or it exactly matches what NXP's mangling would produce at any cutoff in 18..23 chars — or when the original clashes with a sibling. Hand-curated names from newer NXP SVDs (e.g. MCXN's `NONSECURE_PRIV_USER_ALLOWED`) are preserved untouched.
+
+Heuristic stages per field:
+1. **Boolean lead/trail match.** Descriptions starting or ending with `Enable`/`Disable`/`Set`/`Cleared`/`Active`/`Inactive`/`Unchanged` map to canonical short names (`ENABLE`, `DISABLED`, `SET`, ...).
+2. **Leading content tokens.** First N content words (stopwords filtered, camelCase / acronym-then-word / digit-then-letter boundaries split, pure digits dropped), uppercased and underscore-joined. N grows from 2 until names are unique within the field. Last-resort dedup appends `_<value>`.
+
+Names that are YAML 1.1 boolean literals (`NO`, `ON`, `OFF`, ...) are quoted via `_yaml_safe_str` so they survive a dump/load roundtrip as strings. Per-enum overrides for cases the heuristic mishandles live in block-level `transforms:` lists as `renameEnums`.
+
 ## CI
 
-A GitHub Actions workflow validates clock-tree specs: `tools/validate_clocks.py` checks `spec/clock-tree/**/*.yaml` against `schemas/clock-tree.schema.yaml`. Triggered on changes to `schemas/`, `spec/clock-tree/`, or the validator script.
+GitHub Actions runs three validators, each on a separate workflow:
+
+- `tools/validate_clocks.py` — clock-tree specs at `spec/clock-tree/**/*.yaml` against `schemas/clock-tree.schema.yaml` (Draft 2020-12).
+- `tools/validate_peripherals.py` — peripheral block models at `models/**/*.yaml` against `schemas/peripheral.schema.yaml` (Draft 7). Skips files that don't have a top-level `registers` list.
+- `tools/validate_chips.py` — chip-level models at `models/**/*.yaml` against `schemas/chip.schema.yaml` (Draft 7). Skips files that don't have a top-level `instances` map.
+
+All three follow the two-phase pattern: Phase 1 = JSON Schema (structural); Phase 2 = Python code for checks the schema can't express, including per-scope name uniqueness (registers within a block, fields within a register, enum values within a field, parameters within an instance, ...). Standard JSON Schema's `uniqueItems` only checks whole-item equality, not equality of a sub-property like `name`, so uniqueness must live in code. Shared bits (schema loading, schema-error extraction, the duplicate-detection helper, CLI driver) are factored into `tools/validate_lib.py`.
+
+### Reserved bit-fields
+
+The extractor drops fields named `RESERVED` (case-insensitive) from every register and cluster, and drops RESERVED enum values from every field. Bits not declared in `fields` are reserved by definition; the C++ generator fills bit-position gaps with uniquely numbered placeholders (`_0:1`, `_1:24`, ...). Models with multiple explicit RESERVED entries in the same register would otherwise violate the field-name-uniqueness rule and produce duplicate C++ bit-field declarations.
 
 ## Key conventions
 

@@ -2284,6 +2284,420 @@ registers:
           - name: B_0x0
             description: High speed
             value: 0
+  - name: HC[%s]
+    description: Host channel
+    dim: 16
+    addressOffset: 1280
+    dimIncrement: 32
+    registers:
+      - name: CHAR
+        displayName: CHAR
+        description: Characteristics register
+        addressOffset: 0
+        size: 32
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: MPSIZ
+            description: "Maximum packet size\nIndicates the maximum packet size of the associated endpoint."
+            bitOffset: 0
+            bitWidth: 11
+            access: read-write
+          - name: EPNUM
+            description: "Endpoint number\nIndicates the endpoint number on the device serving as the data source or sink."
+            bitOffset: 11
+            bitWidth: 4
+            access: read-write
+          - name: EPDIR
+            description: "Endpoint direction\nIndicates whether the transaction is IN or OUT."
+            bitOffset: 15
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: OUT
+                value: 0
+              - name: B_0x1
+                description: IN
+                value: 1
+          - name: LSDEV
+            description: "Low-speed device\nThis field is set by the application to indicate that this channel is communicating to a low-speed device."
+            bitOffset: 17
+            bitWidth: 1
+            access: read-write
+          - name: EPTYP
+            description: "Endpoint type\nIndicates the transfer type selected."
+            bitOffset: 18
+            bitWidth: 2
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Control
+                value: 0
+              - name: B_0x1
+                description: Isochronous
+                value: 1
+              - name: B_0x2
+                description: Bulk
+                value: 2
+              - name: B_0x3
+                description: Interrupt
+                value: 3
+          - name: MCNT
+            description: "Multicount\nThis field indicates to the host the number of transactions that must be executed per frame for this periodic endpoint. For non-periodic transfers, this field is not used\nNote: This field must be set to at least 01."
+            bitOffset: 20
+            bitWidth: 2
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Reserved. This field yields undefined results
+                value: 0
+              - name: B_0x1
+                description: 1 transaction
+                value: 1
+              - name: B_0x2
+                description: 2 transactions per frame to be issued for this endpoint
+                value: 2
+              - name: B_0x3
+                description: 3 transactions per frame to be issued for this endpoint
+                value: 3
+          - name: DAD
+            description: "Device address\nThis field selects the specific device serving as the data source or sink."
+            bitOffset: 22
+            bitWidth: 7
+            access: read-write
+          - name: ODDFRM
+            description: "Odd frame\nThis field is set (reset) by the application to indicate that the OTG host must perform a transfer in an odd frame. This field is applicable for only periodic (isochronous and interrupt) transactions."
+            bitOffset: 29
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Even frame
+                value: 0
+              - name: B_0x1
+                description: Odd frame
+                value: 1
+          - name: CHDIS
+            description: "Channel disable\nThe application sets this bit to stop transmitting/receiving data on a channel, even before the transfer for that channel is complete. The application must wait for the Channel disabled interrupt before treating the channel as disabled."
+            bitOffset: 30
+            bitWidth: 1
+            access: read-write
+          - name: CHENA
+            description: "Channel enable\n This field is set by the application and cleared by the OTG host."
+            bitOffset: 31
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Channel disabled
+                value: 0
+              - name: B_0x1
+                description: Channel enabled
+                value: 1
+      - name: SPLT
+        displayName: SPLT
+        description: Split control register
+        addressOffset: 4
+        size: 32
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: PRTADDR
+            description: "Port address\nThis field is the port number of the recipient transaction translator."
+            bitOffset: 0
+            bitWidth: 7
+            access: read-write
+          - name: HUBADDR
+            description: "Hub address\nThis field holds the device address of the transaction translators hub."
+            bitOffset: 7
+            bitWidth: 7
+            access: read-write
+          - name: XACTPOS
+            description: "Transaction position\nThis field is used to determine whether to send all, first, middle, or last payloads with each OUT transaction."
+            bitOffset: 14
+            bitWidth: 2
+            access: read-write
+            enumeratedValues:
+              - name: B_0x3
+                description: All. This is the entire data payload of this transaction (which is less than or equal to 188 bytes)
+                value: 3
+              - name: B_0x2
+                description: Begin. This is the first data payload of this transaction (which is larger than 188 bytes)
+                value: 2
+              - name: B_0x0
+                description: Mid. This is the middle payload of this transaction (which is larger than 188 bytes)
+                value: 0
+              - name: B_0x1
+                description: End. This is the last payload of this transaction (which is larger than 188 bytes)
+                value: 1
+          - name: COMPLSPLT
+            description: "Do complete split\nThe application sets this bit to request the OTG host to perform a complete split transaction."
+            bitOffset: 16
+            bitWidth: 1
+            access: read-write
+          - name: SPLITEN
+            description: "Split enable\nThe application sets this bit to indicate that this channel is enabled to perform split transactions."
+            bitOffset: 31
+            bitWidth: 1
+            access: read-write
+      - name: INT
+        displayName: INT
+        description: Interrupt register
+        addressOffset: 8
+        size: 32
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: XFRC
+            description: "Transfer completed.\nTransfer completed normally without any errors."
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+          - name: CHH
+            description: "Channel halted. \nIndicates the transfer completed abnormally either because of any USB transaction error or in response to disable request by the application."
+            bitOffset: 1
+            bitWidth: 1
+            access: read-write
+          - name: AHBERR
+            description: "AHB error\nThis error is generated only in Internal DMA mode when an AHB error occurs during an AHB\nread/write operation. The application can read the corresponding DMA channel address \nregister to get the error address."
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+          - name: STALL
+            description: STALL response received interrupt.
+            bitOffset: 3
+            bitWidth: 1
+            access: read-write
+          - name: NAK
+            description: NAK response received interrupt.
+            bitOffset: 4
+            bitWidth: 1
+            access: read-write
+          - name: ACK
+            description: ACK response received/transmitted interrupt.
+            bitOffset: 5
+            bitWidth: 1
+            access: read-write
+          - name: NYET
+            description: Not yet ready response received interrupt.
+            bitOffset: 6
+            bitWidth: 1
+            access: read-write
+          - name: TXERR
+            description: "Transaction error.\nIndicates one of the following errors occurred on the USB.\nCRC check failure\nTimeout\nBit stuff error\nFalse EOP"
+            bitOffset: 7
+            bitWidth: 1
+            access: read-write
+          - name: BBERR
+            description: Babble error.
+            bitOffset: 8
+            bitWidth: 1
+            access: read-write
+          - name: FRMOR
+            description: Frame overrun.
+            bitOffset: 9
+            bitWidth: 1
+            access: read-write
+          - name: DTERR
+            description: Data toggle error.
+            bitOffset: 10
+            bitWidth: 1
+            access: read-write
+      - name: INTMSK
+        displayName: INTMSK
+        description: Interrupt mask register
+        addressOffset: 12
+        size: 32
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: XFRCM
+            description: Transfer completed mask
+            bitOffset: 0
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: CHHM
+            description: Channel halted mask
+            bitOffset: 1
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: AHBERRM
+            description: AHB error.
+            bitOffset: 2
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: STALLM
+            description: STALL response received interrupt mask.
+            bitOffset: 3
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: NAKM
+            description: NAK response received interrupt mask.
+            bitOffset: 4
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: ACKM
+            description: ACK response received/transmitted interrupt mask.
+            bitOffset: 5
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: NYET
+            description: response received interrupt mask.
+            bitOffset: 6
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: TXERRM
+            description: Transaction error mask.
+            bitOffset: 7
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: BBERRM
+            description: Babble error mask.
+            bitOffset: 8
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: FRMORM
+            description: Frame overrun mask.
+            bitOffset: 9
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+          - name: DTERRM
+            description: Data toggle error mask.
+            bitOffset: 10
+            bitWidth: 1
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: Masked interrupt
+                value: 0
+              - name: B_0x1
+                description: Unmasked interrupt
+                value: 1
+      - name: TSIZ
+        displayName: TSIZ
+        description: Transfer size register
+        addressOffset: 16
+        size: 32
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: XFRSIZ
+            description: "Transfer size\nFor an OUT, this field is the number of data bytes the host sends during the transfer.\nFor an IN, this field is the buffer size that the application has reserved for the transfer. The application is expected to program this field as an integer multiple of the maximum packet size for IN transactions (periodic and non-periodic)."
+            bitOffset: 0
+            bitWidth: 19
+            access: read-write
+          - name: PKTCNT
+            description: "Packet count\nThis field is programmed by the application with the expected number of packets to be transmitted (OUT) or received (IN).\nThe host decrements this count on every successful transmission or reception of an OUT/IN packet. Once this count reaches zero, the application is interrupted to indicate normal completion."
+            bitOffset: 19
+            bitWidth: 10
+            access: read-write
+          - name: DPID
+            description: "Data PID\nThe application programs this field with the type of PID to use for the initial transaction. The host maintains this field for the rest of the transfer."
+            bitOffset: 29
+            bitWidth: 2
+            access: read-write
+            enumeratedValues:
+              - name: B_0x0
+                description: DATA0
+                value: 0
+              - name: B_0x1
+                description: DATA2
+                value: 1
+              - name: B_0x2
+                description: DATA1
+                value: 2
+              - name: B_0x3
+                description: SETUP (control) / MDATA (non-control)
+                value: 3
+          - name: DOPNG
+            description: "Do Ping\nThis bit is used only for OUT transfers. Setting this field to 1 directs the host to do PING protocol. \nNote: Do not set this bit for IN transfers. If this bit is set for IN transfers, it disables the channel."
+            bitOffset: 31
+            bitWidth: 1
+            access: read-write
+      - name: DMA
+        displayName: DMA
+        description: DMA address register
+        addressOffset: 20
+        size: 32
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: DMAADDR
+            description: "DMA address\nThis field holds the start address in the external memory from which the data for the endpoint must be fetched or to which it must be stored. This register is incremented on every AHB transaction."
+            bitOffset: 0
+            bitWidth: 32
+            access: read-write
   - name: DCFG
     displayName: DCFG
     description: Device configuration register
@@ -2825,514 +3239,6 @@ registers:
           - name: B_0x1
             description: Unmasked interrupt
             value: 1
-  - name: PCGCCTL
-    displayName: PCGCCTL
-    description: Power and clock gating control register
-    addressOffset: 3584
-    size: 32
-    resetValue: 537624576
-    resetMask: 4294967295
-    fields:
-      - name: STPPCLK
-        description: "Stop PHY clock\nThe application sets this bit to stop the PHY clock when the USB is suspended, the session is not valid, or the device is disconnected. The application clears this bit when the USB is resumed or a new session starts."
-        bitOffset: 0
-        bitWidth: 1
-        access: read-write
-      - name: GATEHCLK
-        description: "Gate HCLK\nThe application sets this bit to gate HCLK to modules other than the AHB Slave and Master and wakeup logic when the USB is suspended or the session is not valid. The application clears this bit when the USB is resumed or a new session starts."
-        bitOffset: 1
-        bitWidth: 1
-        access: read-write
-      - name: PHYSUSP
-        description: "PHY suspended\nIndicates that the PHY has been suspended. This bit is updated once the PHY is suspended after the application has set the STPPCLK bit."
-        bitOffset: 4
-        bitWidth: 1
-        access: read-only
-      - name: ENL1GTG
-        description: "Enable sleep clock gating\nWhen this bit is set, core internal clock gating is enabled in Sleep state if the core cannot assert utmi_l1_suspend_n. When this bit is not set, the PHY clock is not gated in Sleep state."
-        bitOffset: 5
-        bitWidth: 1
-        access: read-write
-      - name: PHYSLEEP
-        description: "PHY in Sleep\nThis bit indicates that the PHY is in the Sleep state."
-        bitOffset: 6
-        bitWidth: 1
-        access: read-only
-      - name: SUSP
-        description: "Deep Sleep\nThis bit indicates that the PHY is in Deep Sleep when in L1 state."
-        bitOffset: 7
-        bitWidth: 1
-        access: read-only
-  - name: PCGCCTL1
-    displayName: PCGCCTL1
-    description: Power and clock gating control register 1
-    addressOffset: 3588
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: GATEEN
-        description: "Enable active clock gating\nThe application programs GATEEN to enable Active Clock Gating feature for the PHY and AHB clocks."
-        bitOffset: 0
-        bitWidth: 1
-        access: read-write
-      - name: CNTGATECLK
-        description: "Counter for clock gating\nIndicates to the controller how many PHY Clock cycles and AHB Clock cycles of 'IDLE' (no activity) the controller waits for before Gating the respective PHY and AHB clocks internal to the controller."
-        bitOffset: 1
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: 64 clocks
-            value: 0
-          - name: B_0x1
-            description: 128 clocks
-            value: 1
-          - name: B_0x2
-            description: FIELD Reserved
-            value: 2
-          - name: B_0x3
-            description: FIELD Reserved
-            value: 3
-      - name: RAMGATEEN
-        description: "Enable RAM clock gating\nEnable gating of the FIFO RAM."
-        bitOffset: 3
-        bitWidth: 1
-        access: read-write
-  - name: HC[%s]
-    description: Host channel
-    dim: 16
-    addressOffset: 1280
-    dimIncrement: 32
-    registers:
-      - name: CHAR
-        displayName: CHAR
-        description: Characteristics register
-        addressOffset: 0
-        size: 32
-        resetValue: 0
-        resetMask: 4294967295
-        fields:
-          - name: MPSIZ
-            description: "Maximum packet size\nIndicates the maximum packet size of the associated endpoint."
-            bitOffset: 0
-            bitWidth: 11
-            access: read-write
-          - name: EPNUM
-            description: "Endpoint number\nIndicates the endpoint number on the device serving as the data source or sink."
-            bitOffset: 11
-            bitWidth: 4
-            access: read-write
-          - name: EPDIR
-            description: "Endpoint direction\nIndicates whether the transaction is IN or OUT."
-            bitOffset: 15
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: OUT
-                value: 0
-              - name: B_0x1
-                description: IN
-                value: 1
-          - name: LSDEV
-            description: "Low-speed device\nThis field is set by the application to indicate that this channel is communicating to a low-speed device."
-            bitOffset: 17
-            bitWidth: 1
-            access: read-write
-          - name: EPTYP
-            description: "Endpoint type\nIndicates the transfer type selected."
-            bitOffset: 18
-            bitWidth: 2
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Control
-                value: 0
-              - name: B_0x1
-                description: Isochronous
-                value: 1
-              - name: B_0x2
-                description: Bulk
-                value: 2
-              - name: B_0x3
-                description: Interrupt
-                value: 3
-          - name: MCNT
-            description: "Multicount\nThis field indicates to the host the number of transactions that must be executed per frame for this periodic endpoint. For non-periodic transfers, this field is not used\nNote: This field must be set to at least 01."
-            bitOffset: 20
-            bitWidth: 2
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Reserved. This field yields undefined results
-                value: 0
-              - name: B_0x1
-                description: 1 transaction
-                value: 1
-              - name: B_0x2
-                description: 2 transactions per frame to be issued for this endpoint
-                value: 2
-              - name: B_0x3
-                description: 3 transactions per frame to be issued for this endpoint
-                value: 3
-          - name: DAD
-            description: "Device address\nThis field selects the specific device serving as the data source or sink."
-            bitOffset: 22
-            bitWidth: 7
-            access: read-write
-          - name: ODDFRM
-            description: "Odd frame\nThis field is set (reset) by the application to indicate that the OTG host must perform a transfer in an odd frame. This field is applicable for only periodic (isochronous and interrupt) transactions."
-            bitOffset: 29
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Even frame
-                value: 0
-              - name: B_0x1
-                description: Odd frame
-                value: 1
-          - name: CHDIS
-            description: "Channel disable\nThe application sets this bit to stop transmitting/receiving data on a channel, even before the transfer for that channel is complete. The application must wait for the Channel disabled interrupt before treating the channel as disabled."
-            bitOffset: 30
-            bitWidth: 1
-            access: read-write
-          - name: CHENA
-            description: "Channel enable\n This field is set by the application and cleared by the OTG host."
-            bitOffset: 31
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Channel disabled
-                value: 0
-              - name: B_0x1
-                description: Channel enabled
-                value: 1
-      - name: SPLT
-        displayName: SPLT
-        description: Split control register
-        addressOffset: 4
-        size: 32
-        resetValue: 0
-        resetMask: 4294967295
-        fields:
-          - name: PRTADDR
-            description: "Port address\nThis field is the port number of the recipient transaction translator."
-            bitOffset: 0
-            bitWidth: 7
-            access: read-write
-          - name: HUBADDR
-            description: "Hub address\nThis field holds the device address of the transaction translators hub."
-            bitOffset: 7
-            bitWidth: 7
-            access: read-write
-          - name: XACTPOS
-            description: "Transaction position\nThis field is used to determine whether to send all, first, middle, or last payloads with each OUT transaction."
-            bitOffset: 14
-            bitWidth: 2
-            access: read-write
-            enumeratedValues:
-              - name: B_0x3
-                description: All. This is the entire data payload of this transaction (which is less than or equal to 188 bytes)
-                value: 3
-              - name: B_0x2
-                description: Begin. This is the first data payload of this transaction (which is larger than 188 bytes)
-                value: 2
-              - name: B_0x0
-                description: Mid. This is the middle payload of this transaction (which is larger than 188 bytes)
-                value: 0
-              - name: B_0x1
-                description: End. This is the last payload of this transaction (which is larger than 188 bytes)
-                value: 1
-          - name: COMPLSPLT
-            description: "Do complete split\nThe application sets this bit to request the OTG host to perform a complete split transaction."
-            bitOffset: 16
-            bitWidth: 1
-            access: read-write
-          - name: SPLITEN
-            description: "Split enable\nThe application sets this bit to indicate that this channel is enabled to perform split transactions."
-            bitOffset: 31
-            bitWidth: 1
-            access: read-write
-      - name: INT
-        displayName: INT
-        description: Interrupt register
-        addressOffset: 8
-        size: 32
-        resetValue: 0
-        resetMask: 4294967295
-        fields:
-          - name: XFRC
-            description: "Transfer completed.\nTransfer completed normally without any errors."
-            bitOffset: 0
-            bitWidth: 1
-            access: read-write
-          - name: CHH
-            description: "Channel halted. \nIndicates the transfer completed abnormally either because of any USB transaction error or in response to disable request by the application."
-            bitOffset: 1
-            bitWidth: 1
-            access: read-write
-          - name: AHBERR
-            description: "AHB error\nThis error is generated only in Internal DMA mode when an AHB error occurs during an AHB\nread/write operation. The application can read the corresponding DMA channel address \nregister to get the error address."
-            bitOffset: 2
-            bitWidth: 1
-            access: read-write
-          - name: STALL
-            description: STALL response received interrupt.
-            bitOffset: 3
-            bitWidth: 1
-            access: read-write
-          - name: NAK
-            description: NAK response received interrupt.
-            bitOffset: 4
-            bitWidth: 1
-            access: read-write
-          - name: ACK
-            description: ACK response received/transmitted interrupt.
-            bitOffset: 5
-            bitWidth: 1
-            access: read-write
-          - name: NYET
-            description: Not yet ready response received interrupt.
-            bitOffset: 6
-            bitWidth: 1
-            access: read-write
-          - name: TXERR
-            description: "Transaction error.\nIndicates one of the following errors occurred on the USB.\nCRC check failure\nTimeout\nBit stuff error\nFalse EOP"
-            bitOffset: 7
-            bitWidth: 1
-            access: read-write
-          - name: BBERR
-            description: Babble error.
-            bitOffset: 8
-            bitWidth: 1
-            access: read-write
-          - name: FRMOR
-            description: Frame overrun.
-            bitOffset: 9
-            bitWidth: 1
-            access: read-write
-          - name: DTERR
-            description: Data toggle error.
-            bitOffset: 10
-            bitWidth: 1
-            access: read-write
-      - name: INTMSK
-        displayName: INTMSK
-        description: Interrupt mask register
-        addressOffset: 12
-        size: 32
-        resetValue: 0
-        resetMask: 4294967295
-        fields:
-          - name: XFRCM
-            description: Transfer completed mask
-            bitOffset: 0
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: CHHM
-            description: Channel halted mask
-            bitOffset: 1
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: AHBERRM
-            description: AHB error.
-            bitOffset: 2
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: STALLM
-            description: STALL response received interrupt mask.
-            bitOffset: 3
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: NAKM
-            description: NAK response received interrupt mask.
-            bitOffset: 4
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: ACKM
-            description: ACK response received/transmitted interrupt mask.
-            bitOffset: 5
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: NYET
-            description: response received interrupt mask.
-            bitOffset: 6
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: TXERRM
-            description: Transaction error mask.
-            bitOffset: 7
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: BBERRM
-            description: Babble error mask.
-            bitOffset: 8
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: FRMORM
-            description: Frame overrun mask.
-            bitOffset: 9
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-          - name: DTERRM
-            description: Data toggle error mask.
-            bitOffset: 10
-            bitWidth: 1
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: Masked interrupt
-                value: 0
-              - name: B_0x1
-                description: Unmasked interrupt
-                value: 1
-      - name: TSIZ
-        displayName: TSIZ
-        description: Transfer size register
-        addressOffset: 16
-        size: 32
-        resetValue: 0
-        resetMask: 4294967295
-        fields:
-          - name: XFRSIZ
-            description: "Transfer size\nFor an OUT, this field is the number of data bytes the host sends during the transfer.\nFor an IN, this field is the buffer size that the application has reserved for the transfer. The application is expected to program this field as an integer multiple of the maximum packet size for IN transactions (periodic and non-periodic)."
-            bitOffset: 0
-            bitWidth: 19
-            access: read-write
-          - name: PKTCNT
-            description: "Packet count\nThis field is programmed by the application with the expected number of packets to be transmitted (OUT) or received (IN).\nThe host decrements this count on every successful transmission or reception of an OUT/IN packet. Once this count reaches zero, the application is interrupted to indicate normal completion."
-            bitOffset: 19
-            bitWidth: 10
-            access: read-write
-          - name: DPID
-            description: "Data PID\nThe application programs this field with the type of PID to use for the initial transaction. The host maintains this field for the rest of the transfer."
-            bitOffset: 29
-            bitWidth: 2
-            access: read-write
-            enumeratedValues:
-              - name: B_0x0
-                description: DATA0
-                value: 0
-              - name: B_0x1
-                description: DATA2
-                value: 1
-              - name: B_0x2
-                description: DATA1
-                value: 2
-              - name: B_0x3
-                description: SETUP (control) / MDATA (non-control)
-                value: 3
-          - name: DOPNG
-            description: "Do Ping\nThis bit is used only for OUT transfers. Setting this field to 1 directs the host to do PING protocol. \nNote: Do not set this bit for IN transfers. If this bit is set for IN transfers, it disables the channel."
-            bitOffset: 31
-            bitWidth: 1
-            access: read-write
-      - name: DMA
-        displayName: DMA
-        description: DMA address register
-        addressOffset: 20
-        size: 32
-        resetValue: 0
-        resetMask: 4294967295
-        fields:
-          - name: DMAADDR
-            description: "DMA address\nThis field holds the start address in the external memory from which the data for the endpoint must be fetched or to which it must be stored. This register is incremented on every AHB transaction."
-            bitOffset: 0
-            bitWidth: 32
-            access: read-write
-  - name: TXSAFD[%s]
-    displayName: TXSAFD[%s]
-    description: Transmit FIFO start address and depth (index 0 is host periodic TX FIFO)
-    addressOffset: 256
-    size: 32
-    resetValue: 33555456
-    resetMask: 4294967295
-    fields:
-      - name: INEPTXSA
-        description: "IN endpoint FIFOx transmit RAM start address\nThis field contains the memory start address for IN endpoint transmit FIFOx. The address must be aligned with a 32-bit memory location."
-        bitOffset: 0
-        bitWidth: 16
-        access: read-write
-      - name: INEPTXFD
-        description: "IN endpoint Tx FIFO depth\nThis value is in terms of 32-bit words.\nMinimum value is 16"
-        bitOffset: 16
-        bitWidth: 16
-        access: read-write
-    dim: 9
-    dimIncrement: 4
   - name: DIEP[%s]
     description: Device IN endpoint
     dim: 9
@@ -3996,6 +3902,100 @@ registers:
             bitOffset: 0
             bitWidth: 32
             access: read-write
+  - name: PCGCCTL
+    displayName: PCGCCTL
+    description: Power and clock gating control register
+    addressOffset: 3584
+    size: 32
+    resetValue: 537624576
+    resetMask: 4294967295
+    fields:
+      - name: STPPCLK
+        description: "Stop PHY clock\nThe application sets this bit to stop the PHY clock when the USB is suspended, the session is not valid, or the device is disconnected. The application clears this bit when the USB is resumed or a new session starts."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: GATEHCLK
+        description: "Gate HCLK\nThe application sets this bit to gate HCLK to modules other than the AHB Slave and Master and wakeup logic when the USB is suspended or the session is not valid. The application clears this bit when the USB is resumed or a new session starts."
+        bitOffset: 1
+        bitWidth: 1
+        access: read-write
+      - name: PHYSUSP
+        description: "PHY suspended\nIndicates that the PHY has been suspended. This bit is updated once the PHY is suspended after the application has set the STPPCLK bit."
+        bitOffset: 4
+        bitWidth: 1
+        access: read-only
+      - name: ENL1GTG
+        description: "Enable sleep clock gating\nWhen this bit is set, core internal clock gating is enabled in Sleep state if the core cannot assert utmi_l1_suspend_n. When this bit is not set, the PHY clock is not gated in Sleep state."
+        bitOffset: 5
+        bitWidth: 1
+        access: read-write
+      - name: PHYSLEEP
+        description: "PHY in Sleep\nThis bit indicates that the PHY is in the Sleep state."
+        bitOffset: 6
+        bitWidth: 1
+        access: read-only
+      - name: SUSP
+        description: "Deep Sleep\nThis bit indicates that the PHY is in Deep Sleep when in L1 state."
+        bitOffset: 7
+        bitWidth: 1
+        access: read-only
+  - name: PCGCCTL1
+    displayName: PCGCCTL1
+    description: Power and clock gating control register 1
+    addressOffset: 3588
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: GATEEN
+        description: "Enable active clock gating\nThe application programs GATEEN to enable Active Clock Gating feature for the PHY and AHB clocks."
+        bitOffset: 0
+        bitWidth: 1
+        access: read-write
+      - name: CNTGATECLK
+        description: "Counter for clock gating\nIndicates to the controller how many PHY Clock cycles and AHB Clock cycles of 'IDLE' (no activity) the controller waits for before Gating the respective PHY and AHB clocks internal to the controller."
+        bitOffset: 1
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: 64 clocks
+            value: 0
+          - name: B_0x1
+            description: 128 clocks
+            value: 1
+          - name: B_0x2
+            description: FIELD Reserved
+            value: 2
+          - name: B_0x3
+            description: FIELD Reserved
+            value: 3
+      - name: RAMGATEEN
+        description: "Enable RAM clock gating\nEnable gating of the FIFO RAM."
+        bitOffset: 3
+        bitWidth: 1
+        access: read-write
+  - name: TXSAFD[%s]
+    displayName: TXSAFD[%s]
+    description: Transmit FIFO start address and depth (index 0 is host periodic TX FIFO)
+    addressOffset: 256
+    size: 32
+    resetValue: 33555456
+    resetMask: 4294967295
+    fields:
+      - name: INEPTXSA
+        description: "IN endpoint FIFOx transmit RAM start address\nThis field contains the memory start address for IN endpoint transmit FIFOx. The address must be aligned with a 32-bit memory location."
+        bitOffset: 0
+        bitWidth: 16
+        access: read-write
+      - name: INEPTXFD
+        description: "IN endpoint Tx FIFO depth\nThis value is in terms of 32-bit words.\nMinimum value is 16"
+        bitOffset: 16
+        bitWidth: 16
+        access: read-write
+    dim: 9
+    dimIncrement: 4
 addressBlocks:
   - offset: 0
     size: 3592

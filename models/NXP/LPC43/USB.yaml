@@ -18,10 +18,6 @@ registers:
         description: BCD encoding of the EHCI revision number supported by this host controller.
         bitOffset: 8
         bitWidth: 16
-      - name: RESERVED
-        description: These bits are reserved and should be set to zero.
-        bitOffset: 24
-        bitWidth: 8
   - name: HCSPARAMS
     description: Host controller structural parameters
     addressOffset: 260
@@ -37,10 +33,6 @@ registers:
         description: Port Power Control. This field indicates whether the host controller implementation includes port power control.
         bitOffset: 4
         bitWidth: 1
-      - name: RESERVED
-        description: These bits are reserved and should be set to zero.
-        bitOffset: 5
-        bitWidth: 3
       - name: N_PCC
         description: Number of Ports per Companion Controller. This field indicates the number of ports supported per internal Companion Controller.
         bitOffset: 8
@@ -53,10 +45,6 @@ registers:
         description: Port indicators. This bit indicates whether the ports support port indicator control.
         bitOffset: 16
         bitWidth: 1
-      - name: RESERVED
-        description: These bits are reserved and should be set to zero.
-        bitOffset: 17
-        bitWidth: 3
       - name: N_PTT
         description: Number of Ports per Transaction Translator. This field indicates the number of ports assigned to each transaction translator within the USB2.0 host controller.
         bitOffset: 20
@@ -64,10 +52,6 @@ registers:
       - name: N_TT
         description: Number of Transaction Translators. This field indicates the number of embedded transaction translators associated with the USB2.0 host controller.
         bitOffset: 24
-        bitWidth: 4
-      - name: RESERVED
-        description: These bits are reserved and should be set to zero.
-        bitOffset: 28
         bitWidth: 4
   - name: HCCPARAMS
     description: Host controller capability parameters
@@ -96,10 +80,6 @@ registers:
         description: EHCI Extended Capabilities Pointer. This optional field indicates the existence of a capabilities list.
         bitOffset: 8
         bitWidth: 8
-      - name: RESERVED
-        description: These bits are reserved and should be set to zero.
-        bitOffset: 16
-        bitWidth: 16
   - name: DCIVERSION
     description: Device interface version number
     addressOffset: 288
@@ -140,42 +120,6 @@ registers:
             value: 1
         bitOffset: 1
         bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode.
-        bitOffset: 2
-        bitWidth: 2
-      - name: RESERVED
-        description: Not used in device mode.
-        bitOffset: 4
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode.
-        bitOffset: 5
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode. Writing a one to this bit when the device mode is selected, will have undefined results.
-        bitOffset: 6
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved. These bits should be set to 0.
-        bitOffset: 7
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 8
-        bitWidth: 2
-      - name: RESERVED
-        description: Reserved.These bits should be set to 0.
-        bitOffset: 10
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 11
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved.These bits should be set to 0.
-        bitOffset: 12
-        bitWidth: 1
       - name: SUTW
         description: Setup trip wire  During handling a setup packet, this bit is used as a semaphore to ensure that the setup data payload of 8 bytes is extracted from a QH by the DCD without being corrupted. If the setup lockout mode is off (see USBMODE register) then there exists a hazard when new setup data arrives while the DCD is copying the setup data payload from the QH for a previous setup packet. This bit is set and cleared by software and will be cleared by hardware when a hazard exists. (See Section 18.10).
         bitOffset: 13
@@ -184,17 +128,9 @@ registers:
         description: Add dTD trip wire This bit is used as a semaphore to ensure the to proper addition of a new dTD to an active (primed) endpoint's linked list. This bit is set and cleared by software during the process of adding a new dTD. See also Section 18.10. This bit shall also be cleared by hardware when its state machine is hazard region for which adding a dTD to a primed endpoint may go unrecognized.
         bitOffset: 14
         bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode.
-        bitOffset: 15
-        bitWidth: 1
       - name: ITC
         description: Interrupt threshold control. The system software uses this field to set the maximum rate at which the host/device controller will issue interrupts. ITC contains the maximum interrupt interval measured in micro-frames. Valid values are shown below. All other values are reserved. 0x0 = Immediate (no threshold) 0x1 = 1 micro frame. 0x2 = 2 micro frames. 0x8 = 8 micro frames. 0x10 = 16 micro frames. 0x20 = 32 micro frames. 0x40 = 64 micro frames.
         bitOffset: 16
-        bitWidth: 8
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 24
         bitWidth: 8
   - name: USBCMD_H
     description: Command (host mode)
@@ -237,10 +173,10 @@ registers:
       - name: PSE
         description: This bit controls whether the host controller skips processing the periodic schedule.
         enumeratedValues:
-          - name: DO_NOT_PROCESS_THE_P
+          - name: DO_NOT
             description: Do not process the periodic schedule.
             value: 0
-          - name: USE_THE_PERIODICLIST
+          - name: USE_PERIODICLISTBASE
             description: Use the PERIODICLISTBASE register to access the periodic schedule.
             value: 1
         bitOffset: 4
@@ -248,10 +184,10 @@ registers:
       - name: ASE
         description: This bit controls whether the host controller skips processing the asynchronous schedule.
         enumeratedValues:
-          - name: DO_NOT_PROCESS_THE_A
+          - name: DO_NOT
             description: Do not process the asynchronous schedule.
             value: 0
-          - name: USE_THE_ASYNCLISTADD
+          - name: USE_ASYNCLISTADDR
             description: Use the ASYNCLISTADDR to access the asynchronous schedule.
             value: 1
         bitOffset: 5
@@ -259,48 +195,28 @@ registers:
       - name: IAA
         description: This bit is used as a doorbell by software to tell the host controller to issue an interrupt the next time it advances asynchronous schedule.
         enumeratedValues:
-          - name: THE_HOST_CONTROLLER_
+          - name: HOST_CONTROLLER
             description: The host controller sets this bit to zero after it has set the Interrupt on Sync Advance status bit in the USBSTS register to one.
             value: 0
-          - name: SOFTWARE_MUST_WRITE_
+          - name: SOFTWARE_MUST
             description: Software must write a 1 to this bit to ring the doorbell. When the host controller has evicted all appropriate cached schedule states, it sets the Interrupt on Async Advance status bit in the USBSTS register. If the Interrupt on Sync Advance Enable bit in the USBINTR register is one, then the host controller will assert an interrupt at the next interrupt threshold. Software should not write a one to this bit when the asynchronous schedule is inactive. Doing so will yield undefined results.
             value: 1
         bitOffset: 6
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 7
         bitWidth: 1
       - name: ASP1_0
         description: Asynchronous schedule park mode Contains a count of the number of successive transactions the host controller is allowed to execute from a high-speed queue head on the Asynchronous schedule before continuing traversal of the Asynchronous schedule. Valid values are 0x1 to 0x3.  Software must not write 00 to this bit when Park Mode Enable is one as this will result in undefined behavior.
         bitOffset: 8
         bitWidth: 2
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 10
-        bitWidth: 1
       - name: ASPE
         description: Asynchronous Schedule Park Mode Enable
         enumeratedValues:
-          - name: PARK_MODE_IS_DISABLE
+          - name: DISABLED
             description: Park mode is disabled.
             value: 0
-          - name: PARK_MODE_IS_ENABLED
+          - name: ENABLED
             description: Park mode is enabled.
             value: 1
         bitOffset: 11
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 12
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in Host mode.
-        bitOffset: 13
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 14
         bitWidth: 1
       - name: FS2
         description: Bit 2 of the Frame List Size bits. See Table 220.
@@ -309,10 +225,6 @@ registers:
       - name: ITC
         description: Interrupt threshold control. The system software uses this field to set the maximum rate at which the host/device controller will issue interrupts. ITC contains the maximum interrupt interval measured in micro-frames. Valid values are shown below. All other values are reserved. 0x0 = Immediate (no threshold) 0x1 = 1 micro frame. 0x2 = 2 micro frames. 0x8 = 8 micro frames. 0x10 = 16 micro frames. 0x20 = 32 micro frames. 0x40 = 64 micro frames.
         bitOffset: 16
-        bitWidth: 8
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 24
         bitWidth: 8
   - name: USBSTS_D
     description: Status (device mode)
@@ -354,14 +266,6 @@ registers:
             value: 1
         bitOffset: 2
         bitWidth: 1
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 3
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 4
-        bitWidth: 1
       - name: AAI
         description: Not used in Device mode.
         bitOffset: 5
@@ -399,26 +303,6 @@ registers:
             value: 1
         bitOffset: 8
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved. Software should only write 0 to reserved bits.
-        bitOffset: 9
-        bitWidth: 3
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 12
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 13
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 14
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 15
-        bitWidth: 1
       - name: NAKI
         description: NAK interrupt bit
         enumeratedValues:
@@ -430,22 +314,6 @@ registers:
             value: 1
         bitOffset: 16
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved. Software should only write 0 to reserved bits.
-        bitOffset: 17
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 18
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in Device mode.
-        bitOffset: 19
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved. Software should only write 0 to reserved bits.
-        bitOffset: 20
-        bitWidth: 12
   - name: USBSTS_H
     description: Status (host mode)
     alternateRegister: USBSTS_D
@@ -498,10 +366,6 @@ registers:
             value: 1
         bitOffset: 3
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 4
-        bitWidth: 1
       - name: AAI
         description: Interrupt on async advance
         enumeratedValues:
@@ -512,10 +376,6 @@ registers:
             description: System software can force the host controller to issue an interrupt the next time the host controller advances the asynchronous schedule by writing a one to the Interrupt on Async Advance Doorbell bit in the USBCMD register. This status bit indicates the assertion of that interrupt source.
             value: 1
         bitOffset: 5
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used by the Host controller.
-        bitOffset: 6
         bitWidth: 1
       - name: SRI
         description: SOF received
@@ -528,14 +388,6 @@ registers:
             value: 1
         bitOffset: 7
         bitWidth: 1
-      - name: RESERVED
-        description: Not used by the Host controller.
-        bitOffset: 8
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 9
-        bitWidth: 3
       - name: HCH
         description: HCHalted
         enumeratedValues:
@@ -550,7 +402,7 @@ registers:
       - name: RCL
         description: Reclamation
         enumeratedValues:
-          - name: NO_EMPTY_ASYNCHRONOU
+          - name: NO_EMPTY
             description: No empty asynchronous schedule detected.
             value: 0
           - name: EMPTY_ASYNCHRONOU
@@ -564,7 +416,7 @@ registers:
           - name: DISABLED
             description: The periodic schedule status is disabled.
             value: 0
-          - name: DISABLED
+          - name: ENABLED
             description: The periodic schedule status is enabled.
             value: 1
         bitOffset: 14
@@ -575,18 +427,10 @@ registers:
           - name: DISABLED
             description: Asynchronous schedule status is disabled.
             value: 0
-          - name: DISABLED
+          - name: ENABLED
             description: Asynchronous schedule status is enabled.
             value: 1
         bitOffset: 15
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used on Host mode.
-        bitOffset: 16
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 17
         bitWidth: 1
       - name: UAI
         description: USB host asynchronous interrupt (USBHSTASYNCINT)
@@ -610,10 +454,6 @@ registers:
             value: 1
         bitOffset: 19
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 20
-        bitWidth: 12
   - name: USBINTR_D
     description: Interrupt enable (device mode)
     addressOffset: 328
@@ -633,18 +473,6 @@ registers:
         description: Port change detect enable When this bit is a one, and the Port Change Detect bit in the USBSTS register is a one, the host/device controller will issue an interrupt. The interrupt is acknowledged by software clearing the Port Change Detect bit in USBSTS.
         bitOffset: 2
         bitWidth: 1
-      - name: RESERVED
-        description: Not used by the Device controller.
-        bitOffset: 3
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 4
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used by the Device controller.
-        bitOffset: 5
-        bitWidth: 1
       - name: URE
         description: USB reset enable When this bit is a one, and the USB Reset Received bit in the USBSTS register is a one, the device controller will issue an interrupt. The interrupt is acknowledged by software clearing the USB Reset Received bit.
         bitOffset: 6
@@ -657,30 +485,10 @@ registers:
         description: Sleep enable When this bit is a one, and the DCSuspend bit in the USBSTS register transitions, the device controller will issue an interrupt. The interrupt is acknowledged by software writing a one to the DCSuspend bit.
         bitOffset: 8
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 9
-        bitWidth: 7
       - name: NAKE
         description: NAK interrupt enable This bit is set by software if it wants to enable the hardware interrupt for the NAK Interrupt bit. If both this bit and the corresponding NAK Interrupt bit are set, a hardware interrupt is generated.
         bitOffset: 16
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 17
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used by the Device controller.
-        bitOffset: 18
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used by the Device controller.
-        bitOffset: 19
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 20
-        bitWidth: 12
   - name: USBINTR_H
     description: Interrupt enable (host mode)
     alternateRegister: USBINTR_D
@@ -705,37 +513,13 @@ registers:
         description: Frame list rollover enable When this bit is a one, and the Frame List Rollover bit in the USBSTS register is a one, the host controller will issue an interrupt. The interrupt is acknowledged by software clearing the Frame List Rollover bit.
         bitOffset: 3
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 4
-        bitWidth: 1
       - name: AAE
         description: Interrupt on asynchronous advance enable When this bit is a one, and the Interrupt on Async Advance bit in the USBSTS register is a one, the host controller will issue an interrupt at the next interrupt threshold. The interrupt is acknowledged by software clearing the Interrupt on Async Advance bit.
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: Not used by the Host controller.
-        bitOffset: 6
-        bitWidth: 1
       - name: SRE
         description: If this bit is one and the SRI bit in the USBSTS register is one, the host controller will issue an interrupt. In host mode, the SRI bit will be set every 125 ms and can be used by the host controller as a time base. The interrupt is acknowledged by software clearing the SRI bit in the USBSTS register.
         bitOffset: 7
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used by the Host controller.
-        bitOffset: 8
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 9
-        bitWidth: 7
-      - name: RESERVED
-        description: Not used by the host controller.
-        bitOffset: 16
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 17
         bitWidth: 1
       - name: UAIE
         description: USB host asynchronous interrupt enable When this bit is a one, and the USBHSTASYNCINT bit in the USBSTS register is a one, the host controller will issue an interrupt at the next interrupt threshold. The interrupt is acknowledged by software clearing the USBHSTASYNCINT bit.
@@ -745,10 +529,6 @@ registers:
         description: USB host periodic interrupt enable When this bit is a one, and the USBHSTPERINT bit in the USBSTS register is a one, the host controller will issue an interrupt at the next interrupt threshold. The interrupt is acknowledged by software clearing the USBHSTPERINT bit.
         bitOffset: 19
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 20
-        bitWidth: 12
   - name: FRINDEX_D
     description: Frame index (device mode)
     addressOffset: 332
@@ -764,10 +544,6 @@ registers:
         description: Current frame number of the last frame transmitted
         bitOffset: 3
         bitWidth: 11
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 14
-        bitWidth: 18
   - name: FRINDEX_H
     description: Frame index (host mode)
     alternateRegister: FRINDEX_D
@@ -784,10 +560,6 @@ registers:
         description: Frame list current index.
         bitOffset: 3
         bitWidth: 10
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 13
-        bitWidth: 19
   - name: DEVICEADDR
     description: Device address (device mode)
     addressOffset: 340
@@ -795,10 +567,6 @@ registers:
     resetValue: 0
     resetMask: 4294967295
     fields:
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 0
-        bitWidth: 24
       - name: USBADRA
         description: Device address advance
         enumeratedValues:
@@ -822,10 +590,6 @@ registers:
     resetValue: 0
     resetMask: 4294967295
     fields:
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 0
-        bitWidth: 12
       - name: PERBASE31_12
         description: Base Address (Low) These bits correspond to the memory address signals 31:12.
         bitOffset: 12
@@ -837,10 +601,6 @@ registers:
     resetValue: 0
     resetMask: 4294967295
     fields:
-      - name: RESERVED
-        description: reserved
-        bitOffset: 0
-        bitWidth: 11
       - name: EPBASE31_11
         description: Endpoint list pointer (low) These bits correspond to memory address signals 31:11, respectively. This field will reference a list of up to 4 Queue Heads (QH). (i.e. one queue head per endpoint and direction.)
         bitOffset: 11
@@ -853,10 +613,6 @@ registers:
     resetValue: 0
     resetMask: 4294967295
     fields:
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 0
-        bitWidth: 5
       - name: ASYBASE31_5
         description: Link pointer (Low) LPL These bits correspond to memory address signals 31:5, respectively. This field may only reference a Queue Head (OH).
         bitOffset: 5
@@ -868,18 +624,10 @@ registers:
     resetValue: 0
     resetMask: 4294967295
     fields:
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 0
-        bitWidth: 24
       - name: TTHA
         description: Hub address when FS or LS device are connected directly.
         bitOffset: 24
         bitWidth: 7
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 31
-        bitWidth: 1
   - name: BURSTSIZE
     description: Programmable burst size
     addressOffset: 352
@@ -895,10 +643,6 @@ registers:
         description: Programmable TX burst length This register represents the maximum length of a burst in 32-bit words while moving data from system memory to the USB bus.
         bitOffset: 8
         bitWidth: 8
-      - name: RESERVED
-        description: Reserved.
-        bitOffset: 16
-        bitWidth: 16
   - name: TXFILLTUNING
     description: Host transmit pre-buffer packet tuning (host mode)
     addressOffset: 356
@@ -914,18 +658,10 @@ registers:
         description: Scheduler health counter This register increments when the host controller fails to fill the TX latency FIFO to the level programmed by TXFIFOTHRES before running out of time to send the packet before the next Start-Of-Frame . This health counter measures the number of times this occurs to provide feedback to selecting a proper TXSCHOH. Writing to this register will clear the counter. The maximum value is 31.
         bitOffset: 8
         bitWidth: 5
-      - name: RESERVED
-        description: reserved
-        bitOffset: 13
-        bitWidth: 3
       - name: TXFIFOTHRES
         description: Scheduler overhead This register adds an additional fixed offset to the schedule time estimator described above as Tff. As an approximation, the value chosen for this register should limit the number of back-off events captured in the TXSCHHEALTH to less than 10 per second in a highly utilized bus. Choosing a value that is too high for this register is not desired as it can needlessly reduce USB utilization. The time unit represented in this register is 1.267  ms when a device is connected in High-Speed Mode for OTG and SPH. The time unit represented in this register is 6.333  ms when a device is connected in Low/Full Speed Mode for OTG and SPH.
         bitOffset: 16
         bitWidth: 6
-      - name: RESERVED
-        description: reserved
-        bitOffset: 22
-        bitWidth: 10
   - name: BINTERVAL
     description: Length of virtual frame
     addressOffset: 372
@@ -937,10 +673,6 @@ registers:
         description: bInterval value (see Section 18.7.7)
         bitOffset: 0
         bitWidth: 4
-      - name: RESERVED
-        description: reserved
-        bitOffset: 4
-        bitWidth: 28
   - name: ENDPTNAK
     description: Endpoint NAK (device mode)
     addressOffset: 376
@@ -972,10 +704,6 @@ registers:
         description: Rx endpoint NAK Each RX endpoint has one bit in this field. The bit is set when the device sends a NAK handshake on a received OUT or PING token for the corresponding endpoint. Bit 5 corresponds to endpoint 5. ... Bit 1 corresponds to endpoint 1. Bit 0 corresponds to endpoint 0.
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 6
-        bitWidth: 10
       - name: EPTN0
         description: Tx endpoint NAK Each TX endpoint has one bit in this field. The bit is set when the device sends a NAK handshake on a received IN token for the corresponding endpoint. Bit 3 corresponds to endpoint 3. ... Bit 1 corresponds to endpoint 1. Bit 0 corresponds to endpoint 0.
         bitOffset: 16
@@ -1000,10 +728,6 @@ registers:
         description: Tx endpoint NAK Each TX endpoint has one bit in this field. The bit is set when the device sends a NAK handshake on a received IN token for the corresponding endpoint. Bit 3 corresponds to endpoint 3. ... Bit 1 corresponds to endpoint 1. Bit 0 corresponds to endpoint 0.
         bitOffset: 21
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 22
-        bitWidth: 10
   - name: ENDPTNAKEN
     description: Endpoint NAK Enable (device mode)
     addressOffset: 380
@@ -1035,10 +759,6 @@ registers:
         description: Rx endpoint NAK enable Each bit enables the corresponding RX NAK bit. If this bit is set and the corresponding RX endpoint NAK bit is set, the NAK interrupt bit is set. Bit 5 corresponds to endpoint 5. ... Bit 1 corresponds to endpoint 1. Bit 0 corresponds to endpoint 0.
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 6
-        bitWidth: 10
       - name: EPTNE0
         description: Tx endpoint NAK Each bit enables the corresponding TX NAK bit. If this bit is set and the corresponding TX endpoint NAK bit is set, the NAK interrupt bit is set. Bit 5 corresponds to endpoint 5. ... Bit 1 corresponds to endpoint 1. Bit 0 corresponds to endpoint 0.
         bitOffset: 16
@@ -1063,10 +783,6 @@ registers:
         description: Tx endpoint NAK Each bit enables the corresponding TX NAK bit. If this bit is set and the corresponding TX endpoint NAK bit is set, the NAK interrupt bit is set. Bit 5 corresponds to endpoint 5. ... Bit 1 corresponds to endpoint 1. Bit 0 corresponds to endpoint 0.
         bitOffset: 21
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 22
-        bitWidth: 10
   - name: PORTSC1_D
     description: Port 1 status/control (device mode)
     addressOffset: 388
@@ -1077,17 +793,13 @@ registers:
       - name: CCS
         description: Current connect status
         enumeratedValues:
-          - name: DEVICE_NOT_ATTACHED_
+          - name: DEVICE_NOT
             description: Device not attached A zero indicates that the device did not attach successfully or was forcibly disconnected by the software writing a zero to the Run bit in the USBCMD register. It does not state the device being disconnected or suspended.
             value: 0
-          - name: DEVICE_ATTACHED__A_
+          - name: DEVICE_ATTACHED
             description: Device attached.  A one indicates that the device successfully attached and is operating in either high-speed mode or full-speed mode as indicated by the High Speed Port bit in this register.
             value: 1
         bitOffset: 0
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode
-        bitOffset: 1
         bitWidth: 1
       - name: PE
         description: Port enable. This bit is always 1. The device port is always enabled.
@@ -1097,10 +809,6 @@ registers:
         description: Port enable/disable change This bit is always 0. The device port is always enabled.
         bitOffset: 3
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 4
-        bitWidth: 2
       - name: FPR
         description: Force port resume After the device has been in Suspend State for 5 ms or more, software must set this bit to one to drive resume signaling before clearing. The Device Controller will set this bit to one if a J-to-K transition is detected while the port is in the Suspend state. The bit will be cleared when the device returns to normal operation. When this bit transitions to a one because a J-to-K transition detected, the Port Change Detect bit in the USBSTS register is set to one as well.
         enumeratedValues:
@@ -1115,10 +823,10 @@ registers:
       - name: SUSP
         description: Suspend In device mode, this is a read-only status bit .
         enumeratedValues:
-          - name: PORT_NOT_IN_SUSPEND_
+          - name: PORT_NOT
             description: Port not in suspend state
             value: 0
-          - name: PORT_IN_SUSPEND_STAT
+          - name: PORT_SUSPEND
             description: Port in suspend state
             value: 1
         bitOffset: 7
@@ -1126,10 +834,10 @@ registers:
       - name: PR
         description: Port reset In device mode, this is a read-only status bit. A device reset from the USB bus is also indicated in the USBSTS register.
         enumeratedValues:
-          - name: PORT_IS_NOT_IN_THE_R
+          - name: PORT_NOT
             description: Port is not in the reset state.
             value: 0
-          - name: PORT_IS_IN_THE_RESET
+          - name: PORT_RESET
             description: Port is in the reset state.
             value: 1
         bitOffset: 8
@@ -1144,18 +852,6 @@ registers:
             description: Host/device connected to the port is in High-speed mode.
             value: 1
         bitOffset: 9
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode.
-        bitOffset: 10
-        bitWidth: 2
-      - name: RESERVED
-        description: Not used in device mode.
-        bitOffset: 12
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 13
         bitWidth: 1
       - name: PIC1_0
         description: Port indicator control Writing to this field effects the value of the USB0_IND[1:0] pins.
@@ -1200,18 +896,6 @@ registers:
             value: 6
         bitOffset: 16
         bitWidth: 4
-      - name: RESERVED
-        description: Not used in device mode. This bit is always 0 in device mode.
-        bitOffset: 20
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode. This bit is always 0 in device mode.
-        bitOffset: 21
-        bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode. This bit is always 0 in device mode.
-        bitOffset: 22
-        bitWidth: 1
       - name: PHCD
         description: PHY low power suspend - clock disable (PLPSCD) In device mode, The PHY can be put into Low Power Suspend - Clock Disable when the device is not running (USBCMD Run/Stop = 0) or the host has signaled suspend (PORTSC SUSPEND = 1). Low power suspend will be cleared automatically when the host has signaled resume. Before forcing a resume from the device, the device controller driver must clear this bit.
         enumeratedValues:
@@ -1234,17 +918,13 @@ registers:
             value: 1
         bitOffset: 24
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 25
-        bitWidth: 1
       - name: PSPD
         description: Port speed This register field indicates the speed at which the port is operating.
         enumeratedValues:
           - name: FULL_SPEED
             description: Full-speed
             value: 0
-          - name: INVALID_IN_DEVICE_MO
+          - name: INVALID_DEVICE
             description: invalid in device mode
             value: 1
           - name: HIGH_SPEED
@@ -1252,10 +932,6 @@ registers:
             value: 2
         bitOffset: 26
         bitWidth: 2
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 28
-        bitWidth: 4
   - name: PORTSC1_H
     description: Port 1 status/control (host mode)
     alternateRegister: PORTSC1_D
@@ -1267,10 +943,10 @@ registers:
       - name: CCS
         description: Current connect status This value reflects the current state of the port and may not correspond directly to the event that caused the CSC bit to be set. This bit is 0 if PP (Port Power bit) is 0. Software clears this bit by writing a 1 to it.
         enumeratedValues:
-          - name: NO_DEVICE_IS_PRESENT
+          - name: NO_DEVICE
             description: No device is present.
             value: 0
-          - name: DEVICE_IS_PRESENT_ON
+          - name: DEVICE_PRESENT
             description: Device is present on the port.
             value: 1
         bitOffset: 0
@@ -1278,10 +954,10 @@ registers:
       - name: CSC
         description: Connect status change Indicates a change has occurred in the port's Current Connect Status. The host/device controller sets this bit for all changes to the port device connect status, even if system software has not cleared an existing connect status change. For example, the insertion status changes twice before system software has cleared the changed condition, hub hardware will be setting an already-set bit (i.e., the bit will remain set). Software clears this bit by writing a one to it. This bit is 0 if PP (Port Power bit) is 0
         enumeratedValues:
-          - name: NO_CHANGE_IN_CURRENT
+          - name: NO_CHANGE
             description: No change in current status.
             value: 0
-          - name: CHANGE_IN_CURRENT_ST
+          - name: CHANGE_CURRENT
             description: Change in current status.
             value: 1
         bitOffset: 1
@@ -1289,10 +965,10 @@ registers:
       - name: PE
         description: Port enable. Ports can only be enabled by the host controller as a part of the reset and enable. Software cannot enable a port by writing a one to this field. Ports can be disabled by either a fault condition (disconnect event or other fault condition) or by the host software. Note that the bit status does not change until the port state actually changes. There may be a delay in disabling or enabling a port due to other host controller and bus events. When the port is disabled. downstream propagation of data is blocked except for reset. This bit is 0 if PP (Port Power bit) is 0.
         enumeratedValues:
-          - name: PORT_DISABLED_
+          - name: DISABLED
             description: Port disabled.
             value: 0
-          - name: PORT_ENABLED_
+          - name: ENABLED
             description: Port enabled.
             value: 1
         bitOffset: 2
@@ -1300,7 +976,7 @@ registers:
       - name: PEC
         description: Port disable/enable change For the root hub, this bit gets set to a one only when a port is disabled due to disconnect on the port or due to the appropriate conditions existing at the EOF2 point (See Chapter 11 of the USB Specification). Software clears this by writing a one to it. This bit is 0 if PP (Port Power bit) is 0,
         enumeratedValues:
-          - name: NO_CHANGE_
+          - name: NO_CHANGE
             description: No change.
             value: 0
           - name: CHANGED
@@ -1311,10 +987,10 @@ registers:
       - name: OCA
         description: Over-current active This bit will automatically transition from 1 to 0 when the over-current condition is removed.
         enumeratedValues:
-          - name: THE_PORT_DOES_NOT_HA
+          - name: PORT_DOES
             description: The port does not have an over-current condition.
             value: 0
-          - name: THE_PORT_HAS_CURRENT
+          - name: PORT_CURRENTLY
             description: The port has currently an over-current condition.
             value: 1
         bitOffset: 4
@@ -1337,10 +1013,10 @@ registers:
       - name: SUSP
         description: Suspend Together with the PE (Port enabled bit), this bit describes the port states, see Table 240. The host controller will unconditionally set this bit to zero when software sets the Force Port Resume bit to zero. The host controller ignores a write of zero to this bit. If host software sets this bit to a one when the port is not enabled (i.e. Port enabled bit is a zero) the results are undefined. This bit is 0 if PP (Port Power bit) is 0.
         enumeratedValues:
-          - name: PORT_NOT_IN_SUSPEND_
+          - name: PORT_NOT
             description: Port not in suspend state
             value: 0
-          - name: PORT_IN_SUSPEND_STAT
+          - name: PORT_SUSPEND
             description: Port in suspend state When in suspend state, downstream propagation of data is blocked on this port, except for port reset. The blocking occurs at the end of the current transaction if a transaction was in progress when this bit was written to 1. In the suspend state, the port is sensitive to resume detection. Note that the bit status does not change until the port is suspended and that there may be a delay in suspending a port if there is a transaction currently in progress on the USB.
             value: 1
         bitOffset: 7
@@ -1348,10 +1024,10 @@ registers:
       - name: PR
         description: Port reset When software writes a one to this bit the bus-reset sequence as defined in the USB Specification Revision 2.0 is started. This bit will automatically change to zero after the reset sequence is complete. This behavior is different from EHCI where the host controller driver is required to set this bit to a zero after the reset duration is timed in the driver. This bit is 0 if PP (Port Power bit) is 0.
         enumeratedValues:
-          - name: PORT_IS_NOT_IN_THE_R
+          - name: PORT_NOT
             description: Port is not in the reset state.
             value: 0
-          - name: PORT_IS_IN_THE_RESET
+          - name: PORT_RESET
             description: Port is in the reset state.
             value: 1
         bitOffset: 8
@@ -1387,22 +1063,18 @@ registers:
       - name: PP
         description: Port power control Host/OTG controller requires port power control switches. This bit represents the current setting of the switch (0=off, 1=on). When power is not available on a port (i.e. PP equals a 0), the port is non-functional and will not report attaches, detaches, etc. When an over-current condition is detected on a powered port and PPC is a one, the PP bit in each affected port may be transitioned by the host controller driver from a one to a zero (removing power from the port).
         enumeratedValues:
-          - name: PORT_POWER_OFF_
+          - name: PORT_POWER_OFF
             description: Port power off.
             value: 0
-          - name: PORT_POWER_ON_
+          - name: PORT_POWER
             description: Port power on.
             value: 1
         bitOffset: 12
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 13
-        bitWidth: 1
       - name: PIC1_0
         description: Port indicator control Writing to this field effects the value of the pins USB0_IND1 and USB0_IND0.
         enumeratedValues:
-          - name: PORT_INDICATORS_ARE_
+          - name: PORT_INDICATORS
             description: Port indicators are off.
             value: 0
           - name: AMBER
@@ -1448,10 +1120,10 @@ registers:
       - name: WKCN
         description: Wake on connect enable (WKCNNT_E) This bit is 0 if PP (Port Power bit) is 0
         enumeratedValues:
-          - name: DISABLES_THE_PORT_TO
+          - name: DISABLE
             description: Disables the port to wake up on device connects.
             value: 0
-          - name: WRITING_THIS_BIT_TO_
+          - name: WRITING_BIT
             description: Writing this bit to a one enables the port to be sensitive to device connects as wake-up events.
             value: 1
         bitOffset: 20
@@ -1459,10 +1131,10 @@ registers:
       - name: WKDC
         description: Wake on disconnect enable (WKDSCNNT_E) This bit is 0 if PP (Port Power bit) is 0.
         enumeratedValues:
-          - name: DISABLES_THE_PORT_TO
+          - name: DISABLE
             description: Disables the port to wake up on device disconnects.
             value: 0
-          - name: WRITING_THIS_BIT_TO_
+          - name: WRITING_BIT
             description: Writing this bit to a one enables the port to be sensitive to device disconnects as wake-up events.
             value: 1
         bitOffset: 21
@@ -1470,10 +1142,10 @@ registers:
       - name: WKOC
         description: Wake on over-current enable (WKOC_E)
         enumeratedValues:
-          - name: DISABLES_THE_PORT_TO
+          - name: DISABLE
             description: Disables the port to wake up on over-current events.
             value: 0
-          - name: WRITING_A_ONE_TO_THI
+          - name: WRITING_BIT
             description: Writing a one to this bit enabled the port to be sensitive to over-current conditions as wake-up events.
             value: 1
         bitOffset: 22
@@ -1481,10 +1153,10 @@ registers:
       - name: PHCD
         description: PHY low power suspend - clock disable (PLPSCD) In host mode, the PHY can be put into Low Power Suspend - Clock Disable when the downstream device has been put into suspend mode or when no downstream device is connected. Low power suspend is completely under the control of software.
         enumeratedValues:
-          - name: WRITING_A_0_ENABLES_
+          - name: WRITING_ENABLES
             description: Writing a 0 enables the PHY clock. Reading a 0 indicates the status of the PHY clock (enabled).
             value: 0
-          - name: WRITING_A_1_DISABLES
+          - name: WRITING_DISABLES
             description: Writing a 1 disables the PHY clock. Reading a 1 indicates the status of the PHY clock (disabled).
             value: 1
         bitOffset: 23
@@ -1492,17 +1164,13 @@ registers:
       - name: PFSC
         description: Port force full speed connect
         enumeratedValues:
-          - name: PORT_CONNECTS_AT_ANY
+          - name: PORT_CONNECTS
             description: Port connects at any speed.
             value: 0
-          - name: WRITING_THIS_BIT_TO_
+          - name: WRITING_BIT
             description: Writing this bit to a 1 will force the port to only connect at Full Speed. It disables the chirp sequence that allows the port to identify itself as High Speed. This is useful for testing FS configurations with a HS host, hub or device.
             value: 1
         bitOffset: 24
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 25
         bitWidth: 1
       - name: PSPD
         description: Port speed This register field indicates the speed at which the port is operating. For HS mode operation in the host controller and HS/FS operation in the device controller the port routing steers data to the Protocol engine. For FS and LS mode operation in the host controller, the port routing steers data to the Protocol Engine w/ Embedded Transaction Translator.
@@ -1539,7 +1207,7 @@ registers:
           - name: DISABLED
             description: Disabled
             value: 0
-          - name: ENABLE_AUTOMATIC_RES
+          - name: ENABLE
             description: Enable automatic reset after connect on host port.
             value: 1
         bitOffset: 2
@@ -1555,10 +1223,10 @@ registers:
       - name: IDPU
         description: ID pull-up. This bit provides control over the pull-up resistor.
         enumeratedValues:
-          - name: PULL_UP_OFF_THE_ID_
+          - name: PULL_UP_OFF
             description: Pull-up off. The ID bit will not be sampled.
             value: 0
-          - name: PULL_UP_ON_
+          - name: PULL_UP
             description: Pull-up on.
             value: 1
         bitOffset: 5
@@ -1570,10 +1238,10 @@ registers:
       - name: HABA
         description: Hardware assist B-disconnect to A-connect
         enumeratedValues:
-          - name: DISABLED_
+          - name: DISABLED
             description: Disabled.
             value: 0
-          - name: ENABLE_AUTOMATIC_B_D
+          - name: ENABLE
             description: Enable automatic B-disconnect to A-connect sequence.
             value: 1
         bitOffset: 7
@@ -1581,7 +1249,7 @@ registers:
       - name: ID
         description: USB ID
         enumeratedValues:
-          - name: A_DEVICE
+          - name: DEVICE
             description: A-device
             value: 0
           - name: B_DEVICE
@@ -1613,10 +1281,6 @@ registers:
         description: Data bus pulsing status Reading a 1 indicates that data bus pulsing is detected on the port.
         bitOffset: 14
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 15
-        bitWidth: 1
       - name: IDIS
         description: USB ID interrupt status This bit is set when a change on the ID input has been detected. Software must write a 1 to this bit to clear it.
         bitOffset: 16
@@ -1644,10 +1308,6 @@ registers:
       - name: DPIS
         description: Data pulse interrupt status This bit is set when data bus pulsing occurs on DP or DM. Data bus pulsing is only detected when the CM bit in USBMODE = Host (11) and the PortPower bit in PORTSC = Off (0). Software must write a 1 to this bit to clear it.
         bitOffset: 22
-        bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 23
         bitWidth: 1
       - name: IDIE
         description: USB ID interrupt enable Setting this bit enables the interrupt. Writing a 0 disables the interrupt.
@@ -1677,10 +1337,6 @@ registers:
         description: Data pulse interrupt enable Setting this bit enables the data pulse interrupt. Writing a 0 disables the interrupt
         bitOffset: 30
         bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 31
-        bitWidth: 1
   - name: USBMODE_D
     description: Device mode (device mode)
     addressOffset: 424
@@ -1694,9 +1350,6 @@ registers:
           - name: IDLE
             description: Idle
             value: 0
-          - name: RESERVED
-            description: Reserved
-            value: 1
           - name: DEVICE_CONTROLLER
             description: Device controller
             value: 2
@@ -1708,10 +1361,10 @@ registers:
       - name: ES
         description: Endian select This bit can change the byte ordering of the transfer buffers to match the host microprocessor bus architecture. The bit fields in the microprocessor interface and the DMA data structures (including the setup buffer within the device QH) are unaffected by the value of this bit, because they are based upon 32-bit words.
         enumeratedValues:
-          - name: LITTLE_ENDIAN_FIRST
+          - name: LITTLE_ENDIAN
             description: 'Little endian: first byte referenced in least significant byte of 32-bit word.'
             value: 0
-          - name: BIG_ENDIAN_FIRST_BY
+          - name: BIG_ENDIAN
             description: 'Big endian: first byte referenced in most significant byte of 32-bit word.'
             value: 1
         bitOffset: 2
@@ -1719,7 +1372,7 @@ registers:
       - name: SLOM
         description: Setup Lockout mode In device mode, this bit controls behavior of the setup lock mechanism. See Section 18.10.8.
         enumeratedValues:
-          - name: SETUP_LOCKOUTS_ON
+          - name: SETUP_LOCKOUTS
             description: Setup Lockouts on
             value: 0
           - name: SETUP_LOCKOUTS_OFF
@@ -1730,22 +1383,14 @@ registers:
       - name: SDIS
         description: Stream disable mode  The use of this feature substantially limits the overall USB performance that can be achieved.
         enumeratedValues:
-          - name: NOT_DISABLED
+          - name: DISABLED_0
             description: Not disabled
             value: 0
-          - name: DISABLED_SETTING_TH
+          - name: DISABLED_1
             description: 'Disabled. Setting this bit to one disables double priming on both RX and TX for low bandwidth systems. This mode ensures that when the RX and TX buffers are sufficient to contain an entire packet that the standard double buffering scheme is disabled to prevent overruns/underruns in bandwidth limited systems. Note: In High Speed Mode, all packets received will be responded to with a NYET handshake when stream disable is active.'
             value: 1
         bitOffset: 4
         bitWidth: 1
-      - name: RESERVED
-        description: Not used in device mode.
-        bitOffset: 5
-        bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 6
-        bitWidth: 26
   - name: USBMODE_H
     description: Mode (host mode)
     alternateRegister: USBMODE_D
@@ -1760,9 +1405,6 @@ registers:
           - name: IDLE
             description: Idle
             value: 0
-          - name: RESERVED
-            description: Reserved
-            value: 1
           - name: DEVICE_CONTROLLER
             description: Device controller
             value: 2
@@ -1774,25 +1416,21 @@ registers:
       - name: ES
         description: Endian select This bit can change the byte ordering of the transfer buffers. The bit fields in the microprocessor interface and the DMA data structures (including the setup buffer within the device QH) are unaffected by the value of this bit, because they are based upon 32-bit words.
         enumeratedValues:
-          - name: LITTLE_ENDIAN_FIRST
+          - name: LITTLE_ENDIAN
             description: 'Little endian: first byte referenced in least significant byte of 32-bit word.'
             value: 0
-          - name: BIG_ENDIAN_FIRST_BY
+          - name: BIG_ENDIAN
             description: 'Big endian: first byte referenced in most significant byte of 32-bit word.'
             value: 1
         bitOffset: 2
         bitWidth: 1
-      - name: RESERVED
-        description: Not used in host mode
-        bitOffset: 3
-        bitWidth: 1
       - name: SDIS
         description: Stream disable mode  The use of this feature substantially limits the overall USB performance that can be achieved.
         enumeratedValues:
-          - name: NOT_DISABLED
+          - name: DISABLED_0
             description: Not disabled
             value: 0
-          - name: DISABLED_SETTING_TO
+          - name: DISABLED_1
             description: 'Disabled. Setting to a 1 ensures that overruns/underruns of the latency FIFO are eliminated for low bandwidth systems where the RX and TX buffers are sufficient to contain the entire packet. Enabling stream disable also has the effect of ensuring the the TX latency is filled to capacity before the packet is launched onto the USB. Note: Time duration to pre-fill the FIFO becomes significant when stream disable is active. See TXFILLTUNING to characterize the adjustments needed for the scheduler when using this feature.'
             value: 1
         bitOffset: 4
@@ -1808,10 +1446,6 @@ registers:
             value: 1
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 6
-        bitWidth: 26
   - name: ENDPTSETUPSTAT
     description: Endpoint setup status
     addressOffset: 428
@@ -1843,10 +1477,6 @@ registers:
         description: Setup endpoint status for logical endpoints 0 to 5. For every setup transaction that is received, a corresponding bit in this register is set to one. Software must clear or acknowledge the setup transfer by writing a one to a respective bit after it has read the setup data from Queue head. The response to a setup packet as in the order of operations and total response time is crucial to limit bus time outs while the setup lockout mechanism is engaged.
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 6
-        bitWidth: 26
   - name: ENDPTPRIME
     description: Endpoint initialization
     addressOffset: 432
@@ -1878,10 +1508,6 @@ registers:
         description: Prime endpoint receive buffer for physical OUT endpoints 5 to 0. For each OUT endpoint, a corresponding bit is set to 1 by software to request a buffer be prepared for a receive operation for when a USB host initiates a USB OUT transaction. Software should write a one to the corresponding bit whenever posting a new transfer descriptor to an endpoint. Hardware will automatically use this bit to begin parsing for a new transfer descriptor from the queue head and prepare a receive buffer. Hardware will clear this bit when the associated endpoint(s) is (are) successfully primed. PERB0 = endpoint 0 ... PERB5 = endpoint 5
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 6
-        bitWidth: 10
       - name: PETB0
         description: Prime endpoint transmit buffer for physical IN endpoints 5 to 0. For each IN endpoint a corresponding bit is set to one by software to request a buffer be prepared for a transmit operation in order to respond to a USB IN/INTERRUPT transaction. Software should write a one to the corresponding bit when posting a new transfer descriptor to an endpoint. Hardware will automatically use this bit to begin parsing for a new transfer descriptor from the queue head and prepare a transmit buffer. Hardware will clear this bit when the associated endpoint(s) is (are) successfully primed.  PETB0 = endpoint 0 ... PETB5 = endpoint 5
         bitOffset: 16
@@ -1906,10 +1532,6 @@ registers:
         description: Prime endpoint transmit buffer for physical IN endpoints 5 to 0. For each IN endpoint a corresponding bit is set to one by software to request a buffer be prepared for a transmit operation in order to respond to a USB IN/INTERRUPT transaction. Software should write a one to the corresponding bit when posting a new transfer descriptor to an endpoint. Hardware will automatically use this bit to begin parsing for a new transfer descriptor from the queue head and prepare a transmit buffer. Hardware will clear this bit when the associated endpoint(s) is (are) successfully primed.  PETB0 = endpoint 0 ... PETB5 = endpoint 5
         bitOffset: 21
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 22
-        bitWidth: 10
   - name: ENDPTFLUSH
     description: Endpoint de-initialization
     addressOffset: 436
@@ -1941,10 +1563,6 @@ registers:
         description: Flush endpoint receive buffer for physical OUT endpoints 5 to 0. Writing a one to a bit(s) will clear any primed buffers. FERB0 = endpoint 0 ... FERB5 = endpoint 5
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 6
-        bitWidth: 10
       - name: FETB0
         description: Flush endpoint transmit buffer for physical IN endpoints 5 to 0. Writing a one to a bit(s) will clear any primed buffers.  FETB0 = endpoint 0 ... FETB5 = endpoint 5
         bitOffset: 16
@@ -1969,10 +1587,6 @@ registers:
         description: Flush endpoint transmit buffer for physical IN endpoints 5 to 0. Writing a one to a bit(s) will clear any primed buffers.  FETB0 = endpoint 0 ... FETB5 = endpoint 5
         bitOffset: 21
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 22
-        bitWidth: 10
   - name: ENDPTSTAT
     description: Endpoint status
     addressOffset: 440
@@ -2004,10 +1618,6 @@ registers:
         description: Endpoint receive buffer ready for physical OUT endpoints 5 to 0. This bit is set to 1 by hardware as a response to receiving a command from a corresponding bit in the ENDPTPRIME register. ERBR0 = endpoint 0 ... ERBR5 = endpoint 5
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 6
-        bitWidth: 10
       - name: ETBR0
         description: Endpoint transmit buffer ready for physical IN endpoints 3 to 0. This bit is set to 1 by hardware as a response to receiving a command from a corresponding bit in the ENDPTPRIME register. ETBR0 = endpoint 0 ... ETBR5 = endpoint 5
         bitOffset: 16
@@ -2032,10 +1642,6 @@ registers:
         description: Endpoint transmit buffer ready for physical IN endpoints 3 to 0. This bit is set to 1 by hardware as a response to receiving a command from a corresponding bit in the ENDPTPRIME register. ETBR0 = endpoint 0 ... ETBR5 = endpoint 5
         bitOffset: 21
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 22
-        bitWidth: 10
   - name: ENDPTCOMPLETE
     description: Endpoint complete
     addressOffset: 444
@@ -2067,10 +1673,6 @@ registers:
         description: Endpoint receive complete event for physical OUT endpoints 5 to 0. This bit is set to 1 by hardware when receive event (OUT/SETUP) occurred. ERCE0 = endpoint 0 ... ERCE5 = endpoint 5
         bitOffset: 5
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 6
-        bitWidth: 10
       - name: ETCE0
         description: Endpoint transmit complete event for physical IN endpoints 5 to 0. This bit is set to 1 by hardware when a transmit event (IN/INTERRUPT) occurred. ETCE0 = endpoint 0 ... ETCE5 = endpoint 5
         bitOffset: 16
@@ -2095,10 +1697,6 @@ registers:
         description: Endpoint transmit complete event for physical IN endpoints 5 to 0. This bit is set to 1 by hardware when a transmit event (IN/INTERRUPT) occurred. ETCE0 = endpoint 0 ... ETCE5 = endpoint 5
         bitOffset: 21
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 22
-        bitWidth: 10
   - name: ENDPTCTRL0
     description: Endpoint control 0
     addressOffset: 448
@@ -2109,65 +1707,41 @@ registers:
       - name: RXS
         description: Rx endpoint stall
         enumeratedValues:
-          - name: ENDPOINT_OK_
+          - name: ENDPOINT_OK
             description: Endpoint ok.
             value: 0
-          - name: ENDPOINT_STALLED_SOF
+          - name: ENDPOINT_STALLED
             description: Endpoint stalled Software can write a one to this bit to force the endpoint to return a STALL handshake to the Host. It will continue returning STALL until the bit is cleared by software, or it will automatically be cleared upon receipt of a new SETUP request. After receiving a SETUP request, this bit will continue to be cleared by hardware until the associated ENDSETUPSTAT bit is cleared.[1]
             value: 1
         bitOffset: 0
-        bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 1
         bitWidth: 1
       - name: RXT1_0
         description: Endpoint type Endpoint 0 is always a control endpoint.
         bitOffset: 2
         bitWidth: 2
-      - name: RESERVED
-        description: reserved
-        bitOffset: 4
-        bitWidth: 3
       - name: RXE
         description: Rx endpoint enable Endpoint enabled. Control endpoint 0 is always enabled. This bit is always 1.
         bitOffset: 7
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 8
-        bitWidth: 8
       - name: TXS
         description: Tx endpoint stall
         enumeratedValues:
-          - name: ENDPOINT_OK_
+          - name: ENDPOINT_OK
             description: Endpoint ok.
             value: 0
-          - name: ENDPOINT_STALLED_SOF
+          - name: ENDPOINT_STALLED
             description: Endpoint stalled Software can write a one to this bit to force the endpoint to return a STALL handshake to the Host. It will continue returning STALL until the bit is cleared by software, or it will automatically be cleared upon receipt of a new SETUP request. After receiving a SETUP request, this bit will continue to be cleared by hardware until the associated ENDSETUPSTAT bit is cleared.[1]
             value: 1
         bitOffset: 16
-        bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 17
         bitWidth: 1
       - name: TXT1_0
         description: Endpoint type Endpoint 0 is always a control endpoint.
         bitOffset: 18
         bitWidth: 2
-      - name: RESERVED
-        description: reserved
-        bitOffset: 20
-        bitWidth: 3
       - name: TXE
         description: Tx endpoint enable Endpoint enabled. Control endpoint 0 is always enabled. This bit is always 1.
         bitOffset: 23
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 24
-        bitWidth: 8
   - dim: 5
     dimIncrement: 4
     dimIndex: 1,2,3,4,5
@@ -2181,17 +1755,13 @@ registers:
       - name: RXS
         description: Rx endpoint stall
         enumeratedValues:
-          - name: ENDPOINT_OK_THIS_BI
+          - name: ENDPOINT_OK
             description: Endpoint ok. This bit will be cleared automatically upon receipt of a SETUP request if this Endpoint is configured as a Control Endpoint and this bit will continue to be cleared by hardware until the associated ENDPTSETUPSTAT bit is cleared.
             value: 0
-          - name: ENDPOINT_STALLED_SOF
+          - name: ENDPOINT_STALLED
             description: Endpoint stalled Software can write a one to this bit to force the endpoint to return a STALL handshake to the Host. It will continue returning STALL until the bit is cleared by software, or it will automatically be cleared upon receipt of a new SETUP request.
             value: 1
         bitOffset: 0
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 1
         bitWidth: 1
       - name: RXT
         description: Endpoint type
@@ -2205,15 +1775,8 @@ registers:
           - name: BULK
             description: Bulk
             value: 2
-          - name: RESERVED
-            description: Reserved
-            value: 3
         bitOffset: 2
         bitWidth: 2
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 4
-        bitWidth: 1
       - name: RXI
         description: Rx data toggle inhibit This bit is only used for test and should always be written as zero. Writing a one to this bit will cause this endpoint to ignore the data toggle sequence and always accept data packets regardless of their data PID.
         enumeratedValues:
@@ -2232,32 +1795,24 @@ registers:
       - name: RXE
         description: Rx endpoint enable An endpoint should be enabled only after it has been configured.
         enumeratedValues:
-          - name: ENDPOINT_DISABLED_
+          - name: DISABLED
             description: Endpoint disabled.
             value: 0
-          - name: ENDPOINT_ENABLED_
+          - name: ENABLED
             description: Endpoint enabled.
             value: 1
         bitOffset: 7
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 8
-        bitWidth: 8
       - name: TXS
         description: Tx endpoint stall
         enumeratedValues:
-          - name: ENDPOINT_OK_THIS_BI
+          - name: ENDPOINT_OK
             description: Endpoint ok. This bit will be cleared automatically upon receipt of a SETUP request if this Endpoint is configured as a Control Endpoint, and this bit will continue to be cleared by hardware until the associated ENDPTSETUPSTAT bit is cleared.
             value: 0
-          - name: ENDPOINT_STALLED_SOF
+          - name: ENDPOINT_STALLED
             description: Endpoint stalled Software can write a one to this bit to force the endpoint to return a STALL handshake to the Host. It will continue returning STALL until the bit is cleared by software, or it will automatically be cleared upon receipt of a new SETUP request.
             value: 1
         bitOffset: 16
-        bitWidth: 1
-      - name: RESERVED
-        description: Reserved
-        bitOffset: 17
         bitWidth: 1
       - name: TXT1_0
         description: Tx endpoint type
@@ -2276,10 +1831,6 @@ registers:
             value: 3
         bitOffset: 18
         bitWidth: 2
-      - name: RESERVED
-        description: reserved
-        bitOffset: 20
-        bitWidth: 1
       - name: TXI
         description: Tx data toggle inhibit This bit is only used for test and should always be written as zero. Writing a one to this bit will cause this endpoint to ignore the data toggle sequence and always accept data packets regardless of their data PID.
         enumeratedValues:
@@ -2298,18 +1849,14 @@ registers:
       - name: TXE
         description: Tx endpoint enable An endpoint should be enabled only after it has been configured
         enumeratedValues:
-          - name: ENDPOINT_DISABLED_
+          - name: DISABLED
             description: Endpoint disabled.
             value: 0
-          - name: ENDPOINT_ENABLED_
+          - name: ENABLED
             description: Endpoint enabled.
             value: 1
         bitOffset: 23
         bitWidth: 1
-      - name: RESERVED
-        description: reserved
-        bitOffset: 24
-        bitWidth: 8
 addressBlocks:
   - offset: 0
     size: 4095

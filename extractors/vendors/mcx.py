@@ -14,6 +14,11 @@ import svd
 # instance-prefix pattern that STM32 uses.
 use_config_interrupt_map = True
 
+# Re-derive enum value names from descriptions during extraction.  NXP SVDs
+# auto-generate enum names by uppercasing the description and truncating at
+# 20 characters, producing ugly names and within-field collisions.
+simplify_enums = True
+
 
 def add_cli_args(parser):
     """Add MCX-specific CLI arguments."""

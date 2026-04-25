@@ -1,61 +1,60 @@
 #!/usr/bin/env python3
-"""Validate peripheral YAML models against schema and structural rules.
+"""Validate peripheral block YAML models against schema and semantic rules.
 
-Phase 1: JSON Schema validation (Draft 7).
+Phase 1: JSON Schema (Draft 7) against `schemas/peripheral.schema.yaml`.
 
-Phase 2: Semantic checks on register/cluster array shape:
+Phase 2: Semantic checks not expressible in standard JSON Schema:
 
-A register or cluster with `dim` is an array. Its `name`, `dim` and
-optional `dimIndex` must follow one of two shapes:
+  Uniqueness (one source of cross-vendor bugs the schema can't catch):
+    * register names unique within the top-level `registers` list
+    * register names unique within each cluster's `registers` list
+    * field names unique within each register
+    * enum value names unique within each field
+    * parameter names unique within the block
 
-  * No `dimIndex` (canonical zero-based array):
-      - `name` contains one `[%s]` per dim dimension (one for scalar `dim`,
-        len(dim) for list-valued `dim`);
-      - `%s` never appears bare (outside brackets).
+  Array shape (registers/clusters with `dim`):
+    * Without `dimIndex` — name has one `[%s]` per dim dimension, no bare `%s`.
+    * With `dimIndex` — `dim` scalar, name has exactly one bare `%s`,
+      `dimIndex` is a comma-list of `dim` tokens, every substitution
+      yields a valid C identifier.
 
-  * `dimIndex` present (sparse or symbolic indices):
-      - `dim` must be a scalar integer;
-      - `dimIndex` is a comma-list; its length must equal `dim`;
-      - `name` contains exactly one `%s`, not bracketed;
-      - every `name.replace('%s', token)` must be a valid C identifier.
-
-Range-form `dimIndex` (`0-N`) is rejected at the schema level and should
-be normalized away by the extractor.
+Files that don't look like peripheral models (no top-level `registers`
+list) are skipped silently — this lets the same glob also feed
+`validate_chips.py`.
 """
-import sys, pathlib, argparse, glob, re
 
-import yaml  # PyYAML
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
 from jsonschema import Draft7Validator
+from validate_lib import find_duplicates, run
 
+
+_DEFAULT_SCHEMA = str(
+    Path(__file__).parent.parent / 'schemas' / 'peripheral.schema.yaml')
 
 _IDENT_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 
-_MSG_LIMIT = 200
+def is_peripheral(data):
+    """Discriminator: peripheral models have a top-level `registers` list."""
+    return isinstance(data, dict) and isinstance(data.get('registers'), list)
 
 
-def _trim(msg):
-    """Shorten jsonschema messages that dump entire sub-documents."""
-    msg = " ".join(msg.split())
-    if len(msg) > _MSG_LIMIT:
-        msg = msg[:_MSG_LIMIT] + " ..."
-    return msg
-
-
-def validate_schema(data, validator):
-    """Return list of (location, message) tuples for schema errors."""
-    errors = sorted(validator.iter_errors(data), key=lambda e: list(e.path))
-    return [
-        ("/".join(str(p) for p in e.path) or "(root)", _trim(e.message))
-        for e in errors
-    ]
+def _walk(registers, path='registers'):
+    """Yield (json-pointer, register-or-cluster) for every entry, recursively."""
+    for i, r in enumerate(registers or []):
+        if not isinstance(r, dict):
+            continue
+        rpath = f"{path}[{i}]"
+        yield rpath, r
+        if 'registers' in r:
+            yield from _walk(r['registers'], f"{rpath}/registers")
 
 
 def _dim_arity(dim):
-    """Return the number of dimensions for a `dim` value.
-
-    Scalar int -> 1; list -> len(list); anything else -> 0.
-    """
     if isinstance(dim, int):
         return 1
     if isinstance(dim, list):
@@ -64,24 +63,22 @@ def _dim_arity(dim):
 
 
 def _check_array_shape(entry, path):
-    """Return list of (location, message) tuples for one register/cluster."""
+    """Return [(check, message)] for one register/cluster's array shape."""
     errors = []
     name = entry.get('name', '')
     dim = entry.get('dim')
     dim_index = entry.get('dimIndex')
 
     if dim is None:
-        # Not an array; %s has no business appearing in a scalar name, but
-        # don't reject it here — transforms occasionally produce templates
-        # that are expanded later.  The generator-facing constraints only
-        # bite when `dim` is set.
         if dim_index is not None:
-            errors.append((path, f"'dimIndex' present on non-array register '{name}'"))
+            errors.append(('shape',
+                f"{path}: 'dimIndex' present on non-array register '{name}'"))
         return errors
 
     arity = _dim_arity(dim)
     if arity == 0:
-        errors.append((path, f"'dim' on '{name}' must be integer or non-empty list"))
+        errors.append(('shape',
+            f"{path}: 'dim' on '{name}' must be integer or non-empty list"))
         return errors
 
     bracketed = name.count('[%s]')
@@ -89,113 +86,94 @@ def _check_array_shape(entry, path):
     bare = total_placeholders - bracketed
 
     if dim_index is None:
-        # Canonical zero-based form: name must have one [%s] per dimension,
-        # and no bare %s.  Report the most specific problem only.
         if bare:
-            errors.append((path,
-                f"register '{name}': bare '%s' not allowed without dimIndex "
-                f"(use '[%s]' or provide a comma-list 'dimIndex')"))
+            errors.append(('shape',
+                f"{path}: register '{name}': bare '%s' not allowed without "
+                f"dimIndex (use '[%s]' or provide a comma-list 'dimIndex')"))
         elif bracketed != arity:
-            errors.append((path,
-                f"register '{name}': expected {arity} '[%s]' in name, "
-                f"found {bracketed}"))
+            errors.append(('shape',
+                f"{path}: register '{name}': expected {arity} '[%s]' in "
+                f"name, found {bracketed}"))
     else:
-        # dimIndex present: sparse/symbolic form, scalar dim only, bare %s.
         if arity != 1 or not isinstance(dim, int):
-            errors.append((path,
-                f"register '{name}': multidim 'dim' with 'dimIndex' is not supported"))
+            errors.append(('shape',
+                f"{path}: register '{name}': multidim 'dim' with 'dimIndex' "
+                f"is not supported"))
             return errors
         tokens = dim_index.split(',')
         if len(tokens) != dim:
-            errors.append((path,
-                f"register '{name}': dimIndex has {len(tokens)} entries "
-                f"but dim={dim}"))
+            errors.append(('shape',
+                f"{path}: register '{name}': dimIndex has {len(tokens)} "
+                f"entries but dim={dim}"))
         if bracketed:
-            errors.append((path,
-                f"register '{name}': '[%s]' not allowed when dimIndex is given "
-                f"(use bare '%s')"))
+            errors.append(('shape',
+                f"{path}: register '{name}': '[%s]' not allowed when "
+                f"dimIndex is given (use bare '%s')"))
         if total_placeholders != 1:
-            errors.append((path,
-                f"register '{name}': expected exactly one '%s' in name, "
-                f"found {total_placeholders}"))
-        # Every substitution must yield a valid C identifier.
+            errors.append(('shape',
+                f"{path}: register '{name}': expected exactly one '%s' in "
+                f"name, found {total_placeholders}"))
         for tok in tokens:
             substituted = name.replace('%s', tok)
             if not _IDENT_RE.match(substituted):
-                errors.append((path,
-                    f"register '{name}' with dimIndex token '{tok}' "
+                errors.append(('shape',
+                    f"{path}: register '{name}' with dimIndex token '{tok}' "
                     f"substitutes to invalid identifier '{substituted}'"))
     return errors
 
 
-def _walk(entries, path, errors):
-    """Recursively walk a list of register-or-cluster entries."""
-    for i, entry in enumerate(entries or []):
-        if not isinstance(entry, dict):
-            continue
-        loc = f"{path}[{i}]"
-        errors.extend(_check_array_shape(entry, loc))
-        # Cluster: recurse into nested registers.
-        if 'registers' in entry:
-            _walk(entry['registers'], f"{loc}/registers", errors)
-
-
-def validate_structure(data):
-    """Run structural checks on a peripheral model."""
+def validate_semantics(data):
     errors = []
-    _walk(data.get('registers'), 'registers', errors)
+
+    # Block-level parameter uniqueness.
+    for name, count in find_duplicates(data.get('params')).items():
+        errors.append(('params-dup',
+                       f"param '{name}' declared {count} times"))
+
+    # Register-name uniqueness, both top-level and within each cluster.
+    for n, c in find_duplicates(data.get('registers')).items():
+        errors.append(('reg-dup',
+                       f"registers: register '{n}' declared {c} times"))
+    for rpath, r in _walk(data.get('registers') or []):
+        if 'registers' in r:
+            for n, c in find_duplicates(r['registers']).items():
+                errors.append(('reg-dup',
+                               f"{rpath}/registers: register '{n}' declared "
+                               f"{c} times"))
+
+    # Field-name uniqueness within each register.
+    for rpath, r in _walk(data.get('registers') or []):
+        if 'fields' in r:
+            for n, c in find_duplicates(r.get('fields')).items():
+                errors.append(('field-dup',
+                               f"{rpath} ({r.get('name', '?')}): field '{n}' "
+                               f"declared {c} times"))
+
+    # Enum-value-name uniqueness within each field.
+    for rpath, r in _walk(data.get('registers') or []):
+        for j, f in enumerate(r.get('fields') or []):
+            for n, c in find_duplicates(f.get('enumeratedValues')).items():
+                errors.append(('enum-dup',
+                               f"{rpath}/fields[{j}] "
+                               f"({r.get('name', '?')}.{f.get('name', '?')}): "
+                               f"enum value '{n}' declared {c} times"))
+
+    # Array-shape rules from the schema's prose.
+    for rpath, r in _walk(data.get('registers') or []):
+        errors.extend(_check_array_shape(r, rpath))
+
     return errors
 
 
-def is_peripheral(data):
-    """Heuristic: peripheral models have a top-level `registers` list."""
-    return isinstance(data, dict) and isinstance(data.get('registers'), list)
-
-
 def main():
-    ap = argparse.ArgumentParser(
-        description="Validate peripheral YAML models (schema + structural checks)")
-    ap.add_argument("-s", "--schema", required=True, help="Path to JSON/YAML schema")
-    ap.add_argument("-d", "--docs", nargs="+", required=True,
-                    help="YAML model files or globs")
-    args = ap.parse_args()
-
-    schema = yaml.safe_load(pathlib.Path(args.schema).read_text(encoding="utf-8"))
-    Draft7Validator.check_schema(schema)
-    validator = Draft7Validator(schema)
-
-    files = []
-    for pattern in args.docs:
-        files.extend(glob.glob(pattern, recursive=True))
-    if not files:
-        print("No files matched", file=sys.stderr)
-        sys.exit(2)
-
-    had_errors = False
-    skipped = 0
-    for f in sorted(set(files)):
-        if not (f.endswith(".yaml") or f.endswith(".yml")):
-            continue
-        data = yaml.safe_load(pathlib.Path(f).read_text(encoding="utf-8"))
-        if not is_peripheral(data):
-            skipped += 1
-            continue
-
-        schema_errors = validate_schema(data, validator)
-        struct_errors = validate_structure(data) if not schema_errors else []
-
-        if schema_errors or struct_errors:
-            had_errors = True
-            print(f"FAIL {f}:")
-            for loc, msg in schema_errors:
-                print(f"   schema    | at {loc}: {msg}")
-            for loc, msg in struct_errors:
-                print(f"   structure | at {loc}: {msg}")
-
-    if skipped:
-        print(f"(skipped {skipped} non-peripheral files)", file=sys.stderr)
-    sys.exit(1 if had_errors else 0)
+    run(
+        parser_desc='Validate peripheral block YAML models',
+        default_schema=_DEFAULT_SCHEMA,
+        draft_class=Draft7Validator,
+        phase2_func=validate_semantics,
+        accept_doc=is_peripheral,
+    )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

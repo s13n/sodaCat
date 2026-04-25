@@ -21,6 +21,7 @@ from ruamel.yaml import YAML
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
 from transform import renameEntries, createClusterArray, createArray, create2DArray
+from enum_namer import simplify_block_enums
 
 
 # ============================================================================
@@ -256,6 +257,9 @@ def _describe_transform(t):
         return f"patchAddressBlock: {props}"
     elif typ == 'cloneRegister':
         return f"cloneRegister: {t['source']} -> {t['name']}"
+    elif typ == 'renameEnums':
+        n = len(t.get('byValue') or {}) + len(t.get('byName') or {})
+        return f"renameEnums: {t.get('register')}.{t.get('field')}: {n} entries"
     else:
         return f"{typ}: {t}"
 
@@ -440,6 +444,30 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     if k != 'type':
                         ab[k] = v
                 break  # patch first (typically only) address block
+        elif typ == 'renameEnums':
+            reg_name = t.get('register')
+            fld_name = t.get('field')
+            by_value = t.get('byValue') or {}
+            by_name = t.get('byName') or {}
+            target_field = None
+            for reg in block_data.get('registers', []):
+                if reg.get('name') != reg_name:
+                    continue
+                for fld in reg.get('fields') or []:
+                    if fld.get('name') == fld_name:
+                        target_field = fld
+                        break
+                break
+            if target_field is None:
+                print(f"  WARNING: renameEnums: field '{reg_name}.{fld_name}' "
+                      f"not found")
+            else:
+                for e in target_field.get('enumeratedValues') or []:
+                    v = e.get('value')
+                    if v in by_value:
+                        e['name'] = by_value[v]
+                    elif e.get('name') in by_name:
+                        e['name'] = by_name[e['name']]
         elif typ == 'createClusterArray':
             cluster = {'name': t['name']}
             if 'description' in t:
@@ -581,6 +609,50 @@ def _audit_transform_details(before, after, t):
 # ============================================================================
 # Name normalization
 # ============================================================================
+
+def _strip_reserved(block_data):
+    """Drop RESERVED bit-fields and RESERVED enum values from the block.
+
+    Removes any field or enum-value entry whose `name` is RESERVED (case
+    insensitive) from every register and cluster in the block.  The C++
+    generator fills bit-position gaps automatically with uniquely numbered
+    placeholders (`_0:1`, `_1:24`, ...), so explicit RESERVED fields add
+    no information and routinely cause within-register name collisions.
+    """
+    def is_reserved(d):
+        return (isinstance(d, dict)
+                and (d.get('name') or '').upper() == 'RESERVED')
+
+    def strip_field_list(fields):
+        if not fields:
+            return fields
+        return [f for f in fields if not is_reserved(f)]
+
+    def strip_enum_list(field):
+        evs = field.get('enumeratedValues')
+        if not evs:
+            return
+        kept = [e for e in evs if not is_reserved(e)]
+        if kept:
+            field['enumeratedValues'] = kept
+        else:
+            del field['enumeratedValues']
+
+    for r in block_data.get('registers') or []:
+        if not isinstance(r, dict):
+            continue
+        if 'fields' in r:
+            r['fields'] = strip_field_list(r['fields'])
+            for fld in r['fields']:
+                strip_enum_list(fld)
+        for inner in r.get('registers') or []:
+            if not isinstance(inner, dict):
+                continue
+            if 'fields' in inner:
+                inner['fields'] = strip_field_list(inner['fields'])
+                for fld in inner['fields']:
+                    strip_enum_list(fld)
+
 
 def _strip_instance_prefix(block_data, instance_name, block_type):
     """Auto-strip instance/block-type prefix from register names and descriptions.
@@ -1269,6 +1341,27 @@ def main():
                         inst = from_spec.split('.', 1)[1]
                         _strip_instance_prefix(bd, inst, bn)
 
+                # Drop RESERVED bit-fields and RESERVED enum values.  The
+                # C++ generator auto-fills bit-position gaps with uniquely
+                # numbered placeholders, so explicit RESERVED entries add
+                # no information and routinely collide (e.g. registers
+                # with two distinct reserved bit ranges both named
+                # RESERVED).  Bits not declared in `fields` are reserved
+                # by definition.
+                for bd in blocks.values():
+                    _strip_reserved(bd)
+
+                # Re-derive enum value names from their descriptions when the
+                # vendor opts in.  NXP SVDs auto-generate enum names by
+                # uppercasing the description and truncating at 20 characters,
+                # producing within-field collisions; this heuristic recovers
+                # short, unique names from the same descriptions.  Per-enum
+                # overrides for cases the heuristic mis-handles live in
+                # block-level `transforms:` lists as `renameEnums`.
+                if getattr(ext, 'simplify_enums', False):
+                    for bn, bd in blocks.items():
+                        simplify_block_enums(bd)
+
                 # Fold prefix%s_suffix register families into proper clusters.
                 # SVDs often flatten clustered peripherals into per-field arrays
                 # (e.g. CH%s_CONF0, CH%s_DUTY sharing dim and dimIncrement); this
@@ -1393,6 +1486,58 @@ def main():
                 irq['name'] for irq in block_data.get('interrupts', [])]
             model_paths[shared_name] = f"{vendor_prefix}/{shared_name}"
             print(f"  * {shared_name:20} -> top-level (cross-family shared)")
+
+            # Variant overrides on top of a `uses:` shared model.  Subfamilies
+            # listed in the family block_cfg's `variants` extract their own
+            # block (because the variant typically swaps `uses` for a local
+            # `from`), and the resulting per-subfamily model overrides the
+            # shared one for chips in that subfamily.  Without this, chip
+            # models in a variant subfamily reference `model: <block_name>`
+            # but no entry exists in their `models:` index.
+            family_block_cfg = blocks_config.get(block_name, {})
+            variant_overrides = family_block_cfg.get('variants') or {}
+            for fam_name in families:
+                if (fam_name not in families_present
+                        or fam_name not in variant_overrides):
+                    continue
+                resolved = _resolve_block_config(family_block_cfg, fam_name)
+                # Only emit a per-subfamily model when the variant actually
+                # replaces the block model (i.e. swaps `uses` for a local
+                # `from`, or adds variant-specific `transforms`).  Variants
+                # that just change `instances`/`interrupts` are chip-level
+                # details — the shared model still applies.
+                variant_changes_model = (
+                    'from' in resolved
+                    or 'transforms' in variant_overrides[fam_name])
+                if not variant_changes_model:
+                    continue
+                family_specific_count += 1
+                family_dir = output_dir / family_code / fam_name
+                family_dir.mkdir(parents=True, exist_ok=True)
+
+                entry = _select_subfamily_entry(
+                    block_families[fam_name], resolved)
+                v_block_data = entry['data']
+                transforms = resolved.get('transforms')
+                if transforms:
+                    v_block_data = copy.deepcopy(v_block_data)
+                    all_findings.extend(_apply_transforms(
+                        v_block_data, transforms, audit=args.audit,
+                        block_name=f"{block_name} ({fam_name})"))
+                v_block_data = _inject_params(
+                    v_block_data, family_block_cfg.get('params'))
+                v_block_data = _inject_source(
+                    v_block_data, _format_block_source(entry))
+                if resolved.get('description'):
+                    v_block_data['description'] = resolved['description']
+
+                svd.dumpModel(v_block_data, family_dir / block_name)
+                model_interrupt_order[(block_name, fam_name)] = [
+                    irq['name'] for irq in v_block_data.get('interrupts', [])]
+                model_paths[(block_name, fam_name)] = (
+                    f"{vendor_prefix}/{family_code}/{fam_name}/{block_name}")
+                print(f"  + {block_name:20} -> {family_code}/{fam_name} "
+                      f"(variant override)")
             continue
 
         block_cfg = blocks_config.get(block_name, {})
@@ -1541,8 +1686,18 @@ def main():
 
                 canonical_names = canonical_interrupts.get(block_type, set())
 
-                # Map interrupts: config-driven lookup first, then algorithmic
+                # Map interrupts: config-driven lookup first, then algorithmic.
+                # Dedup by canonical name with first-wins policy.  Two cases
+                # this fixes:
+                #   * exact duplicates (shared vectors like TIM1_UP_TIM10
+                #     mapping the same name+value twice);
+                #   * SVD misattribution (e.g. H742 DMA2 lists both
+                #     `DMA2_STR2` at vec 58 and `DMA_STR2` at vec 13 — the
+                #     latter actually belongs to DMA1).  SVDs put the
+                #     correctly instance-prefixed entry first, so first-wins
+                #     keeps the right one.
                 mapped_intrs = []
+                seen_canonical = set()
                 for raw_intr in periph.get('interrupts', []):
                     raw_name = raw_intr['name']
                     canonical = config_interrupt_map.get((block_type, raw_name))
@@ -1550,6 +1705,9 @@ def main():
                         canonical = _resolve_interrupt_name(
                             raw_name, inst_name, canonical_names)
                     if canonical:
+                        if canonical in seen_canonical:
+                            continue
+                        seen_canonical.add(canonical)
                         mapped_intrs.append({
                             'name': canonical, 'value': raw_intr['value']
                         })

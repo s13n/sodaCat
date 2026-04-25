@@ -4,6 +4,24 @@ Known SVD bugs verified against reference manuals, with the transforms that
 work around them. When NXP fixes a bug in a new SVD release, the corresponding
 transform becomes a no-op and can be detected with `audit-lpc-models`.
 
+## Vendor-wide: truncated enum value names
+
+NXP's older MCUXpresso SVD generator (used for LPC43xx_43Sxx and most LPC8/54
+SVDs) derives enum value names from descriptions by uppercasing, replacing
+non-alphanumerics with `_`, and **truncating at 20 characters**. This
+produces ugly names (`ENABLE_CAN_INTERRUPT`, `DISABLE_CAN_INTERRUP`) and
+within-field name clashes (e.g. `THE_MESSAGE_DIRECTIO` x2 in
+`C_CAN.IF%s_MSK2.MDIR`).
+
+Worked around by `simplify_enums = True` in the `lpc` and `mcx` vendor
+extensions, which re-derives short, unique names from the same descriptions
+during extraction. See "Enum name simplification" in `CLAUDE.md`. Per-enum
+overrides for residual awkward cases use the `renameEnums` transform.
+
+The heuristic only acts on names that exhibit mechanical-truncation
+evidence; legitimately long but hand-curated names in newer MCXN SVDs (e.g.
+`NONSECURE_PRIV_USER_ALLOWED`) are preserved.
+
 ## LPC8xx
 
 ### LPC86x (MCUX_2.16.100)
