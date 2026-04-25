@@ -898,6 +898,19 @@ families:
       SCU:
         from: LPC43xx_43Sxx.SCU
         instances: [SCU]
+        # The LPC43 SVD splits each SFSPx port into multiple register
+        # definitions to encode per-pin field variation (high-drive pins
+        # have EHD at [8:9] instead of EHS at [5]; high-speed pins have
+        # their own field set).  The variants don't conflict at the bit
+        # level, so we fuse each port back into one array — the
+        # superset's EHS and EHD live at distinct bit positions and
+        # programmers ignore the irrelevant one for any given pin.
+        transforms:
+          - {type: mergeArrays, pattern: '^SFSP1(_\[%s\]|_%s|_\d+)$', name: 'SFSP1_[%s]', description: 'Pin configuration register for pins P1'}
+          - {type: mergeArrays, pattern: '^SFSP2(_\[%s\]|_%s|_\d+)$', name: 'SFSP2_[%s]', description: 'Pin configuration register for pins P2'}
+          - {type: mergeArrays, pattern: '^SFSP3(_\[%s\]|_%s|_\d+)$', name: 'SFSP3_[%s]', description: 'Pin configuration register for pins P3'}
+          - {type: mergeArrays, pattern: '^SFSP8(_\[%s\]|_%s|_\d+)$', name: 'SFSP8_[%s]', description: 'Pin configuration register for pins P8'}
+          - {type: mergeArrays, pattern: '^SFSPA(_\[%s\]|_%s|_\d+)$', name: 'SFSPA_[%s]', description: 'Pin configuration register for pins PA'}
       SDMMC:
         from: LPC43xx_43Sxx.SDMMC
         instances: [SDMMC]

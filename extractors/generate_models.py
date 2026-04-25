@@ -260,6 +260,8 @@ def _describe_transform(t):
     elif typ == 'renameEnums':
         n = len(t.get('byValue') or {}) + len(t.get('byName') or {})
         return f"renameEnums: {t.get('register')}.{t.get('field')}: {n} entries"
+    elif typ == 'mergeArrays':
+        return f"mergeArrays: /{t['pattern']}/ -> '{t['name']}'"
     else:
         return f"{typ}: {t}"
 
@@ -335,6 +337,157 @@ def _patch_fields(registers, reg_name, field_patches):
                 fields.remove(existing)
             else:
                 print(f"  WARNING: patchFields: field '{name}' not found in '{reg_name}'")
+
+
+def _merge_arrays(registers, pattern, new_name, description=None):
+    """Fuse multiple disjoint-index register arrays/scalars into one array.
+
+    Some SVDs split what is logically a single port-wide pin-config array
+    into several `<register>` definitions because a few pins have a
+    distinct field set (e.g. LPC43 SCU SFSP1: P1.0-16 normal pins, P1.17
+    high-drive, P1.18-20 high-speed).  The split's only motivation is
+    capturing per-pin field variation, but the variants don't conflict
+    at the bit level — they're just supersets of one another.
+
+    This transform finds every top-level register whose `name` matches
+    `pattern`, asserts the union of fields has no bit-level overlap
+    among different fields, and replaces the matched registers with one
+    array using `new_name`.
+
+    Index handling:
+      * Scalar match (no `dim`)       — index inferred from `_<N>` suffix.
+      * Array match with `dimIndex`   — indices read from the comma-list.
+      * Array match with `[%s]` only  — indices are 0..dim-1.
+
+    The merged array uses `[%s]` form when the combined index set is
+    contiguous starting at 0, and bare `%s` + comma-list `dimIndex`
+    otherwise.  All matched registers must share the same `dimIncrement`
+    (where set), and the combined indices must be unique.
+
+    Two fields with the same name are deduplicated when they have
+    matching position; otherwise this raises ValueError, as does any
+    attempt to put two distinct fields on the same bit.
+    """
+    pat = re.compile(pattern)
+
+    # Collect matches: (index_in_registers, register, list_of_indices).
+    matches = []
+    for i, r in enumerate(registers):
+        if not isinstance(r, dict):
+            continue
+        if not pat.match(r.get('name', '')):
+            continue
+        dim = r.get('dim')
+        dim_index = r.get('dimIndex')
+        if dim is None:
+            m = re.search(r'_(\d+)$', r['name'])
+            if not m:
+                raise ValueError(
+                    f"mergeArrays: scalar match '{r['name']}' has no "
+                    f"trailing _<index> to infer position from")
+            indices = [int(m.group(1))]
+        elif dim_index:
+            indices = [int(t) for t in dim_index.split(',')]
+        else:
+            indices = list(range(dim))
+        matches.append((i, r, indices))
+
+    if not matches:
+        print(f"  WARNING: mergeArrays: no registers match '{pattern}'")
+        return
+    if len(matches) == 1:
+        # Nothing to merge — single match is already canonical
+        return
+
+    # Same dimIncrement everywhere it's set.
+    dim_inc = None
+    for _, r, _ in matches:
+        d = r.get('dimIncrement')
+        if d is not None:
+            if dim_inc is not None and dim_inc != d:
+                raise ValueError(
+                    f"mergeArrays: incompatible dimIncrement "
+                    f"({dim_inc} vs {d}) for /{pattern}/")
+            dim_inc = d
+    if dim_inc is None:
+        # All scalars — infer from the gap between two consecutive matches
+        offsets = sorted(r['addressOffset'] for _, r, _ in matches)
+        dim_inc = offsets[1] - offsets[0] if len(offsets) > 1 else 4
+
+    # Combine indices.
+    all_indices = []
+    for _, _, indices in matches:
+        all_indices.extend(indices)
+    if len(set(all_indices)) != len(all_indices):
+        raise ValueError(
+            f"mergeArrays: duplicate indices in merged set for /{pattern}/")
+    all_indices.sort()
+    base_offset = min(r['addressOffset'] for _, r, _ in matches)
+
+    # Field-set union with bit-overlap and same-name-same-position checks.
+    merged_fields = []
+    bit_owners = {}
+    for _, r, _ in matches:
+        for f in r.get('fields') or []:
+            fname = f.get('name')
+            offset = f.get('bitOffset', 0)
+            width = f.get('bitWidth', 1)
+            existing = next(
+                (mf for mf in merged_fields if mf.get('name') == fname), None)
+            if existing is not None:
+                if (existing.get('bitOffset') != offset
+                        or existing.get('bitWidth') != width):
+                    raise ValueError(
+                        f"mergeArrays: field '{fname}' has incompatible "
+                        f"position across /{pattern}/ matches: "
+                        f"[{existing.get('bitOffset')}:"
+                        f"{existing.get('bitWidth')}] vs "
+                        f"[{offset}:{width}]")
+                continue
+            for b in range(offset, offset + width):
+                if b in bit_owners:
+                    raise ValueError(
+                        f"mergeArrays: field '{fname}' bit {b} overlaps "
+                        f"with existing field '{bit_owners[b]}' in "
+                        f"/{pattern}/ merge")
+                bit_owners[b] = fname
+            merged_fields.append(copy.deepcopy(f))
+    merged_fields.sort(key=lambda f: f.get('bitOffset', 0))
+
+    # Decide canonical array shape: contiguous 0-based -> [%s], else %s+dimIndex.
+    contiguous_zero = (
+        all_indices == list(range(len(all_indices))))
+    canonical_name = new_name
+    merged = {
+        'name': canonical_name,
+        'description': description or matches[0][1].get('description'),
+        'addressOffset': base_offset,
+        'dim': len(all_indices),
+        'dimIncrement': dim_inc,
+    }
+    if not contiguous_zero:
+        # Switch to bare %s if user supplied [%s].
+        if '[%s]' in canonical_name:
+            merged['name'] = canonical_name.replace('[%s]', '%s')
+        merged['dimIndex'] = ','.join(str(i) for i in all_indices)
+
+    # Inherit register-level scalar attrs from the first match.
+    first = matches[0][1]
+    for key in ('access', 'resetValue', 'resetMask', 'size'):
+        if key in first:
+            merged[key] = first[key]
+    merged['fields'] = merged_fields
+
+    # Drop None description.
+    if merged.get('description') is None:
+        del merged['description']
+
+    # Replace matched registers in-place: remove all, insert one merged
+    # at the position of the lowest-index match.
+    insert_idx = min(i for i, _, _ in matches)
+    for i in sorted({i for i, _, _ in matches}, reverse=True):
+        del registers[i]
+    registers.insert(insert_idx, merged)
 
 
 def _patch_registers(registers, reg_patches):
@@ -444,6 +597,12 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     if k != 'type':
                         ab[k] = v
                 break  # patch first (typically only) address block
+        elif typ == 'mergeArrays':
+            _merge_arrays(
+                block_data.get('registers', []),
+                t['pattern'],
+                t['name'],
+                description=t.get('description'))
         elif typ == 'renameEnums':
             reg_name = t.get('register')
             fld_name = t.get('field')

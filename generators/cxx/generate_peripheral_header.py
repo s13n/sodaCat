@@ -190,7 +190,15 @@ $postfix"""))
                 names = memberName
                 if dimIndex:
                     #TODO: Check if the address offset matches the size
-                    names = ",".join(reg['name'] % item for item in dimIndex.split(","))
+                    tokens = dimIndex.split(",")
+                    # Disambiguate the bitfield struct name when multiple
+                    # dimIndex arrays share a prefix in the same scope (e.g.
+                    # SFSP1_[%s] alongside SFSP1_%s with dimIndex 18,19,20
+                    # — both would otherwise reduce to `SFSP1_`).  Include
+                    # the first dimIndex token in the struct name.
+                    memberName = reg['name'] % tokens[0]
+                    typeName = structPrefix + memberName
+                    names = ",".join(reg['name'] % item for item in tokens)
                 elif dim_total > 1:
                     memberName = reg['name'].replace('[%s]', '')
                     typeName = structPrefix + memberName
