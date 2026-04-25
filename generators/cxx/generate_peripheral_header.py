@@ -140,7 +140,7 @@ $postfix"""))
             pos += width
         return txt, enums
                 
-    def formatRegisterList(self, reglist:list, defaultType:str, padToSize:int, defaultSize:int, structPrefix:str=''):
+    def formatRegisterList(self, reglist:list, defaultType:str, padToSize:int, defaultSize:int, structPrefix:str='', blockName:str=''):
         """ Generate structs and instances for a list of registers
         Returns four values (in this order):
         1. All the type definitions for the registers as a multiline string
@@ -150,6 +150,14 @@ $postfix"""))
 
         structPrefix is prepended to struct/enum type names to avoid collisions
         when multiple clusters have identically-named registers.
+
+        blockName is the peripheral struct name; when a top-level register's
+        bitfield struct would carry the same name, we append `_` so the two
+        don't redeclare each other in `namespace ${blockName}`.  Only applies
+        at the top level (`structPrefix == ''`); cluster-nested registers are
+        already namespaced by the prefix.  The trailing-underscore convention
+        matches `_safe_name()` and the inline-namespace naming used elsewhere
+        in this generator.
         """
         enums = ''
         structs = ''
@@ -170,6 +178,8 @@ $postfix"""))
                 dimIndex = reg.get('dimIndex', '')
                 # Derive the struct type name: strip [%s] or %s, drop trailing _
                 name = reg['name'].replace('[%s]', '').replace('%s', '').rstrip('_')
+                if not structPrefix and blockName and name == blockName:
+                    name = name + '_'
                 padSize = reg.get('dimIncrement', 0)
                 innerPrefix = structPrefix + name + '_'
                 types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4, innerPrefix)
@@ -203,6 +213,10 @@ $postfix"""))
                     memberName = reg['name'].replace('[%s]', '')
                     typeName = structPrefix + memberName
                     names = reg['name'] % dim_fmt
+                # Avoid clashing the bitfield struct name with the peripheral
+                # struct (both end up at namespace scope).
+                if not structPrefix and blockName and typeName == blockName:
+                    typeName = typeName + '_'
                 size = reg.get('size', defaultSize * 8)
                 type = reg.get('dataType', 'uint%s_t' % size)
                 if 'fields' in reg and reg['fields']:
@@ -268,7 +282,7 @@ $postfix"""))
     def formatPeripheral(self, per:dict, prefix:str, postfix:str):
         """ Generate definitions for a peripheral """
         defaultSize = per.get('size', 32) >> 3
-        types, regs, size, enums = self.formatRegisterList(per['registers'], 'uint32_t', 0, defaultSize)
+        types, regs, size, enums = self.formatRegisterList(per['registers'], 'uint32_t', 0, defaultSize, blockName=per.get('name', ''))
         blocks, ints, params = self.formatIntegrationList(per)
         description = per.get('description', '')
         return self.headerTemplate.substitute(per, blocks=blocks, ints=ints, params=params, regs=regs, enums=enums, types=types, description=description, size=size, prefix=prefix, postfix=postfix)
