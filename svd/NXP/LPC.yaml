@@ -963,18 +963,77 @@ families:
           TIMER1: TIMER
           TIMER2: TIMER
           TIMER3: TIMER
-      UART1:
-        from: LPC43xx_43Sxx.UART1
-        instances: [UART1]
+      USART:
+        # Unified UART/USART block.  UART1 has modem control (MCR/MSR) but
+        # lacks the IrDA/smart-card/sync/oversampling/half-duplex extras the
+        # other three instances have; the model declares the union and
+        # per-instance params advertise which features are present.  Source
+        # is USART0 (the larger feature set); UART1-only registers and
+        # fields are added by transforms below.
+        from: LPC43xx_43Sxx.USART0
+        instances: [UART1, USART0, USART2, USART3]
+        description: Universal (a)synchronous receiver/transmitter (UART/USART)
         interrupts:
           UART1: INTR
-      USART:
-        from: LPC43xx_43Sxx.USART0
-        instances: [USART0, USART2, USART3]
-        interrupts:
-          USART0: USART
-          USART2: USART
-          USART3: USART
+          USART0: INTR
+          USART2: INTR
+          USART3: INTR
+        params:
+          - {name: has_modem, type: bool, default: false, description: 'Modem control: MCR/MSR registers and CTSIE/MSIE bits in IER, SEL bit in RS485CTRL (UART1 only)'}
+          - {name: has_irda, type: bool, default: true, description: 'IrDA encoder/decoder (ICR register)'}
+          - {name: has_smartcard, type: bool, default: true, description: 'ISO7816-3 smart card mode (SCICTRL register)'}
+          - {name: has_synchronous, type: bool, default: true, description: 'Synchronous mode (SYNCCTRL register)'}
+          - {name: has_oversampling, type: bool, default: true, description: 'Configurable oversampling (OSR register)'}
+          - {name: has_halfduplex, type: bool, default: true, description: 'Half-duplex direction control (HDEN register)'}
+        transforms:
+          # Align IER auto-baud bit names with UART1's shorter form (bits identical).
+          - {type: renameFields, register: IER, pattern: ABEOINTEN, replacement: ABEOIE}
+          - {type: renameFields, register: IER, pattern: ABTOINTEN, replacement: ABTOIE}
+          # UART1-only IER bits: declared here so UART1 instances can reach them.
+          - type: patchFields
+            register: IER
+            fields:
+              - {name: MSIE, description: 'Modem Status Interrupt Enable (UART1 only); status in MSR[3:0].', bitOffset: 3, bitWidth: 1}
+              - {name: CTSIE, description: 'CTS Interrupt Enable (UART1 only). With auto-CTS, gates modem-status interrupt on CTS transitions.', bitOffset: 7, bitWidth: 1}
+          # UART1-only RS485CTRL bit: selects RTS vs DTR for direction control.
+          - type: patchFields
+            register: RS485CTRL
+            fields:
+              - {name: SEL, description: 'Direction-control pin select (UART1 only): 0=RTS, 1=DTR', bitOffset: 3, bitWidth: 1}
+          # UART1-only modem-control / modem-status registers.
+          - type: patchRegisters
+            registers:
+              - name: MCR
+                displayName: MCR
+                description: 'Modem Control Register (UART1 only). Flow-control handshaking and loopback mode.'
+                addressOffset: 16
+                size: 32
+                access: read-write
+                resetValue: 0
+                resetMask: 4294967295
+                fields:
+                  - {name: DTRCTRL, description: 'DTR Control. Source for modem output DTR; reads as 0 in loopback mode.', bitOffset: 0, bitWidth: 1}
+                  - {name: RTSCTRL, description: 'RTS Control. Source for modem output RTS; reads as 0 in loopback mode.', bitOffset: 1, bitWidth: 1}
+                  - {name: LMS,     description: 'Loopback Mode Select.', bitOffset: 4, bitWidth: 1}
+                  - {name: RTSEN,   description: 'Auto-RTS flow control enable.', bitOffset: 6, bitWidth: 1}
+                  - {name: CTSEN,   description: 'Auto-CTS flow control enable.', bitOffset: 7, bitWidth: 1}
+              - name: MSR
+                displayName: MSR
+                description: 'Modem Status Register (UART1 only). Handshake-signal status flags.'
+                addressOffset: 24
+                size: 32
+                access: read-only
+                resetValue: 0
+                resetMask: 4294967295
+                fields:
+                  - {name: DCTS, description: 'Delta CTS. Set on CTS state change; cleared on read.', bitOffset: 0, bitWidth: 1}
+                  - {name: DDSR, description: 'Delta DSR. Set on DSR state change; cleared on read.', bitOffset: 1, bitWidth: 1}
+                  - {name: TERI, description: 'Trailing Edge RI. Set on RI low-to-high transition; cleared on read.', bitOffset: 2, bitWidth: 1}
+                  - {name: DDCD, description: 'Delta DCD. Set on DCD state change; cleared on read.', bitOffset: 3, bitWidth: 1}
+                  - {name: CTS,  description: 'Clear To Send (complement of CTS pin; mirrors MCR[1] in loopback).', bitOffset: 4, bitWidth: 1}
+                  - {name: DSR,  description: 'Data Set Ready (complement of DSR pin; mirrors MCR[0] in loopback).', bitOffset: 5, bitWidth: 1}
+                  - {name: RI,   description: 'Ring Indicator (complement of RI pin; mirrors MCR[2] in loopback).', bitOffset: 6, bitWidth: 1}
+                  - {name: DCD,  description: 'Data Carrier Detect (complement of DCD pin; mirrors MCR[3] in loopback).', bitOffset: 7, bitWidth: 1}
       USB:
         from: LPC43xx_43Sxx.USB0
         instances: [USB0, USB1]
@@ -989,3 +1048,6 @@ families:
         _all:
           SCT: {match_channels: 8, events: 8, outputs: 7, has_fractional_match: true}
           SPIFI: {base: 20, logsize: 26, data_base: 128, data_logsize: 26}
+          # UART1 has modem control (MCR/MSR) but lacks the IrDA/smart-card/
+          # sync/oversampling/half-duplex registers that USART0/2/3 have.
+          UART1: {has_modem: true, has_irda: false, has_smartcard: false, has_synchronous: false, has_oversampling: false, has_halfduplex: false}

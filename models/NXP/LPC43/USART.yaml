@@ -1,7 +1,32 @@
 name: USART
-description: USART0_2_3
+description: Universal (a)synchronous receiver/transmitter (UART/USART)
 groupName: USART
 source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+params:
+  - name: has_modem
+    type: bool
+    default: false
+    description: 'Modem control: MCR/MSR registers and CTSIE/MSIE bits in IER, SEL bit in RS485CTRL (UART1 only)'
+  - name: has_irda
+    type: bool
+    default: true
+    description: IrDA encoder/decoder (ICR register)
+  - name: has_smartcard
+    type: bool
+    default: true
+    description: ISO7816-3 smart card mode (SCICTRL register)
+  - name: has_synchronous
+    type: bool
+    default: true
+    description: Synchronous mode (SYNCCTRL register)
+  - name: has_oversampling
+    type: bool
+    default: true
+    description: Configurable oversampling (OSR register)
+  - name: has_halfduplex
+    type: bool
+    default: true
+    description: Half-duplex direction control (HDEN register)
 registers:
   - name: RBR
     description: Receiver Buffer Register. Contains the next received character to be read (DLAB = 0).
@@ -92,7 +117,7 @@ registers:
             value: 1
         bitOffset: 2
         bitWidth: 1
-      - name: ABEOINTEN
+      - name: ABEOIE
         description: Enables the end of auto-baud interrupt.
         enumeratedValues:
           - name: DISABLE
@@ -103,7 +128,7 @@ registers:
             value: 1
         bitOffset: 8
         bitWidth: 1
-      - name: ABTOINTEN
+      - name: ABTOIE
         description: Enables the auto-baud time-out interrupt.
         enumeratedValues:
           - name: DISABLE
@@ -113,6 +138,14 @@ registers:
             description: Enable. Enable auto-baud time-out Interrupt.
             value: 1
         bitOffset: 9
+        bitWidth: 1
+      - name: MSIE
+        description: Modem Status Interrupt Enable (UART1 only); status in MSR[3:0].
+        bitOffset: 3
+        bitWidth: 1
+      - name: CTSIE
+        description: CTS Interrupt Enable (UART1 only). With auto-CTS, gates modem-status interrupt on CTS transitions.
+        bitOffset: 7
         bitWidth: 1
   - name: IIR
     description: Interrupt ID Register. Identifies which interrupt(s) are pending.
@@ -693,6 +726,10 @@ registers:
             value: 1
         bitOffset: 5
         bitWidth: 1
+      - name: SEL
+        description: 'Direction-control pin select (UART1 only): 0=RTS, 1=DTR'
+        bitOffset: 3
+        bitWidth: 1
   - name: RS485ADRMATCH
     description: RS-485/EIA-485 address match. Contains the address match value for RS-485/EIA-485 mode.
     addressOffset: 80
@@ -810,9 +847,40 @@ registers:
         description: Transmit enable.  After reset transmission is enabled. When the TXEN bit is de-asserted, no data will be transmitted although data may be pending in the TSR or THR.
         bitOffset: 0
         bitWidth: 1
+  - name: MCR
+    displayName: MCR
+    description: Modem Control Register (UART1 only). Flow-control handshaking and loopback mode.
+    addressOffset: 16
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - {name: DTRCTRL, description: DTR Control. Source for modem output DTR; reads as 0 in loopback mode., bitOffset: 0, bitWidth: 1}
+      - {name: RTSCTRL, description: RTS Control. Source for modem output RTS; reads as 0 in loopback mode., bitOffset: 1, bitWidth: 1}
+      - {name: LMS, description: Loopback Mode Select., bitOffset: 4, bitWidth: 1}
+      - {name: RTSEN, description: Auto-RTS flow control enable., bitOffset: 6, bitWidth: 1}
+      - {name: CTSEN, description: Auto-CTS flow control enable., bitOffset: 7, bitWidth: 1}
+  - name: MSR
+    displayName: MSR
+    description: Modem Status Register (UART1 only). Handshake-signal status flags.
+    addressOffset: 24
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - {name: DCTS, description: Delta CTS. Set on CTS state change; cleared on read., bitOffset: 0, bitWidth: 1}
+      - {name: DDSR, description: Delta DSR. Set on DSR state change; cleared on read., bitOffset: 1, bitWidth: 1}
+      - {name: TERI, description: Trailing Edge RI. Set on RI low-to-high transition; cleared on read., bitOffset: 2, bitWidth: 1}
+      - {name: DDCD, description: Delta DCD. Set on DCD state change; cleared on read., bitOffset: 3, bitWidth: 1}
+      - {name: CTS, description: 'Clear To Send (complement of CTS pin; mirrors MCR[1] in loopback).', bitOffset: 4, bitWidth: 1}
+      - {name: DSR, description: 'Data Set Ready (complement of DSR pin; mirrors MCR[0] in loopback).', bitOffset: 5, bitWidth: 1}
+      - {name: RI, description: 'Ring Indicator (complement of RI pin; mirrors MCR[2] in loopback).', bitOffset: 6, bitWidth: 1}
+      - {name: DCD, description: 'Data Carrier Detect (complement of DCD pin; mirrors MCR[3] in loopback).', bitOffset: 7, bitWidth: 1}
 addressBlocks:
   - offset: 0
     size: 768
     usage: registers
 interrupts:
-  - name: USART
+  - name: INTR
