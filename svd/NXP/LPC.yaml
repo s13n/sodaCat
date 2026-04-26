@@ -219,6 +219,16 @@ shared_blocks:
 
   SPIFI:
     from: LPC54S018.SPIFI0
+    # Memory-mapped flash windows.  Naming for the primary (code-capable)
+    # window mirrors STM32 QUADSPI (`base`, `logsize`).  The optional
+    # data-only secondary window is an LPC speciality: LPC43 exposes the
+    # same flash twice — a code-capable window and a non-cacheable
+    # data-only window.  Set `data_base = 0` to disable.
+    params:
+      - {name: base, type: int, default: 0, max: 255, description: 'Top 8 bits of memory-mapped base address (e.g. 0x14 = 0x14000000)'}
+      - {name: logsize, type: int, default: 0, max: 31, description: 'Memory window size as log2 (26 = 64 MB)'}
+      - {name: data_base, type: int, default: 0, max: 255, description: 'Top 8 bits of data-only memory-mapped base address (0 = no separate data window)'}
+      - {name: data_logsize, type: int, default: 0, max: 31, description: 'Data-only window size as log2 (0 = none)'}
     interrupts:
       SPIFI: INTR
       SPIFI0: INTR
@@ -732,6 +742,7 @@ families:
         _all:
           MRT0: {timer_bits: 24, has_modcfg: true}
           LCD: {num_palette: 128}
+          SPIFI0: {base: 16, logsize: 27}
       LPC540xx:
         LPC54S018:
           GPIO: {ports: 6}
@@ -977,3 +988,4 @@ families:
       _all:
         _all:
           SCT: {match_channels: 8, events: 8, outputs: 7, has_fractional_match: true}
+          SPIFI: {base: 20, logsize: 26, data_base: 128, data_logsize: 26}
