@@ -269,96 +269,6 @@ registers:
         description: '0: FIFO not empty  1: FIFO empty and PACKED_READ is set'
         bitOffset: 31
         bitWidth: 1
-  - dim: 8
-    dimIncrement: 4
-    name: DESCRIPTOR0_[%s]
-    description: Table 0 descriptor n, n= 0 to 7
-    addressOffset: 768
-    access: read-write
-    resetValue: 37088
-    resetMask: 4294967295
-    fields:
-      - name: CHANNEL_NR
-        description: '0: convert input  0  1: convert input  1  2: convert input  2  3: convert input  3  4: convert input  4  5: convert input  5  6,7: reserved'
-        bitOffset: 0
-        bitWidth: 3
-      - name: HALT
-        description: '0: After this descriptor continue with the next descriptor.  1: halt after this descriptor is processed. Restart at a new trigger.'
-        bitOffset: 3
-        bitWidth: 1
-      - name: INTERRUPT
-        description: '1: Raise interrupt when ADC result is available'
-        bitOffset: 4
-        bitWidth: 1
-      - name: POWER_DOWN
-        description: '1: Power down after this conversion.'
-        bitOffset: 5
-        bitWidth: 1
-      - name: BRANCH
-        description: '00: Continue with next descriptor (wraps around after top).  01: Branch to the first descriptor in this table.  10: Swap tables and branch to the first descriptor of the new table.  11: reserved (do not store sample). Continue with next descriptor (wraps around after top).'
-        bitOffset: 6
-        bitWidth: 2
-      - name: MATCH_VALUE
-        description: Evaluate this descriptor when descriptor timer value is equal to match value.
-        bitOffset: 8
-        bitWidth: 14
-      - name: THRESHOLD_SEL
-        description: 'Indicates which threshold comparison level register set is to be used:  00: no comparison,  01: THR_A.   10: THR_B.  11: Reserved'
-        bitOffset: 22
-        bitWidth: 2
-      - name: RESET_TIMER
-        description: '1: reset descriptor timer.'
-        bitOffset: 24
-        bitWidth: 1
-      - name: UPDATE_TABLE
-        description: '1: Update table with all 8 descriptors of this table. Descriptors of this table that are written without this bit set are not updated until any descriptor of this table is written with this bit set.  This field is write only. A read returns 0x0.'
-        bitOffset: 31
-        bitWidth: 1
-  - dim: 8
-    dimIncrement: 4
-    name: DESCRIPTOR1_[%s]
-    description: Table 1 descriptors n, n=0 to 7
-    addressOffset: 800
-    access: read-write
-    resetValue: 37088
-    resetMask: 4294967295
-    fields:
-      - name: CHANNEL_NR
-        description: '0: convert input 0  1: convert input 1  2: convert input 2  3: convert input 3  4: convert input 4  5: convert input 5  6,7: reserved'
-        bitOffset: 0
-        bitWidth: 3
-      - name: HALT
-        description: '0: After this descriptor continue with the next descriptor.  1: halt after this descriptor is processed. Restart at a new trigger.'
-        bitOffset: 3
-        bitWidth: 1
-      - name: INTERRUPT
-        description: '1: Raise interrupt when ADC result is available'
-        bitOffset: 4
-        bitWidth: 1
-      - name: POWER_DOWN
-        description: '1: Power down after this conversion.'
-        bitOffset: 5
-        bitWidth: 1
-      - name: BRANCH
-        description: '00: Continue with next descriptor (wraps around after top).  01: Branch to the first descriptor in this table.  10: Swap tables and branch to the first descriptor of the new table.  11: reserved (do not store sample).  Continue with next descriptor (wraps around after top).'
-        bitOffset: 6
-        bitWidth: 2
-      - name: MATCH_VALUE
-        description: Evaluate this descriptor when descriptor timer value is equal to match value.
-        bitOffset: 8
-        bitWidth: 14
-      - name: THRESHOLD_SEL
-        description: 'Indicates which threshold comparison level register set is to be used:  00: no comparison,  01: THR_A.   10: THR_B.  11: Reserved'
-        bitOffset: 22
-        bitWidth: 2
-      - name: RESET_TIMER
-        description: '1: reset descriptor timer.'
-        bitOffset: 24
-        bitWidth: 1
-      - name: UPDATE_TABLE
-        description: '1: Update table with all 8 descriptors of this table. Descriptors of this table that are written without this bit set are not updated until any descriptor of this table is written with this bit set.  This field is write only. A read returns 0x0.'
-        bitOffset: 31
-        bitWidth: 1
   - name: CLR_EN0
     description: Interrupt 0 clear mask
     addressOffset: 3840
@@ -631,6 +541,51 @@ registers:
         description: Interrupt set status
         bitOffset: 0
         bitWidth: 30
+  - dim: [2, 8]
+    dimIncrement: [32, 4]
+    name: DESCRIPTOR[%s][%s]
+    description: Table m descriptor n, m=0..1, n=0..7
+    addressOffset: 768
+    access: read-write
+    resetValue: 37088
+    resetMask: 4294967295
+    fields:
+      - name: CHANNEL_NR
+        description: '0: convert input  0  1: convert input  1  2: convert input  2  3: convert input  3  4: convert input  4  5: convert input  5  6,7: reserved'
+        bitOffset: 0
+        bitWidth: 3
+      - name: HALT
+        description: '0: After this descriptor continue with the next descriptor.  1: halt after this descriptor is processed. Restart at a new trigger.'
+        bitOffset: 3
+        bitWidth: 1
+      - name: INTERRUPT
+        description: '1: Raise interrupt when ADC result is available'
+        bitOffset: 4
+        bitWidth: 1
+      - name: POWER_DOWN
+        description: '1: Power down after this conversion.'
+        bitOffset: 5
+        bitWidth: 1
+      - name: BRANCH
+        description: '00: Continue with next descriptor (wraps around after top).  01: Branch to the first descriptor in this table.  10: Swap tables and branch to the first descriptor of the new table.  11: reserved (do not store sample). Continue with next descriptor (wraps around after top).'
+        bitOffset: 6
+        bitWidth: 2
+      - name: MATCH_VALUE
+        description: Evaluate this descriptor when descriptor timer value is equal to match value.
+        bitOffset: 8
+        bitWidth: 14
+      - name: THRESHOLD_SEL
+        description: 'Indicates which threshold comparison level register set is to be used:  00: no comparison,  01: THR_A.   10: THR_B.  11: Reserved'
+        bitOffset: 22
+        bitWidth: 2
+      - name: RESET_TIMER
+        description: '1: reset descriptor timer.'
+        bitOffset: 24
+        bitWidth: 1
+      - name: UPDATE_TABLE
+        description: '1: Update table with all 8 descriptors of this table. Descriptors of this table that are written without this bit set are not updated until any descriptor of this table is written with this bit set.  This field is write only. A read returns 0x0.'
+        bitOffset: 31
+        bitWidth: 1
 addressBlocks:
   - offset: 0
     size: 4095

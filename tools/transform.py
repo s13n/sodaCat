@@ -195,21 +195,56 @@ def createArray(reglist:list, pattern:str, name:str, template:int=0):
 
 
 def create2DArray(reglist:list, pattern:str, name:str, template:tuple=(0,0)):
-    """Convert numbered registers into a 2D register array with list-valued dim/dimIncrement.
+    """Convert registers into a 2D array with list-valued dim/dimIncrement.
 
-    This collapses a grid of identically-structured registers with two numeric
-    indices (e.g. QMEM0_0, QMEM0_1, ..., QMEM3_15) into a single register with
-    dim=[rows, cols] and dimIncrement=[rowStride, colStride] (e.g. QMEM[%s][%s]
-    with dim=[4, 16], dimIncrement=[64, 4]).
+    Two input shapes are accepted, distinguished by the regex's capture-group
+    count:
 
-    The pattern is a regex with two capture groups for the zero-based row and
-    column indices. The name parameter specifies the base name for the resulting
-    array register. The template parameter selects which (row, col) instance to
-    use as prototype (default (0, 0)).
+    - **2 groups (scalar grid)**: a flat grid of identically-structured
+      scalar registers with two numeric indices (e.g. QMEM0_0, QMEM0_1, ...,
+      QMEM3_15). Both row and column indices are read from the regex.
+
+    - **1 group (stack of 1D arrays)**: N already-1D-array registers sharing
+      field shape, dim, and dimIncrement (e.g. DESCRIPTOR0_[%s] and
+      DESCRIPTOR1_[%s] each with dim=8). The capture group supplies the row
+      index; the inner dimension is taken from each matched array's existing
+      dim/dimIncrement.
+
+    Both modes produce the same output: one register named `name[%s][%s]`
+    with dim=[rows, cols] and dimIncrement=[rowStride, colStride].
+
+    The template parameter selects the prototype: (row, col) for scalar mode,
+    (row, _) for stacking mode (the column component is unused).
     """
     pat = re.compile(pattern)
+    if pat.groups == 1:
+        return _stack1DArrays(reglist, pat, pattern, name, template)
+    if pat.groups == 2:
+        return _fuseScalarGrid(reglist, pat, pattern, name, template)
+    print(f'create2DArray: pattern must have 1 or 2 capture groups, got {pat.groups}')
+    return reglist
 
-    # Collect matching registers with their (row, col) indices
+
+def _addr(r):
+    v = r['addressOffset']
+    return v if isinstance(v, int) else int(v, 0)
+
+
+def _emit2DArray(tmpl_reg, name, base_addr, rows, cols, rowStride, colStride):
+    """Rewrite tmpl_reg in place as a 2D array register."""
+    tmpl_reg['name'] = name + '[%s][%s]'
+    if 'displayName' in tmpl_reg:
+        tmpl_reg['displayName'] = name + '[%s][%s]'
+    dim = CommentedSeq([rows, cols])
+    dim.fa.set_flow_style()
+    inc = CommentedSeq([rowStride, colStride])
+    inc.fa.set_flow_style()
+    tmpl_reg['dim'] = dim
+    tmpl_reg['dimIncrement'] = inc
+    tmpl_reg['addressOffset'] = base_addr
+
+
+def _fuseScalarGrid(reglist, pat, pattern, name, template):
     matches = {}  # (row, col) -> register
     for r in reglist:
         m = pat.match(r['name'])
@@ -231,36 +266,78 @@ def create2DArray(reglist:list, pattern:str, name:str, template:tuple=(0,0)):
         print(f'Incomplete 2D array for {pattern}: expected {rows}x{cols}={rows*cols}, got {len(matches)}')
         return reglist
 
-    def addr(r):
-        v = r['addressOffset']
-        return v if isinstance(v, int) else int(v, 0)
+    colStride = _addr(matches[(0, 1)]) - _addr(matches[(0, 0)])
+    rowStride = _addr(matches[(1, 0)]) - _addr(matches[(0, 0)])
 
-    # Calculate strides from adjacent elements
-    colStride = addr(matches[(0, 1)]) - addr(matches[(0, 0)])
-    rowStride = addr(matches[(1, 0)]) - addr(matches[(0, 0)])
-
-    # Find template instance
-    tmpl_reg = matches.get(template, matches[(0, 0)])
-
-    # Modify template in place
-    tmpl_reg['name'] = name + '[%s][%s]'
-    if 'displayName' in tmpl_reg:
-        tmpl_reg['displayName'] = name + '[%s][%s]'
-    dim = CommentedSeq([rows, cols])
-    dim.fa.set_flow_style()
-    inc = CommentedSeq([rowStride, colStride])
-    inc.fa.set_flow_style()
-    tmpl_reg['dim'] = dim
-    tmpl_reg['dimIncrement'] = inc
+    tmpl_reg = matches.get(tuple(template), matches[(0, 0)])
+    base_addr = _addr(matches[(0, 0)])
+    _emit2DArray(tmpl_reg, name, base_addr, rows, cols, rowStride, colStride)
 
     fmt = "Registers {} become 2D array {}: Address offset = {}  Dims = {}x{}  Increments = {},{}"
-    print(fmt.format(pattern, tmpl_reg['name'], addr(tmpl_reg), rows, cols, rowStride, colStride))
+    print(fmt.format(pattern, tmpl_reg['name'], base_addr, rows, cols, rowStride, colStride))
 
-    # Build result: non-matched registers + array register at end
     matched_ids = set(id(r) for r in matches.values())
-    result = [r for r in reglist if id(r) not in matched_ids]
-    result.append(tmpl_reg)
-    return result
+    return [r for r in reglist if id(r) not in matched_ids] + [tmpl_reg]
+
+
+def _stack1DArrays(reglist, pat, pattern, name, template):
+    """Stack N already-1D-array registers into a single 2D array."""
+    matches = {}  # row -> register (must be a 1D array)
+    for r in reglist:
+        m = pat.match(r['name'])
+        if m:
+            try:
+                matches[int(m.group(1))] = r
+            except ValueError:
+                pass
+
+    if len(matches) < 2:
+        print(f'Register set unsuitable for 2D array: only {len(matches)} 1D-array matches for {pattern}')
+        return reglist
+
+    rows = max(matches) + 1
+    if set(matches.keys()) != set(range(rows)):
+        print(f'create2DArray: outer indices for {pattern} must be 0..N-1, got {sorted(matches)}')
+        return reglist
+
+    first = matches[0]
+    cols = first.get('dim')
+    colStride = first.get('dimIncrement')
+    if not isinstance(cols, int) or not isinstance(colStride, int):
+        print(f"create2DArray: '{first['name']}' is not a 1D array (dim/dimIncrement must be int)")
+        return reglist
+
+    def field_sig(reg):
+        return tuple(
+            (f.get('name'), f.get('bitOffset'), f.get('bitWidth'))
+            for f in reg.get('fields', [])
+        )
+
+    sig0 = field_sig(first)
+    for row, r in matches.items():
+        if r.get('dim') != cols or r.get('dimIncrement') != colStride:
+            print(f"create2DArray: '{r['name']}' dim/dimIncrement differ from row 0")
+            return reglist
+        if field_sig(r) != sig0:
+            print(f"create2DArray: '{r['name']}' field shape differs from row 0")
+            return reglist
+
+    base_addr = _addr(matches[0])
+    rowStride = _addr(matches[1]) - base_addr
+    for row in range(rows):
+        if _addr(matches[row]) != base_addr + row * rowStride:
+            print(f"create2DArray: row {row} of {pattern} breaks linear addressing")
+            return reglist
+
+    tmpl_row = template[0] if isinstance(template, (tuple, list)) else 0
+    tmpl_reg = matches.get(tmpl_row, matches[0])
+    _emit2DArray(tmpl_reg, name, base_addr, rows, cols, rowStride, colStride)
+
+    fmt = "Arrays {} stacked into 2D array {}: Address offset = {}  Dims = {}x{}  Increments = {},{}"
+    print(fmt.format(pattern, tmpl_reg['name'], base_addr, rows, cols, rowStride, colStride))
+
+    matched_ids = set(id(r) for r in matches.values())
+    return [r for r in reglist if id(r) not in matched_ids] + [tmpl_reg]
 
 
 def compareRegisters(left:dict, right:dict, includeDescription=False):
