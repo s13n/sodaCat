@@ -1937,7 +1937,7 @@ def main():
             source = ext.format_source(
                 source_name, device_meta.get('version', ''), svd_tag)
             chip_model = {
-                'name': device_meta.get('name', chip_name),
+                'name': chip_name,
                 'source': source,
                 'cpu': device_meta.get('cpu', {}),
                 'interruptOffset': interrupt_offset,
