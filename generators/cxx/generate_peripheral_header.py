@@ -63,6 +63,43 @@ def _safe_name(name: str) -> str:
     return name + '_' if name in _RESERVED_NAMES else name
 
 
+def _parse_array_dims(reg):
+    """Determine array dimensions for HwArray code generation.
+
+    Returns a list of (count, base) tuples (outermost first), or None if the
+    register is not an array, or if it uses non-numeric / non-sequential
+    labels that HwArray can't represent — in which case the caller falls
+    back to the comma-separated-fields form.
+    """
+    dim = reg.get('dim', 1)
+    if isinstance(dim, list):
+        # Multi-dimensional array (sodaCat extension): always 0-based.
+        return [(d, 0) for d in dim]
+    if dim > 1:
+        dimIndex = reg.get('dimIndex', '')
+        if dimIndex:
+            tokens = [t.strip() for t in dimIndex.split(',')]
+            try:
+                ints = [int(t) for t in tokens]
+            except ValueError:
+                return None  # letter or named labels — keep flat fields
+            if ints == list(range(ints[0], ints[0] + len(ints))):
+                return [(len(ints), ints[0])]
+            return None  # non-sequential — keep flat fields
+        return [(dim, 0)]
+    return None  # single register
+
+
+def _wrap_array_type(elem_type, dims):
+    """Wrap elem_type in nested HwArray<...> for each dimension."""
+    for count, base in reversed(dims):
+        if base == 0:
+            elem_type = f'HwArray<{elem_type}, {count}>'
+        else:
+            elem_type = f'HwArray<{elem_type}, {count}, {base}>'
+    return elem_type
+
+
 class PerFormatter:
     def __init__(self, **keywords):
         self.enumTemplate      = Template(keywords.get('enum'     , '\n\t/** $description */\n\t$name = $value,'))
@@ -185,34 +222,37 @@ $postfix"""))
                 types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4, innerPrefix)
                 enums += enum
                 structs += self.registersTemplate.substitute(name=name, regs=regs, types=types, description=description, size=size)
-                if dimIndex:
+                dims = _parse_array_dims(reg)
+                if dims is not None:
+                    field_type = _wrap_array_type('struct ' + name, dims)
+                    field_name = reg['name'].replace('[%s]', '').replace('%s', '')
+                    line = self.fieldTemplate.substitute(name=field_name, type=field_type, description=description)
+                elif dimIndex:
+                    # Letter or named labels — keep expanded comma-separated fields.
                     names = ','.join(reg['name'] % item for item in dimIndex.split(','))
-                elif '[%s]' in reg['name']:
-                    names = reg['name'] % dim_fmt
+                    line = self.fieldTemplate.substitute(name=names, type='struct ' + name, description=description)
                 else:
-                    names = reg['name']
-                line = self.fieldTemplate.substitute(name=names, type='struct ' + name, description=description)
+                    line = self.fieldTemplate.substitute(name=reg['name'], type='struct ' + name, description=description)
                 list.append([line, addressOffset, size*dim_total])
             else:
                 dimIndex = reg.get('dimIndex', "")
-                memberName = reg['name'].replace('%s', '')
-                typeName = structPrefix + memberName
-                names = memberName
-                if dimIndex:
-                    #TODO: Check if the address offset matches the size
-                    tokens = dimIndex.split(",")
+                dims = _parse_array_dims(reg)
+                if dims is None and dimIndex:
+                    # Letter or named labels — keep expanded comma-separated fields.
                     # Disambiguate the bitfield struct name when multiple
                     # dimIndex arrays share a prefix in the same scope (e.g.
                     # SFSP1_[%s] alongside SFSP1_%s with dimIndex 18,19,20
                     # — both would otherwise reduce to `SFSP1_`).  Include
                     # the first dimIndex token in the struct name.
+                    tokens = dimIndex.split(",")
                     memberName = reg['name'] % tokens[0]
                     typeName = structPrefix + memberName
                     names = ",".join(reg['name'] % item for item in tokens)
-                elif dim_total > 1:
-                    memberName = reg['name'].replace('[%s]', '')
+                else:
+                    # Single register, or HwArray-wrapped array.
+                    memberName = reg['name'].replace('[%s]', '').replace('%s', '')
                     typeName = structPrefix + memberName
-                    names = reg['name'] % dim_fmt
+                    names = memberName
                 # Avoid clashing the bitfield struct name with the peripheral
                 # struct (both end up at namespace scope).
                 if not structPrefix and blockName and typeName == blockName:
@@ -226,6 +266,8 @@ $postfix"""))
                     regType = self.typeTemplate.substitute(reg, name=typeName)
                 else:
                     regType = type
+                if dims is not None:
+                    regType = _wrap_array_type(regType, dims)
                 line = self.fieldTemplate.substitute(reg, name=names, type=regType, description=description)
                 list.append([line, addressOffset, (size>>3)*dim_total])
 
@@ -293,6 +335,7 @@ prefixTemplate = Template("""// File was generated, do not edit!
 
 #ifndef EXPORT
 #include "hwreg.hpp"
+#include "array.hpp"
 #include <cstdint>
 #define EXPORT
 #endif
@@ -308,6 +351,7 @@ module;
 
 #include <cstdint>
 #include "hwreg.hpp"
+#include "array.hpp"
 
 export module $mod;
 
