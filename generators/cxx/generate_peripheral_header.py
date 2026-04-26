@@ -286,9 +286,15 @@ $postfix"""))
                 res += 1
                 pos = this[1]
             txt += this[0]
-            if union and this[1] != following[1]:
-                union = False
-                txt += '\n\t};'
+            # Advance `pos` once per union (on close) or once per non-union
+            # register.  A union of N overlapping registers occupies the
+            # space of one member at offset `this[1]`; advancing per-member
+            # would over-count by (N-1)*size bytes and shrink the next gap.
+            if union:
+                if this[1] != following[1]:
+                    union = False
+                    txt += '\n\t};'
+                    pos += this[2]
             else:
                 pos += this[2]
         if padToSize > pos:
