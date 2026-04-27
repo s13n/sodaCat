@@ -20,7 +20,7 @@ from ruamel.yaml import YAML
 # Add sodaCat tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
-from transform import renameEntries, createClusterArray, createArray, create2DArray
+from transform import renameEntries, createClusterArray, createArray, create2DArray, clusterArrays
 from enum_namer import simplify_block_enums
 
 
@@ -262,6 +262,8 @@ def _describe_transform(t):
         return f"renameEnums: {t.get('register')}.{t.get('field')}: {n} entries"
     elif typ == 'mergeArrays':
         return f"mergeArrays: /{t['pattern']}/ -> '{t['name']}'"
+    elif typ == 'clusterArrays':
+        return f"clusterArrays: /{t['pattern']}/ -> '{t['name']}'"
     else:
         return f"{typ}: {t}"
 
@@ -654,6 +656,10 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     if reg.get('name') == arr_name:
                         reg['description'] = t['description']
                         break
+        elif typ == 'clusterArrays':
+            block_data['registers'] = clusterArrays(
+                block_data.get('registers', []), t['pattern'], t['name'],
+                description=t.get('description'))
         elif typ == 'create2DArray':
             template = t.get('template', [0, 0])
             if isinstance(template, list):

@@ -340,6 +340,86 @@ def _stack1DArrays(reglist, pat, pattern, name, template):
     return [r for r in reglist if id(r) not in matched_ids] + [tmpl_reg]
 
 
+def clusterArrays(reglist:list, pattern:str, name:str, description=None):
+    """Group multiple top-level array registers sharing dim/dimIncrement into a cluster array.
+
+    Some SVDs encode per-channel/per-stream registers as separate <dim> arrays
+    at adjacent offsets (e.g. LPC43 GPDMA: C%sSRCADDR, C%sDESTADDR, C%sLLI,
+    C%sCONTROL, C%sCONFIG, each with dim=8, dimIncrement=32). The natural
+    shape is a single cluster of N registers repeating dim times.
+
+    The pattern is a regex with one capture group naming the inner register;
+    it is matched against the literal SVD-array name (with `%s` intact). For
+    example 'C%s(.+)' matches 'C%sSRCADDR' and captures 'SRCADDR'.
+
+    All matched registers must share dim, dimIncrement, and dimIndex. The
+    cluster's base offset is the minimum of the matched registers' offsets;
+    each member's offset becomes (orig_offset - base). The cluster is
+    inserted at the position of the first matched register.
+    """
+    pat = re.compile(pattern)
+
+    matches = []  # (member_name, register)
+    for r in reglist:
+        m = pat.match(r['name'])
+        if m:
+            matches.append((m.group(1), r))
+
+    if len(matches) < 2:
+        print(f'clusterArrays: need 2+ matches, got {len(matches)} for {pattern}')
+        return reglist
+
+    first_member, first_reg = matches[0]
+    dim = first_reg.get('dim')
+    dimIncrement = first_reg.get('dimIncrement')
+    dimIndex = first_reg.get('dimIndex')
+    if not isinstance(dim, int) or not isinstance(dimIncrement, int):
+        print(f"clusterArrays: '{first_reg['name']}' is not a 1D array (dim/dimIncrement must be int)")
+        return reglist
+    for member_name, r in matches[1:]:
+        if r.get('dim') != dim or r.get('dimIncrement') != dimIncrement:
+            print(f"clusterArrays: '{r['name']}' dim/dimIncrement differ from '{first_reg['name']}'")
+            return reglist
+        if r.get('dimIndex') != dimIndex:
+            print(f"clusterArrays: '{r['name']}' dimIndex differs from '{first_reg['name']}'")
+            return reglist
+
+    base = min(_addr(r) for _, r in matches)
+
+    members = []
+    for member_name, r in matches:
+        r['name'] = member_name
+        if 'displayName' in r:
+            r['displayName'] = member_name
+        r['addressOffset'] = _addr(r) - base
+        for k in ('dim', 'dimIncrement', 'dimIndex'):
+            r.pop(k, None)
+        members.append(r)
+
+    cluster = {'name': f'{name}[%s]'}
+    if description:
+        cluster['description'] = description
+    cluster['dim'] = dim
+    cluster['addressOffset'] = base
+    cluster['dimIncrement'] = dimIncrement
+    cluster['registers'] = members
+
+    fmt = "Arrays {} clustered into {}: Address offset = {}  Increment = {}  Count = {}"
+    print(fmt.format(pattern, cluster['name'], base, dimIncrement, dim))
+
+    matched_ids = set(id(r) for _, r in matches)
+    result = []
+    inserted = False
+    for r in reglist:
+        if id(r) in matched_ids:
+            if not inserted:
+                result.append(cluster)
+                inserted = True
+        else:
+            result.append(r)
+    return result
+
+
 def compareRegisters(left:dict, right:dict, includeDescription=False):
     """Compare two register lists and generate a list of differences.
     """
