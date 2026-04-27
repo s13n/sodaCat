@@ -22,7 +22,7 @@ documents:
 instance: CGU
 
 # ===========================================================================
-# Stage 1: oscillators, PLLs, IDIVs.
+# Stages 1 + 2: oscillators, PLLs, IDIVs, BASE_*_CLK output stages.
 #
 # Topology overview (UM10503 §13.4, Fig 36/37):
 #
@@ -31,8 +31,23 @@ instance: CGU
 # Each PLL and IDIV has its own input mux (CLK_SEL field in its CTRL
 # register) selecting one of: 32 kHz osc, IRC, ENET_RX_CLK, ENET_TX_CLK,
 # GP_CLKIN, crystal osc, or one of the other PLLs/IDIVs (with restrictions
-# documented in UM10503 Table 121).  The BASE_*_CLK output stages
-# (~22 base clocks) are deferred to stage 2.
+# documented in UM10503 Table 121).
+#
+# The 24 BASE_*_CLK output stages (numbered 0,1,2,3,4..19,20,25,26,27;
+# stages 21-24 are reserved) live in CGU registers BASE_SAFE_CLK..
+# BASE_CGU_OUT1_CLK and each have their own CLK_SEL mux.  Three source-
+# list patterns are used (per UM10503 Tables 141-148):
+#
+#   * BASE_SAFE_CLK: only IRC (0x01).
+#   * BASE_USB0_CLK: only PLL0USB (0x07).
+#   * BASE_USB1_CLK / BASE_OUT_CLK / BASE_CGU_OUT0_CLK /
+#     BASE_CGU_OUT1_CLK: full source list including PLL0USB.
+#   * All others (PERIPH, M4, SPIFI, SPI, PHY_RX/TX, APB1/3, LCD, ADCHS,
+#     SDIO, SSP0/1, UART0..3, AUDIO): full source list except PLL0USB
+#     (encoding 0x07 reserved).
+#
+# Branch-clock fan-out via CCU1/CCU2 (CLK_*_CFG gates) is deferred to
+# stage 3.
 #
 # Modeling notes:
 #   * PLL0USB and PLL0AUDIO use LFSR-encoded MDEC/NDEC/PDEC values rather
@@ -84,6 +99,32 @@ signals:
   - {name: idivd_clk,                         description: "IDIVD output (max divisor /16)"}
   - {name: idive_in,                          description: "IDIVE_CTRL.CLK_SEL mux output"}
   - {name: idive_clk,                         description: "IDIVE output (max divisor /256)"}
+
+  # BASE_*_CLK output-stage signals (max frequencies from UM10503 Table 120).
+  - {name: base_safe_clk,      max: 12000000,  description: "Output stage 0: WWDT (always-on safe clock; IRC only)"}
+  - {name: base_usb0_clk,      max: 480000000, description: "Output stage 1: USB0 high-speed (PLL0USB only)"}
+  - {name: base_periph_clk,    max: 204000000, description: "Output stage 2: Cortex-M0SUB subsystem, SPI, SGPIO"}
+  - {name: base_usb1_clk,      max: 204000000, description: "Output stage 3: USB1"}
+  - {name: base_m4_clk,        max: 204000000, description: "Output stage 4: ARM Cortex-M4 core, APB blocks 0 & 2"}
+  - {name: base_spifi_clk,     max: 204000000, description: "Output stage 5: SPIFI"}
+  - {name: base_spi_clk,       max: 204000000, description: "Output stage 6: SPI"}
+  - {name: base_phy_rx_clk,    max: 75000000,  description: "Output stage 7: Ethernet PHY receive"}
+  - {name: base_phy_tx_clk,    max: 75000000,  description: "Output stage 8: Ethernet PHY transmit"}
+  - {name: base_apb1_clk,      max: 204000000, description: "Output stage 9: APB peripheral block 1"}
+  - {name: base_apb3_clk,      max: 204000000, description: "Output stage 10: APB peripheral block 3"}
+  - {name: base_lcd_clk,       max: 204000000, description: "Output stage 11: LCD"}
+  - {name: base_adchs_clk,     max: 80000000,  description: "Output stage 12: ADCHS (LPC4370/LPC43S70 only)"}
+  - {name: base_sdio_clk,      max: 204000000, description: "Output stage 13: SD/MMC"}
+  - {name: base_ssp0_clk,      max: 204000000, description: "Output stage 14: SSP0"}
+  - {name: base_ssp1_clk,      max: 204000000, description: "Output stage 15: SSP1"}
+  - {name: base_uart0_clk,     max: 204000000, description: "Output stage 16: UART0"}
+  - {name: base_uart1_clk,     max: 204000000, description: "Output stage 17: UART1"}
+  - {name: base_uart2_clk,     max: 204000000, description: "Output stage 18: UART2"}
+  - {name: base_uart3_clk,     max: 204000000, description: "Output stage 19: UART3"}
+  - {name: base_out_clk,       max: 204000000, description: "Output stage 20: CLKOUT pin"}
+  - {name: base_audio_clk,     max: 204000000, description: "Output stage 25: I2S audio system"}
+  - {name: base_cgu_out0_clk,  max: 204000000, description: "Output stage 26: CGU_OUT0 pin"}
+  - {name: base_cgu_out1_clk,  max: 204000000, description: "Output stage 27: CGU_OUT1 pin"}
 
 generators:
   - name: IRC
@@ -276,6 +317,593 @@ muxes:
       reg: IDIVE_CTRL
       field: CLK_SEL
     description: "Source for IDIVE (8-bit divider, max /256). Same restrictions as IDIVB."
+
+  # ----- BASE_*_CLK output-stage muxes -----
+  # Pattern A: single-source output stages.
+  # Schema requires minItems=1 for inputs; using a single-entry list where
+  # the encoding value is also the only valid one.
+
+  - name: BASE_SAFE_CLKSEL
+    output: base_safe_clk
+    inputs:
+      - null            # 0x00
+      - irc_12mhz       # 0x01 (only valid encoding)
+    control:
+      reg: BASE_SAFE_CLK
+      field: CLK_SEL
+    description: "BASE_SAFE_CLK is hardwired to the IRC; CLK_SEL is read-only at 0x01.  Feeds the WWDT."
+
+  - name: BASE_USB0_CLKSEL
+    output: base_usb0_clk
+    inputs:
+      - null            # 0x00
+      - null            # 0x01
+      - null            # 0x02
+      - null            # 0x03
+      - null            # 0x04
+      - null            # 0x05
+      - null            # 0x06
+      - pll0usb_clk     # 0x07 (only valid encoding)
+    control:
+      reg: BASE_USB0_CLK
+      field: CLK_SEL
+    description: "BASE_USB0_CLK is hardwired to PLL0USB.  Feeds the high-speed USB0 controller."
+
+  # Pattern B: full source list including PLL0USB
+  # (BASE_USB1_CLK, BASE_OUT_CLK, BASE_CGU_OUT0/1_CLK).
+
+  - name: BASE_USB1_CLKSEL
+    output: base_usb1_clk
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01 (default)
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - pll0usb_clk     # 0x07
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+      - idivb_clk       # 0x0D
+      - idivc_clk       # 0x0E
+      - idivd_clk       # 0x0F
+      - idive_clk       # 0x10
+    control:
+      reg: BASE_USB1_CLK
+      field: CLK_SEL
+    description: "Source for BASE_USB1_CLK (USB1)."
+
+  - name: BASE_OUT_CLKSEL
+    output: base_out_clk
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01 (default)
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - pll0usb_clk     # 0x07
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+      - idivb_clk       # 0x0D
+      - idivc_clk       # 0x0E
+      - idivd_clk       # 0x0F
+      - idive_clk       # 0x10
+    control:
+      reg: BASE_OUT_CLK
+      field: CLK_SEL
+    description: "Source for the CLKOUT pin.  Any clock generator output may be monitored."
+
+  - name: BASE_CGU_OUT0_CLKSEL
+    output: base_cgu_out0_clk
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01 (default)
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - pll0usb_clk     # 0x07
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+      - idivb_clk       # 0x0D
+      - idivc_clk       # 0x0E
+      - idivd_clk       # 0x0F
+      - idive_clk       # 0x10
+    control:
+      reg: BASE_CGU_OUT0_CLK
+      field: CLK_SEL
+    description: "Source for the CGU_OUT0 pin."
+
+  - name: BASE_CGU_OUT1_CLKSEL
+    output: base_cgu_out1_clk
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01 (default)
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - pll0usb_clk     # 0x07
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+      - idivb_clk       # 0x0D
+      - idivc_clk       # 0x0E
+      - idivd_clk       # 0x0F
+      - idive_clk       # 0x10
+    control:
+      reg: BASE_CGU_OUT1_CLK
+      field: CLK_SEL
+    description: "Source for the CGU_OUT1 pin."
+
+  # Pattern C: full source list except PLL0USB (encoding 0x07 reserved).
+  # Used by all 18 internal base clocks: PERIPH, M4 .. UART3, AUDIO.
+
+  - name: BASE_PERIPH_CLKSEL
+    output: base_periph_clk
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01 (default)
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - null            # 0x07 reserved (PLL0USB not selectable)
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+      - idivb_clk       # 0x0D
+      - idivc_clk       # 0x0E
+      - idivd_clk       # 0x0F
+      - idive_clk       # 0x10
+    control:
+      reg: BASE_PERIPH_CLK
+      field: CLK_SEL
+    description: "Source for BASE_PERIPH_CLK (Cortex-M0SUB subsystem, SPI, SGPIO)."
+
+  - name: BASE_M4_CLKSEL
+    output: base_m4_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null            # 0x07 reserved
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_M4_CLK
+      field: CLK_SEL
+    description: "Source for BASE_M4_CLK (Cortex-M4 core + APB blocks 0 and 2).  Boot default is PLL1 at 96 MHz fed from IRC."
+
+  - name: BASE_SPIFI_CLKSEL
+    output: base_spifi_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_SPIFI_CLK
+      field: CLK_SEL
+    description: "Source for BASE_SPIFI_CLK (SPI flash interface)."
+
+  - name: BASE_SPI_CLKSEL
+    output: base_spi_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_SPI_CLK
+      field: CLK_SEL
+    description: "Source for BASE_SPI_CLK (SPI master)."
+
+  - name: BASE_PHY_RX_CLKSEL
+    output: base_phy_rx_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_PHY_RX_CLK
+      field: CLK_SEL
+    description: "Source for BASE_PHY_RX_CLK (Ethernet PHY receive clock)."
+
+  - name: BASE_PHY_TX_CLKSEL
+    output: base_phy_tx_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_PHY_TX_CLK
+      field: CLK_SEL
+    description: "Source for BASE_PHY_TX_CLK (Ethernet PHY transmit clock)."
+
+  - name: BASE_APB1_CLKSEL
+    output: base_apb1_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_APB1_CLK
+      field: CLK_SEL
+    description: "Source for BASE_APB1_CLK (APB peripheral block 1: I2C0, I2S, C_CAN1)."
+
+  - name: BASE_APB3_CLKSEL
+    output: base_apb3_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_APB3_CLK
+      field: CLK_SEL
+    description: "Source for BASE_APB3_CLK (APB peripheral block 3: I2C1, DAC, ADC0/1, C_CAN0)."
+
+  - name: BASE_LCD_CLKSEL
+    output: base_lcd_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_LCD_CLK
+      field: CLK_SEL
+    description: "Source for BASE_LCD_CLK (LCD pixel clock)."
+
+  - name: BASE_ADCHS_CLKSEL
+    output: base_adchs_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_ADCHS_CLK
+      field: CLK_SEL
+    description: "Source for BASE_ADCHS_CLK (high-speed ADC; LPC4370/LPC43S70 only)."
+
+  - name: BASE_SDIO_CLKSEL
+    output: base_sdio_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_SDIO_CLK
+      field: CLK_SEL
+    description: "Source for BASE_SDIO_CLK (SD/MMC controller)."
+
+  - name: BASE_SSP0_CLKSEL
+    output: base_ssp0_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_SSP0_CLK
+      field: CLK_SEL
+    description: "Source for BASE_SSP0_CLK (SSP0)."
+
+  - name: BASE_SSP1_CLKSEL
+    output: base_ssp1_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_SSP1_CLK
+      field: CLK_SEL
+    description: "Source for BASE_SSP1_CLK (SSP1)."
+
+  - name: BASE_UART0_CLKSEL
+    output: base_uart0_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_UART0_CLK
+      field: CLK_SEL
+    description: "Source for BASE_UART0_CLK (USART0)."
+
+  - name: BASE_UART1_CLKSEL
+    output: base_uart1_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_UART1_CLK
+      field: CLK_SEL
+    description: "Source for BASE_UART1_CLK (UART1)."
+
+  - name: BASE_UART2_CLKSEL
+    output: base_uart2_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_UART2_CLK
+      field: CLK_SEL
+    description: "Source for BASE_UART2_CLK (USART2)."
+
+  - name: BASE_UART3_CLKSEL
+    output: base_uart3_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_UART3_CLK
+      field: CLK_SEL
+    description: "Source for BASE_UART3_CLK (USART3)."
+
+  - name: BASE_AUDIO_CLKSEL
+    output: base_audio_clk
+    inputs:
+      - osc_32khz
+      - irc_12mhz
+      - enet_rx_clk_in
+      - enet_tx_clk_in
+      - gp_clkin_in
+      - null
+      - xtal_clk
+      - null
+      - pll0audio_clk
+      - pll1_clk
+      - null
+      - null
+      - idiva_clk
+      - idivb_clk
+      - idivc_clk
+      - idivd_clk
+      - idive_clk
+    control:
+      reg: BASE_AUDIO_CLK
+      field: CLK_SEL
+    description: "Source for BASE_AUDIO_CLK (I2S audio system).  PLL0AUDIO is the typical choice."
 
 plls:
   - name: PLL0USB
