@@ -90,16 +90,28 @@ struct GateDesc {
 /// Uses the same struct as GateDesc but a different frequency function.
 using GateInvDesc = GateDesc;
 
-/// Generator with a fixed frequency (8 bytes).
-struct GenFixedDesc {
-    BitAddr  addr;              ///< Enable bit
-    uint32_t frequency;         ///< Nominal frequency in Hz
+/// Enable-bit polarity for generators with an enable bit.
+enum class Polarity : uint8_t {
+    ActiveHigh = 0,             ///< Output is enabled when the bit reads 1
+    ActiveLow  = 1,             ///< Output is enabled when the bit reads 0
+    AlwaysOn   = 2,             ///< No enable bit; output is unconditional (addr is ignored)
 };
 
-/// Generator with runtime-configurable frequency, e.g. external oscillator (5 bytes).
+/// Generator with a fixed frequency (12 bytes).
+/// When polarity == AlwaysOn, addr is ignored and the generator always
+/// returns frequency.  Used for sources that are always running in hardware
+/// (e.g. the LPC43 IRC and 32 kHz oscillators).
+struct GenFixedDesc {
+    BitAddr  addr;              ///< Enable bit (ignored if polarity == AlwaysOn)
+    uint32_t frequency;         ///< Nominal frequency in Hz
+    Polarity polarity;          ///< Enable polarity
+};
+
+/// Generator with runtime-configurable frequency, e.g. external oscillator (8 bytes).
 struct GenExternalDesc {
-    BitAddr addr;               ///< Enable bit
-    uint8_t state_slot;         ///< Index into the mutable state[] array
+    BitAddr  addr;              ///< Enable bit (ignored if polarity == AlwaysOn)
+    uint8_t  state_slot;        ///< Index into the mutable state[] array
+    Polarity polarity;          ///< Enable polarity
 };
 
 /// Divider with table-based divisor lookup (8 bytes).
@@ -247,12 +259,18 @@ inline uint32_t passthrough_freq(void const* desc, uint8_t const* inputs, ClockT
 
 inline uint32_t gen_fixed_freq(void const* desc, uint8_t const* inputs, ClockTreeBase const& tree) {
     auto& g = *static_cast<GenFixedDesc const*>(desc);
-    return read_bit(g.addr.word_offset, g.addr.bit) ? g.frequency : 0;
+    if (g.polarity == Polarity::AlwaysOn) return g.frequency;
+    bool bit = read_bit(g.addr.word_offset, g.addr.bit);
+    bool enabled = bit != (g.polarity == Polarity::ActiveLow);
+    return enabled ? g.frequency : 0;
 }
 
 inline uint32_t gen_external_freq(void const* desc, uint8_t const* inputs, ClockTreeBase const& tree) {
     auto& g = *static_cast<GenExternalDesc const*>(desc);
-    return read_bit(g.addr.word_offset, g.addr.bit) ? tree.state[g.state_slot] : 0;
+    if (g.polarity == Polarity::AlwaysOn) return tree.state[g.state_slot];
+    bool bit = read_bit(g.addr.word_offset, g.addr.bit);
+    bool enabled = bit != (g.polarity == Polarity::ActiveLow);
+    return enabled ? tree.state[g.state_slot] : 0;
 }
 
 inline uint32_t table_div_freq(void const* desc, uint8_t const* inputs, ClockTreeBase const& tree) {

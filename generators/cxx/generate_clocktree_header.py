@@ -210,49 +210,72 @@ def make_field_addr(instance, reg, field, model_dir):
     return f"{{{w}, {b}, {width}}}", width
 
 
-def build_generator(gen, instance, model_dir):
-    """Build a generator descriptor. Returns (type_key, descriptor_string, input_offset)."""
+def _polarity_from_values(values):
+    """Infer enable-bit polarity from a control's `values` list.
+
+    The convention is values=[off, on]: the bit value that disables the
+    output comes first, the value that enables it comes second.  Active-low
+    enables (e.g. LPC43 XTAL_OSC_CTRL.ENABLE) appear as values=[1, 0].
+    Anything else falls back to active-high.
+    """
+    if len(values) == 2 and values[1] == 0 and values[0] != 0:
+        return 'clocktree::Polarity::ActiveLow'
+    return 'clocktree::Polarity::ActiveHigh'
+
+
+def build_generator(gen, instance, model_dir, inputs_map):
+    """Build a generator descriptor. Returns (type_key, descriptor_string, input_offset).
+
+    inputs_map maps signal name -> input metadata dict (with optional 'nominal').
+    """
     ctrl = gen.get('control')
+    output = gen.get('output', '')
+    nominal = inputs_map.get(output, {}).get('nominal')
     input_offset = add_inputs()  # generators have no inputs
 
     if ctrl is None:
-        # No control — unconditional generator. Treat as external with no enable.
-        # Use gen_fixed with frequency 0 as fallback.
-        return ('gen_fixed', f'{{{{{0}, {0}}}, 0}}', input_offset)
+        # Always-on generator (no enable bit in hardware).  The frequency
+        # must come from the input's `nominal` field.
+        if nominal is None:
+            print(f"  WARNING: generator {gen.get('name', '?')} has no control "
+                  f"and no nominal frequency on input '{output}'; emitting 0",
+                  file=sys.stderr)
+            nominal = 0
+        return ('gen_fixed',
+                f'{{{{0, 0}}, {nominal}, clocktree::Polarity::AlwaysOn}}',
+                input_offset)
 
     state = ctrl.get('state')
     reg = ctrl.get('reg', '')
     field = ctrl.get('field', '')
     inst = ctrl.get('instance', instance)
+    values = ctrl.get('values', [])
+    polarity = _polarity_from_values(values)
+    addr = (make_bit_addr(inst, reg, field, model_dir)
+            if reg and field else '{0, 0}')
 
     if state:
-        # External frequency from runtime state
+        # Runtime-configurable frequency (e.g. external crystal).  An
+        # accompanying enable bit is optional; without one, use AlwaysOn so
+        # the runtime ignores addr.
         slot = get_state_slot(state)
-        if reg and field:
-            addr = make_bit_addr(inst, reg, field, model_dir)
-            return ('gen_external', f'{{{addr}, {slot}}}', input_offset)
-        else:
-            # No enable bit — always return state. Use a special type or a dummy bit.
-            # For now: gen_external with addr={0,0} — read_bit will read address 0
-            # which won't be a peripheral register. Better: add an 'always on' generator.
-            # Let's use gen_fixed as a workaround shouldn't occur in practice.
-            return ('gen_external', f'{{{{{0}, {0}}}, {slot}}}', input_offset)
+        pol = polarity if (reg and field) else 'clocktree::Polarity::AlwaysOn'
+        return ('gen_external', f'{{{addr}, {slot}, {pol}}}', input_offset)
 
-    values = ctrl.get('values', [])
-    if values and len(values) == 2 and values[0] == 0:
-        # Simple enable bit: off=0, on=frequency
-        addr = make_bit_addr(inst, reg, field, model_dir)
-        return ('gen_fixed', f'{{{addr}, {values[1]}}}', input_offset)
+    # Fixed-frequency generator with an enable bit.  Prefer the input's
+    # `nominal` field; fall back to the legacy `values`-based encoding
+    # (where values=[0, freq]) for clock trees that haven't been migrated.
+    if nominal is not None:
+        freq = nominal
+    elif len(values) == 2 and values[0] == 0 and values[1] != 0:
+        freq = values[1]
     elif values:
-        # Table-based generator — unusual, treat as table divider of a virtual source
-        # For now just use the last non-zero value as the frequency with enable bit
+        # Multi-state or magic-value table — pick a plausible non-zero entry.
+        # This is a known approximation for cases like the H7 HSI selector.
         freq = next((v for v in reversed(values) if v != 0), 0)
-        addr = make_bit_addr(inst, reg, field, model_dir)
-        return ('gen_fixed', f'{{{addr}, {freq}}}', input_offset)
     else:
-        # value_range — shouldn't occur for generators
-        addr = make_bit_addr(inst, reg, field, model_dir)
-        return ('gen_fixed', f'{{{addr}, 0}}', input_offset)
+        freq = 0
+    return ('gen_fixed', f'{{{addr}, {freq}, {polarity}}}', input_offset)
 
 
 def build_gate(gate, instance, model_dir):
@@ -424,8 +447,9 @@ def generate_header(yaml_path, namespace, hpp_path):
     init_types()
 
     # Build all elements
+    inputs_map = {s['name']: s for s in signals}
     for gen in generators:
-        tk, desc, ioff = build_generator(gen, instance, model_dir)
+        tk, desc, ioff = build_generator(gen, instance, model_dir, inputs_map)
         add_element(gen['output'], tk, desc, ioff)
 
     for pll in plls:
