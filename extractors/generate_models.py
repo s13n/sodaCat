@@ -60,6 +60,8 @@ def _parse_block_cfg(block_cfg):
         entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
     if block_cfg.get('description'):
         entry['description'] = block_cfg['description']
+    if block_cfg.get('designer'):
+        entry['designer'] = block_cfg['designer']
     return entry
 
 
@@ -1646,11 +1648,21 @@ def main():
             if shared_cfg.get('description'):
                 block_data['description'] = shared_cfg['description']
 
-            svd.dumpModel(block_data, output_dir / shared_name)
+            designer = shared_cfg.get('designer')
+            if designer:
+                shared_dir = output_dir.parent / designer
+                shared_dir.mkdir(parents=True, exist_ok=True)
+                shared_path = shared_dir / shared_name
+                model_prefix = designer
+            else:
+                shared_path = output_dir / shared_name
+                model_prefix = vendor_prefix
+            svd.dumpModel(block_data, shared_path)
             model_interrupt_order[shared_name] = [
                 irq['name'] for irq in block_data.get('interrupts', [])]
-            model_paths[shared_name] = f"{vendor_prefix}/{shared_name}"
-            print(f"  * {shared_name:20} -> top-level (cross-family shared)")
+            model_paths[shared_name] = f"{model_prefix}/{shared_name}"
+            origin = f"{designer} (licensed IP)" if designer else "cross-family shared"
+            print(f"  * {shared_name:20} -> top-level ({origin})")
 
             # Variant overrides on top of a `uses:` shared model.  Subfamilies
             # listed in the family block_cfg's `variants` extract their own

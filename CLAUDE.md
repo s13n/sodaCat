@@ -75,6 +75,8 @@ models/ST/
 
 Model placement is config-driven: cross-family shared blocks (defined in `shared_blocks`) go to the top level; within a family, blocks used by only one subfamily go in that subfamily's directory, blocks shared by 2+ subfamilies go in the family base directory — see "Family generator" below.
 
+A shared block with a `designer:` field (e.g. `designer: ARM` for PL080) is treated as licensed IP and routed to `models/<designer>/` instead of the chip-vendor's directory. Chip-model `models:` entries get the matching prefix (e.g. `GPDMA: ARM/PL080`). This lets ARM-designed PrimeCell IP (PL022, PL080, PL081, PL180) and Cortex-M architecture pieces live alongside hand-maintained `models/ARM/` entries while still being generated from a vendor's SVD.
+
 ### CMake integration
 
 The unified `cmake/stm32-extraction.cmake` module provides:

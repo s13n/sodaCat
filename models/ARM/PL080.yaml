@@ -1,5 +1,5 @@
-name: GPDMA
-description: General Purpose DMA (GPDMA)
+name: PL080
+description: ARM PrimeCell DMA Controller (PL080)
 groupName: GPDMA
 source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
 registers:
@@ -710,434 +710,425 @@ registers:
         description: "Controls the synchronization logic for DMA request signals. Each bit represents one set of DMA request lines as described in the preceding text:\n0 - synchronization logic for the corresponding DMA request signals are enabled.\n1 - synchronization logic for the corresponding request line signals are disabled."
         bitOffset: 15
         bitWidth: 1
-  - dim: 8
-    dimIncrement: 32
-    dimIndex: 0,1,2,3,4,5,6,7
-    name: C%sSRCADDR
-    description: DMA Channel  Source Address Register
+  - name: C[%s]
+    description: DMA channel
+    dim: 8
     addressOffset: 256
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
+    dimIncrement: 32
+    registers:
       - name: SRCADDR
-        description: DMA source address. Reading this register will return the current source address.
-        bitOffset: 0
-        bitWidth: 32
-  - dim: 8
-    dimIncrement: 32
-    dimIndex: 0,1,2,3,4,5,6,7
-    name: C%sDESTADDR
-    description: DMA Channel  Destination Address Register
-    addressOffset: 260
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
+        description: DMA Channel  Source Address Register
+        addressOffset: 0
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: SRCADDR
+            description: DMA source address. Reading this register will return the current source address.
+            bitOffset: 0
+            bitWidth: 32
       - name: DESTADDR
-        description: DMA Destination address. Reading this register will return the current destination address.
-        bitOffset: 0
-        bitWidth: 32
-  - dim: 8
-    dimIncrement: 32
-    dimIndex: 0,1,2,3,4,5,6,7
-    name: C%sLLI
-    description: DMA Channel Linked List Item Register
-    addressOffset: 264
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: LM
-        description: 'AHB master select for loading the next LLI:'
-        enumeratedValues:
-          - name: AHB_MASTER_0
-            description: AHB Master 0.
-            value: 0
-          - name: AHB_MASTER_1
-            description: AHB Master 1.
-            value: 1
-        bitOffset: 0
-        bitWidth: 1
-      - name: R
-        description: Reserved, and must be written as 0, masked on read.
-        bitOffset: 1
-        bitWidth: 1
+        description: DMA Channel  Destination Address Register
+        addressOffset: 4
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: DESTADDR
+            description: DMA Destination address. Reading this register will return the current destination address.
+            bitOffset: 0
+            bitWidth: 32
       - name: LLI
-        description: Linked list item. Bits [31:2] of the address for the next LLI. Address bits [1:0] are 0.
-        bitOffset: 2
-        bitWidth: 30
-  - dim: 8
-    dimIncrement: 32
-    dimIndex: 0,1,2,3,4,5,6,7
-    name: C%sCONTROL
-    description: DMA Channel  Control Register
-    addressOffset: 268
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: TRANSFERSIZE
-        description: Transfer size in byte. A write to this field sets the size of the transfer when the DMA Controller is the flow controller. The transfer size value must be set before the channel is enabled. Transfer size is updated as data transfers are completed. A read from this field indicates the number of transfers completed on the destination bus. Reading the register when the channel is active does not give useful information because by the time that the software has processed the value read, the channel might have progressed. It is intended to be used only when a channel is enabled and then disabled. The transfer size value is not used if the DMA Controller is not the flow controller.
-        bitOffset: 0
-        bitWidth: 12
-      - name: SBSIZE
-        description: Source burst size. Indicates the number of transfers that make up a source burst. This value must be set to the burst size of the source peripheral, or if the source is memory, to the memory boundary size (see Figure 3). The burst size is the amount of data that is transferred when the BREQ signal goes active in the source peripheral.
-        enumeratedValues:
-          - name: SOURCE_BURST_1
-            description: Source burst size = 1
-            value: 0
-          - name: SOURCE_BURST_4
-            description: Source burst size = 4
-            value: 1
-          - name: SOURCE_BURST_8
-            description: Source burst size = 8
-            value: 2
-          - name: SOURCE_BURST_16
-            description: Source burst size = 16
-            value: 3
-          - name: SOURCE_BURST_32
-            description: Source burst size = 32
-            value: 4
-          - name: SOURCE_BURST_64
-            description: Source burst size = 64
-            value: 5
-          - name: SOURCE_BURST_128
-            description: Source burst size = 128
-            value: 6
-          - name: SOURCE_BURST_256
-            description: Source burst size = 256
-            value: 7
-        bitOffset: 12
-        bitWidth: 3
-      - name: DBSIZE
-        description: Destination burst size. Indicates the number of transfers that make up a destination burst transfer request. This value must be set to the burst size of the destination peripheral or, if the destination is memory, to the memory boundary size. The burst size is the amount of data that is transferred when the BREQ signal goes active in the destination peripheral.
-        enumeratedValues:
-          - name: DESTINATION_BURST_1
-            description: Destination burst size = 1
-            value: 0
-          - name: DESTINATION_BURST_4
-            description: Destination burst size = 4
-            value: 1
-          - name: DESTINATION_BURST_8
-            description: Destination burst size = 8
-            value: 2
-          - name: DESTINATION_BURST_16
-            description: Destination burst size = 16
-            value: 3
-          - name: DESTINATION_BURST_32
-            description: Destination burst size = 32
-            value: 4
-          - name: DESTINATION_BURST_64
-            description: Destination burst size = 64
-            value: 5
-          - name: DESTINATION_BURST_128
-            description: Destination burst size = 128
-            value: 6
-          - name: DESTINATION_BURST_256
-            description: Destination burst size = 256
-            value: 7
-        bitOffset: 15
-        bitWidth: 3
-      - name: SWIDTH
-        description: Source transfer width. Transfers wider than the AHB master bus width are illegal. The source and destination widths can be different from each other. The hardware automatically packs and unpacks the data as required. 0x3 to 0x7 - Reserved.
-        enumeratedValues:
-          - name: BYTE_BIT
-            description: Byte (8-bit)
-            value: 0
-          - name: HALFWORD_BIT
-            description: Halfword (16-bit)
-            value: 1
-          - name: WORD_BIT
-            description: Word (32-bit)
-            value: 2
-        bitOffset: 18
-        bitWidth: 3
-      - name: DWIDTH
-        description: Destination transfer width. Transfers wider than the AHB master bus width are not supported. The source and destination widths can be different from each other. The hardware automatically packs and unpacks the data as required. 0x3 to 0x7 - Reserved.
-        enumeratedValues:
-          - name: BYTE_BIT
-            description: Byte (8-bit)
-            value: 0
-          - name: HALFWORD_BIT
-            description: Halfword (16-bit)
-            value: 1
-          - name: WORD_BIT
-            description: Word (32-bit)
-            value: 2
-        bitOffset: 21
-        bitWidth: 3
-      - name: S
-        description: 'Source AHB master select:'
-        enumeratedValues:
-          - name: AHB_MASTER_0
-            description: AHB Master 0 selected for source transfer.
-            value: 0
-          - name: AHB_MASTER_1
-            description: AHB Master 1 selected for source transfer.
-            value: 1
-        bitOffset: 24
-        bitWidth: 1
-      - name: D
-        description: 'Destination AHB master select: Only Master1 can access a peripheral. Master0 can only access memory.'
-        enumeratedValues:
-          - name: AHB_MASTER_0
-            description: AHB Master 0 selected for destination transfer.
-            value: 0
-          - name: AHB_MASTER_1
-            description: AHB Master 1 selected for destination transfer.
-            value: 1
-        bitOffset: 25
-        bitWidth: 1
-      - name: SI
-        description: 'Source increment:'
-        enumeratedValues:
-          - name: NOT_INCREMENT
-            description: The source address is not incremented after each transfer.
-            value: 0
-          - name: INCREMENT
-            description: The source address is incremented after each transfer.
-            value: 1
-        bitOffset: 26
-        bitWidth: 1
-      - name: DI
-        description: 'Destination increment:'
-        enumeratedValues:
-          - name: DESTINATION_ADDRESS_NOT
-            description: The destination address is not incremented after each transfer.
-            value: 0
-          - name: DESTINATION_ADDRESS_INCREMENTED
-            description: The destination address is incremented after each transfer.
-            value: 1
-        bitOffset: 27
-        bitWidth: 1
-      - name: PROT1
-        description: 'Indicates that the access is in user mode or privileged mode:'
-        enumeratedValues:
-          - name: ACCESS_USER
-            description: Access is in user mode
-            value: 0
-          - name: ACCESS_PRIVILEGED
-            description: Access is in privileged mode.
-            value: 1
-        bitOffset: 28
-        bitWidth: 1
-      - name: PROT2
-        description: 'Indicates that the access is bufferable or not bufferable:'
-        enumeratedValues:
-          - name: ACCESS_NOT
-            description: Access is not bufferable.
-            value: 0
-          - name: ACCESS_BUFFERABLE
-            description: Access is bufferable.
-            value: 1
-        bitOffset: 29
-        bitWidth: 1
-      - name: PROT3
-        description: 'Indicates that the access is cacheable or not cacheable:'
-        enumeratedValues:
-          - name: ACCESS_NOT
-            description: Access is not cacheable.
-            value: 0
-          - name: ACCESS_CACHEABLE
-            description: Access is cacheable.
-            value: 1
-        bitOffset: 30
-        bitWidth: 1
-      - name: I
-        description: Terminal count interrupt enable bit.
-        enumeratedValues:
-          - name: DISABLED
-            description: The terminal count interrupt is disabled.
-            value: 0
-          - name: ENABLED
-            description: The terminal count interrupt is enabled.
-            value: 1
-        bitOffset: 31
-        bitWidth: 1
-  - dim: 8
-    dimIncrement: 32
-    dimIndex: 0,1,2,3,4,5,6,7
-    name: C%sCONFIG
-    description: DMA Channel Configuration Register
-    addressOffset: 272
-    access: read-write
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: E
-        description: 'Channel enable. Reading this bit indicates whether a channel is currently enabled or disabled: The Channel Enable bit status can also be found by reading the EnbldChns Register. A channel can be disabled by clearing the Enable bit. This causes the current AHB transfer (if one is in progress) to complete and the channel is then disabled. Any data in the FIFO of the relevant channel is lost. Restarting the channel by setting the Channel Enable bit has unpredictable effects, the channel must be fully re-initialized. The channel is also disabled, and Channel Enable bit cleared, when the last LLI is reached, the DMA transfer is completed, or if a channel error is encountered. If a channel must be disabled without losing data in the FIFO, the Halt bit must be set so that further DMA requests are ignored. The Active bit must then be polled until it reaches 0, indicating that there is no data left in the FIFO. Finally, the Channel Enable bit can be cleared.'
-        enumeratedValues:
-          - name: DISABLED
-            description: Channel disabled.
-            value: 0
-          - name: ENABLED
-            description: Channel enabled.
-            value: 1
-        bitOffset: 0
-        bitWidth: 1
-      - name: SRCPERIPHERAL
-        description: Source peripheral. This value selects the DMA source request peripheral. This field is ignored if the source of the transfer is from memory. See Table 136 for details.
-        enumeratedValues:
-          - name: SOURCE_SPIFI
-            description: Source = SPIFI
-            value: 0
-          - name: SOURCE_TIMER_1
-            description: Source = Timer 0 match 0/UART0 transmit
-            value: 1
-          - name: SOURCE_TIMER_2
-            description: Source = Timer 0 match 1/UART0 receive
-            value: 2
-          - name: SOURCE_TIMER_3
-            description: Source = Timer 1 match 0/UART1 transmit
-            value: 3
-          - name: SOURCE_TIMER_4
-            description: Source = Timer 1 match 1/UART 1 receive
-            value: 4
-          - name: SOURCE_TIMER_5
-            description: Source = Timer 2 match 0/UART 2 transmit
-            value: 5
-          - name: SOURCE_TIMER_6
-            description: Source = Timer 2 match 1/UART 2 receive
-            value: 6
-          - name: SOURCE_TIMER_7
-            description: Source = Timer 3 match 0/UART3 transmit/SCT DMA request 0
-            value: 7
-          - name: SOURCE_TIMER_8
-            description: Source = Timer 3 match 1/UART3 receive/SCT DMA request 1
-            value: 8
-          - name: SOURCE_SSP0_9
-            description: Source = SSP0 receive/I2S channel 0
-            value: 9
-          - name: SOURCE_SSP0_10
-            description: Source = SSP0 transmit/I2S channel 1
-            value: 10
-          - name: SOURCE_SSP1_11
-            description: Source = SSP1 receive
-            value: 11
-          - name: SOURCE_SSP1_12
-            description: Source = SSP1 transmit
-            value: 12
-          - name: SOURCE_ADC0
-            description: Source = ADC0
-            value: 13
-          - name: SOURCE_ADC1
-            description: Source = ADC1
-            value: 14
-          - name: SOURCE_DAC
-            description: Source = DAC
-            value: 15
-        bitOffset: 1
-        bitWidth: 5
-      - name: DESTPERIPHERAL
-        description: Destination peripheral. This value selects the DMA destination request peripheral. This field is ignored if the destination of the transfer is to memory. See Table 136 for details.
-        enumeratedValues:
-          - name: DESTINATION_SPIFI
-            description: Destination = SPIFI
-            value: 0
-          - name: DESTINATION_TIMER_1
-            description: Destination = Timer 0 match 0/UART0 transmit
-            value: 1
-          - name: DESTINATION_TIMER_2
-            description: Destination = Timer 0 match 1/UART0 receive
-            value: 2
-          - name: DESTINATION_TIMER_3
-            description: Destination = Timer 1 match 0/UART1 transmit
-            value: 3
-          - name: DESTINATION_TIMER_4
-            description: Destination = Timer 1 match 1/UART 1 receive
-            value: 4
-          - name: DESTINATION_TIMER_5
-            description: Destination = Timer 2 match 0/UART 2 transmit
-            value: 5
-          - name: DESTINATION_TIMER_6
-            description: Destination = Timer 2 match 1/UART 2 receive
-            value: 6
-          - name: DESTINATION_TIMER_7
-            description: Destination = Timer 3 match 0/UART3 transmit/SCT DMA request 0
-            value: 7
-          - name: DESTINATION_TIMER_8
-            description: Destination = Timer 3 match 1/UART3 receive/SCT DMA request 1
-            value: 8
-          - name: DESTINATION_SSP0_9
-            description: Destination = SSP0 receive/I2S channel 0
-            value: 9
-          - name: DESTINATION_SSP0_10
-            description: Destination = SSP0 transmit/I2S channel 1
-            value: 10
-          - name: DESTINATION_SSP1_11
-            description: Destination = SSP1 receive
-            value: 11
-          - name: DESTINATION_SSP1_12
-            description: Destination = SSP1 transmit
-            value: 12
-          - name: DESTINATION_ADC0
-            description: Destination = ADC0
-            value: 13
-          - name: DESTINATION_ADC1
-            description: Destination = ADC1
-            value: 14
-          - name: DESTINATION_DAC
-            description: Destination = DAC
-            value: 15
-        bitOffset: 6
-        bitWidth: 5
-      - name: FLOWCNTRL
-        description: Flow control and transfer type. This value indicates the flow controller and transfer type. The flow controller can be the DMA Controller, the source peripheral, or the destination peripheral. The transfer type can be memory-to-memory, memory-to-peripheral, peripheral-to-memory, or peripheral-to-peripheral. Refer to Table 157 for the encoding of this field.
-        enumeratedValues:
-          - name: MEMORY_MEMORY_DMA_CONTROL
-            description: Memory to memory (DMA control)
-            value: 0
-          - name: MEMORY_PERIPHERAL_DMA_CONTROL
-            description: Memory to peripheral (DMA control)
-            value: 1
-          - name: PERIPHERAL_MEMORY_DMA_CONTROL
-            description: Peripheral to memory (DMA control)
-            value: 2
-          - name: SOURCE_PERIPHERAL_DESTINATION_PERIPHERAL_DMA
-            description: Source peripheral to destination peripheral (DMA control)
-            value: 3
-          - name: SOURCE_PERIPHERAL_DESTINATION_PERIPHERAL_DESTINATION
-            description: Source peripheral to destination peripheral (destination control)
-            value: 4
-          - name: MEMORY_PERIPHERAL_PERIPHERAL_CONTROL
-            description: Memory to peripheral (peripheral control)
-            value: 5
-          - name: PERIPHERAL_MEMORY_PERIPHERAL_CONTROL
-            description: Peripheral to memory (peripheral control)
-            value: 6
-          - name: SOURCE_PERIPHERAL_DESTINATION_PERIPHERAL_SOURCE
-            description: Source peripheral to destination peripheral (source control)
-            value: 7
-        bitOffset: 11
-        bitWidth: 3
-      - name: IE
-        description: Interrupt error mask. When cleared, this bit masks out the error interrupt of the relevant channel.
-        bitOffset: 14
-        bitWidth: 1
-      - name: ITC
-        description: Terminal count interrupt mask. When cleared, this bit masks out the terminal count interrupt of the relevant channel.
-        bitOffset: 15
-        bitWidth: 1
-      - name: L
-        description: Lock. When set, this bit enables locked transfers.
-        bitOffset: 16
-        bitWidth: 1
-      - name: A
-        description: 'Active: 0 = there is no data in the FIFO of the channel. 1 = the channel FIFO has data. This value can be used with the Halt and Channel Enable bits to cleanly disable a DMA channel. This is a read-only bit.'
-        bitOffset: 17
-        bitWidth: 1
-      - name: H
-        description: 'Halt: 0 = enable DMA requests. 1 = ignore further source DMA requests. The contents of the channel FIFO are drained. This value can be used with the Active and Channel Enable bits to cleanly disable a DMA channel.'
-        enumeratedValues:
-          - name: ENABLE
-            description: Enable DMA requests.
-            value: 0
-          - name: IGNORE_FURTHER
-            description: Ignore further source DMA requests.
-            value: 1
-        bitOffset: 18
-        bitWidth: 1
+        description: DMA Channel Linked List Item Register
+        addressOffset: 8
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: LM
+            description: 'AHB master select for loading the next LLI:'
+            enumeratedValues:
+              - name: AHB_MASTER_0
+                description: AHB Master 0.
+                value: 0
+              - name: AHB_MASTER_1
+                description: AHB Master 1.
+                value: 1
+            bitOffset: 0
+            bitWidth: 1
+          - name: R
+            description: Reserved, and must be written as 0, masked on read.
+            bitOffset: 1
+            bitWidth: 1
+          - name: LLI
+            description: Linked list item. Bits [31:2] of the address for the next LLI. Address bits [1:0] are 0.
+            bitOffset: 2
+            bitWidth: 30
+      - name: CONTROL
+        description: DMA Channel  Control Register
+        addressOffset: 12
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: TRANSFERSIZE
+            description: Transfer size in byte. A write to this field sets the size of the transfer when the DMA Controller is the flow controller. The transfer size value must be set before the channel is enabled. Transfer size is updated as data transfers are completed. A read from this field indicates the number of transfers completed on the destination bus. Reading the register when the channel is active does not give useful information because by the time that the software has processed the value read, the channel might have progressed. It is intended to be used only when a channel is enabled and then disabled. The transfer size value is not used if the DMA Controller is not the flow controller.
+            bitOffset: 0
+            bitWidth: 12
+          - name: SBSIZE
+            description: Source burst size. Indicates the number of transfers that make up a source burst. This value must be set to the burst size of the source peripheral, or if the source is memory, to the memory boundary size (see Figure 3). The burst size is the amount of data that is transferred when the BREQ signal goes active in the source peripheral.
+            enumeratedValues:
+              - name: SOURCE_BURST_1
+                description: Source burst size = 1
+                value: 0
+              - name: SOURCE_BURST_4
+                description: Source burst size = 4
+                value: 1
+              - name: SOURCE_BURST_8
+                description: Source burst size = 8
+                value: 2
+              - name: SOURCE_BURST_16
+                description: Source burst size = 16
+                value: 3
+              - name: SOURCE_BURST_32
+                description: Source burst size = 32
+                value: 4
+              - name: SOURCE_BURST_64
+                description: Source burst size = 64
+                value: 5
+              - name: SOURCE_BURST_128
+                description: Source burst size = 128
+                value: 6
+              - name: SOURCE_BURST_256
+                description: Source burst size = 256
+                value: 7
+            bitOffset: 12
+            bitWidth: 3
+          - name: DBSIZE
+            description: Destination burst size. Indicates the number of transfers that make up a destination burst transfer request. This value must be set to the burst size of the destination peripheral or, if the destination is memory, to the memory boundary size. The burst size is the amount of data that is transferred when the BREQ signal goes active in the destination peripheral.
+            enumeratedValues:
+              - name: DESTINATION_BURST_1
+                description: Destination burst size = 1
+                value: 0
+              - name: DESTINATION_BURST_4
+                description: Destination burst size = 4
+                value: 1
+              - name: DESTINATION_BURST_8
+                description: Destination burst size = 8
+                value: 2
+              - name: DESTINATION_BURST_16
+                description: Destination burst size = 16
+                value: 3
+              - name: DESTINATION_BURST_32
+                description: Destination burst size = 32
+                value: 4
+              - name: DESTINATION_BURST_64
+                description: Destination burst size = 64
+                value: 5
+              - name: DESTINATION_BURST_128
+                description: Destination burst size = 128
+                value: 6
+              - name: DESTINATION_BURST_256
+                description: Destination burst size = 256
+                value: 7
+            bitOffset: 15
+            bitWidth: 3
+          - name: SWIDTH
+            description: Source transfer width. Transfers wider than the AHB master bus width are illegal. The source and destination widths can be different from each other. The hardware automatically packs and unpacks the data as required. 0x3 to 0x7 - Reserved.
+            enumeratedValues:
+              - name: BYTE_BIT
+                description: Byte (8-bit)
+                value: 0
+              - name: HALFWORD_BIT
+                description: Halfword (16-bit)
+                value: 1
+              - name: WORD_BIT
+                description: Word (32-bit)
+                value: 2
+            bitOffset: 18
+            bitWidth: 3
+          - name: DWIDTH
+            description: Destination transfer width. Transfers wider than the AHB master bus width are not supported. The source and destination widths can be different from each other. The hardware automatically packs and unpacks the data as required. 0x3 to 0x7 - Reserved.
+            enumeratedValues:
+              - name: BYTE_BIT
+                description: Byte (8-bit)
+                value: 0
+              - name: HALFWORD_BIT
+                description: Halfword (16-bit)
+                value: 1
+              - name: WORD_BIT
+                description: Word (32-bit)
+                value: 2
+            bitOffset: 21
+            bitWidth: 3
+          - name: S
+            description: 'Source AHB master select:'
+            enumeratedValues:
+              - name: AHB_MASTER_0
+                description: AHB Master 0 selected for source transfer.
+                value: 0
+              - name: AHB_MASTER_1
+                description: AHB Master 1 selected for source transfer.
+                value: 1
+            bitOffset: 24
+            bitWidth: 1
+          - name: D
+            description: 'Destination AHB master select: Only Master1 can access a peripheral. Master0 can only access memory.'
+            enumeratedValues:
+              - name: AHB_MASTER_0
+                description: AHB Master 0 selected for destination transfer.
+                value: 0
+              - name: AHB_MASTER_1
+                description: AHB Master 1 selected for destination transfer.
+                value: 1
+            bitOffset: 25
+            bitWidth: 1
+          - name: SI
+            description: 'Source increment:'
+            enumeratedValues:
+              - name: NOT_INCREMENT
+                description: The source address is not incremented after each transfer.
+                value: 0
+              - name: INCREMENT
+                description: The source address is incremented after each transfer.
+                value: 1
+            bitOffset: 26
+            bitWidth: 1
+          - name: DI
+            description: 'Destination increment:'
+            enumeratedValues:
+              - name: DESTINATION_ADDRESS_NOT
+                description: The destination address is not incremented after each transfer.
+                value: 0
+              - name: DESTINATION_ADDRESS_INCREMENTED
+                description: The destination address is incremented after each transfer.
+                value: 1
+            bitOffset: 27
+            bitWidth: 1
+          - name: PROT1
+            description: 'Indicates that the access is in user mode or privileged mode:'
+            enumeratedValues:
+              - name: ACCESS_USER
+                description: Access is in user mode
+                value: 0
+              - name: ACCESS_PRIVILEGED
+                description: Access is in privileged mode.
+                value: 1
+            bitOffset: 28
+            bitWidth: 1
+          - name: PROT2
+            description: 'Indicates that the access is bufferable or not bufferable:'
+            enumeratedValues:
+              - name: ACCESS_NOT
+                description: Access is not bufferable.
+                value: 0
+              - name: ACCESS_BUFFERABLE
+                description: Access is bufferable.
+                value: 1
+            bitOffset: 29
+            bitWidth: 1
+          - name: PROT3
+            description: 'Indicates that the access is cacheable or not cacheable:'
+            enumeratedValues:
+              - name: ACCESS_NOT
+                description: Access is not cacheable.
+                value: 0
+              - name: ACCESS_CACHEABLE
+                description: Access is cacheable.
+                value: 1
+            bitOffset: 30
+            bitWidth: 1
+          - name: I
+            description: Terminal count interrupt enable bit.
+            enumeratedValues:
+              - name: DISABLED
+                description: The terminal count interrupt is disabled.
+                value: 0
+              - name: ENABLED
+                description: The terminal count interrupt is enabled.
+                value: 1
+            bitOffset: 31
+            bitWidth: 1
+      - name: CONFIG
+        description: DMA Channel Configuration Register
+        addressOffset: 16
+        access: read-write
+        resetValue: 0
+        resetMask: 4294967295
+        fields:
+          - name: E
+            description: 'Channel enable. Reading this bit indicates whether a channel is currently enabled or disabled: The Channel Enable bit status can also be found by reading the EnbldChns Register. A channel can be disabled by clearing the Enable bit. This causes the current AHB transfer (if one is in progress) to complete and the channel is then disabled. Any data in the FIFO of the relevant channel is lost. Restarting the channel by setting the Channel Enable bit has unpredictable effects, the channel must be fully re-initialized. The channel is also disabled, and Channel Enable bit cleared, when the last LLI is reached, the DMA transfer is completed, or if a channel error is encountered. If a channel must be disabled without losing data in the FIFO, the Halt bit must be set so that further DMA requests are ignored. The Active bit must then be polled until it reaches 0, indicating that there is no data left in the FIFO. Finally, the Channel Enable bit can be cleared.'
+            enumeratedValues:
+              - name: DISABLED
+                description: Channel disabled.
+                value: 0
+              - name: ENABLED
+                description: Channel enabled.
+                value: 1
+            bitOffset: 0
+            bitWidth: 1
+          - name: SRCPERIPHERAL
+            description: Source peripheral. This value selects the DMA source request peripheral. This field is ignored if the source of the transfer is from memory. See Table 136 for details.
+            enumeratedValues:
+              - name: SOURCE_SPIFI
+                description: Source = SPIFI
+                value: 0
+              - name: SOURCE_TIMER_1
+                description: Source = Timer 0 match 0/UART0 transmit
+                value: 1
+              - name: SOURCE_TIMER_2
+                description: Source = Timer 0 match 1/UART0 receive
+                value: 2
+              - name: SOURCE_TIMER_3
+                description: Source = Timer 1 match 0/UART1 transmit
+                value: 3
+              - name: SOURCE_TIMER_4
+                description: Source = Timer 1 match 1/UART 1 receive
+                value: 4
+              - name: SOURCE_TIMER_5
+                description: Source = Timer 2 match 0/UART 2 transmit
+                value: 5
+              - name: SOURCE_TIMER_6
+                description: Source = Timer 2 match 1/UART 2 receive
+                value: 6
+              - name: SOURCE_TIMER_7
+                description: Source = Timer 3 match 0/UART3 transmit/SCT DMA request 0
+                value: 7
+              - name: SOURCE_TIMER_8
+                description: Source = Timer 3 match 1/UART3 receive/SCT DMA request 1
+                value: 8
+              - name: SOURCE_SSP0_9
+                description: Source = SSP0 receive/I2S channel 0
+                value: 9
+              - name: SOURCE_SSP0_10
+                description: Source = SSP0 transmit/I2S channel 1
+                value: 10
+              - name: SOURCE_SSP1_11
+                description: Source = SSP1 receive
+                value: 11
+              - name: SOURCE_SSP1_12
+                description: Source = SSP1 transmit
+                value: 12
+              - name: SOURCE_ADC0
+                description: Source = ADC0
+                value: 13
+              - name: SOURCE_ADC1
+                description: Source = ADC1
+                value: 14
+              - name: SOURCE_DAC
+                description: Source = DAC
+                value: 15
+            bitOffset: 1
+            bitWidth: 5
+          - name: DESTPERIPHERAL
+            description: Destination peripheral. This value selects the DMA destination request peripheral. This field is ignored if the destination of the transfer is to memory. See Table 136 for details.
+            enumeratedValues:
+              - name: DESTINATION_SPIFI
+                description: Destination = SPIFI
+                value: 0
+              - name: DESTINATION_TIMER_1
+                description: Destination = Timer 0 match 0/UART0 transmit
+                value: 1
+              - name: DESTINATION_TIMER_2
+                description: Destination = Timer 0 match 1/UART0 receive
+                value: 2
+              - name: DESTINATION_TIMER_3
+                description: Destination = Timer 1 match 0/UART1 transmit
+                value: 3
+              - name: DESTINATION_TIMER_4
+                description: Destination = Timer 1 match 1/UART 1 receive
+                value: 4
+              - name: DESTINATION_TIMER_5
+                description: Destination = Timer 2 match 0/UART 2 transmit
+                value: 5
+              - name: DESTINATION_TIMER_6
+                description: Destination = Timer 2 match 1/UART 2 receive
+                value: 6
+              - name: DESTINATION_TIMER_7
+                description: Destination = Timer 3 match 0/UART3 transmit/SCT DMA request 0
+                value: 7
+              - name: DESTINATION_TIMER_8
+                description: Destination = Timer 3 match 1/UART3 receive/SCT DMA request 1
+                value: 8
+              - name: DESTINATION_SSP0_9
+                description: Destination = SSP0 receive/I2S channel 0
+                value: 9
+              - name: DESTINATION_SSP0_10
+                description: Destination = SSP0 transmit/I2S channel 1
+                value: 10
+              - name: DESTINATION_SSP1_11
+                description: Destination = SSP1 receive
+                value: 11
+              - name: DESTINATION_SSP1_12
+                description: Destination = SSP1 transmit
+                value: 12
+              - name: DESTINATION_ADC0
+                description: Destination = ADC0
+                value: 13
+              - name: DESTINATION_ADC1
+                description: Destination = ADC1
+                value: 14
+              - name: DESTINATION_DAC
+                description: Destination = DAC
+                value: 15
+            bitOffset: 6
+            bitWidth: 5
+          - name: FLOWCNTRL
+            description: Flow control and transfer type. This value indicates the flow controller and transfer type. The flow controller can be the DMA Controller, the source peripheral, or the destination peripheral. The transfer type can be memory-to-memory, memory-to-peripheral, peripheral-to-memory, or peripheral-to-peripheral. Refer to Table 157 for the encoding of this field.
+            enumeratedValues:
+              - name: MEMORY_MEMORY_DMA_CONTROL
+                description: Memory to memory (DMA control)
+                value: 0
+              - name: MEMORY_PERIPHERAL_DMA_CONTROL
+                description: Memory to peripheral (DMA control)
+                value: 1
+              - name: PERIPHERAL_MEMORY_DMA_CONTROL
+                description: Peripheral to memory (DMA control)
+                value: 2
+              - name: SOURCE_PERIPHERAL_DESTINATION_PERIPHERAL_DMA
+                description: Source peripheral to destination peripheral (DMA control)
+                value: 3
+              - name: SOURCE_PERIPHERAL_DESTINATION_PERIPHERAL_DESTINATION
+                description: Source peripheral to destination peripheral (destination control)
+                value: 4
+              - name: MEMORY_PERIPHERAL_PERIPHERAL_CONTROL
+                description: Memory to peripheral (peripheral control)
+                value: 5
+              - name: PERIPHERAL_MEMORY_PERIPHERAL_CONTROL
+                description: Peripheral to memory (peripheral control)
+                value: 6
+              - name: SOURCE_PERIPHERAL_DESTINATION_PERIPHERAL_SOURCE
+                description: Source peripheral to destination peripheral (source control)
+                value: 7
+            bitOffset: 11
+            bitWidth: 3
+          - name: IE
+            description: Interrupt error mask. When cleared, this bit masks out the error interrupt of the relevant channel.
+            bitOffset: 14
+            bitWidth: 1
+          - name: ITC
+            description: Terminal count interrupt mask. When cleared, this bit masks out the terminal count interrupt of the relevant channel.
+            bitOffset: 15
+            bitWidth: 1
+          - name: L
+            description: Lock. When set, this bit enables locked transfers.
+            bitOffset: 16
+            bitWidth: 1
+          - name: A
+            description: 'Active: 0 = there is no data in the FIFO of the channel. 1 = the channel FIFO has data. This value can be used with the Halt and Channel Enable bits to cleanly disable a DMA channel. This is a read-only bit.'
+            bitOffset: 17
+            bitWidth: 1
+          - name: H
+            description: 'Halt: 0 = enable DMA requests. 1 = ignore further source DMA requests. The contents of the channel FIFO are drained. This value can be used with the Active and Channel Enable bits to cleanly disable a DMA channel.'
+            enumeratedValues:
+              - name: ENABLE
+                description: Enable DMA requests.
+                value: 0
+              - name: IGNORE_FURTHER
+                description: Ignore further source DMA requests.
+                value: 1
+            bitOffset: 18
+            bitWidth: 1
 addressBlocks:
   - offset: 0
     size: 4095

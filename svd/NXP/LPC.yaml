@@ -217,6 +217,21 @@ shared_blocks:
     interrupts:
       LCD: INTR
 
+  PL080:
+    # ARM PrimeCell DMA Controller (DDI 0196).  Licensed IP used by NXP
+    # LPC17xx/LPC178x/LPC408x/LPC18xx/LPC43xx/LPC24xx, ST SPEAr,
+    # ST-Ericsson Nomadik, Samsung S3C6410, Faraday FTDMAC020, ARM
+    # RealView/Versatile reference platforms.  Every real instance is
+    # 8-channel; the 32-bit-wide channel-mask register fields are
+    # synthesis headroom, not used by any known silicon.
+    designer: ARM
+    from: LPC4350.GPDMA
+    description: ARM PrimeCell DMA Controller (PL080)
+    transforms:
+      - type: clusterArrays
+        pattern: 'C%s(.+)'
+        name: C
+        description: DMA channel
   SPIFI:
     from: LPC54S018.SPIFI0
     # Memory-mapped flash windows.  Naming for the primary (code-capable)
@@ -858,15 +873,10 @@ families:
         from: LPC43xx_43Sxx.GPIO_PORT
         instances: [GPIO_PORT]
       GPDMA:
-        from: LPC43xx_43Sxx.GPDMA
+        uses: PL080
         instances: [GPDMA]
         interrupts:
           DMA: DMA
-        transforms:
-          - type: clusterArrays
-            pattern: 'C%s(.+)'
-            name: C
-            description: DMA channel
       I2C:
         from: LPC43xx_43Sxx.I2C0
         instances: [I2C0, I2C1]
