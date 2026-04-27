@@ -217,16 +217,20 @@ shared_blocks:
     interrupts:
       LCD: INTR
 
-  PL080:
-    # ARM PrimeCell DMA Controller (DDI 0196).  Licensed IP used by NXP
-    # LPC17xx/LPC178x/LPC408x/LPC18xx/LPC43xx/LPC24xx, ST SPEAr,
-    # ST-Ericsson Nomadik, Samsung S3C6410, Faraday FTDMAC020, ARM
-    # RealView/Versatile reference platforms.  Every real instance is
-    # 8-channel; the 32-bit-wide channel-mask register fields are
-    # synthesis headroom, not used by any known silicon.
+  PL08x:
+    # ARM PrimeCell DMA Controller.  Two ARM-published variants share one
+    # register layout: the full PL080 (DDI 0196) and the cut-down PL081
+    # (DDI 0218).  Licensed IP used by NXP LPC17xx/LPC178x/LPC408x/LPC18xx/
+    # LPC43xx/LPC24xx, ST SPEAr, ST-Ericsson Nomadik, Samsung S3C6410,
+    # Faraday FTDMAC020, ARM RealView/Versatile reference platforms.  The
+    # 32-bit-wide channel-mask register fields are synthesis headroom; no
+    # known silicon uses more than 8 channels (PL080) or 2 (PL081).
     designer: ARM
     from: LPC4350.GPDMA
-    description: ARM PrimeCell DMA Controller (PL080)
+    description: ARM PrimeCell DMA Controller (PL080/PL081)
+    params:
+      - {name: pl081, type: int, default: 0, max: 1,
+         description: "0 = PL080 (8 channels, 2 AHB masters); 1 = PL081 (2 channels only, single AHB master so CONFIG.M1 endianness bit, C[n].LLI.LM bit, and C[n].CONTROL.S/D master-select bits are reserved). Both variants share the same register layout."}
     transforms:
       - type: clusterArrays
         pattern: 'C%s(.+)'
@@ -873,7 +877,7 @@ families:
         from: LPC43xx_43Sxx.GPIO_PORT
         instances: [GPIO_PORT]
       GPDMA:
-        uses: PL080
+        uses: PL08x
         instances: [GPDMA]
         interrupts:
           DMA: DMA
