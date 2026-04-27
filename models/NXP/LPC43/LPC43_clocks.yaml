@@ -22,7 +22,8 @@ documents:
 instance: CGU
 
 # ===========================================================================
-# Stages 1 + 2: oscillators, PLLs, IDIVs, BASE_*_CLK output stages.
+# Stages 1 + 2 + 3: oscillators, PLLs, IDIVs, BASE_*_CLK output stages,
+# CCU1/CCU2 branch fan-out.
 #
 # Topology overview (UM10503 §13.4, Fig 36/37):
 #
@@ -46,8 +47,13 @@ instance: CGU
 #     SDIO, SSP0/1, UART0..3, AUDIO): full source list except PLL0USB
 #     (encoding 0x07 reserved).
 #
-# Branch-clock fan-out via CCU1/CCU2 (CLK_*_CFG gates) is deferred to
-# stage 3.
+# Branch-clock fan-out is via CCU1/CCU2: each branch is a Gate whose
+# control bit is the CLK_*_CFG.RUN bit (Tables 162/164).  CCU1 has
+# 51 branches; CCU2 has 8.  One branch is special:
+# CLK_M4_EMCDIV (Table 163) is both gated and divided, so it appears
+# as a Gate (M4_EMCDIV_GATE) feeding an intermediate signal that is
+# then fed through a Divider (M4_EMCDIV) configured by the same
+# register's DIV field.
 #
 # Modeling notes:
 #   * PLL0USB and PLL0AUDIO use LFSR-encoded MDEC/NDEC/PDEC values rather
@@ -125,6 +131,69 @@ signals:
   - {name: base_audio_clk,     max: 204000000, description: "Output stage 25: I2S audio system"}
   - {name: base_cgu_out0_clk,  max: 204000000, description: "Output stage 26: CGU_OUT0 pin"}
   - {name: base_cgu_out1_clk,  max: 204000000, description: "Output stage 27: CGU_OUT1 pin"}
+
+  # CCU1/CCU2 branch-clock leaf signals (each gated by CLK_*_CFG.RUN; per UM10503 §14.5.3, Tables 162/164)
+  - {name: clk_apb3_bus}
+  - {name: clk_apb3_i2c1}
+  - {name: clk_apb3_dac}
+  - {name: clk_apb3_adc0}
+  - {name: clk_apb3_adc1}
+  - {name: clk_apb3_can0}
+  - {name: clk_apb1_bus}
+  - {name: clk_apb1_motoconpwm}
+  - {name: clk_apb1_i2c0}
+  - {name: clk_apb1_i2s}
+  - {name: clk_apb1_can1}
+  - {name: clk_spifi}
+  - {name: clk_m4_bus}
+  - {name: clk_m4_spifi}
+  - {name: clk_m4_gpio}
+  - {name: clk_m4_lcd}
+  - {name: clk_m4_ethernet}
+  - {name: clk_m4_usb0}
+  - {name: clk_m4_emc}
+  - {name: clk_m4_sdio}
+  - {name: clk_m4_dma}
+  - {name: clk_m4_m4core}
+  - {name: clk_m4_sct}
+  - {name: clk_m4_usb1}
+  - {name: clk_m4_flasha}
+  - {name: clk_m4_flashb}
+  - {name: clk_m4_m0app}
+  - {name: clk_m4_adchs}
+  - {name: clk_m4_eeprom}
+  - {name: clk_m4_wwdt}
+  - {name: clk_m4_usart0}
+  - {name: clk_m4_uart1}
+  - {name: clk_m4_ssp0}
+  - {name: clk_m4_timer0}
+  - {name: clk_m4_timer1}
+  - {name: clk_m4_scu}
+  - {name: clk_m4_creg}
+  - {name: clk_m4_ritimer}
+  - {name: clk_m4_usart2}
+  - {name: clk_m4_usart3}
+  - {name: clk_m4_timer2}
+  - {name: clk_m4_timer3}
+  - {name: clk_m4_ssp1}
+  - {name: clk_m4_qei}
+  - {name: clk_periph_bus}
+  - {name: clk_periph_core}
+  - {name: clk_periph_sgpio}
+  - {name: clk_usb0}
+  - {name: clk_usb1}
+  - {name: clk_spi}
+  - {name: clk_adchs}
+  - {name: clk_audio}
+  - {name: clk_apb2_usart3}
+  - {name: clk_apb2_usart2}
+  - {name: clk_apb0_uart1}
+  - {name: clk_apb0_usart0}
+  - {name: clk_apb2_ssp1}
+  - {name: clk_apb0_ssp0}
+  - {name: clk_sdio}
+  - {name: clk_m4_emcdiv_gated, description: "BASE_M4_CLK gated by CLK_M4_EMCDIV_CFG.RUN, before DIV"}
+  - {name: clk_m4_emcdiv,         description: "EMC clock with optional divide-by-1/2 (CLK_M4_EMCDIV_CFG.DIV); see also CREG6.EMC_CLK_SEL bit 16"}
 
 generators:
   - name: IRC
@@ -1023,3 +1092,499 @@ dividers:
       field: IDIV
       value_range: {min: 1, max: 256, offset: 1}
     description: "Integer divider E.  IDIV=0..255 -> divisor=1..256."
+
+  - name: M4_EMCDIV
+    input: clk_m4_emcdiv_gated
+    output: clk_m4_emcdiv
+    factor:
+      instance: CCU1
+      reg: CLK_M4_EMCDIV_CFG
+      field: DIV
+      values: [1, 2]
+    description: "CLK_M4_EMCDIV divider stage.  DIV=0 -> /1, DIV=1 -> /2; values 0x2-0x4 reserved.  Status reflected in DIVSTAT (bits 29:27) of the same register, not the STAT register."
+
+gates:
+  # ----- CCU1 branches (instance: CCU1) -----
+  - name: APB3_BUS
+    input: base_apb3_clk
+    output: clk_apb3_bus
+    control:
+      instance: CCU1
+      reg: CLK_APB3_BUS_CFG
+      field: RUN
+    description: "APB3 bus branch of BASE_APB3_CLK"
+  - name: APB3_I2C1
+    input: base_apb3_clk
+    output: clk_apb3_i2c1
+    control:
+      instance: CCU1
+      reg: CLK_APB3_I2C1_CFG
+      field: RUN
+    description: "I2C1 branch of BASE_APB3_CLK"
+  - name: APB3_DAC
+    input: base_apb3_clk
+    output: clk_apb3_dac
+    control:
+      instance: CCU1
+      reg: CLK_APB3_DAC_CFG
+      field: RUN
+    description: "DAC branch of BASE_APB3_CLK"
+  - name: APB3_ADC0
+    input: base_apb3_clk
+    output: clk_apb3_adc0
+    control:
+      instance: CCU1
+      reg: CLK_APB3_ADC0_CFG
+      field: RUN
+    description: "ADC0 branch of BASE_APB3_CLK"
+  - name: APB3_ADC1
+    input: base_apb3_clk
+    output: clk_apb3_adc1
+    control:
+      instance: CCU1
+      reg: CLK_APB3_ADC1_CFG
+      field: RUN
+    description: "ADC1 branch of BASE_APB3_CLK"
+  - name: APB3_CAN0
+    input: base_apb3_clk
+    output: clk_apb3_can0
+    control:
+      instance: CCU1
+      reg: CLK_APB3_CAN0_CFG
+      field: RUN
+    description: "C_CAN0 branch of BASE_APB3_CLK"
+  - name: APB1_BUS
+    input: base_apb1_clk
+    output: clk_apb1_bus
+    control:
+      instance: CCU1
+      reg: CLK_APB1_BUS_CFG
+      field: RUN
+    description: "APB1 bus branch of BASE_APB1_CLK"
+  - name: APB1_MOTOCONPWM
+    input: base_apb1_clk
+    output: clk_apb1_motoconpwm
+    control:
+      instance: CCU1
+      reg: CLK_APB1_MOTOCONPWM_CFG
+      field: RUN
+    description: "PWM motor control branch of BASE_APB1_CLK"
+  - name: APB1_I2C0
+    input: base_apb1_clk
+    output: clk_apb1_i2c0
+    control:
+      instance: CCU1
+      reg: CLK_APB1_I2C0_CFG
+      field: RUN
+    description: "I2C0 branch of BASE_APB1_CLK"
+  - name: APB1_I2S
+    input: base_apb1_clk
+    output: clk_apb1_i2s
+    control:
+      instance: CCU1
+      reg: CLK_APB1_I2S_CFG
+      field: RUN
+    description: "I2S0/I2S1 branch of BASE_APB1_CLK"
+  - name: APB1_CAN1
+    input: base_apb1_clk
+    output: clk_apb1_can1
+    control:
+      instance: CCU1
+      reg: CLK_APB1_CAN1_CFG
+      field: RUN
+    description: "C_CAN1 branch of BASE_APB1_CLK"
+  - name: SPIFI
+    input: base_spifi_clk
+    output: clk_spifi
+    control:
+      instance: CCU1
+      reg: CLK_SPIFI_CFG
+      field: RUN
+    description: "SPIFI SCKI input branch of BASE_SPIFI_CLK"
+  - name: M4_BUS
+    input: base_m4_clk
+    output: clk_m4_bus
+    control:
+      instance: CCU1
+      reg: CLK_M4_BUS_CFG
+      field: RUN
+    description: "M4 bus branch of BASE_M4_CLK"
+  - name: M4_SPIFI
+    input: base_m4_clk
+    output: clk_m4_spifi
+    control:
+      instance: CCU1
+      reg: CLK_M4_SPIFI_CFG
+      field: RUN
+    description: "SPIFI register interface branch of BASE_M4_CLK"
+  - name: M4_GPIO
+    input: base_m4_clk
+    output: clk_m4_gpio
+    control:
+      instance: CCU1
+      reg: CLK_M4_GPIO_CFG
+      field: RUN
+    description: "GPIO register interface branch of BASE_M4_CLK"
+  - name: M4_LCD
+    input: base_m4_clk
+    output: clk_m4_lcd
+    control:
+      instance: CCU1
+      reg: CLK_M4_LCD_CFG
+      field: RUN
+    description: "LCD register interface branch of BASE_M4_CLK"
+  - name: M4_ETHERNET
+    input: base_m4_clk
+    output: clk_m4_ethernet
+    control:
+      instance: CCU1
+      reg: CLK_M4_ETHERNET_CFG
+      field: RUN
+    description: "Ethernet register interface branch of BASE_M4_CLK"
+  - name: M4_USB0
+    input: base_m4_clk
+    output: clk_m4_usb0
+    control:
+      instance: CCU1
+      reg: CLK_M4_USB0_CFG
+      field: RUN
+    description: "USB0 register interface branch of BASE_M4_CLK"
+  - name: M4_EMC
+    input: base_m4_clk
+    output: clk_m4_emc
+    control:
+      instance: CCU1
+      reg: CLK_M4_EMC_CFG
+      field: RUN
+    description: "EMC branch of BASE_M4_CLK"
+  - name: M4_SDIO
+    input: base_m4_clk
+    output: clk_m4_sdio
+    control:
+      instance: CCU1
+      reg: CLK_M4_SDIO_CFG
+      field: RUN
+    description: "SD/MMC register interface branch of BASE_M4_CLK"
+  - name: M4_DMA
+    input: base_m4_clk
+    output: clk_m4_dma
+    control:
+      instance: CCU1
+      reg: CLK_M4_DMA_CFG
+      field: RUN
+    description: "DMA register interface branch of BASE_M4_CLK"
+  - name: M4_M4CORE
+    input: base_m4_clk
+    output: clk_m4_m4core
+    control:
+      instance: CCU1
+      reg: CLK_M4_M4CORE_CFG
+      field: RUN
+    description: "Cortex-M4 core branch of BASE_M4_CLK"
+  - name: M4_SCT
+    input: base_m4_clk
+    output: clk_m4_sct
+    control:
+      instance: CCU1
+      reg: CLK_M4_SCT_CFG
+      field: RUN
+    description: "SCTimer/PWM register interface branch of BASE_M4_CLK"
+  - name: M4_USB1
+    input: base_m4_clk
+    output: clk_m4_usb1
+    control:
+      instance: CCU1
+      reg: CLK_M4_USB1_CFG
+      field: RUN
+    description: "USB1 register interface branch of BASE_M4_CLK"
+  - name: M4_FLASHA
+    input: base_m4_clk
+    output: clk_m4_flasha
+    control:
+      instance: CCU1
+      reg: CLK_M4_FLASHA_CFG
+      field: RUN
+    description: "flash bank A branch of BASE_M4_CLK"
+  - name: M4_FLASHB
+    input: base_m4_clk
+    output: clk_m4_flashb
+    control:
+      instance: CCU1
+      reg: CLK_M4_FLASHB_CFG
+      field: RUN
+    description: "flash bank B branch of BASE_M4_CLK"
+  - name: M4_M0APP
+    input: base_m4_clk
+    output: clk_m4_m0app
+    control:
+      instance: CCU1
+      reg: CLK_M4_M0APP_CFG
+      field: RUN
+    description: "M0APP coprocessor branch of BASE_M4_CLK"
+  - name: M4_ADCHS
+    input: base_m4_clk
+    output: clk_m4_adchs
+    control:
+      instance: CCU1
+      reg: CLK_M4_ADCHS_CFG
+      field: RUN
+    description: "ADCHS branch of BASE_M4_CLK"
+  - name: M4_EEPROM
+    input: base_m4_clk
+    output: clk_m4_eeprom
+    control:
+      instance: CCU1
+      reg: CLK_M4_EEPROM_CFG
+      field: RUN
+    description: "EEPROM branch of BASE_M4_CLK"
+  - name: M4_WWDT
+    input: base_m4_clk
+    output: clk_m4_wwdt
+    control:
+      instance: CCU1
+      reg: CLK_M4_WWDT_CFG
+      field: RUN
+    description: "WWDT register interface branch of BASE_M4_CLK"
+  - name: M4_USART0
+    input: base_m4_clk
+    output: clk_m4_usart0
+    control:
+      instance: CCU1
+      reg: CLK_M4_USART0_CFG
+      field: RUN
+    description: "USART0 register interface branch of BASE_M4_CLK"
+  - name: M4_UART1
+    input: base_m4_clk
+    output: clk_m4_uart1
+    control:
+      instance: CCU1
+      reg: CLK_M4_UART1_CFG
+      field: RUN
+    description: "UART1 register interface branch of BASE_M4_CLK"
+  - name: M4_SSP0
+    input: base_m4_clk
+    output: clk_m4_ssp0
+    control:
+      instance: CCU1
+      reg: CLK_M4_SSP0_CFG
+      field: RUN
+    description: "SSP0 register interface branch of BASE_M4_CLK"
+  - name: M4_TIMER0
+    input: base_m4_clk
+    output: clk_m4_timer0
+    control:
+      instance: CCU1
+      reg: CLK_M4_TIMER0_CFG
+      field: RUN
+    description: "Timer 0 branch of BASE_M4_CLK"
+  - name: M4_TIMER1
+    input: base_m4_clk
+    output: clk_m4_timer1
+    control:
+      instance: CCU1
+      reg: CLK_M4_TIMER1_CFG
+      field: RUN
+    description: "Timer 1 branch of BASE_M4_CLK"
+  - name: M4_SCU
+    input: base_m4_clk
+    output: clk_m4_scu
+    control:
+      instance: CCU1
+      reg: CLK_M4_SCU_CFG
+      field: RUN
+    description: "SCU register interface branch of BASE_M4_CLK"
+  - name: M4_CREG
+    input: base_m4_clk
+    output: clk_m4_creg
+    control:
+      instance: CCU1
+      reg: CLK_M4_CREG_CFG
+      field: RUN
+    description: "CREG register interface branch of BASE_M4_CLK"
+  - name: M4_RITIMER
+    input: base_m4_clk
+    output: clk_m4_ritimer
+    control:
+      instance: CCU1
+      reg: CLK_M4_RITIMER_CFG
+      field: RUN
+    description: "RI timer branch of BASE_M4_CLK"
+  - name: M4_USART2
+    input: base_m4_clk
+    output: clk_m4_usart2
+    control:
+      instance: CCU1
+      reg: CLK_M4_USART2_CFG
+      field: RUN
+    description: "USART2 register interface branch of BASE_M4_CLK"
+  - name: M4_USART3
+    input: base_m4_clk
+    output: clk_m4_usart3
+    control:
+      instance: CCU1
+      reg: CLK_M4_USART3_CFG
+      field: RUN
+    description: "USART3 register interface branch of BASE_M4_CLK"
+  - name: M4_TIMER2
+    input: base_m4_clk
+    output: clk_m4_timer2
+    control:
+      instance: CCU1
+      reg: CLK_M4_TIMER2_CFG
+      field: RUN
+    description: "Timer 2 branch of BASE_M4_CLK"
+  - name: M4_TIMER3
+    input: base_m4_clk
+    output: clk_m4_timer3
+    control:
+      instance: CCU1
+      reg: CLK_M4_TIMER3_CFG
+      field: RUN
+    description: "Timer 3 branch of BASE_M4_CLK"
+  - name: M4_SSP1
+    input: base_m4_clk
+    output: clk_m4_ssp1
+    control:
+      instance: CCU1
+      reg: CLK_M4_SSP1_CFG
+      field: RUN
+    description: "SSP1 register interface branch of BASE_M4_CLK"
+  - name: M4_QEI
+    input: base_m4_clk
+    output: clk_m4_qei
+    control:
+      instance: CCU1
+      reg: CLK_M4_QEI_CFG
+      field: RUN
+    description: "QEI branch of BASE_M4_CLK"
+  - name: PERIPH_BUS
+    input: base_periph_clk
+    output: clk_periph_bus
+    control:
+      instance: CCU1
+      reg: CLK_PERIPH_BUS_CFG
+      field: RUN
+    description: "M0SUB AHB matrix and peripheral bus branch of BASE_PERIPH_CLK"
+  - name: PERIPH_CORE
+    input: base_periph_clk
+    output: clk_periph_core
+    control:
+      instance: CCU1
+      reg: CLK_PERIPH_CORE_CFG
+      field: RUN
+    description: "Cortex-M0 subsystem core branch of BASE_PERIPH_CLK"
+  - name: PERIPH_SGPIO
+    input: base_periph_clk
+    output: clk_periph_sgpio
+    control:
+      instance: CCU1
+      reg: CLK_PERIPH_SGPIO_CFG
+      field: RUN
+    description: "SGPIO interface branch of BASE_PERIPH_CLK"
+  - name: USB0
+    input: base_usb0_clk
+    output: clk_usb0
+    control:
+      instance: CCU1
+      reg: CLK_USB0_CFG
+      field: RUN
+    description: "USB0 peripheral branch of BASE_USB0_CLK"
+  - name: USB1
+    input: base_usb1_clk
+    output: clk_usb1
+    control:
+      instance: CCU1
+      reg: CLK_USB1_CFG
+      field: RUN
+    description: "USB1 peripheral branch of BASE_USB1_CLK"
+  - name: SPI
+    input: base_spi_clk
+    output: clk_spi
+    control:
+      instance: CCU1
+      reg: CLK_SPI_CFG
+      field: RUN
+    description: "SPI interface branch of BASE_SPI_CLK"
+  - name: ADCHS
+    input: base_adchs_clk
+    output: clk_adchs
+    control:
+      instance: CCU1
+      reg: CLK_ADCHS_CFG
+      field: RUN
+    description: "ADCHS branch of BASE_ADCHS_CLK"
+  # CLK_M4_EMCDIV: gated AND divided.  Modeled as a gate feeding an
+  # intermediate signal which is then divided in the dividers section.
+  - name: M4_EMCDIV_GATE
+    input: base_m4_clk
+    output: clk_m4_emcdiv_gated
+    control:
+      instance: CCU1
+      reg: CLK_M4_EMCDIV_CFG
+      field: RUN
+    description: "EMC divided clock branch -- gate stage. RUN bit in CLK_M4_EMCDIV_CFG."
+  # ----- CCU2 branches (instance: CCU2) -----
+  - name: AUDIO
+    input: base_audio_clk
+    output: clk_audio
+    control:
+      instance: CCU2
+      reg: CLK_AUDIO_CFG
+      field: RUN
+    description: "I2S audio system branch of BASE_AUDIO_CLK"
+  - name: APB2_USART3
+    input: base_uart3_clk
+    output: clk_apb2_usart3
+    control:
+      instance: CCU2
+      reg: CLK_APB2_USART3_CFG
+      field: RUN
+    description: "USART3 peripheral branch of BASE_UART3_CLK"
+  - name: APB2_USART2
+    input: base_uart2_clk
+    output: clk_apb2_usart2
+    control:
+      instance: CCU2
+      reg: CLK_APB2_USART2_CFG
+      field: RUN
+    description: "USART2 peripheral branch of BASE_UART2_CLK"
+  - name: APB0_UART1
+    input: base_uart1_clk
+    output: clk_apb0_uart1
+    control:
+      instance: CCU2
+      reg: CLK_APB0_UART1_BUS_CFG
+      field: RUN
+    description: "UART1 peripheral branch of BASE_UART1_CLK"
+  - name: APB0_USART0
+    input: base_uart0_clk
+    output: clk_apb0_usart0
+    control:
+      instance: CCU2
+      reg: CLK_APB0_USART0_CFG
+      field: RUN
+    description: "USART0 peripheral branch of BASE_UART0_CLK"
+  - name: APB2_SSP1
+    input: base_ssp1_clk
+    output: clk_apb2_ssp1
+    control:
+      instance: CCU2
+      reg: CLK_APB2_SSP1_CFG
+      field: RUN
+    description: "SSP1 peripheral branch of BASE_SSP1_CLK"
+  - name: APB0_SSP0
+    input: base_ssp0_clk
+    output: clk_apb0_ssp0
+    control:
+      instance: CCU2
+      reg: CLK_APB0_SSP0_CFG
+      field: RUN
+    description: "SSP0 peripheral branch of BASE_SSP0_CLK"
+  - name: SDIO
+    input: base_sdio_clk
+    output: clk_sdio
+    control:
+      instance: CCU2
+      reg: CLK_SDIO_CFG
+      field: RUN
+    description: "SD/MMC peripheral branch of BASE_SDIO_CLK"
