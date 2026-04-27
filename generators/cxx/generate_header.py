@@ -27,7 +27,16 @@ filename = sys.argv[3]+sys.argv[4]
 # globally unique across vendors (e.g. esp32p4.GPIO vs stm32h7.GPIO) — C++20
 # module names are a flat global space, and dotted names are legal.
 _stem = Path(filename).stem.replace('-', '_')
-_ns = sys.argv[2]
+_ns_arg = sys.argv[2]
+# When the namespace argument is a path to a YAML map (e.g. for a chip whose
+# peripherals span multiple namespaces), pull the default ('') namespace
+# from the map for the module-name prefix.
+_nsfile = Path(_ns_arg)
+if _nsfile.exists():
+    _ns_map = yaml.load(_nsfile)
+    _ns = _ns_map.get('', '') if isinstance(_ns_map, dict) else ''
+else:
+    _ns = _ns_arg
 modid = f'{_ns}.{_stem}' if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', _ns) else _stem
 
 if 'registers' in model:
