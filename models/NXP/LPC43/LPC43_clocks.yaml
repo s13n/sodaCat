@@ -1,0 +1,397 @@
+version: 0.1.0
+family: LPC43xx
+devices:
+  - LPC4310
+  - LPC4320
+  - LPC4330
+  - LPC4350
+  - LPC4370
+  - LPC43S10
+  - LPC43S20
+  - LPC43S30
+  - LPC43S37
+  - LPC43S50
+  - LPC43S57
+  - LPC43S67
+  - LPC43S70
+documents:
+  - id: UM10503
+    title: LPC43xx/LPC43Sxx ARM Cortex-M4/M0 multi-core microcontroller
+    revision: "2.5"
+    url: https://www.nxp.com/docs/en/user-guide/UM10503.pdf
+instance: CGU
+
+# ===========================================================================
+# Stage 1: oscillators, PLLs, IDIVs.
+#
+# Topology overview (UM10503 §13.4, Fig 36/37):
+#
+#   sources --> { PLL0USB, PLL0AUDIO, PLL1, IDIVA..IDIVE } --> base clocks (CCU)
+#
+# Each PLL and IDIV has its own input mux (CLK_SEL field in its CTRL
+# register) selecting one of: 32 kHz osc, IRC, ENET_RX_CLK, ENET_TX_CLK,
+# GP_CLKIN, crystal osc, or one of the other PLLs/IDIVs (with restrictions
+# documented in UM10503 Table 121).  The BASE_*_CLK output stages
+# (~22 base clocks) are deferred to stage 2.
+#
+# Modeling notes:
+#   * PLL0USB and PLL0AUDIO use LFSR-encoded MDEC/NDEC/PDEC values rather
+#     than direct binary M/N/P, so feedback_integer/post_divider here name
+#     the register fields without value_range (encoding tables are in
+#     UM10503 §13.6.3.3, §13.6.3.4, §13.6.4.3, §13.6.4.4).
+#   * PLL1 has both NSEL pre-divider and PSEL post-divider.  The schema's
+#     Pll has no pre_divider concept, so NSEL is modeled as a separate
+#     Divider (PLL1_N_DIV) sitting between the input mux and the PLL's
+#     phase detector.  The actual P-divider in PLL1 is 2*PSEL_value, so
+#     post_divider.values is [2,4,8,16] for PSEL encodings 0..3.
+#   * Operating-mode bits that bypass the dividers (PD, BYPASS, FBSEL,
+#     DIRECT, DIRECTI, DIRECTO) are not modeled here -- they're orthogonal
+#     to the linear topology the schema describes.
+#   * Cycle-creating feedback paths supported by the hardware are NOT
+#     modeled, because the schema's DAG check rejects them:
+#       - PLL outputs as inputs to other PLLs (PLL0USB <-> PLL1,
+#         PLL0AUDIO <-> PLL1).  Hardware allows it but rarely useful.
+#       - IDIV outputs as inputs to PLLs.  Hardware allows IDIVA-E to
+#         feed PLL0USB and PLL0AUDIO; not modeled.
+#     Any of these connections would form a graph cycle (e.g. via
+#     PLL1->IDIVA->PLL1).  Selecting them via the corresponding CLK_SEL
+#     encoding works on the silicon but is outside this model's scope.
+
+signals:
+  # External / oscillator sources
+  - {name: irc_12mhz,      nominal: 12000000, description: "12 MHz internal RC oscillator (always on, default boot clock)"}
+  - {name: osc_32khz,      nominal: 32768,    description: "32.768 kHz oscillator on RTCX1/RTCX2 pins (RTC and low-power timing)"}
+  - {name: xtal_clk,       min: 1000000, max: 25000000, description: "Crystal oscillator on XTAL1/XTAL2 (1-25 MHz, or external clock in bypass mode)"}
+  - {name: enet_rx_clk_in, max: 75000000,    description: "Ethernet PHY receive clock (external pin, RMII/MII)"}
+  - {name: enet_tx_clk_in, max: 75000000,    description: "Ethernet PHY transmit clock (external pin, RMII/MII)"}
+  - {name: gp_clkin_in,                       description: "General-purpose external clock input pin (GP_CLKIN)"}
+
+  # Internal clock-source-bus nets (PLL/IDIV inputs and outputs)
+  - {name: pll0usb_in,                        description: "PLL0USB_CTRL.CLK_SEL mux output"}
+  - {name: pll0usb_clk,    nominal: 480000000, max: 480000000, description: "PLL0USB output (USB high-speed 480 MHz)"}
+  - {name: pll0audio_in,                      description: "PLL0AUDIO_CTRL.CLK_SEL mux output"}
+  - {name: pll0audio_clk,                     description: "PLL0AUDIO output (with optional fractional divider)"}
+  - {name: pll1_in_pre,                       description: "PLL1_CTRL.CLK_SEL mux output (before NSEL pre-divider)"}
+  - {name: pll1_in,                           description: "PLL1 phase-detector input (after NSEL pre-divider)"}
+  - {name: pll1_clk,       max: 204000000,    description: "PLL1 output (main system PLL)"}
+  - {name: idiva_in,                          description: "IDIVA_CTRL.CLK_SEL mux output"}
+  - {name: idiva_clk,                         description: "IDIVA output (max divisor /4)"}
+  - {name: idivb_in,                          description: "IDIVB_CTRL.CLK_SEL mux output"}
+  - {name: idivb_clk,                         description: "IDIVB output (max divisor /16)"}
+  - {name: idivc_in,                          description: "IDIVC_CTRL.CLK_SEL mux output"}
+  - {name: idivc_clk,                         description: "IDIVC output (max divisor /16)"}
+  - {name: idivd_in,                          description: "IDIVD_CTRL.CLK_SEL mux output"}
+  - {name: idivd_clk,                         description: "IDIVD output (max divisor /16)"}
+  - {name: idive_in,                          description: "IDIVE_CTRL.CLK_SEL mux output"}
+  - {name: idive_clk,                         description: "IDIVE output (max divisor /256)"}
+
+generators:
+  - name: IRC
+    output: irc_12mhz
+    description: "12 MHz internal RC oscillator. No CGU power control; always running."
+
+  - name: OSC32K
+    output: osc_32khz
+    description: "32.768 kHz oscillator (RTCX1/RTCX2). Power control lives in the RTC peripheral, not in CGU."
+
+  - name: XTAL
+    output: xtal_clk
+    control:
+      reg: XTAL_OSC_CTRL
+      field: ENABLE
+      values: [1, 0]   # ENABLE is active-low: 0 = enabled, 1 = power-down
+    description: "Crystal oscillator (XTAL1/XTAL2). XTAL_OSC_CTRL also has BYPASS (use external clock instead of crystal) and HF (1=15-25 MHz range, 0=1-20 MHz range)."
+
+  - name: ENET_RX_CLK
+    output: enet_rx_clk_in
+    control:
+      state: stateENET_RX_CLK
+    description: "Ethernet PHY receive clock; presence depends on board wiring and PHY configuration."
+
+  - name: ENET_TX_CLK
+    output: enet_tx_clk_in
+    control:
+      state: stateENET_TX_CLK
+    description: "Ethernet PHY transmit clock; presence depends on board wiring and PHY configuration."
+
+  - name: GP_CLKIN
+    output: gp_clkin_in
+    control:
+      state: stateGP_CLKIN
+    description: "General-purpose clock input pin; presence depends on pin function selection."
+
+muxes:
+  # The clock-source bus is 5 bits wide.  Encoding values that are
+  # reserved for a particular CLK_SEL field appear as `null` below;
+  # selecting them is undefined behavior per UM10503.  Trailing nulls
+  # for codes >= 0x11 are omitted (schema convention).
+  # PLL input muxes are restricted here to oscillator/external sources
+  # only.  The hardware additionally allows other PLLs (PLL0USB <-> PLL1,
+  # PLL0AUDIO <-> PLL1) and IDIVA-E as PLL inputs, but those create
+  # cycles in the topology graph and are documented at the top of this
+  # file rather than represented here.
+  - name: PLL0USB_CLKSEL
+    output: pll0usb_in
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+    control:
+      reg: PLL0USB_CTRL
+      field: CLK_SEL
+    description: "Source for PLL0USB. Encoding values 0x09, 0x0C-0x10 are also valid in hardware (PLL1, IDIVA-E) but omitted here to avoid graph cycles; values 0x05, 0x07-0x08, 0x0A-0x0B are reserved."
+
+  - name: PLL0AUDIO_CLKSEL
+    output: pll0audio_in
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+    control:
+      reg: PLL0AUDIO_CTRL
+      field: CLK_SEL
+    description: "Source for PLL0AUDIO. Encoding values 0x09, 0x0C-0x10 are also valid in hardware (PLL1, IDIVA-E) but omitted to avoid cycles."
+
+  - name: PLL1_CLKSEL
+    output: pll1_in_pre
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+    control:
+      reg: PLL1_CTRL
+      field: CLK_SEL
+    description: "Source for PLL1.  Encoding values 0x07-0x08 (PLL0USB, PLL0AUDIO) and 0x0C-0x10 (IDIVA-E) are valid in hardware but omitted to avoid cycles."
+
+  - name: IDIVA_CLKSEL
+    output: idiva_in
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - pll0usb_clk     # 0x07
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+    control:
+      reg: IDIVA_CTRL
+      field: CLK_SEL
+    description: "Source for IDIVA (4-bit divider, max /4). IDIVA can take any of the three PLLs but no other dividers."
+
+  - name: IDIVB_CLKSEL
+    output: idivb_in
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - null            # 0x07 reserved (PLL0USB not allowed for IDIVB)
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+    control:
+      reg: IDIVB_CTRL
+      field: CLK_SEL
+    description: "Source for IDIVB (4-bit divider, max /16). PLL0USB is not selectable; only IDIVA among the dividers."
+
+  - name: IDIVC_CLKSEL
+    output: idivc_in
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - null            # 0x07 reserved (PLL0USB not allowed for IDIVC)
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+    control:
+      reg: IDIVC_CTRL
+      field: CLK_SEL
+    description: "Source for IDIVC (4-bit divider, max /16). Same restrictions as IDIVB."
+
+  - name: IDIVD_CLKSEL
+    output: idivd_in
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - null            # 0x07 reserved (PLL0USB not allowed for IDIVD)
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+    control:
+      reg: IDIVD_CTRL
+      field: CLK_SEL
+    description: "Source for IDIVD (4-bit divider, max /16). Same restrictions as IDIVB."
+
+  - name: IDIVE_CLKSEL
+    output: idive_in
+    inputs:
+      - osc_32khz       # 0x00
+      - irc_12mhz       # 0x01
+      - enet_rx_clk_in  # 0x02
+      - enet_tx_clk_in  # 0x03
+      - gp_clkin_in     # 0x04
+      - null            # 0x05 reserved
+      - xtal_clk        # 0x06
+      - null            # 0x07 reserved (PLL0USB not allowed for IDIVE)
+      - pll0audio_clk   # 0x08
+      - pll1_clk        # 0x09
+      - null            # 0x0A reserved
+      - null            # 0x0B reserved
+      - idiva_clk       # 0x0C
+    control:
+      reg: IDIVE_CTRL
+      field: CLK_SEL
+    description: "Source for IDIVE (8-bit divider, max /256). Same restrictions as IDIVB."
+
+plls:
+  - name: PLL0USB
+    input: pll0usb_in
+    output: pll0usb_clk
+    feedback_integer:
+      reg: PLL0USB_MDIV
+      field: MDEC
+    post_divider:
+      reg: PLL0USB_NP_DIV
+      field: PDEC
+    vco_limits: {min: 275000000, max: 550000000}
+    description: |-
+      Dedicated PLL for the USB high-speed 480 MHz clock.
+      M/N/P are stored as LFSR-encoded values MDEC/NDEC/PDEC (not direct
+      binary).  Encoding tables in UM10503 §13.6.3.3 and §13.6.3.4.
+      Valid logical ranges: M = 1..2^15, N = 1..2^8, P = 1..2^5.
+      The N pre-divider lives in PLL0USB_NP_DIV.NDEC; not modeled here as
+      the schema does not represent PLL pre-dividers.
+      VCO must be in 275-550 MHz range per the LPC43 datasheet.
+
+  - name: PLL0AUDIO
+    input: pll0audio_in
+    output: pll0audio_clk
+    feedback_integer:
+      reg: PLL0AUDIO_MDIV
+      field: MDEC
+    feedback_fraction:
+      reg: PLL0AUDIO_FRAC
+      field: PLLFRACT_CTRL
+    post_divider:
+      reg: PLL0AUDIO_NP_DIV
+      field: PDEC
+    vco_limits: {min: 275000000, max: 550000000}
+    description: |-
+      PLL with optional fractional divider for audio applications.
+      Same M/N/P LFSR encoding as PLL0USB.  When SEL_EXT=0 in
+      PLL0AUDIO_CTRL, the sigma-delta modulator drives MDEC from the
+      PLLFRACT_CTRL[21:0] word: integer part PLLFRACT[21:15] (M), fraction
+      PLLFRACT[14:0] (K) producing average ratio M + K/L.  When SEL_EXT=1,
+      MDEC is set directly via PLL0AUDIO_MDIV.MDEC.
+      The N pre-divider in PLL0AUDIO_NP_DIV.NDEC is not modeled here.
+
+  - name: PLL1
+    input: pll1_in
+    output: pll1_clk
+    feedback_integer:
+      reg: PLL1_CTRL
+      field: MSEL
+      value_range: {min: 1, max: 256, offset: 1}
+    post_divider:
+      reg: PLL1_CTRL
+      field: PSEL
+      values: [2, 4, 8, 16]
+    vco_limits: {min: 156000000, max: 320000000}
+    description: |-
+      Main system PLL feeding BASE_M4_CLK and the bulk of peripheral base
+      clocks.  Direct binary divisors (no LFSR encoding):
+        M = MSEL + 1     (range 1..256)
+        N = NSEL + 1     (range 1..4, modeled as separate PLL1_N_DIV)
+        P_div = 2 * PSEL_value  where PSEL_value in {1,2,4,8}
+        => actual post_divider values: {2,4,8,16}
+      DIRECT bit (PLL1_CTRL[7]) bypasses the post-divider entirely; not
+      modeled here.  Boot default produces 96 MHz from the IRC.
+
+dividers:
+  - name: PLL1_N_DIV
+    input: pll1_in_pre
+    output: pll1_in
+    factor:
+      reg: PLL1_CTRL
+      field: NSEL
+      value_range: {min: 1, max: 4, offset: 1}
+    description: "PLL1 pre-divider (N).  NSEL=0..3 -> N=1..4."
+
+  - name: IDIVA
+    input: idiva_in
+    output: idiva_clk
+    factor:
+      reg: IDIVA_CTRL
+      field: IDIV
+      value_range: {min: 1, max: 4, offset: 1}
+    description: "Integer divider A.  IDIV=0..3 -> divisor=1..4."
+
+  - name: IDIVB
+    input: idivb_in
+    output: idivb_clk
+    factor:
+      reg: IDIVB_CTRL
+      field: IDIV
+      value_range: {min: 1, max: 16, offset: 1}
+    description: "Integer divider B.  IDIV=0..15 -> divisor=1..16."
+
+  - name: IDIVC
+    input: idivc_in
+    output: idivc_clk
+    factor:
+      reg: IDIVC_CTRL
+      field: IDIV
+      value_range: {min: 1, max: 16, offset: 1}
+    description: "Integer divider C.  IDIV=0..15 -> divisor=1..16."
+
+  - name: IDIVD
+    input: idivd_in
+    output: idivd_clk
+    factor:
+      reg: IDIVD_CTRL
+      field: IDIV
+      value_range: {min: 1, max: 16, offset: 1}
+    description: "Integer divider D.  IDIV=0..15 -> divisor=1..16."
+
+  - name: IDIVE
+    input: idive_in
+    output: idive_clk
+    factor:
+      reg: IDIVE_CTRL
+      field: IDIV
+      value_range: {min: 1, max: 256, offset: 1}
+    description: "Integer divider E.  IDIV=0..255 -> divisor=1..256."
