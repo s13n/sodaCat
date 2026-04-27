@@ -99,6 +99,15 @@ def load_chip_model(model_dir):
             except:
                 continue
         d = d.parent
+    # Fallback: chip model may live in a subdirectory (e.g. LPC43xx/LPC4330.yaml).
+    for f in Path(model_dir).rglob("*.yaml"):
+        try:
+            yaml = YAML(typ='safe')
+            data = yaml.load(f)
+            if data and 'instances' in data:
+                return data
+        except:
+            continue
     return None
 
 
