@@ -73,7 +73,7 @@ models/ST/
 │       └── ...
 ```
 
-Model placement is config-driven: cross-family shared blocks (defined in `shared_blocks`) go to the top level; within a family, blocks used by only one subfamily go in that subfamily's directory, blocks shared by 2+ subfamilies go in the family base directory — see "Family generator" below.
+Model placement is config-driven: cross-family shared blocks (defined in `shared_blocks`) go to the top level; within a family, non-variant blocks go in the family base directory and variant blocks (declared via the `variants` key) go in their subfamily directory — see "Family generator" below.
 
 A shared block with a `designer:` field (e.g. `designer: ARM` for PL080) is treated as licensed IP and routed to `models/<designer>/` instead of the chip-vendor's directory. Chip-model `models:` entries get the matching prefix (e.g. `GPDMA: ARM/PL080`). This lets ARM-designed PrimeCell IP (PL022, PL080, PL081, PL180) and Cortex-M architecture pieces live alongside hand-maintained `models/ARM/` entries while still being generated from a vendor's SVD.
 
@@ -113,7 +113,7 @@ Parameter declarations are arrays of `{name, type, default?, description?}`. Per
 
 The `chip_params` section is always keyed by subfamily (or `_all` for family-wide), then by chip name (or `_all` for subfamily-wide), then by block name or instance name. Resolution order: per-chip instance → per-chip block → subfamily `_all` instance → subfamily `_all` block → family `_all._all` instance → family `_all._all` block → param default.
 
-Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** share a common model. If only one subfamily uses the base config, the model is placed in that subfamily's directory (not the family base directory); if two or more subfamilies share the base config, it goes in the family base directory. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
+Blocks with a `variants` key contain per-subfamily overrides (shallow-merged over top-level defaults). The `variants` key also controls model file placement: subfamilies **listed** in `variants` are written to subfamily subdirectories; subfamilies **not listed** share a common model written to the family base directory, regardless of how many use it. This supports partial variants — e.g., H7 ADC has top-level config shared by H742_H753/H745_H757, with only H73x and H7A3_B as variants. A variant's `transforms` list fully replaces (not merges with) the top-level `transforms`.
 
 Three-pass processing: Pass 1 collects blocks from all chips (resolving per-subfamily config via `variants`); Pass 2 writes models using config-driven placement (for shared blocks, canonical interrupt names from the shared block's `interrupts` mapping are injected into the model so it declares the superset of all families' interrupts); Pass 3 generates chip models with interrupts, instances, and parameters.
 

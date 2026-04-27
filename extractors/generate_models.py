@@ -1766,21 +1766,16 @@ def main():
                 block_data['description'] = block_cfg['description']
 
             intr_order = [irq['name'] for irq in block_data.get('interrupts', [])]
-            if len(default_present) == 1:
-                # Only one subfamily uses base -> place in subfamily dir
-                fam_name = next(iter(default_present))
-                family_specific_count += 1
-                family_dir = output_dir / family_code / fam_name
-                family_dir.mkdir(parents=True, exist_ok=True)
-                svd.dumpModel(block_data, family_dir / block_name)
-                model_interrupt_order[(block_name, fam_name)] = intr_order
-                model_paths[(block_name, fam_name)] = f"{vendor_prefix}/{family_code}/{fam_name}/{block_name}"
-            else:
-                common_count += 1
-                svd.dumpModel(block_data, common_blocks_dir / block_name)
-                model_interrupt_order[block_name] = intr_order
-                model_paths[block_name] = f"{vendor_prefix}/{family_code}/{block_name}"
-                print(f"  + {block_name:20} -> {family_code} (shared)")
+            # Non-variant blocks are emitted at family level regardless of
+            # how many subfamilies use the default config.  A redundant
+            # subfamily-level nesting in single-subfamily families adds no
+            # information and creates churn when a family later grows a
+            # second subfamily.
+            common_count += 1
+            svd.dumpModel(block_data, common_blocks_dir / block_name)
+            model_interrupt_order[block_name] = intr_order
+            model_paths[block_name] = f"{vendor_prefix}/{family_code}/{block_name}"
+            print(f"  + {block_name:20} -> {family_code} (shared)")
 
     # Fill in interrupt orders, paths, and param declarations for models not
     # written in this run (uses: blocks referencing shared models from other
