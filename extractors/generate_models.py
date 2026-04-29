@@ -34,6 +34,7 @@ VENDORS = {
     'mcx': 'vendors.mcx',
     'esp': 'vendors.esp',
     'raspberry': 'vendors.raspberry',
+    'microchip': 'vendors.microchip',
 }
 
 
@@ -1784,11 +1785,19 @@ def main():
     for bt, bc in blocks_config.items():
         model_name = bc.get('uses') or bt
         if model_name not in model_interrupt_order:
-            model_path = output_dir / f"{model_name}.yaml"
-            rel_path = f"{vendor_prefix}/{model_name}"
-            if not model_path.exists():
-                model_path = output_dir / family_code / f"{model_name}.yaml"
-                rel_path = f"{vendor_prefix}/{family_code}/{model_name}"
+            # Designer-routed paths (e.g. models/ARM/NVIC.yaml) take precedence
+            # for hand-maintained or sibling-vendor-owned shared blocks living
+            # outside this vendor's output directory.
+            designer = (shared_blocks.get(model_name) or {}).get('designer')
+            if designer:
+                model_path = output_dir.parent / designer / f"{model_name}.yaml"
+                rel_path = f"{designer}/{model_name}"
+            else:
+                model_path = output_dir / f"{model_name}.yaml"
+                rel_path = f"{vendor_prefix}/{model_name}"
+                if not model_path.exists():
+                    model_path = output_dir / family_code / f"{model_name}.yaml"
+                    rel_path = f"{vendor_prefix}/{family_code}/{model_name}"
             if model_path.exists():
                 model = yaml_loader.load(model_path)
                 if model:
@@ -1796,11 +1805,15 @@ def main():
                         irq['name'] for irq in model.get('interrupts', [])]
                     if model_name not in model_paths:
                         model_paths[model_name] = rel_path
-                    # Import param declarations for cross-config uses: blocks
-                    if (bc.get('uses') and model_name not in shared_blocks
-                            and model.get('params')):
-                        shared_blocks[model_name] = {
-                            'params': model['params']}
+                    # Import param declarations from the model file when the
+                    # uses: target either isn't in shared_blocks or has no
+                    # explicit params there (e.g. cross-vendor designer-routed
+                    # blocks declared with just designer/description).
+                    if bc.get('uses') and model.get('params'):
+                        existing = shared_blocks.get(model_name) or {}
+                        if not existing.get('params'):
+                            existing['params'] = model['params']
+                            shared_blocks[model_name] = existing
 
     # ==========================================================================
     # PASS 3: Generate chip models

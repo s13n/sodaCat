@@ -20,7 +20,7 @@ writes one or more YAML block models. These scripts use the `svd` and
 structures, and apply transformations such as register array detection and
 interrupt name cleanup.
 
-Examples: `STM32H757.py`, `RP2040.py`, `LPC8.py`, `SAMV71.py`.
+Examples: `STM32H757.py`, `RP2040.py`, `LPC8.py`.
 
 ## Family extractors
 

@@ -1,0 +1,331 @@
+# Consolidated configuration for Microchip ATSAM model extraction.
+# SVD files are stored in-tree (downloaded from packs.download.atmel.com).
+
+svd:
+  source: https://packs.download.atmel.com/
+
+shared_blocks:
+  # ARM Cortex-M core peripherals — hand-maintained at models/ARM/.  No `from:`
+  # (no SVD extraction); referenced via `uses:` from family blocks.
+  NVIC:
+    designer: ARM
+    description: Nested Vectored Interrupt Controller
+    params:
+      - {name: priobits, type: int, description: 'Number of priority bits'}
+      - {name: interrupts, type: int, description: 'Number of NVIC interrupt vectors'}
+
+  SCB:
+    designer: ARM
+    description: System Control Block
+
+  FPU:
+    designer: ARM
+    description: Floating Point Unit
+
+families:
+  SAMV71:
+    svd:
+      version: "Rev 0"
+    subfamilies:
+      SAMV71:
+        chips: [ATSAMV71Q21B]
+        ref_manual:
+          name: SAM E70/S70/V70/V71 Family Data Sheet
+          url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-E70-S70-V70-V71-Family-Data-Sheet-DS60001527.pdf
+
+    blocks:
+      # ====================================================================
+      # Analog
+      # ====================================================================
+      ACC:
+        from: ATSAMV71Q21B.ACC
+        instances: [ACC]
+        interrupts:
+          ACC: INT
+
+      AFEC:
+        from: ATSAMV71Q21B.AFEC0
+        instances: [AFEC0, AFEC1]
+        interrupts:
+          AFEC0: INT
+          AFEC1: INT
+
+      DACC:
+        from: ATSAMV71Q21B.DACC
+        instances: [DACC]
+        interrupts:
+          DACC: INT
+
+      # ====================================================================
+      # Communication
+      # ====================================================================
+      GMAC:
+        from: ATSAMV71Q21B.GMAC
+        instances: [GMAC]
+        interrupts:
+          GMAC: INT
+          GMAC_Q1: Q1
+          GMAC_Q2: Q2
+          GMAC_Q3: Q3
+          GMAC_Q4: Q4
+          GMAC_Q5: Q5
+
+      I2SC:
+        from: ATSAMV71Q21B.I2SC0
+        instances: [I2SC0, I2SC1]
+        interrupts:
+          I2SC0: INT
+          I2SC1: INT
+
+      MCAN:
+        from: ATSAMV71Q21B.MCAN0
+        instances: [MCAN0, MCAN1]
+        interrupts:
+          MCAN0_INT0: INT0
+          MCAN0_INT1: INT1
+          MCAN1_INT0: INT0
+          MCAN1_INT1: INT1
+
+      MLB:
+        from: ATSAMV71Q21B.MLB
+        instances: [MLB]
+        interrupts:
+          MLB: INT
+
+      QSPI:
+        from: ATSAMV71Q21B.QSPI
+        instances: [QSPI]
+        interrupts:
+          QSPI: INT
+
+      SPI:
+        from: ATSAMV71Q21B.SPI0
+        instances: [SPI0, SPI1]
+        interrupts:
+          SPI0: INT
+          SPI1: INT
+
+      SSC:
+        from: ATSAMV71Q21B.SSC
+        instances: [SSC]
+        interrupts:
+          SSC: INT
+
+      TWIHS:
+        from: ATSAMV71Q21B.TWIHS0
+        instances: [TWIHS0, TWIHS1, TWIHS2]
+        interrupts:
+          TWIHS0: INT
+          TWIHS1: INT
+          TWIHS2: INT
+
+      UART:
+        from: ATSAMV71Q21B.UART0
+        instances: [UART0, UART1, UART2, UART3, UART4]
+        interrupts:
+          UART0: INT
+          UART1: INT
+          UART2: INT
+          UART3: INT
+          UART4: INT
+
+      USART:
+        from: ATSAMV71Q21B.USART0
+        instances: [USART0, USART1, USART2]
+        interrupts:
+          USART0: INT
+          USART1: INT
+          USART2: INT
+
+      USBHS:
+        from: ATSAMV71Q21B.USBHS
+        instances: [USBHS]
+        interrupts:
+          USBHS: INT
+
+      UTMI:
+        from: ATSAMV71Q21B.UTMI
+        instances: [UTMI]
+
+      # ====================================================================
+      # GPIO / image / media
+      # ====================================================================
+      ISI:
+        from: ATSAMV71Q21B.ISI
+        instances: [ISI]
+        interrupts:
+          ISI: INT
+
+      PIO:
+        from: ATSAMV71Q21B.PIOA
+        instances: [PIOA, PIOB, PIOC, PIOD, PIOE]
+        interrupts:
+          PIOA: INT
+          PIOB: INT
+          PIOC: INT
+          PIOD: INT
+          PIOE: INT
+
+      # ====================================================================
+      # Timers / counters / RTC
+      # ====================================================================
+      PWM:
+        from: ATSAMV71Q21B.PWM0
+        instances: [PWM0, PWM1]
+        interrupts:
+          PWM0: INT
+          PWM1: INT
+
+      RTC:
+        from: ATSAMV71Q21B.RTC
+        instances: [RTC]
+        interrupts:
+          RTC: INT
+
+      RTT:
+        from: ATSAMV71Q21B.RTT
+        instances: [RTT]
+        interrupts:
+          RTT: INT
+
+      RSWDT:
+        from: ATSAMV71Q21B.RSWDT
+        instances: [RSWDT]
+        interrupts:
+          RSWDT: INT
+
+      TC:
+        from: ATSAMV71Q21B.TC0
+        instances: [TC0, TC1, TC2, TC3]
+        # Each TC instance carries three timer-channel interrupts; canonicalise
+        # them to INT0/INT1/INT2 within each instance (TC0–TC11 → modulo 3).
+        interrupts:
+          TC0: INT0
+          TC1: INT1
+          TC2: INT2
+          TC3: INT0
+          TC4: INT1
+          TC5: INT2
+          TC6: INT0
+          TC7: INT1
+          TC8: INT2
+          TC9: INT0
+          TC10: INT1
+          TC11: INT2
+
+      WDT:
+        from: ATSAMV71Q21B.WDT
+        instances: [WDT]
+        interrupts:
+          WDT: INT
+
+      # ====================================================================
+      # Memory / DMA / bus
+      # ====================================================================
+      EFC:
+        from: ATSAMV71Q21B.EFC
+        instances: [EFC]
+        interrupts:
+          EFC: INT
+
+      HSMCI:
+        from: ATSAMV71Q21B.HSMCI
+        instances: [HSMCI]
+        interrupts:
+          HSMCI: INT
+
+      MATRIX:
+        from: ATSAMV71Q21B.MATRIX
+        instances: [MATRIX]
+
+      SMC:
+        from: ATSAMV71Q21B.SMC
+        instances: [SMC]
+
+      XDMAC:
+        from: ATSAMV71Q21B.XDMAC
+        instances: [XDMAC]
+        interrupts:
+          XDMAC: INT
+
+      # ====================================================================
+      # Power / reset / clock / system identity
+      # ====================================================================
+      CHIPID:
+        from: ATSAMV71Q21B.CHIPID
+        instances: [CHIPID]
+
+      GPBR:
+        from: ATSAMV71Q21B.GPBR
+        instances: [GPBR]
+
+      PMC:
+        from: ATSAMV71Q21B.PMC
+        instances: [PMC]
+        interrupts:
+          PMC: INT
+
+      RSTC:
+        from: ATSAMV71Q21B.RSTC
+        instances: [RSTC]
+        interrupts:
+          RSTC: INT
+
+      SUPC:
+        from: ATSAMV71Q21B.SUPC
+        instances: [SUPC]
+        interrupts:
+          SUPC: INT
+
+      # ====================================================================
+      # Security
+      # ====================================================================
+      AES:
+        from: ATSAMV71Q21B.AES
+        instances: [AES]
+        interrupts:
+          AES: INT
+
+      ICM:
+        from: ATSAMV71Q21B.ICM
+        instances: [ICM]
+        interrupts:
+          ICM: INT
+
+      TRNG:
+        from: ATSAMV71Q21B.TRNG
+        instances: [TRNG]
+        interrupts:
+          TRNG: INT
+
+      # ====================================================================
+      # ARM Cortex-M core peripherals (hand-maintained, cross-vendor)
+      # ====================================================================
+      NVIC:
+        uses: NVIC
+        instances: [NVIC]
+
+      SCB:
+        uses: SCB
+        instances: [SCB]
+        interrupts:
+          CCW: CCW
+          CCF: CCF
+
+      FPU:
+        uses: FPU
+        instances: [FPU]
+        interrupts:
+          FPU: INT
+          IXC: IXC
+
+    chip_params:
+      _all:
+        _all:
+          NVIC:
+            priobits: 3
+            interrupts: 70
+          # Cortex-M7 has fault handlers (MMFAR/BFAR/CFSR) and L1 I/D caches.
+          SCB:
+            has_faults: true
+            has_cache: true
