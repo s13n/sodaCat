@@ -1,0 +1,557 @@
+family: SAM_Gen1
+version: 0.1.0
+documents:
+  - id: DS60001527J
+    title: SAM E70/S70/V70/V71 Family Data Sheet
+    revision: J
+    url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-E70-S70-V70-V71-Family-Data-Sheet-DS60001527.pdf
+  - id: DS60001825E
+    title: PIC32CZ CA70/MC70 Family Data Sheet
+    revision: E
+    url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/PIC32CZ-CA70-MC70-Family-Data-Sheet-DS60001825.pdf
+devices:
+  - SAME70
+  - SAMS70
+  - SAMV70
+  - SAMV71
+  - PIC32CZ-CA70
+  - PIC32CZ-MC70
+instance: PMC
+
+# ===========================================================================
+# Notes
+# ===========================================================================
+# The Clock Generator chapter (DS60001527J §30, DS60001825E §22) defines the
+# oscillators and the two PLLs (PLLA, UPLL); their registers carry the
+# `CKGR_` prefix but live in the PMC's address space.  The Power Management
+# Controller chapter (DS60001527J §31, DS60001825E §23) defines the master
+# clock distribution (MCK/HCLK/FCLK), the USB clock controller, the eight
+# programmable clock outputs (PCK0..PCK7), the per-peripheral clock gates
+# (PCER0/PCER1) and the two generic clocks routed to the I2SC instances
+# (configured via PMC_PCR per peripheral ID).
+#
+# The 32 kHz slow-clock source mux (between the slow RC oscillator and the
+# 32.768 kHz crystal) is controlled from the *Supply Controller* (SUPC.CR.
+# XTALSEL) rather than the PMC; the schema's per-block `instance` override
+# is used for that one mux.
+#
+# PIC32CZ-MC70 has no USB peripheral and therefore no functional UPLL; the
+# UPLL block is still present in the IP but unused.  PIC32CZ-CA70 carries
+# the same Cadence-GEM Ethernet MAC as SAME70/V71; the MC70 does not.
+# ===========================================================================
+
+signals:
+  # --- 32 kHz slow-clock domain ---
+  - { name: slow_rc_osc, nominal: 32000,
+      description: "Internal slow RC oscillator (~32 kHz typical, untrimmed)" }
+  - { name: xtal32k, nominal: 32768,
+      description: "32.768 kHz crystal oscillator (XIN32/XOUT32) or external clock in bypass mode" }
+  - { name: slck,
+      description: "Slow Clock — selected by SUPC.CR.XTALSEL.  The only permanent clock in the system." }
+
+  # --- Main clock domain ---
+  - { name: main_rc_osc,
+      description: "Main RC oscillator, programmable to 4 / 8 / 12 MHz via CKGR_MOR.MOSCRCF (default 12 MHz, factory-trimmed at 8 / 12 MHz)" }
+  - { name: main_xtal_osc, min: 3000000, max: 20000000,
+      description: "Main crystal oscillator (XIN/XOUT) or external clock in bypass mode" }
+  - { name: mainck,
+      description: "Main Clock — selected from main_rc_osc or main_xtal_osc by CKGR_MOR.MOSCSEL" }
+  - { name: plla_in, min: 8000000, max: 32000000,
+      description: "PLLA input after the DIVA pre-divider (must be 8..32 MHz per RM)" }
+  - { name: pllack, min: 160000000, max: 500000000,
+      description: "PLLA output (programmable 160..500 MHz VCO)" }
+
+  # --- USB UTMI PLL ---
+  - { name: upllck, nominal: 480000000,
+      description: "UTMI PLL output, fixed at 480 MHz; sourced from main_xtal_osc multiplied by ×40 (12 MHz xtal) or ×30 (16 MHz xtal)" }
+  - { name: upllck_div,
+      description: "UPLL after the post-divider (PMC_MCKR.UPLLDIV2: ÷1 or ÷2)" }
+
+  # --- Master / processor clock chain ---
+  - { name: mck_pre_pres,
+      description: "Master Clock source after PMC_MCKR.CSS mux, before PRES prescaler" }
+  - { name: hclk,
+      description: "Cortex-M7 Processor Clock = mck_pre_pres / PMC_MCKR.PRES.
+        FCLK (the always-on free-running counterpart used for interrupt
+        sampling and debug logic in Sleep mode) is identical in frequency to
+        HCLK; the WFI/WFE sleep gate is treated as always-on for clock-tree
+        purposes since the processor cannot observe its own sleep gating." }
+  - { name: mck,
+      description: "Host Clock = HCLK / PMC_MCKR.MDIV.  Source for all peripheral clocks." }
+
+  # --- USB FS clock ---
+  - { name: usb_pre,
+      description: "USB FS clock source after PMC_USB.USBS mux (PLLA or UPLL), before USBDIV" }
+  - { name: usb_48m_div, nominal: 48000000,
+      description: "USB Full-Speed clock after USBDIV, before the USBCLK gate" }
+  - { name: usb_48m, nominal: 48000000,
+      description: "USB Full-Speed clock (48 MHz) — gated by PMC_SCER.USBCLK" }
+
+  # --- Programmable clock outputs PCK0..PCK7 ---
+  - { name: pck0_pre, description: "PCK0 source after CSS mux, before PRES prescaler" }
+  - { name: pck1_pre, description: "PCK1 source after CSS mux, before PRES prescaler" }
+  - { name: pck2_pre, description: "PCK2 source after CSS mux, before PRES prescaler" }
+  - { name: pck3_pre, description: "PCK3 source after CSS mux, before PRES prescaler" }
+  - { name: pck4_pre, description: "PCK4 source after CSS mux, before PRES prescaler" }
+  - { name: pck5_pre, description: "PCK5 source after CSS mux, before PRES prescaler" }
+  - { name: pck6_pre, description: "PCK6 source after CSS mux, before PRES prescaler" }
+  - { name: pck7_pre, description: "PCK7 source after CSS mux, before PRES prescaler" }
+  - { name: pck0_div, description: "PCK0 after PRES prescaler, before output gate" }
+  - { name: pck1_div, description: "PCK1 after PRES prescaler, before output gate" }
+  - { name: pck2_div, description: "PCK2 after PRES prescaler, before output gate" }
+  - { name: pck3_div, description: "PCK3 after PRES prescaler, before output gate (typically routed to ETM)" }
+  - { name: pck4_div, description: "PCK4 after PRES prescaler, before output gate (typically routed to UART/USART)" }
+  - { name: pck5_div, description: "PCK5 after PRES prescaler, before output gate (typically routed to MCAN)" }
+  - { name: pck6_div, description: "PCK6 after PRES prescaler, before output gate (typically routed to TC0.Ch1..TC3.Ch2)" }
+  - { name: pck7_div, description: "PCK7 after PRES prescaler, before output gate (typically routed to TC0.Ch0)" }
+  - { name: pck0, description: "PCK0 output (general-purpose external pin)" }
+  - { name: pck1, description: "PCK1 output (general-purpose external pin)" }
+  - { name: pck2, description: "PCK2 output (general-purpose external pin)" }
+  - { name: pck3, description: "PCK3 output / ETM trace clock" }
+  - { name: pck4, description: "PCK4 internal — independent UART/USART clock" }
+  - { name: pck5, description: "PCK5 internal — independent MCAN bit-rate clock" }
+  - { name: pck6, description: "PCK6 internal — independent timer-counter clock (TC0.Ch1..TC3.Ch2)" }
+  - { name: pck7, description: "PCK7 internal — independent timer-counter clock (TC0.Ch0)" }
+
+  # --- Generic clocks (GCK) for I2SC0 / I2SC1 ---
+  - { name: gck_i2sc0_pre, description: "I2SC0 generic-clock source after PMC_PCR.GCLKCSS mux (PID = 69)" }
+  - { name: gck_i2sc1_pre, description: "I2SC1 generic-clock source after PMC_PCR.GCLKCSS mux (PID = 70)" }
+  - { name: gck_i2sc0_div, description: "I2SC0 generic clock after GCLKDIV divider, before GCLKEN gate" }
+  - { name: gck_i2sc1_div, description: "I2SC1 generic clock after GCLKDIV divider, before GCLKEN gate" }
+  - { name: gck_i2sc0,    description: "I2SC0 generic clock — gated by PMC_PCR.GCLKEN with PID = 69 (independent of MCK)" }
+  - { name: gck_i2sc1,    description: "I2SC1 generic clock — gated by PMC_PCR.GCLKEN with PID = 70 (independent of MCK)" }
+
+  # --- Per-peripheral gated clocks (output of PMC_PCERx).  Each is mck
+  # gated by the corresponding PIDx bit; the names below match the
+  # peripheral instance names from RM Table 14-1. ---
+  - { name: periph_clk_uart0,   description: "PID 7"  }
+  - { name: periph_clk_uart1,   description: "PID 8"  }
+  - { name: periph_clk_smc,     description: "PID 9"  }
+  - { name: periph_clk_pioa,    description: "PID 10" }
+  - { name: periph_clk_piob,    description: "PID 11" }
+  - { name: periph_clk_pioc,    description: "PID 12" }
+  - { name: periph_clk_usart0,  description: "PID 13" }
+  - { name: periph_clk_usart1,  description: "PID 14" }
+  - { name: periph_clk_usart2,  description: "PID 15" }
+  - { name: periph_clk_piod,    description: "PID 16" }
+  - { name: periph_clk_pioe,    description: "PID 17" }
+  - { name: periph_clk_hsmci,   description: "PID 18" }
+  - { name: periph_clk_twihs0,  description: "PID 19" }
+  - { name: periph_clk_twihs1,  description: "PID 20" }
+  - { name: periph_clk_spi0,    description: "PID 21" }
+  - { name: periph_clk_ssc,     description: "PID 22" }
+  - { name: periph_clk_tc0_ch0, description: "PID 23" }
+  - { name: periph_clk_tc0_ch1, description: "PID 24" }
+  - { name: periph_clk_tc0_ch2, description: "PID 25" }
+  - { name: periph_clk_tc1_ch0, description: "PID 26" }
+  - { name: periph_clk_tc1_ch1, description: "PID 27" }
+  - { name: periph_clk_tc1_ch2, description: "PID 28" }
+  - { name: periph_clk_afec0,   description: "PID 29" }
+  - { name: periph_clk_dacc,    description: "PID 30" }
+  - { name: periph_clk_pwm0,    description: "PID 31" }
+  - { name: periph_clk_icm,     description: "PID 32" }
+  - { name: periph_clk_acc,     description: "PID 33" }
+  - { name: periph_clk_usbhs,   description: "PID 34" }
+  - { name: periph_clk_mcan0,   description: "PID 35" }
+  - { name: periph_clk_mcan1,   description: "PID 37" }
+  - { name: periph_clk_gmac,    description: "PID 39 (SAME70 / SAMV71 / PIC32CZ-CA70 only)" }
+  - { name: periph_clk_afec1,   description: "PID 40" }
+  - { name: periph_clk_twihs2,  description: "PID 41" }
+  - { name: periph_clk_spi1,    description: "PID 42" }
+  - { name: periph_clk_qspi,    description: "PID 43" }
+  - { name: periph_clk_uart2,   description: "PID 44" }
+  - { name: periph_clk_uart3,   description: "PID 45" }
+  - { name: periph_clk_uart4,   description: "PID 46" }
+  - { name: periph_clk_tc2_ch0, description: "PID 47" }
+  - { name: periph_clk_tc2_ch1, description: "PID 48" }
+  - { name: periph_clk_tc2_ch2, description: "PID 49" }
+  - { name: periph_clk_tc3_ch0, description: "PID 50" }
+  - { name: periph_clk_tc3_ch1, description: "PID 51" }
+  - { name: periph_clk_tc3_ch2, description: "PID 52" }
+  - { name: periph_clk_mlb,     description: "PID 53 (SAMV70 / SAMV71 / PIC32CZ-CA70 / PIC32CZ-MC70 only)" }
+  - { name: periph_clk_aes,     description: "PID 56" }
+  - { name: periph_clk_trng,    description: "PID 57" }
+  - { name: periph_clk_xdmac,   description: "PID 58" }
+  - { name: periph_clk_isi,     description: "PID 59" }
+  - { name: periph_clk_pwm1,    description: "PID 60" }
+  - { name: periph_clk_i2sc0,   description: "PID 69 — peripheral-bus clock (separate from gck_i2sc0)" }
+  - { name: periph_clk_i2sc1,   description: "PID 70 — peripheral-bus clock (separate from gck_i2sc1)" }
+
+
+# ===========================================================================
+# Generators (oscillators)
+# ===========================================================================
+generators:
+  - name: SLOW_RC
+    output: slow_rc_osc
+    description: "Untrimmed slow RC oscillator (~32 kHz, ±50%) inside the SUPC.  Default source of SLCK at power-up; disabled automatically when XTALSEL selects the 32 kHz crystal."
+
+  - name: XTAL32K
+    output: xtal32k
+    description: "32.768 kHz crystal oscillator inside the SUPC.  Disabled by default; enabled by setting SUPC.CR.XTALSEL."
+    control:
+      instance: SUPC
+      reg: MR
+      field: OSCBYPASS
+    notes: "OSCBYPASS = 1 + XTALSEL = 1 puts the oscillator in bypass mode (external clock on XIN32)."
+
+  - name: MAIN_RC
+    output: main_rc_osc
+    description: "Main on-chip RC oscillator with three programmable frequencies."
+    control:
+      reg: CKGR_MOR
+      field: MOSCRCF
+      values: [4000000, 8000000, 12000000]
+      default: 12000000
+
+  - name: MAIN_XTAL
+    output: main_xtal_osc
+    description: "Main crystal oscillator (XIN/XOUT) for 3..20 MHz operation, or external clock when CKGR_MOR.MOSCXTBY = 1 (bypass)."
+    control:
+      reg: CKGR_MOR
+      field: MOSCXTEN
+
+
+# ===========================================================================
+# Muxes
+# ===========================================================================
+muxes:
+  - name: SLCK_SEL
+    output: slck
+    inputs: [slow_rc_osc, xtal32k]
+    description: "Slow-clock source selector inside the Supply Controller."
+    control:
+      instance: SUPC
+      reg: CR
+      field: XTALSEL
+
+  - name: MAINCK_SEL
+    output: mainck
+    inputs: [main_rc_osc, main_xtal_osc]
+    description: "Main-clock source selector (Main RC vs Main crystal).  Switchover is glitch-free."
+    control:
+      reg: CKGR_MOR
+      field: MOSCSEL
+
+  - name: MCK_CSS
+    output: mck_pre_pres
+    # Enum order matches PMC_MCKR.CSS encoding (0=SLCK, 1=MAINCK, 2=PLLACK, 3=UPLLCK_DIV)
+    inputs: [slck, mainck, pllack, upllck_div]
+    description: "Master / processor clock source selector."
+    control:
+      reg: MCKR
+      field: CSS
+
+  - name: USB_SEL
+    output: usb_pre
+    # PMC_USB.USBS: 0=PLLA, 1=UPLL
+    inputs: [pllack, upllck]
+    description: "USB FS clock source selector (PLLA or UPLL)."
+    control:
+      reg: USB
+      field: USBS
+
+  # PCKx CSS muxes — PCK0..PCK7.  Encoding: 0=SLCK, 1=MAINCK, 2=PLLACK,
+  # 3=UPLLCK_DIV, 4=MCK; values 5..7 reserved.
+  - name: PCK0_CSS
+    output: pck0_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    control: { reg: 'PCK[0]', field: CSS }
+  - name: PCK1_CSS
+    output: pck1_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    control: { reg: 'PCK[1]', field: CSS }
+  - name: PCK2_CSS
+    output: pck2_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    control: { reg: 'PCK[2]', field: CSS }
+  - name: PCK3_CSS
+    output: pck3_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    control: { reg: 'PCK[3]', field: CSS }
+  - name: PCK4_CSS
+    output: pck4_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    control: { reg: 'PCK[4]', field: CSS }
+  - name: PCK5_CSS
+    output: pck5_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    control: { reg: 'PCK[5]', field: CSS }
+  - name: PCK6_CSS
+    output: pck6_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    control: { reg: 'PCK[6]', field: CSS }
+  - name: PCK7_CSS
+    output: pck7_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    control: { reg: 'PCK[7]', field: CSS }
+
+  # GCLKCSS for the two I2SC instances.  PMC_PCR is a banked register
+  # (PID-indexed via the PID field + CMD = 1); we model the two settings as
+  # distinct logical muxes addressed by their respective PIDs.
+  - name: GCK_I2SC0_CSS
+    output: gck_i2sc0_pre
+    # GCLKCSS encoding: 0=SLCK, 1=MAINCK, 2=PLLACK, 3=UPLLCK_DIV, 4=MCK
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    description: "Generic-clock source for I2SC0 (PMC_PCR with PID = 69, CMD = 1)."
+    control: { reg: PCR, field: GCLKCSS }
+  - name: GCK_I2SC1_CSS
+    output: gck_i2sc1_pre
+    inputs: [slck, mainck, pllack, upllck_div, mck, null, null, null]
+    description: "Generic-clock source for I2SC1 (PMC_PCR with PID = 70, CMD = 1)."
+    control: { reg: PCR, field: GCLKCSS }
+
+
+# ===========================================================================
+# PLLs
+# ===========================================================================
+plls:
+  - name: PLLA
+    input: plla_in
+    output: pllack
+    description: "PLLA — programmable PLL.  Effective multiplier is (MULA + 1); MULA = 0 disables the PLL."
+    feedback_integer:
+      reg: CKGR_PLLAR
+      field: MULA
+      value_range: { min: 1, max: 63, offset: 1 }
+    vco_limits: { min: 160000000, max: 500000000 }
+
+  - name: UPLL
+    input: main_xtal_osc
+    output: upllck
+    description: |-
+      UTMI PLL — fixed-output 480 MHz PLL for USB high-speed.  The hardware
+      supports two multiplication factors (×40 for a 12 MHz crystal, ×30 for
+      a 16 MHz crystal); the active multiplier is determined by the
+      CKTRIM.FREQ field in the UTMI block (UTMI.CKTRIM.FREQ values 0 = 48 MHz
+      reserved, 1 = 12 MHz crystal → ×40, 2 = 16 MHz crystal → ×30).  The
+      VCO output is documented at 480 MHz for both settings.
+    feedback_integer:
+      instance: UTMI
+      reg: CKTRIM
+      field: FREQ
+      values: [0, 40, 30]
+      default: 40
+    vco_limits: { min: 480000000, max: 480000000 }
+
+
+# ===========================================================================
+# Dividers
+# ===========================================================================
+dividers:
+  - name: PLLA_DIVA
+    input: mainck
+    output: plla_in
+    description: "PLLA pre-divider.  DIVA = 0 disables PLLA; DIVA = 1..255 = ÷1..÷255."
+    factor:
+      reg: CKGR_PLLAR
+      field: DIVA
+      value_range: { min: 0, max: 255 }
+
+  - name: UPLLDIV2
+    input: upllck
+    output: upllck_div
+    description: "UPLL post-divider — ÷1 or ÷2."
+    factor:
+      reg: MCKR
+      field: UPLLDIV2
+      values: [1, 2]
+
+  - name: MCK_PRES
+    input: mck_pre_pres
+    output: hclk
+    description: "HCLK / FCLK prescaler.  PRES encoding: 0..6 = ÷1, ÷2, ÷4, ÷8, ÷16, ÷32, ÷64; 7 = ÷3."
+    factor:
+      reg: MCKR
+      field: PRES
+      values: [1, 2, 4, 8, 16, 32, 64, 3]
+
+  - name: MCK_MDIV
+    input: hclk
+    output: mck
+    description: "MCK divider applied after the PRES prescaler."
+    factor:
+      reg: MCKR
+      field: MDIV
+      values: [1, 2, 4, 3]
+
+  - name: USB_DIV
+    input: usb_pre
+    output: usb_48m_div
+    description: "USB FS post-divider.  Effective factor is USBDIV + 1."
+    factor:
+      reg: USB
+      field: USBDIV
+      value_range: { min: 0, max: 15, offset: 1 }
+
+  # PCKx PRES dividers — PRES + 1 = ÷1..÷256.
+  - name: PCK0_PRES
+    input: pck0_pre
+    output: pck0_div
+    factor: { reg: 'PCK[0]', field: PRES, value_range: { min: 0, max: 255, offset: 1 } }
+  - name: PCK1_PRES
+    input: pck1_pre
+    output: pck1_div
+    factor: { reg: 'PCK[1]', field: PRES, value_range: { min: 0, max: 255, offset: 1 } }
+  - name: PCK2_PRES
+    input: pck2_pre
+    output: pck2_div
+    factor: { reg: 'PCK[2]', field: PRES, value_range: { min: 0, max: 255, offset: 1 } }
+  - name: PCK3_PRES
+    input: pck3_pre
+    output: pck3_div
+    factor: { reg: 'PCK[3]', field: PRES, value_range: { min: 0, max: 255, offset: 1 } }
+  - name: PCK4_PRES
+    input: pck4_pre
+    output: pck4_div
+    factor: { reg: 'PCK[4]', field: PRES, value_range: { min: 0, max: 255, offset: 1 } }
+  - name: PCK5_PRES
+    input: pck5_pre
+    output: pck5_div
+    factor: { reg: 'PCK[5]', field: PRES, value_range: { min: 0, max: 255, offset: 1 } }
+  - name: PCK6_PRES
+    input: pck6_pre
+    output: pck6_div
+    factor: { reg: 'PCK[6]', field: PRES, value_range: { min: 0, max: 255, offset: 1 } }
+  - name: PCK7_PRES
+    input: pck7_pre
+    output: pck7_div
+    factor: { reg: 'PCK[7]', field: PRES, value_range: { min: 0, max: 255, offset: 1 } }
+
+  # GCK dividers for I2SC0 / I2SC1.  GCLKDIV + 1 = ÷1..÷256 per PMC_PCR.
+  - name: GCK_I2SC0_DIV
+    input: gck_i2sc0_pre
+    output: gck_i2sc0_div
+    description: "I2SC0 generic-clock divider (PMC_PCR.GCLKDIV with PID = 69)."
+    factor: { reg: PCR, field: GCLKDIV, value_range: { min: 0, max: 255, offset: 1 } }
+  - name: GCK_I2SC1_DIV
+    input: gck_i2sc1_pre
+    output: gck_i2sc1_div
+    description: "I2SC1 generic-clock divider (PMC_PCR.GCLKDIV with PID = 70)."
+    factor: { reg: PCR, field: GCLKDIV, value_range: { min: 0, max: 255, offset: 1 } }
+
+
+# ===========================================================================
+# Gates
+# ===========================================================================
+# The processor-side FCLK / HCLK split is modeled as a single sleep gate
+# that disables HCLK (and therefore MCK) on WFI / WFE while leaving FCLK
+# always-on.  The actual gate is driven by the Cortex-M7 sleep state, not
+# a PMC register field.
+gates:
+  # USB FS clock enable.
+  - name: USBCLK_GATE
+    input: usb_48m_div
+    output: usb_48m
+    description: "USB FS clock enable.  Set via PMC_SCER.USBCLK, cleared via
+      PMC_SCDR.USBCLK; status read in PMC_SCSR.USBCLK."
+    control:
+      reg: SCER
+      field: USBCLK
+
+  # PCKx output enables.
+  - name: PCK0_EN
+    input: pck0_div
+    output: pck0
+    control: { reg: SCER, field: PCK0 }
+  - name: PCK1_EN
+    input: pck1_div
+    output: pck1
+    control: { reg: SCER, field: PCK1 }
+  - name: PCK2_EN
+    input: pck2_div
+    output: pck2
+    control: { reg: SCER, field: PCK2 }
+  - name: PCK3_EN
+    input: pck3_div
+    output: pck3
+    control: { reg: SCER, field: PCK3 }
+  - name: PCK4_EN
+    input: pck4_div
+    output: pck4
+    control: { reg: SCER, field: PCK4 }
+  - name: PCK5_EN
+    input: pck5_div
+    output: pck5
+    control: { reg: SCER, field: PCK5 }
+  - name: PCK6_EN
+    input: pck6_div
+    output: pck6
+    control: { reg: SCER, field: PCK6 }
+  - name: PCK7_EN
+    input: pck7_div
+    output: pck7
+    control: { reg: SCER, field: PCK7 }
+
+  # Per-peripheral clock enables (PMC_PCERx / PMC_PCDRx, status PMC_PCSRx).
+  # PIDs 7..31 live in PCER0; PIDs 32..63 live in PCER1 (bit = PID − 32).
+  # The schema's RegisterField uses the PMC field name (PIDn) which already
+  # encodes this layout: PCER0.PID7..PID31 and PCER1.PID32..PID63.
+  - { name: UART0_CLK,   input: mck, output: periph_clk_uart0,   control: { reg: PCER0, field: PID7  } }
+  - { name: UART1_CLK,   input: mck, output: periph_clk_uart1,   control: { reg: PCER0, field: PID8  } }
+  - { name: SMC_CLK,     input: mck, output: periph_clk_smc,     control: { reg: PCER0, field: PID9  } }
+  - { name: PIOA_CLK,    input: mck, output: periph_clk_pioa,    control: { reg: PCER0, field: PID10 } }
+  - { name: PIOB_CLK,    input: mck, output: periph_clk_piob,    control: { reg: PCER0, field: PID11 } }
+  - { name: PIOC_CLK,    input: mck, output: periph_clk_pioc,    control: { reg: PCER0, field: PID12 } }
+  - { name: USART0_CLK,  input: mck, output: periph_clk_usart0,  control: { reg: PCER0, field: PID13 } }
+  - { name: USART1_CLK,  input: mck, output: periph_clk_usart1,  control: { reg: PCER0, field: PID14 } }
+  - { name: USART2_CLK,  input: mck, output: periph_clk_usart2,  control: { reg: PCER0, field: PID15 } }
+  - { name: PIOD_CLK,    input: mck, output: periph_clk_piod,    control: { reg: PCER0, field: PID16 } }
+  - { name: PIOE_CLK,    input: mck, output: periph_clk_pioe,    control: { reg: PCER0, field: PID17 } }
+  - { name: HSMCI_CLK,   input: mck, output: periph_clk_hsmci,   control: { reg: PCER0, field: PID18 } }
+  - { name: TWIHS0_CLK,  input: mck, output: periph_clk_twihs0,  control: { reg: PCER0, field: PID19 } }
+  - { name: TWIHS1_CLK,  input: mck, output: periph_clk_twihs1,  control: { reg: PCER0, field: PID20 } }
+  - { name: SPI0_CLK,    input: mck, output: periph_clk_spi0,    control: { reg: PCER0, field: PID21 } }
+  - { name: SSC_CLK,     input: mck, output: periph_clk_ssc,     control: { reg: PCER0, field: PID22 } }
+  - { name: TC0_CH0_CLK, input: mck, output: periph_clk_tc0_ch0, control: { reg: PCER0, field: PID23 } }
+  - { name: TC0_CH1_CLK, input: mck, output: periph_clk_tc0_ch1, control: { reg: PCER0, field: PID24 } }
+  - { name: TC0_CH2_CLK, input: mck, output: periph_clk_tc0_ch2, control: { reg: PCER0, field: PID25 } }
+  - { name: TC1_CH0_CLK, input: mck, output: periph_clk_tc1_ch0, control: { reg: PCER0, field: PID26 } }
+  - { name: TC1_CH1_CLK, input: mck, output: periph_clk_tc1_ch1, control: { reg: PCER0, field: PID27 } }
+  - { name: TC1_CH2_CLK, input: mck, output: periph_clk_tc1_ch2, control: { reg: PCER0, field: PID28 } }
+  - { name: AFEC0_CLK,   input: mck, output: periph_clk_afec0,   control: { reg: PCER0, field: PID29 } }
+  - { name: DACC_CLK,    input: mck, output: periph_clk_dacc,    control: { reg: PCER0, field: PID30 } }
+  - { name: PWM0_CLK,    input: mck, output: periph_clk_pwm0,    control: { reg: PCER0, field: PID31 } }
+  - { name: ICM_CLK,     input: mck, output: periph_clk_icm,     control: { reg: PCER1, field: PID32 } }
+  - { name: ACC_CLK,     input: mck, output: periph_clk_acc,     control: { reg: PCER1, field: PID33 } }
+  - { name: USBHS_CLK,   input: mck, output: periph_clk_usbhs,   control: { reg: PCER1, field: PID34 } }
+  - { name: MCAN0_CLK,   input: mck, output: periph_clk_mcan0,   control: { reg: PCER1, field: PID35 } }
+  - { name: MCAN1_CLK,   input: mck, output: periph_clk_mcan1,   control: { reg: PCER1, field: PID37 } }
+  - { name: GMAC_CLK,    input: mck, output: periph_clk_gmac,    control: { reg: PCER1, field: PID39 } }
+  - { name: AFEC1_CLK,   input: mck, output: periph_clk_afec1,   control: { reg: PCER1, field: PID40 } }
+  - { name: TWIHS2_CLK,  input: mck, output: periph_clk_twihs2,  control: { reg: PCER1, field: PID41 } }
+  - { name: SPI1_CLK,    input: mck, output: periph_clk_spi1,    control: { reg: PCER1, field: PID42 } }
+  - { name: QSPI_CLK,    input: mck, output: periph_clk_qspi,    control: { reg: PCER1, field: PID43 } }
+  - { name: UART2_CLK,   input: mck, output: periph_clk_uart2,   control: { reg: PCER1, field: PID44 } }
+  - { name: UART3_CLK,   input: mck, output: periph_clk_uart3,   control: { reg: PCER1, field: PID45 } }
+  - { name: UART4_CLK,   input: mck, output: periph_clk_uart4,   control: { reg: PCER1, field: PID46 } }
+  - { name: TC2_CH0_CLK, input: mck, output: periph_clk_tc2_ch0, control: { reg: PCER1, field: PID47 } }
+  - { name: TC2_CH1_CLK, input: mck, output: periph_clk_tc2_ch1, control: { reg: PCER1, field: PID48 } }
+  - { name: TC2_CH2_CLK, input: mck, output: periph_clk_tc2_ch2, control: { reg: PCER1, field: PID49 } }
+  - { name: TC3_CH0_CLK, input: mck, output: periph_clk_tc3_ch0, control: { reg: PCER1, field: PID50 } }
+  - { name: TC3_CH1_CLK, input: mck, output: periph_clk_tc3_ch1, control: { reg: PCER1, field: PID51 } }
+  - { name: TC3_CH2_CLK, input: mck, output: periph_clk_tc3_ch2, control: { reg: PCER1, field: PID52 } }
+  - { name: MLB_CLK,     input: mck, output: periph_clk_mlb,     control: { reg: PCER1, field: PID53 } }
+  - { name: AES_CLK,     input: mck, output: periph_clk_aes,     control: { reg: PCER1, field: PID56 } }
+  - { name: TRNG_CLK,    input: mck, output: periph_clk_trng,    control: { reg: PCER1, field: PID57 } }
+  - { name: XDMAC_CLK,   input: mck, output: periph_clk_xdmac,   control: { reg: PCER1, field: PID58 } }
+  - { name: ISI_CLK,     input: mck, output: periph_clk_isi,     control: { reg: PCER1, field: PID59 } }
+  - { name: PWM1_CLK,    input: mck, output: periph_clk_pwm1,    control: { reg: PCER1, field: PID60 } }
+  # PIDs 69 / 70 live in an extended PCER register pair on the SAME70/V71
+  # silicon — gated via PMC_PCR (PID + CMD = 1 + EN = 1) rather than via
+  # PCERx bits.  We model the gate logically; the actual access path is a
+  # banked PMC_PCR write per peripheral.
+  - { name: I2SC0_CLK, input: mck, output: periph_clk_i2sc0, control: { reg: PCR, field: EN } }
+  - { name: I2SC1_CLK, input: mck, output: periph_clk_i2sc1, control: { reg: PCR, field: EN } }
+
+  # GCK enable bits (PMC_PCR.GCLKEN with PID = 69 / 70).
+  - name: GCK_I2SC0_EN
+    input: gck_i2sc0_div
+    output: gck_i2sc0
+    description: "I2SC0 generic-clock enable (PMC_PCR.GCLKEN with PID = 69, CMD = 1)."
+    control: { reg: PCR, field: GCLKEN }
+  - name: GCK_I2SC1_EN
+    input: gck_i2sc1_div
+    output: gck_i2sc1
+    description: "I2SC1 generic-clock enable (PMC_PCR.GCLKEN with PID = 70, CMD = 1)."
+    control: { reg: PCR, field: GCLKEN }

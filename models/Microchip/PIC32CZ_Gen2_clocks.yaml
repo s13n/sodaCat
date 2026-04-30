@@ -1,0 +1,946 @@
+family: PIC32CZ_Gen2
+version: 0.1.0
+documents:
+  - id: DS60001749G
+    title: PIC32CZ CA80/CA9x Family Data Sheet
+    revision: G
+    url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/PIC32CZ-CA80-CA90-Family-Data-Sheet-DS60001749.pdf
+devices:
+  - PIC32CZ-CA80
+  - PIC32CZ-CA90
+instance: GCLK
+
+# ===========================================================================
+# Notes
+# ===========================================================================
+# The Gen2 PIC32CZ-CA80/CA90 clock architecture is the SAMD-derived split
+# controller layout:
+#
+#   OSCCTRL       (ch.18) — XOSC + DFLL48M + PLL0 + PLL1 + FRACDIV0/1
+#   OSC32KCTRL    (ch.19) — XOSC32K + OSCULP32K + RTC/HSM clock select
+#   GCLK          (ch.20) — 16 generic-clock generators + 64 peripheral
+#                            channels (PCHCTRL fan-out)
+#   MCLK          (ch.21) — CPU/AHB/APB main-clock prescaler + per-module
+#                            mask bits (CLKMSK)
+#
+# `instance` is set to GCLK because the bulk of the per-peripheral mux/
+# divider/gate registers (GENCTRL / PCHCTRL) live there.  Cross-block
+# register references use the `instance` field on RegisterField (e.g.
+# OSCCTRL.PLL0CTRL.REFSEL, MCLK.CLKMSK0.MASK).
+#
+# Many features are documented but not yet represented in detail:
+#   - PLL FRACDIV0/FRACDIV1 (PLL1 only) for high-resolution clock
+#     generation; treated as plain dividers off PLL1 output 0/2.
+#   - DFLL48M closed-loop multiplication (FCLKDFLL48M = MUL × ref) — the
+#     graph treats the DFLL output as a fixed 48 MHz source; the closed-
+#     loop multiplier from DFLLMUL.MUL is mentioned in the description
+#     but does not connect to the GCLK_OSCCTRL_DFLL48 reference channel.
+#   - Some PCHCTRL channels feed multiple peripherals (the SERCOM_SLOW
+#     channels at indices 18/19/20).  Modeled as one signal per channel;
+#     individual SERCOM blocks read the same shared signal.
+# ===========================================================================
+
+signals:
+  # --- Oscillators / external clocks ---
+  - { name: xosc, min: 4000000, max: 48000000,
+      description: "External Multipurpose Crystal Oscillator output (4..48 MHz crystal or external clock on XIN)" }
+  - { name: xosc_usbhs,
+      description: "XOSC after the USBHSDIV prescaler, supplied as USBHS PLL reference" }
+  - { name: dfll48m_clk, nominal: 48000000,
+      description: "DFLL48M output — 48 MHz calibrated; 8 MHz in DFLLCTRLA.LOWFREQ mode.  In closed loop the output is DFLLMUL.MUL × GCLK_OSCCTRL_DFLL48; in open loop it free-runs at the calibrated frequency." }
+  - { name: xosc32k, nominal: 32768,
+      description: "32.768 kHz external crystal (XIN32/XOUT32) or external clock in bypass mode" }
+  - { name: xosc1k, nominal: 1024,
+      description: "32.768 kHz crystal divided down to 1.024 kHz (RTC/HSM clock option)" }
+  - { name: osculp32k, nominal: 32768,
+      description: "Internal Ultra-Low-Power 32 kHz RC oscillator (always-on; the only clock source available in Backup mode)" }
+  - { name: osculp1k, nominal: 1024,
+      description: "OSCULP32K divided down to 1.024 kHz (RTC/HSM clock option)" }
+  - { name: gclkin0, description: "External clock on GCLK_IO[0] pin" }
+  - { name: gclkin1, description: "External clock on GCLK_IO[1] pin" }
+  - { name: gclkin2, description: "External clock on GCLK_IO[2] pin" }
+  - { name: gclkin3, description: "External clock on GCLK_IO[3] pin" }
+  - { name: gclkin4, description: "External clock on GCLK_IO[4] pin" }
+  - { name: gclkin5, description: "External clock on GCLK_IO[5] pin" }
+  - { name: gclkin6, description: "External clock on GCLK_IO[6] pin" }
+  - { name: gclkin7, description: "External clock on GCLK_IO[7] pin" }
+
+  # --- PLL reference clocks (per-PLL REFSEL mux output, before REFDIV) ---
+  - { name: pll0_ref_pre,  description: "PLL0 reference clock before the REFDIV prescaler" }
+  - { name: pll1_ref_pre,  description: "PLL1 reference clock before the REFDIV prescaler" }
+  - { name: pll0_ref, min: 4000000, max: 48000000,
+      description: "PLL0 phase-detector input (FPFD) after PLL0REFDIV.REFDIV" }
+  - { name: pll1_ref, min: 4000000, max: 48000000,
+      description: "PLL1 phase-detector input (FPFD) after PLL1REFDIV.REFDIV" }
+
+  # --- PLL VCO outputs ---
+  - { name: pll0_vco, min: 800000000, max: 1600000000,
+      description: "PLL0 VCO output (FVCO0): 800 MHz..1.6 GHz" }
+  - { name: pll1_vco, min: 800000000, max: 1600000000,
+      description: "PLL1 VCO output (FVCO1): 800 MHz..1.6 GHz" }
+
+  # --- PLL post-divider outputs (4 per PLL).  Outputs feeding the
+  # fractional dividers (PLL0 output 0, PLL1 output 0/2) may run up to
+  # 1.6 GHz; outputs feeding GCLK are limited to 12.7 MHz..300 MHz. ---
+  - { name: pll0_out0_div, description: "PLL0 output 0 after POSTDIV0, before OUTEN0 gate" }
+  - { name: pll0_out1_div, description: "PLL0 output 1 after POSTDIV1, before OUTEN1 gate" }
+  - { name: pll0_out2_div, description: "PLL0 output 2 after POSTDIV2, before OUTEN2 gate" }
+  - { name: pll0_out3_div, description: "PLL0 output 3 after POSTDIV3, before OUTEN3 gate" }
+  - { name: pll0_out0, description: "PLL0 output 0 (feeds FRACDIV0; OUTEN0)" }
+  - { name: pll0_out1, max: 300000000, description: "PLL0 output 1 (OUTEN1)" }
+  - { name: pll0_out2, max: 300000000, description: "PLL0 output 2 (OUTEN2)" }
+  - { name: pll0_out3, max: 300000000, description: "PLL0 output 3 (OUTEN3)" }
+  - { name: pll1_out0_div, description: "PLL1 output 0 after POSTDIV0, before OUTEN0 gate" }
+  - { name: pll1_out1_div, description: "PLL1 output 1 after POSTDIV1, before OUTEN1 gate" }
+  - { name: pll1_out2_div, description: "PLL1 output 2 after POSTDIV2, before OUTEN2 gate" }
+  - { name: pll1_out3_div, description: "PLL1 output 3 after POSTDIV3, before OUTEN3 gate" }
+  - { name: pll1_out0, description: "PLL1 output 0 (feeds FRACDIV0; OUTEN0)" }
+  - { name: pll1_out1, max: 300000000, description: "PLL1 output 1 (OUTEN1)" }
+  - { name: pll1_out2, description: "PLL1 output 2 (feeds FRACDIV1; OUTEN2)" }
+  - { name: pll1_out3, max: 300000000, description: "PLL1 output 3 (OUTEN3)" }
+  - { name: fracdiv0_out, max: 300000000,
+      description: "Fractional divider 0 output (PLL1 output 0 / (INTDIV + REMDIV/512))" }
+  - { name: fracdiv1_out, max: 300000000,
+      description: "Fractional divider 1 output (PLL1 output 2 / (INTDIV + REMDIV/512))" }
+
+  # --- GCLK generator outputs (16 generators).  Each is mux + divider +
+  # gate.  GCLKGEN[0] is the source of CLK_MAIN (the MCLK input). ---
+  - { name: gclkgen0_pre, description: "GCLK generator 0 source after SRC mux, before DIV" }
+  - { name: gclkgen1_pre, description: "GCLK generator 1 source after SRC mux, before DIV" }
+  - { name: gclkgen2_pre, description: "GCLK generator 2 source after SRC mux, before DIV" }
+  - { name: gclkgen3_pre, description: "GCLK generator 3 source after SRC mux, before DIV" }
+  - { name: gclkgen4_pre, description: "GCLK generator 4 source after SRC mux, before DIV" }
+  - { name: gclkgen5_pre, description: "GCLK generator 5 source after SRC mux, before DIV" }
+  - { name: gclkgen6_pre, description: "GCLK generator 6 source after SRC mux, before DIV" }
+  - { name: gclkgen7_pre, description: "GCLK generator 7 source after SRC mux, before DIV" }
+  - { name: gclkgen8_pre, description: "GCLK generator 8 source after SRC mux, before DIV" }
+  - { name: gclkgen9_pre, description: "GCLK generator 9 source after SRC mux, before DIV" }
+  - { name: gclkgen10_pre, description: "GCLK generator 10 source after SRC mux, before DIV" }
+  - { name: gclkgen11_pre, description: "GCLK generator 11 source after SRC mux, before DIV" }
+  - { name: gclkgen12_pre, description: "GCLK generator 12 source after SRC mux, before DIV" }
+  - { name: gclkgen13_pre, description: "GCLK generator 13 source after SRC mux, before DIV" }
+  - { name: gclkgen14_pre, description: "GCLK generator 14 source after SRC mux, before DIV" }
+  - { name: gclkgen15_pre, description: "GCLK generator 15 source after SRC mux, before DIV" }
+  - { name: gclkgen0_div, description: "GCLK generator 0 after DIV, before GENEN gate" }
+  - { name: gclkgen1_div, description: "GCLK generator 1 after DIV, before GENEN gate" }
+  - { name: gclkgen2_div, description: "GCLK generator 2 after DIV, before GENEN gate" }
+  - { name: gclkgen3_div, description: "GCLK generator 3 after DIV, before GENEN gate" }
+  - { name: gclkgen4_div, description: "GCLK generator 4 after DIV, before GENEN gate" }
+  - { name: gclkgen5_div, description: "GCLK generator 5 after DIV, before GENEN gate" }
+  - { name: gclkgen6_div, description: "GCLK generator 6 after DIV, before GENEN gate" }
+  - { name: gclkgen7_div, description: "GCLK generator 7 after DIV, before GENEN gate" }
+  - { name: gclkgen8_div, description: "GCLK generator 8 after DIV, before GENEN gate" }
+  - { name: gclkgen9_div, description: "GCLK generator 9 after DIV, before GENEN gate" }
+  - { name: gclkgen10_div, description: "GCLK generator 10 after DIV, before GENEN gate" }
+  - { name: gclkgen11_div, description: "GCLK generator 11 after DIV, before GENEN gate" }
+  - { name: gclkgen12_div, description: "GCLK generator 12 after DIV, before GENEN gate" }
+  - { name: gclkgen13_div, description: "GCLK generator 13 after DIV, before GENEN gate" }
+  - { name: gclkgen14_div, description: "GCLK generator 14 after DIV, before GENEN gate" }
+  - { name: gclkgen15_div, description: "GCLK generator 15 after DIV, before GENEN gate" }
+  - { name: gclkgen0, description: "GCLK generator 0 output (= CLK_MAIN, the MCLK input)" }
+  - { name: gclkgen1, description: "GCLK generator 1 output (also feeds the SRC mux of every other generator as a cascade option)" }
+  - { name: gclkgen2, description: "GCLK generator 2 output" }
+  - { name: gclkgen3, description: "GCLK generator 3 output" }
+  - { name: gclkgen4, description: "GCLK generator 4 output" }
+  - { name: gclkgen5, description: "GCLK generator 5 output" }
+  - { name: gclkgen6, description: "GCLK generator 6 output" }
+  - { name: gclkgen7, description: "GCLK generator 7 output" }
+  - { name: gclkgen8, description: "GCLK generator 8 output" }
+  - { name: gclkgen9, description: "GCLK generator 9 output" }
+  - { name: gclkgen10, description: "GCLK generator 10 output" }
+  - { name: gclkgen11, description: "GCLK generator 11 output" }
+  - { name: gclkgen12, description: "GCLK generator 12 output" }
+  - { name: gclkgen13, description: "GCLK generator 13 output" }
+  - { name: gclkgen14, description: "GCLK generator 14 output" }
+  - { name: gclkgen15, description: "GCLK generator 15 output" }
+
+  # --- MCLK domain ---
+  - { name: clk_main, description: "MCLK input — alias for gclkgen0 (= GCLK_MAIN)" }
+  - { name: clk_cpu,  description: "CPU clock domain — clk_main / MCLK.CLKDIV0.DIV (1..128)" }
+  - { name: clk_bup,  description: "Backup clock domain — clk_main / MCLK.CLKDIV1.DIV (1..128).  RM also names this the LP domain on some references." }
+
+  # --- Per-peripheral bus-clock outputs (CLKMSK gates).
+  # Naming convention follows the RM Peripheral-Clock-Default-State table on
+  # DS60001749G p.308–309: CLK_<peripheral>_<bus> where <bus> ∈ {AHB, APB}.
+  # For peripherals that listed both an AHB and an APB mask bit but the RM
+  # didn't explicitly suffix them, the lower bit number is taken as AHB and
+  # the next as APB (consistent with the explicitly-suffixed pairs in
+  # CLKMSK2: SDHCx, EBI, MLB).  Single-bit peripherals are assumed APB
+  # unless the RM names them otherwise.
+  # CLKMSK0 → CPU domain, with five exceptions (PM/SUPC/RSTC/OSC32KCTRL/
+  # RTC) which the RM lists as Backup domain on p.309.
+  - { name: clk_dsu_ahb,        description: "CLKMSK0[0]  — DSU AHB clock" }
+  - { name: clk_dsu_apb,        description: "CLKMSK0[1]  — DSU APB clock" }
+  - { name: clk_fcw_ahb,        description: "CLKMSK0[2]  — Flash Controller-Write AHB clock" }
+  - { name: clk_fcw_apb,        description: "CLKMSK0[3]  — Flash Controller-Write APB clock" }
+  - { name: clk_fcr_ahb,        description: "CLKMSK0[4]  — Flash Controller-Read AHB clock" }
+  - { name: clk_fcr_apb,        description: "CLKMSK0[5]  — Flash Controller-Read APB clock" }
+  - { name: clk_pm_apb,         description: "CLKMSK0[6]  — Power Manager APB clock (Backup domain)" }
+  - { name: clk_supc_apb,       description: "CLKMSK0[7]  — Supply Controller APB clock (Backup domain)" }
+  - { name: clk_rstc_apb,       description: "CLKMSK0[8]  — Reset Controller APB clock (Backup domain)" }
+  - { name: clk_oscctrl_apb,    description: "CLKMSK0[9]  — OSCCTRL APB clock" }
+  - { name: clk_osc32kctrl_apb, description: "CLKMSK0[10] — OSC32KCTRL APB clock (Backup domain)" }
+  # CLKMSK0 bits 11, 12 reserved (must be set to 1)
+  - { name: clk_freqm_apb,      description: "CLKMSK0[13] — Frequency Meter APB clock" }
+  - { name: clk_wdt_apb,        description: "CLKMSK0[14] — Watchdog Timer APB clock" }
+  - { name: clk_rtc_apb,        description: "CLKMSK0[15] — RTC APB clock (Backup domain)" }
+  - { name: clk_eic_apb,        description: "CLKMSK0[16] — External Interrupt Controller APB clock" }
+  - { name: clk_pac_ahb,        description: "CLKMSK0[17] — Peripheral Access Controller AHB clock" }
+  - { name: clk_pac_apb,        description: "CLKMSK0[18] — Peripheral Access Controller APB clock" }
+  - { name: clk_drmtcm_apb,     description: "CLKMSK0[19] — DRMTCM (Tightly-Coupled Memory) APB clock" }
+  - { name: clk_mcramc_apb,     description: "CLKMSK0[20] — MCRAMC APB clock" }
+  - { name: clk_tram_apb,       description: "CLKMSK0[21] — TrustRAM APB clock" }
+  - { name: clk_port_ahb,       description: "CLKMSK0[22] — PORT (GPIO) AHB clock" }
+  - { name: clk_port_apb,       description: "CLKMSK0[23] — PORT (GPIO) APB clock" }
+  - { name: clk_dmac_ahb,       description: "CLKMSK0[24] — DMA Controller AHB clock" }
+  - { name: clk_dmac_apb,       description: "CLKMSK0[25] — DMA Controller APB clock" }
+  - { name: clk_busmatrix_ahb,  description: "CLKMSK0[26] — Bus Matrix AHB clock" }
+  - { name: clk_busmatrix_apb,  description: "CLKMSK0[27] — Bus Matrix APB clock" }
+  - { name: clk_bootrom_ahb,    description: "CLKMSK0[28] — Boot ROM AHB clock" }
+  - { name: clk_bootrom_apb,    description: "CLKMSK0[29] — Boot ROM APB clock" }
+  - { name: clk_evsys_apb,      description: "CLKMSK0[30] — Event System APB clock" }
+  - { name: clk_sercom0_apb,    description: "CLKMSK0[31] — SERCOM0 APB clock" }
+  # CLKMSK1 → CPU domain (SERCOMs, TCCs, ADC/AC/PTC, I2S, CANs)
+  - { name: clk_sercom1_apb,    description: "CLKMSK1[0]  — SERCOM1 APB clock" }
+  - { name: clk_sercom2_apb,    description: "CLKMSK1[1]  — SERCOM2 APB clock" }
+  - { name: clk_sercom3_apb,    description: "CLKMSK1[2]  — SERCOM3 APB clock" }
+  - { name: clk_sercom4_apb,    description: "CLKMSK1[3]  — SERCOM4 APB clock" }
+  - { name: clk_sercom5_apb,    description: "CLKMSK1[4]  — SERCOM5 APB clock" }
+  - { name: clk_sercom6_apb,    description: "CLKMSK1[5]  — SERCOM6 APB clock" }
+  - { name: clk_sercom7_apb,    description: "CLKMSK1[6]  — SERCOM7 APB clock" }
+  - { name: clk_sercom8_apb,    description: "CLKMSK1[7]  — SERCOM8 APB clock" }
+  - { name: clk_sercom9_apb,    description: "CLKMSK1[8]  — SERCOM9 APB clock" }
+  - { name: clk_tcc0_apb,       description: "CLKMSK1[9]  — TCC0 APB clock" }
+  - { name: clk_tcc1_apb,       description: "CLKMSK1[10] — TCC1 APB clock" }
+  - { name: clk_tcc2_apb,       description: "CLKMSK1[11] — TCC2 APB clock" }
+  - { name: clk_tcc3_apb,       description: "CLKMSK1[12] — TCC3 APB clock" }
+  - { name: clk_tcc4_apb,       description: "CLKMSK1[13] — TCC4 APB clock" }
+  - { name: clk_tcc5_apb,       description: "CLKMSK1[14] — TCC5 APB clock" }
+  - { name: clk_tcc6_apb,       description: "CLKMSK1[15] — TCC6 APB clock" }
+  - { name: clk_tcc7_apb,       description: "CLKMSK1[16] — TCC7 APB clock" }
+  - { name: clk_tcc8_apb,       description: "CLKMSK1[17] — TCC8 APB clock" }
+  - { name: clk_tcc9_apb,       description: "CLKMSK1[18] — TCC9 APB clock" }
+  - { name: clk_adc_apb,        description: "CLKMSK1[19] — ADC APB clock" }
+  - { name: clk_ac_apb,         description: "CLKMSK1[20] — Analog Comparator APB clock" }
+  - { name: clk_ptc_apb,        description: "CLKMSK1[21] — PTC APB clock" }
+  - { name: clk_i2s0_apb,       description: "CLKMSK1[22] — I2S0 APB clock.  (RM says \"I2S2\" — apparent typo for I2S0; the chip has only I2S0 and I2S1.)" }
+  - { name: clk_i2s1_apb,       description: "CLKMSK1[23] — I2S1 APB clock" }
+  - { name: clk_can0_apb,       description: "CLKMSK1[24] — CAN0 APB clock" }
+  - { name: clk_can1_apb,       description: "CLKMSK1[25] — CAN1 APB clock" }
+  - { name: clk_can2_apb,       description: "CLKMSK1[26] — CAN2 APB clock" }
+  - { name: clk_can3_apb,       description: "CLKMSK1[27] — CAN3 APB clock" }
+  - { name: clk_can4_apb,       description: "CLKMSK1[28] — CAN4 APB clock" }
+  - { name: clk_can5_apb,       description: "CLKMSK1[29] — CAN5 APB clock" }
+  # CLKMSK1 bits 30, 31 reserved
+  # CLKMSK2 → CPU domain (high-bandwidth peripherals)
+  - { name: clk_gmac_ahb,       description: "CLKMSK2[0]  — Ethernet MAC AHB clock" }
+  - { name: clk_gmac_apb,       description: "CLKMSK2[1]  — Ethernet MAC APB clock" }
+  - { name: clk_sqi0_apb,       description: "CLKMSK2[2]  — SQI0 (Serial Quad I/O) APB clock" }
+  - { name: clk_sqi1_apb,       description: "CLKMSK2[3]  — SQI1 (Serial Quad I/O) APB clock" }
+  - { name: clk_trng_apb,       description: "CLKMSK2[4]  — TRNG APB clock" }
+  - { name: clk_sdhc0_ahb,      description: "CLKMSK2[5]  — SD/MMC Host Controller 0 AHB clock" }
+  - { name: clk_sdhc0_apb,      description: "CLKMSK2[6]  — SD/MMC Host Controller 0 APB clock" }
+  - { name: clk_sdhc1_ahb,      description: "CLKMSK2[7]  — SD/MMC Host Controller 1 AHB clock" }
+  - { name: clk_sdhc1_apb,      description: "CLKMSK2[8]  — SD/MMC Host Controller 1 APB clock" }
+  - { name: clk_husb0_ahb,      description: "CLKMSK2[9]  — High-speed USB Controller 0 AHB clock" }
+  - { name: clk_husb1_ahb,      description: "CLKMSK2[10] — High-speed USB Controller 1 AHB clock" }
+  - { name: clk_ebi_ahb,        description: "CLKMSK2[11] — External Bus Interface AHB clock" }
+  - { name: clk_ebi_apb,        description: "CLKMSK2[12] — External Bus Interface APB clock" }
+  - { name: clk_hsm_apb,        description: "CLKMSK2[13] — Hardware Security Module APB clock" }
+  - { name: clk_mlb_ahb,        description: "CLKMSK2[14] — MediaLB AHB clock" }
+  - { name: clk_mlb_apb,        description: "CLKMSK2[15] — MediaLB APB clock" }
+  # CLKMSK2 bits 16..31 reserved.
+  # CLKMSK3..CLKMSK8 are over-declared by the SVD (it sets dim=9 on the
+  # CLKMSK array starting at 0x3C) but the RM (DS60001749G §21.6.5–.7)
+  # documents only CLKMSK0/1/2.  The remaining six register slots
+  # (0x48..0x5C) are unused address space; ODOFF resumes at 0x60.
+
+  # --- Peripheral channel outputs (PCHCTRL[0..63]) ---
+  # Every peripheral channel: mux selects from gclkgen0..15, then a CHEN gate.
+  # Channel-to-peripheral mapping per RM Table 20-2 / 20-14.
+  - { name: pchctrl0_pre,  description: "PCHCTRL[0] after GEN mux, before CHEN gate" }
+  - { name: pchctrl1_pre,  description: "PCHCTRL[1] after GEN mux, before CHEN gate" }
+  - { name: pchctrl2_pre,  description: "PCHCTRL[2] after GEN mux, before CHEN gate" }
+  - { name: pchctrl3_pre,  description: "PCHCTRL[3] after GEN mux, before CHEN gate" }
+  - { name: pchctrl4_pre,  description: "PCHCTRL[4] after GEN mux, before CHEN gate" }
+  - { name: pchctrl5_pre,  description: "PCHCTRL[5] after GEN mux, before CHEN gate" }
+  - { name: pchctrl6_pre,  description: "PCHCTRL[6] after GEN mux, before CHEN gate" }
+  - { name: pchctrl7_pre,  description: "PCHCTRL[7] after GEN mux, before CHEN gate" }
+  - { name: pchctrl8_pre,  description: "PCHCTRL[8] after GEN mux, before CHEN gate" }
+  - { name: pchctrl9_pre,  description: "PCHCTRL[9] after GEN mux, before CHEN gate" }
+  - { name: pchctrl10_pre, description: "PCHCTRL[10] after GEN mux, before CHEN gate" }
+  - { name: pchctrl11_pre, description: "PCHCTRL[11] after GEN mux, before CHEN gate" }
+  - { name: pchctrl12_pre, description: "PCHCTRL[12] after GEN mux, before CHEN gate" }
+  - { name: pchctrl13_pre, description: "PCHCTRL[13] after GEN mux, before CHEN gate" }
+  - { name: pchctrl14_pre, description: "PCHCTRL[14] after GEN mux, before CHEN gate" }
+  - { name: pchctrl15_pre, description: "PCHCTRL[15] after GEN mux, before CHEN gate" }
+  - { name: pchctrl16_pre, description: "PCHCTRL[16] after GEN mux, before CHEN gate" }
+  - { name: pchctrl17_pre, description: "PCHCTRL[17] after GEN mux, before CHEN gate" }
+  - { name: pchctrl18_pre, description: "PCHCTRL[18] after GEN mux, before CHEN gate" }
+  - { name: pchctrl19_pre, description: "PCHCTRL[19] after GEN mux, before CHEN gate" }
+  - { name: pchctrl20_pre, description: "PCHCTRL[20] after GEN mux, before CHEN gate" }
+  - { name: pchctrl21_pre, description: "PCHCTRL[21] after GEN mux, before CHEN gate" }
+  - { name: pchctrl22_pre, description: "PCHCTRL[22] after GEN mux, before CHEN gate" }
+  - { name: pchctrl23_pre, description: "PCHCTRL[23] after GEN mux, before CHEN gate" }
+  - { name: pchctrl24_pre, description: "PCHCTRL[24] after GEN mux, before CHEN gate" }
+  - { name: pchctrl25_pre, description: "PCHCTRL[25] after GEN mux, before CHEN gate" }
+  - { name: pchctrl26_pre, description: "PCHCTRL[26] after GEN mux, before CHEN gate" }
+  - { name: pchctrl27_pre, description: "PCHCTRL[27] after GEN mux, before CHEN gate" }
+  - { name: pchctrl28_pre, description: "PCHCTRL[28] after GEN mux, before CHEN gate" }
+  - { name: pchctrl29_pre, description: "PCHCTRL[29] after GEN mux, before CHEN gate" }
+  - { name: pchctrl30_pre, description: "PCHCTRL[30] after GEN mux, before CHEN gate" }
+  - { name: pchctrl31_pre, description: "PCHCTRL[31] after GEN mux, before CHEN gate" }
+  - { name: pchctrl32_pre, description: "PCHCTRL[32] after GEN mux, before CHEN gate" }
+  - { name: pchctrl33_pre, description: "PCHCTRL[33] after GEN mux, before CHEN gate" }
+  - { name: pchctrl34_pre, description: "PCHCTRL[34] after GEN mux, before CHEN gate" }
+  - { name: pchctrl35_pre, description: "PCHCTRL[35] after GEN mux, before CHEN gate" }
+  - { name: pchctrl36_pre, description: "PCHCTRL[36] after GEN mux, before CHEN gate" }
+  - { name: pchctrl37_pre, description: "PCHCTRL[37] after GEN mux, before CHEN gate" }
+  - { name: pchctrl38_pre, description: "PCHCTRL[38] after GEN mux, before CHEN gate" }
+  - { name: pchctrl39_pre, description: "PCHCTRL[39] after GEN mux, before CHEN gate" }
+  - { name: pchctrl40_pre, description: "PCHCTRL[40] after GEN mux, before CHEN gate" }
+  - { name: pchctrl41_pre, description: "PCHCTRL[41] after GEN mux, before CHEN gate" }
+  - { name: pchctrl42_pre, description: "PCHCTRL[42] after GEN mux, before CHEN gate" }
+  - { name: pchctrl43_pre, description: "PCHCTRL[43] after GEN mux, before CHEN gate" }
+  - { name: pchctrl44_pre, description: "PCHCTRL[44] after GEN mux, before CHEN gate" }
+  - { name: pchctrl45_pre, description: "PCHCTRL[45] after GEN mux, before CHEN gate" }
+  - { name: pchctrl46_pre, description: "PCHCTRL[46] after GEN mux, before CHEN gate" }
+  - { name: pchctrl47_pre, description: "PCHCTRL[47] after GEN mux, before CHEN gate" }
+  - { name: pchctrl48_pre, description: "PCHCTRL[48] after GEN mux, before CHEN gate" }
+  - { name: pchctrl49_pre, description: "PCHCTRL[49] after GEN mux, before CHEN gate" }
+  - { name: pchctrl50_pre, description: "PCHCTRL[50] after GEN mux, before CHEN gate" }
+  - { name: pchctrl51_pre, description: "PCHCTRL[51] after GEN mux, before CHEN gate" }
+  - { name: pchctrl52_pre, description: "PCHCTRL[52] after GEN mux, before CHEN gate (reserved)" }
+  - { name: pchctrl53_pre, description: "PCHCTRL[53] after GEN mux, before CHEN gate (reserved)" }
+  - { name: pchctrl54_pre, description: "PCHCTRL[54] after GEN mux, before CHEN gate" }
+  - { name: pchctrl55_pre, description: "PCHCTRL[55] after GEN mux, before CHEN gate" }
+  - { name: pchctrl56_pre, description: "PCHCTRL[56] after GEN mux, before CHEN gate" }
+  - { name: pchctrl57_pre, description: "PCHCTRL[57] after GEN mux, before CHEN gate" }
+  - { name: pchctrl58_pre, description: "PCHCTRL[58] after GEN mux, before CHEN gate" }
+  - { name: pchctrl59_pre, description: "PCHCTRL[59] after GEN mux, before CHEN gate" }
+  - { name: pchctrl60_pre, description: "PCHCTRL[60] after GEN mux, before CHEN gate" }
+  - { name: pchctrl61_pre, description: "PCHCTRL[61] after GEN mux, before CHEN gate" }
+  - { name: pchctrl62_pre, description: "PCHCTRL[62] after GEN mux, before CHEN gate" }
+  - { name: pchctrl63_pre, description: "PCHCTRL[63] after GEN mux, before CHEN gate" }
+  # Named channel outputs (post-CHEN gate) — mapping per RM Table 20-14
+  - { name: gclk_oscctrl_dfll48,    description: "PCHCTRL[0]  — DFLL48M reference clock" }
+  - { name: gclk_oscctrl_pll0,      description: "PCHCTRL[1]  — PLL0 reference clock (when REFSEL = GCLK)" }
+  - { name: gclk_oscctrl_pll1,      description: "PCHCTRL[2]  — PLL1 reference clock (when REFSEL = GCLK)" }
+  - { name: gclk_freqm_msr,         description: "PCHCTRL[3]  — FREQM measurement clock" }
+  - { name: gclk_freqm_ref,         description: "PCHCTRL[4]  — FREQM reference clock" }
+  - { name: gclk_eic,               description: "PCHCTRL[5]  — External Interrupt Controller" }
+  - { name: gclk_evsys_ch0,         description: "PCHCTRL[6]  — EVSYS channel 0 generator clock" }
+  - { name: gclk_evsys_ch1,         description: "PCHCTRL[7]  — EVSYS channel 1" }
+  - { name: gclk_evsys_ch2,         description: "PCHCTRL[8]  — EVSYS channel 2" }
+  - { name: gclk_evsys_ch3,         description: "PCHCTRL[9]  — EVSYS channel 3" }
+  - { name: gclk_evsys_ch4,         description: "PCHCTRL[10] — EVSYS channel 4" }
+  - { name: gclk_evsys_ch5,         description: "PCHCTRL[11] — EVSYS channel 5" }
+  - { name: gclk_evsys_ch6,         description: "PCHCTRL[12] — EVSYS channel 6" }
+  - { name: gclk_evsys_ch7,         description: "PCHCTRL[13] — EVSYS channel 7" }
+  - { name: gclk_evsys_ch8,         description: "PCHCTRL[14] — EVSYS channel 8" }
+  - { name: gclk_evsys_ch9,         description: "PCHCTRL[15] — EVSYS channel 9" }
+  - { name: gclk_evsys_ch10,        description: "PCHCTRL[16] — EVSYS channel 10" }
+  - { name: gclk_evsys_ch11,        description: "PCHCTRL[17] — EVSYS channel 11" }
+  - { name: gclk_sercom_slow_018,   description: "PCHCTRL[18] — SERCOM slow clock (SERCOM0/1/4)" }
+  - { name: gclk_sercom_slow_2356,  description: "PCHCTRL[19] — SERCOM slow clock (SERCOM2/3/5)" }
+  - { name: gclk_sercom_slow_6789,  description: "PCHCTRL[20] — SERCOM slow clock (SERCOM6/7/8/9)" }
+  - { name: gclk_sercom0_core,      description: "PCHCTRL[21] — SERCOM0 core clock" }
+  - { name: gclk_sercom1_core,      description: "PCHCTRL[22] — SERCOM1 core clock" }
+  - { name: gclk_sercom2_core,      description: "PCHCTRL[23] — SERCOM2 core clock" }
+  - { name: gclk_sercom3_core,      description: "PCHCTRL[24] — SERCOM3 core clock" }
+  - { name: gclk_sercom4_core,      description: "PCHCTRL[25] — SERCOM4 core clock" }
+  - { name: gclk_sercom5_core,      description: "PCHCTRL[26] — SERCOM5 core clock" }
+  - { name: gclk_sercom6_core,      description: "PCHCTRL[27] — SERCOM6 core clock" }
+  - { name: gclk_sercom7_core,      description: "PCHCTRL[28] — SERCOM7 core clock" }
+  - { name: gclk_sercom8_core,      description: "PCHCTRL[29] — SERCOM8 core clock" }
+  - { name: gclk_sercom9_core,      description: "PCHCTRL[30] — SERCOM9 core clock" }
+  - { name: gclk_tcc0,              description: "PCHCTRL[31] — TCC0" }
+  - { name: gclk_tcc1,              description: "PCHCTRL[32] — TCC1" }
+  - { name: gclk_tcc2,              description: "PCHCTRL[33] — TCC2" }
+  - { name: gclk_tcc3,              description: "PCHCTRL[34] — TCC3" }
+  - { name: gclk_tcc4,              description: "PCHCTRL[35] — TCC4" }
+  - { name: gclk_tcc5,              description: "PCHCTRL[36] — TCC5" }
+  - { name: gclk_tcc6,              description: "PCHCTRL[37] — TCC6" }
+  - { name: gclk_tcc7,              description: "PCHCTRL[38] — TCC7" }
+  - { name: gclk_tcc8,              description: "PCHCTRL[39] — TCC8" }
+  - { name: gclk_tcc9,              description: "PCHCTRL[40] — TCC9" }
+  - { name: gclk_adc,               description: "PCHCTRL[41] — ADC" }
+  - { name: gclk_ac,                description: "PCHCTRL[42] — Analog Comparator" }
+  - { name: gclk_ptc,               description: "PCHCTRL[43] — PTC" }
+  - { name: gclk_i2s0,              description: "PCHCTRL[44] — I2S0" }
+  - { name: gclk_i2s1,              description: "PCHCTRL[45] — I2S1" }
+  - { name: gclk_can0,              description: "PCHCTRL[46] — CAN0" }
+  - { name: gclk_can1,              description: "PCHCTRL[47] — CAN1" }
+  - { name: gclk_can2,              description: "PCHCTRL[48] — CAN2" }
+  - { name: gclk_can3,              description: "PCHCTRL[49] — CAN3" }
+  - { name: gclk_can4,              description: "PCHCTRL[50] — CAN4" }
+  - { name: gclk_can5,              description: "PCHCTRL[51] — CAN5" }
+  - { name: gclk_pchctrl52_rsv,     description: "PCHCTRL[52] — Reserved" }
+  - { name: gclk_pchctrl53_rsv,     description: "PCHCTRL[53] — Reserved" }
+  - { name: gclk_gmac_tx,           description: "PCHCTRL[54] — GMAC TX clock" }
+  - { name: gclk_gmac_tsu,          description: "PCHCTRL[55] — GMAC TSU (timestamp unit, IEEE 1588)" }
+  - { name: gclk_sqi0,              description: "PCHCTRL[56] — SQI0" }
+  - { name: gclk_sqi1,              description: "PCHCTRL[57] — SQI1" }
+  - { name: gclk_sdhc0_core,        description: "PCHCTRL[58] — SDHC0 core clock" }
+  - { name: gclk_sdhc0_slow,        description: "PCHCTRL[59] — SDHC0 slow clock" }
+  - { name: gclk_sdhc1_core,        description: "PCHCTRL[60] — SDHC1 core clock" }
+  - { name: gclk_sdhc1_slow,        description: "PCHCTRL[61] — SDHC1 slow clock" }
+  - { name: gclk_mlb,               description: "PCHCTRL[62] — MLB" }
+  - { name: gclk_cm7_trace,         description: "PCHCTRL[63] — Cortex-M7 trace (ETM)" }
+
+  # --- Backup-domain RTC/HSM clocks (selected from XOSC32K/OSCULP32K
+  # variants by OSC32KCTRL.CLKSELCTRL) ---
+  - { name: rtc_clk, description: "RTC count clock — selected by OSC32KCTRL.CLKSELCTRL.RTCSEL from {OSCULP32K 32k, OSCULP32K 1k, XOSC32K 32k, XOSC32K 1k}" }
+  - { name: hsm_clk, description: "Hardware-Security-Module backup clock — selected by OSC32KCTRL.CLKSELCTRL.HSMSEL from the same four sources as RTC" }
+
+
+# ===========================================================================
+# Generators
+# ===========================================================================
+generators:
+  - name: XOSC
+    output: xosc
+    description: "External multipurpose crystal oscillator (4..48 MHz crystal, or external clock when XTALEN=0).  CLK_FAIL detection switches to a safe fall-back clock derived from DFLL48M (configured via XOSCCTRLA.CFDPRESC)."
+    control: { reg: XOSCCTRLA, field: ENABLE, instance: OSCCTRL }
+
+  - name: DFLL48M
+    output: dfll48m_clk
+    description: "Digital Frequency-Locked Loop, factory-calibrated to 48 MHz (open loop).  In closed loop the output is GCLK_OSCCTRL_DFLL48 × DFLLMUL.MUL, regulated against the reference."
+    control:
+      instance: OSCCTRL
+      reg: DFLLCTRLA
+      field: ENABLE
+
+  - name: XOSC32K
+    output: xosc32k
+    description: "32.768 kHz crystal oscillator.  Bypass mode (external clock on XIN32) is selected by setting XTALEN=0 with ENABLE=1."
+    control: { reg: XOSC32K, field: ENABLE, instance: OSC32KCTRL }
+
+  - name: OSCULP32K
+    output: osculp32k
+    description: "Internal Ultra-Low-Power 32 kHz RC oscillator.  Always running; no enable bit.  The only clock source available in Backup mode."
+
+  - name: GCLKIN0
+    output: gclkin0
+    description: "External clock on GCLK_IO[0] pin.  Selected as a generator source via GENCTRL[n].SRC = GCLKIN."
+    control: { state: stateGCLKIN0 }
+  - name: GCLKIN1
+    output: gclkin1
+    control: { state: stateGCLKIN1 }
+  - name: GCLKIN2
+    output: gclkin2
+    control: { state: stateGCLKIN2 }
+  - name: GCLKIN3
+    output: gclkin3
+    control: { state: stateGCLKIN3 }
+  - name: GCLKIN4
+    output: gclkin4
+    control: { state: stateGCLKIN4 }
+  - name: GCLKIN5
+    output: gclkin5
+    control: { state: stateGCLKIN5 }
+  - name: GCLKIN6
+    output: gclkin6
+    control: { state: stateGCLKIN6 }
+  - name: GCLKIN7
+    output: gclkin7
+    control: { state: stateGCLKIN7 }
+
+
+# ===========================================================================
+# Muxes
+# ===========================================================================
+muxes:
+  # PLL reference selectors.  PLLCTRL.REFSEL: 0 = GCLK_PLLn_REF, 1 = XOSC,
+  # 2 = DFLL48M, 3..7 reserved.
+  #
+  # The GCLK_PLLn_REF input (REFSEL = 0) is intentionally omitted from the
+  # graph: in hardware the PLLn reference can be sourced from any GCLK
+  # generator, which itself can be sourced from PLLn's own outputs — a
+  # configuration the silicon allows but software would not deliberately
+  # select.  Modeling that edge introduces a feedback cycle the DAG
+  # validator (correctly) rejects.  Software using GCLK as the PLL
+  # reference must reason about the chain externally to this graph.
+  - name: PLL0_REFSEL
+    output: pll0_ref_pre
+    inputs: [null, xosc, dfll48m_clk, null, null, null, null, null]
+    control: { reg: PLL0CTRL, field: REFSEL, instance: OSCCTRL }
+  - name: PLL1_REFSEL
+    output: pll1_ref_pre
+    inputs: [null, xosc, dfll48m_clk, null, null, null, null, null]
+    control: { reg: PLL1CTRL, field: REFSEL, instance: OSCCTRL }
+
+  # OSC32KCTRL RTC and HSM clock selectors.
+  - name: RTC_SEL
+    output: rtc_clk
+    inputs: [osculp32k, osculp1k, xosc32k, xosc1k]
+    control: { reg: CLKSELCTRL, field: RTCSEL, instance: OSC32KCTRL }
+  - name: HSM_SEL
+    output: hsm_clk
+    inputs: [osculp32k, osculp1k, xosc32k, xosc1k]
+    control: { reg: CLKSELCTRL, field: HSMSEL, instance: OSC32KCTRL }
+
+  # GCLK generator source selectors (16 of them).  GENCTRL[i].SRC encoding
+  # per RM: 0=XOSC, 1=GCLKIN[i], 2=GCLKGEN1, 3=OSCULP32K, 4=XOSC32K,
+  # 5=DFLL, 6..9=PLL0_1..4, 10..13=PLL1_1..4, 14..15 reserved.
+  # GCLKGEN1 is itself a generator output, so generator 1's SRC mux uses
+  # the same encoding but value 2 (GCLKGEN1) is reserved/loopback.
+  - name: GCLKGEN0_SRC
+    output: gclkgen0_pre
+    inputs: [xosc, gclkin0, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[0]', field: SRC }
+  - name: GCLKGEN1_SRC
+    output: gclkgen1_pre
+    inputs: [xosc, gclkin1, null, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[1]', field: SRC }
+  - name: GCLKGEN2_SRC
+    output: gclkgen2_pre
+    inputs: [xosc, gclkin2, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[2]', field: SRC }
+  - name: GCLKGEN3_SRC
+    output: gclkgen3_pre
+    inputs: [xosc, gclkin3, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[3]', field: SRC }
+  - name: GCLKGEN4_SRC
+    output: gclkgen4_pre
+    inputs: [xosc, gclkin4, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[4]', field: SRC }
+  - name: GCLKGEN5_SRC
+    output: gclkgen5_pre
+    inputs: [xosc, gclkin5, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[5]', field: SRC }
+  - name: GCLKGEN6_SRC
+    output: gclkgen6_pre
+    inputs: [xosc, gclkin6, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[6]', field: SRC }
+  - name: GCLKGEN7_SRC
+    output: gclkgen7_pre
+    inputs: [xosc, gclkin7, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[7]', field: SRC }
+  - name: GCLKGEN8_SRC
+    output: gclkgen8_pre
+    inputs: [xosc, null, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[8]', field: SRC }
+  - name: GCLKGEN9_SRC
+    output: gclkgen9_pre
+    inputs: [xosc, null, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[9]', field: SRC }
+  - name: GCLKGEN10_SRC
+    output: gclkgen10_pre
+    inputs: [xosc, null, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[10]', field: SRC }
+  - name: GCLKGEN11_SRC
+    output: gclkgen11_pre
+    inputs: [xosc, null, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[11]', field: SRC }
+  - name: GCLKGEN12_SRC
+    output: gclkgen12_pre
+    inputs: [xosc, null, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[12]', field: SRC }
+  - name: GCLKGEN13_SRC
+    output: gclkgen13_pre
+    inputs: [xosc, null, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[13]', field: SRC }
+  - name: GCLKGEN14_SRC
+    output: gclkgen14_pre
+    inputs: [xosc, null, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[14]', field: SRC }
+  - name: GCLKGEN15_SRC
+    output: gclkgen15_pre
+    inputs: [xosc, null, gclkgen1, osculp32k, xosc32k, dfll48m_clk, pll0_out0, pll0_out1, pll0_out2, pll0_out3, pll1_out0, pll1_out1, pll1_out2, pll1_out3, null, null]
+    control: { reg: 'GENCTRL[15]', field: SRC }
+
+  # PCHCTRL[i].GEN selects which generator drives this peripheral channel.
+  # 64 channels, all with the same input list (gclkgen0..15).
+  - { name: PCH0_SEL,  output: pchctrl0_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[0]',  field: GEN } }
+  - { name: PCH1_SEL,  output: pchctrl1_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[1]',  field: GEN } }
+  - { name: PCH2_SEL,  output: pchctrl2_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[2]',  field: GEN } }
+  - { name: PCH3_SEL,  output: pchctrl3_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[3]',  field: GEN } }
+  - { name: PCH4_SEL,  output: pchctrl4_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[4]',  field: GEN } }
+  - { name: PCH5_SEL,  output: pchctrl5_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[5]',  field: GEN } }
+  - { name: PCH6_SEL,  output: pchctrl6_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[6]',  field: GEN } }
+  - { name: PCH7_SEL,  output: pchctrl7_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[7]',  field: GEN } }
+  - { name: PCH8_SEL,  output: pchctrl8_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[8]',  field: GEN } }
+  - { name: PCH9_SEL,  output: pchctrl9_pre,  inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[9]',  field: GEN } }
+  - { name: PCH10_SEL, output: pchctrl10_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[10]', field: GEN } }
+  - { name: PCH11_SEL, output: pchctrl11_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[11]', field: GEN } }
+  - { name: PCH12_SEL, output: pchctrl12_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[12]', field: GEN } }
+  - { name: PCH13_SEL, output: pchctrl13_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[13]', field: GEN } }
+  - { name: PCH14_SEL, output: pchctrl14_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[14]', field: GEN } }
+  - { name: PCH15_SEL, output: pchctrl15_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[15]', field: GEN } }
+  - { name: PCH16_SEL, output: pchctrl16_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[16]', field: GEN } }
+  - { name: PCH17_SEL, output: pchctrl17_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[17]', field: GEN } }
+  - { name: PCH18_SEL, output: pchctrl18_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[18]', field: GEN } }
+  - { name: PCH19_SEL, output: pchctrl19_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[19]', field: GEN } }
+  - { name: PCH20_SEL, output: pchctrl20_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[20]', field: GEN } }
+  - { name: PCH21_SEL, output: pchctrl21_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[21]', field: GEN } }
+  - { name: PCH22_SEL, output: pchctrl22_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[22]', field: GEN } }
+  - { name: PCH23_SEL, output: pchctrl23_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[23]', field: GEN } }
+  - { name: PCH24_SEL, output: pchctrl24_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[24]', field: GEN } }
+  - { name: PCH25_SEL, output: pchctrl25_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[25]', field: GEN } }
+  - { name: PCH26_SEL, output: pchctrl26_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[26]', field: GEN } }
+  - { name: PCH27_SEL, output: pchctrl27_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[27]', field: GEN } }
+  - { name: PCH28_SEL, output: pchctrl28_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[28]', field: GEN } }
+  - { name: PCH29_SEL, output: pchctrl29_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[29]', field: GEN } }
+  - { name: PCH30_SEL, output: pchctrl30_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[30]', field: GEN } }
+  - { name: PCH31_SEL, output: pchctrl31_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[31]', field: GEN } }
+  - { name: PCH32_SEL, output: pchctrl32_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[32]', field: GEN } }
+  - { name: PCH33_SEL, output: pchctrl33_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[33]', field: GEN } }
+  - { name: PCH34_SEL, output: pchctrl34_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[34]', field: GEN } }
+  - { name: PCH35_SEL, output: pchctrl35_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[35]', field: GEN } }
+  - { name: PCH36_SEL, output: pchctrl36_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[36]', field: GEN } }
+  - { name: PCH37_SEL, output: pchctrl37_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[37]', field: GEN } }
+  - { name: PCH38_SEL, output: pchctrl38_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[38]', field: GEN } }
+  - { name: PCH39_SEL, output: pchctrl39_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[39]', field: GEN } }
+  - { name: PCH40_SEL, output: pchctrl40_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[40]', field: GEN } }
+  - { name: PCH41_SEL, output: pchctrl41_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[41]', field: GEN } }
+  - { name: PCH42_SEL, output: pchctrl42_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[42]', field: GEN } }
+  - { name: PCH43_SEL, output: pchctrl43_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[43]', field: GEN } }
+  - { name: PCH44_SEL, output: pchctrl44_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[44]', field: GEN } }
+  - { name: PCH45_SEL, output: pchctrl45_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[45]', field: GEN } }
+  - { name: PCH46_SEL, output: pchctrl46_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[46]', field: GEN } }
+  - { name: PCH47_SEL, output: pchctrl47_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[47]', field: GEN } }
+  - { name: PCH48_SEL, output: pchctrl48_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[48]', field: GEN } }
+  - { name: PCH49_SEL, output: pchctrl49_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[49]', field: GEN } }
+  - { name: PCH50_SEL, output: pchctrl50_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[50]', field: GEN } }
+  - { name: PCH51_SEL, output: pchctrl51_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[51]', field: GEN } }
+  - { name: PCH52_SEL, output: pchctrl52_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[52]', field: GEN } }
+  - { name: PCH53_SEL, output: pchctrl53_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[53]', field: GEN } }
+  - { name: PCH54_SEL, output: pchctrl54_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[54]', field: GEN } }
+  - { name: PCH55_SEL, output: pchctrl55_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[55]', field: GEN } }
+  - { name: PCH56_SEL, output: pchctrl56_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[56]', field: GEN } }
+  - { name: PCH57_SEL, output: pchctrl57_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[57]', field: GEN } }
+  - { name: PCH58_SEL, output: pchctrl58_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[58]', field: GEN } }
+  - { name: PCH59_SEL, output: pchctrl59_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[59]', field: GEN } }
+  - { name: PCH60_SEL, output: pchctrl60_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[60]', field: GEN } }
+  - { name: PCH61_SEL, output: pchctrl61_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[61]', field: GEN } }
+  - { name: PCH62_SEL, output: pchctrl62_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[62]', field: GEN } }
+  - { name: PCH63_SEL, output: pchctrl63_pre, inputs: [gclkgen0, gclkgen1, gclkgen2, gclkgen3, gclkgen4, gclkgen5, gclkgen6, gclkgen7, gclkgen8, gclkgen9, gclkgen10, gclkgen11, gclkgen12, gclkgen13, gclkgen14, gclkgen15], control: { reg: 'PCHCTRL[63]', field: GEN } }
+
+
+# ===========================================================================
+# PLLs
+# ===========================================================================
+plls:
+  - name: PLL0
+    input: pll0_ref
+    output: pll0_vco
+    description: "PLL0 — VCO output 800 MHz..1.6 GHz.  FBDIV range 21..1023 (no offset).  Outputs 0..3 are produced by separate POSTDIVn dividers, each with its own OUTENn gate."
+    feedback_integer:
+      reg: PLL0FBDIV
+      field: FBDIV
+      instance: OSCCTRL
+      value_range: { min: 21, max: 1023 }
+    vco_limits: { min: 800000000, max: 1600000000 }
+
+  - name: PLL1
+    input: pll1_ref
+    output: pll1_vco
+    description: "PLL1 — same parameters as PLL0.  PLL1 outputs 0 and 2 also feed the FRACDIV0/FRACDIV1 fractional dividers."
+    feedback_integer:
+      reg: PLL1FBDIV
+      field: FBDIV
+      instance: OSCCTRL
+      value_range: { min: 21, max: 1023 }
+    vco_limits: { min: 800000000, max: 1600000000 }
+
+
+# ===========================================================================
+# Dividers
+# ===========================================================================
+dividers:
+  # XOSC USBHS prescaler.
+  - name: XOSC_USBHSDIV
+    input: xosc
+    output: xosc_usbhs
+    description: "XOSC pre-divider supplying the USBHS PLL reference."
+    factor:
+      instance: OSCCTRL
+      reg: XOSCCTRLA
+      field: USBHSDIV
+
+  # XOSC32K → 1.024 kHz fixed divide-by-32.
+  - name: XOSC32K_TO_1K
+    input: xosc32k
+    output: xosc1k
+    description: "32.768 kHz / 32 = 1.024 kHz."
+    value: 32
+
+  - name: OSCULP32K_TO_1K
+    input: osculp32k
+    output: osculp1k
+    description: "32.768 kHz / 32 = 1.024 kHz (internal ULP)."
+    value: 32
+
+  # PLL reference dividers.  REFDIV: 1..63.
+  - name: PLL0_REFDIV
+    input: pll0_ref_pre
+    output: pll0_ref
+    factor:
+      instance: OSCCTRL
+      reg: PLL0REFDIV
+      field: REFDIV
+      value_range: { min: 1, max: 63 }
+  - name: PLL1_REFDIV
+    input: pll1_ref_pre
+    output: pll1_ref
+    factor:
+      instance: OSCCTRL
+      reg: PLL1REFDIV
+      field: REFDIV
+      value_range: { min: 1, max: 63 }
+
+  # Per-output PLL post-dividers (4 per PLL).
+  - { name: PLL0_POSTDIV0, input: pll0_vco, output: pll0_out0_div, factor: { instance: OSCCTRL, reg: PLL0POSTDIVA, field: POSTDIV0, value_range: { min: 1, max: 63 } } }
+  - { name: PLL0_POSTDIV1, input: pll0_vco, output: pll0_out1_div, factor: { instance: OSCCTRL, reg: PLL0POSTDIVA, field: POSTDIV1, value_range: { min: 1, max: 63 } } }
+  - { name: PLL0_POSTDIV2, input: pll0_vco, output: pll0_out2_div, factor: { instance: OSCCTRL, reg: PLL0POSTDIVA, field: POSTDIV2, value_range: { min: 1, max: 63 } } }
+  - { name: PLL0_POSTDIV3, input: pll0_vco, output: pll0_out3_div, factor: { instance: OSCCTRL, reg: PLL0POSTDIVA, field: POSTDIV3, value_range: { min: 1, max: 63 } } }
+  - { name: PLL1_POSTDIV0, input: pll1_vco, output: pll1_out0_div, factor: { instance: OSCCTRL, reg: PLL1POSTDIVA, field: POSTDIV0, value_range: { min: 1, max: 63 } } }
+  - { name: PLL1_POSTDIV1, input: pll1_vco, output: pll1_out1_div, factor: { instance: OSCCTRL, reg: PLL1POSTDIVA, field: POSTDIV1, value_range: { min: 1, max: 63 } } }
+  - { name: PLL1_POSTDIV2, input: pll1_vco, output: pll1_out2_div, factor: { instance: OSCCTRL, reg: PLL1POSTDIVA, field: POSTDIV2, value_range: { min: 1, max: 63 } } }
+  - { name: PLL1_POSTDIV3, input: pll1_vco, output: pll1_out3_div, factor: { instance: OSCCTRL, reg: PLL1POSTDIVA, field: POSTDIV3, value_range: { min: 1, max: 63 } } }
+
+  # Fractional dividers (FRACDIV0 fed by PLL1 output 0; FRACDIV1 fed by
+  # PLL1 output 2).  Effective factor is INTDIV + REMDIV/512.
+  - name: FRACDIV0
+    input: pll1_out0
+    output: fracdiv0_out
+    description: "Fractional Divider 0 (PLL1 output 0): factor = INTDIV + REMDIV/512.  Documented integer range up to 32767."
+    factor: { instance: OSCCTRL, reg: FRACDIV0, field: INTDIV }
+    denominator: { instance: OSCCTRL, reg: FRACDIV0, field: REMDIV }
+  - name: FRACDIV1
+    input: pll1_out2
+    output: fracdiv1_out
+    description: "Fractional Divider 1 (PLL1 output 2): factor = INTDIV + REMDIV/512."
+    factor: { instance: OSCCTRL, reg: FRACDIV1, field: INTDIV }
+    denominator: { instance: OSCCTRL, reg: FRACDIV1, field: REMDIV }
+
+  # GENCTRL[i].DIV — 16 generator dividers.  DIVSEL=0 → factor = DIV
+  # (linear), DIVSEL=1 → factor = 2^(DIV+1) (power of 2).  The schema's
+  # single `factor` field can't capture the DIVSEL split; modeled here as
+  # the linear case (DIVSEL=0) which is the common configuration.
+  - { name: GCLKGEN0_DIV,  input: gclkgen0_pre,  output: gclkgen0_div,  factor: { reg: 'GENCTRL[0]',  field: DIV } }
+  - { name: GCLKGEN1_DIV,  input: gclkgen1_pre,  output: gclkgen1_div,  factor: { reg: 'GENCTRL[1]',  field: DIV } }
+  - { name: GCLKGEN2_DIV,  input: gclkgen2_pre,  output: gclkgen2_div,  factor: { reg: 'GENCTRL[2]',  field: DIV } }
+  - { name: GCLKGEN3_DIV,  input: gclkgen3_pre,  output: gclkgen3_div,  factor: { reg: 'GENCTRL[3]',  field: DIV } }
+  - { name: GCLKGEN4_DIV,  input: gclkgen4_pre,  output: gclkgen4_div,  factor: { reg: 'GENCTRL[4]',  field: DIV } }
+  - { name: GCLKGEN5_DIV,  input: gclkgen5_pre,  output: gclkgen5_div,  factor: { reg: 'GENCTRL[5]',  field: DIV } }
+  - { name: GCLKGEN6_DIV,  input: gclkgen6_pre,  output: gclkgen6_div,  factor: { reg: 'GENCTRL[6]',  field: DIV } }
+  - { name: GCLKGEN7_DIV,  input: gclkgen7_pre,  output: gclkgen7_div,  factor: { reg: 'GENCTRL[7]',  field: DIV } }
+  - { name: GCLKGEN8_DIV,  input: gclkgen8_pre,  output: gclkgen8_div,  factor: { reg: 'GENCTRL[8]',  field: DIV } }
+  - { name: GCLKGEN9_DIV,  input: gclkgen9_pre,  output: gclkgen9_div,  factor: { reg: 'GENCTRL[9]',  field: DIV } }
+  - { name: GCLKGEN10_DIV, input: gclkgen10_pre, output: gclkgen10_div, factor: { reg: 'GENCTRL[10]', field: DIV } }
+  - { name: GCLKGEN11_DIV, input: gclkgen11_pre, output: gclkgen11_div, factor: { reg: 'GENCTRL[11]', field: DIV } }
+  - { name: GCLKGEN12_DIV, input: gclkgen12_pre, output: gclkgen12_div, factor: { reg: 'GENCTRL[12]', field: DIV } }
+  - { name: GCLKGEN13_DIV, input: gclkgen13_pre, output: gclkgen13_div, factor: { reg: 'GENCTRL[13]', field: DIV } }
+  - { name: GCLKGEN14_DIV, input: gclkgen14_pre, output: gclkgen14_div, factor: { reg: 'GENCTRL[14]', field: DIV } }
+  - { name: GCLKGEN15_DIV, input: gclkgen15_pre, output: gclkgen15_div, factor: { reg: 'GENCTRL[15]', field: DIV } }
+
+  # MCLK CPU and BUP dividers.
+  - name: CPUDIV
+    input: clk_main
+    output: clk_cpu
+    description: "CPU clock domain divider (8-bit prescaler, 1..128 in powers of 2)."
+    factor:
+      instance: MCLK
+      reg: 'CLKDIV[0]'
+      field: DIV
+  - name: BUPDIV
+    input: clk_main
+    output: clk_bup
+    description: "Backup clock domain divider (same encoding as CPUDIV)."
+    factor:
+      instance: MCLK
+      reg: 'CLKDIV[1]'
+      field: DIV
+
+
+# ===========================================================================
+# Gates
+# ===========================================================================
+gates:
+  # gclkgen0 IS clk_main — model as an always-on alias gate so both names
+  # are reachable in the graph.
+  - name: GCLKGEN0_IS_CLK_MAIN
+    input: gclkgen0
+    output: clk_main
+    description: "GCLKGEN[0] output is the MCLK input (CLK_MAIN)."
+
+  # PLL output enables (4 per PLL).
+  - { name: PLL0_OUTEN0, input: pll0_out0_div, output: pll0_out0, control: { instance: OSCCTRL, reg: PLL0POSTDIVA, field: OUTEN0 } }
+  - { name: PLL0_OUTEN1, input: pll0_out1_div, output: pll0_out1, control: { instance: OSCCTRL, reg: PLL0POSTDIVA, field: OUTEN1 } }
+  - { name: PLL0_OUTEN2, input: pll0_out2_div, output: pll0_out2, control: { instance: OSCCTRL, reg: PLL0POSTDIVA, field: OUTEN2 } }
+  - { name: PLL0_OUTEN3, input: pll0_out3_div, output: pll0_out3, control: { instance: OSCCTRL, reg: PLL0POSTDIVA, field: OUTEN3 } }
+  - { name: PLL1_OUTEN0, input: pll1_out0_div, output: pll1_out0, control: { instance: OSCCTRL, reg: PLL1POSTDIVA, field: OUTEN0 } }
+  - { name: PLL1_OUTEN1, input: pll1_out1_div, output: pll1_out1, control: { instance: OSCCTRL, reg: PLL1POSTDIVA, field: OUTEN1 } }
+  - { name: PLL1_OUTEN2, input: pll1_out2_div, output: pll1_out2, control: { instance: OSCCTRL, reg: PLL1POSTDIVA, field: OUTEN2 } }
+  - { name: PLL1_OUTEN3, input: pll1_out3_div, output: pll1_out3, control: { instance: OSCCTRL, reg: PLL1POSTDIVA, field: OUTEN3 } }
+
+  # GCLK generator enables.
+  - { name: GCLKGEN0_EN,  input: gclkgen0_div,  output: gclkgen0,  control: { reg: 'GENCTRL[0]',  field: GENEN } }
+  - { name: GCLKGEN1_EN,  input: gclkgen1_div,  output: gclkgen1,  control: { reg: 'GENCTRL[1]',  field: GENEN } }
+  - { name: GCLKGEN2_EN,  input: gclkgen2_div,  output: gclkgen2,  control: { reg: 'GENCTRL[2]',  field: GENEN } }
+  - { name: GCLKGEN3_EN,  input: gclkgen3_div,  output: gclkgen3,  control: { reg: 'GENCTRL[3]',  field: GENEN } }
+  - { name: GCLKGEN4_EN,  input: gclkgen4_div,  output: gclkgen4,  control: { reg: 'GENCTRL[4]',  field: GENEN } }
+  - { name: GCLKGEN5_EN,  input: gclkgen5_div,  output: gclkgen5,  control: { reg: 'GENCTRL[5]',  field: GENEN } }
+  - { name: GCLKGEN6_EN,  input: gclkgen6_div,  output: gclkgen6,  control: { reg: 'GENCTRL[6]',  field: GENEN } }
+  - { name: GCLKGEN7_EN,  input: gclkgen7_div,  output: gclkgen7,  control: { reg: 'GENCTRL[7]',  field: GENEN } }
+  - { name: GCLKGEN8_EN,  input: gclkgen8_div,  output: gclkgen8,  control: { reg: 'GENCTRL[8]',  field: GENEN } }
+  - { name: GCLKGEN9_EN,  input: gclkgen9_div,  output: gclkgen9,  control: { reg: 'GENCTRL[9]',  field: GENEN } }
+  - { name: GCLKGEN10_EN, input: gclkgen10_div, output: gclkgen10, control: { reg: 'GENCTRL[10]', field: GENEN } }
+  - { name: GCLKGEN11_EN, input: gclkgen11_div, output: gclkgen11, control: { reg: 'GENCTRL[11]', field: GENEN } }
+  - { name: GCLKGEN12_EN, input: gclkgen12_div, output: gclkgen12, control: { reg: 'GENCTRL[12]', field: GENEN } }
+  - { name: GCLKGEN13_EN, input: gclkgen13_div, output: gclkgen13, control: { reg: 'GENCTRL[13]', field: GENEN } }
+  - { name: GCLKGEN14_EN, input: gclkgen14_div, output: gclkgen14, control: { reg: 'GENCTRL[14]', field: GENEN } }
+  - { name: GCLKGEN15_EN, input: gclkgen15_div, output: gclkgen15, control: { reg: 'GENCTRL[15]', field: GENEN } }
+
+  # PCHCTRL[i].CHEN — peripheral channel enables.
+  - { name: PCH0_EN,  input: pchctrl0_pre,  output: gclk_oscctrl_dfll48,    control: { reg: 'PCHCTRL[0]',  field: CHEN } }
+  - { name: PCH1_EN,  input: pchctrl1_pre,  output: gclk_oscctrl_pll0,      control: { reg: 'PCHCTRL[1]',  field: CHEN } }
+  - { name: PCH2_EN,  input: pchctrl2_pre,  output: gclk_oscctrl_pll1,      control: { reg: 'PCHCTRL[2]',  field: CHEN } }
+  - { name: PCH3_EN,  input: pchctrl3_pre,  output: gclk_freqm_msr,         control: { reg: 'PCHCTRL[3]',  field: CHEN } }
+  - { name: PCH4_EN,  input: pchctrl4_pre,  output: gclk_freqm_ref,         control: { reg: 'PCHCTRL[4]',  field: CHEN } }
+  - { name: PCH5_EN,  input: pchctrl5_pre,  output: gclk_eic,               control: { reg: 'PCHCTRL[5]',  field: CHEN } }
+  - { name: PCH6_EN,  input: pchctrl6_pre,  output: gclk_evsys_ch0,         control: { reg: 'PCHCTRL[6]',  field: CHEN } }
+  - { name: PCH7_EN,  input: pchctrl7_pre,  output: gclk_evsys_ch1,         control: { reg: 'PCHCTRL[7]',  field: CHEN } }
+  - { name: PCH8_EN,  input: pchctrl8_pre,  output: gclk_evsys_ch2,         control: { reg: 'PCHCTRL[8]',  field: CHEN } }
+  - { name: PCH9_EN,  input: pchctrl9_pre,  output: gclk_evsys_ch3,         control: { reg: 'PCHCTRL[9]',  field: CHEN } }
+  - { name: PCH10_EN, input: pchctrl10_pre, output: gclk_evsys_ch4,         control: { reg: 'PCHCTRL[10]', field: CHEN } }
+  - { name: PCH11_EN, input: pchctrl11_pre, output: gclk_evsys_ch5,         control: { reg: 'PCHCTRL[11]', field: CHEN } }
+  - { name: PCH12_EN, input: pchctrl12_pre, output: gclk_evsys_ch6,         control: { reg: 'PCHCTRL[12]', field: CHEN } }
+  - { name: PCH13_EN, input: pchctrl13_pre, output: gclk_evsys_ch7,         control: { reg: 'PCHCTRL[13]', field: CHEN } }
+  - { name: PCH14_EN, input: pchctrl14_pre, output: gclk_evsys_ch8,         control: { reg: 'PCHCTRL[14]', field: CHEN } }
+  - { name: PCH15_EN, input: pchctrl15_pre, output: gclk_evsys_ch9,         control: { reg: 'PCHCTRL[15]', field: CHEN } }
+  - { name: PCH16_EN, input: pchctrl16_pre, output: gclk_evsys_ch10,        control: { reg: 'PCHCTRL[16]', field: CHEN } }
+  - { name: PCH17_EN, input: pchctrl17_pre, output: gclk_evsys_ch11,        control: { reg: 'PCHCTRL[17]', field: CHEN } }
+  - { name: PCH18_EN, input: pchctrl18_pre, output: gclk_sercom_slow_018,   control: { reg: 'PCHCTRL[18]', field: CHEN } }
+  - { name: PCH19_EN, input: pchctrl19_pre, output: gclk_sercom_slow_2356,  control: { reg: 'PCHCTRL[19]', field: CHEN } }
+  - { name: PCH20_EN, input: pchctrl20_pre, output: gclk_sercom_slow_6789,  control: { reg: 'PCHCTRL[20]', field: CHEN } }
+  - { name: PCH21_EN, input: pchctrl21_pre, output: gclk_sercom0_core,      control: { reg: 'PCHCTRL[21]', field: CHEN } }
+  - { name: PCH22_EN, input: pchctrl22_pre, output: gclk_sercom1_core,      control: { reg: 'PCHCTRL[22]', field: CHEN } }
+  - { name: PCH23_EN, input: pchctrl23_pre, output: gclk_sercom2_core,      control: { reg: 'PCHCTRL[23]', field: CHEN } }
+  - { name: PCH24_EN, input: pchctrl24_pre, output: gclk_sercom3_core,      control: { reg: 'PCHCTRL[24]', field: CHEN } }
+  - { name: PCH25_EN, input: pchctrl25_pre, output: gclk_sercom4_core,      control: { reg: 'PCHCTRL[25]', field: CHEN } }
+  - { name: PCH26_EN, input: pchctrl26_pre, output: gclk_sercom5_core,      control: { reg: 'PCHCTRL[26]', field: CHEN } }
+  - { name: PCH27_EN, input: pchctrl27_pre, output: gclk_sercom6_core,      control: { reg: 'PCHCTRL[27]', field: CHEN } }
+  - { name: PCH28_EN, input: pchctrl28_pre, output: gclk_sercom7_core,      control: { reg: 'PCHCTRL[28]', field: CHEN } }
+  - { name: PCH29_EN, input: pchctrl29_pre, output: gclk_sercom8_core,      control: { reg: 'PCHCTRL[29]', field: CHEN } }
+  - { name: PCH30_EN, input: pchctrl30_pre, output: gclk_sercom9_core,      control: { reg: 'PCHCTRL[30]', field: CHEN } }
+  - { name: PCH31_EN, input: pchctrl31_pre, output: gclk_tcc0,              control: { reg: 'PCHCTRL[31]', field: CHEN } }
+  - { name: PCH32_EN, input: pchctrl32_pre, output: gclk_tcc1,              control: { reg: 'PCHCTRL[32]', field: CHEN } }
+  - { name: PCH33_EN, input: pchctrl33_pre, output: gclk_tcc2,              control: { reg: 'PCHCTRL[33]', field: CHEN } }
+  - { name: PCH34_EN, input: pchctrl34_pre, output: gclk_tcc3,              control: { reg: 'PCHCTRL[34]', field: CHEN } }
+  - { name: PCH35_EN, input: pchctrl35_pre, output: gclk_tcc4,              control: { reg: 'PCHCTRL[35]', field: CHEN } }
+  - { name: PCH36_EN, input: pchctrl36_pre, output: gclk_tcc5,              control: { reg: 'PCHCTRL[36]', field: CHEN } }
+  - { name: PCH37_EN, input: pchctrl37_pre, output: gclk_tcc6,              control: { reg: 'PCHCTRL[37]', field: CHEN } }
+  - { name: PCH38_EN, input: pchctrl38_pre, output: gclk_tcc7,              control: { reg: 'PCHCTRL[38]', field: CHEN } }
+  - { name: PCH39_EN, input: pchctrl39_pre, output: gclk_tcc8,              control: { reg: 'PCHCTRL[39]', field: CHEN } }
+  - { name: PCH40_EN, input: pchctrl40_pre, output: gclk_tcc9,              control: { reg: 'PCHCTRL[40]', field: CHEN } }
+  - { name: PCH41_EN, input: pchctrl41_pre, output: gclk_adc,               control: { reg: 'PCHCTRL[41]', field: CHEN } }
+  - { name: PCH42_EN, input: pchctrl42_pre, output: gclk_ac,                control: { reg: 'PCHCTRL[42]', field: CHEN } }
+  - { name: PCH43_EN, input: pchctrl43_pre, output: gclk_ptc,               control: { reg: 'PCHCTRL[43]', field: CHEN } }
+  - { name: PCH44_EN, input: pchctrl44_pre, output: gclk_i2s0,              control: { reg: 'PCHCTRL[44]', field: CHEN } }
+  - { name: PCH45_EN, input: pchctrl45_pre, output: gclk_i2s1,              control: { reg: 'PCHCTRL[45]', field: CHEN } }
+  - { name: PCH46_EN, input: pchctrl46_pre, output: gclk_can0,              control: { reg: 'PCHCTRL[46]', field: CHEN } }
+  - { name: PCH47_EN, input: pchctrl47_pre, output: gclk_can1,              control: { reg: 'PCHCTRL[47]', field: CHEN } }
+  - { name: PCH48_EN, input: pchctrl48_pre, output: gclk_can2,              control: { reg: 'PCHCTRL[48]', field: CHEN } }
+  - { name: PCH49_EN, input: pchctrl49_pre, output: gclk_can3,              control: { reg: 'PCHCTRL[49]', field: CHEN } }
+  - { name: PCH50_EN, input: pchctrl50_pre, output: gclk_can4,              control: { reg: 'PCHCTRL[50]', field: CHEN } }
+  - { name: PCH51_EN, input: pchctrl51_pre, output: gclk_can5,              control: { reg: 'PCHCTRL[51]', field: CHEN } }
+  - { name: PCH52_EN, input: pchctrl52_pre, output: gclk_pchctrl52_rsv,     control: { reg: 'PCHCTRL[52]', field: CHEN } }
+  - { name: PCH53_EN, input: pchctrl53_pre, output: gclk_pchctrl53_rsv,     control: { reg: 'PCHCTRL[53]', field: CHEN } }
+  - { name: PCH54_EN, input: pchctrl54_pre, output: gclk_gmac_tx,           control: { reg: 'PCHCTRL[54]', field: CHEN } }
+  - { name: PCH55_EN, input: pchctrl55_pre, output: gclk_gmac_tsu,          control: { reg: 'PCHCTRL[55]', field: CHEN } }
+  - { name: PCH56_EN, input: pchctrl56_pre, output: gclk_sqi0,              control: { reg: 'PCHCTRL[56]', field: CHEN } }
+  - { name: PCH57_EN, input: pchctrl57_pre, output: gclk_sqi1,              control: { reg: 'PCHCTRL[57]', field: CHEN } }
+  - { name: PCH58_EN, input: pchctrl58_pre, output: gclk_sdhc0_core,        control: { reg: 'PCHCTRL[58]', field: CHEN } }
+  - { name: PCH59_EN, input: pchctrl59_pre, output: gclk_sdhc0_slow,        control: { reg: 'PCHCTRL[59]', field: CHEN } }
+  - { name: PCH60_EN, input: pchctrl60_pre, output: gclk_sdhc1_core,        control: { reg: 'PCHCTRL[60]', field: CHEN } }
+  - { name: PCH61_EN, input: pchctrl61_pre, output: gclk_sdhc1_slow,        control: { reg: 'PCHCTRL[61]', field: CHEN } }
+  - { name: PCH62_EN, input: pchctrl62_pre, output: gclk_mlb,               control: { reg: 'PCHCTRL[62]', field: CHEN } }
+  - { name: PCH63_EN, input: pchctrl63_pre, output: gclk_cm7_trace,         control: { reg: 'PCHCTRL[63]', field: CHEN } }
+
+  # MCLK CLKMSK[0..2] per-peripheral bus-clock gates.  The underlying
+  # registers in the SVD model use a single 32-bit MASK field; the field
+  # references below (MSK0..MSK31) follow the RM bit-field naming and may
+  # not match the peripheral model's field name until the model is split
+  # into per-bit fields.
+  # CLKMSK0 — CPU domain except where noted.
+  - { name: DSU_AHB_CLK,        input: clk_cpu, output: clk_dsu_ahb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK0  } }
+  - { name: DSU_APB_CLK,        input: clk_cpu, output: clk_dsu_apb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK1  } }
+  - { name: FCW_AHB_CLK,        input: clk_cpu, output: clk_fcw_ahb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK2  } }
+  - { name: FCW_APB_CLK,        input: clk_cpu, output: clk_fcw_apb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK3  } }
+  - { name: FCR_AHB_CLK,        input: clk_cpu, output: clk_fcr_ahb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK4  } }
+  - { name: FCR_APB_CLK,        input: clk_cpu, output: clk_fcr_apb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK5  } }
+  - { name: PM_APB_CLK,         input: clk_bup, output: clk_pm_apb,         control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK6  } }
+  - { name: SUPC_APB_CLK,       input: clk_bup, output: clk_supc_apb,       control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK7  } }
+  - { name: RSTC_APB_CLK,       input: clk_bup, output: clk_rstc_apb,       control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK8  } }
+  - { name: OSCCTRL_APB_CLK,    input: clk_cpu, output: clk_oscctrl_apb,    control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK9  } }
+  - { name: OSC32KCTRL_APB_CLK, input: clk_bup, output: clk_osc32kctrl_apb, control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK10 } }
+  - { name: FREQM_APB_CLK,      input: clk_cpu, output: clk_freqm_apb,      control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK13 } }
+  - { name: WDT_APB_CLK,        input: clk_cpu, output: clk_wdt_apb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK14 } }
+  - { name: RTC_APB_CLK,        input: clk_bup, output: clk_rtc_apb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK15 } }
+  - { name: EIC_APB_CLK,        input: clk_cpu, output: clk_eic_apb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK16 } }
+  - { name: PAC_AHB_CLK,        input: clk_cpu, output: clk_pac_ahb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK17 } }
+  - { name: PAC_APB_CLK,        input: clk_cpu, output: clk_pac_apb,        control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK18 } }
+  - { name: DRMTCM_APB_CLK,     input: clk_cpu, output: clk_drmtcm_apb,     control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK19 } }
+  - { name: MCRAMC_APB_CLK,     input: clk_cpu, output: clk_mcramc_apb,     control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK20 } }
+  - { name: TRAM_APB_CLK,       input: clk_cpu, output: clk_tram_apb,       control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK21 } }
+  - { name: PORT_AHB_CLK,       input: clk_cpu, output: clk_port_ahb,       control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK22 } }
+  - { name: PORT_APB_CLK,       input: clk_cpu, output: clk_port_apb,       control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK23 } }
+  - { name: DMAC_AHB_CLK,       input: clk_cpu, output: clk_dmac_ahb,       control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK24 } }
+  - { name: DMAC_APB_CLK,       input: clk_cpu, output: clk_dmac_apb,       control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK25 } }
+  - { name: BUSMATRIX_AHB_CLK,  input: clk_cpu, output: clk_busmatrix_ahb,  control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK26 } }
+  - { name: BUSMATRIX_APB_CLK,  input: clk_cpu, output: clk_busmatrix_apb,  control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK27 } }
+  - { name: BOOTROM_AHB_CLK,    input: clk_cpu, output: clk_bootrom_ahb,    control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK28 } }
+  - { name: BOOTROM_APB_CLK,    input: clk_cpu, output: clk_bootrom_apb,    control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK29 } }
+  - { name: EVSYS_APB_CLK,      input: clk_cpu, output: clk_evsys_apb,      control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK30 } }
+  - { name: SERCOM0_APB_CLK,    input: clk_cpu, output: clk_sercom0_apb,    control: { instance: MCLK, reg: 'CLKMSK[0]', field: MSK31 } }
+  # CLKMSK1 — all CPU domain.
+  - { name: SERCOM1_APB_CLK, input: clk_cpu, output: clk_sercom1_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK0  } }
+  - { name: SERCOM2_APB_CLK, input: clk_cpu, output: clk_sercom2_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK1  } }
+  - { name: SERCOM3_APB_CLK, input: clk_cpu, output: clk_sercom3_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK2  } }
+  - { name: SERCOM4_APB_CLK, input: clk_cpu, output: clk_sercom4_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK3  } }
+  - { name: SERCOM5_APB_CLK, input: clk_cpu, output: clk_sercom5_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK4  } }
+  - { name: SERCOM6_APB_CLK, input: clk_cpu, output: clk_sercom6_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK5  } }
+  - { name: SERCOM7_APB_CLK, input: clk_cpu, output: clk_sercom7_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK6  } }
+  - { name: SERCOM8_APB_CLK, input: clk_cpu, output: clk_sercom8_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK7  } }
+  - { name: SERCOM9_APB_CLK, input: clk_cpu, output: clk_sercom9_apb, control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK8  } }
+  - { name: TCC0_APB_CLK,    input: clk_cpu, output: clk_tcc0_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK9  } }
+  - { name: TCC1_APB_CLK,    input: clk_cpu, output: clk_tcc1_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK10 } }
+  - { name: TCC2_APB_CLK,    input: clk_cpu, output: clk_tcc2_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK11 } }
+  - { name: TCC3_APB_CLK,    input: clk_cpu, output: clk_tcc3_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK12 } }
+  - { name: TCC4_APB_CLK,    input: clk_cpu, output: clk_tcc4_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK13 } }
+  - { name: TCC5_APB_CLK,    input: clk_cpu, output: clk_tcc5_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK14 } }
+  - { name: TCC6_APB_CLK,    input: clk_cpu, output: clk_tcc6_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK15 } }
+  - { name: TCC7_APB_CLK,    input: clk_cpu, output: clk_tcc7_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK16 } }
+  - { name: TCC8_APB_CLK,    input: clk_cpu, output: clk_tcc8_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK17 } }
+  - { name: TCC9_APB_CLK,    input: clk_cpu, output: clk_tcc9_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK18 } }
+  - { name: ADC_APB_CLK,     input: clk_cpu, output: clk_adc_apb,     control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK19 } }
+  - { name: AC_APB_CLK,      input: clk_cpu, output: clk_ac_apb,      control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK20 } }
+  - { name: PTC_APB_CLK,     input: clk_cpu, output: clk_ptc_apb,     control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK21 } }
+  - { name: I2S0_APB_CLK,    input: clk_cpu, output: clk_i2s0_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK22 } }
+  - { name: I2S1_APB_CLK,    input: clk_cpu, output: clk_i2s1_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK23 } }
+  - { name: CAN0_APB_CLK,    input: clk_cpu, output: clk_can0_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK24 } }
+  - { name: CAN1_APB_CLK,    input: clk_cpu, output: clk_can1_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK25 } }
+  - { name: CAN2_APB_CLK,    input: clk_cpu, output: clk_can2_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK26 } }
+  - { name: CAN3_APB_CLK,    input: clk_cpu, output: clk_can3_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK27 } }
+  - { name: CAN4_APB_CLK,    input: clk_cpu, output: clk_can4_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK28 } }
+  - { name: CAN5_APB_CLK,    input: clk_cpu, output: clk_can5_apb,    control: { instance: MCLK, reg: 'CLKMSK[1]', field: MSK29 } }
+  # CLKMSK2 — all CPU domain.
+  - { name: GMAC_AHB_CLK,    input: clk_cpu, output: clk_gmac_ahb,   control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK0  } }
+  - { name: GMAC_APB_CLK,    input: clk_cpu, output: clk_gmac_apb,   control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK1  } }
+  - { name: SQI0_APB_CLK,    input: clk_cpu, output: clk_sqi0_apb,   control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK2  } }
+  - { name: SQI1_APB_CLK,    input: clk_cpu, output: clk_sqi1_apb,   control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK3  } }
+  - { name: TRNG_APB_CLK,    input: clk_cpu, output: clk_trng_apb,   control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK4  } }
+  - { name: SDHC0_AHB_CLK,   input: clk_cpu, output: clk_sdhc0_ahb,  control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK5  } }
+  - { name: SDHC0_APB_CLK,   input: clk_cpu, output: clk_sdhc0_apb,  control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK6  } }
+  - { name: SDHC1_AHB_CLK,   input: clk_cpu, output: clk_sdhc1_ahb,  control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK7  } }
+  - { name: SDHC1_APB_CLK,   input: clk_cpu, output: clk_sdhc1_apb,  control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK8  } }
+  - { name: HUSB0_AHB_CLK,   input: clk_cpu, output: clk_husb0_ahb,  control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK9  } }
+  - { name: HUSB1_AHB_CLK,   input: clk_cpu, output: clk_husb1_ahb,  control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK10 } }
+  - { name: EBI_AHB_CLK,     input: clk_cpu, output: clk_ebi_ahb,    control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK11 } }
+  - { name: EBI_APB_CLK,     input: clk_cpu, output: clk_ebi_apb,    control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK12 } }
+  - { name: HSM_APB_CLK,     input: clk_cpu, output: clk_hsm_apb,    control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK13 } }
+  - { name: MLB_AHB_CLK,     input: clk_cpu, output: clk_mlb_ahb,    control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK14 } }
+  - { name: MLB_APB_CLK,     input: clk_cpu, output: clk_mlb_apb,    control: { instance: MCLK, reg: 'CLKMSK[2]', field: MSK15 } }

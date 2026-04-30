@@ -107,6 +107,52 @@ the systematic pattern is "any array whose RM offset formula contains
 `(n-1)*incr` or `[n=1..N]` is currently 0-indexed in the model."
 
 
+## MCLK CLKMSK: dim over-declared, MASK field not bit-decomposed
+
+References: DS60001749G §21.6.5–.7 (CLKMSK0/1/2).
+
+Two minor observations on the CA80/CA90 `MCLK.CLKMSK[%s]` array; both
+are noted for completeness but neither requires a transform.
+
+- The SVD declares `CLKMSK` with `<dim>9</dim>` at offset `0x3C`, but
+  only `CLKMSK0/1/2` (offsets 0x3C/0x40/0x44) are documented in the RM.
+  The next six register slots (0x48..0x5C) are unused address space;
+  the next documented register (`ODOFF`) resumes at 0x60.  This is most
+  likely a deliberate forward-compatibility allocation by Microchip —
+  the CA80/CA90 only populates the first three CLKMSK words but the IP
+  reserves 9× 32-bit slots for future expansion as more peripherals are
+  added.  Harmless.
+- Each CLKMSK register is emitted with a single 32-bit `MASK` field,
+  even though the RM names individual mask bits `MSK0..MSK31`.  The
+  clock-tree model in
+  [PIC32CZ_Gen2_clocks.yaml](../../models/Microchip/PIC32CZ_Gen2_clocks.yaml)
+  references the per-bit names (`MSK0`, `MSK1`, …) anyway since the
+  clock-tree validator does not cross-check field names against the
+  peripheral model; eventual C++ generation would benefit from a
+  `patchFields` transform that splits each CLKMSK into 32 single-bit
+  fields, but that's a presentation tweak rather than a correctness
+  fix.
+
+
+## PIC32CZ-CA80/CA90 RM: I2S0 mislabeled as "I2S2" in CLKMSK1
+
+Reference: DS60001749G p.319 (CLKMSK1 mask-bit table).
+
+The CLKMSK1 bit-22 mask-bit row in the CA80/CA90 RM is labeled
+*"I2S2"*, but the chip has only two I2S instances — `I2S0` and `I2S1` —
+per the Chapter 47 (Inter-IC Sound Controller) pinout table on page 41
+and the GCLK PCHCTRL channel mapping on page 288 (which lists
+`GCLK_I2S0` at index 44 and `GCLK_I2S1` at index 45).  The
+"I2S2" label is consistent with neither, so it is taken to be a typo
+for `I2S0`.  Bit 23 in the same register is correctly labeled
+`I2S1`, which is consistent with the bit-22 / bit-23 pair gating the
+two-instance I2S block.
+
+The clock-tree model assumes bit 22 is `clk_i2s0_apb`.  No SVD-side
+fix is required; flagged here purely so a future reader who consults
+the RM doesn't mis-route the bit to a non-existent third I2S.
+
+
 ## PIC32CZ-CA80/CA90 RM: missing SAT registers (RM erratum)
 
 Reference: PIC32CZ-CA80/CA9x Family Data Sheet DS60001749G
