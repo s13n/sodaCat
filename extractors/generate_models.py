@@ -512,7 +512,8 @@ def _patch_registers(registers, reg_patches):
             if existing:
                 if 'newName' in patch:
                     existing['name'] = patch['newName']
-                    existing['displayName'] = patch['newName']
+                    if 'displayName' in existing:
+                        existing['displayName'] = patch['newName']
                 for k, v in props.items():
                     if v is None:
                         existing.pop(k, None)

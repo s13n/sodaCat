@@ -67,6 +67,17 @@ shared_blocks:
   GMAC:
     from: ATSAMV71Q21B.GMAC
     description: Gigabit Ethernet MAC
+    # SAMV71 RM (DS60001527) numbers IERPQ/IDRPQ/IMRPQ as registers 1..5
+    # ([n=1..5] in the offset formula); the SVD only declares <dim>5</dim>
+    # without a <dimIndex>, so the array defaults to 0..4.  Restore the RM
+    # numbering.  The other priority-queue arrays (ISRPQ, TBQBAPQ, RBQBAPQ,
+    # RBSRPQ, ST1RPQ, ST2RPQ, ST2ER) are already RM-confirmed 0-based.
+    transforms:
+      - type: patchRegisters
+        registers:
+          - {name: 'IERPQ[%s]', newName: 'IERPQ%s', dimIndex: '1,2,3,4,5'}
+          - {name: 'IDRPQ[%s]', newName: 'IDRPQ%s', dimIndex: '1,2,3,4,5'}
+          - {name: 'IMRPQ[%s]', newName: 'IMRPQ%s', dimIndex: '1,2,3,4,5'}
 
   GPBR:
     from: ATSAMV71Q21B.GPBR
@@ -232,6 +243,38 @@ shared_blocks:
   ETH:
     from: PIC32CZ8110CA80208.ETH
     description: Ethernet MAC (Synopsys EQOS)
+    # PIC32CZ-CA80 RM (DS60001749) numbers SAB/SAT/TIDM as 1..4 and the
+    # priority-queue arrays (ISRQ, TBPQB, RBPQB, RBQSZ, IERQ, IDRQ, IMRQ)
+    # as 1..5 in the offset formula `(n-1)*incr`.  The SVD declares the
+    # full register window (e.g. ISRQ dim=15) without <dimIndex>, so the
+    # array defaults to 0-based.  Shift the dimIndex base to 1; the upper
+    # slots (RM-undocumented but physically present in the GEM IP) keep
+    # the same 1-based shift for consistency.  IERQU/IDRQU/IMRQU are
+    # not separately documented in the RM, but pair with IERQ/IDRQ/IMRQ
+    # as the "upper" half of the same per-queue interrupt registers, so
+    # they get the same 1-based numbering for consistency.
+    transforms:
+      - type: patchRegisters
+        registers:
+          - {name: 'SA[%s]',     newName: 'SA%s',    dimIndex: '1,2,3,4'}
+          - {name: 'STDM[%s]',   newName: 'STDM%s',  dimIndex: '1,2,3,4'}
+          - {name: 'ISRQ[%s]',   newName: 'ISRQ%s',  dimIndex: '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15'}
+          - {name: 'TBPQB[%s]',  newName: 'TBPQB%s', dimIndex: '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15'}
+          - {name: 'RBPQB[%s]',  newName: 'RBPQB%s', dimIndex: '1,2,3,4,5,6,7'}
+          - {name: 'RBQSZ[%s]',  newName: 'RBQSZ%s', dimIndex: '1,2,3,4,5,6,7'}
+          - {name: 'IERQ[%s]',   newName: 'IERQ%s',  dimIndex: '1,2,3,4,5,6,7'}
+          - {name: 'IDRQ[%s]',   newName: 'IDRQ%s',  dimIndex: '1,2,3,4,5,6,7'}
+          - {name: 'IMRQ[%s]',   newName: 'IMRQ%s',  dimIndex: '1,2,3,4,5,6,7'}
+          - {name: 'IERQU[%s]',  newName: 'IERQU%s', dimIndex: '1,2,3,4,5,6,7,8'}
+          - {name: 'IDRQU[%s]',  newName: 'IDRQU%s', dimIndex: '1,2,3,4,5,6,7,8'}
+          - {name: 'IMRQU[%s]',  newName: 'IMRQU%s', dimIndex: '1,2,3,4,5,6,7,8'}
+      # SCRT2CMP is a cluster array (already correctly clustered in the SVD)
+      # whose two inner members are named SCRT2CMP0 / SCRT2CMP1 — redundant
+      # with the cluster name.  Rename to W0 / W1 so accesses read as
+      # SCRT2CMP[n].W0 / .W1, matching the RM's "Compare Word 0/1" wording.
+      # The regex anchors prevent the top-level cluster name (`SCRT2CMP[%s]`)
+      # from matching.
+      - {type: renameRegisters, pattern: '^SCRT2CMP(\d)$', replacement: 'W\1'}
 
   EVSYS:
     from: PIC32CZ8110CA80208.EVSYS
