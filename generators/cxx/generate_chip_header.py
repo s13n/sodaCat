@@ -20,10 +20,62 @@ class ChipFormatter:
 /** Integration parameters for $name */
 EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
 """))
-    
-    def createParameters(self, instance):
+        # Block-name → (param_names, interrupt_names) cache, populated lazily.
+        # The block model is the authoritative source for designated-initializer
+        # order; chip-side lists are sorted to match before emission.
+        self._block_orders = {}
+
+    @staticmethod
+    def _resolve_block_path(chip_dir, model_relpath):
+        """Walk up from chip_dir until <parent>/<model_relpath>.yaml exists."""
+        target = Path(model_relpath + '.yaml')
+        p = Path(chip_dir).resolve()
+        while True:
+            candidate = p / target
+            if candidate.is_file():
+                return candidate
+            if p.parent == p:
+                return None
+            p = p.parent
+
+    def _loadBlockOrder(self, chip_dir, models_map, model_name):
+        """Return (param_names, interrupt_names) declared by the block model.
+
+        Returns (None, None) when the block YAML can't be located, in which
+        case callers preserve chip-side order — fallback for ad-hoc runs
+        outside the standard models tree.  Under CMake the file is always
+        present (ensure_model() downloads it ahead of header generation).
+        """
+        if model_name in self._block_orders:
+            return self._block_orders[model_name]
+        relpath = models_map.get(model_name, model_name)
+        block_path = self._resolve_block_path(chip_dir, relpath)
+        if block_path is None:
+            result = (None, None)
+        else:
+            block = YAML(typ='safe').load(block_path)
+            result = (
+                [p['name'] for p in block.get('params', [])],
+                [i['name'] for i in block.get('interrupts', [])],
+            )
+        self._block_orders[model_name] = result
+        return result
+
+    def createParameters(self, instance_name, instance, param_order):
+        chip_params = instance.get('parameters', [])
+        by_name = {p['name']: p for p in chip_params}
+        if param_order is None:
+            ordered = chip_params
+        else:
+            unknown = set(by_name) - set(param_order)
+            if unknown:
+                raise ValueError(
+                    f"chip instance '{instance_name}' (model '{instance['model']}'): "
+                    f"parameter(s) {sorted(unknown)!r} not declared by block model"
+                )
+            ordered = [by_name[n] for n in param_order if n in by_name]
         params = ''
-        for i in instance.get('parameters', []):
+        for i in ordered:
             v = i['value']
             if isinstance(v, bool):
                 params += f"\n\t.{i['name']} = {'true' if v else 'false'},"
@@ -32,30 +84,42 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             else:
                 params += self.instanceParamTemplate.substitute(i)
         return params
-        
-    def createInterrupts(self, instance):
-        ints = ''
-        seen = set()
+
+    def createInterrupts(self, instance_name, instance, int_order):
+        by_name = {}
         for i in instance.get('interrupts', []):
-            if i['name'] not in seen:
-                seen.add(i['name'])
-                ints += self.instanceIntTemplate.substitute(i)
-        return ints
-        
-    def createIntegration(self, instances, namespace, namespaces):
+            by_name.setdefault(i['name'], i)  # dedup, first occurrence wins
+        if int_order is None:
+            ordered = list(by_name.values())
+        else:
+            unknown = set(by_name) - set(int_order)
+            if unknown:
+                raise ValueError(
+                    f"chip instance '{instance_name}' (model '{instance['model']}'): "
+                    f"interrupt(s) {sorted(unknown)!r} not declared by block model"
+                )
+            ordered = [by_name[n] for n in int_order if n in by_name]
+        return ''.join(self.instanceIntTemplate.substitute(i) for i in ordered)
+
+    def createIntegration(self, chip, chip_path, namespace, namespaces):
         """ create list of integration structs.
 
         Returns (decl, includes, model_to_ns) where model_to_ns maps each
         referenced peripheral model name to its C++ namespace — needed both
         for namespace-qualified `#include`s and for module import names.
         """
+        instances = chip['instances']
+        models_map = chip.get('models', {})
+        chip_dir = Path(chip_path).parent
         model_to_ns = {}
         decl = ''
         for k, i in instances.items():
-            ns = namespaces.get(i['model'], namespace)
-            model_to_ns[i['model']] = ns
-            params = self.createParameters(i)
-            ints = self.createInterrupts(i)
+            m = i['model']
+            ns = namespaces.get(m, namespace)
+            model_to_ns[m] = ns
+            param_order, int_order = self._loadBlockOrder(chip_dir, models_map, m)
+            params = self.createParameters(k, i, param_order)
+            ints = self.createInterrupts(k, i, int_order)
             init = '\n\t.registers = %#Xu\n' % i['baseAddress']
             decl += self.instanceDeclTemplate.substitute(i, name=k, ns=ns, params=params, ints=ints, init=init)
         includes = [
@@ -64,7 +128,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         ]
         return decl, ''.join(includes), model_to_ns
 
-    def createHeader(self, chip, namespaces, prefix, postfix):
+    def createHeader(self, chip, chip_path, namespaces, prefix, postfix):
         namespace = namespaces
         inverse = {}
         if isinstance(namespaces, dict):
@@ -73,7 +137,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                 for v in vals:
                     if inverse.setdefault(v, k) != k:
                         raise ValueError(f"Duplicate value {v!r}")
-        decl, incl, model_to_ns = self.createIntegration(chip['instances'], namespace, inverse)
+        decl, incl, model_to_ns = self.createIntegration(chip, chip_path, namespace, inverse)
         imports = [f'{ns}.{m}' for m, ns in model_to_ns.items()]
         interrupts = chip.get('interrupts', {})
         interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
@@ -136,7 +200,7 @@ def generate_header(model_file, namespace, model_name, out_suffix, module_name=N
                        if isinstance(namespace, str)
                        and re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
                        else stem)
-    header, imports = fmt.createHeader(chip, namespaces, prefixTemplate, postfixTemplate)
+    header, imports = fmt.createHeader(chip, model_file, namespaces, prefixTemplate, postfixTemplate)
     filename = model_name + out_suffix
     print(header, file=open(filename, mode='w'))
     cppm = Path(filename).with_suffix('.cppm')
