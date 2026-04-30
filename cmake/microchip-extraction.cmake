@@ -11,7 +11,7 @@
 #   audit-microchip<id>-models   - Detect transforms that became no-ops
 #
 # User-overridable cache variables:
-#   MICROCHIP_SVD_DIR            - Path to directory containing Microchip SVD files
+#   MICROCHIP<CODE>_SVD_ZIP      - Path to the DFP zip archive (per family)
 #   MICROCHIP_GENERATOR          - Path to the unified Python generator script
 #   MICROCHIP_MODELS_DIR         - Output directory (default: models/Microchip)
 
@@ -29,23 +29,24 @@ set(_MICROCHIP_FAMILY_IDS "" CACHE INTERNAL "")
 #     ID <id>                    # Lowercase ID for target names (e.g. "samv71")
 #     CODE <code>                # Family code under models/Microchip/ (e.g. "SAMV71")
 #     DISPLAY <name>             # Display name for messages (e.g. "SAM V71")
+#     ZIP <filename>             # DFP zip filename in svd/Microchip/ directory
 # )
 function(microchip_add_family)
-    cmake_parse_arguments(FAM "" "ID;CODE;DISPLAY" "" ${ARGN})
+    cmake_parse_arguments(FAM "" "ID;CODE;DISPLAY;ZIP" "" ${ARGN})
 
-    foreach(_arg ID CODE DISPLAY)
+    foreach(_arg ID CODE DISPLAY ZIP)
         if(NOT DEFINED FAM_${_arg})
             message(FATAL_ERROR "microchip_add_family: ${_arg} is required")
         endif()
     endforeach()
 
-    if(NOT DEFINED MICROCHIP_SVD_DIR)
-        message(FATAL_ERROR "microchip_add_family: MICROCHIP_SVD_DIR must be set before registering families")
-    endif()
-
     # Store metadata (CACHE INTERNAL for cross-scope access)
     set(_MICROCHIP_${FAM_ID}_CODE "${FAM_CODE}" CACHE INTERNAL "")
     set(_MICROCHIP_${FAM_ID}_DISPLAY "${FAM_DISPLAY}" CACHE INTERNAL "")
+
+    # User-overridable DFP zip path
+    set(MICROCHIP${FAM_CODE}_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/Microchip/${FAM_ZIP}" CACHE PATH
+        "Path to ${FAM_DISPLAY} DFP zip archive")
 
     # Family config file (consolidated YAML with all family definitions)
     set(_family_config "${CMAKE_SOURCE_DIR}/svd/Microchip/Microchip.yaml")
@@ -57,8 +58,9 @@ function(microchip_add_family)
     add_custom_command(
         OUTPUT ${_marker}
         COMMAND ${Python3_EXECUTABLE} ${MICROCHIP_GENERATOR}
-                microchip ${FAM_CODE} ${MICROCHIP_SVD_DIR} ${MICROCHIP_MODELS_DIR}
+                microchip ${FAM_CODE} ${MICROCHIP${FAM_CODE}_SVD_ZIP} ${MICROCHIP_MODELS_DIR}
         COMMAND ${CMAKE_COMMAND} -E touch ${_marker}
+        MAIN_DEPENDENCY ${MICROCHIP${FAM_CODE}_SVD_ZIP}
         DEPENDS ${MICROCHIP_GENERATOR} ${_family_config}
         COMMENT "Extracting ${FAM_DISPLAY} family models from SVD files..."
         VERBATIM
@@ -76,7 +78,7 @@ function(microchip_add_family)
     # Audit target: check transforms for no-ops (SVD bugs potentially fixed)
     add_custom_target(audit-${_target}
         COMMAND ${Python3_EXECUTABLE} ${MICROCHIP_GENERATOR}
-                microchip ${FAM_CODE} ${MICROCHIP_SVD_DIR} ${MICROCHIP_MODELS_DIR}
+                microchip ${FAM_CODE} ${MICROCHIP${FAM_CODE}_SVD_ZIP} ${MICROCHIP_MODELS_DIR}
                 --audit
         COMMENT "Auditing ${FAM_DISPLAY} transforms for no-ops..."
         VERBATIM

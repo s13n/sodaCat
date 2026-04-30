@@ -1,10 +1,13 @@
 """Microchip ATSAM vendor extension for the unified model generator.
 
-Provides SVD access via in-tree files in svd/Microchip/.  Requires tools/
-on sys.path (set up by generate_models.py).
+Provides SVD access via Microchip CMSIS Device Family Pack archives
+(`.atpack` files renamed to `.zip`) stored in svd/Microchip/.  Requires
+tools/ on sys.path (set up by generate_models.py).
 """
 
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 import svd
@@ -20,7 +23,7 @@ use_config_interrupt_map = True
 def add_cli_args(parser):
     """Add Microchip-specific CLI arguments."""
     parser.add_argument('svd_source', type=Path,
-                        help='Path to directory containing Microchip SVD files')
+                        help='Path to a Microchip DFP zip archive (.atpack renamed to .zip)')
 
 
 def validate_args(args):
@@ -32,21 +35,28 @@ def validate_args(args):
 
 def config_path(args):
     """Return path to the Microchip consolidated YAML config."""
-    return Path(__file__).parent.parent.parent / 'svd' / 'Microchip' / 'Microchip.yaml'
+    return args.svd_source.parent / 'Microchip.yaml'
 
 
 def open_svd(args, chip_name):
-    """Locate and parse an SVD file from the Microchip directory.
+    """Extract and parse an SVD file from the DFP zip archive.
 
-    Naming convention: chip_name as-is (e.g. ATSAMV71Q21B -> ATSAMV71Q21B.svd).
+    The Microchip pack layout nests SVDs under various subdirectories
+    (e.g. samv71b/svd/, CA80/svd/, svd/), but extractFromZip matches by
+    suffix so the chip name alone is sufficient.
 
     Returns (xml_root, extra_metadata_dict) or None if not found.
     """
-    svd_dir = Path(args.svd_source)
-    svd_path = svd_dir / f"{chip_name}.svd"
-    if not svd_path.exists():
+    svd_content = svd.extractFromZip(args.svd_source, chip_name)
+    if svd_content is None:
         return None
-    root = svd.parse(str(svd_path))
+    with tempfile.NamedTemporaryFile(mode='wb', suffix='.svd', delete=False) as tf:
+        tf.write(svd_content)
+        temp_path = tf.name
+    try:
+        root = svd.parse(temp_path)
+    finally:
+        os.unlink(temp_path)
     return root, {}
 
 
