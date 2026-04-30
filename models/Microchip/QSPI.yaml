@@ -1,0 +1,476 @@
+name: QSPI
+version: 11171J
+description: Quad serial peripheral interface
+source: ATSAMV71Q21B SVD Rev 0
+registers:
+  - name: CR
+    description: Control Register
+    addressOffset: 0
+    size: 32
+    access: write-only
+    fields:
+      - name: QSPIEN
+        description: QSPI Enable
+        bitOffset: 0
+        bitWidth: 1
+      - name: QSPIDIS
+        description: QSPI Disable
+        bitOffset: 1
+        bitWidth: 1
+      - name: SWRST
+        description: QSPI Software Reset
+        bitOffset: 7
+        bitWidth: 1
+      - name: LASTXFER
+        description: Last Transfer
+        bitOffset: 24
+        bitWidth: 1
+  - name: MR
+    description: Mode Register
+    addressOffset: 4
+    size: 32
+    fields:
+      - name: SMM
+        description: Serial Memory Mode
+        bitOffset: 0
+        bitWidth: 1
+        enumeratedValues:
+          - name: SPI
+            description: The QSPI is in SPI mode.
+            value: 0
+          - name: MEMORY
+            description: The QSPI is in Serial Memory mode.
+            value: 1
+      - name: LLB
+        description: Local Loopback Enable
+        bitOffset: 1
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLED
+            description: Local loopback path disabled.
+            value: 0
+          - name: ENABLED
+            description: Local loopback path enabled.
+            value: 1
+      - name: WDRBT
+        description: Wait Data Read Before Transfer
+        bitOffset: 2
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLED
+            description: No effect. In SPI mode, a transfer can be initiated whatever the state of the QSPI_RDR is.
+            value: 0
+          - name: ENABLED
+            description: In SPI mode, a transfer can start only if the QSPI_RDR is empty, i.e., does not contain any unread data. This mode prevents overrun error in reception.
+            value: 1
+      - name: CSMODE
+        description: Chip Select Mode
+        bitOffset: 4
+        bitWidth: 2
+        enumeratedValues:
+          - name: NOT_RELOADED
+            description: The chip select is deasserted if QSPI_TDR.TD has not been reloaded before the end of the current transfer.
+            value: 0
+          - name: LASTXFER
+            description: The chip select is deasserted when the bit LASTXFER is written at 1 and the character written in QSPI_TDR.TD has been transferred.
+            value: 1
+          - name: SYSTEMATICALLY
+            description: The chip select is deasserted systematically after each transfer.
+            value: 2
+      - name: NBBITS
+        description: Number Of Bits Per Transfer
+        bitOffset: 8
+        bitWidth: 4
+        enumeratedValues:
+          - name: _8_BIT
+            description: 8 bits for transfer
+            value: 0
+          - name: _16_BIT
+            description: 16 bits for transfer
+            value: 8
+      - name: DLYBCT
+        description: Delay Between Consecutive Transfers
+        bitOffset: 16
+        bitWidth: 8
+      - name: DLYCS
+        description: Minimum Inactive QCS Delay
+        bitOffset: 24
+        bitWidth: 8
+  - name: RDR
+    description: Receive Data Register
+    addressOffset: 8
+    size: 32
+    access: read-only
+    fields:
+      - name: RD
+        description: Receive Data
+        bitOffset: 0
+        bitWidth: 16
+  - name: TDR
+    description: Transmit Data Register
+    addressOffset: 12
+    size: 32
+    access: write-only
+    fields:
+      - name: TD
+        description: Transmit Data
+        bitOffset: 0
+        bitWidth: 16
+  - name: SR
+    description: Status Register
+    addressOffset: 16
+    size: 32
+    access: read-only
+    fields:
+      - name: RDRF
+        description: Receive Data Register Full (cleared by reading SPI_RDR)
+        bitOffset: 0
+        bitWidth: 1
+      - name: TDRE
+        description: Transmit Data Register Empty (cleared by writing SPI_TDR)
+        bitOffset: 1
+        bitWidth: 1
+      - name: TXEMPTY
+        description: Transmission Registers Empty (cleared by writing SPI_TDR)
+        bitOffset: 2
+        bitWidth: 1
+      - name: OVRES
+        description: Overrun Error Status (cleared on read)
+        bitOffset: 3
+        bitWidth: 1
+      - name: CSR
+        description: Chip Select Rise (cleared on read)
+        bitOffset: 8
+        bitWidth: 1
+      - name: CSS
+        description: Chip Select Status
+        bitOffset: 9
+        bitWidth: 1
+      - name: INSTRE
+        description: Instruction End Status (cleared on read)
+        bitOffset: 10
+        bitWidth: 1
+      - name: QSPIENS
+        description: QSPI Enable Status
+        bitOffset: 24
+        bitWidth: 1
+  - name: IER
+    description: Interrupt Enable Register
+    addressOffset: 20
+    size: 32
+    access: write-only
+    fields:
+      - name: RDRF
+        description: Receive Data Register Full Interrupt Enable
+        bitOffset: 0
+        bitWidth: 1
+      - name: TDRE
+        description: Transmit Data Register Empty Interrupt Enable
+        bitOffset: 1
+        bitWidth: 1
+      - name: TXEMPTY
+        description: Transmission Registers Empty Enable
+        bitOffset: 2
+        bitWidth: 1
+      - name: OVRES
+        description: Overrun Error Interrupt Enable
+        bitOffset: 3
+        bitWidth: 1
+      - name: CSR
+        description: Chip Select Rise Interrupt Enable
+        bitOffset: 8
+        bitWidth: 1
+      - name: CSS
+        description: Chip Select Status Interrupt Enable
+        bitOffset: 9
+        bitWidth: 1
+      - name: INSTRE
+        description: Instruction End Interrupt Enable
+        bitOffset: 10
+        bitWidth: 1
+  - name: IDR
+    description: Interrupt Disable Register
+    addressOffset: 24
+    size: 32
+    access: write-only
+    fields:
+      - name: RDRF
+        description: Receive Data Register Full Interrupt Disable
+        bitOffset: 0
+        bitWidth: 1
+      - name: TDRE
+        description: Transmit Data Register Empty Interrupt Disable
+        bitOffset: 1
+        bitWidth: 1
+      - name: TXEMPTY
+        description: Transmission Registers Empty Disable
+        bitOffset: 2
+        bitWidth: 1
+      - name: OVRES
+        description: Overrun Error Interrupt Disable
+        bitOffset: 3
+        bitWidth: 1
+      - name: CSR
+        description: Chip Select Rise Interrupt Disable
+        bitOffset: 8
+        bitWidth: 1
+      - name: CSS
+        description: Chip Select Status Interrupt Disable
+        bitOffset: 9
+        bitWidth: 1
+      - name: INSTRE
+        description: Instruction End Interrupt Disable
+        bitOffset: 10
+        bitWidth: 1
+  - name: IMR
+    description: Interrupt Mask Register
+    addressOffset: 28
+    size: 32
+    access: read-only
+    fields:
+      - name: RDRF
+        description: Receive Data Register Full Interrupt Mask
+        bitOffset: 0
+        bitWidth: 1
+      - name: TDRE
+        description: Transmit Data Register Empty Interrupt Mask
+        bitOffset: 1
+        bitWidth: 1
+      - name: TXEMPTY
+        description: Transmission Registers Empty Mask
+        bitOffset: 2
+        bitWidth: 1
+      - name: OVRES
+        description: Overrun Error Interrupt Mask
+        bitOffset: 3
+        bitWidth: 1
+      - name: CSR
+        description: Chip Select Rise Interrupt Mask
+        bitOffset: 8
+        bitWidth: 1
+      - name: CSS
+        description: Chip Select Status Interrupt Mask
+        bitOffset: 9
+        bitWidth: 1
+      - name: INSTRE
+        description: Instruction End Interrupt Mask
+        bitOffset: 10
+        bitWidth: 1
+  - name: SCR
+    description: Serial Clock Register
+    addressOffset: 32
+    size: 32
+    fields:
+      - name: CPOL
+        description: Clock Polarity
+        bitOffset: 0
+        bitWidth: 1
+      - name: CPHA
+        description: Clock Phase
+        bitOffset: 1
+        bitWidth: 1
+      - name: SCBR
+        description: Serial Clock Baud Rate
+        bitOffset: 8
+        bitWidth: 8
+      - name: DLYBS
+        description: Delay Before QSCK
+        bitOffset: 16
+        bitWidth: 8
+  - name: IAR
+    description: Instruction Address Register
+    addressOffset: 48
+    size: 32
+    fields:
+      - name: ADDR
+        description: Address
+        bitOffset: 0
+        bitWidth: 32
+  - name: ICR
+    description: Instruction Code Register
+    addressOffset: 52
+    size: 32
+    fields:
+      - name: INST
+        description: Instruction Code
+        bitOffset: 0
+        bitWidth: 8
+      - name: OPT
+        description: Option Code
+        bitOffset: 16
+        bitWidth: 8
+  - name: IFR
+    description: Instruction Frame Register
+    addressOffset: 56
+    size: 32
+    fields:
+      - name: WIDTH
+        description: Width of Instruction Code, Address, Option Code and Data
+        bitOffset: 0
+        bitWidth: 3
+        enumeratedValues:
+          - name: SINGLE_BIT_SPI
+            description: 'Instruction: Single-bit SPI / Address-Option: Single-bit SPI / Data: Single-bit SPI'
+            value: 0
+          - name: DUAL_OUTPUT
+            description: 'Instruction: Single-bit SPI / Address-Option: Single-bit SPI / Data: Dual SPI'
+            value: 1
+          - name: QUAD_OUTPUT
+            description: 'Instruction: Single-bit SPI / Address-Option: Single-bit SPI / Data: Quad SPI'
+            value: 2
+          - name: DUAL_IO
+            description: 'Instruction: Single-bit SPI / Address-Option: Dual SPI / Data: Dual SPI'
+            value: 3
+          - name: QUAD_IO
+            description: 'Instruction: Single-bit SPI / Address-Option: Quad SPI / Data: Quad SPI'
+            value: 4
+          - name: DUAL_CMD
+            description: 'Instruction: Dual SPI / Address-Option: Dual SPI / Data: Dual SPI'
+            value: 5
+          - name: QUAD_CMD
+            description: 'Instruction: Quad SPI / Address-Option: Quad SPI / Data: Quad SPI'
+            value: 6
+      - name: INSTEN
+        description: Instruction Enable
+        bitOffset: 4
+        bitWidth: 1
+      - name: ADDREN
+        description: Address Enable
+        bitOffset: 5
+        bitWidth: 1
+      - name: OPTEN
+        description: Option Enable
+        bitOffset: 6
+        bitWidth: 1
+      - name: DATAEN
+        description: Data Enable
+        bitOffset: 7
+        bitWidth: 1
+      - name: OPTL
+        description: Option Code Length
+        bitOffset: 8
+        bitWidth: 2
+        enumeratedValues:
+          - name: OPTION_1BIT
+            description: The option code is 1 bit long.
+            value: 0
+          - name: OPTION_2BIT
+            description: The option code is 2 bits long.
+            value: 1
+          - name: OPTION_4BIT
+            description: The option code is 4 bits long.
+            value: 2
+          - name: OPTION_8BIT
+            description: The option code is 8 bits long.
+            value: 3
+      - name: ADDRL
+        description: Address Length
+        bitOffset: 10
+        bitWidth: 1
+        enumeratedValues:
+          - name: _24_BIT
+            description: The address is 24 bits long.
+            value: 0
+          - name: _32_BIT
+            description: The address is 32 bits long.
+            value: 1
+      - name: TFRTYP
+        description: Data Transfer Type
+        bitOffset: 12
+        bitWidth: 2
+        enumeratedValues:
+          - name: TRSFR_READ
+            description: Read transfer from the serial memory.Scrambling is not performed.Read at random location (fetch) in the serial Flash memory is not possible.
+            value: 0
+          - name: TRSFR_READ_MEMORY
+            description: Read data transfer from the serial memory.If enabled, scrambling is performed.Read at random location (fetch) in the serial Flash memory is possible.
+            value: 1
+          - name: TRSFR_WRITE
+            description: Write transfer into the serial memory.Scrambling is not performed.
+            value: 2
+          - name: TRSFR_WRITE_MEMORY
+            description: Write data transfer into the serial memory.If enabled, scrambling is performed.
+            value: 3
+      - name: CRM
+        description: Continuous Read Mode
+        bitOffset: 14
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLED
+            description: The Continuous Read mode is disabled.
+            value: 0
+          - name: ENABLED
+            description: The Continuous Read mode is enabled.
+            value: 1
+      - name: NBDUM
+        description: Number Of Dummy Cycles
+        bitOffset: 16
+        bitWidth: 5
+  - name: SMR
+    description: Scrambling Mode Register
+    addressOffset: 64
+    size: 32
+    fields:
+      - name: SCREN
+        description: Scrambling/Unscrambling Enable
+        bitOffset: 0
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLED
+            description: The scrambling/unscrambling is disabled.
+            value: 0
+          - name: ENABLED
+            description: The scrambling/unscrambling is enabled.
+            value: 1
+      - name: RVDIS
+        description: Scrambling/Unscrambling Random Value Disable
+        bitOffset: 1
+        bitWidth: 1
+  - name: SKR
+    description: Scrambling Key Register
+    addressOffset: 68
+    size: 32
+    access: write-only
+    fields:
+      - name: USRK
+        description: User Scrambling Key
+        bitOffset: 0
+        bitWidth: 32
+  - name: WPMR
+    description: Write Protection Mode Register
+    addressOffset: 228
+    size: 32
+    fields:
+      - name: WPEN
+        description: Write Protection Enable
+        bitOffset: 0
+        bitWidth: 1
+      - name: WPKEY
+        description: Write Protection Key
+        bitOffset: 8
+        bitWidth: 24
+        enumeratedValues:
+          - name: PASSWD
+            description: Writing any other value in this field aborts the write operation of the WPEN bit. Always reads as 0.
+            value: 5329744
+  - name: WPSR
+    description: Write Protection Status Register
+    addressOffset: 232
+    size: 32
+    access: read-only
+    fields:
+      - name: WPVS
+        description: Write Protection Violation Status
+        bitOffset: 0
+        bitWidth: 1
+      - name: WPVSRC
+        description: Write Protection Violation Source
+        bitOffset: 8
+        bitWidth: 8
+addressBlocks:
+  - offset: 0
+    size: 236
+    usage: registers
+interrupts:
+  - name: INT
+    description: Quad I/O Serial Peripheral Interface

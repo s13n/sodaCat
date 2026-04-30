@@ -5,9 +5,23 @@
 svd:
   source: https://packs.download.microchip.com/
 
+# ============================================================================
+# Cross-family shared blocks
+#
+# 1. ARM Cortex-M core peripherals — hand-maintained at models/ARM/.  No `from:`
+#    (no SVD extraction); referenced via `uses:` from family blocks.
+#
+# 2. SAM-Gen1 IP — register-byte-identical across the four SAM families
+#    (SAME70, SAMS70, SAMV70, SAMV71) and the PIC32CZ-CA70/MC70 generation,
+#    which Microchip built on the same silicon design.  These blocks are
+#    extracted from SAMV71 (the most complete SAM-Gen1 SVD) and reused via
+#    `uses:` in the other Gen1 families.  A new `models/Microchip/<Block>.yaml`
+#    is produced per shared block.
+# ============================================================================
 shared_blocks:
-  # ARM Cortex-M core peripherals — hand-maintained at models/ARM/.  No `from:`
-  # (no SVD extraction); referenced via `uses:` from family blocks.
+  # --------------------------------------------------------------------------
+  # ARM Cortex-M core (hand-maintained)
+  # --------------------------------------------------------------------------
   NVIC:
     designer: ARM
     description: Nested Vectored Interrupt Controller
@@ -23,47 +37,217 @@ shared_blocks:
     designer: ARM
     description: Floating Point Unit
 
+  # --------------------------------------------------------------------------
+  # SAM-Gen1 peripherals (canonical source: ATSAMV71Q21B)
+  # --------------------------------------------------------------------------
+  ACC:
+    from: ATSAMV71Q21B.ACC
+    description: Analog comparator controller
+
+  AES:
+    from: ATSAMV71Q21B.AES
+    description: Advanced Encryption Standard hardware accelerator
+
+  AFEC:
+    from: ATSAMV71Q21B.AFEC0
+    description: Analog front-end controller (12-bit ADC)
+
+  CHIPID:
+    from: ATSAMV71Q21B.CHIPID
+    description: Chip identification
+
+  DACC:
+    from: ATSAMV71Q21B.DACC
+    description: Digital-to-analog converter controller
+
+  EFC:
+    from: ATSAMV71Q21B.EFC
+    description: Embedded flash controller
+
+  GMAC:
+    from: ATSAMV71Q21B.GMAC
+    description: Gigabit Ethernet MAC
+
+  GPBR:
+    from: ATSAMV71Q21B.GPBR
+    description: General-purpose backup registers
+
+  HSMCI:
+    from: ATSAMV71Q21B.HSMCI
+    description: High-speed multimedia card interface
+
+  I2SC:
+    from: ATSAMV71Q21B.I2SC0
+    description: Inter-IC sound controller
+
+  ICM:
+    from: ATSAMV71Q21B.ICM
+    description: Integrity check monitor
+
+  ISI:
+    from: ATSAMV71Q21B.ISI
+    description: Image sensor interface
+
+  MATRIX:
+    # Bus matrix: SAM-Q21 register layout, also matches CA70 (5125-144) and
+    # MC70 (2051-100).  SAME70/SAMS70/SAMV70 each have a distinct register
+    # variant — those families declare MATRIX at family level with their
+    # own `from:` instead of `uses:` here.
+    from: ATSAMV71Q21B.MATRIX
+    description: Bus matrix
+
+  MCAN:
+    from: ATSAMV71Q21B.MCAN0
+    description: Bosch M_CAN controller (CAN-FD)
+
+  MLB:
+    from: ATSAMV71Q21B.MLB
+    description: Media Local Bus controller
+
+  PIO:
+    from: ATSAMV71Q21B.PIOA
+    description: Parallel input/output controller
+
+  PMC:
+    # Power management controller: SAM-Q21 register layout, also matches
+    # CA70 and MC70.  SAME70/SAMS70/SAMV70 each have a distinct PMC variant
+    # — those families declare PMC at family level instead of `uses:` here.
+    from: ATSAMV71Q21B.PMC
+    description: Power management controller
+
+  PWM:
+    from: ATSAMV71Q21B.PWM0
+    description: Pulse-width modulation controller
+
+  QSPI:
+    from: ATSAMV71Q21B.QSPI
+    description: Quad serial peripheral interface
+
+  RSTC:
+    from: ATSAMV71Q21B.RSTC
+    description: Reset controller
+
+  RSWDT:
+    from: ATSAMV71Q21B.RSWDT
+    description: Reinforced safety watchdog timer
+
+  RTC:
+    from: ATSAMV71Q21B.RTC
+    description: Real-time clock
+
+  RTT:
+    from: ATSAMV71Q21B.RTT
+    description: Real-time timer
+
+  SMC:
+    from: ATSAMV71Q21B.SMC
+    description: Static memory controller
+
+  SPI:
+    from: ATSAMV71Q21B.SPI0
+    description: Serial peripheral interface
+
+  SSC:
+    from: ATSAMV71Q21B.SSC
+    description: Synchronous serial controller
+
+  SUPC:
+    from: ATSAMV71Q21B.SUPC
+    description: Supply controller
+
+  TC:
+    from: ATSAMV71Q21B.TC0
+    description: Timer/counter (3 channels per instance)
+
+  TRNG:
+    from: ATSAMV71Q21B.TRNG
+    description: True random number generator
+
+  TWIHS:
+    from: ATSAMV71Q21B.TWIHS0
+    description: Two-wire high-speed interface (I²C)
+
+  UART:
+    from: ATSAMV71Q21B.UART0
+    description: Universal asynchronous receiver/transmitter
+
+  USART:
+    from: ATSAMV71Q21B.USART0
+    description: Universal synchronous/asynchronous receiver/transmitter
+
+  USBHS:
+    from: ATSAMV71Q21B.USBHS
+    description: USB high-speed device/host controller
+
+  UTMI:
+    from: ATSAMV71Q21B.UTMI
+    description: USB transceiver macrocell interface
+
+  WDT:
+    from: ATSAMV71Q21B.WDT
+    description: Watchdog timer
+
+  XDMAC:
+    from: ATSAMV71Q21B.XDMAC
+    description: Extensible DMA controller
+
+# ============================================================================
+# Family configurations
+# ============================================================================
 families:
-  SAMV71:
+  SAME70:
     svd:
-      zip: SAMV71_DFP.4.13.257.zip
-      version: "4.13.257"
-      date: "2026-01-29"
+      zip: SAME70_DFP.4.13.292.zip
+      version: "4.13.292"
+      date: "2026-01-31"
     subfamilies:
-      SAMV71:
-        chips: [ATSAMV71Q21B]
+      SAME70:
+        chips: [ATSAME70Q21B]
         ref_manual:
           name: SAM E70/S70/V70/V71 Family Data Sheet
           url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-E70-S70-V70-V71-Family-Data-Sheet-DS60001527.pdf
 
     blocks:
       # ====================================================================
-      # Analog
+      # SAM-Gen1 shared peripherals
       # ====================================================================
       ACC:
-        from: ATSAMV71Q21B.ACC
+        uses: ACC
         instances: [ACC]
         interrupts:
           ACC: INT
 
+      AES:
+        uses: AES
+        instances: [AES]
+        interrupts:
+          AES: INT
+
       AFEC:
-        from: ATSAMV71Q21B.AFEC0
+        uses: AFEC
         instances: [AFEC0, AFEC1]
         interrupts:
           AFEC0: INT
           AFEC1: INT
 
+      CHIPID:
+        uses: CHIPID
+        instances: [CHIPID]
+
       DACC:
-        from: ATSAMV71Q21B.DACC
+        uses: DACC
         instances: [DACC]
         interrupts:
           DACC: INT
 
-      # ====================================================================
-      # Communication
-      # ====================================================================
+      EFC:
+        uses: EFC
+        instances: [EFC]
+        interrupts:
+          EFC: INT
+
       GMAC:
-        from: ATSAMV71Q21B.GMAC
+        uses: GMAC
         instances: [GMAC]
         interrupts:
           GMAC: INT
@@ -73,15 +257,37 @@ families:
           GMAC_Q4: Q4
           GMAC_Q5: Q5
 
+      GPBR:
+        uses: GPBR
+        instances: [GPBR]
+
+      HSMCI:
+        uses: HSMCI
+        instances: [HSMCI]
+        interrupts:
+          HSMCI: INT
+
       I2SC:
-        from: ATSAMV71Q21B.I2SC0
+        uses: I2SC
         instances: [I2SC0, I2SC1]
         interrupts:
           I2SC0: INT
           I2SC1: INT
 
+      ICM:
+        uses: ICM
+        instances: [ICM]
+        interrupts:
+          ICM: INT
+
+      ISI:
+        uses: ISI
+        instances: [ISI]
+        interrupts:
+          ISI: INT
+
       MCAN:
-        from: ATSAMV71Q21B.MCAN0
+        uses: MCAN
         instances: [MCAN0, MCAN1]
         interrupts:
           MCAN0_INT0: INT0
@@ -89,33 +295,84 @@ families:
           MCAN1_INT0: INT0
           MCAN1_INT1: INT1
 
-      MLB:
-        from: ATSAMV71Q21B.MLB
-        instances: [MLB]
+      PIO:
+        uses: PIO
+        instances: [PIOA, PIOB, PIOC, PIOD, PIOE]
         interrupts:
-          MLB: INT
+          PIOA: INT
+          PIOB: INT
+          PIOC: INT
+          PIOD: INT
+          PIOE: INT
+
+      PWM:
+        uses: PWM
+        instances: [PWM0, PWM1]
+        interrupts:
+          PWM0: INT
+          PWM1: INT
 
       QSPI:
-        from: ATSAMV71Q21B.QSPI
+        uses: QSPI
         instances: [QSPI]
         interrupts:
           QSPI: INT
 
+      RSTC:
+        uses: RSTC
+        instances: [RSTC]
+        interrupts:
+          RSTC: INT
+
+      RSWDT:
+        uses: RSWDT
+        instances: [RSWDT]
+        interrupts:
+          RSWDT: INT
+
+      RTC:
+        uses: RTC
+        instances: [RTC]
+        interrupts:
+          RTC: INT
+
+      RTT:
+        uses: RTT
+        instances: [RTT]
+        interrupts:
+          RTT: INT
+
+      SMC:
+        uses: SMC
+        instances: [SMC]
+
       SPI:
-        from: ATSAMV71Q21B.SPI0
+        uses: SPI
         instances: [SPI0, SPI1]
         interrupts:
           SPI0: INT
           SPI1: INT
 
       SSC:
-        from: ATSAMV71Q21B.SSC
+        uses: SSC
         instances: [SSC]
         interrupts:
           SSC: INT
 
+      SUPC:
+        uses: SUPC
+        instances: [SUPC]
+        interrupts:
+          SUPC: INT
+
+      TRNG:
+        uses: TRNG
+        instances: [TRNG]
+        interrupts:
+          TRNG: INT
+
       TWIHS:
-        from: ATSAMV71Q21B.TWIHS0
+        uses: TWIHS
         instances: [TWIHS0, TWIHS1, TWIHS2]
         interrupts:
           TWIHS0: INT
@@ -123,7 +380,7 @@ families:
           TWIHS2: INT
 
       UART:
-        from: ATSAMV71Q21B.UART0
+        uses: UART
         instances: [UART0, UART1, UART2, UART3, UART4]
         interrupts:
           UART0: INT
@@ -133,7 +390,7 @@ families:
           UART4: INT
 
       USART:
-        from: ATSAMV71Q21B.USART0
+        uses: USART
         instances: [USART0, USART1, USART2]
         interrupts:
           USART0: INT
@@ -141,64 +398,29 @@ families:
           USART2: INT
 
       USBHS:
-        from: ATSAMV71Q21B.USBHS
+        uses: USBHS
         instances: [USBHS]
         interrupts:
           USBHS: INT
 
       UTMI:
-        from: ATSAMV71Q21B.UTMI
+        uses: UTMI
         instances: [UTMI]
 
-      # ====================================================================
-      # GPIO / image / media
-      # ====================================================================
-      ISI:
-        from: ATSAMV71Q21B.ISI
-        instances: [ISI]
+      WDT:
+        uses: WDT
+        instances: [WDT]
         interrupts:
-          ISI: INT
+          WDT: INT
 
-      PIO:
-        from: ATSAMV71Q21B.PIOA
-        instances: [PIOA, PIOB, PIOC, PIOD, PIOE]
+      XDMAC:
+        uses: XDMAC
+        instances: [XDMAC]
         interrupts:
-          PIOA: INT
-          PIOB: INT
-          PIOC: INT
-          PIOD: INT
-          PIOE: INT
-
-      # ====================================================================
-      # Timers / counters / RTC
-      # ====================================================================
-      PWM:
-        from: ATSAMV71Q21B.PWM0
-        instances: [PWM0, PWM1]
-        interrupts:
-          PWM0: INT
-          PWM1: INT
-
-      RTC:
-        from: ATSAMV71Q21B.RTC
-        instances: [RTC]
-        interrupts:
-          RTC: INT
-
-      RTT:
-        from: ATSAMV71Q21B.RTT
-        instances: [RTT]
-        interrupts:
-          RTT: INT
-
-      RSWDT:
-        from: ATSAMV71Q21B.RSWDT
-        instances: [RSWDT]
-        interrupts:
-          RSWDT: INT
+          XDMAC: INT
 
       TC:
-        from: ATSAMV71Q21B.TC0
+        uses: TC
         instances: [TC0, TC1, TC2, TC3]
         # Each TC instance carries three timer-channel interrupts; canonicalise
         # them to INT0/INT1/INT2 within each instance (TC0–TC11 → modulo 3).
@@ -216,90 +438,857 @@ families:
           TC10: INT1
           TC11: INT2
 
-      WDT:
-        from: ATSAMV71Q21B.WDT
-        instances: [WDT]
-        interrupts:
-          WDT: INT
-
       # ====================================================================
-      # Memory / DMA / bus
+      # SAME70-specific peripherals (MATRIX/PMC differ per SAM family)
       # ====================================================================
-      EFC:
-        from: ATSAMV71Q21B.EFC
-        instances: [EFC]
-        interrupts:
-          EFC: INT
-
-      HSMCI:
-        from: ATSAMV71Q21B.HSMCI
-        instances: [HSMCI]
-        interrupts:
-          HSMCI: INT
-
       MATRIX:
-        from: ATSAMV71Q21B.MATRIX
+        from: ATSAME70Q21B.MATRIX
         instances: [MATRIX]
 
-      SMC:
-        from: ATSAMV71Q21B.SMC
-        instances: [SMC]
-
-      XDMAC:
-        from: ATSAMV71Q21B.XDMAC
-        instances: [XDMAC]
-        interrupts:
-          XDMAC: INT
-
-      # ====================================================================
-      # Power / reset / clock / system identity
-      # ====================================================================
-      CHIPID:
-        from: ATSAMV71Q21B.CHIPID
-        instances: [CHIPID]
-
-      GPBR:
-        from: ATSAMV71Q21B.GPBR
-        instances: [GPBR]
-
       PMC:
-        from: ATSAMV71Q21B.PMC
+        from: ATSAME70Q21B.PMC
         instances: [PMC]
         interrupts:
           PMC: INT
 
-      RSTC:
-        from: ATSAMV71Q21B.RSTC
-        instances: [RSTC]
-        interrupts:
-          RSTC: INT
-
-      SUPC:
-        from: ATSAMV71Q21B.SUPC
-        instances: [SUPC]
-        interrupts:
-          SUPC: INT
-
       # ====================================================================
-      # Security
+      # ARM Cortex-M core peripherals (hand-maintained, cross-vendor)
       # ====================================================================
+      NVIC:
+        uses: NVIC
+        instances: [NVIC]
+
+      SCB:
+        uses: SCB
+        instances: [SCB]
+        interrupts:
+          CCW: CCW
+          CCF: CCF
+
+      FPU:
+        uses: FPU
+        instances: [FPU]
+        interrupts:
+          FPU: INT
+          IXC: IXC
+
+    chip_params:
+      _all:
+        _all:
+          NVIC:
+            priobits: 3
+            interrupts: 74
+          # Cortex-M7 has fault handlers (MMFAR/BFAR/CFSR) and L1 I/D caches.
+          SCB:
+            has_faults: true
+            has_cache: true
+  SAMS70:
+    svd:
+      zip: SAMS70_DFP.4.12.234.zip
+      version: "4.12.234"
+      date: "2026-01-31"
+    subfamilies:
+      SAMS70:
+        chips: [ATSAMS70Q21B]
+        ref_manual:
+          name: SAM E70/S70/V70/V71 Family Data Sheet
+          url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-E70-S70-V70-V71-Family-Data-Sheet-DS60001527.pdf
+
+    blocks:
+      # ====================================================================
+      # SAM-Gen1 shared peripherals
+      # ====================================================================
+      ACC:
+        uses: ACC
+        instances: [ACC]
+        interrupts:
+          ACC: INT
+
       AES:
-        from: ATSAMV71Q21B.AES
+        uses: AES
         instances: [AES]
         interrupts:
           AES: INT
 
+      AFEC:
+        uses: AFEC
+        instances: [AFEC0, AFEC1]
+        interrupts:
+          AFEC0: INT
+          AFEC1: INT
+
+      CHIPID:
+        uses: CHIPID
+        instances: [CHIPID]
+
+      DACC:
+        uses: DACC
+        instances: [DACC]
+        interrupts:
+          DACC: INT
+
+      EFC:
+        uses: EFC
+        instances: [EFC]
+        interrupts:
+          EFC: INT
+
+      GPBR:
+        uses: GPBR
+        instances: [GPBR]
+
+      HSMCI:
+        uses: HSMCI
+        instances: [HSMCI]
+        interrupts:
+          HSMCI: INT
+
+      I2SC:
+        uses: I2SC
+        instances: [I2SC0, I2SC1]
+        interrupts:
+          I2SC0: INT
+          I2SC1: INT
+
       ICM:
-        from: ATSAMV71Q21B.ICM
+        uses: ICM
         instances: [ICM]
         interrupts:
           ICM: INT
 
+      ISI:
+        uses: ISI
+        instances: [ISI]
+        interrupts:
+          ISI: INT
+
+      PIO:
+        uses: PIO
+        instances: [PIOA, PIOB, PIOC, PIOD, PIOE]
+        interrupts:
+          PIOA: INT
+          PIOB: INT
+          PIOC: INT
+          PIOD: INT
+          PIOE: INT
+
+      PWM:
+        uses: PWM
+        instances: [PWM0, PWM1]
+        interrupts:
+          PWM0: INT
+          PWM1: INT
+
+      QSPI:
+        uses: QSPI
+        instances: [QSPI]
+        interrupts:
+          QSPI: INT
+
+      RSTC:
+        uses: RSTC
+        instances: [RSTC]
+        interrupts:
+          RSTC: INT
+
+      RSWDT:
+        uses: RSWDT
+        instances: [RSWDT]
+        interrupts:
+          RSWDT: INT
+
+      RTC:
+        uses: RTC
+        instances: [RTC]
+        interrupts:
+          RTC: INT
+
+      RTT:
+        uses: RTT
+        instances: [RTT]
+        interrupts:
+          RTT: INT
+
+      SMC:
+        uses: SMC
+        instances: [SMC]
+
+      SPI:
+        uses: SPI
+        instances: [SPI0, SPI1]
+        interrupts:
+          SPI0: INT
+          SPI1: INT
+
+      SSC:
+        uses: SSC
+        instances: [SSC]
+        interrupts:
+          SSC: INT
+
+      SUPC:
+        uses: SUPC
+        instances: [SUPC]
+        interrupts:
+          SUPC: INT
+
       TRNG:
-        from: ATSAMV71Q21B.TRNG
+        uses: TRNG
         instances: [TRNG]
         interrupts:
           TRNG: INT
+
+      TWIHS:
+        uses: TWIHS
+        instances: [TWIHS0, TWIHS1, TWIHS2]
+        interrupts:
+          TWIHS0: INT
+          TWIHS1: INT
+          TWIHS2: INT
+
+      UART:
+        uses: UART
+        instances: [UART0, UART1, UART2, UART3, UART4]
+        interrupts:
+          UART0: INT
+          UART1: INT
+          UART2: INT
+          UART3: INT
+          UART4: INT
+
+      USART:
+        uses: USART
+        instances: [USART0, USART1, USART2]
+        interrupts:
+          USART0: INT
+          USART1: INT
+          USART2: INT
+
+      USBHS:
+        uses: USBHS
+        instances: [USBHS]
+        interrupts:
+          USBHS: INT
+
+      UTMI:
+        uses: UTMI
+        instances: [UTMI]
+
+      WDT:
+        uses: WDT
+        instances: [WDT]
+        interrupts:
+          WDT: INT
+
+      XDMAC:
+        uses: XDMAC
+        instances: [XDMAC]
+        interrupts:
+          XDMAC: INT
+
+      TC:
+        uses: TC
+        instances: [TC0, TC1, TC2, TC3]
+        # Each TC instance carries three timer-channel interrupts; canonicalise
+        # them to INT0/INT1/INT2 within each instance (TC0–TC11 → modulo 3).
+        interrupts:
+          TC0: INT0
+          TC1: INT1
+          TC2: INT2
+          TC3: INT0
+          TC4: INT1
+          TC5: INT2
+          TC6: INT0
+          TC7: INT1
+          TC8: INT2
+          TC9: INT0
+          TC10: INT1
+          TC11: INT2
+
+      # ====================================================================
+      # SAMS70-specific peripherals (MATRIX/PMC differ per SAM family)
+      # ====================================================================
+      MATRIX:
+        from: ATSAMS70Q21B.MATRIX
+        instances: [MATRIX]
+
+      PMC:
+        from: ATSAMS70Q21B.PMC
+        instances: [PMC]
+        interrupts:
+          PMC: INT
+
+      # ====================================================================
+      # ARM Cortex-M core peripherals (hand-maintained, cross-vendor)
+      # ====================================================================
+      NVIC:
+        uses: NVIC
+        instances: [NVIC]
+
+      SCB:
+        uses: SCB
+        instances: [SCB]
+        interrupts:
+          CCW: CCW
+          CCF: CCF
+
+      FPU:
+        uses: FPU
+        instances: [FPU]
+        interrupts:
+          FPU: INT
+          IXC: IXC
+
+    chip_params:
+      _all:
+        _all:
+          NVIC:
+            priobits: 3
+            interrupts: 71
+          # Cortex-M7 has fault handlers (MMFAR/BFAR/CFSR) and L1 I/D caches.
+          SCB:
+            has_faults: true
+            has_cache: true
+  SAMV70:
+    svd:
+      zip: SAMV70_DFP.4.12.233.zip
+      version: "4.12.233"
+      date: "2026-01-31"
+    subfamilies:
+      SAMV70:
+        chips: [ATSAMV70Q20B]
+        ref_manual:
+          name: SAM E70/S70/V70/V71 Family Data Sheet
+          url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-E70-S70-V70-V71-Family-Data-Sheet-DS60001527.pdf
+
+    blocks:
+      # ====================================================================
+      # SAM-Gen1 shared peripherals
+      # ====================================================================
+      ACC:
+        uses: ACC
+        instances: [ACC]
+        interrupts:
+          ACC: INT
+
+      AES:
+        uses: AES
+        instances: [AES]
+        interrupts:
+          AES: INT
+
+      AFEC:
+        uses: AFEC
+        instances: [AFEC0, AFEC1]
+        interrupts:
+          AFEC0: INT
+          AFEC1: INT
+
+      CHIPID:
+        uses: CHIPID
+        instances: [CHIPID]
+
+      DACC:
+        uses: DACC
+        instances: [DACC]
+        interrupts:
+          DACC: INT
+
+      EFC:
+        uses: EFC
+        instances: [EFC]
+        interrupts:
+          EFC: INT
+
+      GPBR:
+        uses: GPBR
+        instances: [GPBR]
+
+      HSMCI:
+        uses: HSMCI
+        instances: [HSMCI]
+        interrupts:
+          HSMCI: INT
+
+      I2SC:
+        uses: I2SC
+        instances: [I2SC0, I2SC1]
+        interrupts:
+          I2SC0: INT
+          I2SC1: INT
+
+      ICM:
+        uses: ICM
+        instances: [ICM]
+        interrupts:
+          ICM: INT
+
+      ISI:
+        uses: ISI
+        instances: [ISI]
+        interrupts:
+          ISI: INT
+
+      MCAN:
+        uses: MCAN
+        instances: [MCAN0, MCAN1]
+        interrupts:
+          MCAN0_INT0: INT0
+          MCAN0_INT1: INT1
+          MCAN1_INT0: INT0
+          MCAN1_INT1: INT1
+
+      MLB:
+        uses: MLB
+        instances: [MLB]
+        interrupts:
+          MLB: INT
+
+      PIO:
+        uses: PIO
+        instances: [PIOA, PIOB, PIOC, PIOD, PIOE]
+        interrupts:
+          PIOA: INT
+          PIOB: INT
+          PIOC: INT
+          PIOD: INT
+          PIOE: INT
+
+      PWM:
+        uses: PWM
+        instances: [PWM0, PWM1]
+        interrupts:
+          PWM0: INT
+          PWM1: INT
+
+      QSPI:
+        uses: QSPI
+        instances: [QSPI]
+        interrupts:
+          QSPI: INT
+
+      RSTC:
+        uses: RSTC
+        instances: [RSTC]
+        interrupts:
+          RSTC: INT
+
+      RSWDT:
+        uses: RSWDT
+        instances: [RSWDT]
+        interrupts:
+          RSWDT: INT
+
+      RTC:
+        uses: RTC
+        instances: [RTC]
+        interrupts:
+          RTC: INT
+
+      RTT:
+        uses: RTT
+        instances: [RTT]
+        interrupts:
+          RTT: INT
+
+      SMC:
+        uses: SMC
+        instances: [SMC]
+
+      SPI:
+        uses: SPI
+        instances: [SPI0, SPI1]
+        interrupts:
+          SPI0: INT
+          SPI1: INT
+
+      SSC:
+        uses: SSC
+        instances: [SSC]
+        interrupts:
+          SSC: INT
+
+      SUPC:
+        uses: SUPC
+        instances: [SUPC]
+        interrupts:
+          SUPC: INT
+
+      TRNG:
+        uses: TRNG
+        instances: [TRNG]
+        interrupts:
+          TRNG: INT
+
+      TWIHS:
+        uses: TWIHS
+        instances: [TWIHS0, TWIHS1, TWIHS2]
+        interrupts:
+          TWIHS0: INT
+          TWIHS1: INT
+          TWIHS2: INT
+
+      UART:
+        uses: UART
+        instances: [UART0, UART1, UART2, UART3, UART4]
+        interrupts:
+          UART0: INT
+          UART1: INT
+          UART2: INT
+          UART3: INT
+          UART4: INT
+
+      USART:
+        uses: USART
+        instances: [USART0, USART1, USART2]
+        interrupts:
+          USART0: INT
+          USART1: INT
+          USART2: INT
+
+      USBHS:
+        uses: USBHS
+        instances: [USBHS]
+        interrupts:
+          USBHS: INT
+
+      UTMI:
+        uses: UTMI
+        instances: [UTMI]
+
+      WDT:
+        uses: WDT
+        instances: [WDT]
+        interrupts:
+          WDT: INT
+
+      XDMAC:
+        uses: XDMAC
+        instances: [XDMAC]
+        interrupts:
+          XDMAC: INT
+
+      TC:
+        uses: TC
+        instances: [TC0, TC1, TC2, TC3]
+        # Each TC instance carries three timer-channel interrupts; canonicalise
+        # them to INT0/INT1/INT2 within each instance (TC0–TC11 → modulo 3).
+        interrupts:
+          TC0: INT0
+          TC1: INT1
+          TC2: INT2
+          TC3: INT0
+          TC4: INT1
+          TC5: INT2
+          TC6: INT0
+          TC7: INT1
+          TC8: INT2
+          TC9: INT0
+          TC10: INT1
+          TC11: INT2
+
+      # ====================================================================
+      # SAMV70-specific peripherals (MATRIX/PMC differ per SAM family)
+      # ====================================================================
+      MATRIX:
+        from: ATSAMV70Q20B.MATRIX
+        instances: [MATRIX]
+
+      PMC:
+        from: ATSAMV70Q20B.PMC
+        instances: [PMC]
+        interrupts:
+          PMC: INT
+
+      # ====================================================================
+      # ARM Cortex-M core peripherals (hand-maintained, cross-vendor)
+      # ====================================================================
+      NVIC:
+        uses: NVIC
+        instances: [NVIC]
+
+      SCB:
+        uses: SCB
+        instances: [SCB]
+        interrupts:
+          CCW: CCW
+          CCF: CCF
+
+      FPU:
+        uses: FPU
+        instances: [FPU]
+        interrupts:
+          FPU: INT
+          IXC: IXC
+
+    chip_params:
+      _all:
+        _all:
+          NVIC:
+            priobits: 3
+            interrupts: 71
+          # Cortex-M7 has fault handlers (MMFAR/BFAR/CFSR) and L1 I/D caches.
+          SCB:
+            has_faults: true
+            has_cache: true
+  SAMV71:
+    svd:
+      zip: SAMV71_DFP.4.13.257.zip
+      version: "4.13.257"
+      date: "2026-01-29"
+    subfamilies:
+      SAMV71:
+        chips: [ATSAMV71Q21B]
+        ref_manual:
+          name: SAM E70/S70/V70/V71 Family Data Sheet
+          url: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-E70-S70-V70-V71-Family-Data-Sheet-DS60001527.pdf
+
+    blocks:
+      # ====================================================================
+      # SAM-Gen1 shared peripherals (extracted via shared_blocks)
+      # ====================================================================
+      ACC:
+        uses: ACC
+        instances: [ACC]
+        interrupts:
+          ACC: INT
+
+      AFEC:
+        uses: AFEC
+        instances: [AFEC0, AFEC1]
+        interrupts:
+          AFEC0: INT
+          AFEC1: INT
+
+      CHIPID:
+        uses: CHIPID
+        instances: [CHIPID]
+
+      DACC:
+        uses: DACC
+        instances: [DACC]
+        interrupts:
+          DACC: INT
+
+      EFC:
+        uses: EFC
+        instances: [EFC]
+        interrupts:
+          EFC: INT
+
+      GMAC:
+        uses: GMAC
+        instances: [GMAC]
+        interrupts:
+          GMAC: INT
+          GMAC_Q1: Q1
+          GMAC_Q2: Q2
+          GMAC_Q3: Q3
+          GMAC_Q4: Q4
+          GMAC_Q5: Q5
+
+      GPBR:
+        uses: GPBR
+        instances: [GPBR]
+
+      HSMCI:
+        uses: HSMCI
+        instances: [HSMCI]
+        interrupts:
+          HSMCI: INT
+
+      I2SC:
+        uses: I2SC
+        instances: [I2SC0, I2SC1]
+        interrupts:
+          I2SC0: INT
+          I2SC1: INT
+
+      ICM:
+        uses: ICM
+        instances: [ICM]
+        interrupts:
+          ICM: INT
+
+      ISI:
+        uses: ISI
+        instances: [ISI]
+        interrupts:
+          ISI: INT
+
+      MCAN:
+        uses: MCAN
+        instances: [MCAN0, MCAN1]
+        interrupts:
+          MCAN0_INT0: INT0
+          MCAN0_INT1: INT1
+          MCAN1_INT0: INT0
+          MCAN1_INT1: INT1
+
+      MLB:
+        uses: MLB
+        instances: [MLB]
+        interrupts:
+          MLB: INT
+
+      PIO:
+        uses: PIO
+        instances: [PIOA, PIOB, PIOC, PIOD, PIOE]
+        interrupts:
+          PIOA: INT
+          PIOB: INT
+          PIOC: INT
+          PIOD: INT
+          PIOE: INT
+
+      PWM:
+        uses: PWM
+        instances: [PWM0, PWM1]
+        interrupts:
+          PWM0: INT
+          PWM1: INT
+
+      QSPI:
+        uses: QSPI
+        instances: [QSPI]
+        interrupts:
+          QSPI: INT
+
+      RSWDT:
+        uses: RSWDT
+        instances: [RSWDT]
+        interrupts:
+          RSWDT: INT
+
+      RTT:
+        uses: RTT
+        instances: [RTT]
+        interrupts:
+          RTT: INT
+
+      SMC:
+        uses: SMC
+        instances: [SMC]
+
+      SPI:
+        uses: SPI
+        instances: [SPI0, SPI1]
+        interrupts:
+          SPI0: INT
+          SPI1: INT
+
+      SSC:
+        uses: SSC
+        instances: [SSC]
+        interrupts:
+          SSC: INT
+
+      TC:
+        uses: TC
+        instances: [TC0, TC1, TC2, TC3]
+        # Each TC instance carries three timer-channel interrupts; canonicalise
+        # them to INT0/INT1/INT2 within each instance (TC0–TC11 → modulo 3).
+        interrupts:
+          TC0: INT0
+          TC1: INT1
+          TC2: INT2
+          TC3: INT0
+          TC4: INT1
+          TC5: INT2
+          TC6: INT0
+          TC7: INT1
+          TC8: INT2
+          TC9: INT0
+          TC10: INT1
+          TC11: INT2
+
+      TRNG:
+        uses: TRNG
+        instances: [TRNG]
+        interrupts:
+          TRNG: INT
+
+      TWIHS:
+        uses: TWIHS
+        instances: [TWIHS0, TWIHS1, TWIHS2]
+        interrupts:
+          TWIHS0: INT
+          TWIHS1: INT
+          TWIHS2: INT
+
+      UART:
+        uses: UART
+        instances: [UART0, UART1, UART2, UART3, UART4]
+        interrupts:
+          UART0: INT
+          UART1: INT
+          UART2: INT
+          UART3: INT
+          UART4: INT
+
+      USART:
+        uses: USART
+        instances: [USART0, USART1, USART2]
+        interrupts:
+          USART0: INT
+          USART1: INT
+          USART2: INT
+
+      USBHS:
+        uses: USBHS
+        instances: [USBHS]
+        interrupts:
+          USBHS: INT
+
+      UTMI:
+        uses: UTMI
+        instances: [UTMI]
+
+      XDMAC:
+        uses: XDMAC
+        instances: [XDMAC]
+        interrupts:
+          XDMAC: INT
+
+      AES:
+        uses: AES
+        instances: [AES]
+        interrupts:
+          AES: INT
+
+      RSTC:
+        uses: RSTC
+        instances: [RSTC]
+        interrupts:
+          RSTC: INT
+
+      RTC:
+        uses: RTC
+        instances: [RTC]
+        interrupts:
+          RTC: INT
+
+      SUPC:
+        uses: SUPC
+        instances: [SUPC]
+        interrupts:
+          SUPC: INT
+
+      WDT:
+        uses: WDT
+        instances: [WDT]
+        interrupts:
+          WDT: INT
+
+      MATRIX:
+        uses: MATRIX
+        instances: [MATRIX]
+
+      PMC:
+        uses: PMC
+        instances: [PMC]
+        interrupts:
+          PMC: INT
 
       # ====================================================================
       # ARM Cortex-M core peripherals (hand-maintained, cross-vendor)
@@ -329,6 +1318,571 @@ families:
             priobits: 3
             interrupts: 70
           # Cortex-M7 has fault handlers (MMFAR/BFAR/CFSR) and L1 I/D caches.
+          SCB:
+            has_faults: true
+            has_cache: true
+  PIC32CZ-CA70:
+    svd:
+      zip: PIC32CZ-CA70_DFP.1.3.62.zip
+      version: "1.3.62"
+      date: "2026-01-20"
+    subfamilies:
+      CA70:
+        chips: [PIC32CZ5125CA70144]
+
+    blocks:
+      # ====================================================================
+      # SAM-Gen1 shared peripherals (PIC32CZ-CA70/MC70 reuse the SAM IP at
+      # the register level — see Microchip's own datasheet language)
+      # ====================================================================
+      ACC:
+        uses: ACC
+        instances: [ACC]
+        interrupts:
+          ACC: INT
+
+      AFEC:
+        uses: AFEC
+        instances: [AFEC0, AFEC1]
+        interrupts:
+          AFEC0: INT
+          AFEC1: INT
+
+      CHIPID:
+        uses: CHIPID
+        instances: [CHIPID]
+
+      DACC:
+        uses: DACC
+        instances: [DACC]
+        interrupts:
+          DACC: INT
+
+      EFC:
+        uses: EFC
+        instances: [EFC]
+        interrupts:
+          EFC: INT
+
+      GMAC:
+        uses: GMAC
+        instances: [GMAC]
+        interrupts:
+          GMAC: INT
+          GMAC_Q1: Q1
+          GMAC_Q2: Q2
+          GMAC_Q3: Q3
+          GMAC_Q4: Q4
+          GMAC_Q5: Q5
+
+      GPBR:
+        uses: GPBR
+        instances: [GPBR]
+
+      HSMCI:
+        uses: HSMCI
+        instances: [HSMCI]
+        interrupts:
+          HSMCI: INT
+
+      I2SC:
+        uses: I2SC
+        instances: [I2SC0, I2SC1]
+        interrupts:
+          I2SC0: INT
+          I2SC1: INT
+
+      ICM:
+        uses: ICM
+        instances: [ICM]
+        interrupts:
+          ICM: INT
+
+      ISI:
+        uses: ISI
+        instances: [ISI]
+        interrupts:
+          ISI: INT
+
+      MATRIX:
+        uses: MATRIX
+        instances: [MATRIX]
+
+      MCAN:
+        uses: MCAN
+        instances: [MCAN0, MCAN1]
+        interrupts:
+          MCAN0_INT0: INT0
+          MCAN0_INT1: INT1
+          MCAN1_INT0: INT0
+          MCAN1_INT1: INT1
+
+      MLB:
+        uses: MLB
+        instances: [MLB]
+        interrupts:
+          MLB: INT
+
+      PIO:
+        uses: PIO
+        instances: [PIOA, PIOB, PIOC, PIOD, PIOE]
+        interrupts:
+          PIOA: INT
+          PIOB: INT
+          PIOC: INT
+          PIOD: INT
+          PIOE: INT
+
+      PMC:
+        uses: PMC
+        instances: [PMC]
+        interrupts:
+          PMC: INT
+
+      PWM:
+        uses: PWM
+        instances: [PWM0, PWM1]
+        interrupts:
+          PWM0: INT
+          PWM1: INT
+
+      QSPI:
+        uses: QSPI
+        instances: [QSPI]
+        interrupts:
+          QSPI: INT
+
+      RSTC:
+        uses: RSTC
+        instances: [RSTC]
+        interrupts:
+          RSTC: INT
+
+      RSWDT:
+        uses: RSWDT
+        instances: [RSWDT]
+        interrupts:
+          RSWDT: INT
+
+      RTC:
+        uses: RTC
+        instances: [RTC]
+        interrupts:
+          RTC: INT
+
+      RTT:
+        uses: RTT
+        instances: [RTT]
+        interrupts:
+          RTT: INT
+
+      SMC:
+        uses: SMC
+        instances: [SMC]
+
+      SPI:
+        uses: SPI
+        instances: [SPI0, SPI1]
+        interrupts:
+          SPI0: INT
+          SPI1: INT
+
+      SSC:
+        uses: SSC
+        instances: [SSC]
+        interrupts:
+          SSC: INT
+
+      SUPC:
+        uses: SUPC
+        instances: [SUPC]
+        interrupts:
+          SUPC: INT
+
+      TRNG:
+        uses: TRNG
+        instances: [TRNG]
+        interrupts:
+          TRNG: INT
+
+      TWIHS:
+        uses: TWIHS
+        instances: [TWIHS0, TWIHS1, TWIHS2]
+        interrupts:
+          TWIHS0: INT
+          TWIHS1: INT
+          TWIHS2: INT
+
+      UART:
+        uses: UART
+        instances: [UART0, UART1, UART2, UART3, UART4]
+        interrupts:
+          UART0: INT
+          UART1: INT
+          UART2: INT
+          UART3: INT
+          UART4: INT
+
+      USART:
+        uses: USART
+        instances: [USART0, USART1, USART2]
+        interrupts:
+          USART0: INT
+          USART1: INT
+          USART2: INT
+
+      USBHS:
+        uses: USBHS
+        instances: [USBHS]
+        interrupts:
+          USBHS: INT
+
+      UTMI:
+        uses: UTMI
+        instances: [UTMI]
+
+      WDT:
+        uses: WDT
+        instances: [WDT]
+        interrupts:
+          WDT: INT
+
+      XDMAC:
+        uses: XDMAC
+        instances: [XDMAC]
+        interrupts:
+          XDMAC: INT
+
+      TC:
+        uses: TC
+        instances: [TC0, TC1, TC2, TC3]
+        # Each TC instance carries three timer-channel interrupts.
+        interrupts:
+          TC0: INT0
+          TC1: INT1
+          TC2: INT2
+          TC3: INT0
+          TC4: INT1
+          TC5: INT2
+          TC6: INT0
+          TC7: INT1
+          TC8: INT2
+          TC9: INT0
+          TC10: INT1
+          TC11: INT2
+
+      # ====================================================================
+      # PIC32CZ-CA70/MC70-specific peripherals (register layouts differ from
+      # SAM Gen1 — written to models/Microchip/PIC32CZ-CA70/<Block>.yaml).
+      # ====================================================================
+      AES:
+        from: PIC32CZ5125CA70144.AES
+        instances: [AES]
+        interrupts:
+          AES: INT
+
+      # ====================================================================
+      # ARM Cortex-M core peripherals (hand-maintained, cross-vendor)
+      # ====================================================================
+      NVIC:
+        uses: NVIC
+        instances: [NVIC]
+
+      SCB:
+        uses: SCB
+        instances: [SCB]
+        interrupts:
+          CCW: CCW
+          CCF: CCF
+
+      FPU:
+        uses: FPU
+        instances: [FPU]
+        interrupts:
+          FPU: INT
+          IXC: IXC
+
+    chip_params:
+      _all:
+        _all:
+          NVIC:
+            priobits: 3
+            interrupts: 74  # canonical for CA70 (Q-pin, 144-pin, full set)
+          SCB:
+            has_faults: true
+            has_cache: true
+
+  PIC32CZ-MC70:
+    svd:
+      zip: PIC32CZ-MC70_DFP.1.3.57.zip
+      version: "1.3.57"
+      date: "2026-01-20"
+    subfamilies:
+      MC70:
+        chips: [PIC32CZ2051MC70100]
+
+    blocks:
+      # ====================================================================
+      # SAM-Gen1 shared peripherals (MC70 is the motor-control variant of
+      # the PIC32CZ Gen1 silicon — fewer instances than CA70, but identical
+      # register layouts at the IP level)
+      # ====================================================================
+      ACC:
+        uses: ACC
+        instances: [ACC]
+        interrupts:
+          ACC: INT
+
+      AFEC:
+        uses: AFEC
+        instances: [AFEC0, AFEC1]
+        interrupts:
+          AFEC0: INT
+          AFEC1: INT
+
+      CHIPID:
+        uses: CHIPID
+        instances: [CHIPID]
+
+      DACC:
+        uses: DACC
+        instances: [DACC]
+        interrupts:
+          DACC: INT
+
+      EFC:
+        uses: EFC
+        instances: [EFC]
+        interrupts:
+          EFC: INT
+
+      GPBR:
+        uses: GPBR
+        instances: [GPBR]
+
+      HSMCI:
+        uses: HSMCI
+        instances: [HSMCI]
+        interrupts:
+          HSMCI: INT
+
+      I2SC:
+        uses: I2SC
+        instances: [I2SC0]
+        interrupts:
+          I2SC0: INT
+
+      ICM:
+        uses: ICM
+        instances: [ICM]
+        interrupts:
+          ICM: INT
+
+      ISI:
+        uses: ISI
+        instances: [ISI]
+        interrupts:
+          ISI: INT
+
+      MATRIX:
+        uses: MATRIX
+        instances: [MATRIX]
+
+      MCAN:
+        uses: MCAN
+        instances: [MCAN0, MCAN1]
+        interrupts:
+          MCAN0_INT0: INT0
+          MCAN0_INT1: INT1
+          MCAN1_INT0: INT0
+          MCAN1_INT1: INT1
+
+      MLB:
+        uses: MLB
+        instances: [MLB]
+        interrupts:
+          MLB: INT
+
+      PIO:
+        uses: PIO
+        instances: [PIOA, PIOB, PIOC, PIOD]
+        interrupts:
+          PIOA: INT
+          PIOB: INT
+          PIOC: INT
+          PIOD: INT
+
+      PMC:
+        uses: PMC
+        instances: [PMC]
+        interrupts:
+          PMC: INT
+
+      PWM:
+        uses: PWM
+        instances: [PWM0, PWM1]
+        interrupts:
+          PWM0: INT
+          PWM1: INT
+
+      QSPI:
+        uses: QSPI
+        instances: [QSPI]
+        interrupts:
+          QSPI: INT
+
+      RSTC:
+        uses: RSTC
+        instances: [RSTC]
+        interrupts:
+          RSTC: INT
+
+      RSWDT:
+        uses: RSWDT
+        instances: [RSWDT]
+        interrupts:
+          RSWDT: INT
+
+      RTC:
+        uses: RTC
+        instances: [RTC]
+        interrupts:
+          RTC: INT
+
+      RTT:
+        uses: RTT
+        instances: [RTT]
+        interrupts:
+          RTT: INT
+
+      SPI:
+        uses: SPI
+        instances: [SPI0]
+        interrupts:
+          SPI0: INT
+
+      SSC:
+        uses: SSC
+        instances: [SSC]
+        interrupts:
+          SSC: INT
+
+      SUPC:
+        uses: SUPC
+        instances: [SUPC]
+        interrupts:
+          SUPC: INT
+
+      TRNG:
+        uses: TRNG
+        instances: [TRNG]
+        interrupts:
+          TRNG: INT
+
+      TWIHS:
+        uses: TWIHS
+        instances: [TWIHS0, TWIHS1, TWIHS2]
+        interrupts:
+          TWIHS0: INT
+          TWIHS1: INT
+          TWIHS2: INT
+
+      UART:
+        uses: UART
+        instances: [UART0, UART1, UART2, UART3, UART4]
+        interrupts:
+          UART0: INT
+          UART1: INT
+          UART2: INT
+          UART3: INT
+          UART4: INT
+
+      USART:
+        uses: USART
+        instances: [USART0, USART1, USART2]
+        interrupts:
+          USART0: INT
+          USART1: INT
+          USART2: INT
+
+      USBHS:
+        uses: USBHS
+        instances: [USBHS]
+        interrupts:
+          USBHS: INT
+
+      UTMI:
+        uses: UTMI
+        instances: [UTMI]
+
+      WDT:
+        uses: WDT
+        instances: [WDT]
+        interrupts:
+          WDT: INT
+
+      XDMAC:
+        uses: XDMAC
+        instances: [XDMAC]
+        interrupts:
+          XDMAC: INT
+
+      TC:
+        uses: TC
+        instances: [TC0, TC1, TC2, TC3]
+        # Each TC instance carries three timer-channel interrupts.
+        interrupts:
+          TC0: INT0
+          TC1: INT1
+          TC2: INT2
+          TC3: INT0
+          TC4: INT1
+          TC5: INT2
+          TC6: INT0
+          TC7: INT1
+          TC8: INT2
+          TC9: INT0
+          TC10: INT1
+          TC11: INT2
+
+      # ====================================================================
+      # MC70-specific peripherals (AES register layout matches CA70's but
+      # differs from SAM AES — extracted from MC70's SVD into the family dir;
+      # the resulting YAML is byte-identical to PIC32CZ-CA70/AES.yaml).
+      # ====================================================================
+      AES:
+        from: PIC32CZ2051MC70100.AES
+        instances: [AES]
+        interrupts:
+          AES: INT
+
+      # ====================================================================
+      # ARM Cortex-M core peripherals (hand-maintained, cross-vendor)
+      # ====================================================================
+      NVIC:
+        uses: NVIC
+        instances: [NVIC]
+
+      SCB:
+        uses: SCB
+        instances: [SCB]
+        interrupts:
+          CCW: CCW
+          CCF: CCF
+
+      FPU:
+        uses: FPU
+        instances: [FPU]
+        interrupts:
+          FPU: INT
+          IXC: IXC
+
+    chip_params:
+      _all:
+        _all:
+          NVIC:
+            priobits: 3
+            interrupts: 71
           SCB:
             has_faults: true
             has_cache: true

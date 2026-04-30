@@ -9,8 +9,18 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/microchip-extraction.cmake)
 # ============================================================================
 # Microchip Family Registrations
 # ============================================================================
+microchip_add_family(ID same70  CODE SAME70  DISPLAY "SAM E70"
+    ZIP SAME70_DFP.4.13.292.zip)
+microchip_add_family(ID sams70  CODE SAMS70  DISPLAY "SAM S70"
+    ZIP SAMS70_DFP.4.12.234.zip)
+microchip_add_family(ID samv70  CODE SAMV70  DISPLAY "SAM V70"
+    ZIP SAMV70_DFP.4.12.233.zip)
 microchip_add_family(ID samv71  CODE SAMV71  DISPLAY "SAM V71"
     ZIP SAMV71_DFP.4.13.257.zip)
+microchip_add_family(ID pic32czca70 CODE PIC32CZ-CA70 DISPLAY "PIC32CZ-CA70"
+    ZIP PIC32CZ-CA70_DFP.1.3.62.zip)
+microchip_add_family(ID pic32czmc70 CODE PIC32CZ-MC70 DISPLAY "PIC32CZ-MC70"
+    ZIP PIC32CZ-MC70_DFP.1.3.57.zip)
 
 # ============================================================================
 # Summary

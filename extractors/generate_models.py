@@ -1792,23 +1792,27 @@ def main():
             if designer:
                 model_path = output_dir.parent / designer / f"{model_name}.yaml"
                 rel_path = f"{designer}/{model_name}"
-            else:
+            elif bc.get('uses'):
+                # uses: a shared block — placement is always top-level.
                 model_path = output_dir / f"{model_name}.yaml"
                 rel_path = f"{vendor_prefix}/{model_name}"
-                if not model_path.exists():
-                    model_path = output_dir / family_code / f"{model_name}.yaml"
-                    rel_path = f"{vendor_prefix}/{family_code}/{model_name}"
+            else:
+                # Regular family-level block in the family subdirectory.
+                model_path = output_dir / family_code / f"{model_name}.yaml"
+                rel_path = f"{vendor_prefix}/{family_code}/{model_name}"
+            # Register the path even if the model file hasn't been generated
+            # yet — the canonical owning family writes it on its run, and
+            # chip models in other families reference it by relative path.
+            if model_name not in model_paths:
+                model_paths[model_name] = rel_path
+            # When the file is present, read interrupt order and (for uses:
+            # blocks without explicit shared-block params) lift any params
+            # declared inline in the model file.
             if model_path.exists():
                 model = yaml_loader.load(model_path)
                 if model:
                     model_interrupt_order[model_name] = [
                         irq['name'] for irq in model.get('interrupts', [])]
-                    if model_name not in model_paths:
-                        model_paths[model_name] = rel_path
-                    # Import param declarations from the model file when the
-                    # uses: target either isn't in shared_blocks or has no
-                    # explicit params there (e.g. cross-vendor designer-routed
-                    # blocks declared with just designer/description).
                     if bc.get('uses') and model.get('params'):
                         existing = shared_blocks.get(model_name) or {}
                         if not existing.get('params'):

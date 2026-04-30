@@ -1,0 +1,872 @@
+name: SUPC
+version: 6452ZE
+description: Supply controller
+source: ATSAMV71Q21B SVD Rev 0
+registers:
+  - name: CR
+    description: Supply Controller Control Register
+    addressOffset: 0
+    size: 32
+    access: write-only
+    fields:
+      - name: VROFF
+        description: Voltage Regulator Off
+        bitOffset: 2
+        bitWidth: 1
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect.
+            value: 0
+          - name: STOP_VREG
+            description: If KEY is correct, VROFF asserts the vddcore_nreset and stops the voltage regulator.
+            value: 1
+      - name: XTALSEL
+        description: Crystal Oscillator Select
+        bitOffset: 3
+        bitWidth: 1
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect.
+            value: 0
+          - name: CRYSTAL_SEL
+            description: If KEY is correct, XTALSEL switches the slow clock on the crystal oscillator output.
+            value: 1
+      - name: KEY
+        description: Password
+        bitOffset: 24
+        bitWidth: 8
+        enumeratedValues:
+          - name: PASSWD
+            description: Writing any other value in this field aborts the write operation.
+            value: 165
+  - name: SMMR
+    description: Supply Controller Supply Monitor Mode Register
+    addressOffset: 4
+    size: 32
+    fields:
+      - name: SMTH
+        description: Supply Monitor Threshold
+        bitOffset: 0
+        bitWidth: 4
+      - name: SMSMPL
+        description: Supply Monitor Sampling Period
+        bitOffset: 8
+        bitWidth: 3
+        enumeratedValues:
+          - name: SMD
+            description: Supply Monitor disabled
+            value: 0
+          - name: CSM
+            description: Continuous Supply Monitor
+            value: 1
+          - name: _32SLCK
+            description: Supply Monitor enabled one SLCK period every 32 SLCK periods
+            value: 2
+          - name: _256SLCK
+            description: Supply Monitor enabled one SLCK period every 256 SLCK periods
+            value: 3
+          - name: _2048SLCK
+            description: Supply Monitor enabled one SLCK period every 2,048 SLCK periods
+            value: 4
+      - name: SMRSTEN
+        description: Supply Monitor Reset Enable
+        bitOffset: 12
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: The core reset signal vddcore_nreset is not affected when a supply monitor detection occurs.
+            value: 0
+          - name: ENABLE
+            description: The core reset signal, vddcore_nreset is asserted when a supply monitor detection occurs.
+            value: 1
+      - name: SMIEN
+        description: Supply Monitor Interrupt Enable
+        bitOffset: 13
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: The SUPC interrupt signal is not affected when a supply monitor detection occurs.
+            value: 0
+          - name: ENABLE
+            description: The SUPC interrupt signal is asserted when a supply monitor detection occurs.
+            value: 1
+  - name: MR
+    description: Supply Controller Mode Register
+    addressOffset: 8
+    size: 32
+    fields:
+      - name: BODRSTEN
+        description: Brownout Detector Reset Enable
+        bitOffset: 12
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: The core reset signal vddcore_nreset is not affected when a brownout detection occurs.
+            value: 0
+          - name: ENABLE
+            description: The core reset signal, vddcore_nreset is asserted when a brownout detection occurs.
+            value: 1
+      - name: BODDIS
+        description: Brownout Detector Disable
+        bitOffset: 13
+        bitWidth: 1
+        enumeratedValues:
+          - name: ENABLE
+            description: The core brownout detector is enabled.
+            value: 0
+          - name: DISABLE
+            description: The core brownout detector is disabled.
+            value: 1
+      - name: ONREG
+        description: Voltage Regulator Enable
+        bitOffset: 14
+        bitWidth: 1
+        enumeratedValues:
+          - name: ONREG_UNUSED
+            description: Internal voltage regulator is not used (external power supply is used).
+            value: 0
+          - name: ONREG_USED
+            description: Internal voltage regulator is used.
+            value: 1
+      - name: BKUPRETON
+        description: SRAM On In Backup Mode
+        bitOffset: 17
+        bitWidth: 1
+      - name: OSCBYPASS
+        description: Oscillator Bypass
+        bitOffset: 20
+        bitWidth: 1
+        enumeratedValues:
+          - name: NO_EFFECT
+            description: No effect. Clock selection depends on the value of XTALSEL (SUPC_CR).
+            value: 0
+          - name: BYPASS
+            description: The 32 kHz crystal oscillator is bypassed if XTALSEL (SUPC_CR) is set. OSCBYPASS must be set prior to setting XTALSEL.
+            value: 1
+      - name: KEY
+        description: Password Key
+        bitOffset: 24
+        bitWidth: 8
+        enumeratedValues:
+          - name: PASSWD
+            description: Writing any other value in this field aborts the write operation.
+            value: 165
+  - name: WUMR
+    description: Supply Controller Wake-up Mode Register
+    addressOffset: 12
+    size: 32
+    fields:
+      - name: SMEN
+        description: Supply Monitor Wake-up Enable
+        bitOffset: 1
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: The supply monitor detection has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The supply monitor detection forces the wake-up of the core power supply.
+            value: 1
+      - name: RTTEN
+        description: Real-time Timer Wake-up Enable
+        bitOffset: 2
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: The RTT alarm signal has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The RTT alarm signal forces the wake-up of the core power supply.
+            value: 1
+      - name: RTCEN
+        description: Real-time Clock Wake-up Enable
+        bitOffset: 3
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: The RTC alarm signal has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The RTC alarm signal forces the wake-up of the core power supply.
+            value: 1
+      - name: LPDBCEN0
+        description: Low-power Debouncer Enable WKUP0
+        bitOffset: 5
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: The WKUP0 input pin is not connected to the low-power debouncer.
+            value: 0
+          - name: ENABLE
+            description: The WKUP0 input pin is connected to the low-power debouncer and forces a system wake-up.
+            value: 1
+      - name: LPDBCEN1
+        description: Low-power Debouncer Enable WKUP1
+        bitOffset: 6
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: The WKUP1 input pin is not connected to the low-power debouncer.
+            value: 0
+          - name: ENABLE
+            description: The WKUP1 input pin is connected to the low-power debouncer and forces a system wake-up.
+            value: 1
+      - name: LPDBCCLR
+        description: Low-power Debouncer Clear
+        bitOffset: 7
+        bitWidth: 1
+        enumeratedValues:
+          - name: NOT_ENABLE
+            description: A low-power debounce event does not create an immediate clear on the first half of GPBR registers.
+            value: 0
+          - name: ENABLE
+            description: A low-power debounce event on WKUP0 or WKUP1 generates an immediate clear on the first half of GPBR registers.
+            value: 1
+      - name: WKUPDBC
+        description: Wake-up Inputs Debouncer Period
+        bitOffset: 12
+        bitWidth: 3
+        enumeratedValues:
+          - name: IMMEDIATE
+            description: Immediate, no debouncing, detected active at least on one Slow Clock edge.
+            value: 0
+          - name: _3_SLCK
+            description: WKUPx shall be in its active state for at least 3 SLCK periods
+            value: 1
+          - name: _32_SLCK
+            description: WKUPx shall be in its active state for at least 32 SLCK periods
+            value: 2
+          - name: _512_SLCK
+            description: WKUPx shall be in its active state for at least 512 SLCK periods
+            value: 3
+          - name: _4096_SLCK
+            description: WKUPx shall be in its active state for at least 4,096 SLCK periods
+            value: 4
+          - name: _32768_SLCK
+            description: WKUPx shall be in its active state for at least 32,768 SLCK periods
+            value: 5
+      - name: LPDBC
+        description: Low-power Debouncer Period
+        bitOffset: 16
+        bitWidth: 3
+        enumeratedValues:
+          - name: DISABLE
+            description: Disable the low-power debouncers.
+            value: 0
+          - name: _2_RTCOUT
+            description: WKUP0/1 in active state for at least 2 RTCOUTx clock periods
+            value: 1
+          - name: _3_RTCOUT
+            description: WKUP0/1 in active state for at least 3 RTCOUTx clock periods
+            value: 2
+          - name: _4_RTCOUT
+            description: WKUP0/1 in active state for at least 4 RTCOUTx clock periods
+            value: 3
+          - name: _5_RTCOUT
+            description: WKUP0/1 in active state for at least 5 RTCOUTx clock periods
+            value: 4
+          - name: _6_RTCOUT
+            description: WKUP0/1 in active state for at least 6 RTCOUTx clock periods
+            value: 5
+          - name: _7_RTCOUT
+            description: WKUP0/1 in active state for at least 7 RTCOUTx clock periods
+            value: 6
+          - name: _8_RTCOUT
+            description: WKUP0/1 in active state for at least 8 RTCOUTx clock periods
+            value: 7
+  - name: WUIR
+    description: Supply Controller Wake-up Inputs Register
+    addressOffset: 16
+    size: 32
+    fields:
+      - name: WKUPEN0
+        description: Wake-up Input Enable 0 to 0
+        bitOffset: 0
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN1
+        description: Wake-up Input Enable 0 to 1
+        bitOffset: 1
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN2
+        description: Wake-up Input Enable 0 to 2
+        bitOffset: 2
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN3
+        description: Wake-up Input Enable 0 to 3
+        bitOffset: 3
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN4
+        description: Wake-up Input Enable 0 to 4
+        bitOffset: 4
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN5
+        description: Wake-up Input Enable 0 to 5
+        bitOffset: 5
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN6
+        description: Wake-up Input Enable 0 to 6
+        bitOffset: 6
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN7
+        description: Wake-up Input Enable 0 to 7
+        bitOffset: 7
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN8
+        description: Wake-up Input Enable 0 to 8
+        bitOffset: 8
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN9
+        description: Wake-up Input Enable 0 to 9
+        bitOffset: 9
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN10
+        description: Wake-up Input Enable 0 to 10
+        bitOffset: 10
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN11
+        description: Wake-up Input Enable 0 to 11
+        bitOffset: 11
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN12
+        description: Wake-up Input Enable 0 to 12
+        bitOffset: 12
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPEN13
+        description: Wake-up Input Enable 0 to 13
+        bitOffset: 13
+        bitWidth: 1
+        enumeratedValues:
+          - name: DISABLE
+            description: The corresponding wake-up input has no wake-up effect.
+            value: 0
+          - name: ENABLE
+            description: The corresponding wake-up input is enabled for a wake-up of the core power supply.
+            value: 1
+      - name: WKUPT0
+        description: Wake-up Input Type 0 to 0
+        bitOffset: 16
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT1
+        description: Wake-up Input Type 0 to 1
+        bitOffset: 17
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT2
+        description: Wake-up Input Type 0 to 2
+        bitOffset: 18
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT3
+        description: Wake-up Input Type 0 to 3
+        bitOffset: 19
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT4
+        description: Wake-up Input Type 0 to 4
+        bitOffset: 20
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT5
+        description: Wake-up Input Type 0 to 5
+        bitOffset: 21
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT6
+        description: Wake-up Input Type 0 to 6
+        bitOffset: 22
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT7
+        description: Wake-up Input Type 0 to 7
+        bitOffset: 23
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT8
+        description: Wake-up Input Type 0 to 8
+        bitOffset: 24
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT9
+        description: Wake-up Input Type 0 to 9
+        bitOffset: 25
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT10
+        description: Wake-up Input Type 0 to 10
+        bitOffset: 26
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT11
+        description: Wake-up Input Type 0 to 11
+        bitOffset: 27
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT12
+        description: Wake-up Input Type 0 to 12
+        bitOffset: 28
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+      - name: WKUPT13
+        description: Wake-up Input Type 0 to 13
+        bitOffset: 29
+        bitWidth: 1
+        enumeratedValues:
+          - name: LOW
+            description: A falling edge followed by a low level for a period defined by WKUPDBC on the corre-sponding wake-up input forces the wake-up of the core power supply.
+            value: 0
+          - name: HIGH
+            description: A rising edge followed by a high level for a period defined by WKUPDBC on the cor-responding wake-up input forces the wake-up of the core power supply.
+            value: 1
+  - name: SR
+    description: Supply Controller Status Register
+    addressOffset: 20
+    size: 32
+    access: read-only
+    fields:
+      - name: WKUPS
+        description: WKUP Wake-up Status (cleared on read)
+        bitOffset: 1
+        bitWidth: 1
+        enumeratedValues:
+          - name: 'NO'
+            description: No wake-up due to the assertion of the WKUP pins has occurred since the last read of SUPC_SR.
+            value: 0
+          - name: PRESENT
+            description: At least one wake-up due to the assertion of the WKUP pins has occurred since the last read of SUPC_SR.
+            value: 1
+      - name: SMWS
+        description: Supply Monitor Detection Wake-up Status (cleared on read)
+        bitOffset: 2
+        bitWidth: 1
+        enumeratedValues:
+          - name: 'NO'
+            description: No wake-up due to a supply monitor detection has occurred since the last read of SUPC_SR.
+            value: 0
+          - name: PRESENT
+            description: At least one wake-up due to a supply monitor detection has occurred since the last read of SUPC_SR.
+            value: 1
+      - name: BODRSTS
+        description: Brownout Detector Reset Status (cleared on read)
+        bitOffset: 3
+        bitWidth: 1
+        enumeratedValues:
+          - name: 'NO'
+            description: No core brownout rising edge event has been detected since the last read of the SUPC_SR.
+            value: 0
+          - name: PRESENT
+            description: At least one brownout output rising edge event has been detected since the last read of the SUPC_SR.
+            value: 1
+      - name: SMRSTS
+        description: Supply Monitor Reset Status (cleared on read)
+        bitOffset: 4
+        bitWidth: 1
+        enumeratedValues:
+          - name: 'NO'
+            description: No supply monitor detection has generated a core reset since the last read of the SUPC_SR.
+            value: 0
+          - name: PRESENT
+            description: At least one supply monitor detection has generated a core reset since the last read of the SUPC_SR.
+            value: 1
+      - name: SMS
+        description: Supply Monitor Status (cleared on read)
+        bitOffset: 5
+        bitWidth: 1
+        enumeratedValues:
+          - name: 'NO'
+            description: No supply monitor detection since the last read of SUPC_SR.
+            value: 0
+          - name: PRESENT
+            description: At least one supply monitor detection since the last read of SUPC_SR.
+            value: 1
+      - name: SMOS
+        description: Supply Monitor Output Status
+        bitOffset: 6
+        bitWidth: 1
+        enumeratedValues:
+          - name: HIGH
+            description: The supply monitor detected VDDIO higher than its threshold at its last measurement.
+            value: 0
+          - name: LOW
+            description: The supply monitor detected VDDIO lower than its threshold at its last measurement.
+            value: 1
+      - name: OSCSEL
+        description: 32-kHz Oscillator Selection Status
+        bitOffset: 7
+        bitWidth: 1
+        enumeratedValues:
+          - name: RC
+            description: The slow clock, SLCK, is generated by the embedded 32 kHz RC oscillator.
+            value: 0
+          - name: CRYST
+            description: The slow clock, SLCK, is generated by the 32 kHz crystal oscillator.
+            value: 1
+      - name: LPDBCS0
+        description: Low-power Debouncer Wake-up Status on WKUP0 (cleared on read)
+        bitOffset: 13
+        bitWidth: 1
+        enumeratedValues:
+          - name: 'NO'
+            description: No wake-up due to the assertion of the WKUP0 pin has occurred since the last read of SUPC_SR.
+            value: 0
+          - name: PRESENT
+            description: At least one wake-up due to the assertion of the WKUP0 pin has occurred since the last read of SUPC_SR.
+            value: 1
+      - name: LPDBCS1
+        description: Low-power Debouncer Wake-up Status on WKUP1 (cleared on read)
+        bitOffset: 14
+        bitWidth: 1
+        enumeratedValues:
+          - name: 'NO'
+            description: No wake-up due to the assertion of the WKUP1 pin has occurred since the last read of SUPC_SR.
+            value: 0
+          - name: PRESENT
+            description: At least one wake-up due to the assertion of the WKUP1 pin has occurred since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS0
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 16
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS1
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 17
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS2
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 18
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS3
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 19
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS4
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 20
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS5
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 21
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS6
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 22
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS7
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 23
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS8
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 24
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS9
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 25
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS10
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 26
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS11
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 27
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS12
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 28
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+      - name: WKUPIS13
+        description: WKUPx Input Status (cleared on read)
+        bitOffset: 29
+        bitWidth: 1
+        enumeratedValues:
+          - name: DIS
+            description: The corresponding wake-up input is disabled, or was inactive at the time the debouncer triggered a wake-up event.
+            value: 0
+          - name: EN
+            description: The corresponding wake-up input was active at the time the debouncer triggered a wake-up event since the last read of SUPC_SR.
+            value: 1
+  - name: SYSC_WPMR
+    description: Write Protection Mode Register
+    addressOffset: 212
+    size: 32
+    fields:
+      - name: WPEN
+        description: Write Protection Enable
+        bitOffset: 0
+        bitWidth: 1
+      - name: WPKEY
+        description: Write Protection Key
+        bitOffset: 8
+        bitWidth: 24
+        enumeratedValues:
+          - name: PASSWD
+            description: Writing any other value in this field aborts the write operation of the WPEN bit. Always reads as 0.
+            value: 5395523
+addressBlocks:
+  - offset: 0
+    size: 216
+    usage: registers
+interrupts:
+  - name: INT
+    description: Supply Controller

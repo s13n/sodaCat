@@ -1,0 +1,346 @@
+name: AES
+version: 6149W
+description: Advanced Encryption Standard hardware accelerator
+source: ATSAMV71Q21B SVD Rev 0
+registers:
+  - name: CR
+    description: Control Register
+    addressOffset: 0
+    size: 32
+    access: write-only
+    fields:
+      - name: START
+        description: Start Processing
+        bitOffset: 0
+        bitWidth: 1
+      - name: SWRST
+        description: Software Reset
+        bitOffset: 8
+        bitWidth: 1
+      - name: LOADSEED
+        description: Random Number Generator Seed Loading
+        bitOffset: 16
+        bitWidth: 1
+  - name: MR
+    description: Mode Register
+    addressOffset: 4
+    size: 32
+    fields:
+      - name: CIPHER
+        description: Processing Mode
+        bitOffset: 0
+        bitWidth: 1
+      - name: GTAGEN
+        description: GCM Automatic Tag Generation Enable
+        bitOffset: 1
+        bitWidth: 1
+      - name: DUALBUFF
+        description: Dual Input Buffer
+        bitOffset: 3
+        bitWidth: 1
+        enumeratedValues:
+          - name: INACTIVE
+            description: AES_IDATARx cannot be written during processing of previous block.
+            value: 0
+          - name: ACTIVE
+            description: AES_IDATARx can be written during processing of previous block when SMOD = 2. It speeds up the overall runtime of large files.
+            value: 1
+      - name: PROCDLY
+        description: Processing Delay
+        bitOffset: 4
+        bitWidth: 4
+      - name: SMOD
+        description: Start Mode
+        bitOffset: 8
+        bitWidth: 2
+        enumeratedValues:
+          - name: MANUAL_START
+            description: Manual Mode
+            value: 0
+          - name: AUTO_START
+            description: Auto Mode
+            value: 1
+          - name: IDATAR0_START
+            description: AES_IDATAR0 access only Auto Mode (DMA)
+            value: 2
+      - name: KEYSIZE
+        description: Key Size
+        bitOffset: 10
+        bitWidth: 2
+        enumeratedValues:
+          - name: AES128
+            description: AES Key Size is 128 bits
+            value: 0
+          - name: AES192
+            description: AES Key Size is 192 bits
+            value: 1
+          - name: AES256
+            description: AES Key Size is 256 bits
+            value: 2
+      - name: OPMOD
+        description: Operating Mode
+        bitOffset: 12
+        bitWidth: 3
+        enumeratedValues:
+          - name: ECB
+            description: 'ECB: Electronic Code Book mode'
+            value: 0
+          - name: CBC
+            description: 'CBC: Cipher Block Chaining mode'
+            value: 1
+          - name: OFB
+            description: 'OFB: Output Feedback mode'
+            value: 2
+          - name: CFB
+            description: 'CFB: Cipher Feedback mode'
+            value: 3
+          - name: CTR
+            description: 'CTR: Counter mode (16-bit internal counter)'
+            value: 4
+          - name: GCM
+            description: 'GCM: Galois/Counter mode'
+            value: 5
+      - name: LOD
+        description: Last Output Data Mode
+        bitOffset: 15
+        bitWidth: 1
+      - name: CFBS
+        description: Cipher Feedback Data Size
+        bitOffset: 16
+        bitWidth: 3
+        enumeratedValues:
+          - name: SIZE_128BIT
+            description: 128-bit
+            value: 0
+          - name: SIZE_64BIT
+            description: 64-bit
+            value: 1
+          - name: SIZE_32BIT
+            description: 32-bit
+            value: 2
+          - name: SIZE_16BIT
+            description: 16-bit
+            value: 3
+          - name: SIZE_8BIT
+            description: 8-bit
+            value: 4
+      - name: CKEY
+        description: Countermeasure Key
+        bitOffset: 20
+        bitWidth: 4
+        enumeratedValues:
+          - name: PASSWD
+            description: This field must be written with 0xE to allow CMTYPx bit configuration changes. Any other values will abort the write operation in CMTYPx bits.Always reads as 0.
+            value: 14
+  - name: IER
+    description: Interrupt Enable Register
+    addressOffset: 16
+    size: 32
+    access: write-only
+    fields:
+      - name: DATRDY
+        description: Data Ready Interrupt Enable
+        bitOffset: 0
+        bitWidth: 1
+      - name: URAD
+        description: Unspecified Register Access Detection Interrupt Enable
+        bitOffset: 8
+        bitWidth: 1
+      - name: TAGRDY
+        description: GCM Tag Ready Interrupt Enable
+        bitOffset: 16
+        bitWidth: 1
+  - name: IDR
+    description: Interrupt Disable Register
+    addressOffset: 20
+    size: 32
+    access: write-only
+    fields:
+      - name: DATRDY
+        description: Data Ready Interrupt Disable
+        bitOffset: 0
+        bitWidth: 1
+      - name: URAD
+        description: Unspecified Register Access Detection Interrupt Disable
+        bitOffset: 8
+        bitWidth: 1
+      - name: TAGRDY
+        description: GCM Tag Ready Interrupt Disable
+        bitOffset: 16
+        bitWidth: 1
+  - name: IMR
+    description: Interrupt Mask Register
+    addressOffset: 24
+    size: 32
+    access: read-only
+    fields:
+      - name: DATRDY
+        description: Data Ready Interrupt Mask
+        bitOffset: 0
+        bitWidth: 1
+      - name: URAD
+        description: Unspecified Register Access Detection Interrupt Mask
+        bitOffset: 8
+        bitWidth: 1
+      - name: TAGRDY
+        description: GCM Tag Ready Interrupt Mask
+        bitOffset: 16
+        bitWidth: 1
+  - name: ISR
+    description: Interrupt Status Register
+    addressOffset: 28
+    size: 32
+    access: read-only
+    fields:
+      - name: DATRDY
+        description: Data Ready (cleared by setting bit START or bit SWRST in AES_CR or by reading AES_ODATARx)
+        bitOffset: 0
+        bitWidth: 1
+      - name: URAD
+        description: Unspecified Register Access Detection Status (cleared by writing SWRST in AES_CR)
+        bitOffset: 8
+        bitWidth: 1
+      - name: URAT
+        description: Unspecified Register Access (cleared by writing SWRST in AES_CR)
+        bitOffset: 12
+        bitWidth: 4
+        enumeratedValues:
+          - name: IDR_WR_PROCESSING
+            description: Input Data Register written during the data processing when SMOD = 0x2 mode.
+            value: 0
+          - name: ODR_RD_PROCESSING
+            description: Output Data Register read during the data processing.
+            value: 1
+          - name: MR_WR_PROCESSING
+            description: Mode Register written during the data processing.
+            value: 2
+          - name: ODR_RD_SUBKGEN
+            description: Output Data Register read during the sub-keys generation.
+            value: 3
+          - name: MR_WR_SUBKGEN
+            description: Mode Register written during the sub-keys generation.
+            value: 4
+          - name: WOR_RD_ACCESS
+            description: Write-only register read access.
+            value: 5
+      - name: TAGRDY
+        description: GCM Tag Ready
+        bitOffset: 16
+        bitWidth: 1
+  - dim: 8
+    dimIncrement: 4
+    name: KEYWR[%s]
+    description: Key Word Register
+    addressOffset: 32
+    size: 32
+    access: write-only
+    fields:
+      - name: KEYW
+        description: Key Word
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 4
+    dimIncrement: 4
+    name: IDATAR[%s]
+    description: Input Data Register
+    addressOffset: 64
+    size: 32
+    access: write-only
+    fields:
+      - name: IDATA
+        description: Input Data Word
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 4
+    dimIncrement: 4
+    name: ODATAR[%s]
+    description: Output Data Register
+    addressOffset: 80
+    size: 32
+    access: read-only
+    fields:
+      - name: ODATA
+        description: Output Data
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 4
+    dimIncrement: 4
+    name: IVR[%s]
+    description: Initialization Vector Register
+    addressOffset: 96
+    size: 32
+    access: write-only
+    fields:
+      - name: IV
+        description: Initialization Vector
+        bitOffset: 0
+        bitWidth: 32
+  - name: AADLENR
+    description: Additional Authenticated Data Length Register
+    addressOffset: 112
+    size: 32
+    fields:
+      - name: AADLEN
+        description: Additional Authenticated Data Length
+        bitOffset: 0
+        bitWidth: 32
+  - name: CLENR
+    description: Plaintext/Ciphertext Length Register
+    addressOffset: 116
+    size: 32
+    fields:
+      - name: CLEN
+        description: Plaintext/Ciphertext Length
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 4
+    dimIncrement: 4
+    name: GHASHR[%s]
+    description: GCM Intermediate Hash Word Register
+    addressOffset: 120
+    size: 32
+    fields:
+      - name: GHASH
+        description: Intermediate GCM Hash Word x
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 4
+    dimIncrement: 4
+    name: TAGR[%s]
+    description: GCM Authentication Tag Word Register
+    addressOffset: 136
+    size: 32
+    access: read-only
+    fields:
+      - name: TAG
+        description: GCM Authentication Tag x
+        bitOffset: 0
+        bitWidth: 32
+  - name: CTRR
+    description: GCM Encryption Counter Value Register
+    addressOffset: 152
+    size: 32
+    access: read-only
+    fields:
+      - name: CTR
+        description: GCM Encryption Counter
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 4
+    dimIncrement: 4
+    name: GCMHR[%s]
+    description: GCM H Word Register
+    addressOffset: 156
+    size: 32
+    fields:
+      - name: H
+        description: GCM H Word x
+        bitOffset: 0
+        bitWidth: 32
+addressBlocks:
+  - offset: 0
+    size: 172
+    usage: registers
+interrupts:
+  - name: INT
+    description: AES
