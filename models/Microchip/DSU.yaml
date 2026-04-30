@@ -1,0 +1,639 @@
+name: DSU
+version: 037162a0
+description: Device service unit
+source: PIC32CZ8110CA80208 SVD Rev 0
+registers:
+  - name: CTRL
+    description: Control
+    addressOffset: 0
+    size: 32
+    access: write-only
+    resetValue: 0
+    fields:
+      - name: SWRST
+        description: Software Reset
+        bitOffset: 0
+        bitWidth: 1
+      - name: CMD
+        description: Command Register
+        bitOffset: 16
+        bitWidth: 16
+        enumeratedValues:
+          - name: NOOP
+            description: No operation
+            value: 0
+          - name: CRC32
+            description: 32-bit Cyclic Redundancy Code
+            value: 42240
+          - name: MBIST
+            description: Global Memory built-in self-test
+            value: 42241
+  - name: ADDR
+    description: Address
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    fields:
+      - name: ADDR
+        description: Address
+        bitOffset: 2
+        bitWidth: 30
+  - name: ADDR_MBIST_MODE
+    description: Address
+    alternateRegister: ADDR
+    addressOffset: 4
+    size: 32
+    resetValue: 0
+    fields:
+      - name: AMOD
+        description: Access Mode
+        bitOffset: 0
+        bitWidth: 2
+        enumeratedValues:
+          - name: EXIT_ON_ERROR
+            description: STATUSA.FAIL rises upon first error and algorithm stops (STATUSA.DONE rises).
+            value: 0
+          - name: PAUSE_ON_ERROR
+            description: STATUSA.FAIL rises when an error is detected and algorith stops until STATUSA.FAIL is cleared. Once cleared, the algorithm is resumed going to next test step.
+            value: 1
+      - name: ADDR
+        description: Address
+        bitOffset: 2
+        bitWidth: 30
+  - name: LENGTH
+    description: Length
+    addressOffset: 8
+    size: 32
+    resetValue: 0
+    fields:
+      - name: LENGTH
+        description: Length
+        bitOffset: 2
+        bitWidth: 30
+  - name: DATA
+    description: Data
+    addressOffset: 12
+    size: 32
+    resetValue: 0
+    fields:
+      - name: DATA
+        description: Data
+        bitOffset: 0
+        bitWidth: 32
+  - name: DATA_MBIST_MODE
+    description: Data
+    alternateRegister: DATA
+    addressOffset: 12
+    size: 32
+    resetValue: 0
+    fields:
+      - name: STATE
+        description: MBIST state
+        bitOffset: 0
+        bitWidth: 5
+        enumeratedValues:
+          - name: SET1
+            description: "SET1 Phase: read '0' write '1'"
+            value: 9
+          - name: SET2
+            description: "SET2 Phase: read '1' write '0'"
+            value: 10
+          - name: SET2B
+            description: "SET2B Phase: read '0' write '1'"
+            value: 11
+          - name: CLEAR1
+            description: "CLEAR1 Phase: read '1' write '0'"
+            value: 12
+          - name: CLEAR2
+            description: "CLEAR2 Phase: read '0' write '1'"
+            value: 13
+          - name: CLEAR2B
+            description: "CLEAR2B Phase: read '1' write '0'"
+            value: 14
+          - name: READ
+            description: 'READ Phase: check memory is cleared'
+            value: 15
+      - name: INDEX
+        description: MBIST bit Index
+        bitOffset: 8
+        bitWidth: 5
+  - name: CFG
+    description: Configuration
+    addressOffset: 16
+    size: 32
+    resetValue: 0
+    fields:
+      - name: DCCDMALEVEL0
+        description: DMA Trigger 0 Level
+        bitOffset: 0
+        bitWidth: 1
+        enumeratedValues:
+          - name: EMPTY
+            description: Trigger x rises when DCC is read and falls when it is written
+            value: 0
+          - name: FULL
+            description: Trigger x rises when DCC is written and falls when it is read
+            value: 1
+      - name: DCCDMALEVEL1
+        description: DMA Trigger 1 Level
+        bitOffset: 1
+        bitWidth: 1
+        enumeratedValues:
+          - name: EMPTY
+            description: Trigger x rises when DCC is read and falls when it is written
+            value: 0
+          - name: FULL
+            description: Trigger x rises when DCC is written and falls when it is read
+            value: 1
+      - name: MBFI
+        description: Enables the Memory Bist Fault Injection
+        bitOffset: 2
+        bitWidth: 1
+      - name: MISC
+        description: Device Specific Configuration Register
+        bitOffset: 8
+        bitWidth: 24
+  - name: MBFI0
+    description: Memory Bist Fault Injection 0
+    addressOffset: 20
+    size: 32
+    resetValue: 0
+    fields:
+      - name: BIDX
+        description: Bit Index of injected fault
+        bitOffset: 0
+        bitWidth: 5
+      - name: AMMOD
+        description: Address matching mode
+        bitOffset: 6
+        bitWidth: 1
+        enumeratedValues:
+          - name: ADDR
+            description: Address match, fault injected when the masked master address matches with the masked bcc1.addr
+            value: 0
+          - name: ALWAYS
+            description: Always matches, fault injected every AHB access
+            value: 1
+      - name: FTYPE
+        description: Fault type
+        bitOffset: 7
+        bitWidth: 1
+        enumeratedValues:
+          - name: STUCKAT0
+            description: Stuck At 0
+            value: 0
+          - name: STUCKAT1
+            description: Stuck At 1
+            value: 1
+      - name: AMMSK
+        description: Address matching Mask (Word address)
+        bitOffset: 8
+        bitWidth: 24
+  - name: MBFI1
+    description: Memory Bist Fault Injection 1
+    addressOffset: 24
+    size: 32
+    resetValue: 0
+    fields:
+      - name: ADDR
+        description: Word Address
+        bitOffset: 2
+        bitWidth: 30
+  - name: STATUSA
+    description: Status A
+    addressOffset: 256
+    size: 32
+    resetValue: 0
+    fields:
+      - name: DONE
+        description: Done
+        bitOffset: 0
+        bitWidth: 1
+      - name: FAIL
+        description: Failure
+        bitOffset: 1
+        bitWidth: 1
+      - name: BERR
+        description: Bus Error
+        bitOffset: 2
+        bitWidth: 1
+      - name: PERR
+        description: Protection Error
+        bitOffset: 3
+        bitWidth: 1
+      - name: CRSTEXT0
+        description: CPU 0 Reset Phase Extension
+        bitOffset: 8
+        bitWidth: 1
+      - name: CRSTEXT1
+        description: CPU 1 Reset Phase Extension
+        bitOffset: 9
+        bitWidth: 1
+      - name: CRSTEXT2
+        description: CPU 2 Reset Phase Extension
+        bitOffset: 10
+        bitWidth: 1
+      - name: CRSTEXT3
+        description: CPU 3 Reset Phase Extension
+        bitOffset: 11
+        bitWidth: 1
+      - name: BREXT0
+        description: BootRom 0 Phase Extension
+        bitOffset: 16
+        bitWidth: 1
+      - name: BREXT1
+        description: BootRom 1 Phase Extension
+        bitOffset: 17
+        bitWidth: 1
+      - name: BREXT2
+        description: BootRom 2 Phase Extension
+        bitOffset: 18
+        bitWidth: 1
+      - name: BREXT3
+        description: BootRom 3 Phase Extension
+        bitOffset: 19
+        bitWidth: 1
+  - name: STATUSB
+    description: Status B
+    addressOffset: 260
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: BCCD0
+        description: Boot ROM Communication Channel 0 Dirty
+        bitOffset: 0
+        bitWidth: 1
+      - name: BCCD1
+        description: Boot ROM Communication Channel 1 Dirty
+        bitOffset: 1
+        bitWidth: 1
+      - name: DCCD0
+        description: Debug Communication Channel 0 Dirty
+        bitOffset: 2
+        bitWidth: 1
+      - name: DCCD1
+        description: Debug Communication Channel 1 Dirty
+        bitOffset: 3
+        bitWidth: 1
+      - name: DBGPRES
+        description: Debugger Present
+        bitOffset: 8
+        bitWidth: 1
+      - name: HPE
+        description: Hot-Plugging Enable
+        bitOffset: 10
+        bitWidth: 1
+      - name: APDIS
+        description: ARM Access Ports Disabled
+        bitOffset: 11
+        bitWidth: 1
+  - name: STATUSC
+    description: Status C
+    addressOffset: 264
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: STATE
+        description: Core State
+        bitOffset: 0
+        bitWidth: 5
+        enumeratedValues:
+          - name: IDLE
+            description: State Machine Ready
+            value: 0
+          - name: MBIST_FILL
+            description: MBIST fill memory with zeroes
+            value: 8
+          - name: MBIST_SET1
+            description: "SET1 Phase: read '0' write '1'"
+            value: 9
+          - name: MBIST_SET2
+            description: "SET2 Phase: read '1' write '0'"
+            value: 10
+          - name: MBIST_SET2B
+            description: "SET2B Phase: read '0' write '1'"
+            value: 11
+          - name: MBIST_CLEAR1
+            description: "CLEAR1 Phase: read '1' write '0'"
+            value: 12
+          - name: MBIST_CLEAR2
+            description: "CLEAR2 Phase: read '0' write '1'"
+            value: 13
+          - name: MBIST_CLEAR2B
+            description: "CLEAR2B Phase: read '1' write '0'"
+            value: 14
+          - name: MBIST_READ
+            description: 'READ Phase: check memory is cleared'
+            value: 15
+      - name: INDEX
+        description: MBIST, MSA, PMSA bit Index
+        bitOffset: 8
+        bitWidth: 5
+  - dim: 2
+    dimIncrement: 4
+    name: BCC[%s]
+    description: Boot ROM Communication Channel x
+    addressOffset: 272
+    size: 32
+    resetValue: 0
+    fields:
+      - name: DATA
+        description: Data
+        bitOffset: 0
+        bitWidth: 32
+  - dim: 2
+    dimIncrement: 4
+    name: DCC[%s]
+    description: Debug Communication Channel x
+    addressOffset: 280
+    size: 32
+    resetValue: 0
+    fields:
+      - name: DATA
+        description: Data
+        bitOffset: 0
+        bitWidth: 32
+  - name: DID
+    description: Device Identification
+    addressOffset: 288
+    size: 32
+    access: read-only
+    resetValue: 153092179
+    fields:
+      - name: MARKER
+        description: Marker Bit
+        bitOffset: 0
+        bitWidth: 1
+      - name: MANID
+        description: Manufacturer ID
+        bitOffset: 1
+        bitWidth: 11
+      - name: DEVSEL
+        description: Device Select
+        bitOffset: 12
+        bitWidth: 8
+      - name: PRODUCT
+        description: Product
+        bitOffset: 20
+        bitWidth: 8
+      - name: REVISION
+        description: Revision
+        bitOffset: 28
+        bitWidth: 4
+  - name: DAL
+    description: Debugger Access Level
+    addressOffset: 292
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: CPU0
+        description: Per CPU Debugger Access Level
+        bitOffset: 0
+        bitWidth: 2
+        enumeratedValues:
+          - name: SECURED
+            description: Debugger targeting CPU0 domain can only access the DSU external address space otherwise debugger access is disabled
+            value: 0
+          - name: NS_DEBUG
+            description: Debugger can access only non-secure regions
+            value: 1
+          - name: FULL_DEBUG
+            description: Debugger can access secure and non-secure regions
+            value: 2
+          - name: UNIMPLEMENTED
+            description: No CPU in this slot
+            value: 3
+      - name: CPU1
+        description: Per CPU Debugger Access Level
+        bitOffset: 2
+        bitWidth: 2
+        enumeratedValues:
+          - name: SECURED
+            description: Debugger targeting CPU0 domain can only access the DSU external address space otherwise debugger access is disabled
+            value: 0
+          - name: NS_DEBUG
+            description: Debugger can access only non-secure regions
+            value: 1
+          - name: FULL_DEBUG
+            description: Debugger can access secure and non-secure regions
+            value: 2
+          - name: UNIMPLEMENTED
+            description: No CPU in this slot
+            value: 3
+      - name: CPU2
+        description: Per CPU Debugger Access Level
+        bitOffset: 4
+        bitWidth: 2
+        enumeratedValues:
+          - name: SECURED
+            description: Debugger targeting CPU0 domain can only access the DSU external address space otherwise debugger access is disabled
+            value: 0
+          - name: NS_DEBUG
+            description: Debugger can access only non-secure regions
+            value: 1
+          - name: FULL_DEBUG
+            description: Debugger can access secure and non-secure regions
+            value: 2
+          - name: UNIMPLEMENTED
+            description: No CPU in this slot
+            value: 3
+      - name: CPU3
+        description: Per CPU Debugger Access Level
+        bitOffset: 6
+        bitWidth: 2
+        enumeratedValues:
+          - name: SECURED
+            description: Debugger targeting CPU0 domain can only access the DSU external address space otherwise debugger access is disabled
+            value: 0
+          - name: NS_DEBUG
+            description: Debugger can access only non-secure regions
+            value: 1
+          - name: FULL_DEBUG
+            description: Debugger can access secure and non-secure regions
+            value: 2
+          - name: UNIMPLEMENTED
+            description: No CPU in this slot
+            value: 3
+  - dim: 8
+    dimIncrement: 4
+    name: ENTRY[%s]
+    description: Coresight ROM Table Entry x
+    addressOffset: 4096
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: EPRES
+        description: Entry Present
+        bitOffset: 0
+        bitWidth: 1
+      - name: FMT
+        description: Format
+        bitOffset: 1
+        bitWidth: 1
+      - name: ADDOFF
+        description: Address Offset
+        bitOffset: 12
+        bitWidth: 20
+  - name: MEMTYPE
+    description: Coresight ROM Table Memory Type
+    addressOffset: 8140
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: SMEMP
+        description: System Memory Present
+        bitOffset: 0
+        bitWidth: 1
+  - name: PID4
+    description: Coresight ROM Table Peripheral Identification 4
+    addressOffset: 8144
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: JEPCC
+        description: JEP-106 Continuation Code
+        bitOffset: 0
+        bitWidth: 4
+      - name: FKBC
+        description: 4KB count
+        bitOffset: 4
+        bitWidth: 4
+  - name: PID5
+    description: Coresight ROM Table Peripheral Identification 5
+    addressOffset: 8148
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields: []
+  - name: PID6
+    description: Coresight ROM Table Peripheral Identification 6
+    addressOffset: 8152
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields: []
+  - name: PID7
+    description: Coresight ROM Table Peripheral Identification 7
+    addressOffset: 8156
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields: []
+  - name: PID0
+    description: Coresight ROM Table Peripheral Identification 0
+    addressOffset: 8160
+    size: 32
+    access: read-only
+    resetValue: 208
+    fields:
+      - name: PARTNBL
+        description: Part Number Low
+        bitOffset: 0
+        bitWidth: 8
+  - name: PID1
+    description: Coresight ROM Table Peripheral Identification 1
+    addressOffset: 8164
+    size: 32
+    access: read-only
+    resetValue: 156
+    fields:
+      - name: PARTNBH
+        description: Part Number High
+        bitOffset: 0
+        bitWidth: 4
+      - name: JEPIDCL
+        description: Low part of the JEP-106 Identity Code
+        bitOffset: 4
+        bitWidth: 4
+  - name: PID2
+    description: Coresight ROM Table Peripheral Identification 2
+    addressOffset: 8168
+    size: 32
+    access: read-only
+    resetValue: 42
+    fields:
+      - name: JEPIDCH
+        description: JEP-106 Identity Code High
+        bitOffset: 0
+        bitWidth: 3
+      - name: JEPU
+        description: JEP-106 Identity Code is used
+        bitOffset: 3
+        bitWidth: 1
+      - name: REVISION
+        description: Revision Number
+        bitOffset: 4
+        bitWidth: 4
+  - name: PID3
+    description: Coresight ROM Table Peripheral Identification 3
+    addressOffset: 8172
+    size: 32
+    access: read-only
+    resetValue: 0
+    fields:
+      - name: CUSMOD
+        description: ARM CUSMOD
+        bitOffset: 0
+        bitWidth: 4
+      - name: REVAND
+        description: Revision Number
+        bitOffset: 4
+        bitWidth: 4
+  - name: CID0
+    description: Coresight ROM Table Component Identification 0
+    addressOffset: 8176
+    size: 32
+    access: read-only
+    resetValue: 13
+    fields:
+      - name: PREAMBLEB0
+        description: Preamble Byte 0
+        bitOffset: 0
+        bitWidth: 8
+  - name: CID1
+    description: Coresight ROM Table Component Identification 1
+    addressOffset: 8180
+    size: 32
+    access: read-only
+    resetValue: 16
+    fields:
+      - name: PREAMBLE
+        description: Preamble
+        bitOffset: 0
+        bitWidth: 4
+      - name: CCLASS
+        description: Component Class
+        bitOffset: 4
+        bitWidth: 4
+  - name: CID2
+    description: Coresight ROM Table Component Identification 2
+    addressOffset: 8184
+    size: 32
+    access: read-only
+    resetValue: 5
+    fields:
+      - name: PREAMBLEB2
+        description: Preamble Byte 2
+        bitOffset: 0
+        bitWidth: 8
+  - name: CID3
+    description: Coresight ROM Table Component Identification 3
+    addressOffset: 8188
+    size: 32
+    access: read-only
+    resetValue: 177
+    fields:
+      - name: PREAMBLEB3
+        description: Preamble Byte 3
+        bitOffset: 0
+        bitWidth: 8
+addressBlocks:
+  - offset: 0
+    size: 8192
+    usage: registers

@@ -21,6 +21,10 @@ microchip_add_family(ID pic32czca70 CODE PIC32CZ-CA70 DISPLAY "PIC32CZ-CA70"
     ZIP PIC32CZ-CA70_DFP.1.3.62.zip)
 microchip_add_family(ID pic32czmc70 CODE PIC32CZ-MC70 DISPLAY "PIC32CZ-MC70"
     ZIP PIC32CZ-MC70_DFP.1.3.57.zip)
+microchip_add_family(ID pic32czca80 CODE PIC32CZ-CA80 DISPLAY "PIC32CZ-CA80"
+    ZIP PIC32CZ-CA80_DFP.1.2.150.zip)
+microchip_add_family(ID pic32czca90 CODE PIC32CZ-CA90 DISPLAY "PIC32CZ-CA90"
+    ZIP PIC32CZ-CA90_DFP.1.4.160.zip)
 
 # ============================================================================
 # Summary
