@@ -94,6 +94,14 @@ python3 generate_chip_header.py <chip_model.yaml> <namespace> <model_name> <suff
 ```
 They use `string.Template` for code emission and produce `HwReg<T>`-based register wrappers with type-safe bitfield access. The `hwreg.hpp` template provides `.val()` (read as int), `.get()` (read as bitfield struct), and assignment for writes.
 
+The chip-header generator enforces **block-YAML order** for designated initializers: per-instance `parameters:` and `interrupts:` are reordered to match the block model's declaration order before emission, regardless of the order in the chip YAML. C++20 requires designators to appear in struct-declaration order, so any divergence would be a compile error. Names that the chip declares but the block doesn't raise `ValueError`. The block YAML is located by walking up from the chip-YAML directory until `<parent>/<ns>/<model>.yaml` exists, using the chip's `models:` map.
+
+### Clock-tree association
+
+A chip declares its clock tree via a top-level `clocktree:` string (path relative to the models root, e.g. `Microchip/SAM_Gen1_clocks` — same shape as `models:` map values). When the cmake macro `generate_header()` processes a chip, it auto-generates the chip's clock-tree header in the same C++ namespace, using the existing dedup mechanism so a clock tree shared by N chips is only emitted once per (namespace, target). The dispatcher (`generate_header.py`) routes clock-tree YAMLs by their `signals:` key. Standalone `generate_header(...)` calls for clock-tree models still work but are redundant once the chip references one.
+
+**Clock-tree mux encoding:** in mux input lists, `""` (empty string) is a valid mux setting that switches the output off (0 Hz), while `null` (None) marks an illegal/undefined setting. The distinction is intentional — consult the reference manual to determine which reserved positions are "off" vs truly illegal.
+
 ### Family generator
 
 A single unified `extractors/generate_models.py` script handles all families (STM32, LPC). Vendor-specific behavior (SVD access, source formatting) is provided by lightweight extension modules in `extractors/vendors/`. All STM32 family configuration lives in a single consolidated file `svd/ST/STM32.yaml` with two top-level keys:
@@ -109,7 +117,7 @@ Each family entry has up to four keys:
 - `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
 - `chip_interrupts` (optional): subfamily-keyed interrupt overrides to inject or correct chip-level interrupt assignments. Same cascade structure as `chip_params`: `chip_interrupts[subfamily|_all][chip|_all][instance_name] = {canonical_name: irq_number}`. First match wins (no merging across levels). Used to fix SVD bugs where interrupts are misattributed, missing, or misnumbered.
 
-Parameter declarations are arrays of `{name, type, default?, description?}`. Permissible types: `int`, `bool`, `string`.
+Parameter declarations are arrays of `{name, type, default?, description?}`. Permissible types: `int`, `bool`, `string`. The `type` field is optional and defaults to `int` in the C++ generator. Block models use `params:` for these declarations; chip-instance values appear under `parameters:` (different key, by design).
 
 The `chip_params` section is always keyed by subfamily (or `_all` for family-wide), then by chip name (or `_all` for subfamily-wide), then by block name or instance name. Resolution order: per-chip instance → per-chip block → subfamily `_all` instance → subfamily `_all` block → family `_all._all` instance → family `_all._all` block → param default.
 

@@ -1,40 +1,56 @@
 # sodaCat Documentation
 
-Documentation for the sodaCat SOC data extraction and model generation system.
+Documentation for the sodaCat SoC data extraction and model generation system.
 For a complete overview of the project architecture, build commands, and
 conventions, see [CLAUDE.md](../CLAUDE.md).
 
-## Transformation Framework
+## Design documents
 
-The generic transformation framework in `tools/generic_transform.py` provides a
-plugin-based, configuration-driven system for applying SVD post-processing
-transformations (renames, array clustering, parameter assignment, etc.).
+Per-topic design notes and rationale for non-obvious decisions:
 
-- [Framework Overview](transformation-framework/GENERIC_TRANSFORMATION_FRAMEWORK.md) - How the transformation system works
-- [Extension Guide](transformation-framework/TRANSFORMATION_EXTENSION_GUIDE.md) - Adding new transformation types
-- [Implementation Details](transformation-framework/GENERIC_TRANSFORMATION_DELIVERY.md) - What was delivered and how it works
-- [Checklist](transformation-framework/TRANSFORMATION_IMPLEMENTATION_CHECKLIST.md) - Quick reference for using the framework
+- [Cross-vendor licensed IP](design/cross-vendor-ip.md) — DWC GMAC/EQOS,
+  DWC2 USB OTG, Bosch M_CAN, DWC SDMMC, ARM PrimeCell PL08x; candidates
+  for cross-vendor unification and known licensees outside the database.
+- [STM32 shared blocks](design/stm32-shared-blocks.md) — per-block design
+  rationale for OPAMP variants, GpTimer source choice, OTG, ETH, FDCAN,
+  HRTIM, and other notable shared blocks.
+- [Multi-CPU chip model refactor](design/multicpu-chip-refactor.md) —
+  planned redesign to model multi-core silicon as `chip-with-cores:`
+  rather than one-chip-per-CPU-view.
 
-## Key Concepts
+## Per-vendor analysis (STM32)
 
-### Three-Tier Model Organization
+- [GpTimer comparison](ST/GpTimer_comparison.md)
+- [STM32C5 analysis](ST/STM32C5-analysis.md)
+- [USART comparison](ST/USART_comparison.md)
 
-Models are organized into three tiers to maximize code reuse:
-1. **Family base directory** (e.g. `H7/`) - Blocks shared across ALL subfamilies
-2. **Subfamily directories** (e.g. `H7/H73x/`) - Blocks that differ per subfamily
-3. **Chip models** (e.g. `H7/H73x/STM32H723.yaml`) - Chip-level configurations
+## Vendor reference manuals
 
-Placement is config-driven: blocks without `variants` in the family YAML config
-go to the base directory; blocks with `variants` go to subfamily directories.
+PDFs of vendor reference manuals live alongside this directory:
+[ARM/](ARM/), [ESP/](ESP/), [Microchip/](Microchip/), [NXP/](NXP/),
+[Raspberry/](Raspberry/), [ST/](ST/).
 
-### STM32 Family Extraction
+## Key concepts
+
+### Three-tier model organisation
+
+Models are organised into three tiers to maximise code reuse:
+1. **Top-level shared blocks** (e.g. `models/ST/WWDG.yaml`) — blocks shared across multiple families
+2. **Family base directory** (e.g. `models/ST/H7/`) — blocks shared across all subfamilies of a family
+3. **Subfamily directories** (e.g. `models/ST/H7/H745_H757/`) — blocks that differ per subfamily
+
+Placement is config-driven: blocks without `variants` in the family YAML
+config go to the family base directory; blocks with `variants` go to
+subfamily directories. See [CLAUDE.md](../CLAUDE.md) for the full rules.
+
+### STM32 family extraction
 
 All 17 STM32 families use a single unified extractor
-(`extractors/generate_stm32_models.py`) with consolidated YAML configuration in
+(`extractors/generate_models.py`) with consolidated YAML configuration in
 `svd/ST/STM32.yaml`. Subfamilies are aligned with ST reference manual
 boundaries so each subfamily corresponds to exactly one RM.
 
-### CMake Integration
+### CMake integration
 
 - Models are in the **source tree** (`models/ST/`) for easy user access
 - Build artifacts (stamp files) are in the **build directory** (not committed)
