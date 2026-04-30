@@ -132,6 +132,39 @@ future reader who spots the RM "reserved" entries doesn't try to "fix" the
 SVD or the model.
 
 
+## PIC32CZ-CA80/CA90: missing I2S peripheral block
+
+Reference: PIC32CZ-CA80/CA9x Family Data Sheet DS60001749G, Chapter 47
+("Inter-IC Sound Controller (I2S)") and Table 6-13 ("I2S Pinout I/O
+Descriptions").
+
+The CA80/CA90 chips carry **two** instances of the Inter-IC Sound
+Controller — `I2S0` and `I2S1` — confirmed both by the dedicated RM
+chapter (page 1930ff) and by the pinout, which lists ten dedicated I2S
+signals (`I2S_FSYNC0/1`, `I2S_MCK0/1`, `I2S_SCK0/1`, `I2S_SDI0/1`,
+`I2S_SDO0/1`). The SVD defines no peripheral for either instance.
+
+The Gen2 I2S is not just a renamed SAM-Gen1 `I2SC`; it is materially
+more capable:
+
+| | SAM-Gen1 `I2SC` | Gen2 `I2S` (CA80/CA90) |
+|---|---|---|
+| Native channels | 2 (stereo) | up to 8 |
+| TDM | not supported | up to 32 slots per FSYNC |
+| FIFOs | small holding regs | 2 × 64-byte (TX, RX) |
+| Audio formats | I²S, mono/stereo, compact stereo | I²S + left/right justified + 32-bit FP audio + AM824 raw + multiple TDM variants + PCM + I2STPD |
+
+So the CA80/CA90 *upgraded* the audio block from the SAM-Gen1 line; it
+is only the SVD that has dropped it.
+
+No transform can compensate for a wholly-absent peripheral; a hand-
+written model would need to be added to `models/Microchip/I2S.yaml` once
+the register layout is transcribed from the RM (or once Microchip
+publishes a fixed DFP). The block name `I2S` (no trailing `C`) suggests
+it should *not* re-use the SAM-Gen1 `models/Microchip/I2SC.yaml`; the
+register layout is materially different.
+
+
 ## PIC32CZ-CA80/CA90 ETH: misleading peripheral description
 
 Reference: PIC32CZ-CA80/CA9x Family Data Sheet DS60001749G
