@@ -165,6 +165,41 @@ it should *not* re-use the SAM-Gen1 `models/Microchip/I2SC.yaml`; the
 register layout is materially different.
 
 
+## MLB: incomplete `MLBCLK` enum values
+
+Reference: SAMV71 RM DS60001527J p.1396 (and equivalent CA70/CA80/CA90
+RM pages).
+
+The `MLBC0.MLBCLK[2:0]` field selects the MediaLB clock speed as a
+multiplier of Fs. The field is 3 bits wide and the RM documents seven
+values:
+
+| Value | Multiplier |
+|---|---|
+| 0 | 256×Fs |
+| 1 | 512×Fs |
+| 2 | 1024×Fs (max in 3-pin mode at Fs=48 kHz: 49.152 MHz) |
+| 3 | 2048×Fs |
+| 4 | 3072×Fs |
+| 5 | 4096×Fs |
+| 6 | 6144×Fs |
+
+All four MLB-bearing SVDs (SAMV71, PIC32CZ-CA70/CA80/CA90) declare
+only the first three (256/512/1024 ×Fs). Setting `MLBCLK = 3..6` is
+RM-legal and selects higher multipliers but generates no compile-time
+enum constant in the C++ headers, forcing users to fall back on raw
+integer literals.
+
+This is a minor SVD bug — easy to fix via a `patchFields` transform
+that adds the missing enum values when we get round to it. No transform
+is applied yet.
+
+Note that running at Fs=48 kHz with multiplier > 1024× exceeds the
+49.152 MHz documented 3-pin signaling limit; multipliers 2048..6144
+are intended for the 6-pin MediaLB variant (which the SAMV71/PIC32CZ
+silicon does not implement) or for lower Fs values.
+
+
 ## PIC32CZ-CA80/CA90 ETH: misleading peripheral description
 
 Reference: PIC32CZ-CA80/CA9x Family Data Sheet DS60001749G
