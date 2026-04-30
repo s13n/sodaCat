@@ -78,6 +78,13 @@ shared_blocks:
           - {name: 'IERPQ[%s]', newName: 'IERPQ%s', dimIndex: '1,2,3,4,5'}
           - {name: 'IDRPQ[%s]', newName: 'IDRPQ%s', dimIndex: '1,2,3,4,5'}
           - {name: 'IMRPQ[%s]', newName: 'IMRPQ%s', dimIndex: '1,2,3,4,5'}
+      # ST2CW is a cluster array (already correctly clustered in the SVD)
+      # whose two inner members are named ST2CW0 / ST2CW1 — redundant with
+      # the cluster name.  Rename to W0 / W1 so accesses read as
+      # ST2CW[n].W0 / .W1, matching the same scheme used for ETH.SCRT2CMP
+      # and the RM's "Compare Word 0/1" wording.  The regex anchors prevent
+      # the top-level cluster name (`ST2CW[%s]`) from matching.
+      - {type: renameRegisters, pattern: '^ST2CW(\d)$', replacement: 'W\1'}
 
   GPBR:
     from: ATSAMV71Q21B.GPBR

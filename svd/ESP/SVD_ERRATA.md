@@ -43,7 +43,7 @@ These peripherals appear in TRM Table 7.3-2 but have no SVD definition:
 |-------------|------------------------------|---------------------------|
 | 0x50000000  | USB 2.0 OTG High-Speed       | Synopsys DWC2 OTG IP      |
 | 0x50040000  | USB 2.0 OTG Full-Speed       | Synopsys DWC2 OTG IP      |
-| 0x50098000  | GMAC (Ethernet MAC)          | 16 KB, significant omission |
+| 0x50098000  | GMAC (Ethernet MAC)          | Synopsys DWC GMAC IP (see below); significant 16 KB omission |
 | 0x5009C000  | USB 2.0 OTG High-Speed PHY   |                           |
 | 0x500A5000  | HP Peripheral PMS            | Permission controller     |
 | 0x500A5800  | LP2HP Peripheral PMS         | Permission controller     |
@@ -58,6 +58,17 @@ These peripherals appear in TRM Table 7.3-2 but have no SVD definition:
 The SVD only provides USB_WRAP (PHY wrapper at 0x50080000) and USB_DEVICE
 (USB-Serial-JTAG at 0x500D2000) — neither of which is the actual USB OTG
 controller.
+
+The TRM does not name the EMAC IP vendor, but Chapter 50's register
+layout (MAC at 0x0000, DMA at 0x1000; canonical names `EMACCONFIG_REG`,
+`EMACFF_REG`, `EMACMIIADDR_REG`, `DMABUSMODE_REG`, `DMAOPERATION_MODE_REG`,
+`EMACADDR<n>LOW_REG` for n=0..8, `PMT_CSR_REG`, `EMACTSTPCTRL_REG`)
+unambiguously identifies it as **Synopsys DesignWare GMAC** — the same
+older DWC GMAC variant used in ST F4/F7 Ethernet and NXP LPC43xx
+ETHERNET (not the newer EQOS used in ST H5/H7/N6 and NXP LPC54/MCXN).
+A future hand-written or third-party-sourced model for this peripheral
+would group naturally with those existing DWC GMAC blocks rather than
+with Microchip's Cadence GEM (GMAC/ETH).
 
 ### Timer Group (TIMG)
 
