@@ -189,11 +189,8 @@ generators:
   - name: XTAL32K
     output: xtal32k
     description: "32.768 kHz crystal oscillator inside the SUPC.  Disabled by default; enabled by setting SUPC.CR.XTALSEL."
-    control:
-      instance: SUPC
-      reg: MR
-      field: OSCBYPASS
-    notes: "OSCBYPASS = 1 + XTALSEL = 1 puts the oscillator in bypass mode (external clock on XIN32)."
+    control: { state: stateXTAL32K }
+    notes: "Modelled as an external generator: the crystal is a board-level component and its presence/availability is a runtime state, not a register bit.  SUPC.MR.OSCBYPASS = 1 + SUPC.CR.XTALSEL = 1 selects external-clock-on-XIN32 mode."
 
   - name: MAIN_RC
     output: main_rc_osc
@@ -207,9 +204,8 @@ generators:
   - name: MAIN_XTAL
     output: main_xtal_osc
     description: "Main crystal oscillator (XIN/XOUT) for 3..20 MHz operation, or external clock when CKGR_MOR.MOSCXTBY = 1 (bypass)."
-    control:
-      reg: CKGR_MOR
-      field: MOSCXTEN
+    control: { state: stateMAIN_XTAL }
+    notes: "Modelled as an external generator: the crystal (or external clock source) is a board-level component.  Chip-side enable is CKGR_MOR.MOSCXTEN; bypass-mode is CKGR_MOR.MOSCXTBY."
 
 
 # ===========================================================================
