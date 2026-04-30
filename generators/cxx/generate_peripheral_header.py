@@ -313,18 +313,21 @@ $postfix"""))
             desc = int.get('description', '')
             ints += self.interruptTemplate.substitute(int, description=desc)
         params = ''
-        for par in per.get('parameters', per.get('params', [])):
+        for par in per.get('params', []):
             desc = par.get('description', '')
-            if par.get('type') == 'int' and 'max' in par:
+            ptype = par.get('type', 'int')   # `type:` is optional; defaults to int
+            if 'bits' in par:
+                # Explicit bit-width wins over any derivation; some authors
+                # round up (e.g. bits: 16, max: 32767) for alignment reasons.
+                params += self.parameterTemplate.substitute(par, description=desc)
+            elif ptype == 'bool':
+                params += self.parameterTemplate.substitute(par, bits=1, description=desc)
+            elif ptype == 'int' and 'max' in par:
                 bits = par['max'].bit_length() or 1
                 params += self.parameterTemplate.substitute(par, bits=bits, description=desc)
-            elif par.get('type') == 'bool':
-                params += self.parameterTemplate.substitute(par, bits=1, description=desc)
-            elif 'bits' in par:
-                params += self.parameterTemplate.substitute(par, description=desc)
             else:
-                ptype = {'string': 'const char*'}.get(par.get('type', 'int'), 'uint32_t')
-                params += f'\t{ptype} {par["name"]};\t//!< {desc}\n'
+                ctype = {'string': 'const char*'}.get(ptype, 'uint32_t')
+                params += f'\t{ctype} {par["name"]};\t//!< {desc}\n'
         return blocks, ints, params
 
     def formatPeripheral(self, per:dict, prefix:str, postfix:str):

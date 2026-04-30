@@ -125,6 +125,15 @@ def _check_array_shape(entry, path):
 def validate_semantics(data):
     errors = []
 
+    # Catch the stale `parameters:` spelling at the block level.  The chip
+    # schema uses `parameters:` for instance values, but a block declares
+    # its parameter shape under `params:`; a top-level `parameters:` here
+    # is a key mismatch that the C++ generator would silently ignore.
+    if 'parameters' in data:
+        errors.append(('params-key',
+                       "top-level 'parameters:' is the chip-side spelling; "
+                       "block models use 'params:'"))
+
     # Block-level parameter uniqueness.
     for name, count in find_duplicates(data.get('params')).items():
         errors.append(('params-dup',
