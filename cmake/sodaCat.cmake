@@ -108,10 +108,12 @@ function(ensure_model model_path)
         message(FATAL_ERROR "Failed to download ${url}: ${status_message}")
     endif()
 
-    # Check for transitive dependencies (models: key in YAML)
+    # Check for transitive dependencies: peripheral block models referenced
+    # under `models:`, plus an optional clock-tree model under `clocktree:`
+    # for chip YAMLs.  Both kinds of dep need their YAML files locally.
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c
-            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); m=d.get('models',{}); print(';'.join(m.values()) if m else '')"
+            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); deps=list(d.get('models',{}).values()); ct=d.get('clocktree'); deps += [ct] if ct else []; print(';'.join(deps))"
         OUTPUT_VARIABLE model_deps
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
@@ -204,6 +206,20 @@ function(generate_header target language namespace model_path suffix)
                 generate_header(${target} ${language} ${_ns} ${dep} ${suffix})
             endif()
         endforeach()
+    endif()
+
+    # Generate the chip's clock-tree header in the same C++ namespace as
+    # the chip itself, so consumers see chip and clock symbols side-by-side.
+    # The dispatcher (generate_header.py) routes clock-tree YAMLs by their
+    # `signals:` key, so no special handling is needed here beyond recursion.
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c
+            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); print(d.get('clocktree') or '')"
+        OUTPUT_VARIABLE clocktree_dep
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(clocktree_dep)
+        generate_header(${target} ${language} ${_ns} ${clocktree_dep} ${suffix})
     endif()
 
     # Resolve generator directory
