@@ -28,19 +28,47 @@ For most arrays the 0-based default happens to match the RM (`ISRPQ`,
 `ST1RPQ`, `ST2RPQ`, etc.). For the rest the model was wrong until
 patched. The two affected blocks identified to date are GMAC and ETH:
 
-### GMAC — SAMV71 RM, DS60001527J pages 742–744
+### GMAC — SAMV71 RM, DS60001527J pages 732–748
 
-| Array | RM range | Worked around with |
-|------|----------|--------------------|
-| `IERPQ[%s]` | `n=1..5` | `patchRegisters` → `dimIndex: 1,2,3,4,5` |
-| `IDRPQ[%s]` | `n=1..5` | `patchRegisters` → `dimIndex: 1,2,3,4,5` |
-| `IMRPQ[%s]` | `n=1..5` | `patchRegisters` → `dimIndex: 1,2,3,4,5` |
+All six priority-queue array registers cover the same logical queues
+1..5. The SAMV71 RM is internally inconsistent about the indexing:
 
-The PIC32CZ-CA70 RM (DS60001825E) numbers the same registers `n=0..4`,
-disagreeing with the SAMV71 RM. The hardware is identical (same Cadence
-GEM IP, same offsets); we follow the SAMV71/SAME70 RM convention because
-it matches the existing explicit `<dimIndex>1-4</dimIndex>` on `GMAC_SA`
-in the same SVD, and matches Cadence's upstream GEM TRM.
+| Array | RM offset formula | RM register names |
+|------|-------------------|-------------------|
+| `ISRPQ`, `TBQBAPQ`, `RBQBAPQ`, `RBSRPQ`, `ST1RPQ`, `ST2RPQ`, `ST2ER` | `x*0x04 [x=0..N]` | 0-based |
+| `IERPQ`, `IDRPQ`, `IMRPQ` | `(x-1)*0x04 [x=1..5]` | 1-based |
+
+The free-text descriptions on every PQ array nevertheless say *"Priority
+Queue (1..5)"* — confirming the registers all conceptually represent
+queues 1..5 regardless of the formula. We therefore force a uniform
+1-based numbering across the four ISRPQ/TBQBAPQ/RBQBAPQ/RBSRPQ arrays
+in addition to the three IERPQ/IDRPQ/IMRPQ arrays, so the array index
+always equals the queue number throughout the GMAC block:
+
+| Array | Worked around with |
+|------|--------------------|
+| `ISRPQ[%s]`   | `dimIndex: 1,2,3,4,5` |
+| `TBQBAPQ[%s]` | `dimIndex: 1,2,3,4,5` |
+| `RBQBAPQ[%s]` | `dimIndex: 1,2,3,4,5` |
+| `RBSRPQ[%s]`  | `dimIndex: 1,2,3,4,5` |
+| `IERPQ[%s]`   | `dimIndex: 1,2,3,4,5` |
+| `IDRPQ[%s]`   | `dimIndex: 1,2,3,4,5` |
+| `IMRPQ[%s]`   | `dimIndex: 1,2,3,4,5` |
+
+This deviates from the SAMV71 RM register *names* for the ISRPQ-group
+(which are `GMAC_ISRPQ0..GMAC_ISRPQ4`) but matches both the description
+text and the SAMV71 RM names for the IERPQ-group (`GMAC_IERPQ1..
+GMAC_IERPQ5`) and the explicit `<dimIndex>1-4</dimIndex>` on the sibling
+`GMAC_SA` cluster. The PIC32CZ-CA70 RM (DS60001825E) numbers all PQ
+registers as `n=0..4` — internally consistent, but the underlying
+hardware and queue-number convention is identical, so the same dimIndex
+choice applies.
+
+In addition, four flat scalars `TIDM1..TIDM4` (Type ID Match registers,
+offsets 168/172/176/180) were collapsed into a `TIDM%s` array indexed
+1..4, following the same 1-based convention. This required normalizing
+the per-register field names `ENID1`/`ENID2`/`ENID3`/`ENID4` to plain
+`ENID` first.
 
 ### ETH — PIC32CZ-CA80 RM, DS60001749G pages 899–994
 

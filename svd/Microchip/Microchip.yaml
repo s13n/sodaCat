@@ -73,11 +73,22 @@ shared_blocks:
     # numbering.  The other priority-queue arrays (ISRPQ, TBQBAPQ, RBQBAPQ,
     # RBSRPQ, ST1RPQ, ST2RPQ, ST2ER) are already RM-confirmed 0-based.
     transforms:
+      # All six priority-queue array registers cover the same logical
+      # queues 1..5 of the GMAC.  IERPQ/IDRPQ/IMRPQ are named 1..5 in the
+      # SAMV71 RM offset formula `(x-1)*0x04 [x=1..5]`; the other three
+      # (ISRPQ, TBQBAPQ, RBQBAPQ, RBSRPQ) use `x*0x04 [x=0..4]` in the
+      # same RM but their descriptions explicitly say "(1..5)".  Force a
+      # uniform 1-based numbering so the array index always equals the
+      # queue number, regardless of which operation the array represents.
       - type: patchRegisters
         registers:
-          - {name: 'IERPQ[%s]', newName: 'IERPQ%s', dimIndex: '1,2,3,4,5'}
-          - {name: 'IDRPQ[%s]', newName: 'IDRPQ%s', dimIndex: '1,2,3,4,5'}
-          - {name: 'IMRPQ[%s]', newName: 'IMRPQ%s', dimIndex: '1,2,3,4,5'}
+          - {name: 'ISRPQ[%s]',   newName: 'ISRPQ%s',   dimIndex: '1,2,3,4,5'}
+          - {name: 'TBQBAPQ[%s]', newName: 'TBQBAPQ%s', dimIndex: '1,2,3,4,5'}
+          - {name: 'RBQBAPQ[%s]', newName: 'RBQBAPQ%s', dimIndex: '1,2,3,4,5'}
+          - {name: 'RBSRPQ[%s]',  newName: 'RBSRPQ%s',  dimIndex: '1,2,3,4,5'}
+          - {name: 'IERPQ[%s]',   newName: 'IERPQ%s',   dimIndex: '1,2,3,4,5'}
+          - {name: 'IDRPQ[%s]',   newName: 'IDRPQ%s',   dimIndex: '1,2,3,4,5'}
+          - {name: 'IMRPQ[%s]',   newName: 'IMRPQ%s',   dimIndex: '1,2,3,4,5'}
       # ST2CW is a cluster array (already correctly clustered in the SVD)
       # whose two inner members are named ST2CW0 / ST2CW1 — redundant with
       # the cluster name.  Rename to W0 / W1 so accesses read as
@@ -85,6 +96,23 @@ shared_blocks:
       # and the RM's "Compare Word 0/1" wording.  The regex anchors prevent
       # the top-level cluster name (`ST2CW[%s]`) from matching.
       - {type: renameRegisters, pattern: '^ST2CW(\d)$', replacement: 'W\1'}
+      # TIDM1..TIDM4 are four flat copies of the same register (Type ID
+      # Match), differing only in the ENID%d field name and the trailing
+      # digit in descriptions.  Normalize the per-instance field name to
+      # plain ENID, then collapse into a TIDM%s array indexed 1..4
+      # matching the RM's "Type ID Match 1..4" naming.
+      - {type: renameFields, register: '^TIDM\d+$', pattern: '^ENID\d+$', replacement: 'ENID'}
+      - type: createArray
+        pattern: '^TIDM(\d+)$'
+        name: TIDM
+        description: Type ID Match Register
+      - type: patchFields
+        register: 'TIDM[%s]'
+        fields:
+          - {name: TID, description: 'Type ID Match'}
+      - type: patchRegisters
+        registers:
+          - {name: 'TIDM[%s]', newName: 'TIDM%s', dimIndex: '1,2,3,4'}
 
   GPBR:
     from: ATSAMV71Q21B.GPBR
