@@ -416,7 +416,7 @@ def init_types():
     register_type('pll',          'clocktree::PllDesc',         'clocktree::pll_freq')
 
 
-def generate_header(yaml_path, namespace, hpp_path):
+def generate_header(yaml_path, namespace, hpp_path, module_name=None):
     yaml = YAML(typ='safe')
     data = yaml.load(Path(yaml_path))
     model_dir = str(Path(yaml_path).parent)
@@ -621,13 +621,22 @@ def generate_header(yaml_path, namespace, hpp_path):
 
     Path(hpp_path).write_text('\n'.join(txt))
 
-    # Generate .cppm module wrapper
-    stem = Path(hpp_path).stem
+    # Generate .cppm module wrapper.  Module names must be valid C++
+    # identifiers; namespace-prefix the bare stem so module names stay
+    # globally unique across vendors (matches what the chip and peripheral
+    # generators do via the dispatcher).
     cppm_path = Path(hpp_path).with_suffix('.cppm')
+    if module_name is None:
+        import re as _re
+        stem = Path(hpp_path).stem.replace('-', '_')
+        module_name = (f'{namespace}.{stem}'
+                       if isinstance(namespace, str)
+                       and _re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
+                       else stem)
     cppm = [
         f'module;',
         f'#include "{Path(hpp_path).name}"',
-        f'export module {stem};',
+        f'export module {module_name};',
     ]
     cppm_path.write_text('\n'.join(cppm))
 

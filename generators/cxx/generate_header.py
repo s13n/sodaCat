@@ -55,7 +55,7 @@ elif 'instances' in model:
 
 elif 'signals' in model:
     from generate_clocktree_header import generate_header
-    generate_header(sys.argv[1], sys.argv[2], sys.argv[3]+sys.argv[4])
+    generate_header(sys.argv[1], sys.argv[2], sys.argv[3]+sys.argv[4], modid)
 
 else:
     keys = ', '.join(model.keys())
