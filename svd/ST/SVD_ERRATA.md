@@ -632,6 +632,39 @@ attributed to HRTIM_TIMA instead of their proper sub-peripherals:
 Vectors 104–108 (TIMA–TIME) are correctly on HRTIM_TIMA. Worked around via
 `chip_interrupts` (all 7 interrupts injected on the unified HRTIM_Master instance).
 
+### HRTIM declared but absent on H7A3_B
+
+**STM32H7A3 / STM32H7B0 / STM32H7B3 (SVD v2.8):**
+
+The H7A3_B SVDs declare HRTIM peripherals (`HRTIM_Master`, `HRTIM_Common`,
+`HRTIM_TIMA…HRTIM_TIME`) carbon-copied from the H742_H753 SVD, but this
+silicon does not have an HRTIM peripheral:
+
+- RM0455 (covering H7A3 / H7B0 / H7B3) makes no mention of HRTIM in any
+  of its 2966 pages — no chapter, no register, no interrupt.
+- The STM32H7A3ZI datasheet (DS13196) lists "Up to 19 timers and 2 watchdogs"
+  comprising 2× 32-bit timers, 2× 16-bit advanced motor control timers,
+  10× 16-bit general-purpose timers, 3× 16-bit low-power timers, 2×
+  watchdogs and a SysTick — explicitly omitting HRTIM.
+- Confirming bug: the H7A3_B RCC has no `HRTIMEN` enable bit and no
+  `HRTIMSEL` kernel-clock mux, so even if user code tried to use HRTIM
+  the peripheral would have no clock.
+
+Worked around by suppressing the HRTIM instance from the H7A3_B chip
+yamls via a `variants` override in `svd/ST/STM32.yaml` (`HRTIM.variants.
+H7A3_B.instances: []`).
+
+### HRTIM missing on H73x
+
+**STM32H723 / STM32H725 / STM32H730 / STM32H733 / STM32H735 (SVD v2.8):**
+
+The opposite problem: H73x silicon includes HRTIM v2 (12 channels, 2.2 ns
+resolution per the STM32H723ZG datasheet DS13313), but the H73x SVDs
+don't declare any HRTIM peripheral block.  H73x chip yamls therefore
+have no HRTIM instance even though the hardware is present.  Not yet
+worked around — would require reconstructing the HRTIM register layout
+for inclusion as an H73x-specific peripheral entry.
+
 ### SYSCFG (H7 subfamily differences)
 
 The H7 SYSCFG register set varies significantly across subfamilies. The SVD files
