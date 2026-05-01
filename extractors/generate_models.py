@@ -70,7 +70,8 @@ def load_family_config(family_code, config_file):
     """Load the YAML config for a given family code.
 
     Returns (families, blocks_config, chip_params, chip_interrupts,
-             shared_blocks_config, svd_tag).
+             shared_blocks_config, svd_tag, address_overrides, svd_chip,
+             clocktree).
     """
     if not config_file.exists():
         print(f"Error: Config {config_file} not found")
@@ -112,7 +113,14 @@ def load_family_config(family_code, config_file):
     svd_tag = full_config.get('svd', {}).get('tag', '')
     svd_chip = config.get('svd_chip')
 
-    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag, address_overrides, svd_chip
+    # Optional family-wide clock-tree association.  The chip generator emits
+    # this verbatim into each chip model's `clocktree:` key so the cmake macro
+    # can recurse into it.  Modelled at family granularity because every
+    # family observed so far has a single clock-tree topology — extend to
+    # subfamily/chip overrides later if a counterexample appears.
+    clocktree = config.get('clocktree')
+
+    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -1439,7 +1447,7 @@ def main():
 
     config_file = ext.config_path(args)
     families, blocks_config, chip_params, chip_interrupts, shared_blocks, svd_tag, \
-        address_overrides, svd_chip = load_family_config(family_code, config_file)
+        address_overrides, svd_chip, clocktree = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
     family_chips = set()
@@ -1970,12 +1978,16 @@ def main():
             chip_model = {
                 'name': chip_name,
                 'source': source,
+            }
+            if clocktree:
+                chip_model['clocktree'] = clocktree
+            chip_model.update({
                 'cpu': device_meta.get('cpu', {}),
                 'interruptOffset': interrupt_offset,
                 'interrupts': dict(sorted(interrupt_table.items())),
                 'instances': dict(sorted(instances.items())),
                 'models': dict(sorted(models_index.items())),
-            }
+            })
 
             # Write chip model
             subfamily_dir = output_dir / family_code / subfamily_name
