@@ -14,18 +14,15 @@ instance: RCC
 # ===========================================================================
 # Single-core variant of the H7 clock tree (RM0455 lineage).
 #
-# Initial v0 — intentionally incomplete; see "Status" below.
-#
 # Architecture matches H742_H753 (six oscillator sources, three PLLs each
 # with P/Q/R outputs, system-clock mux feeding domain-specific prescalers,
 # kernel-clock muxes for most peripherals).  Differences from H742_H753:
 #
-#   - drops the dual-core register prefix entirely (no C1_*ENR;
-#     just AHB1ENR / APB1LENR / etc.)
-#   - renames the CPU-domain config registers (D1CFGR -> CDCFGR1,
-#     D2CFGR -> CDCFGR2) and the peripheral-mux registers
-#     (D1CCIPR -> CDCCIPR, D2CCIP[12]R -> CDCCIP[12]R,
-#      D3CCIPR -> SRDCCIPR)
+#   - drops the dual-core register prefix entirely (no C1_*ENR; just
+#     AHB1ENR / APB1LENR / etc.)
+#   - renames CPU-domain config registers (D1CFGR -> CDCFGR1, D2CFGR ->
+#     CDCFGR2) and the peripheral-mux registers (D1CCIPR -> CDCCIPR,
+#     D2CCIP[12]R -> CDCCIP[12]R, D3CCIPR -> SRDCCIPR)
 #   - renames the prescaler bit-fields to match (D1CPRE -> CDCPRE,
 #     D1PPRE -> CDPPRE, D2PPRE[12] -> CDPPRE[12], D3PPRE -> SRDPPRE)
 #   - replaces D3AMR with SRDAMR — the D3 domain is now called the Smart
@@ -36,31 +33,29 @@ instance: RCC
 #     SPDIFRXSEL; QSPISEL -> OCTOSPISEL; SWPSEL -> SWPMISEL; SWPEN ->
 #     SWPMIEN; RTCSRC -> RTCSEL; USART16SEL -> USART16910SEL;
 #     USART7EN -> UART7EN; USART8EN -> UART8EN;
-#     USB1OTGHSEN -> USB1OTGEN; USB1OTGHSULPIEN -> USB1ULPIEN
+#     USB1OTGHSEN -> USB1OTGEN; USB1OTGHSULPIEN -> USB1ULPIEN; DCMIEN ->
+#     DCMI_PSSIEN
 #   - drops absent peripherals: Ethernet, ADC3, SAI3/4, OTG2, QUADSPI,
-#     LPTIM4/5, HRTIM
+#     LPTIM4/5, HRTIM (no HRTIMEN bit in H7A3_B's RCC)
 #
-# Status
-# ------
-# Implemented: oscillators, the three system PLLs, all per-domain
-# prescalers, the system-clock mux, and the subset of per-peripheral
-# kernel muxes / gates that overlap with H742_H753 after the field
-# renames above.
+# H7A3_B-specific peripherals (added vs H742_H753, per RM0455 §8.5
+# Table 58 and Figure 47):
 #
-# DEFERRED — not yet captured in this model:
-#   - the new H7A3_B-only peripherals: OCTOSPI1, OCTOSPI2 (with the
-#     OCTOSPISEL mux currently still named QSPISEL_remapped); PSSI;
-#     USART9, USART10; TT_FDCAN; separate TAMP
-#   - the split-instance kernel muxes: SAI2A/SAI2B (replacing SAI23
-#     in H742_H753); the H7A3_B-specific SAI1SEL/SAI2ASEL/SAI2BSEL mux
-#     family wasn't translated wholesale — verify before relying on
-#     the SAI gates here
-#   - per-instance gates for BDMA1/BDMA2, DAC1/DAC2, DFSDM1/DFSDM2 (the
-#     existing BDMA/DAC/DFSDM gates were dropped because the merged
-#     fields don't exist; per-instance replacements still TODO)
-#   - smart-run-domain awareness in the gate-input wiring (SRDPPRE
-#     prescaler is correct, but D3-domain peripheral grouping may need
-#     review against RM0455 §8.5)
+#   - OCTOSPI1, OCTOSPI2, OCTOSPI I/O Manager: replace QUADSPI; share the
+#     OCTOSPISEL kernel mux (CDCCIPR.OCTOSPISEL: bus_clocks / pll1_q /
+#     pll2_r / per_ck)
+#   - PSSI: combined DCMI/PSSI controller, single AHB2 gate (DCMI_PSSIEN)
+#   - UART9, USART10: APB2-side; share the USART16910SEL kernel mux
+#     (CDCCIP2R.USART16910SEL with USART1/USART6)
+#   - BDMA1 (CD/AHB2) and BDMA2 (SRD/AHB4): two independent BDMAs vs.
+#     the single H742_H753 BDMA
+#   - DAC1 (APB1L) and DAC2 (APB4 / SRD): split DAC instances on
+#     different domains
+#   - DFSDM2: SRD-domain DFSDM, with its own SRDCCIPR.DFSDM2SEL
+#     (rcc_pclk4 vs sys_ck) and DFSDM2EN gate
+#   - SAI2A/SAI2B: split SAI2 sub-blocks with separate kernel-clock
+#     muxes (CDCCIP1R.SAI2ASEL, SAI2BSEL); replaces SAI23/SAI4 family
+#   - GFXMMU: Graphics MMU, AHB3 (H7A3_B-specific)
 # ===========================================================================
 
 # ===========================================================================
@@ -214,17 +209,14 @@ signals:
   - name: rcc_timy_ker_ck
     description: Timer kernel clock for APB2 timers (TIM1, TIM8, TIM15-17)
     max: 480000000
-  - name: hrtim_ker_ck
-    description: HRTIM kernel clock
-    max: 480000000
 
   # --- Kernel clocks ---
   - name: per_ck
     description: Direct kernel clock for peripherals (hsi/csi/hse selectable)
   - name: sdmmc_ker_ck
     description: SDMMC1/2 kernel clock
-  - name: quadspi_ker_ck
-    description: QUADSPI kernel clock
+  - name: octospi_ker_ck
+    description: OCTOSPI1/2 kernel clock (output of OCTOSPISEL mux)
   - name: fmc_ker_ck
     description: FMC kernel clock
   - name: fdcan_ker_ck
@@ -237,16 +229,16 @@ signals:
     description: SPI6 kernel clock
   - name: sai1_ker_ck
     description: SAI1 and DFSDM1 audio kernel clock
-  - name: sai23_ker_ck
-    description: SAI2/3 kernel clock
-  - name: sai4a_ker_ck
-    description: SAI4 sub-block A kernel clock
-  - name: sai4b_ker_ck
-    description: SAI4 sub-block B kernel clock
-  - name: usart16_ker_ck
-    description: USART1/6 kernel clock
+  - name: sai_a_ker_ck
+    description: SAI2 sub-block A kernel clock (H7A3_B replaces SAI23/SAI4 with SAI2A/SAI2B)
+  - name: sai_b_ker_ck
+    description: SAI2 sub-block B kernel clock
+  - name: usart16910_ker_ck
+    description: USART1, USART6, UART9, USART10 kernel clock (H7A3_B groups four instances vs USART1/6 on H742_H753)
   - name: usart234578_ker_ck
     description: USART2/3, UART4/5/7/8 kernel clock
+  - name: dfsdm2_ker_ck
+    description: DFSDM2 processing clock (H7A3_B-specific; SRD-domain instance)
   - name: lpuart1_ker_ck
     description: LPUART1 kernel clock
   - name: i2c123_ker_ck
@@ -293,9 +285,9 @@ signals:
 # ===========================================================================
   - name: adc12_hclk
     max: 240000000
-  - name: adc3_hclk
+  - name: bdma1_hclk
     max: 240000000
-  - name: bdma_hclk
+  - name: bdma2_hclk
     max: 240000000
   - name: bkpram_hclk
     max: 240000000
@@ -303,7 +295,8 @@ signals:
     max: 240000000
   - name: cryp_hclk
     max: 240000000
-  - name: dcmi_hclk
+  - name: dcmi_pssi_hclk
+    description: DCMI/PSSI shared bus interface clock (combined controller in H7A3_B)
     max: 240000000
   - name: dma1_hclk
     max: 240000000
@@ -311,13 +304,10 @@ signals:
     max: 240000000
   - name: dma2d_hclk
     max: 240000000
-  - name: eth1mac_hclk
-    max: 240000000
-  - name: eth1rx_hclk
-    max: 240000000
-  - name: eth1tx_hclk
-    max: 240000000
   - name: fmc_hclk
+    max: 240000000
+  - name: gfxmmu_hclk
+    description: Graphics MMU bus interface clock (H7A3_B-specific peripheral)
     max: 240000000
   - name: gpioa_hclk
     max: 240000000
@@ -349,7 +339,14 @@ signals:
     max: 240000000
   - name: mdma_hclk
     max: 240000000
-  - name: quadspi_hclk
+  - name: octospi1_hclk
+    description: OCTOSPI1 bus interface clock (H7A3_B-specific; replaces QUADSPI on H742_H753)
+    max: 240000000
+  - name: octospi2_hclk
+    description: OCTOSPI2 bus interface clock
+    max: 240000000
+  - name: octospim_hclk
+    description: OCTOSPI I/O Manager bus interface clock
     max: 240000000
   - name: rng_hclk
     max: 240000000
@@ -357,19 +354,21 @@ signals:
     max: 240000000
   - name: sdmmc2_hclk
     max: 240000000
-  - name: usb1otghs_hclk
+  - name: usb1otg_hclk
+    description: USB1 OTG_HS bus interface clock (H7A3_B has only one USB OTG vs. two on H742_H753)
     max: 240000000
-  - name: usb1otghsulpi_hclk
-    max: 240000000
-  - name: usb2otghs_hclk
-    max: 240000000
-  - name: usb2otghsulpi_hclk
+  - name: usb1ulpi_hclk
+    description: USB1 ULPI PHY clock
     max: 240000000
   - name: cec_pclk
     max: 120000000
   - name: crs_pclk
     max: 120000000
-  - name: dac12_pclk
+  - name: dac1_pclk
+    description: DAC1 APB1 bus interface clock (H7A3_B has separate DAC1 / DAC2 on different domains)
+    max: 120000000
+  - name: dac2_pclk
+    description: DAC2 APB4 bus interface clock (Smart Run Domain)
     max: 120000000
   - name: fdcan_pclk
     max: 120000000
@@ -425,13 +424,9 @@ signals:
     max: 120000000
   - name: dfsdm1_pclk
     max: 120000000
-  - name: hrtim_pclk
-    max: 120000000
   - name: sai1_pclk
     max: 120000000
   - name: sai2_pclk
-    max: 120000000
-  - name: sai3_pclk
     max: 120000000
   - name: spi1_pclk
     max: 120000000
@@ -453,6 +448,15 @@ signals:
     max: 120000000
   - name: usart6_pclk
     max: 120000000
+  - name: uart9_pclk
+    description: UART9 APB2 bus interface clock (H7A3_B-specific)
+    max: 120000000
+  - name: usart10_pclk
+    description: USART10 APB2 bus interface clock (H7A3_B-specific)
+    max: 120000000
+  - name: dfsdm2_pclk
+    description: DFSDM2 APB4 bus interface clock (Smart Run Domain)
+    max: 120000000
   - name: ltdc_pclk
     max: 120000000
   - name: wwdg_pclk
@@ -465,15 +469,9 @@ signals:
     max: 120000000
   - name: lptim3_pclk
     max: 120000000
-  - name: lptim4_pclk
-    max: 120000000
-  - name: lptim5_pclk
-    max: 120000000
   - name: lpuart1_pclk
     max: 120000000
   - name: rtcapb_pclk
-    max: 120000000
-  - name: sai4_pclk
     max: 120000000
   - name: spi6_pclk
     max: 120000000
@@ -639,9 +637,9 @@ muxes:
       reg: CDCCIPR
       field: SDMMCSEL
 
-  - name: QSPISEL
-    description: QUADSPI kernel clock source selection
-    output: quadspi_ker_ck
+  - name: OCTOSPISEL
+    description: OCTOSPI1/2 kernel clock source selection (RM0455 Table 58)
+    output: octospi_ker_ck
     inputs:
       - rcc_hclk
       - pll1_q_ck
@@ -696,6 +694,16 @@ muxes:
       reg: CDCCIP1R
       field: DFSDM1SEL
 
+  - name: DFSDM2SEL
+    description: DFSDM2 processing clock source selection (Smart Run Domain)
+    output: dfsdm2_ker_ck
+    inputs:
+      - rcc_pclk4
+      - sys_ck
+    control:
+      reg: SRDCCIPR
+      field: DFSDM2SEL
+
   - name: SPDIFSEL
     description: SPDIFRX kernel clock source selection
     output: spdif_ker_ck
@@ -749,16 +757,51 @@ muxes:
       - pll3_p_ck
       - I2S_CKIN
       - per_ck
-      - 
-      - 
-      - 
+      -
+      -
+      -
     control:
       reg: CDCCIP1R
       field: SAI1SEL
 
-  - name: USART16SEL
-    description: USART1/6 kernel clock source selection
-    output: usart16_ker_ck
+  - name: SAI2ASEL
+    description: SAI2 sub-block A audio kernel clock source selection (RM0455
+      Table 58; H7A3_B replaces SAI23SEL with split SAI2ASEL/SAI2BSEL)
+    output: sai_a_ker_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - I2S_CKIN
+      - per_ck
+      -
+      -
+      -
+    control:
+      reg: CDCCIP1R
+      field: SAI2ASEL
+
+  - name: SAI2BSEL
+    description: SAI2 sub-block B audio kernel clock source selection
+    output: sai_b_ker_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - I2S_CKIN
+      - per_ck
+      -
+      -
+      -
+    control:
+      reg: CDCCIP1R
+      field: SAI2BSEL
+
+  - name: USART16910SEL
+    description: USART1, USART6, UART9, USART10 kernel clock source selection
+      (H7A3_B groups four instances; the H742_H753 USART16SEL covered just
+      USART1/6)
+    output: usart16910_ker_ck
     inputs:
       - rcc_pclk2
       - pll2_q_ck
@@ -1397,9 +1440,29 @@ gates:
     input: rcc_hclk
     output: sdmmc1_hclk
     control: {reg: 'AHB3ENR', field: SDMMC1EN}
+  - name: OCTOSPI1EN
+    description: OCTOSPI1 peripheral clock enable
+    input: rcc_hclk
+    output: octospi1_hclk
+    control: {reg: 'AHB3ENR', field: OCTOSPI1EN}
+  - name: OCTOSPI2EN
+    description: OCTOSPI2 peripheral clock enable
+    input: rcc_hclk
+    output: octospi2_hclk
+    control: {reg: 'AHB3ENR', field: OCTOSPI2EN}
+  - name: OCTOSPIMEN
+    description: OCTOSPI I/O Manager clock enable
+    input: rcc_hclk
+    output: octospim_hclk
+    control: {reg: 'AHB3ENR', field: OCTOSPIMEN}
+  - name: GFXMMUEN
+    description: Graphics MMU clock enable (H7A3_B-specific peripheral)
+    input: rcc_hclk
+    output: gfxmmu_hclk
+    control: {reg: 'AHB3ENR', field: GFXMMUEN}
 
   # =========================================================================
-  # Peripheral clock gates — AHB1 (D2 domain)
+  # Peripheral clock gates — AHB1 (CD domain)
   # Register: RCC_AHB1ENR
   # =========================================================================
   - name: DMA1EN
@@ -1417,21 +1480,26 @@ gates:
     input: rcc_hclk
     output: adc12_hclk
     control: {reg: 'AHB1ENR', field: ADC12EN}
-  - name: USB1OTGHSEN
-    description: USB1 OTG HS peripheral clock enable
+  - name: USB1OTGEN
+    description: USB1 OTG peripheral clock enable (single OTG on H7A3_B vs. OTG_HS+OTG_FS on H742_H753)
     input: rcc_hclk
-    output: usb1otghs_hclk
+    output: usb1otg_hclk
     control: {reg: 'AHB1ENR', field: USB1OTGEN}
-  - name: USB1OTGHSULPIEN
-    description: USB1 OTG HS ULPI clock enable
+  - name: USB1ULPIEN
+    description: USB1 ULPI PHY clock enable
     input: rcc_hclk
-    output: usb1otghsulpi_hclk
+    output: usb1ulpi_hclk
     control: {reg: 'AHB1ENR', field: USB1ULPIEN}
-  - name: DCMIEN
-    description: DCMI peripheral clock enable
+  - name: DCMI_PSSIEN
+    description: DCMI/PSSI shared peripheral clock enable (combined controller on H7A3_B)
     input: rcc_hclk
-    output: dcmi_hclk
+    output: dcmi_pssi_hclk
     control: {reg: 'AHB2ENR', field: DCMI_PSSIEN}
+  - name: BDMA1EN
+    description: BDMA1 peripheral clock enable (H7A3_B has two BDMA instances vs. one on H742_H753)
+    input: rcc_hclk
+    output: bdma1_hclk
+    control: {reg: 'AHB2ENR', field: BDMA1EN}
   - name: CRYPTEN
     description: CRYP peripheral clock enable
     input: rcc_hclk
@@ -1527,9 +1595,14 @@ gates:
     input: rcc_hclk
     output: bkpram_hclk
     control: {reg: 'AHB4ENR', field: BKPRAMEN}
+  - name: BDMA2EN
+    description: BDMA2 peripheral clock enable (Smart Run Domain)
+    input: rcc_hclk
+    output: bdma2_hclk
+    control: {reg: 'AHB4ENR', field: BDMA2EN}
 
   # =========================================================================
-  # Peripheral clock gates — APB3 (D1 domain)
+  # Peripheral clock gates — APB3 (CD domain)
   # Register: RCC_APB3ENR
   # =========================================================================
   - name: LTDCEN
@@ -1664,9 +1737,14 @@ gates:
     input: rcc_pclk1
     output: uart8_pclk
     control: {reg: 'APB1LENR', field: UART8EN}
+  - name: DAC1EN
+    description: DAC1 peripheral clock enable (H7A3_B has separate DAC1 (APB1) / DAC2 (APB4))
+    input: rcc_pclk1
+    output: dac1_pclk
+    control: {reg: 'APB1LENR', field: DAC1EN}
 
   # =========================================================================
-  # Peripheral clock gates — APB1 high (D2 domain)
+  # Peripheral clock gates — APB1 high (CD domain)
   # Register: RCC_APB1HENR
   # =========================================================================
   - name: CRSEN
@@ -1689,9 +1767,14 @@ gates:
     input: rcc_pclk1
     output: fdcan_pclk
     control: {reg: 'APB1HENR', field: FDCANEN}
+  - name: SWPMIEN
+    description: SWPMI peripheral clock enable
+    input: rcc_pclk1
+    output: swpmi_pclk
+    control: {reg: 'APB1HENR', field: SWPMIEN}
 
   # =========================================================================
-  # Peripheral clock gates — APB2 (D2 domain)
+  # Peripheral clock gates — APB2 (CD domain)
   # Register: RCC_APB2ENR
   # =========================================================================
   - name: TIM1EN
@@ -1759,6 +1842,16 @@ gates:
     input: rcc_pclk2
     output: dfsdm1_pclk
     control: {reg: 'APB2ENR', field: DFSDM1EN}
+  - name: UART9EN
+    description: UART9 clock enable (H7A3_B-specific)
+    input: rcc_pclk2
+    output: uart9_pclk
+    control: {reg: 'APB2ENR', field: UART9EN}
+  - name: USART10EN
+    description: USART10 clock enable (H7A3_B-specific)
+    input: rcc_pclk2
+    output: usart10_pclk
+    control: {reg: 'APB2ENR', field: USART10EN}
   - name: SYSCFGEN
     description: SYSCFG clock enable
     input: rcc_pclk4
@@ -1804,3 +1897,13 @@ gates:
     input: rcc_pclk4
     output: rtcapb_pclk
     control: {reg: 'APB4ENR', field: RTCAPBEN}
+  - name: DAC2EN
+    description: DAC2 peripheral clock enable (Smart Run Domain — separate from DAC1 on APB1)
+    input: rcc_pclk4
+    output: dac2_pclk
+    control: {reg: 'APB4ENR', field: DAC2EN}
+  - name: DFSDM2EN
+    description: DFSDM2 peripheral clock enable (H7A3_B-specific; SRD-domain instance)
+    input: rcc_pclk4
+    output: dfsdm2_pclk
+    control: {reg: 'APB4ENR', field: DFSDM2EN}
