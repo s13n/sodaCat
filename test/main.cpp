@@ -1,7 +1,16 @@
 // test for soc-data
 
 #include <cstdint>
+// clocktree.hpp lives in the support library, not in any module.  In include
+// mode the per-chip clock-tree header pulls it in transitively; in module
+// mode it sits in the .cppm's global module fragment and isn't re-exported,
+// so consumers needing clocktree::ClockTree<> must include it directly.
+#include "clocktree.hpp"
 #if REGISTERS_MODULE
+// The chip module imports peripherals but does not re-export them, so any
+// peripheral namespace named below in `using namespace ...` must be imported
+// explicitly here.
+import stm32h7.DMA;
 import stm32h7.MDMA;
 import stm32h7.STM32H757_CM7;
 import microchip.ATSAME70Q21B;
