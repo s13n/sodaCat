@@ -543,12 +543,22 @@ def generate_header(yaml_path, namespace, hpp_path, module_name=None):
     state_defaults_str = ', '.join(str(state_defaults[n]) for n in state_names)
 
     # --- Assemble the header ---
+    # The EXPORT discipline mirrors the peripheral/chip generators: in plain
+    # include mode the prefix block defines EXPORT to nothing and pulls in
+    # clocktree.hpp; in module mode the .cppm has already #defined EXPORT to
+    # `export` and included clocktree.hpp via the global module fragment, so
+    # the prefix block is skipped and the two top-level declarations carry
+    # the export keyword across the module boundary.
     txt = []
     txt.append("// generated header file, please don't edit.")
     txt.append('#pragma once')
-    txt.append('#include "clocktree.hpp"')
     txt.append('')
-    txt.append(f'namespace {namespace} {{')
+    txt.append('#ifndef EXPORT')
+    txt.append('#include "clocktree.hpp"')
+    txt.append('#define EXPORT')
+    txt.append('#endif')
+    txt.append('')
+    txt.append(f'EXPORT namespace {namespace} {{')
     txt.append('')
 
     # Signals enum
@@ -618,6 +628,8 @@ def generate_header(yaml_path, namespace, hpp_path, module_name=None):
     txt.append('')
     txt.append('} // namespace')
     txt.append('')
+    txt.append('#undef EXPORT')
+    txt.append('')
 
     Path(hpp_path).write_text('\n'.join(txt))
 
@@ -633,10 +645,23 @@ def generate_header(yaml_path, namespace, hpp_path, module_name=None):
                        if isinstance(namespace, str)
                        and _re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
                        else stem)
+    # Same pattern as the peripheral and chip module wrappers: the support
+    # header (clocktree.hpp) lives in the global module fragment so its
+    # declarations are visible inside the module TU, then the generated
+    # header is re-included with EXPORT=export so the user-facing types
+    # (Signals, Clocks) cross the module boundary.
     cppm = [
-        f'module;',
-        f'#include "{Path(hpp_path).name}"',
+        "// File was generated, do not edit!",
+        'module;',
+        '',
+        '#include "clocktree.hpp"',
+        '',
         f'export module {module_name};',
+        '',
+        '#define EXPORT export',
+        f'#include "{Path(hpp_path).name}"',
+        '#undef EXPORT',
+        '',
     ]
     cppm_path.write_text('\n'.join(cppm))
 

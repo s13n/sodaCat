@@ -92,6 +92,10 @@ generate_header(soc-data-modules cxx stm32h7 ST/VREFBUF .hpp)
 
 generate_header(soc-data-modules cxx stm32h7 ARM/NVIC .hpp)
 
+# Microchip SAME70 — exercises the clock-tree code path
+# (the chip's `clocktree:` key pulls in SAM_Gen1_clocks alongside the chip).
+generate_header(soc-data-modules cxx microchip Microchip/SAME70/SAME70/ATSAME70Q21B .hpp)
+
 # ESP32-P4
 generate_header(soc-data-modules cxx esp32p4 ESP/P4/ESP32_P4/ESP32-P4 .hpp)
 generate_header(soc-data-modules cxx esp32p4 ESP/P4/ESP32_P4/ADC .hpp)

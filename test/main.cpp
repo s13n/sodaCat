@@ -4,8 +4,12 @@
 #if REGISTERS_MODULE
 import stm32h7.MDMA;
 import stm32h7.STM32H757_CM7;
+import microchip.ATSAME70Q21B;
+import microchip.SAM_Gen1_clocks;
 #else
 #include "stm32h7/STM32H757_CM7.hpp"
+#include "microchip/ATSAME70Q21B.hpp"
+#include "microchip/SAM_Gen1_clocks.hpp"
 #endif
 
 using namespace stm32h7::DMA;
@@ -25,4 +29,14 @@ int main() {
     auto ma1 = get(dma.S[1].M1AR).M1A;          // dto.
     b.EN = 1;                                   // modify field in bitfield struct
     mdma.C[6].CR = b;                           // write back entire bitfield struct to register
+
+    // Exercise the clock-tree code path: instantiate the SAM_Gen1 tree and
+    // query a frequency, with the external crystal frequencies supplied via
+    // the State slots.
+    clocktree::ClockTree<microchip::Clocks> ct{microchip::Clocks::State{
+        .stateXTAL32K = 32768,
+        .stateMAIN_XTAL = 12'000'000,
+    }};
+    volatile uint32_t mck = ct.getFrequency(microchip::Signals::mck);
+    (void)mck;
 }
