@@ -39,33 +39,54 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             p = p.parent
 
     def _loadBlockOrder(self, chip_dir, models_map, model_name):
-        """Return (param_names, interrupt_names) declared by the block model.
+        """Return (param_names, interrupt_names, param_defaults) declared
+        by the block model.
 
-        Returns (None, None) when the block YAML can't be located, in which
-        case callers preserve chip-side order — fallback for ad-hoc runs
-        outside the standard models tree.  Under CMake the file is always
-        present (ensure_model() downloads it ahead of header generation).
+        param_defaults is a {name: value} map for params that declare a
+        default; chip instances that don't override such a param fall
+        back to the default at integration-emission time.
+
+        Returns (None, None, {}) when the block YAML can't be located,
+        in which case callers preserve chip-side order with no default
+        fallback — that's the ad-hoc-runs case outside the standard
+        models tree.  Under CMake the file is always present (ensure_model()
+        downloads it ahead of header generation).
         """
         if model_name in self._block_orders:
             return self._block_orders[model_name]
         relpath = models_map.get(model_name, model_name)
         block_path = self._resolve_block_path(chip_dir, relpath)
         if block_path is None:
-            result = (None, None)
+            result = (None, None, {})
         else:
             block = YAML(typ='safe').load(block_path)
+            params_decl = block.get('params', [])
             result = (
-                [p['name'] for p in block.get('params', [])],
+                [p['name'] for p in params_decl],
                 [i['name'] for i in block.get('interrupts', [])],
+                {p['name']: p['default']
+                 for p in params_decl if 'default' in p},
             )
         self._block_orders[model_name] = result
         return result
 
-    def createParameters(self, instance_name, instance, param_order):
+    def createParameters(self, instance_name, instance, param_order,
+                         param_defaults):
+        """Emit designated initialisers for an instance's params.
+
+        Chip-yaml `parameters:` overrides take precedence; any param
+        declared by the block model with a default that the chip yaml
+        didn't override falls back to the default.  Params with neither
+        a chip override nor a block default are silently skipped (the
+        struct member is then default-initialised by C++ — caller's
+        responsibility to ensure that's acceptable).
+        """
         chip_params = instance.get('parameters', [])
-        by_name = {p['name']: p for p in chip_params}
+        by_name = {p['name']: p['value'] for p in chip_params}
         if param_order is None:
-            ordered = chip_params
+            # Block model not located — preserve chip-side order, no
+            # default fallback (we don't know the param declarations).
+            merged = [(p['name'], p['value']) for p in chip_params]
         else:
             unknown = set(by_name) - set(param_order)
             if unknown:
@@ -73,16 +94,21 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                     f"chip instance '{instance_name}' (model '{instance['model']}'): "
                     f"parameter(s) {sorted(unknown)!r} not declared by block model"
                 )
-            ordered = [by_name[n] for n in param_order if n in by_name]
+            merged = []
+            for n in param_order:
+                if n in by_name:
+                    merged.append((n, by_name[n]))
+                elif n in param_defaults:
+                    merged.append((n, param_defaults[n]))
         params = ''
-        for i in ordered:
-            v = i['value']
+        for name, v in merged:
             if isinstance(v, bool):
-                params += f"\n\t.{i['name']} = {'true' if v else 'false'},"
+                params += f"\n\t.{name} = {'true' if v else 'false'},"
             elif isinstance(v, str):
-                params += f'\n\t.{i["name"]} = "{v}",'
+                params += f'\n\t.{name} = "{v}",'
             else:
-                params += self.instanceParamTemplate.substitute(i)
+                params += self.instanceParamTemplate.substitute(
+                    name=name, value=v)
         return params
 
     def createInterrupts(self, instance_name, instance, int_order):
@@ -117,8 +143,9 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             m = i['model']
             ns = namespaces.get(m, namespace)
             model_to_ns[m] = ns
-            param_order, int_order = self._loadBlockOrder(chip_dir, models_map, m)
-            params = self.createParameters(k, i, param_order)
+            param_order, int_order, param_defaults = self._loadBlockOrder(
+                chip_dir, models_map, m)
+            params = self.createParameters(k, i, param_order, param_defaults)
             ints = self.createInterrupts(k, i, int_order)
             init = '\n\t.registers = %#Xu\n' % i['baseAddress']
             decl += self.instanceDeclTemplate.substitute(i, name=k, ns=ns, params=params, ints=ints, init=init)

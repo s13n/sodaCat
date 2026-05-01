@@ -1942,17 +1942,24 @@ def main():
                     if entry not in interrupt_table[vec]:
                         interrupt_table[vec].append(entry)
 
-                # Resolve parameters
+                # Resolve parameters.  When the resolved value matches the
+                # declared default we omit the param from the chip yaml: the
+                # block-model Intgr struct carries the default itself (the
+                # C++ peripheral generator emits `= <default>` on the field),
+                # so the chip-side designated initialiser need not list it.
+                # Result: chip yamls only carry per-instance overrides.
                 params_list = []
                 param_decls = _get_param_decls(
                     block_type, blocks_config, shared_blocks, subfamily_name)
                 for param in param_decls:
+                    default = param.get('default')
                     value = _resolve_chip_param(
                         chip_params, subfamily_name, chip_name,
                         inst_name, block_type, param['name'],
-                        default=param.get('default'))
-                    if value is not None:
-                        params_list.append({'name': param['name'], 'value': value})
+                        default=default)
+                    if value is None or value == default:
+                        continue
+                    params_list.append({'name': param['name'], 'value': value})
 
                 instances[inst_name] = {
                     'baseAddress': periph['baseAddress'],
