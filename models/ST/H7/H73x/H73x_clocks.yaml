@@ -1,0 +1,1919 @@
+version: 1.0.0
+family: STM32H7
+devices:
+  - STM32H723
+  - STM32H725
+  - STM32H730
+  - STM32H733
+  - STM32H735
+documents:
+  - id: RM0468
+    title: STM32H723/733, STM32H725/735 and STM32H730 Value line advanced Arm®-based 32-bit MCUs
+    revision: '3'
+    url: https://www.st.com/resource/en/reference_manual/rm0468-stm32h723733-stm32h725735-and-stm32h730-value-line-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
+instance: RCC
+
+# ===========================================================================
+# Single-core variant of the H7 clock tree (RM0468 lineage — H72x/H73x).
+#
+# Derived from H742_H753_clocks.yaml.  H73x is a refresh of the H7 silicon:
+# same Cortex-M7 single core, same RCC register layout (still uses the
+# C1_-prefixed enable/LP-enable registers and D1/D2/D3 domain naming —
+# unlike H7A3_B which simplified those away), but with a refreshed
+# peripheral set:
+#
+#   Removed (vs H742_H753):
+#     - QUADSPI (replaced by OCTOSPI1 / OCTOSPI2 / OCTOSPI I/O Manager)
+#     - JPEG codec
+#     - SAI2, SAI3 (only SAI1 + SAI4 remain on H73x)
+#     - second OTG_HS instance (only USB1 OTG)
+#     - DCMI (subsumed into combined DCMI_PSSI controller)
+#
+#   Added:
+#     - OCTOSPI1, OCTOSPI2, OCTOSPI I/O Manager (with OCTOSPISEL kernel mux)
+#     - PSSI: combined DCMI/PSSI controller (single AHB2 gate DCMI_PSSIEN)
+#     - CORDIC, FMAC: math accelerators
+#     - TIM23, TIM24: APB1L 32-bit timers
+#     - I2C5: APB1L I2C instance (no kernel mux — APB1 only)
+#     - UART9, USART10: APB2 async serial; share USART16910SEL kernel mux
+#     - FDCAN3: third FDCAN block sharing the single FDCANEN gate
+#
+#   Naming differences:
+#     - DCMIEN -> DCMI_PSSIEN (combined controller bit name)
+#     - QSPISEL -> OCTOSPISEL (same mux structure as on H7A3_B)
+#     - USART16SEL -> USART16910SEL (mux now also drives UART9 + USART10)
+#     - chip-yaml instances `WWDG1` and `IWDG1` keep their numbered
+#       names from the dual-core register convention (single core in
+#       practice; bit names WWDG1EN / IWDGxKR are unchanged from H742_H753)
+#
+# H73x silicon does NOT include HRTIM (RM0468 has no HRTIM chapter in its
+# 3357 pages, the H723ZG datasheet's 17-16-bit + 4-32-bit + 5-LP timer
+# itemisation omits it, and the H73x SVD has no HRTIMEN / HRTIMSEL
+# bits) — same conclusion as H7A3_B.
+# ===========================================================================
+
+# ===========================================================================
+# Signals
+# ===========================================================================
+signals:
+  # --- Oscillators ---
+  - name: hsi_osc
+    description: High-speed internal RC oscillator raw output (before HSIDIV)
+    nominal: 64000000
+  - name: hsi_ck
+    description: HSI clock after HSIDIV prescaler
+    max: 64000000
+  - name: hsi_ker_ck
+    description: HSI kernel clock (same frequency as hsi_ck, gated by HSIKERON for Stop mode)
+    max: 64000000
+  - name: hse_ck
+    description: High-speed external oscillator or clock input
+    min: 4000000
+    max: 48000000
+  - name: csi_ck
+    description: Low-power internal RC oscillator
+    nominal: 4000000
+  - name: csi_ker_ck
+    description: CSI kernel clock (same frequency as csi_ck, gated by CSIKERON for Stop mode)
+    nominal: 4000000
+  - name: csi_ker_div122
+    description: CSI kernel clock divided by 122 (for HDMI-CEC)
+    nominal: 32786
+  - name: lsi_ck
+    description: Low-speed internal RC oscillator
+    nominal: 32000
+  - name: lse_ck
+    description: Low-speed external crystal oscillator
+    nominal: 32768
+  - name: hsi48_ck
+    description: 48 MHz internal RC oscillator (trimmable via CRS)
+    nominal: 48000000
+
+  # --- External inputs ---
+  - name: I2S_CKIN
+    description: External I2S clock input pin
+
+  # --- PLL reference clocks ---
+  - name: pll_src
+    description: Common PLL source clock (before per-PLL prescalers)
+  - name: ref1_ck
+    description: PLL1 reference clock (after DIVM1 prescaler)
+    min: 1000000
+    max: 16000000
+  - name: ref2_ck
+    description: PLL2 reference clock (after DIVM2 prescaler)
+    min: 1000000
+    max: 16000000
+  - name: ref3_ck
+    description: PLL3 reference clock (after DIVM3 prescaler)
+    min: 1000000
+    max: 16000000
+
+  # --- PLL VCO outputs ---
+  - name: vco1_ck
+    description: PLL1 VCO output
+  - name: vco2_ck
+    description: PLL2 VCO output
+  - name: vco3_ck
+    description: PLL3 VCO output
+
+  # --- PLL post-divider outputs ---
+  - name: pll1_p_raw
+    description: PLL1 P divider output (system clock candidate) (before enable gate)
+    max: 480000000
+  - name: pll1_p_ck
+    description: PLL1 P divider output (system clock candidate) (gated)
+    max: 480000000
+  - name: pll1_q_raw
+    description: PLL1 Q divider output (before enable gate)
+    max: 480000000
+  - name: pll1_q_ck
+    description: PLL1 Q divider output (gated)
+    max: 480000000
+  - name: pll1_r_raw
+    description: PLL1 R divider output (before enable gate)
+    max: 480000000
+  - name: pll1_r_ck
+    description: PLL1 R divider output (gated)
+    max: 480000000
+  - name: pll2_p_raw
+    description: PLL2 P divider output (before enable gate)
+    max: 480000000
+  - name: pll2_p_ck
+    description: PLL2 P divider output (gated)
+    max: 480000000
+  - name: pll2_q_raw
+    description: PLL2 Q divider output (before enable gate)
+    max: 480000000
+  - name: pll2_q_ck
+    description: PLL2 Q divider output (gated)
+    max: 480000000
+  - name: pll2_r_raw
+    description: PLL2 R divider output (before enable gate)
+    max: 480000000
+  - name: pll2_r_ck
+    description: PLL2 R divider output (gated)
+    max: 480000000
+  - name: pll3_p_raw
+    description: PLL3 P divider output (before enable gate)
+    max: 480000000
+  - name: pll3_p_ck
+    description: PLL3 P divider output (gated)
+    max: 480000000
+  - name: pll3_q_raw
+    description: PLL3 Q divider output (before enable gate)
+    max: 480000000
+  - name: pll3_q_ck
+    description: PLL3 Q divider output (gated)
+    max: 480000000
+  - name: pll3_r_raw
+    description: PLL3 R divider output (before enable gate)
+    max: 480000000
+  - name: pll3_r_ck
+    description: PLL3 R divider output (gated)
+    max: 480000000
+
+  # --- System / domain clocks ---
+  - name: sys_ck
+    description: System clock
+    max: 480000000
+  - name: sys_d1cpre_ck
+    description: D1 domain CPU prescaler output (CPU1 clock, rcc_c1_ck)
+    max: 480000000
+  - name: rcc_hclk
+    description: AHB / AXI bus clock (all domains, also rcc_hclk1/2/3/4 and rcc_aclk)
+    max: 240000000
+  - name: rcc_pclk1
+    description: APB1 peripheral bus clock (D2 domain)
+    max: 120000000
+  - name: rcc_pclk2
+    description: APB2 peripheral bus clock (D2 domain)
+    max: 120000000
+  - name: rcc_pclk3
+    description: APB3 peripheral bus clock (D1 domain)
+    max: 120000000
+  - name: rcc_pclk4
+    description: APB4 peripheral bus clock (D3 domain)
+    max: 120000000
+
+  # --- Timer clocks ---
+  - name: rcc_timx_ker_ck
+    description: Timer kernel clock for APB1 timers (TIM2-7, TIM12-14)
+    max: 480000000
+  - name: rcc_timy_ker_ck
+    description: Timer kernel clock for APB2 timers (TIM1, TIM8, TIM15-17)
+    max: 480000000
+
+  # --- Kernel clocks ---
+  - name: per_ck
+    description: Direct kernel clock for peripherals (hsi/csi/hse selectable)
+  - name: sdmmc_ker_ck
+    description: SDMMC1/2 kernel clock
+  - name: octospi_ker_ck
+    description: OCTOSPI1/2 kernel clock (output of OCTOSPISEL mux)
+  - name: fmc_ker_ck
+    description: FMC kernel clock
+  - name: fdcan_ker_ck
+    description: FDCAN kernel clock
+  - name: spi123_ker_ck
+    description: SPI/I2S 1,2,3 kernel clock
+  - name: spi45_ker_ck
+    description: SPI 4,5 kernel clock
+  - name: spi6_ker_ck
+    description: SPI6 kernel clock
+  - name: sai1_ker_ck
+    description: SAI1 and DFSDM1 audio kernel clock
+  - name: sai4a_ker_ck
+    description: SAI4 sub-block A kernel clock
+  - name: sai4b_ker_ck
+    description: SAI4 sub-block B kernel clock
+  - name: usart16910_ker_ck
+    description: USART1, USART6, UART9, USART10 kernel clock (H73x adds UART9 + USART10 to the mux)
+  - name: usart234578_ker_ck
+    description: USART2/3, UART4/5/7/8 kernel clock
+  - name: lpuart1_ker_ck
+    description: LPUART1 kernel clock
+  - name: i2c123_ker_ck
+    description: I2C1/2/3 kernel clock
+  - name: i2c4_ker_ck
+    description: I2C4 kernel clock
+  - name: lptim1_ker_ck
+    description: LPTIM1 kernel clock
+  - name: lptim2_ker_ck
+    description: LPTIM2 kernel clock
+  - name: lptim345_ker_ck
+    description: LPTIM3/4/5 kernel clock
+  - name: usb_ker_ck
+    description: USB1/2 OTG kernel clock
+  - name: adc_ker_ck
+    description: ADC1/2/3 kernel clock
+  - name: rng_ker_ck
+    description: RNG kernel clock
+  - name: spdif_ker_ck
+    description: SPDIFRX kernel clock
+  - name: cec_ker_ck
+    description: HDMI-CEC kernel clock
+  - name: swpmi_ker_ck
+    description: SWPMI kernel clock
+  - name: dfsdm1_ker_ck
+    description: DFSDM1 processing clock
+
+  # --- RTC ---
+  - name: hse_rtc_ck
+    description: HSE divided for RTC
+  - name: rtc_pre
+    description: RTC/AWU clock source (before enable gate)
+  - name: rtc_ck
+    description: RTC/AWU clock source (gated)
+
+  # --- MCO outputs ---
+  - name: mco1
+    description: Microcontroller clock output 1
+  - name: mco2
+    description: Microcontroller clock output 2
+
+# ===========================================================================
+# Generators (oscillators and external inputs)
+# ===========================================================================
+  - name: adc12_hclk
+    max: 240000000
+  - name: adc3_hclk
+    max: 240000000
+  - name: bdma_hclk
+    max: 240000000
+  - name: bkpram_hclk
+    max: 240000000
+  - name: crc_hclk
+    max: 240000000
+  - name: cryp_hclk
+    max: 240000000
+  - name: dcmi_pssi_hclk
+    description: Combined DCMI + PSSI bus interface clock (single shared gate on H73x)
+    max: 240000000
+  - name: dma1_hclk
+    max: 240000000
+  - name: dma2_hclk
+    max: 240000000
+  - name: dma2d_hclk
+    max: 240000000
+  - name: eth1mac_hclk
+    max: 240000000
+  - name: eth1rx_hclk
+    max: 240000000
+  - name: eth1tx_hclk
+    max: 240000000
+  - name: fmc_hclk
+    max: 240000000
+  - name: gpioa_hclk
+    max: 240000000
+  - name: gpiob_hclk
+    max: 240000000
+  - name: gpioc_hclk
+    max: 240000000
+  - name: gpiod_hclk
+    max: 240000000
+  - name: gpioe_hclk
+    max: 240000000
+  - name: gpiof_hclk
+    max: 240000000
+  - name: gpiog_hclk
+    max: 240000000
+  - name: gpioh_hclk
+    max: 240000000
+  - name: gpioj_hclk
+    max: 240000000
+  - name: gpiok_hclk
+    max: 240000000
+  - name: hash_hclk
+    max: 240000000
+  - name: hsem_hclk
+    max: 240000000
+  - name: mdma_hclk
+    max: 240000000
+  - name: octospi1_hclk
+    description: OCTOSPI1 bus interface clock (H73x replaces QUADSPI with two OCTOSPI controllers)
+    max: 240000000
+  - name: octospi2_hclk
+    description: OCTOSPI2 bus interface clock
+    max: 240000000
+  - name: octospim_hclk
+    description: OCTOSPI I/O Manager bus interface clock
+    max: 240000000
+  - name: rng_hclk
+    max: 240000000
+  - name: sdmmc1_hclk
+    max: 240000000
+  - name: sdmmc2_hclk
+    max: 240000000
+  - name: usb1otghs_hclk
+    max: 240000000
+  - name: usb1otghsulpi_hclk
+    max: 240000000
+  - name: cec_pclk
+    max: 120000000
+  - name: crs_pclk
+    max: 120000000
+  - name: dac12_pclk
+    max: 120000000
+  - name: fdcan_pclk
+    max: 120000000
+  - name: i2c1_pclk
+    max: 120000000
+  - name: i2c2_pclk
+    max: 120000000
+  - name: i2c3_pclk
+    max: 120000000
+  - name: lptim1_pclk
+    max: 120000000
+  - name: mdios_pclk
+    max: 120000000
+  - name: opamp_pclk
+    max: 120000000
+  - name: spdifrx_pclk
+    max: 120000000
+  - name: spi2_pclk
+    max: 120000000
+  - name: spi3_pclk
+    max: 120000000
+  - name: swpmi_pclk
+    max: 120000000
+  - name: tim12_pclk
+    max: 120000000
+  - name: tim13_pclk
+    max: 120000000
+  - name: tim14_pclk
+    max: 120000000
+  - name: tim2_pclk
+    max: 120000000
+  - name: tim3_pclk
+    max: 120000000
+  - name: tim4_pclk
+    max: 120000000
+  - name: tim5_pclk
+    max: 120000000
+  - name: tim6_pclk
+    max: 120000000
+  - name: tim7_pclk
+    max: 120000000
+  - name: uart4_pclk
+    max: 120000000
+  - name: uart5_pclk
+    max: 120000000
+  - name: uart7_pclk
+    max: 120000000
+  - name: uart8_pclk
+    max: 120000000
+  - name: usart2_pclk
+    max: 120000000
+  - name: usart3_pclk
+    max: 120000000
+  - name: dfsdm1_pclk
+    max: 120000000
+  - name: sai1_pclk
+    max: 120000000
+  - name: spi1_pclk
+    max: 120000000
+  - name: spi4_pclk
+    max: 120000000
+  - name: spi5_pclk
+    max: 120000000
+  - name: tim15_pclk
+    max: 120000000
+  - name: tim16_pclk
+    max: 120000000
+  - name: tim17_pclk
+    max: 120000000
+  - name: tim1_pclk
+    max: 120000000
+  - name: tim8_pclk
+    max: 120000000
+  - name: usart1_pclk
+    max: 120000000
+  - name: usart6_pclk
+    max: 120000000
+  - name: uart9_pclk
+    description: UART9 APB2 bus interface clock (H73x-specific)
+    max: 120000000
+  - name: usart10_pclk
+    description: USART10 APB2 bus interface clock (H73x-specific)
+    max: 120000000
+  - name: cordic_hclk
+    description: CORDIC math accelerator clock (H73x-specific)
+    max: 240000000
+  - name: fmac_hclk
+    description: FMAC filter accelerator clock (H73x-specific)
+    max: 240000000
+  - name: tim23_pclk
+    description: TIM23 32-bit timer APB1 bus clock (H73x-specific)
+    max: 120000000
+  - name: tim24_pclk
+    description: TIM24 32-bit timer APB1 bus clock (H73x-specific)
+    max: 120000000
+  - name: i2c5_pclk
+    description: I2C5 APB1 bus interface clock (H73x-specific)
+    max: 120000000
+  - name: ltdc_pclk
+    max: 120000000
+  - name: wwdg_pclk
+    max: 120000000
+  - name: comp12_pclk
+    max: 120000000
+  - name: i2c4_pclk
+    max: 120000000
+  - name: lptim2_pclk
+    max: 120000000
+  - name: lptim3_pclk
+    max: 120000000
+  - name: lptim4_pclk
+    max: 120000000
+  - name: lptim5_pclk
+    max: 120000000
+  - name: lpuart1_pclk
+    max: 120000000
+  - name: rtcapb_pclk
+    max: 120000000
+  - name: sai4_pclk
+    max: 120000000
+  - name: spi6_pclk
+    max: 120000000
+  - name: syscfg_pclk
+    max: 120000000
+  - name: vrefbuf_pclk
+    max: 120000000
+generators:
+  - name: HSI64
+    description: 64 MHz high-speed internal RC oscillator
+    output: hsi_osc
+    control:
+      reg: CR
+      field: HSION
+      values: [0, 64000000]
+
+  - name: HSE
+    description: High-speed external oscillator (4-48 MHz crystal or bypass)
+    output: hse_ck
+    control:
+      state: freqHSE
+      reg: CR
+      field: HSEON
+
+  - name: CSI
+    description: 4 MHz low-power internal RC oscillator
+    output: csi_ck
+    control:
+      reg: CR
+      field: CSION
+      values: [0, 4000000]
+
+  - name: LSI
+    description: 32 kHz low-speed internal RC oscillator
+    output: lsi_ck
+    control:
+      reg: CSR
+      field: LSION
+      values: [0, 32000]
+
+  - name: LSE
+    description: 32.768 kHz low-speed external crystal oscillator
+    output: lse_ck
+    control:
+      state: freqLSE
+      reg: BDCR
+      field: LSEON
+
+  - name: HSI48
+    description: 48 MHz internal RC oscillator (CRS trimmable)
+    output: hsi48_ck
+    control:
+      reg: CR
+      field: RC48ON
+      values: [0, 48000000]
+
+  - name: I2S_CKIN
+    description: External I2S clock input pin
+    output: I2S_CKIN
+
+# ===========================================================================
+# Muxes
+# ===========================================================================
+muxes:
+  # --- PLL source ---
+  - name: PLLSRC
+    description: Common source for all three PLLs
+    output: pll_src
+    inputs:
+      - hsi_ck
+      - csi_ck
+      - hse_ck
+      - ''
+    control:
+      reg: PLLCKSELR
+      field: PLLSRC
+
+  # --- System clock ---
+  - name: SW
+    description: System clock switch
+    output: sys_ck
+    inputs:
+      - hsi_ck
+      - csi_ck
+      - hse_ck
+      - pll1_p_ck
+      - 
+      - 
+      - 
+      - 
+    control:
+      reg: CFGR
+      field: SW
+
+  # --- per_ck ---
+  - name: CKPERSEL
+    description: External peripheral clock source selection
+    output: per_ck
+    inputs:
+      - hsi_ker_ck
+      - csi_ker_ck
+      - hse_ck
+      - ''
+    control:
+      reg: D1CCIPR
+      field: CKPERSEL
+
+  # --- RTC source ---
+  - name: RTCSEL
+    description: RTC clock source selection
+    output: rtc_pre
+    inputs:
+      - ''
+      - lse_ck
+      - lsi_ck
+      - hse_rtc_ck
+    control:
+      reg: BDCR
+      field: RTCSEL
+
+  # --- MCO1 ---
+  - name: MCO1SEL
+    description: Microcontroller clock output 1 source
+    output: mco1
+    inputs:
+      - hsi_ck
+      - lse_ck
+      - hse_ck
+      - pll1_q_ck
+      - hsi48_ck
+      - 
+      - 
+      - 
+    control:
+      reg: CFGR
+      field: MCO1
+
+  # --- MCO2 ---
+  - name: MCO2SEL
+    description: Microcontroller clock output 2 source
+    output: mco2
+    inputs:
+      - sys_ck
+      - pll2_p_ck
+      - hse_ck
+      - pll1_p_ck
+      - csi_ck
+      - lsi_ck
+      - 
+      - 
+    control:
+      reg: CFGR
+      field: MCO2
+
+
+  # --- D1 domain kernel clock muxes ---
+  - name: SDMMCSEL
+    description: SDMMC1/2 kernel clock source selection
+    output: sdmmc_ker_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_r_ck
+    control:
+      reg: D1CCIPR
+      field: SDMMCSEL
+
+  - name: OCTOSPISEL
+    description: OCTOSPI1/2 kernel clock source selection (RM0468)
+    output: octospi_ker_ck
+    inputs:
+      - rcc_hclk
+      - pll1_q_ck
+      - pll2_r_ck
+      - per_ck
+    control:
+      reg: D1CCIPR
+      field: OCTOSPISEL
+
+  - name: FMCSEL
+    description: FMC kernel clock source selection
+    output: fmc_ker_ck
+    inputs:
+      - rcc_hclk
+      - pll1_q_ck
+      - pll2_r_ck
+      - per_ck
+    control:
+      reg: D1CCIPR
+      field: FMCSEL
+
+  # --- D2 domain kernel clock muxes ---
+  - name: FDCANSEL
+    description: FDCAN kernel clock source selection
+    output: fdcan_ker_ck
+    inputs:
+      - hse_ck
+      - pll1_q_ck
+      - pll2_q_ck
+      - ''
+    control:
+      reg: D2CCIP1R
+      field: FDCANSEL
+
+  - name: SWPSEL
+    description: SWPMI kernel clock source selection
+    output: swpmi_ker_ck
+    inputs:
+      - rcc_pclk1
+      - hsi_ker_ck
+    control:
+      reg: D2CCIP1R
+      field: SWPMISEL
+
+  - name: DFSDM1SEL
+    description: DFSDM1 processing clock source selection
+    output: dfsdm1_ker_ck
+    inputs:
+      - rcc_pclk2
+      - sys_ck
+    control:
+      reg: D2CCIP1R
+      field: DFSDM1SEL
+
+  - name: SPDIFSEL
+    description: SPDIFRX kernel clock source selection
+    output: spdif_ker_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_r_ck
+      - pll3_r_ck
+      - hsi_ker_ck
+    control:
+      reg: D2CCIP1R
+      field: SPDIFRXSEL
+
+  - name: SPI45SEL
+    description: SPI4/5 kernel clock source selection
+    output: spi45_ker_ck
+    inputs:
+      - rcc_pclk2
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - hse_ck
+      - 
+      - 
+    control:
+      reg: D2CCIP1R
+      field: SPI45SEL
+
+  - name: SPI123SEL
+    description: SPI/I2S 1,2,3 kernel clock source selection
+    output: spi123_ker_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - I2S_CKIN
+      - per_ck
+      - 
+      - 
+      - 
+    control:
+      reg: D2CCIP1R
+      field: SPI123SEL
+
+  - name: SAI1SEL
+    description: SAI1 and DFSDM1 audio kernel clock source selection
+    output: sai1_ker_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - I2S_CKIN
+      - per_ck
+      - 
+      - 
+      - 
+    control:
+      reg: D2CCIP1R
+      field: SAI1SEL
+
+  - name: USART16910SEL
+    description: USART1, USART6, UART9, USART10 kernel clock source selection
+      (H73x adds UART9 + USART10 to the H742_H753 USART16SEL mux)
+    output: usart16910_ker_ck
+    inputs:
+      - rcc_pclk2
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - lse_ck
+      -
+      -
+    control:
+      reg: D2CCIP2R
+      field: USART16910SEL
+
+  - name: USART234578SEL
+    description: USART2/3, UART4/5/7/8 kernel clock source selection
+    output: usart234578_ker_ck
+    inputs:
+      - rcc_pclk1
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - lse_ck
+      - 
+      - 
+    control:
+      reg: D2CCIP2R
+      field: USART234578SEL
+
+  - name: I2C123SEL
+    description: I2C1/2/3 kernel clock source selection
+    output: i2c123_ker_ck
+    inputs:
+      - rcc_pclk1
+      - pll3_r_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+    control:
+      reg: D2CCIP2R
+      field: I2C123SEL
+
+  - name: USBSEL
+    description: USB1/2 OTG kernel clock source selection
+    output: usb_ker_ck
+    inputs:
+      - ''
+      - pll1_q_ck
+      - pll3_q_ck
+      - hsi48_ck
+    control:
+      reg: D2CCIP2R
+      field: USBSEL
+
+  - name: RNGSEL
+    description: RNG kernel clock source selection
+    output: rng_ker_ck
+    inputs:
+      - hsi48_ck
+      - pll1_q_ck
+      - lse_ck
+      - lsi_ck
+    control:
+      reg: D2CCIP2R
+      field: RNGSEL
+
+  - name: CECSEL
+    description: HDMI-CEC kernel clock source selection
+    output: cec_ker_ck
+    inputs:
+      - lse_ck
+      - lsi_ck
+      - csi_ker_div122
+      - ''
+    control:
+      reg: D2CCIP2R
+      field: CECSEL
+
+  - name: LPTIM1SEL
+    description: LPTIM1 kernel clock source selection
+    output: lptim1_ker_ck
+    inputs:
+      - rcc_pclk1
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - 
+      - 
+    control:
+      reg: D2CCIP2R
+      field: LPTIM1SEL
+
+  # --- D3 domain kernel clock muxes ---
+  - name: SPI6SEL
+    description: SPI6 kernel clock source selection
+    output: spi6_ker_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - hse_ck
+      - 
+      - 
+    control:
+      reg: D3CCIPR
+      field: SPI6SEL
+
+  - name: SAI4ASEL
+    description: SAI4 sub-block A kernel clock source selection
+    output: sai4a_ker_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - I2S_CKIN
+      - per_ck
+      - 
+      - 
+      - 
+    control:
+      reg: D3CCIPR
+      field: SAI4ASEL
+
+  - name: SAI4BSEL
+    description: SAI4 sub-block B kernel clock source selection
+    output: sai4b_ker_ck
+    inputs:
+      - pll1_q_ck
+      - pll2_p_ck
+      - pll3_p_ck
+      - I2S_CKIN
+      - per_ck
+      - 
+      - 
+      - 
+    control:
+      reg: D3CCIPR
+      field: SAI4BSEL
+
+  - name: ADCSEL
+    description: ADC1/2/3 kernel clock source selection
+    output: adc_ker_ck
+    inputs:
+      - pll2_p_ck
+      - pll3_r_ck
+      - per_ck
+      - ''
+    control:
+      reg: D3CCIPR
+      field: ADCSEL
+
+  - name: LPTIM2SEL
+    description: LPTIM2 kernel clock source selection
+    output: lptim2_ker_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - 
+      - 
+    control:
+      reg: D3CCIPR
+      field: LPTIM2SEL
+
+  - name: LPTIM345SEL
+    description: LPTIM3/4/5 kernel clock source selection
+    output: lptim345_ker_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_p_ck
+      - pll3_r_ck
+      - lse_ck
+      - lsi_ck
+      - per_ck
+      - 
+      - 
+    control:
+      reg: D3CCIPR
+      field: LPTIM345SEL
+
+  - name: I2C4SEL
+    description: I2C4 kernel clock source selection
+    output: i2c4_ker_ck
+    inputs:
+      - rcc_pclk4
+      - pll3_r_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+    control:
+      reg: D3CCIPR
+      field: I2C4SEL
+
+  - name: LPUART1SEL
+    description: LPUART1 kernel clock source selection
+    output: lpuart1_ker_ck
+    inputs:
+      - rcc_pclk4
+      - pll2_q_ck
+      - pll3_q_ck
+      - hsi_ker_ck
+      - csi_ker_ck
+      - lse_ck
+      - 
+      - 
+    control:
+      reg: D3CCIPR
+      field: LPUART1SEL
+
+# ===========================================================================
+# PLLs
+# ===========================================================================
+plls:
+  - name: PLL1
+    description: Main system PLL (fractional-N)
+    input: ref1_ck
+    output: vco1_ck
+    feedback_integer:
+      reg: PLL1DIVR
+      field: DIVN1
+      value_range:
+        min: 3
+        max: 511
+        offset: 1
+    feedback_fraction:
+      reg: PLL1FRACR
+      field: FRACN1
+      value_range:
+        min: 0
+        max: 8191
+    vco_limits:
+      min: 150000000
+      max: 960000000
+    notes: 'Wide VCO (VCOH): 192-960 MHz; Medium VCO (VCOL): 150-420 MHz. Selected by PLL1VCOSEL in RCC_PLLCFGR.'
+
+  - name: PLL2
+    description: Auxiliary PLL 2 (fractional-N)
+    input: ref2_ck
+    output: vco2_ck
+    feedback_integer:
+      reg: PLL2DIVR
+      field: DIVN2
+      value_range:
+        min: 3
+        max: 511
+        offset: 1
+    feedback_fraction:
+      reg: PLL2FRACR
+      field: FRACN2
+      value_range:
+        min: 0
+        max: 8191
+    vco_limits:
+      min: 150000000
+      max: 960000000
+
+  - name: PLL3
+    description: Auxiliary PLL 3 (fractional-N)
+    input: ref3_ck
+    output: vco3_ck
+    feedback_integer:
+      reg: PLL3DIVR
+      field: DIVN3
+      value_range:
+        min: 3
+        max: 511
+        offset: 1
+    feedback_fraction:
+      reg: PLL3FRACR
+      field: FRACN3
+      value_range:
+        min: 0
+        max: 8191
+    vco_limits:
+      min: 150000000
+      max: 960000000
+
+# ===========================================================================
+# Dividers
+# ===========================================================================
+dividers:
+  # --- HSI divider ---
+  - name: HSIDIV
+    description: HSI oscillator prescaler
+    input: hsi_osc
+    output: hsi_ck
+    factor:
+      reg: CR
+      field: HSIDIV
+      values: [1, 2, 4, 8]
+
+  # --- CEC fixed divider ---
+  - name: CSI_CEC_DIV
+    description: Fixed /122 divider for HDMI-CEC from CSI kernel clock
+    input: csi_ker_ck
+    output: csi_ker_div122
+    value: 122
+
+  # --- PLL input prescalers ---
+  - name: DIVM1
+    description: PLL1 prescaler (division factor for PLL1 reference clock)
+    input: pll_src
+    output: ref1_ck
+    factor:
+      reg: PLLCKSELR
+      field: DIVM1
+      value_range:
+        min: 0
+        max: 63
+    notes: Value 0 disables the prescaler (no clock). Values 1-63 divide by that amount.
+
+  - name: DIVM2
+    description: PLL2 prescaler (division factor for PLL2 reference clock)
+    input: pll_src
+    output: ref2_ck
+    factor:
+      reg: PLLCKSELR
+      field: DIVM2
+      value_range:
+        min: 0
+        max: 63
+
+  - name: DIVM3
+    description: PLL3 prescaler (division factor for PLL3 reference clock)
+    input: pll_src
+    output: ref3_ck
+    factor:
+      reg: PLLCKSELR
+      field: DIVM3
+      value_range:
+        min: 0
+        max: 63
+
+  # --- PLL output dividers ---
+  - name: DIVP1
+    description: PLL1 P output divider
+    input: vco1_ck
+    output: pll1_p_raw
+    factor:
+      reg: PLL1DIVR
+      field: DIVP1
+      value_range:
+        min: 0
+        max: 127
+        offset: 1
+    notes: Odd division factors not allowed for PLL1 P output
+
+  - name: DIVQ1
+    description: PLL1 Q output divider
+    input: vco1_ck
+    output: pll1_q_raw
+    factor:
+      reg: PLL1DIVR
+      field: DIVQ1
+      value_range:
+        min: 0
+        max: 127
+        offset: 1
+
+  - name: DIVR1
+    description: PLL1 R output divider
+    input: vco1_ck
+    output: pll1_r_raw
+    factor:
+      reg: PLL1DIVR
+      field: DIVR1
+      value_range:
+        min: 1
+        max: 127
+        offset: 1
+    notes: Field value 0 is not allowed
+
+  - name: DIVP2
+    description: PLL2 P output divider
+    input: vco2_ck
+    output: pll2_p_raw
+    factor:
+      reg: PLL2DIVR
+      field: DIVP2
+      value_range:
+        min: 0
+        max: 127
+        offset: 1
+
+  - name: DIVQ2
+    description: PLL2 Q output divider
+    input: vco2_ck
+    output: pll2_q_raw
+    factor:
+      reg: PLL2DIVR
+      field: DIVQ2
+      value_range:
+        min: 0
+        max: 127
+        offset: 1
+
+  - name: DIVR2
+    description: PLL2 R output divider
+    input: vco2_ck
+    output: pll2_r_raw
+    factor:
+      reg: PLL2DIVR
+      field: DIVR2
+      value_range:
+        min: 0
+        max: 127
+        offset: 1
+
+  - name: DIVP3
+    description: PLL3 P output divider
+    input: vco3_ck
+    output: pll3_p_raw
+    factor:
+      reg: PLL3DIVR
+      field: DIVP3
+      value_range:
+        min: 0
+        max: 127
+        offset: 1
+
+  - name: DIVQ3
+    description: PLL3 Q output divider
+    input: vco3_ck
+    output: pll3_q_raw
+    factor:
+      reg: PLL3DIVR
+      field: DIVQ3
+      value_range:
+        min: 0
+        max: 127
+        offset: 1
+
+  - name: DIVR3
+    description: PLL3 R output divider
+    input: vco3_ck
+    output: pll3_r_raw
+    factor:
+      reg: PLL3DIVR
+      field: DIVR3
+      value_range:
+        min: 0
+        max: 127
+        offset: 1
+
+  # --- Domain prescalers ---
+  - name: D1CPRE
+    description: D1 domain CPU clock prescaler (sys_ck to CPU1)
+    input: sys_ck
+    output: sys_d1cpre_ck
+    factor:
+      reg: D1CFGR
+      field: D1CPRE
+      values: [1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 8, 16, 64, 128, 256, 512]
+
+  - name: HPRE
+    description: AHB prescaler (sys_d1cpre_ck to AHB/AXI buses)
+    input: sys_d1cpre_ck
+    output: rcc_hclk
+    factor:
+      reg: D1CFGR
+      field: HPRE
+      values: [1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 8, 16, 64, 128, 256, 512]
+
+  - name: D1PPRE
+    description: D1 domain APB3 prescaler
+    input: rcc_hclk
+    output: rcc_pclk3
+    factor:
+      reg: D1CFGR
+      field: D1PPRE
+      values: [1, 1, 1, 1, 2, 4, 8, 16]
+
+  - name: D2PPRE1
+    description: D2 domain APB1 prescaler
+    input: rcc_hclk
+    output: rcc_pclk1
+    factor:
+      reg: D2CFGR
+      field: D2PPRE1
+      values: [1, 1, 1, 1, 2, 4, 8, 16]
+
+  - name: D2PPRE2
+    description: D2 domain APB2 prescaler
+    input: rcc_hclk
+    output: rcc_pclk2
+    factor:
+      reg: D2CFGR
+      field: D2PPRE2
+      values: [1, 1, 1, 1, 2, 4, 8, 16]
+
+  - name: D3PPRE
+    description: D3 domain APB4 prescaler
+    input: rcc_hclk
+    output: rcc_pclk4
+    factor:
+      reg: D3CFGR
+      field: D3PPRE
+      values: [1, 1, 1, 1, 2, 4, 8, 16]
+
+  # --- Timer clock prescalers ---
+  - name: TIMX_PRESCALER
+    description: APB1 timer clock prescaler from HCLK
+    input: rcc_hclk
+    output: rcc_timx_ker_ck
+    notes: >-
+      The timer clock divisor from rcc_hclk depends on BOTH the D2PPRE1 APB
+      prescaler and the TIMPRE bit (RCC_CFGR bit 15). With TIMPRE=0: divisor =
+      max(1, D2PPRE1_ratio / 2). With TIMPRE=1: divisor = max(1, D2PPRE1_ratio / 4).
+      The result is always >= rcc_pclk1 and <= rcc_hclk. This conditional logic
+      cannot be expressed with a single register field.
+
+  - name: TIMY_PRESCALER
+    description: APB2 timer clock prescaler from HCLK
+    input: rcc_hclk
+    output: rcc_timy_ker_ck
+    notes: >-
+      Same logic as TIMX_PRESCALER but using D2PPRE2 instead of D2PPRE1.
+      With TIMPRE=0: divisor = max(1, D2PPRE2_ratio / 2). With TIMPRE=1:
+      divisor = max(1, D2PPRE2_ratio / 4).
+
+  # --- HSE division for RTC ---
+  - name: RTCPRE
+    description: HSE division factor for RTC clock
+    input: hse_ck
+    output: hse_rtc_ck
+    factor:
+      reg: CFGR
+      field: RTCPRE
+      value_range:
+        min: 0
+        max: 63
+    notes: Values 0 and 1 produce no clock. Values 2-63 divide HSE by that amount.
+
+# ===========================================================================
+# Gates
+# ===========================================================================
+gates:
+  # --- HSI/CSI kernel clock gates ---
+  - name: HSIKERON
+    description: HSI kernel clock enable for Stop mode
+    input: hsi_ck
+    output: hsi_ker_ck
+    control:
+      reg: CR
+      field: HSIKERON
+
+  - name: CSIKERON
+    description: CSI kernel clock enable for Stop mode
+    input: csi_ck
+    output: csi_ker_ck
+    control:
+      reg: CR
+      field: CSIKERON
+
+  # --- PLL output enable gates ---
+  - name: DIVP1EN
+    description: PLL1 P output enable
+    input: pll1_p_raw
+    output: pll1_p_ck
+    control:
+      reg: PLLCFGR
+      field: DIVP1EN
+
+  - name: DIVQ1EN
+    description: PLL1 Q output enable
+    input: pll1_q_raw
+    output: pll1_q_ck
+    control:
+      reg: PLLCFGR
+      field: DIVQ1EN
+
+  - name: DIVR1EN
+    description: PLL1 R output enable
+    input: pll1_r_raw
+    output: pll1_r_ck
+    control:
+      reg: PLLCFGR
+      field: DIVR1EN
+
+  - name: DIVP2EN
+    description: PLL2 P output enable
+    input: pll2_p_raw
+    output: pll2_p_ck
+    control:
+      reg: PLLCFGR
+      field: DIVP2EN
+
+  - name: DIVQ2EN
+    description: PLL2 Q output enable
+    input: pll2_q_raw
+    output: pll2_q_ck
+    control:
+      reg: PLLCFGR
+      field: DIVQ2EN
+
+  - name: DIVR2EN
+    description: PLL2 R output enable
+    input: pll2_r_raw
+    output: pll2_r_ck
+    control:
+      reg: PLLCFGR
+      field: DIVR2EN
+
+  - name: DIVP3EN
+    description: PLL3 P output enable
+    input: pll3_p_raw
+    output: pll3_p_ck
+    control:
+      reg: PLLCFGR
+      field: DIVP3EN
+
+  - name: DIVQ3EN
+    description: PLL3 Q output enable
+    input: pll3_q_raw
+    output: pll3_q_ck
+    control:
+      reg: PLLCFGR
+      field: DIVQ3EN
+
+  - name: DIVR3EN
+    description: PLL3 R output enable
+    input: pll3_r_raw
+    output: pll3_r_ck
+    control:
+      reg: PLLCFGR
+      field: DIVR3EN
+
+  # --- RTC gate ---
+  - name: RTCEN
+    description: RTC clock enable
+    input: rtc_pre
+    output: rtc_ck
+    control:
+      reg: BDCR
+      field: RTCEN
+
+  # =========================================================================
+  # Peripheral clock gates — AHB3 (D1 domain)
+  # Register: RCC_AHB3ENR
+  # =========================================================================
+  - name: MDMAEN
+    description: MDMA peripheral clock enable
+    input: rcc_hclk
+    output: mdma_hclk
+    control: {reg: 'C1_AHB3ENR', field: MDMAEN}
+  - name: DMA2DEN
+    description: DMA2D peripheral clock enable
+    input: rcc_hclk
+    output: dma2d_hclk
+    control: {reg: 'C1_AHB3ENR', field: DMA2DEN}
+  - name: FMCEN
+    description: FMC peripheral clock enable
+    input: rcc_hclk
+    output: fmc_hclk
+    control: {reg: 'C1_AHB3ENR', field: FMCEN}
+  - name: SDMMC1EN
+    description: SDMMC1 peripheral clock enable
+    input: rcc_hclk
+    output: sdmmc1_hclk
+    control: {reg: 'C1_AHB3ENR', field: SDMMC1EN}
+  - name: OCTOSPI1EN
+    description: OCTOSPI1 peripheral clock enable (H73x replaces QUADSPI)
+    input: rcc_hclk
+    output: octospi1_hclk
+    control: {reg: 'C1_AHB3ENR', field: OCTOSPI1EN}
+  - name: OCTOSPI2EN
+    description: OCTOSPI2 peripheral clock enable
+    input: rcc_hclk
+    output: octospi2_hclk
+    control: {reg: 'C1_AHB3ENR', field: OCTOSPI2EN}
+  - name: IOMNGREN
+    description: OCTOSPI I/O Manager peripheral clock enable
+    input: rcc_hclk
+    output: octospim_hclk
+    control: {reg: 'C1_AHB3ENR', field: IOMNGREN}
+
+  # =========================================================================
+  # Peripheral clock gates — AHB1 (D2 domain)
+  # Register: RCC_AHB1ENR
+  # =========================================================================
+  - name: DMA1EN
+    description: DMA1 clock enable
+    input: rcc_hclk
+    output: dma1_hclk
+    control: {reg: 'C1_AHB1ENR', field: DMA1EN}
+  - name: DMA2EN
+    description: DMA2 clock enable
+    input: rcc_hclk
+    output: dma2_hclk
+    control: {reg: 'C1_AHB1ENR', field: DMA2EN}
+  - name: ADC12EN
+    description: ADC1/2 peripheral clock enable
+    input: rcc_hclk
+    output: adc12_hclk
+    control: {reg: 'C1_AHB1ENR', field: ADC12EN}
+  - name: ETH1MACEN
+    description: Ethernet MAC bus interface clock enable
+    input: rcc_hclk
+    output: eth1mac_hclk
+    control: {reg: 'C1_AHB1ENR', field: ETH1MACEN}
+  - name: ETH1TXEN
+    description: Ethernet TX clock enable
+    input: rcc_hclk
+    output: eth1tx_hclk
+    control: {reg: 'C1_AHB1ENR', field: ETH1TXEN}
+  - name: ETH1RXEN
+    description: Ethernet RX clock enable
+    input: rcc_hclk
+    output: eth1rx_hclk
+    control: {reg: 'C1_AHB1ENR', field: ETH1RXEN}
+  - name: USB1OTGHSEN
+    description: USB1 OTG HS peripheral clock enable
+    input: rcc_hclk
+    output: usb1otghs_hclk
+    control: {reg: 'C1_AHB1ENR', field: USB1OTGHSEN}
+  - name: USB1OTGHSULPIEN
+    description: USB1 OTG HS ULPI clock enable
+    input: rcc_hclk
+    output: usb1otghsulpi_hclk
+    control: {reg: 'C1_AHB1ENR', field: USB1OTGHSULPIEN}
+  - name: DCMI_PSSIEN
+    description: DCMI/PSSI shared peripheral clock enable (combined controller on H73x)
+    input: rcc_hclk
+    output: dcmi_pssi_hclk
+    control: {reg: 'C1_AHB2ENR', field: DCMI_PSSIEN}
+  - name: CRYPTEN
+    description: CRYP peripheral clock enable
+    input: rcc_hclk
+    output: cryp_hclk
+    control: {reg: 'C1_AHB2ENR', field: CRYPTEN}
+  - name: HASHEN
+    description: HASH peripheral clock enable
+    input: rcc_hclk
+    output: hash_hclk
+    control: {reg: 'C1_AHB2ENR', field: HASHEN}
+  - name: RNGEN
+    description: RNG peripheral clock enable
+    input: rcc_hclk
+    output: rng_hclk
+    control: {reg: 'C1_AHB2ENR', field: RNGEN}
+  - name: SDMMC2EN
+    description: SDMMC2 peripheral clock enable
+    input: rcc_hclk
+    output: sdmmc2_hclk
+    control: {reg: 'C1_AHB2ENR', field: SDMMC2EN}
+  - name: CORDICEN
+    description: CORDIC math accelerator clock enable (H73x-specific)
+    input: rcc_hclk
+    output: cordic_hclk
+    control: {reg: 'C1_AHB2ENR', field: CORDICEN}
+  - name: FMACEN
+    description: FMAC filter accelerator clock enable (H73x-specific)
+    input: rcc_hclk
+    output: fmac_hclk
+    control: {reg: 'C1_AHB2ENR', field: FMACEN}
+
+  # =========================================================================
+  # Peripheral clock gates — AHB4 (D3 domain)
+  # Register: RCC_AHB4ENR
+  # =========================================================================
+  - name: GPIOAEN
+    description: GPIOA clock enable
+    input: rcc_hclk
+    output: gpioa_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOAEN}
+  - name: GPIOBEN
+    description: GPIOB clock enable
+    input: rcc_hclk
+    output: gpiob_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOBEN}
+  - name: GPIOCEN
+    description: GPIOC clock enable
+    input: rcc_hclk
+    output: gpioc_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOCEN}
+  - name: GPIODEN
+    description: GPIOD clock enable
+    input: rcc_hclk
+    output: gpiod_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIODEN}
+  - name: GPIOEEN
+    description: GPIOE clock enable
+    input: rcc_hclk
+    output: gpioe_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOEEN}
+  - name: GPIOFEN
+    description: GPIOF clock enable
+    input: rcc_hclk
+    output: gpiof_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOFEN}
+  - name: GPIOGEN
+    description: GPIOG clock enable
+    input: rcc_hclk
+    output: gpiog_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOGEN}
+  - name: GPIOHEN
+    description: GPIOH clock enable
+    input: rcc_hclk
+    output: gpioh_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOHEN}
+  - name: GPIOJEN
+    description: GPIOJ clock enable
+    input: rcc_hclk
+    output: gpioj_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOJEN}
+  - name: GPIOKEN
+    description: GPIOK clock enable
+    input: rcc_hclk
+    output: gpiok_hclk
+    control: {reg: 'C1_AHB4ENR', field: GPIOKEN}
+  - name: CRCEN
+    description: CRC clock enable
+    input: rcc_hclk
+    output: crc_hclk
+    control: {reg: 'C1_AHB4ENR', field: CRCEN}
+  - name: BDMAEN
+    description: BDMA and DMAMUX2 clock enable
+    input: rcc_hclk
+    output: bdma_hclk
+    control: {reg: 'C1_AHB4ENR', field: BDMAEN}
+  - name: ADC3EN
+    description: ADC3 peripheral clock enable
+    input: rcc_hclk
+    output: adc3_hclk
+    control: {reg: 'C1_AHB4ENR', field: ADC3EN}
+  - name: HSEMEN
+    description: HSEM peripheral clock enable
+    input: rcc_hclk
+    output: hsem_hclk
+    control: {reg: 'C1_AHB4ENR', field: HSEMEN}
+  - name: BKPRAMEN
+    description: Backup RAM clock enable
+    input: rcc_hclk
+    output: bkpram_hclk
+    control: {reg: 'C1_AHB4ENR', field: BKPRAMEN}
+
+  # =========================================================================
+  # Peripheral clock gates — APB3 (D1 domain)
+  # Register: RCC_APB3ENR
+  # =========================================================================
+  - name: LTDCEN
+    description: LTDC peripheral clock enable
+    input: rcc_pclk3
+    output: ltdc_pclk
+    control: {reg: 'C1_APB3ENR', field: LTDCEN}
+  - name: WWDG1EN
+    description: WWDG clock enable (RCC bit retains the WWDG1EN name from
+      the dual-core silicon design; on this single-core variant WWDG2 is
+      not present)
+    input: rcc_pclk3
+    output: wwdg_pclk
+    control: {reg: 'C1_APB3ENR', field: WWDG1EN}
+
+  # =========================================================================
+  # Peripheral clock gates — APB1 low (D2 domain)
+  # Register: RCC_APB1LENR
+  # =========================================================================
+  - name: TIM2EN
+    description: TIM2 clock enable
+    input: rcc_pclk1
+    output: tim2_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM2EN}
+  - name: TIM3EN
+    description: TIM3 clock enable
+    input: rcc_pclk1
+    output: tim3_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM3EN}
+  - name: TIM4EN
+    description: TIM4 clock enable
+    input: rcc_pclk1
+    output: tim4_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM4EN}
+  - name: TIM5EN
+    description: TIM5 clock enable
+    input: rcc_pclk1
+    output: tim5_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM5EN}
+  - name: TIM6EN
+    description: TIM6 clock enable
+    input: rcc_pclk1
+    output: tim6_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM6EN}
+  - name: TIM7EN
+    description: TIM7 clock enable
+    input: rcc_pclk1
+    output: tim7_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM7EN}
+  - name: TIM12EN
+    description: TIM12 clock enable
+    input: rcc_pclk1
+    output: tim12_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM12EN}
+  - name: TIM13EN
+    description: TIM13 clock enable
+    input: rcc_pclk1
+    output: tim13_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM13EN}
+  - name: TIM14EN
+    description: TIM14 clock enable
+    input: rcc_pclk1
+    output: tim14_pclk
+    control: {reg: 'C1_APB1LENR', field: TIM14EN}
+  - name: LPTIM1EN
+    description: LPTIM1 clock enable
+    input: rcc_pclk1
+    output: lptim1_pclk
+    control: {reg: 'C1_APB1LENR', field: LPTIM1EN}
+  - name: SPI2EN
+    description: SPI2 clock enable
+    input: rcc_pclk1
+    output: spi2_pclk
+    control: {reg: 'C1_APB1LENR', field: SPI2EN}
+  - name: SPI3EN
+    description: SPI3 clock enable
+    input: rcc_pclk1
+    output: spi3_pclk
+    control: {reg: 'C1_APB1LENR', field: SPI3EN}
+  - name: SPDIFRXEN
+    description: SPDIFRX clock enable
+    input: rcc_pclk1
+    output: spdifrx_pclk
+    control: {reg: 'C1_APB1LENR', field: SPDIFRXEN}
+  - name: USART2EN
+    description: USART2 clock enable
+    input: rcc_pclk1
+    output: usart2_pclk
+    control: {reg: 'C1_APB1LENR', field: USART2EN}
+  - name: USART3EN
+    description: USART3 clock enable
+    input: rcc_pclk1
+    output: usart3_pclk
+    control: {reg: 'C1_APB1LENR', field: USART3EN}
+  - name: UART4EN
+    description: UART4 clock enable
+    input: rcc_pclk1
+    output: uart4_pclk
+    control: {reg: 'C1_APB1LENR', field: UART4EN}
+  - name: UART5EN
+    description: UART5 clock enable
+    input: rcc_pclk1
+    output: uart5_pclk
+    control: {reg: 'C1_APB1LENR', field: UART5EN}
+  - name: I2C1EN
+    description: I2C1 clock enable
+    input: rcc_pclk1
+    output: i2c1_pclk
+    control: {reg: 'C1_APB1LENR', field: I2C1EN}
+  - name: I2C2EN
+    description: I2C2 clock enable
+    input: rcc_pclk1
+    output: i2c2_pclk
+    control: {reg: 'C1_APB1LENR', field: I2C2EN}
+  - name: I2C3EN
+    description: I2C3 clock enable
+    input: rcc_pclk1
+    output: i2c3_pclk
+    control: {reg: 'C1_APB1LENR', field: I2C3EN}
+  - name: I2C5EN
+    description: I2C5 clock enable (H73x-specific)
+    input: rcc_pclk1
+    output: i2c5_pclk
+    control: {reg: 'C1_APB1LENR', field: I2C5EN}
+  - name: CECEN
+    description: HDMI-CEC peripheral clock enable
+    input: rcc_pclk1
+    output: cec_pclk
+    control: {reg: 'C1_APB1LENR', field: CECEN}
+  - name: DAC12EN
+    description: DAC1/2 clock enable
+    input: rcc_pclk1
+    output: dac12_pclk
+    control: {reg: 'C1_APB1LENR', field: DAC12EN}
+  - name: UART7EN
+    description: UART7 clock enable
+    input: rcc_pclk1
+    output: uart7_pclk
+    control: {reg: 'C1_APB1LENR', field: UART7EN}
+  - name: UART8EN
+    description: UART8 clock enable
+    input: rcc_pclk1
+    output: uart8_pclk
+    control: {reg: 'C1_APB1LENR', field: UART8EN}
+  - name: CRSEN
+    description: CRS clock enable
+    input: rcc_pclk1
+    output: crs_pclk
+    control: {reg: 'C1_APB1HENR', field: CRSEN}
+  - name: OPAMPEN
+    description: OPAMP clock enable
+    input: rcc_pclk1
+    output: opamp_pclk
+    control: {reg: 'C1_APB1HENR', field: OPAMPEN}
+  - name: MDIOSEN
+    description: MDIOS clock enable
+    input: rcc_pclk1
+    output: mdios_pclk
+    control: {reg: 'C1_APB1HENR', field: MDIOSEN}
+  - name: FDCANEN
+    description: FDCAN clock enable (shared by FDCAN1, FDCAN2, FDCAN3 on H73x)
+    input: rcc_pclk1
+    output: fdcan_pclk
+    control: {reg: 'C1_APB1HENR', field: FDCANEN}
+  - name: SWPMIEN
+    description: SWPMI peripheral clock enable
+    input: rcc_pclk1
+    output: swpmi_pclk
+    control: {reg: 'C1_APB1HENR', field: SWPMIEN}
+  - name: TIM23EN
+    description: TIM23 32-bit timer clock enable (H73x-specific)
+    input: rcc_pclk1
+    output: tim23_pclk
+    control: {reg: 'C1_APB1HENR', field: TIM23EN}
+  - name: TIM24EN
+    description: TIM24 32-bit timer clock enable (H73x-specific)
+    input: rcc_pclk1
+    output: tim24_pclk
+    control: {reg: 'C1_APB1HENR', field: TIM24EN}
+
+  # =========================================================================
+  # Peripheral clock gates — APB2 (D2 domain)
+  # Register: RCC_APB2ENR
+  # =========================================================================
+  - name: TIM1EN
+    description: TIM1 clock enable
+    input: rcc_pclk2
+    output: tim1_pclk
+    control: {reg: 'C1_APB2ENR', field: TIM1EN}
+  - name: TIM8EN
+    description: TIM8 clock enable
+    input: rcc_pclk2
+    output: tim8_pclk
+    control: {reg: 'C1_APB2ENR', field: TIM8EN}
+  - name: USART1EN
+    description: USART1 clock enable
+    input: rcc_pclk2
+    output: usart1_pclk
+    control: {reg: 'C1_APB2ENR', field: USART1EN}
+  - name: USART6EN
+    description: USART6 clock enable
+    input: rcc_pclk2
+    output: usart6_pclk
+    control: {reg: 'C1_APB2ENR', field: USART6EN}
+  - name: SPI1EN
+    description: SPI1 clock enable
+    input: rcc_pclk2
+    output: spi1_pclk
+    control: {reg: 'C1_APB2ENR', field: SPI1EN}
+  - name: SPI4EN
+    description: SPI4 clock enable
+    input: rcc_pclk2
+    output: spi4_pclk
+    control: {reg: 'C1_APB2ENR', field: SPI4EN}
+  - name: TIM15EN
+    description: TIM15 clock enable
+    input: rcc_pclk2
+    output: tim15_pclk
+    control: {reg: 'C1_APB2ENR', field: TIM15EN}
+  - name: TIM16EN
+    description: TIM16 clock enable
+    input: rcc_pclk2
+    output: tim16_pclk
+    control: {reg: 'C1_APB2ENR', field: TIM16EN}
+  - name: TIM17EN
+    description: TIM17 clock enable
+    input: rcc_pclk2
+    output: tim17_pclk
+    control: {reg: 'C1_APB2ENR', field: TIM17EN}
+  - name: SPI5EN
+    description: SPI5 clock enable
+    input: rcc_pclk2
+    output: spi5_pclk
+    control: {reg: 'C1_APB2ENR', field: SPI5EN}
+  - name: SAI1EN
+    description: SAI1 clock enable
+    input: rcc_pclk2
+    output: sai1_pclk
+    control: {reg: 'C1_APB2ENR', field: SAI1EN}
+  - name: DFSDM1EN
+    description: DFSDM1 clock enable
+    input: rcc_pclk2
+    output: dfsdm1_pclk
+    control: {reg: 'C1_APB2ENR', field: DFSDM1EN}
+  - name: UART9EN
+    description: UART9 clock enable (H73x-specific)
+    input: rcc_pclk2
+    output: uart9_pclk
+    control: {reg: 'C1_APB2ENR', field: UART9EN}
+  - name: USART10EN
+    description: USART10 clock enable (H73x-specific)
+    input: rcc_pclk2
+    output: usart10_pclk
+    control: {reg: 'C1_APB2ENR', field: USART10EN}
+  - name: SYSCFGEN
+    description: SYSCFG clock enable
+    input: rcc_pclk4
+    output: syscfg_pclk
+    control: {reg: 'C1_APB4ENR', field: SYSCFGEN}
+  - name: LPUART1EN
+    description: LPUART1 clock enable
+    input: rcc_pclk4
+    output: lpuart1_pclk
+    control: {reg: 'C1_APB4ENR', field: LPUART1EN}
+  - name: SPI6EN
+    description: SPI6 clock enable
+    input: rcc_pclk4
+    output: spi6_pclk
+    control: {reg: 'C1_APB4ENR', field: SPI6EN}
+  - name: I2C4EN
+    description: I2C4 clock enable
+    input: rcc_pclk4
+    output: i2c4_pclk
+    control: {reg: 'C1_APB4ENR', field: I2C4EN}
+  - name: LPTIM2EN
+    description: LPTIM2 clock enable
+    input: rcc_pclk4
+    output: lptim2_pclk
+    control: {reg: 'C1_APB4ENR', field: LPTIM2EN}
+  - name: LPTIM3EN
+    description: LPTIM3 clock enable
+    input: rcc_pclk4
+    output: lptim3_pclk
+    control: {reg: 'C1_APB4ENR', field: LPTIM3EN}
+  - name: LPTIM4EN
+    description: LPTIM4 clock enable
+    input: rcc_pclk4
+    output: lptim4_pclk
+    control: {reg: 'C1_APB4ENR', field: LPTIM4EN}
+  - name: LPTIM5EN
+    description: LPTIM5 clock enable
+    input: rcc_pclk4
+    output: lptim5_pclk
+    control: {reg: 'C1_APB4ENR', field: LPTIM5EN}
+  - name: COMP12EN
+    description: COMP1/2 clock enable
+    input: rcc_pclk4
+    output: comp12_pclk
+    control: {reg: 'C1_APB4ENR', field: COMP12EN}
+  - name: VREFEN
+    description: VREFBUF clock enable
+    input: rcc_pclk4
+    output: vrefbuf_pclk
+    control: {reg: 'C1_APB4ENR', field: VREFEN}
+  - name: RTCAPBEN
+    description: RTC APB interface clock enable
+    input: rcc_pclk4
+    output: rtcapb_pclk
+    control: {reg: 'C1_APB4ENR', field: RTCAPBEN}
+  - name: SAI4EN
+    description: SAI4 clock enable
+    input: rcc_pclk4
+    output: sai4_pclk
+    control: {reg: 'C1_APB4ENR', field: SAI4EN}
