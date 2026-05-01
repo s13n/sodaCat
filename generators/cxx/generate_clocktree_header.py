@@ -543,18 +543,21 @@ def generate_header(yaml_path, namespace, hpp_path, module_name=None):
     state_defaults_str = ', '.join(str(state_defaults[n]) for n in state_names)
 
     # --- Assemble the header ---
-    # The EXPORT discipline mirrors the peripheral/chip generators: in plain
-    # include mode the prefix block defines EXPORT to nothing and pulls in
-    # clocktree.hpp; in module mode the .cppm has already #defined EXPORT to
-    # `export` and included clocktree.hpp via the global module fragment, so
-    # the prefix block is skipped and the two top-level declarations carry
-    # the export keyword across the module boundary.
+    # EXPORT discipline: clocktree.hpp is included unconditionally so its
+    # types ride on whatever EXPORT setting the wrapping context has chosen.
+    # In module mode the cppm has already #defined EXPORT=export, so
+    # clocktree.hpp's namespace is re-exported through this module — no
+    # separate #include "clocktree.hpp" needed by importers.  In include
+    # mode EXPORT is undefined; clocktree.hpp's own #ifndef-EXPORT block
+    # pulls in STL and defines EXPORT empty, after which the chip's
+    # namespace below is just declared, not exported.
     txt = []
     txt.append("// generated header file, please don't edit.")
     txt.append('#pragma once')
     txt.append('')
-    txt.append('#ifndef EXPORT')
     txt.append('#include "clocktree.hpp"')
+    txt.append('')
+    txt.append('#ifndef EXPORT')
     txt.append('#define EXPORT')
     txt.append('#endif')
     txt.append('')
@@ -645,16 +648,19 @@ def generate_header(yaml_path, namespace, hpp_path, module_name=None):
                        if isinstance(namespace, str)
                        and _re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
                        else stem)
-    # Same pattern as the peripheral and chip module wrappers: the support
-    # header (clocktree.hpp) lives in the global module fragment so its
-    # declarations are visible inside the module TU, then the generated
-    # header is re-included with EXPORT=export so the user-facing types
-    # (Signals, Clocks) cross the module boundary.
+    # Module wrapper.  Differs from the peripheral/chip pattern: those
+    # generators put their support header (hwreg.hpp) in the global module
+    # fragment because its types are not meant to cross the module
+    # boundary.  Here we want clocktree::ClockTree<> visible to importers,
+    # so clocktree.hpp goes inside the EXPORT=export region — pulled in
+    # transitively via the chip-specific header — and only STL goes in
+    # the GMF.
     cppm = [
         "// File was generated, do not edit!",
         'module;',
         '',
-        '#include "clocktree.hpp"',
+        '#include <cstdint>',
+        '#include <span>',
         '',
         f'export module {module_name};',
         '',
