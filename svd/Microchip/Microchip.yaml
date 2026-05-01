@@ -217,13 +217,25 @@ shared_blocks:
     from: ATSAMV71Q21B.TWIHS0
     description: Two-wire high-speed interface (I²C)
 
-  UART:
-    from: ATSAMV71Q21B.UART0
-    description: Universal asynchronous receiver/transmitter
-
   USART:
     from: ATSAMV71Q21B.USART0
     description: Universal synchronous/asynchronous receiver/transmitter
+    # Feature-flag params.  The SAM-Gen1 USART supports nearly every
+    # variant flag below; the simpler UART (also re-using this model
+    # via `uses: USART`) overrides everything except modemCtrl back to
+    # false via chip_params.
+    params:
+      - {name: modemCtrl, type: bool, default: false, description: 'Modem control supported (DTR/DSR/DCD/RI)'}
+      - {name: handshake, type: bool, default: true,  description: 'RTS/CTS handshake supported (MR.MODE=HW_HANDSHAKING)'}
+      - {name: syncMode,  type: bool, default: true,  description: 'Synchronous mode supported (MR.SYNC; SCK pin)'}
+      - {name: spiMode,   type: bool, default: true,  description: 'SPI master/slave mode supported (MR.MODE=SPI_*)'}
+      - {name: irdaCtrl,  type: bool, default: true,  description: 'IrDA encoder/decoder supported (MR.MODE=IRDA; US_IF)'}
+      - {name: rs485Ctrl, type: bool, default: true,  description: 'RS485 control supported — RTS auto-enables transmitter (MR.MODE=RS485)'}
+      - {name: manchester,type: bool, default: true,  description: 'Manchester encoding supported (MR.MAN; US_MAN)'}
+      - {name: iso7816,   type: bool, default: true,  description: 'ISO 7816 smartcard mode supported (MR.MODE=IS07816_T_0/T_1; US_FIDI; US_NER; US_TTGR)'}
+      - {name: linMode,   type: bool, default: true,  description: 'LIN mode supported (MR.MODE=LIN_*; US_LINMR; US_LINIR; US_LINBRR)'}
+      - {name: lonMode,   type: bool, default: true,  description: 'LON mode supported (MR.MODE=LON; US_LONMR/PR/DL/L2HDR/BL/B1TX/B1RX/PRIO)'}
+      - {name: multidrop, type: bool, default: true,  description: 'Multidrop mode with 9-bit address detection (MR.MODE=MULTIDROP; MR.MSBF)'}
 
   USBHS:
     from: ATSAMV71Q21B.USBHS
@@ -593,7 +605,7 @@ families:
           TWIHS2: INT
 
       UART:
-        uses: UART
+        uses: USART
         instances: [UART0, UART1, UART2, UART3, UART4]
         interrupts:
           UART0: INT
@@ -699,6 +711,20 @@ families:
           # (DS60001527).  PIC32CZ-CA70/MC70 inherit the same silicon design.
           PIOE:
             pins: 0x3F
+          # UART instances re-use the unified USART model; turn off every
+          # mode-specific feature flag so the IP-block's parameter struct
+          # reflects what the simpler UART hardware actually provides.
+          UART:
+            handshake: false
+            syncMode: false
+            spiMode: false
+            irdaCtrl: false
+            rs485Ctrl: false
+            manchester: false
+            iso7816: false
+            linMode: false
+            lonMode: false
+            multidrop: false
   SAMS70:
     svd:
       zip: SAMS70_DFP.4.12.234.zip
@@ -865,7 +891,7 @@ families:
           TWIHS2: INT
 
       UART:
-        uses: UART
+        uses: USART
         instances: [UART0, UART1, UART2, UART3, UART4]
         interrupts:
           UART0: INT
@@ -970,6 +996,20 @@ families:
           # Port E is limited to PE0..PE5 (see SAME70 note above).
           PIOE:
             pins: 0x3F
+          # UART instances re-use the unified USART model; turn off every
+          # mode-specific feature flag so the IP-block's parameter struct
+          # reflects what the simpler UART hardware actually provides.
+          UART:
+            handshake: false
+            syncMode: false
+            spiMode: false
+            irdaCtrl: false
+            rs485Ctrl: false
+            manchester: false
+            iso7816: false
+            linMode: false
+            lonMode: false
+            multidrop: false
   SAMV70:
     svd:
       zip: SAMV70_DFP.4.12.233.zip
@@ -1151,7 +1191,7 @@ families:
           TWIHS2: INT
 
       UART:
-        uses: UART
+        uses: USART
         instances: [UART0, UART1, UART2, UART3, UART4]
         interrupts:
           UART0: INT
@@ -1256,6 +1296,20 @@ families:
           # Port E is limited to PE0..PE5 (see SAME70 note above).
           PIOE:
             pins: 0x3F
+          # UART instances re-use the unified USART model; turn off every
+          # mode-specific feature flag so the IP-block's parameter struct
+          # reflects what the simpler UART hardware actually provides.
+          UART:
+            handshake: false
+            syncMode: false
+            spiMode: false
+            irdaCtrl: false
+            rs485Ctrl: false
+            manchester: false
+            iso7816: false
+            linMode: false
+            lonMode: false
+            multidrop: false
   SAMV71:
     svd:
       zip: SAMV71_DFP.4.13.257.zip
@@ -1443,7 +1497,7 @@ families:
           TWIHS2: INT
 
       UART:
-        uses: UART
+        uses: USART
         instances: [UART0, UART1, UART2, UART3, UART4]
         interrupts:
           UART0: INT
@@ -1550,6 +1604,20 @@ families:
           # Port E is limited to PE0..PE5 (see SAME70 note above).
           PIOE:
             pins: 0x3F
+          # UART instances re-use the unified USART model; turn off every
+          # mode-specific feature flag so the IP-block's parameter struct
+          # reflects what the simpler UART hardware actually provides.
+          UART:
+            handshake: false
+            syncMode: false
+            spiMode: false
+            irdaCtrl: false
+            rs485Ctrl: false
+            manchester: false
+            iso7816: false
+            linMode: false
+            lonMode: false
+            multidrop: false
   PIC32CZ-CA70:
     svd:
       zip: PIC32CZ-CA70_DFP.1.3.62.zip
@@ -1744,7 +1812,7 @@ families:
           TWIHS2: INT
 
       UART:
-        uses: UART
+        uses: USART
         instances: [UART0, UART1, UART2, UART3, UART4]
         interrupts:
           UART0: INT
@@ -1844,6 +1912,20 @@ families:
           # Port E is limited to PE0..PE5 (see SAME70 note above).
           PIOE:
             pins: 0x3F
+          # UART instances re-use the unified USART model; turn off every
+          # mode-specific feature flag so the IP-block's parameter struct
+          # reflects what the simpler UART hardware actually provides.
+          UART:
+            handshake: false
+            syncMode: false
+            spiMode: false
+            irdaCtrl: false
+            rs485Ctrl: false
+            manchester: false
+            iso7816: false
+            linMode: false
+            lonMode: false
+            multidrop: false
 
   PIC32CZ-MC70:
     svd:
@@ -2022,7 +2104,7 @@ families:
           TWIHS2: INT
 
       UART:
-        uses: UART
+        uses: USART
         instances: [UART0, UART1, UART2, UART3, UART4]
         interrupts:
           UART0: INT
@@ -2123,6 +2205,20 @@ families:
           # Port E is limited to PE0..PE5 (see SAME70 note above).
           PIOE:
             pins: 0x3F
+          # UART instances re-use the unified USART model; turn off every
+          # mode-specific feature flag so the IP-block's parameter struct
+          # reflects what the simpler UART hardware actually provides.
+          UART:
+            handshake: false
+            syncMode: false
+            spiMode: false
+            irdaCtrl: false
+            rs485Ctrl: false
+            manchester: false
+            iso7816: false
+            linMode: false
+            lonMode: false
+            multidrop: false
 
   PIC32CZ-CA80:
     svd:
