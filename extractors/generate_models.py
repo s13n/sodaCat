@@ -88,7 +88,10 @@ def load_family_config(family_code, config_file):
 
     families = {}
     for name, info in config['subfamilies'].items():
-        families[name] = {'chips': list(info['chips'])}
+        sf = {'chips': list(info['chips'])}
+        if info.get('clocktree') is not None:
+            sf['clocktree'] = info['clocktree']
+        families[name] = sf
 
     blocks_config = {}
     for block_type, block_cfg in (config.get('blocks') or {}).items():
@@ -1986,8 +1989,10 @@ def main():
                 'name': chip_name,
                 'source': source,
             }
-            if clocktree:
-                chip_model['clocktree'] = clocktree
+            chip_clocktree = (
+                families.get(subfamily_name, {}).get('clocktree') or clocktree)
+            if chip_clocktree:
+                chip_model['clocktree'] = chip_clocktree
             chip_model.update({
                 'cpu': device_meta.get('cpu', {}),
                 'interruptOffset': interrupt_offset,
