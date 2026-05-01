@@ -64,12 +64,21 @@ def toNumber(tbl:dict, keys:list):
             tbl[k] = _safe_int(v)
 
 def toBoolean(tbl:dict, keys:list):
-    """ In a table, in-place convert all listed keys into a boolean. """
+    """ In a table, in-place convert all listed keys into a boolean.
+
+    Per the CMSIS SVD schema, xs:boolean values may appear as `true`/`false`
+    or `1`/`0` (case-insensitive).  Anything else is left untouched so the
+    error is visible rather than silently coerced to True.
+    """
     for k in keys:
         if k in tbl:
-            if tbl[k]:
+            v = tbl[k]
+            if isinstance(v, bool):
+                continue
+            s = str(v).strip().lower()
+            if s in ('true', '1'):
                 tbl[k] = True
-            else:
+            elif s in ('false', '0'):
                 tbl[k] = False
 
 def asArray(tbl):
@@ -201,11 +210,22 @@ def collatePeripherals(device:dict):
 
 def collateCpu(device:dict):
     """ go through the device CPU section and collate all its information
-        the data structure is modified in place. """
+        the data structure is modified in place.
+
+        Numeric and boolean fields are coerced from their SVD string form
+        per the CMSIS SVD schema (cpuType complexType).  Without this every
+        boolean would land in the chip yaml as a quoted string and
+        downstream consumers would see e.g. `vtorPresent: 'true'` instead
+        of `vtorPresent: true`.
+    """
     cpu = device['cpu']
     if cpu:
-        toNumber(cpu, [ "nvicPrioBits" ])
-        toBoolean(cpu, [ "mpuPresent", "fpuPresent", "vendorSystickConfig" ])
+        toNumber(cpu, [ "nvicPrioBits", "deviceNumInterrupts", "sauNumRegions" ])
+        toBoolean(cpu, [
+            "mpuPresent", "fpuPresent", "fpuDP", "dspPresent",
+            "icachePresent", "dcachePresent", "itcmPresent", "dtcmPresent",
+            "vtorPresent", "vendorSystickConfig",
+        ])
     device['interruptOffset'] = 16     #TODO: Make this dependent on CPU type
     device['interrupts'] = device.get('interrupts', [])
 
