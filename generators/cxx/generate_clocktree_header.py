@@ -108,11 +108,15 @@ def _collect_registers(reg_list, base_offset, regs):
                 regs[name] = {'addressOffset': offset, 'fields': fields}
 
 
-def _load_chip_cached(model_dir):
-    """Cached wrapper around load_chip_model."""
+def _load_chip_cached(model_dir, devices=None):
+    """Cached wrapper around load_chip_model.  When `devices` is given,
+    filters chip yamls by name so a clocktree-shared model_dir (e.g.
+    models/Raspberry/RP/ housing both RP2040 and RP2350 chip yamls)
+    picks the right one.  Subsequent calls without `devices` reuse the
+    primed cache entry."""
     key = str(Path(model_dir).resolve())
     if key not in _chip_cache:
-        _chip_cache[key] = load_chip_model(model_dir)
+        _chip_cache[key] = load_chip_model(model_dir, devices=devices)
     return _chip_cache[key]
 
 
@@ -146,9 +150,21 @@ def load_peripheral_model(instance, model_dir):
     return _periph_cache[instance]
 
 
-def load_chip_model(model_dir):
+def load_chip_model(model_dir, devices=None):
     """Find and load the chip model to get peripheral base addresses.
-    The chip model has 'instances' key with baseAddress per peripheral."""
+    The chip model has 'instances' key with baseAddress per peripheral.
+
+    When `devices` is non-empty, only return a chip yaml whose `name` is
+    in that list — required when model_dir's subtree contains multiple
+    chip yamls (e.g. models/Raspberry/RP/ with both RP2040 and RP2350)
+    and the caller knows which one the clocktree is associated with."""
+    devices_set = set(devices) if devices else None
+
+    def matches(data):
+        if devices_set is None:
+            return True
+        return data.get('name') in devices_set
+
     # Search for a YAML file with 'instances' key in model_dir and ancestors
     d = Path(model_dir)
     while d != d.parent:
@@ -156,7 +172,7 @@ def load_chip_model(model_dir):
             try:
                 yaml = YAML(typ='safe')
                 data = yaml.load(f)
-                if data and 'instances' in data:
+                if data and 'instances' in data and matches(data):
                     return data
             except:
                 continue
@@ -166,7 +182,7 @@ def load_chip_model(model_dir):
         try:
             yaml = YAML(typ='safe')
             data = yaml.load(f)
-            if data and 'instances' in data:
+            if data and 'instances' in data and matches(data):
                 return data
         except:
             continue
@@ -479,9 +495,20 @@ def init_types():
 
 
 def generate_header(yaml_path, namespace, hpp_path, module_name=None):
+    # Reset module-level caches so successive generate_header calls in the
+    # same process don't reuse a chip/peripheral resolved against a different
+    # clocktree's context.
+    _chip_cache.clear()
+    _periph_cache.clear()
+
     yaml = YAML(typ='safe')
     data = yaml.load(Path(yaml_path))
     model_dir = str(Path(yaml_path).parent)
+
+    # Prime the chip cache with the right chip up front, so later
+    # load_peripheral_model calls (which don't get devices threaded through)
+    # resolve via the correct chip's instances/models map.
+    _load_chip_cached(model_dir, devices=data.get('devices'))
 
     instance = data.get('instance', '')
     signals = data.get('signals', [])
