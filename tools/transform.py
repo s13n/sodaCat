@@ -126,6 +126,61 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimI
                     cluster['registers'].append(r)
             else:               # register doesn't belong to cluster
                 registers.append(r)
+
+        # Union fields from non-template instances into the cluster prototype.
+        # The cluster carries the superset of fields across slots; it's the
+        # programmer's responsibility (typically via per-instance params or the
+        # surrounding driver contract) to know which fields actually exist on
+        # which slot.  RP2040 CLOCKS is the original motivator — CLK_REF_CTRL
+        # and CLK_SYS_CTRL have an SRC field that the GPOUT/PERI/USB/ADC/RTC
+        # slots don't, and intersecting silently dropped it.
+        cluster_subregs = {r['name']: r for r in cluster['registers']}
+        merged_into = set()
+        for inst_idx, inst_regs in enumerate(instances):
+            if inst_idx == template:
+                continue
+            for entry in inst_regs:
+                target = cluster_subregs.get(entry['name'])
+                if target is None:
+                    # sub-register doesn't exist in the template instance — no
+                    # offset to assign within the cluster slot, skip.
+                    continue
+                target_fields = target.setdefault('fields', [])
+                target_by_name = {f['name']: f for f in target_fields}
+                for f in entry['reg'].get('fields', []):
+                    fname = f['name']
+                    existing = target_by_name.get(fname)
+                    if existing is None:
+                        nb = f.get('bitOffset')
+                        nw = f.get('bitWidth', 1)
+                        # Treat (bitOffset, bitWidth) as the field's identity.
+                        # A new name occupying an identical bit range is a
+                        # name-alias for the existing field — skip it.  Keeps
+                        # the cluster a superset over distinct bits, not over
+                        # distinct names.  (E.g. STM32H7 MDMA per-channel ISRs
+                        # carry TEIF, TEIF1, TEIF2, ... all at bit 0 width 1
+                        # — aliases, not extra fields.)
+                        if any(e.get('bitOffset') == nb and
+                               e.get('bitWidth', 1) == nw
+                               for e in target_fields):
+                            continue
+                        target_fields.append(f)
+                        target_by_name[fname] = f
+                        merged_into.add(id(target))
+                    else:
+                        eb = existing.get('bitOffset')
+                        ew = existing.get('bitWidth', 1)
+                        nb = f.get('bitOffset')
+                        nw = f.get('bitWidth', 1)
+                        if eb != nb or ew != nw:
+                            print(f"WARNING: cluster {cluster['name']}.{entry['name']}.{fname}: "
+                                  f"bit positions differ across instances ({eb}/{ew} vs {nb}/{nw})")
+        # For sub-registers we touched, sort fields by bitOffset so the
+        # merged-in entries don't appear out of order.
+        for sub in cluster['registers']:
+            if id(sub) in merged_into and 'fields' in sub:
+                sub['fields'].sort(key=lambda f: f.get('bitOffset', 0))
+
         # insert the cluster where the first matched register used to be
         if first_match_pos is None:
             first_match_pos = len(registers)
