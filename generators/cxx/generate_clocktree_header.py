@@ -30,7 +30,14 @@ def find_model_file(name, start_dir):
 
 
 def _collect_registers(reg_list, base_offset, regs):
-    """Recursively collect registers, handling clusters (dim/dimIncrement)."""
+    """Recursively collect registers, handling clusters (dim/dimIncrement).
+
+    Cluster and dim>1 expansion emits two name forms when `dimIndex` is
+    present: numeric (CLK_0.CTRL) and dimIndex-token (CLK_REF.CTRL).
+    Clocktree YAMLs can then reference clustered registers by the
+    manufacturer's logical name (REF, SYS, ...) while the peripheral
+    model keeps its array structure.
+    """
     for reg in reg_list:
         name = reg['name']
         offset = reg['addressOffset'] + base_offset
@@ -38,15 +45,22 @@ def _collect_registers(reg_list, base_offset, regs):
         sub_regs = reg.get('registers')
         dim = reg.get('dim', 1)
         dim_inc = reg.get('dimIncrement', 0)
+        dim_index = reg.get('dimIndex')
+        if isinstance(dim_index, str):
+            dim_tokens = [t.strip() for t in dim_index.split(',')]
+        elif isinstance(dim_index, list):
+            dim_tokens = [str(t).strip() for t in dim_index]
+        else:
+            dim_tokens = None
         if sub_regs:
             # This is a register cluster — expand each dimension instance
             for i in range(dim):
-                cluster_name = name.replace('%s', str(i))
                 cluster_offset = offset + i * dim_inc
                 _collect_registers(sub_regs, cluster_offset, regs)
-                # Also register sub-regs with cluster prefix
+                cluster_names = [name.replace('%s', str(i))]
+                if dim_tokens and i < len(dim_tokens):
+                    cluster_names.append(name.replace('%s', dim_tokens[i]))
                 for sr in sub_regs:
-                    prefixed = f"{cluster_name}.{sr['name']}"
                     sr_offset = cluster_offset + sr['addressOffset']
                     fields = {}
                     for f in sr.get('fields', []):
@@ -54,7 +68,9 @@ def _collect_registers(reg_list, base_offset, regs):
                             'bitOffset': f['bitOffset'],
                             'bitWidth': f.get('bitWidth', 1),
                         }
-                    regs[prefixed] = {'addressOffset': sr_offset, 'fields': fields}
+                    entry = {'addressOffset': sr_offset, 'fields': fields}
+                    for cn in cluster_names:
+                        regs[f"{cn}.{sr['name']}"] = entry
         else:
             # Plain register, possibly with dim
             fields = {}
@@ -65,8 +81,12 @@ def _collect_registers(reg_list, base_offset, regs):
                 }
             if dim > 1:
                 for i in range(dim):
-                    rname = name.replace('%s', str(i))
-                    regs[rname] = {'addressOffset': offset + i * dim_inc, 'fields': fields}
+                    entry = {'addressOffset': offset + i * dim_inc, 'fields': fields}
+                    rnames = [name.replace('%s', str(i))]
+                    if dim_tokens and i < len(dim_tokens):
+                        rnames.append(name.replace('%s', dim_tokens[i]))
+                    for rn in rnames:
+                        regs[rn] = entry
             else:
                 regs[name] = {'addressOffset': offset, 'fields': fields}
 
