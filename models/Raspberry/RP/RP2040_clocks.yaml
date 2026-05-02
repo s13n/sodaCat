@@ -101,6 +101,57 @@ signals:
   - name: clk_gpout3_div_out
     description: Output of CLK_GPOUT3 divider, feeds CLK_GPOUT3 gate
 
+  # Per-peripheral wake-mode gate outputs (WAKE_EN0 / WAKE_EN1 fields).
+  # Each signal is the clock delivered to one peripheral instance after
+  # the wake-mode gate.  Listed here so the gates below have named outputs.
+  - {name: clk_sys_clocks}
+  - {name: clk_adc_adc}
+  - {name: clk_sys_adc}
+  - {name: clk_sys_busctrl}
+  - {name: clk_sys_busfabric}
+  - {name: clk_sys_dma}
+  - {name: clk_sys_i2c0}
+  - {name: clk_sys_i2c1}
+  - {name: clk_sys_io}
+  - {name: clk_sys_jtag}
+  - {name: clk_sys_vreg_and_chip_reset}
+  - {name: clk_sys_pads}
+  - {name: clk_sys_pio0}
+  - {name: clk_sys_pio1}
+  - {name: clk_sys_pll_sys}
+  - {name: clk_sys_pll_usb}
+  - {name: clk_sys_psm}
+  - {name: clk_sys_pwm}
+  - {name: clk_sys_resets}
+  - {name: clk_sys_rom}
+  - {name: clk_sys_rosc}
+  - {name: clk_rtc_rtc}
+  - {name: clk_sys_rtc}
+  - {name: clk_sys_sio}
+  - {name: clk_peri_spi0}
+  - {name: clk_sys_spi0}
+  - {name: clk_peri_spi1}
+  - {name: clk_sys_spi1}
+  - {name: clk_sys_sram0}
+  - {name: clk_sys_sram1}
+  - {name: clk_sys_sram2}
+  - {name: clk_sys_sram3}
+  - {name: clk_sys_sram4}
+  - {name: clk_sys_sram5}
+  - {name: clk_sys_syscfg}
+  - {name: clk_sys_sysinfo}
+  - {name: clk_sys_tbman}
+  - {name: clk_sys_timer}
+  - {name: clk_peri_uart0}
+  - {name: clk_sys_uart0}
+  - {name: clk_peri_uart1}
+  - {name: clk_sys_uart1}
+  - {name: clk_sys_usbctrl}
+  - {name: clk_usb_usbctrl}
+  - {name: clk_sys_watchdog}
+  - {name: clk_sys_xip}
+  - {name: clk_sys_xosc}
+
 generators:
   - name: xosc
     description: Crystal oscillator (12MHz typical)
@@ -579,3 +630,254 @@ gates:
     control:
       reg: CLK_GPOUT3_CTRL
       field: ENABLE
+
+  # ==========================================================================
+  # Per-peripheral wake-mode gates (CLOCKS.WAKE_EN0 / WAKE_EN1)
+  #
+  # Each bit gates the clock delivered to one peripheral instance.  WAKE_EN0/1
+  # carry the wake-mode mask, SLEEP_EN0/1 carry the sleep-mode mask with the
+  # same field names, and ENABLED0/1 reflect the currently effective state.
+  # The EnableControl schema points at one register/field, so WAKE_EN is named
+  # here as the default-active mask; a driver wanting the SLEEP_EN view reads
+  # the same field name from SLEEP_EN0/1.  Both WAKE_EN0/1 reset to all-ones,
+  # so every peripheral starts with its clock enabled in wake mode.
+  # ==========================================================================
+
+  # --- WAKE_EN0 ---
+  - name: CLK_SYS_CLOCKS
+    description: CLOCKS register-interface clock
+    input: clk_sys
+    output: clk_sys_clocks
+    control: {reg: WAKE_EN0, field: CLK_SYS_CLOCKS}
+  - name: CLK_ADC_ADC
+    description: ADC analog/conversion clock (48 MHz)
+    input: clk_adc
+    output: clk_adc_adc
+    control: {reg: WAKE_EN0, field: CLK_ADC_ADC}
+  - name: CLK_SYS_ADC
+    description: ADC register-interface clock
+    input: clk_sys
+    output: clk_sys_adc
+    control: {reg: WAKE_EN0, field: CLK_SYS_ADC}
+  - name: CLK_SYS_BUSCTRL
+    description: BUSCTRL bus-arbiter clock
+    input: clk_sys
+    output: clk_sys_busctrl
+    control: {reg: WAKE_EN0, field: CLK_SYS_BUSCTRL}
+  - name: CLK_SYS_BUSFABRIC
+    description: AHB-Lite crossbar clock
+    input: clk_sys
+    output: clk_sys_busfabric
+    control: {reg: WAKE_EN0, field: CLK_SYS_BUSFABRIC}
+  - name: CLK_SYS_DMA
+    description: DMA controller clock
+    input: clk_sys
+    output: clk_sys_dma
+    control: {reg: WAKE_EN0, field: CLK_SYS_DMA}
+  - name: CLK_SYS_I2C0
+    description: I2C0 clock
+    input: clk_sys
+    output: clk_sys_i2c0
+    control: {reg: WAKE_EN0, field: CLK_SYS_I2C0}
+  - name: CLK_SYS_I2C1
+    description: I2C1 clock
+    input: clk_sys
+    output: clk_sys_i2c1
+    control: {reg: WAKE_EN0, field: CLK_SYS_I2C1}
+  - name: CLK_SYS_IO
+    description: IO_BANK0 clock
+    input: clk_sys
+    output: clk_sys_io
+    control: {reg: WAKE_EN0, field: CLK_SYS_IO}
+  - name: CLK_SYS_JTAG
+    description: JTAG/SWD interface clock
+    input: clk_sys
+    output: clk_sys_jtag
+    control: {reg: WAKE_EN0, field: CLK_SYS_JTAG}
+  - name: CLK_SYS_VREG_AND_CHIP_RESET
+    description: VREG_AND_CHIP_RESET clock
+    input: clk_sys
+    output: clk_sys_vreg_and_chip_reset
+    control: {reg: WAKE_EN0, field: CLK_SYS_VREG_AND_CHIP_RESET}
+  - name: CLK_SYS_PADS
+    description: PADS_BANK0 clock
+    input: clk_sys
+    output: clk_sys_pads
+    control: {reg: WAKE_EN0, field: CLK_SYS_PADS}
+  - name: CLK_SYS_PIO0
+    description: PIO0 clock
+    input: clk_sys
+    output: clk_sys_pio0
+    control: {reg: WAKE_EN0, field: CLK_SYS_PIO0}
+  - name: CLK_SYS_PIO1
+    description: PIO1 clock
+    input: clk_sys
+    output: clk_sys_pio1
+    control: {reg: WAKE_EN0, field: CLK_SYS_PIO1}
+  - name: CLK_SYS_PLL_SYS
+    description: PLL_SYS register-interface clock
+    input: clk_sys
+    output: clk_sys_pll_sys
+    control: {reg: WAKE_EN0, field: CLK_SYS_PLL_SYS}
+  - name: CLK_SYS_PLL_USB
+    description: PLL_USB register-interface clock
+    input: clk_sys
+    output: clk_sys_pll_usb
+    control: {reg: WAKE_EN0, field: CLK_SYS_PLL_USB}
+  - name: CLK_SYS_PSM
+    description: PSM clock
+    input: clk_sys
+    output: clk_sys_psm
+    control: {reg: WAKE_EN0, field: CLK_SYS_PSM}
+  - name: CLK_SYS_PWM
+    description: PWM clock
+    input: clk_sys
+    output: clk_sys_pwm
+    control: {reg: WAKE_EN0, field: CLK_SYS_PWM}
+  - name: CLK_SYS_RESETS
+    description: RESETS clock
+    input: clk_sys
+    output: clk_sys_resets
+    control: {reg: WAKE_EN0, field: CLK_SYS_RESETS}
+  - name: CLK_SYS_ROM
+    description: Boot ROM clock
+    input: clk_sys
+    output: clk_sys_rom
+    control: {reg: WAKE_EN0, field: CLK_SYS_ROM}
+  - name: CLK_SYS_ROSC
+    description: ROSC register-interface clock
+    input: clk_sys
+    output: clk_sys_rosc
+    control: {reg: WAKE_EN0, field: CLK_SYS_ROSC}
+  - name: CLK_RTC_RTC
+    description: RTC counter clock (slow clock from CLK_RTC)
+    input: clk_rtc
+    output: clk_rtc_rtc
+    control: {reg: WAKE_EN0, field: CLK_RTC_RTC}
+  - name: CLK_SYS_RTC
+    description: RTC register-interface clock
+    input: clk_sys
+    output: clk_sys_rtc
+    control: {reg: WAKE_EN0, field: CLK_SYS_RTC}
+  - name: CLK_SYS_SIO
+    description: SIO clock
+    input: clk_sys
+    output: clk_sys_sio
+    control: {reg: WAKE_EN0, field: CLK_SYS_SIO}
+  - name: CLK_PERI_SPI0
+    description: SPI0 serial bit clock
+    input: clk_peri
+    output: clk_peri_spi0
+    control: {reg: WAKE_EN0, field: CLK_PERI_SPI0}
+  - name: CLK_SYS_SPI0
+    description: SPI0 register-interface clock
+    input: clk_sys
+    output: clk_sys_spi0
+    control: {reg: WAKE_EN0, field: CLK_SYS_SPI0}
+  - name: CLK_PERI_SPI1
+    description: SPI1 serial bit clock
+    input: clk_peri
+    output: clk_peri_spi1
+    control: {reg: WAKE_EN0, field: CLK_PERI_SPI1}
+  - name: CLK_SYS_SPI1
+    description: SPI1 register-interface clock
+    input: clk_sys
+    output: clk_sys_spi1
+    control: {reg: WAKE_EN0, field: CLK_SYS_SPI1}
+  - name: CLK_SYS_SRAM0
+    description: SRAM bank 0 clock
+    input: clk_sys
+    output: clk_sys_sram0
+    control: {reg: WAKE_EN0, field: CLK_SYS_SRAM0}
+  - name: CLK_SYS_SRAM1
+    description: SRAM bank 1 clock
+    input: clk_sys
+    output: clk_sys_sram1
+    control: {reg: WAKE_EN0, field: CLK_SYS_SRAM1}
+  - name: CLK_SYS_SRAM2
+    description: SRAM bank 2 clock
+    input: clk_sys
+    output: clk_sys_sram2
+    control: {reg: WAKE_EN0, field: CLK_SYS_SRAM2}
+  - name: CLK_SYS_SRAM3
+    description: SRAM bank 3 clock
+    input: clk_sys
+    output: clk_sys_sram3
+    control: {reg: WAKE_EN0, field: CLK_SYS_SRAM3}
+
+  # --- WAKE_EN1 ---
+  - name: CLK_SYS_SRAM4
+    description: SRAM bank 4 clock
+    input: clk_sys
+    output: clk_sys_sram4
+    control: {reg: WAKE_EN1, field: CLK_SYS_SRAM4}
+  - name: CLK_SYS_SRAM5
+    description: SRAM bank 5 clock
+    input: clk_sys
+    output: clk_sys_sram5
+    control: {reg: WAKE_EN1, field: CLK_SYS_SRAM5}
+  - name: CLK_SYS_SYSCFG
+    description: SYSCFG clock
+    input: clk_sys
+    output: clk_sys_syscfg
+    control: {reg: WAKE_EN1, field: CLK_SYS_SYSCFG}
+  - name: CLK_SYS_SYSINFO
+    description: SYSINFO clock
+    input: clk_sys
+    output: clk_sys_sysinfo
+    control: {reg: WAKE_EN1, field: CLK_SYS_SYSINFO}
+  - name: CLK_SYS_TBMAN
+    description: TBMAN clock
+    input: clk_sys
+    output: clk_sys_tbman
+    control: {reg: WAKE_EN1, field: CLK_SYS_TBMAN}
+  - name: CLK_SYS_TIMER
+    description: TIMER clock
+    input: clk_sys
+    output: clk_sys_timer
+    control: {reg: WAKE_EN1, field: CLK_SYS_TIMER}
+  - name: CLK_PERI_UART0
+    description: UART0 baud-rate clock
+    input: clk_peri
+    output: clk_peri_uart0
+    control: {reg: WAKE_EN1, field: CLK_PERI_UART0}
+  - name: CLK_SYS_UART0
+    description: UART0 register-interface clock
+    input: clk_sys
+    output: clk_sys_uart0
+    control: {reg: WAKE_EN1, field: CLK_SYS_UART0}
+  - name: CLK_PERI_UART1
+    description: UART1 baud-rate clock
+    input: clk_peri
+    output: clk_peri_uart1
+    control: {reg: WAKE_EN1, field: CLK_PERI_UART1}
+  - name: CLK_SYS_UART1
+    description: UART1 register-interface clock
+    input: clk_sys
+    output: clk_sys_uart1
+    control: {reg: WAKE_EN1, field: CLK_SYS_UART1}
+  - name: CLK_SYS_USBCTRL
+    description: USB controller register-interface clock
+    input: clk_sys
+    output: clk_sys_usbctrl
+    control: {reg: WAKE_EN1, field: CLK_SYS_USBCTRL}
+  - name: CLK_USB_USBCTRL
+    description: USB controller core clock (48 MHz)
+    input: clk_usb
+    output: clk_usb_usbctrl
+    control: {reg: WAKE_EN1, field: CLK_USB_USBCTRL}
+  - name: CLK_SYS_WATCHDOG
+    description: WATCHDOG register-interface clock
+    input: clk_sys
+    output: clk_sys_watchdog
+    control: {reg: WAKE_EN1, field: CLK_SYS_WATCHDOG}
+  - name: CLK_SYS_XIP
+    description: XIP_CTRL clock
+    input: clk_sys
+    output: clk_sys_xip
+    control: {reg: WAKE_EN1, field: CLK_SYS_XIP}
+  - name: CLK_SYS_XOSC
+    description: XOSC register-interface clock
+    input: clk_sys
+    output: clk_sys_xosc
+    control: {reg: WAKE_EN1, field: CLK_SYS_XOSC}
