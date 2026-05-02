@@ -17,6 +17,7 @@ import sys
 # ---------------------------------------------------------------------------
 
 _periph_cache = {}   # instance_name -> { 'base': int, 'regs': {reg_name: {offset, fields: {name: {bitOffset, bitWidth}}}} }
+_chip_cache = {}     # resolved model_dir -> chip dict (or None)
 
 def find_model_file(name, start_dir):
     """Find a YAML model file by name, searching start_dir and ancestors."""
@@ -27,6 +28,19 @@ def find_model_file(name, start_dir):
             return candidate
         d = d.parent
     raise FileNotFoundError(f"Cannot find model file {name}.yaml starting from {start_dir}")
+
+
+def _resolve_block_path(start_dir, model_relpath):
+    """Walk up from start_dir until <parent>/<model_relpath>.yaml exists."""
+    target = Path(model_relpath + '.yaml')
+    p = Path(start_dir).resolve()
+    while True:
+        candidate = p / target
+        if candidate.is_file():
+            return candidate
+        if p.parent == p:
+            return None
+        p = p.parent
 
 
 def _collect_registers(reg_list, base_offset, regs):
@@ -91,12 +105,37 @@ def _collect_registers(reg_list, base_offset, regs):
                 regs[name] = {'addressOffset': offset, 'fields': fields}
 
 
+def _load_chip_cached(model_dir):
+    """Cached wrapper around load_chip_model."""
+    key = str(Path(model_dir).resolve())
+    if key not in _chip_cache:
+        _chip_cache[key] = load_chip_model(model_dir)
+    return _chip_cache[key]
+
+
 def load_peripheral_model(instance, model_dir):
-    """Load a peripheral YAML model and extract register/field layout."""
+    """Load a peripheral YAML model and extract register/field layout.
+
+    Resolves the model file via the chip's instance->model->relpath map
+    (instances[<instance>].model -> models[<model>] -> relpath), so an
+    instance like PLL_SYS resolves to the PLL block model rather than
+    looking for a non-existent PLL_SYS.yaml.  Falls back to a bare
+    <instance>.yaml lookup for ad-hoc invocation outside a chip context.
+    """
     if instance in _periph_cache:
         return _periph_cache[instance]
     yaml = YAML(typ='safe')
-    path = find_model_file(instance, model_dir)
+    path = None
+    chip = _load_chip_cached(model_dir)
+    if chip:
+        info = chip.get('instances', {}).get(instance)
+        if isinstance(info, dict):
+            model_name = info.get('model')
+            if model_name:
+                relpath = chip.get('models', {}).get(model_name, model_name)
+                path = _resolve_block_path(model_dir, relpath)
+    if path is None:
+        path = find_model_file(instance, model_dir)
     data = yaml.load(path)
     regs = {}
     _collect_registers(data.get('registers', []), 0, regs)
