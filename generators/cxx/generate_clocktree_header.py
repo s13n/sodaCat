@@ -68,9 +68,12 @@ def _collect_registers(reg_list, base_offset, regs):
             dim_tokens = None
         if sub_regs:
             # This is a register cluster — expand each dimension instance
+            # under qualified names (CLK_0.CTRL, CLK_REF.CTRL, ...).  Bare
+            # sub-register names (CTRL, DIV, ...) are deliberately not
+            # registered: they'd collide across cluster instances and the
+            # last write would silently win.
             for i in range(dim):
                 cluster_offset = offset + i * dim_inc
-                _collect_registers(sub_regs, cluster_offset, regs)
                 cluster_names = [name.replace('%s', str(i))]
                 if dim_tokens and i < len(dim_tokens):
                     cluster_names.append(name.replace('%s', dim_tokens[i]))
