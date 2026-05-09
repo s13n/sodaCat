@@ -61,6 +61,7 @@ function(raspberry_add_family)
         COMMAND ${CMAKE_COMMAND} -E touch ${_marker}
         DEPENDS ${RASPBERRY_GENERATOR} ${_family_config}
         COMMENT "Extracting ${FAM_DISPLAY} family models from SVD files..."
+        JOB_POOL extract_models
         VERBATIM
     )
 

@@ -63,6 +63,7 @@ function(microchip_add_family)
         MAIN_DEPENDENCY ${MICROCHIP${FAM_CODE}_SVD_ZIP}
         DEPENDS ${MICROCHIP_GENERATOR} ${_family_config}
         COMMENT "Extracting ${FAM_DISPLAY} family models from SVD files..."
+        JOB_POOL extract_models
         VERBATIM
     )
 

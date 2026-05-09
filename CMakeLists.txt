@@ -3,6 +3,15 @@ cmake_minimum_required(VERSION 3.28)
 
 project(soc-data CXX)
 
+# Family extractors share output paths (cross-family shared blocks like
+# models/ST/MDMA.yaml or models/ARM/PL08x.yaml are produced by more than
+# one family) but each only declares its stamp file as OUTPUT.  Without
+# serialisation, ninja schedules them in parallel and concurrent writes
+# corrupt the YAML.  Run extractors in a depth-1 pool to serialise them
+# while leaving the rest of the build (compilation, validation, etc.)
+# free to parallelise.
+set_property(GLOBAL APPEND PROPERTY JOB_POOLS extract_models=1)
+
 # SVD-based model generation
 add_subdirectory(svd)
 
