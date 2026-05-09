@@ -1,5 +1,6 @@
 # Functions to manipulate the data structure.
 # (C) 2024 Stefan Heinzmann
+import copy
 import re
 import sys
 from ruamel.yaml.comments import CommentedSeq
@@ -259,11 +260,15 @@ def create2DArray(reglist:list, pattern:str, name:str, template:tuple=(0,0)):
       scalar registers with two numeric indices (e.g. QMEM0_0, QMEM0_1, ...,
       QMEM3_15). Both row and column indices are read from the regex.
 
-    - **1 group (stack of 1D arrays)**: N already-1D-array registers sharing
-      field shape, dim, and dimIncrement (e.g. DESCRIPTOR0_[%s] and
-      DESCRIPTOR1_[%s] each with dim=8). The capture group supplies the row
-      index; the inner dimension is taken from each matched array's existing
-      dim/dimIncrement.
+    - **1 group (stack of 1D arrays)**: N already-1D-array registers
+      sharing dimIncrement but not necessarily dim or field set. The
+      capture group supplies the row index (parsed as decimal first,
+      falling back to base 16 so single hex letters A..F work as 10..15).
+      The inner dimension is computed from rowStride / colStride, so rows
+      with dim < cols leave phantom (reserved) inner indices at the end.
+      Fields are unioned across rows under the same contract as
+      mergeArrays: same-named fields must share bit position, different-
+      named fields must not overlap at the bit level.
 
     Both modes produce the same output: one register named `name[%s][%s]`
     with dim=[rows, cols] and dimIncrement=[rowStride, colStride].
@@ -340,11 +345,17 @@ def _stack1DArrays(reglist, pat, pattern, name, template):
     matches = {}  # row -> register (must be a 1D array)
     for r in reglist:
         m = pat.match(r['name'])
-        if m:
+        if not m:
+            continue
+        s = m.group(1)
+        try:
+            row = int(s)
+        except ValueError:
             try:
-                matches[int(m.group(1))] = r
+                row = int(s, 16)
             except ValueError:
-                pass
+                continue
+        matches[row] = r
 
     if len(matches) < 2:
         print(f'Register set unsuitable for 2D array: only {len(matches)} 1D-array matches for {pattern}')
@@ -356,36 +367,66 @@ def _stack1DArrays(reglist, pat, pattern, name, template):
         return reglist
 
     first = matches[0]
-    cols = first.get('dim')
     colStride = first.get('dimIncrement')
-    if not isinstance(cols, int) or not isinstance(colStride, int):
+    if not isinstance(colStride, int) or not isinstance(first.get('dim'), int):
         print(f"create2DArray: '{first['name']}' is not a 1D array (dim/dimIncrement must be int)")
         return reglist
-
-    def field_sig(reg):
-        return tuple(
-            (f.get('name'), f.get('bitOffset'), f.get('bitWidth'))
-            for f in reg.get('fields', [])
-        )
-
-    sig0 = field_sig(first)
     for row, r in matches.items():
-        if r.get('dim') != cols or r.get('dimIncrement') != colStride:
-            print(f"create2DArray: '{r['name']}' dim/dimIncrement differ from row 0")
+        if r.get('dimIncrement') != colStride:
+            print(f"create2DArray: row {row} dimIncrement {r.get('dimIncrement')} "
+                  f"differs from row 0 ({colStride})")
             return reglist
-        if field_sig(r) != sig0:
-            print(f"create2DArray: '{r['name']}' field shape differs from row 0")
+        if not isinstance(r.get('dim'), int):
+            print(f"create2DArray: row {row} dim must be int")
             return reglist
 
     base_addr = _addr(matches[0])
     rowStride = _addr(matches[1]) - base_addr
+    if rowStride <= 0 or rowStride % colStride != 0:
+        print(f"create2DArray: rowStride {rowStride} not a positive multiple "
+              f"of colStride {colStride}")
+        return reglist
+    cols = rowStride // colStride
+
     for row in range(rows):
         if _addr(matches[row]) != base_addr + row * rowStride:
             print(f"create2DArray: row {row} of {pattern} breaks linear addressing")
             return reglist
+        if matches[row].get('dim') > cols:
+            print(f"create2DArray: row {row} dim {matches[row]['dim']} exceeds "
+                  f"inferred cols {cols}")
+            return reglist
+
+    # Field union across rows (mirrors mergeArrays' bit-disjointness contract).
+    merged_fields = []
+    bit_owners = {}  # bit -> field name
+    for row in range(rows):
+        for f in matches[row].get('fields') or []:
+            fname = f.get('name')
+            offset = f.get('bitOffset', 0)
+            width = f.get('bitWidth', 1)
+            existing = next((mf for mf in merged_fields if mf.get('name') == fname), None)
+            if existing is not None:
+                if (existing.get('bitOffset') != offset
+                        or existing.get('bitWidth') != width):
+                    print(f"create2DArray: field '{fname}' has incompatible position "
+                          f"across /{pattern}/ rows: "
+                          f"[{existing.get('bitOffset')}:{existing.get('bitWidth')}] "
+                          f"vs [{offset}:{width}]")
+                    return reglist
+                continue
+            for b in range(offset, offset + width):
+                if b in bit_owners:
+                    print(f"create2DArray: field '{fname}' bit {b} overlaps with "
+                          f"existing field '{bit_owners[b]}' in /{pattern}/ stack")
+                    return reglist
+                bit_owners[b] = fname
+            merged_fields.append(copy.deepcopy(f))
+    merged_fields.sort(key=lambda f: f.get('bitOffset', 0))
 
     tmpl_row = template[0] if isinstance(template, (tuple, list)) else 0
     tmpl_reg = matches.get(tmpl_row, matches[0])
+    tmpl_reg['fields'] = merged_fields
     _emit2DArray(tmpl_reg, name, base_addr, rows, cols, rowStride, colStride)
 
     fmt = "Arrays {} stacked into 2D array {}: Address offset = {}  Dims = {}x{}  Increments = {},{}"

@@ -957,6 +957,15 @@ families:
           - {type: mergeArrays, pattern: '^SFSP3(_\[%s\]|_%s|_\d+)$', name: 'SFSP3_[%s]', description: 'Pin configuration register for pins P3'}
           - {type: mergeArrays, pattern: '^SFSP8(_\[%s\]|_%s|_\d+)$', name: 'SFSP8_[%s]', description: 'Pin configuration register for pins P8'}
           - {type: mergeArrays, pattern: '^SFSPA(_\[%s\]|_%s|_\d+)$', name: 'SFSPA_[%s]', description: 'Pin configuration register for pins PA'}
+          # Fold the 16 per-port arrays into a single 2D array
+          # SFSP[16][32].  Outer index 0..F (parsed as hex) covers ports
+          # P0..PF.  Inner dim is 32 = port stride / colStride; ports
+          # with fewer real pins leave phantom inner indices for the
+          # reserved tail.  Field union across ports adds EHD (bits 8:9)
+          # to ports that don't have it and ZIF (bit 7) to port 9 — both
+          # are consistent with the per-port superset already taken
+          # above.
+          - {type: create2DArray, pattern: '^SFSP([0-9A-F])_\[%s\]$', name: SFSP, description: 'Pin configuration register for port m, pin n'}
       SDMMC:
         from: LPC43xx_43Sxx.SDMMC
         instances: [SDMMC]
