@@ -9,6 +9,7 @@ Usage: called from generate_header.py when the model has a 'signals' key.
 
 from ruamel.yaml import YAML
 from pathlib import Path
+from itertools import product
 import sys
 
 
@@ -51,6 +52,13 @@ def _collect_registers(reg_list, base_offset, regs):
     Clocktree YAMLs can then reference clustered registers by the
     manufacturer's logical name (REF, SYS, ...) while the peripheral
     model keeps its array structure.
+
+    Multi-dimensional arrays (list-valued dim/dimIncrement, e.g. LPC43
+    CCU's CLK[%s][%s]) are expanded to a name per (i, j, ...) tuple by
+    sequentially substituting %s placeholders — clocktree YAMLs reference
+    such registers as CLK[0][0].CFG, CLK[3][15].CFG, etc.  dimIndex
+    tokens are only applied to 1D arrays; multi-dim entries are
+    numeric-only.
     """
     for reg in reg_list:
         name = reg['name']
@@ -60,34 +68,53 @@ def _collect_registers(reg_list, base_offset, regs):
         dim = reg.get('dim', 1)
         dim_inc = reg.get('dimIncrement', 0)
         dim_index = reg.get('dimIndex')
+
+        # Normalise dim/dim_inc to lists so 1D and N-D share one path.
+        if isinstance(dim, list):
+            dims = list(dim)
+            incs = list(dim_inc)
+        elif dim > 1:
+            dims = [dim]
+            incs = [dim_inc]
+        else:
+            dims = []
+            incs = []
+
         if isinstance(dim_index, str):
             dim_tokens = [t.strip() for t in dim_index.split(',')]
         elif isinstance(dim_index, list):
             dim_tokens = [str(t).strip() for t in dim_index]
         else:
             dim_tokens = None
+
+        def _instance_names(indices):
+            """Return one or more name forms for a (multi-)dim instance."""
+            n = name
+            for idx in indices:
+                n = n.replace('%s', str(idx), 1)
+            names = [n]
+            # dimIndex tokens are only meaningful for 1D arrays.
+            if len(indices) == 1 and dim_tokens and indices[0] < len(dim_tokens):
+                names.append(name.replace('%s', dim_tokens[indices[0]]))
+            return names
+
         if sub_regs:
             # This is a register cluster — expand each dimension instance
             # under qualified names (CLK_0.CTRL, CLK_REF.CTRL, ...).  Bare
             # sub-register names (CTRL, DIV, ...) are deliberately not
             # registered: they'd collide across cluster instances and the
             # last write would silently win.
-            for i in range(dim):
-                cluster_offset = offset + i * dim_inc
-                cluster_names = [name.replace('%s', str(i))]
-                if dim_tokens and i < len(dim_tokens):
-                    cluster_names.append(name.replace('%s', dim_tokens[i]))
-                for sr in sub_regs:
-                    sr_offset = cluster_offset + sr['addressOffset']
-                    fields = {}
-                    for f in sr.get('fields', []):
-                        fields[f['name']] = {
-                            'bitOffset': f['bitOffset'],
-                            'bitWidth': f.get('bitWidth', 1),
-                        }
-                    entry = {'addressOffset': sr_offset, 'fields': fields}
-                    for cn in cluster_names:
-                        regs[f"{cn}.{sr['name']}"] = entry
+            iter_indices = product(*(range(d) for d in dims)) if dims else [()]
+            for indices in iter_indices:
+                cluster_offset = offset + sum(i * inc for i, inc in zip(indices, incs))
+                cluster_names = _instance_names(indices) if indices else [name]
+                # Recurse so nested clusters/arrays inside this cluster
+                # are themselves expanded with proper offsets.
+                inner_regs = {}
+                _collect_registers(sub_regs, cluster_offset, inner_regs)
+                for cn in cluster_names:
+                    for sr_key, entry in inner_regs.items():
+                        regs[f"{cn}.{sr_key}"] = entry
         else:
             # Plain register, possibly with dim
             fields = {}
@@ -96,13 +123,11 @@ def _collect_registers(reg_list, base_offset, regs):
                     'bitOffset': f['bitOffset'],
                     'bitWidth': f.get('bitWidth', 1),
                 }
-            if dim > 1:
-                for i in range(dim):
-                    entry = {'addressOffset': offset + i * dim_inc, 'fields': fields}
-                    rnames = [name.replace('%s', str(i))]
-                    if dim_tokens and i < len(dim_tokens):
-                        rnames.append(name.replace('%s', dim_tokens[i]))
-                    for rn in rnames:
+            if dims:
+                for indices in product(*(range(d) for d in dims)):
+                    entry_offset = offset + sum(i * inc for i, inc in zip(indices, incs))
+                    entry = {'addressOffset': entry_offset, 'fields': fields}
+                    for rn in _instance_names(indices):
                         regs[rn] = entry
             else:
                 regs[name] = {'addressOffset': offset, 'fields': fields}
