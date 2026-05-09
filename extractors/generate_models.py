@@ -699,6 +699,7 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                 t['innerStride'],
                 outerDim=t.get('outerDim'),
                 description=t.get('description'),
+                enumeratedIndices=t.get('enumeratedIndices'),
             )
         else:
             print(f"  WARNING: unknown transform type '{typ}'")

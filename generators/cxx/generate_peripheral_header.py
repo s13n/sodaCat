@@ -90,14 +90,68 @@ def _parse_array_dims(reg):
     return None  # single register
 
 
-def _wrap_array_type(elem_type, dims):
-    """Wrap elem_type in nested HwArray<...> for each dimension."""
-    for count, base in reversed(dims):
-        if base == 0:
-            elem_type = f'HwArray<{elem_type}, {count}>'
-        else:
+def _wrap_array_type(elem_type, dims, idx_types=None):
+    """Wrap elem_type in nested HwArray<...> for each dimension.
+
+    `idx_types`, if provided, is a list aligned with `dims`: for axis k,
+    None means "no index enum" and a string means the C++ scoped-enum
+    type name (e.g. 'Branch') to instantiate as the HwArray's Idx
+    parameter.  When idx is non-None the Base parameter is emitted
+    explicitly so the positional template-argument list reaches Idx.
+    """
+    n = len(dims)
+    for k in range(n - 1, -1, -1):
+        count, base = dims[k]
+        idx = idx_types[k] if idx_types and k < len(idx_types) else None
+        if idx is not None:
+            elem_type = f'HwArray<{elem_type}, {count}, {base}, {idx}>'
+        elif base != 0:
             elem_type = f'HwArray<{elem_type}, {count}, {base}>'
+        else:
+            elem_type = f'HwArray<{elem_type}, {count}>'
     return elem_type
+
+
+def _index_enum_underlying(axis_dim):
+    """Smallest unsigned integer type that holds [0, axis_dim)."""
+    if axis_dim <= 256:
+        return 'std::uint8_t'
+    if axis_dim <= 65536:
+        return 'std::uint16_t'
+    return 'std::uint32_t'
+
+
+def _normalize_index_enums(reg):
+    """Return per-axis list of enum-objects-or-None for a register/cluster.
+
+    The schema lets `enumeratedIndices` be either a single object (1D
+    arrays) or a list (multi-axis).  Normalise to a list of length
+    `axis count`, padding with None for unspecified trailing axes.
+    """
+    enums = reg.get('enumeratedIndices')
+    if enums is None:
+        return None
+    if isinstance(enums, dict):
+        return [enums]
+    return list(enums)
+
+
+def _format_index_enum(enum_obj, axis_dim):
+    """Emit a scoped enum-class declaration for one axis."""
+    name = enum_obj['name']
+    underlying = _index_enum_underlying(axis_dim)
+    desc = enum_obj.get('description', '')
+    lines = ['']
+    if desc:
+        lines.append(f'/** {desc} */')
+    lines.append(f'EXPORT enum class {name} : {underlying} {{')
+    for v in enum_obj['values']:
+        vdesc = v.get('description', '')
+        if vdesc:
+            lines.append(f'\t/** {vdesc} */')
+        lines.append(f'\t{v["name"]} = {v["value"]},')
+    lines.append('};\n')
+    return '\n'.join(lines)
 
 
 class PerFormatter:
@@ -211,6 +265,24 @@ $postfix"""))
                 dim_fmt = tuple(dim)
                 dim_total = 1
                 for d in dim: dim_total *= d
+            # If the entry carries enumeratedIndices, emit one scoped-enum
+            # declaration per axis and remember the type names so they can
+            # be threaded into the HwArray template instantiation.
+            idx_enums = _normalize_index_enums(reg)
+            idx_types = None
+            if idx_enums:
+                axis_dims = [dim] if isinstance(dim, int) else [d for d in dim]
+                idx_types = []
+                for axis, e in enumerate(idx_enums):
+                    if e is None:
+                        idx_types.append(None)
+                    else:
+                        enums += _format_index_enum(e, axis_dims[axis])
+                        idx_types.append(e['name'])
+                # Pad trailing axes with None.
+                while len(idx_types) < len(axis_dims):
+                    idx_types.append(None)
+
             if 'registers' in reg:
                 dimIndex = reg.get('dimIndex', '')
                 # Derive the struct type name: strip [%s] or %s, drop trailing _
@@ -228,7 +300,7 @@ $postfix"""))
                 structs += self.registersTemplate.substitute(name=name, regs=regs, types=types, description=description, size=size)
                 dims = _parse_array_dims(reg)
                 if dims is not None:
-                    field_type = _wrap_array_type('struct ' + name, dims)
+                    field_type = _wrap_array_type('struct ' + name, dims, idx_types)
                     field_name = reg['name'].replace('[%s]', '').replace('%s', '')
                     line = self.fieldTemplate.substitute(name=field_name, type=field_type, description=description)
                 elif dimIndex:
@@ -271,7 +343,7 @@ $postfix"""))
                 else:
                     regType = type
                 if dims is not None:
-                    regType = _wrap_array_type(regType, dims)
+                    regType = _wrap_array_type(regType, dims, idx_types)
                 line = self.fieldTemplate.substitute(reg, name=names, type=regType, description=description)
                 list.append([line, addressOffset, (size>>3)*dim_total])
 

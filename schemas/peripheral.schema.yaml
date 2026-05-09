@@ -75,6 +75,50 @@ definitions:
   arrayName:
     type: string
     pattern: '%s'
+  # An indexEnum is one scoped enum mapping symbolic names to integer
+  # subscripts on one axis of a register/cluster array.  C++ generators
+  # emit it as `enum class <name> : <underlying> { ... };` and instantiate
+  # the corresponding HwArray template parameter so subscripts of that
+  # axis can only accept this enum's values (or an explicit cast).
+  # `value` ranges and array-rank checks are enforced by
+  # tools/validate_peripherals.py.
+  indexEnum:
+    type: object
+    required:
+    - values
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      values:
+        type: array
+        minItems: 1
+        items:
+          type: object
+          required:
+          - name
+          - value
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            value:
+              type: integer
+  # `enumeratedIndices` is an indexEnum (1D form, single object) or a
+  # list of {indexEnum, null} (multi-axis form).  In the list form the
+  # k-th entry applies to axis k of `dim`; null means that axis carries
+  # no enum and stays plain-integer indexed.  The list may be shorter
+  # than the array's rank; missing trailing entries are implicit nulls.
+  enumeratedIndices:
+    oneOf:
+    - $ref: '#/definitions/indexEnum'
+    - type: array
+      items:
+        oneOf:
+        - $ref: '#/definitions/indexEnum'
+        - type: 'null'
   register:
     type: object
     required:
@@ -107,6 +151,8 @@ definitions:
         $ref: '#/definitions/dimValue'
       dimIndex:
         $ref: '#/definitions/dimIndexValue'
+      enumeratedIndices:
+        $ref: '#/definitions/enumeratedIndices'
       fields:
         type: array
         items:
@@ -162,6 +208,8 @@ definitions:
         $ref: '#/definitions/dimValue'
       dimIndex:
         $ref: '#/definitions/dimIndexValue'
+      enumeratedIndices:
+        $ref: '#/definitions/enumeratedIndices'
       registers:
         type: array
         items:

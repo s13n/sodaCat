@@ -62,6 +62,73 @@ def _dim_arity(dim):
     return 0
 
 
+def _check_index_enums(entry, path):
+    """Return [(check, message)] for the entry's enumeratedIndices, if any.
+
+    Validates that:
+      - the per-axis list is no longer than the array's dim arity;
+      - 1D form (single object) is only used on 1D arrays;
+      - each enumerator value lies in [Base, Base + dim_k - 1];
+      - enumerator names are unique within each enum.
+    Value uniqueness is not checked: aliases (two names for the same
+    index) are deliberately permitted.
+    """
+    errors = []
+    enums = entry.get('enumeratedIndices')
+    if enums is None:
+        return errors
+
+    name = entry.get('name', '?')
+    dim = entry.get('dim')
+    if dim is None:
+        errors.append(('idx-enum',
+            f"{path}: '{name}' has 'enumeratedIndices' but is not an array"))
+        return errors
+
+    # Normalise dim and the per-axis enum list to lists for uniform handling.
+    dims = dim if isinstance(dim, list) else [dim]
+    if isinstance(enums, list):
+        per_axis = list(enums)
+    else:
+        per_axis = [enums]
+        if len(dims) != 1:
+            errors.append(('idx-enum',
+                f"{path}: '{name}': single-object 'enumeratedIndices' is "
+                f"only valid for 1D arrays (rank={len(dims)})"))
+            return errors
+
+    if len(per_axis) > len(dims):
+        errors.append(('idx-enum',
+            f"{path}: '{name}': 'enumeratedIndices' has {len(per_axis)} "
+            f"entries but array rank is {len(dims)}"))
+        return errors
+
+    # Base offset is currently always 0 in our models.  If a non-zero base
+    # ever lands here it'd live alongside `dim` -- not modelled today, so
+    # treat as 0.
+    base = 0
+    for axis, e in enumerate(per_axis):
+        if e is None:
+            continue
+        d = dims[axis]
+        values = e.get('values') or []
+        seen_names = {}
+        for v in values:
+            vname = v.get('name', '?')
+            seen_names[vname] = seen_names.get(vname, 0) + 1
+            vval = v.get('value')
+            if isinstance(vval, int) and not (base <= vval < base + d):
+                errors.append(('idx-enum',
+                    f"{path}: '{name}'.enumeratedIndices[{axis}].{vname}: "
+                    f"value {vval} outside [{base}, {base + d - 1}]"))
+        for n, c in seen_names.items():
+            if c > 1:
+                errors.append(('idx-enum',
+                    f"{path}: '{name}'.enumeratedIndices[{axis}]: "
+                    f"enumerator name '{n}' declared {c} times"))
+    return errors
+
+
 def _check_array_shape(entry, path):
     """Return [(check, message)] for one register/cluster's array shape."""
     errors = []
@@ -170,6 +237,10 @@ def validate_semantics(data):
     # Array-shape rules from the schema's prose.
     for rpath, r in _walk(data.get('registers') or []):
         errors.extend(_check_array_shape(r, rpath))
+
+    # Index-enum range and name-uniqueness checks.
+    for rpath, r in _walk(data.get('registers') or []):
+        errors.extend(_check_index_enums(r, rpath))
 
     return errors
 

@@ -1,11 +1,23 @@
 /**@file
- * Fixed-size hardware array with a configurable starting index.
+ * Fixed-size hardware array with a configurable starting index and
+ * optional typed index.
  *
  * Many vendor reference manuals number registers from 1 (e.g. STM32 DMA
  * channels CCR1..CCR8, HSEM R1..R31) or from some other non-zero value.
  * HwArray<T, N, Base> preserves that numbering: a[Base] is the first
  * element, a[Base + size() - 1] is the last. This is in contrast to
  * std::array, where the first element is always at index 0.
+ *
+ * The optional fourth template parameter Idx selects the index type.
+ * When Idx is left at its std::size_t default, the array indexes by
+ * plain integer as before. When Idx is a scoped enum (the typical use
+ * once a register array carries a schema-level enumeratedIndices), the
+ * compiler rejects raw-integer subscripts and only accepts values of
+ * that enum -- the type system enforces that you index a Branch[]-style
+ * array with a Branch value rather than an arbitrary integer. Idx and
+ * Base are independent: the storage offset is always
+ * static_cast<size_type>(i) - Base, regardless of whether i is an
+ * integer or a scoped enum.
  *
  * size() always returns the number of elements N, irrespective of Base.
  * Use first_index(), last_index() or contains() when looping by index.
@@ -29,12 +41,13 @@
 
 inline namespace hwreg {
 
-template<typename T, std::size_t N, std::size_t Base = 0>
+template<typename T, std::size_t N, std::size_t Base = 0, typename Idx = std::size_t>
 struct HwArray {
     static_assert(N > 0, "HwArray requires at least one element");
 
     using value_type = T;
     using size_type = std::size_t;
+    using index_type = Idx;
     using reference = T &;
     using const_reference = T const &;
     using pointer = T *;
@@ -52,31 +65,32 @@ struct HwArray {
         return false;
     }
 
-    //! Smallest valid index (== Base).
-    static constexpr size_type first_index() noexcept {
-        return Base;
+    //! Smallest valid index (== Base, in the index type).
+    static constexpr index_type first_index() noexcept {
+        return static_cast<index_type>(Base);
     }
-    //! Largest valid index (== Base + size() - 1).
-    static constexpr size_type last_index() noexcept {
-        return Base + N - 1;
+    //! Largest valid index (== Base + size() - 1, in the index type).
+    static constexpr index_type last_index() noexcept {
+        return static_cast<index_type>(Base + N - 1);
     }
     //! True iff i is a valid index for this array.
-    static constexpr bool contains(size_type i) noexcept {
-        return i >= Base && i < Base + N;
+    static constexpr bool contains(index_type i) noexcept {
+        auto v = static_cast<size_type>(i);
+        return v >= Base && v < Base + N;
     }
 
     //! Unchecked element access. Behaviour is undefined if !contains(i).
-    constexpr T &operator[](size_type i) noexcept {
-        return storage_[i - Base];
+    constexpr T &operator[](index_type i) noexcept {
+        return storage_[static_cast<size_type>(i) - Base];
     }
-    constexpr T const &operator[](size_type i) const noexcept {
-        return storage_[i - Base];
+    constexpr T const &operator[](index_type i) const noexcept {
+        return storage_[static_cast<size_type>(i) - Base];
     }
-    constexpr T volatile &operator[](size_type i) volatile noexcept {
-        return storage_[i - Base];
+    constexpr T volatile &operator[](index_type i) volatile noexcept {
+        return storage_[static_cast<size_type>(i) - Base];
     }
-    constexpr T const volatile &operator[](size_type i) const volatile noexcept {
-        return storage_[i - Base];
+    constexpr T const volatile &operator[](index_type i) const volatile noexcept {
+        return storage_[static_cast<size_type>(i) - Base];
     }
 
     constexpr T &front() noexcept {

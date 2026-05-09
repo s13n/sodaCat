@@ -5,6 +5,24 @@ import re
 import sys
 from ruamel.yaml.comments import CommentedSeq
     
+def _strip_yaml_metadata(obj):
+    """Convert ruamel.yaml CommentedMap/CommentedSeq trees to plain dict/list.
+
+    Transform inputs that come from a ruamel.yaml-parsed family-config file
+    carry comment, anchor and flow-style metadata.  When a transform stores
+    such an input directly into the emitted block model and the model is
+    then dumped, the metadata leaks through -- comments meant for the
+    family config end up attached to model entries.  Run inputs through
+    this stripper before assigning them to the cluster/register dict so
+    only the data crosses the transform boundary.
+    """
+    if isinstance(obj, dict):
+        return {k: _strip_yaml_metadata(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_strip_yaml_metadata(v) for v in obj]
+    return obj
+
+
 def renameEntries(array:list, key, pattern:str, replacement):
     """In all entries of array, replace the value of given key using regular expression matching.
     
@@ -519,7 +537,8 @@ def clusterArrays(reglist:list, pattern:str, name:str, description=None):
 def createCluster2DArray(reglist:list, pattern:str, name:str,
                           addressOffset:int, outerStride:int,
                           innerDim:int, innerStride:int,
-                          outerDim:int=None, description:str=None):
+                          outerDim:int=None, description:str=None,
+                          enumeratedIndices=None):
     """Group flat registers laid out as outer x inner into a 2D cluster array.
 
     Some peripherals organise registers as `outerStride`-spaced regions
@@ -650,6 +669,8 @@ def createCluster2DArray(reglist:list, pattern:str, name:str,
     }
     if description:
         cluster['description'] = description
+    if enumeratedIndices is not None:
+        cluster['enumeratedIndices'] = _strip_yaml_metadata(enumeratedIndices)
 
     fmt = ("Registers /{}/ become 2D cluster array {}: "
            "addressOffset=0x{:x} dim=[{},{}] dimIncrement=[{},{}]")
