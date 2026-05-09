@@ -143,16 +143,81 @@ Starting from the C rules, the following additions are made:
 
 Since C++11, the language supports scoped enums, whose value names don't appear
 in the surrounding scope. While this sound just fine for us, there is a serious
-drawback that effectively makes them inconvenient for our use case: The values
-of scoped enums don't automatically convert to integers. Hence they can't be
-combined easily with bitwise and arithmetic operators. You would need a cast,
-which adds considerable clutter to the code. Or you would need to overload the
-relevant operators to accept values from the scoped enums. That's not a
-"lightweight" solution.
+drawback that effectively makes them inconvenient for *bitfield-value* enums:
+the values don't automatically convert to integers, so they can't be combined
+easily with bitwise and arithmetic operators. You would need a cast, which adds
+considerable clutter to the code. Or you would need to overload the relevant
+operators to accept values from the scoped enums. That's not a "lightweight"
+solution.
 
-We therefore use namespaces: We make the plain, unscoped enum definitions part
-of a namespace. To bring all enum values intos scope, `using namespace x;`
-suffices.
+We therefore use unscoped enums for *bitfield values*, wrapped in a namespace.
+To bring all enum values into scope, `using namespace x;` suffices.
+
+For *array indices*, on the other hand, scoped enums are exactly the right tool
+— see "Index enums" below. C++20's `using enum` lets the consumer pull the
+enumerators into a local scope on demand, without making them implicitly
+convertible to integers (which would defeat the type-safety we want when
+indexing).
+
+### Index enums
+
+Register and cluster arrays can carry an `enumeratedIndices` property in the
+YAML model, naming individual subscript values per axis. The C++ generator
+emits one `enum class <Name> : std::uint{8,16,32}_t` per axis and threads the
+type into `HwArray`'s 4th template parameter (`Idx`):
+
+```cpp
+EXPORT enum class BaseClock : std::uint8_t {
+    SAFE = 0, USB0 = 1, PERIPH = 2, USB1 = 3, M4 = 4, /* ... */ CGU_OUT1 = 27,
+};
+
+HwArray<HwReg<BASE_CLK>, 28, 0, BaseClock> BASE_CLK;
+```
+
+The compiler rejects raw-integer subscripts on enum-typed arrays, so
+`cgu.BASE_CLK[3]` is a compile error and the consumer must spell the
+enumerator. The recommended form uses C++20's `using enum` at function or
+block scope to keep the call site clean:
+
+```cpp
+void setup_uart_clock(lpc43::CGU::CGU& cgu) {
+    using enum lpc43::CGU::BaseClock;       // names visible in this function only
+    cgu.BASE_CLK[UART2].CLK_SEL = src_idx;  // bare-name subscript
+}
+```
+
+`using enum` is a strict superset of per-symbol `using lpc43::CGU::BaseClock::UART2;`
+and beats `using namespace`, because it imports only the enumerators of one
+specific enum without polluting the scope with everything else from the
+peripheral's namespace. Reach for plain qualification (`BaseClock::UART2`) when
+two enums in scope happen to share an enumerator name.
+
+#### `using enum` and C++20 modules — a small snag
+
+When the generated headers are consumed as C++20 modules, the chip-level
+module imports the peripheral modules but doesn't typically re-export every
+named type. As a result, `using enum lpc43::CGU::BaseClock;` in a translation
+unit that only `import`s the chip module fails because the enum's complete type
+isn't reachable — the `using enum` declaration needs the enum *definition* in
+scope, not just a forward declaration or a re-exported name.
+
+The fix is straightforward: import the peripheral module directly in any file
+that uses `using enum` on its index enums. Even if you'd normally only need
+the chip module, add the peripheral import alongside:
+
+```cpp
+import myproject.STM32H757_CM7;             // chip — pointers, base addresses
+import myproject.CGU;                       // peripheral — for `using enum`
+
+void f(myproject::CGU::CGU& cgu) {
+    using enum myproject::CGU::BaseClock;
+    cgu.BASE_CLK[UART2].CLK_SEL = ...;
+}
+```
+
+`#include` users don't see this — one transitive `#include` of the chip header
+already pulls in every peripheral header it depends on. Modules deliberately
+don't have that property, which is why the explicit import is needed.
 
 ### Inline namespaces
 

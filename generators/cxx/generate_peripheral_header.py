@@ -7,7 +7,13 @@
 # We use namespaces a lot here, because they help avoiding ambiguities when the naming of registers, fields
 # and/or enumerators overlaps. That is frequently the case, unfortunately. The user can avoid unnecessary
 # verbosity in his code by employing `using namespace <...>` directives. This is why we use namespaces
-# instead of other scoping mechanisms like scoped enums, which can't be abbreviated in this way.
+# (with unscoped enums inside) for *bitfield-value* enumerations, where automatic conversion to integer is
+# desirable for use with bitwise operators.
+#
+# *Index* enumerations (declared via the schema's `enumeratedIndices` property on register/cluster arrays)
+# are emitted as `enum class` instead.  For array subscripts we want the opposite property: no implicit
+# integer conversion, so `arr[3]` is rejected and only the named enumerator is accepted.  Consumers pull
+# the enumerators into local scope on demand via C++20's `using enum`.
 #
 # Note that a struct or an unscoped enum can have the same name as a namespace or an enumerator or a struct
 # member - the enumerator or member takes precedence and hides the struct/enum name. If you explicitly want
