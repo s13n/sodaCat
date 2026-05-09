@@ -820,12 +820,60 @@ families:
         interrupts:
           C_CAN0: INTR
           C_CAN1: INTR
-      CCU1:
+      CCU:
         from: LPC43xx_43Sxx.CCU1
-        instances: [CCU1]
-      CCU2:
-        from: LPC43xx_43Sxx.CCU2
-        instances: [CCU2]
+        instances: [CCU1, CCU2]
+        # Unified Clock Control Unit covering both CCU1 and CCU2.
+        # The 4 KB SCU address space holds up to 16 0x100-byte regions:
+        # the first contains PM (offset 0) and BASE_STAT (offset 4); the
+        # remaining 15 are clock branches indexed 0..14, each holding up
+        # to 32 CFG/STAT pairs at stride 8.  CCU1 populates 11 branches
+        # (APB3, APB1, SPIFI, M4 part1/2/3, PERIPH, USB0, USB1, SPI,
+        # ADCHS); CCU2 populates 8 (AUDIO, USART3, USART2, UART1, USART0,
+        # SSP1, SSP0, SDIO).  Sharing one block sacrifices per-pair RM
+        # names and per-instance BASE_STAT field semantics (the field
+        # names follow CCU1; bit positions are consistent with CCU2 but
+        # the names are not) in exchange for one model and one driver
+        # for both peripherals.  outerDim=15 covers the full 4 KB region
+        # so neither instance overflows the cluster.
+        transforms:
+          - type: createCluster2DArray
+            pattern: '^CLK_[A-Z0-9_]+_(CFG|STAT)$'
+            name: CLK
+            addressOffset: 0x100
+            outerStride: 0x100
+            outerDim: 15
+            innerDim: 32
+            innerStride: 8
+            description: Clock branch slot CFG/STAT pair
+          # Replace BASE_STAT's CCU1-specific field names with generic
+          # per-branch indicators that match the CLK[i][j] indexing.
+          # Each bit n reports whether at least one slot in CLK[n] is
+          # currently enabled.  CCU1 caveat: bit 3 covers branches 3, 4
+          # and 5 jointly (the M4 clock set spans three 0x100 regions
+          # but shares a single indicator bit); the generic model can't
+          # express that mapping, so users targeting CCU1's M4 must
+          # treat CLK_3_IND as covering all three branches.
+          - type: patchRegisters
+            registers:
+              - name: BASE_STAT
+                description: 'Per-branch active indicator. Bit n reports whether at least one slot in CLK[n] is currently enabled. CCU1 caveat: bit 3 covers branches 3, 4 and 5 jointly (the M4 clock set spans three branches sharing one indicator).'
+                fields:
+                  - {name: CLK_0_IND,  bitOffset: 0,  bitWidth: 1, description: 'Active indicator for CLK[0]'}
+                  - {name: CLK_1_IND,  bitOffset: 1,  bitWidth: 1, description: 'Active indicator for CLK[1]'}
+                  - {name: CLK_2_IND,  bitOffset: 2,  bitWidth: 1, description: 'Active indicator for CLK[2]'}
+                  - {name: CLK_3_IND,  bitOffset: 3,  bitWidth: 1, description: 'Active indicator for CLK[3] (CCU1: also covers CLK[4] and CLK[5])'}
+                  - {name: CLK_4_IND,  bitOffset: 4,  bitWidth: 1, description: 'Active indicator for CLK[4]'}
+                  - {name: CLK_5_IND,  bitOffset: 5,  bitWidth: 1, description: 'Active indicator for CLK[5]'}
+                  - {name: CLK_6_IND,  bitOffset: 6,  bitWidth: 1, description: 'Active indicator for CLK[6]'}
+                  - {name: CLK_7_IND,  bitOffset: 7,  bitWidth: 1, description: 'Active indicator for CLK[7]'}
+                  - {name: CLK_8_IND,  bitOffset: 8,  bitWidth: 1, description: 'Active indicator for CLK[8]'}
+                  - {name: CLK_9_IND,  bitOffset: 9,  bitWidth: 1, description: 'Active indicator for CLK[9]'}
+                  - {name: CLK_10_IND, bitOffset: 10, bitWidth: 1, description: 'Active indicator for CLK[10]'}
+                  - {name: CLK_11_IND, bitOffset: 11, bitWidth: 1, description: 'Active indicator for CLK[11]'}
+                  - {name: CLK_12_IND, bitOffset: 12, bitWidth: 1, description: 'Active indicator for CLK[12]'}
+                  - {name: CLK_13_IND, bitOffset: 13, bitWidth: 1, description: 'Active indicator for CLK[13]'}
+                  - {name: CLK_14_IND, bitOffset: 14, bitWidth: 1, description: 'Active indicator for CLK[14]'}
       CGU:
         from: LPC43xx_43Sxx.CGU
         instances: [CGU]

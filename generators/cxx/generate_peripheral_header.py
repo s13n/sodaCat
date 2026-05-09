@@ -217,7 +217,11 @@ $postfix"""))
                 name = reg['name'].replace('[%s]', '').replace('%s', '').rstrip('_')
                 if not structPrefix and blockName and name == blockName:
                     name = name + '_'
-                padSize = reg.get('dimIncrement', 0)
+                dimInc = reg.get('dimIncrement', 0)
+                # For 2D cluster arrays (list-valued dimIncrement), the
+                # cluster contents fill the innermost stride; the outer
+                # stride is consumed by the inner-array repetition.
+                padSize = dimInc if isinstance(dimInc, int) else dimInc[-1]
                 innerPrefix = structPrefix + name + '_'
                 types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4, innerPrefix)
                 enums += enum

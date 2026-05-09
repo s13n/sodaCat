@@ -516,6 +516,150 @@ def clusterArrays(reglist:list, pattern:str, name:str, description=None):
     return result
 
 
+def createCluster2DArray(reglist:list, pattern:str, name:str,
+                          addressOffset:int, outerStride:int,
+                          innerDim:int, innerStride:int,
+                          outerDim:int=None, description:str=None):
+    """Group flat registers laid out as outer x inner into a 2D cluster array.
+
+    Some peripherals organise registers as `outerStride`-spaced regions
+    each holding up to `innerDim` slots at `innerStride` (e.g. LPC43 CCU1:
+    11 clock branches at stride 0x100, each up to 32 CFG/STAT pairs at
+    stride 8).  This transform takes a regex `pattern` with one capture
+    group naming the in-slot member (e.g. `(CFG|STAT)`), computes outer
+    and inner indices from each matched register's address, and emits a
+    single cluster array with list-valued dim/dimIncrement:
+
+        name[%s][%s]               dim=[outer_dim, innerDim]
+                                   dimIncrement=[outerStride, innerStride]
+          <member 1>               addressOffset = its in-slot offset
+          <member 2>               ...
+
+    Outer dim defaults to max(outer_idx) + 1 (auto-sized to populated
+    branches) but can be overridden via `outerDim` to reflect the full
+    address space (e.g. CCU1 only populates 11 of 15 possible 0x100-byte
+    branches in its 4 KB region; outerDim=15 lets the model accommodate
+    the unused trailing branches and stay aligned with CCU2 for shared-
+    block usage).  Populated slots don't need to span every (outer, inner)
+    — sparse coverage is fine, the emitted array just has reserved
+    entries at unpopulated indices.
+    All registers with the same member name must share the same in-slot
+    offset.  Field sets are unioned per member with the same bit-
+    disjointness contract as mergeArrays.
+    """
+    pat = re.compile(pattern)
+    matches = {}      # (outer_idx, inner_idx, member_name) -> register
+    member_offsets = {}  # member_name -> in-slot offset
+
+    for r in reglist:
+        if not isinstance(r, dict):
+            continue
+        m = pat.match(r.get('name', ''))
+        if not m:
+            continue
+        addr = _addr(r)
+        rel = addr - addressOffset
+        if rel < 0:
+            continue
+        outer_idx, within = divmod(rel, outerStride)
+        inner_idx, in_slot = divmod(within, innerStride)
+        if inner_idx >= innerDim:
+            print(f"createCluster2DArray: '{r['name']}' inner_idx {inner_idx} "
+                  f">= innerDim {innerDim}")
+            return reglist
+        member_name = m.group(1)
+        prev = member_offsets.get(member_name)
+        if prev is None:
+            member_offsets[member_name] = in_slot
+        elif prev != in_slot:
+            print(f"createCluster2DArray: '{r['name']}' member '{member_name}' "
+                  f"at in-slot offset {in_slot}, expected {prev}")
+            return reglist
+        matches[(outer_idx, inner_idx, member_name)] = r
+
+    if not matches:
+        print(f"  WARNING: createCluster2DArray: no registers match '{pattern}'")
+        return reglist
+
+    populated_outer = max(o for (o, _, _) in matches) + 1
+    if outerDim is None:
+        outer_dim = populated_outer
+    else:
+        if populated_outer > outerDim:
+            print(f"createCluster2DArray: populated outer dim {populated_outer} "
+                  f"exceeds requested outerDim {outerDim}")
+            return reglist
+        outer_dim = outerDim
+
+    # Build the cluster's member registers: one per distinct member name,
+    # with field union across all populated (outer, inner) instances.
+    members = []
+    for member_name, in_slot in sorted(member_offsets.items(), key=lambda x: x[1]):
+        instances = [r for (_, _, m), r in matches.items() if m == member_name]
+        merged_fields = []
+        bit_owners = {}
+        for inst in instances:
+            for f in inst.get('fields') or []:
+                fname = f.get('name')
+                offset = f.get('bitOffset', 0)
+                width = f.get('bitWidth', 1)
+                existing = next((mf for mf in merged_fields if mf.get('name') == fname), None)
+                if existing is not None:
+                    if (existing.get('bitOffset') != offset
+                            or existing.get('bitWidth') != width):
+                        print(f"createCluster2DArray: field '{fname}' in member "
+                              f"'{member_name}' has incompatible position: "
+                              f"[{existing.get('bitOffset')}:{existing.get('bitWidth')}] "
+                              f"vs [{offset}:{width}]")
+                        return reglist
+                    continue
+                for b in range(offset, offset + width):
+                    if b in bit_owners:
+                        print(f"createCluster2DArray: field '{fname}' bit {b} "
+                              f"in member '{member_name}' overlaps with "
+                              f"'{bit_owners[b]}'")
+                        return reglist
+                    bit_owners[b] = fname
+                merged_fields.append(copy.deepcopy(f))
+        merged_fields.sort(key=lambda f: f.get('bitOffset', 0))
+
+        proto = copy.deepcopy(instances[0])
+        proto['name'] = member_name
+        if 'displayName' in proto:
+            proto['displayName'] = member_name
+        proto['addressOffset'] = in_slot
+        proto['fields'] = merged_fields
+        for k in ('dim', 'dimIncrement', 'dimIndex'):
+            proto.pop(k, None)
+        # The first instance's per-pair description (e.g. "CLK_APB3_BUS
+        # clock configuration register") is misleading at cluster scope;
+        # drop it so the C++ generator inherits the cluster-level one.
+        proto.pop('description', None)
+        members.append(proto)
+
+    dim = CommentedSeq([outer_dim, innerDim])
+    dim.fa.set_flow_style()
+    inc = CommentedSeq([outerStride, innerStride])
+    inc.fa.set_flow_style()
+    cluster = {
+        'name': name + '[%s][%s]',
+        'addressOffset': addressOffset,
+        'dim': dim,
+        'dimIncrement': inc,
+        'registers': members,
+    }
+    if description:
+        cluster['description'] = description
+
+    fmt = ("Registers /{}/ become 2D cluster array {}: "
+           "addressOffset=0x{:x} dim=[{},{}] dimIncrement=[{},{}]")
+    print(fmt.format(pattern, cluster['name'], addressOffset, outer_dim,
+                     innerDim, outerStride, innerStride))
+
+    matched_ids = set(id(r) for r in matches.values())
+    return [r for r in reglist if id(r) not in matched_ids] + [cluster]
+
+
 def compareRegisters(left:dict, right:dict, includeDescription=False):
     """Compare two register lists and generate a list of differences.
     """

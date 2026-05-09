@@ -20,7 +20,7 @@ from ruamel.yaml import YAML
 # Add sodaCat tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
-from transform import renameEntries, createClusterArray, createArray, create2DArray, clusterArrays
+from transform import renameEntries, createClusterArray, createArray, create2DArray, clusterArrays, createCluster2DArray
 from enum_namer import simplify_block_enums
 
 
@@ -688,6 +688,18 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     if reg.get('name') == arr_name:
                         reg['description'] = t['description']
                         break
+        elif typ == 'createCluster2DArray':
+            block_data['registers'] = createCluster2DArray(
+                block_data.get('registers', []),
+                t['pattern'],
+                t['name'],
+                t['addressOffset'],
+                t['outerStride'],
+                t['innerDim'],
+                t['innerStride'],
+                outerDim=t.get('outerDim'),
+                description=t.get('description'),
+            )
         else:
             print(f"  WARNING: unknown transform type '{typ}'")
 

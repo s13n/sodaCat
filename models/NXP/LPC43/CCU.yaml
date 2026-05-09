@@ -1,0 +1,123 @@
+name: CCU
+description: Clock Control Unit (CCU)
+groupName: CCU1
+source: LPC43xx_43Sxx.svd v10 (MCUX_2.16.100)
+registers:
+  - name: PM
+    description: Power mode register
+    addressOffset: 0
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: PD
+        description: Initiate power-down mode
+        enumeratedValues:
+          - name: NORMAL_OPERATION
+            description: Normal operation.
+            value: 0
+          - name: DISABLED
+            description: Clocks with wake-up mode enabled (W = 1) are disabled.
+            value: 1
+        bitOffset: 0
+        bitWidth: 1
+  - name: BASE_STAT
+    description: 'Per-branch active indicator. Bit n reports whether at least one slot in CLK[n] is currently enabled. CCU1 caveat: bit 3 covers branches 3, 4 and 5 jointly (the M4 clock set spans three branches sharing one indicator).'
+    addressOffset: 4
+    access: read-only
+    resetValue: 4095
+    resetMask: 4294967295
+    fields:
+      - {name: CLK_0_IND, bitOffset: 0, bitWidth: 1, description: 'Active indicator for CLK[0]'}
+      - {name: CLK_1_IND, bitOffset: 1, bitWidth: 1, description: 'Active indicator for CLK[1]'}
+      - {name: CLK_2_IND, bitOffset: 2, bitWidth: 1, description: 'Active indicator for CLK[2]'}
+      - {name: CLK_3_IND, bitOffset: 3, bitWidth: 1, description: 'Active indicator for CLK[3] (CCU1: also covers CLK[4] and CLK[5])'}
+      - {name: CLK_4_IND, bitOffset: 4, bitWidth: 1, description: 'Active indicator for CLK[4]'}
+      - {name: CLK_5_IND, bitOffset: 5, bitWidth: 1, description: 'Active indicator for CLK[5]'}
+      - {name: CLK_6_IND, bitOffset: 6, bitWidth: 1, description: 'Active indicator for CLK[6]'}
+      - {name: CLK_7_IND, bitOffset: 7, bitWidth: 1, description: 'Active indicator for CLK[7]'}
+      - {name: CLK_8_IND, bitOffset: 8, bitWidth: 1, description: 'Active indicator for CLK[8]'}
+      - {name: CLK_9_IND, bitOffset: 9, bitWidth: 1, description: 'Active indicator for CLK[9]'}
+      - {name: CLK_10_IND, bitOffset: 10, bitWidth: 1, description: 'Active indicator for CLK[10]'}
+      - {name: CLK_11_IND, bitOffset: 11, bitWidth: 1, description: 'Active indicator for CLK[11]'}
+      - {name: CLK_12_IND, bitOffset: 12, bitWidth: 1, description: 'Active indicator for CLK[12]'}
+      - {name: CLK_13_IND, bitOffset: 13, bitWidth: 1, description: 'Active indicator for CLK[13]'}
+      - {name: CLK_14_IND, bitOffset: 14, bitWidth: 1, description: 'Active indicator for CLK[14]'}
+  - name: CLK[%s][%s]
+    addressOffset: 0x100
+    dim: [15, 32]
+    dimIncrement: [0x100, 8]
+    registers:
+      - name: CFG
+        addressOffset: 0
+        access: read-write
+        resetValue: 1
+        resetMask: 4294967295
+        fields:
+          - name: RUN
+            description: Run enable
+            enumeratedValues:
+              - name: DISABLED
+                description: Clock is disabled.
+                value: 0
+              - name: ENABLED
+                description: Clock is enabled.
+                value: 1
+            bitOffset: 0
+            bitWidth: 1
+          - name: AUTO
+            description: Auto (AHB disable mechanism) enable
+            enumeratedValues:
+              - name: DISABLED
+                description: Auto is disabled.
+                value: 0
+              - name: ENABLED
+                description: Auto is enabled.
+                value: 1
+            bitOffset: 1
+            bitWidth: 1
+          - name: WAKEUP
+            description: Wake-up mechanism enable
+            enumeratedValues:
+              - name: DISABLED
+                description: Wake-up is disabled.
+                value: 0
+              - name: ENABLED
+                description: Wake-up is enabled.
+                value: 1
+            bitOffset: 2
+            bitWidth: 1
+          - name: DIV
+            description: Clock divider value
+            enumeratedValues:
+              - name: DIVIDEBY1
+                description: No division. Divide by 1.
+                value: 0
+              - name: DIVIDEBY2
+                description: Divide by 2.
+                value: 1
+            bitOffset: 5
+            bitWidth: 3
+      - name: STAT
+        addressOffset: 4
+        access: read-only
+        resetValue: 1
+        resetMask: 4294967295
+        fields:
+          - name: RUN
+            description: Run enable status 0 = clock is disabled. 1 = clock is enabled.
+            bitOffset: 0
+            bitWidth: 1
+          - name: AUTO
+            description: Auto (AHB disable mechanism) enable status 0 = Auto is disabled. 1 = Auto is enabled.
+            bitOffset: 1
+            bitWidth: 1
+          - name: WAKEUP
+            description: Wake-up mechanism enable status 0 = Wake-up is disabled. 1 = Wake-up is enabled.
+            bitOffset: 2
+            bitWidth: 1
+    description: Clock branch slot CFG/STAT pair
+addressBlocks:
+  - offset: 0
+    size: 65535
+    usage: registers
