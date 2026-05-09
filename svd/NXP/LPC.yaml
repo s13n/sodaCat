@@ -976,6 +976,55 @@ families:
       GIMA:
         from: LPC43xx_43Sxx.GIMA
         instances: [GIMA]
+        # GIMA is a 30-register input-multiplexer table at offsets
+        # 0x00..0x74, every entry sharing the same 5-field shape
+        # (INV/EDGE/SYNCH/PULSE/FUNC).  Fold the lot into one array
+        # IN[%s] indexed by an Input enum that names every signal per
+        # UM10503 §17.4: 16 capture-timer inputs (CAPx_y), 8 SCT inputs
+        # (CTIN_n), the high-speed-ADC trigger, three event-router
+        # inputs, and two ADC-start signals.
+        transforms:
+          - type: createIndexedRegisterArray
+            pattern: '^(?:CAP\d+_\d+|CTIN_\d+|ADCHS_TRIGGER|EVENTROUTER_\d+|ADCSTART\d+)_IN$'
+            name: IN
+            addressOffset: 0
+            stride: 4
+            dim: 30
+            description: 'Input multiplexer entry — selects which signal is routed to the indexed destination (capture timer input, SCT input, ADC trigger, ...). Per UM10503 §17.4.'
+            enumeratedIndices:
+              name: Input
+              description: 'GIMA destination identifier (UM10503 §17.4 input-multiplexer table).'
+              values:
+                - {name: CAP0_0,            value: 0,  description: 'Capture timer 0, capture channel 0'}
+                - {name: CAP0_1,            value: 1,  description: 'Capture timer 0, capture channel 1'}
+                - {name: CAP0_2,            value: 2,  description: 'Capture timer 0, capture channel 2'}
+                - {name: CAP0_3,            value: 3,  description: 'Capture timer 0, capture channel 3'}
+                - {name: CAP1_0,            value: 4,  description: 'Capture timer 1, capture channel 0'}
+                - {name: CAP1_1,            value: 5,  description: 'Capture timer 1, capture channel 1'}
+                - {name: CAP1_2,            value: 6,  description: 'Capture timer 1, capture channel 2'}
+                - {name: CAP1_3,            value: 7,  description: 'Capture timer 1, capture channel 3'}
+                - {name: CAP2_0,            value: 8,  description: 'Capture timer 2, capture channel 0'}
+                - {name: CAP2_1,            value: 9,  description: 'Capture timer 2, capture channel 1'}
+                - {name: CAP2_2,            value: 10, description: 'Capture timer 2, capture channel 2'}
+                - {name: CAP2_3,            value: 11, description: 'Capture timer 2, capture channel 3'}
+                - {name: CAP3_0,            value: 12, description: 'Capture timer 3, capture channel 0'}
+                - {name: CAP3_1,            value: 13, description: 'Capture timer 3, capture channel 1'}
+                - {name: CAP3_2,            value: 14, description: 'Capture timer 3, capture channel 2'}
+                - {name: CAP3_3,            value: 15, description: 'Capture timer 3, capture channel 3'}
+                - {name: CTIN_0,            value: 16, description: 'SCT input 0'}
+                - {name: CTIN_1,            value: 17, description: 'SCT input 1'}
+                - {name: CTIN_2,            value: 18, description: 'SCT input 2'}
+                - {name: CTIN_3,            value: 19, description: 'SCT input 3'}
+                - {name: CTIN_4,            value: 20, description: 'SCT input 4'}
+                - {name: CTIN_5,            value: 21, description: 'SCT input 5'}
+                - {name: CTIN_6,            value: 22, description: 'SCT input 6'}
+                - {name: CTIN_7,            value: 23, description: 'SCT input 7'}
+                - {name: ADCHS_TRIGGER,     value: 24, description: 'High-speed ADC trigger'}
+                - {name: EVENTROUTER_13,    value: 25, description: 'Event router input 13'}
+                - {name: EVENTROUTER_14,    value: 26, description: 'Event router input 14'}
+                - {name: EVENTROUTER_16,    value: 27, description: 'Event router input 16'}
+                - {name: ADCSTART0,         value: 28, description: 'ADC0 start signal'}
+                - {name: ADCSTART1,         value: 29, description: 'ADC1 start signal'}
       GPIO_GROUP_INT:
         from: LPC43xx_43Sxx.GPIO_GROUP_INT0
         instances: [GPIO_GROUP_INT0, GPIO_GROUP_INT1]
