@@ -57,8 +57,14 @@ def _collect_registers(reg_list, base_offset, regs):
     CCU's CLK[%s][%s]) are expanded to a name per (i, j, ...) tuple by
     sequentially substituting %s placeholders — clocktree YAMLs reference
     such registers as CLK[0][0].CFG, CLK[3][15].CFG, etc.  dimIndex
-    tokens are only applied to 1D arrays; multi-dim entries are
-    numeric-only.
+    tokens are only applied to 1D arrays; multi-dim entries support per-
+    axis enumeratedIndices substitutions (so LPC43 CGU's BASE_CLK[%s] can
+    be referenced as BASE_CLK[SAFE].CLK_SEL once `enumeratedIndices` on
+    the array names slot 0 SAFE).  Each axis substitutes one of: the
+    numeric index, the dimIndex token (1D arrays only), or any
+    enumeratedIndices enumerator name pointing at that index.  Names are
+    emitted as the cross-product across axes; aliases at the same index
+    each get their own name form.
     """
     for reg in reg_list:
         name = reg['name']
@@ -87,15 +93,46 @@ def _collect_registers(reg_list, base_offset, regs):
         else:
             dim_tokens = None
 
+        # Build per-axis {value: [enumerator_name, ...]} maps so each axis
+        # can be addressed by its enumeratedIndices name(s) in addition to
+        # the numeric index.
+        enum_indices = reg.get('enumeratedIndices')
+        if isinstance(enum_indices, dict):
+            per_axis_enums = [enum_indices]
+        elif isinstance(enum_indices, list):
+            per_axis_enums = list(enum_indices)
+        else:
+            per_axis_enums = []
+        enum_axis_maps = []
+        for e in per_axis_enums:
+            if not isinstance(e, dict):
+                enum_axis_maps.append(None)
+                continue
+            m = {}
+            for v in e.get('values') or []:
+                m.setdefault(v.get('value'), []).append(v.get('name'))
+            enum_axis_maps.append(m)
+
         def _instance_names(indices):
-            """Return one or more name forms for a (multi-)dim instance."""
-            n = name
-            for idx in indices:
-                n = n.replace('%s', str(idx), 1)
-            names = [n]
-            # dimIndex tokens are only meaningful for 1D arrays.
-            if len(indices) == 1 and dim_tokens and indices[0] < len(dim_tokens):
-                names.append(name.replace('%s', dim_tokens[indices[0]]))
+            """Return all name forms (numeric + dimIndex + enumeratedIndices)
+            for one (multi-)dim instance."""
+            # Per-axis substitution alternatives: every axis lists the
+            # numeric index plus any aliases that map to that index.
+            per_axis_subs = []
+            for k, idx in enumerate(indices):
+                subs = [str(idx)]
+                if (len(indices) == 1 and dim_tokens
+                        and idx < len(dim_tokens)):
+                    subs.append(dim_tokens[idx])
+                if k < len(enum_axis_maps) and enum_axis_maps[k] is not None:
+                    subs.extend(enum_axis_maps[k].get(idx, []))
+                per_axis_subs.append(subs)
+            names = []
+            for combo in product(*per_axis_subs):
+                n = name
+                for c in combo:
+                    n = n.replace('%s', c, 1)
+                names.append(n)
             return names
 
         if sub_regs:
