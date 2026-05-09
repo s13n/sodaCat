@@ -681,6 +681,128 @@ def createCluster2DArray(reglist:list, pattern:str, name:str,
     return [r for r in reglist if id(r) not in matched_ids] + [cluster]
 
 
+def createIndexedRegisterArray(reglist:list, pattern:str, name:str,
+                                addressOffset:int, stride:int, dim:int,
+                                description:str=None,
+                                enumeratedIndices=None):
+    """Fuse flat registers at strided offsets into a single 1D register array.
+
+    Many clock-controller and similar peripherals expose a flat list of
+    same-shape register names (LPC43 CGU's BASE_SAFE_CLK / BASE_USB0_CLK
+    / ... / BASE_CGU_OUT1_CLK is the canonical case: 24 registers at
+    offsets 0x5C..0xC8, all sharing the same field layout, with a few
+    reserved gaps between them).  The natural representation is a single
+    register array indexed by an `enumeratedIndices` enum that carries
+    the per-slot semantic name.
+
+    All matched registers must lie in `[addressOffset, addressOffset +
+    dim*stride)`, must align to `stride`, must hash to distinct slots,
+    and must have unioneable field sets (same-named fields share bit
+    position, different-named fields must not overlap on the bit level
+    -- the same contract `mergeArrays` and `createCluster2DArray` use).
+    Slots that no register maps to remain reserved in the emitted array
+    and the consumer-side enum simply doesn't name them.
+
+    Pattern carries no capture groups; the regex only filters which
+    top-level registers participate.  Indices are derived from address.
+    """
+    pat = re.compile(pattern)
+    matches = {}  # slot -> register
+    for r in reglist:
+        if not isinstance(r, dict):
+            continue
+        if not pat.match(r.get('name', '')):
+            continue
+        addr = _addr(r)
+        rel = addr - addressOffset
+        if rel < 0 or rel >= dim * stride:
+            continue
+        if rel % stride:
+            print(f"createIndexedRegisterArray: '{r['name']}' at 0x{addr:x} "
+                  f"is not aligned to stride {stride}")
+            return reglist
+        slot = rel // stride
+        if slot in matches:
+            print(f"createIndexedRegisterArray: '{r['name']}' and "
+                  f"'{matches[slot]['name']}' both map to slot {slot}")
+            return reglist
+        matches[slot] = r
+
+    if not matches:
+        print(f"  WARNING: createIndexedRegisterArray: no registers match "
+              f"'{pattern}' in [0x{addressOffset:x}, "
+              f"0x{addressOffset + dim*stride:x})")
+        return reglist
+
+    # Field union across all matched instances; bit-disjointness contract.
+    merged_fields = []
+    bit_owners = {}
+    for slot in sorted(matches):
+        r = matches[slot]
+        for f in r.get('fields') or []:
+            fname = f.get('name')
+            offset = f.get('bitOffset', 0)
+            width = f.get('bitWidth', 1)
+            existing = next((mf for mf in merged_fields if mf.get('name') == fname), None)
+            if existing is not None:
+                if (existing.get('bitOffset') != offset
+                        or existing.get('bitWidth') != width):
+                    print(f"createIndexedRegisterArray: field '{fname}' has "
+                          f"incompatible position across /{pattern}/ matches: "
+                          f"[{existing.get('bitOffset')}:{existing.get('bitWidth')}] "
+                          f"vs [{offset}:{width}]")
+                    return reglist
+                continue
+            for b in range(offset, offset + width):
+                if b in bit_owners:
+                    print(f"createIndexedRegisterArray: field '{fname}' bit {b} "
+                          f"overlaps with existing field '{bit_owners[b]}' in "
+                          f"/{pattern}/ merge")
+                    return reglist
+                bit_owners[b] = fname
+            merged_fields.append(copy.deepcopy(f))
+    merged_fields.sort(key=lambda f: f.get('bitOffset', 0))
+
+    # Inherit register-level scalar attrs from the lowest-slot match,
+    # except for `access` which is unioned across matches (the array as a
+    # whole supports the broadest access mode any slot does, so a mix of
+    # read-only and read-write members yields read-write).
+    first = matches[min(matches)]
+    array = {'name': name + '[%s]'}
+    if description:
+        array['description'] = description
+    elif first.get('description'):
+        array['description'] = first['description']
+    array['addressOffset'] = addressOffset
+    array['dim'] = dim
+    array['dimIncrement'] = stride
+    accesses = {r.get('access') for r in matches.values() if r.get('access')}
+    if len(accesses) == 1:
+        array['access'] = next(iter(accesses))
+    elif accesses:
+        # Mixed: read-write is a superset of read-only and write-only, so
+        # use it whenever any member declares it OR when both halves are
+        # represented separately.
+        if 'read-write' in accesses or {'read-only', 'write-only'} <= accesses:
+            array['access'] = 'read-write'
+        else:
+            array['access'] = first.get('access')
+    for key in ('resetValue', 'resetMask', 'size'):
+        if key in first:
+            array[key] = first[key]
+    array['fields'] = merged_fields
+    if enumeratedIndices is not None:
+        array['enumeratedIndices'] = _strip_yaml_metadata(enumeratedIndices)
+
+    fmt = ("Registers /{}/ become indexed register array {}: "
+           "addressOffset=0x{:x} dim={} stride={} (populated {}/{} slots)")
+    print(fmt.format(pattern, array['name'], addressOffset, dim, stride,
+                     len(matches), dim))
+
+    matched_ids = set(id(r) for r in matches.values())
+    return [r for r in reglist if id(r) not in matched_ids] + [array]
+
+
 def compareRegisters(left:dict, right:dict, includeDescription=False):
     """Compare two register lists and generate a list of differences.
     """

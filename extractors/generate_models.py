@@ -20,7 +20,7 @@ from ruamel.yaml import YAML
 # Add sodaCat tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
-from transform import renameEntries, createClusterArray, createArray, create2DArray, clusterArrays, createCluster2DArray
+from transform import renameEntries, createClusterArray, createArray, create2DArray, clusterArrays, createCluster2DArray, createIndexedRegisterArray
 from enum_namer import simplify_block_enums
 
 
@@ -698,6 +698,17 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                 t['innerDim'],
                 t['innerStride'],
                 outerDim=t.get('outerDim'),
+                description=t.get('description'),
+                enumeratedIndices=t.get('enumeratedIndices'),
+            )
+        elif typ == 'createIndexedRegisterArray':
+            block_data['registers'] = createIndexedRegisterArray(
+                block_data.get('registers', []),
+                t['pattern'],
+                t['name'],
+                t['addressOffset'],
+                t['stride'],
+                t['dim'],
                 description=t.get('description'),
                 enumeratedIndices=t.get('enumeratedIndices'),
             )
