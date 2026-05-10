@@ -1233,15 +1233,11 @@ families:
                   - {name: RI,   description: 'Ring Indicator (complement of RI pin; mirrors MCR[2] in loopback).', bitOffset: 6, bitWidth: 1}
                   - {name: DCD,  description: 'Data Carrier Detect (complement of DCD pin; mirrors MCR[3] in loopback).', bitOffset: 7, bitWidth: 1}
       USB:
-        from: LPC43xx_43Sxx.USB0
+        uses: ChipIdeaHS
         instances: [USB0, USB1]
         interrupts:
           USB0: USB
           USB1: USB
-        params:
-          - {name: endpoints, type: int, default: 5, max: 15, description: 'Number of bidirectional endpoint pairs beyond EP0 (range 0..15). EP0 is always present and not counted. The IN and OUT directions of each pair share one ENDPTCTRL register, so the count applies to both directions.'}
-          - {name: has_hs_phy, type: bool, default: true, description: 'On-chip USB high-speed PHY/transceiver is present.'}
-          - {name: has_fs_phy, type: bool, default: false, description: 'On-chip USB full-speed PHY/transceiver is present.'}
       WWDT:
         uses: WWDT
         instances: [WWDT]
@@ -1253,7 +1249,14 @@ families:
           # UART1 has modem control (MCR/MSR) but lacks the IrDA/smart-card/
           # sync/oversampling/half-duplex registers that USART0/2/3 have.
           UART1: {has_modem: true, has_irda: false, has_smartcard: false, has_synchronous: false, has_oversampling: false, has_halfduplex: false}
-          # USB0 = HS OTG with on-chip HS PHY, EP1..EP5 (5 additional pairs beyond EP0); block defaults already match.
+          # ChipIdeaHS defaults assume the full MCXN feature set; LPC43
+          # turns off the HW-cap prefix, GPTIMER, SBUSCFG, CONFIGFLAG and
+          # DCCPARAMS (none are wired up) and turns on TTCTRL / BINTERVAL.
+          USB:  {has_hw_caps: false, has_gptimer: false, has_sbuscfg: false,
+                 has_configflag: false, has_dccparams: false,
+                 has_ttctrl: true, has_binterval: true}
+          # USB0 = HS OTG with on-chip HS PHY, EP1..EP5 (5 additional pairs beyond EP0).
+          USB0: {endpoints: 5, has_hs_phy: true,  has_fs_phy: false}
           # USB1 = FS host/device with on-chip FS PHY, EP1..EP3 (3 additional pairs beyond EP0).
           USB1: {endpoints: 3, has_hs_phy: false, has_fs_phy: true}
     # Per-chip instance presence.  The single LPC43xx_43Sxx SVD describes a
