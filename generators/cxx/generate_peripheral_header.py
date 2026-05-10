@@ -426,8 +426,6 @@ prefixTemplate = Template("""// File was generated, do not edit!
 
 #ifndef EXPORT
 #include "hwreg.hpp"
-#include "array.hpp"
-#include <cstdint>
 #define EXPORT
 #endif
 
@@ -440,9 +438,7 @@ postfixTemplate = Template("""} // namespace $ns
 moduleTemplate = Template("""// File was generated, do not edit!
 module;
 
-#include <cstdint>
 #include "hwreg.hpp"
-#include "array.hpp"
 
 export module $mod;
 

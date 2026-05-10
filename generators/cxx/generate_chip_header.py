@@ -177,7 +177,6 @@ prefixTemplate = Template("""// File was generated, do not edit!
 #ifndef EXPORT
 $incl
 #include "hwreg.hpp"
-#include <cstdint>
 #define EXPORT
 #endif
 
@@ -197,7 +196,6 @@ postfixTemplate = Template("""
 moduleTemplate = Template("""// File was generated, do not edit!
 module;
 
-#include <cstdint>
 #include "hwreg.hpp"
 
 export module $mod;
