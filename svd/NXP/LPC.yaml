@@ -1046,6 +1046,15 @@ families:
       GPIO_PORT:
         from: LPC43xx_43Sxx.GPIO_PORT
         instances: [GPIO_PORT]
+        # The byte (B) and word (W) pin registers are flat 256-entry
+        # arrays in the SVD but addressed as B[port][pin] / W[port][pin]
+        # in the RM (8 ports × 32 pins).  Reshape to 2D so consumers
+        # subscript by (port, pin) instead of computing port*32 + pin.
+        transforms:
+          - type: patchRegisters
+            registers:
+              - {name: 'B[%s]', newName: 'B[%s][%s]', dim: [8, 32], dimIncrement: [32, 1], dimIndex: null}
+              - {name: 'W[%s]', newName: 'W[%s][%s]', dim: [8, 32], dimIncrement: [128, 4], dimIndex: null}
       GPDMA:
         uses: PL08x
         instances: [GPDMA]
