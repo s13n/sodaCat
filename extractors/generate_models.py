@@ -1497,6 +1497,13 @@ def main():
 
     ext.validate_args(args)
 
+    # Vendor-defined per-family namespace (e.g. STM32 H7 → 'stm32h7'; Microchip
+    # collapses all families to 'microchip').  Defaults to lowercased family
+    # code when a vendor extension doesn't override.
+    family_ns = (ext.family_namespace(family_code) if hasattr(ext, 'family_namespace')
+                 else family_code.lower())
+    vendor_ns = output_dir.name.lower()
+
     config_file = ext.config_path(args)
     families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks, svd_tag, \
         address_overrides, svd_chip, clocktree = load_family_config(family_code, config_file)
@@ -1716,9 +1723,11 @@ def main():
                 shared_dir.mkdir(parents=True, exist_ok=True)
                 shared_path = shared_dir / shared_name
                 model_prefix = designer
+                block_data['namespace'] = designer.lower()
             else:
                 shared_path = output_dir / shared_name
                 model_prefix = vendor_prefix
+                block_data['namespace'] = vendor_ns
             svd.dumpModel(block_data, shared_path)
             model_interrupt_order[shared_name] = [
                 irq['name'] for irq in block_data.get('interrupts', [])]
@@ -1770,6 +1779,7 @@ def main():
                 if resolved.get('description'):
                     v_block_data['description'] = resolved['description']
 
+                v_block_data['namespace'] = family_ns
                 svd.dumpModel(v_block_data, family_dir / block_name)
                 model_interrupt_order[(block_name, fam_name)] = [
                     irq['name'] for irq in v_block_data.get('interrupts', [])]
@@ -1805,6 +1815,7 @@ def main():
                 if resolved.get('description'):
                     block_data['description'] = resolved['description']
 
+                block_data['namespace'] = family_ns
                 svd.dumpModel(block_data, family_dir / block_name)
                 model_interrupt_order[(block_name, fam_name)] = [
                     irq['name'] for irq in block_data.get('interrupts', [])]
@@ -1834,6 +1845,7 @@ def main():
             # information and creates churn when a family later grows a
             # second subfamily.
             common_count += 1
+            block_data['namespace'] = family_ns
             svd.dumpModel(block_data, common_blocks_dir / block_name)
             model_interrupt_order[block_name] = intr_order
             model_paths[block_name] = f"{vendor_prefix}/{family_code}/{block_name}"
@@ -2041,6 +2053,7 @@ def main():
                 source_name, device_meta.get('version', ''), svd_tag)
             chip_model = {
                 'name': chip_name,
+                'namespace': family_ns,
                 'source': source,
             }
             chip_clocktree = (

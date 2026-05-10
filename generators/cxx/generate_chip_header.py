@@ -127,13 +127,15 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             ordered = [by_name[n] for n in int_order if n in by_name]
         return ''.join(self.instanceIntTemplate.substitute(i) for i in ordered)
 
-    def createIntegration(self, chip, chip_path, namespace, namespaces):
+    def createIntegration(self, chip, chip_path, namespace, incl_suffix):
         """ create list of integration structs.
 
         Returns (decl, includes, model_to_ns) where model_to_ns maps each
-        referenced peripheral model name to its C++ namespace — needed both
-        for namespace-qualified `#include`s and for module import names.
+        referenced peripheral model name to its C++ namespace — read from
+        the referenced block YAML's own `namespace:` key (with directory-
+        based fallback via _namespace.resolve).
         """
+        from _namespace import resolve as _resolve_ns
         instances = chip['instances']
         models_map = chip.get('models', {})
         chip_dir = Path(chip_path).parent
@@ -141,8 +143,11 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         decl = ''
         for k, i in instances.items():
             m = i['model']
-            ns = namespaces.get(m, namespace)
-            model_to_ns[m] = ns
+            if m not in model_to_ns:
+                block_path = self._resolve_block_path(
+                    chip_dir, models_map.get(m, m))
+                model_to_ns[m] = _resolve_ns(block_path) if block_path else namespace
+            ns = model_to_ns[m]
             param_order, int_order, param_defaults = self._loadBlockOrder(
                 chip_dir, models_map, m)
             params = self.createParameters(k, i, param_order, param_defaults)
@@ -150,21 +155,13 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             init = '\n\t.registers = %#Xu\n' % i['baseAddress']
             decl += self.instanceDeclTemplate.substitute(i, name=k, ns=ns, params=params, ints=ints, init=init)
         includes = [
-            self.instanceInclTemplate.substitute(model=m, ns=ns, incl_suffix=sys.argv[4])
+            self.instanceInclTemplate.substitute(model=m, ns=ns, incl_suffix=incl_suffix)
             for m, ns in model_to_ns.items()
         ]
         return decl, ''.join(includes), model_to_ns
 
-    def createHeader(self, chip, chip_path, namespaces, prefix, postfix):
-        namespace = namespaces
-        inverse = {}
-        if isinstance(namespaces, dict):
-            namespace = namespaces.pop("", None)
-            for k, vals in namespaces.items():
-                for v in vals:
-                    if inverse.setdefault(v, k) != k:
-                        raise ValueError(f"Duplicate value {v!r}")
-        decl, incl, model_to_ns = self.createIntegration(chip, chip_path, namespace, inverse)
+    def createHeader(self, chip, chip_path, namespace, incl_suffix, prefix, postfix):
+        decl, incl, model_to_ns = self.createIntegration(chip, chip_path, namespace, incl_suffix)
         imports = [f'{ns}.{m}' for m, ns in model_to_ns.items()]
         interrupts = chip.get('interrupts', {})
         interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
@@ -210,22 +207,21 @@ def generate_module(mod, header, imports):
     imp_lines = ''.join(f'import {i};\n' for i in imports)
     return moduleTemplate.substitute(mod=mod, header=header, imports=imp_lines)
 
-def generate_header(model_file, namespace, model_name, out_suffix, module_name=None):
+def generate_header(model_file, model_name, out_suffix, module_name=None):
+    from _namespace import resolve as _resolve_ns
     yaml = YAML(typ='safe')
     chip = yaml.load(Path(model_file))
     fmt  = ChipFormatter()
-    nsfile = Path(namespace)
-    namespaces = yaml.load(nsfile) if nsfile.exists() else namespace
+    namespace = _resolve_ns(model_file)
     if module_name is None:
         # Module names must be valid C++ identifiers; stems like "ESP32-P4"
         # need the hyphen replaced.  Prefix with the namespace when it's a
         # plain identifier, so module names stay unique across vendors.
         stem = Path(model_name + out_suffix).stem.replace('-', '_')
         module_name = (f'{namespace}.{stem}'
-                       if isinstance(namespace, str)
-                       and re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
+                       if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
                        else stem)
-    header, imports = fmt.createHeader(chip, model_file, namespaces, prefixTemplate, postfixTemplate)
+    header, imports = fmt.createHeader(chip, model_file, namespace, out_suffix, prefixTemplate, postfixTemplate)
     filename = model_name + out_suffix
     print(header, file=open(filename, mode='w'))
     cppm = Path(filename).with_suffix('.cppm')
@@ -233,9 +229,8 @@ def generate_header(model_file, namespace, model_name, out_suffix, module_name=N
 
 # Script arguments:
 #   argv[1] - Model (Name of yaml file)
-#   argv[2] - Namespace name, or path of namespace file (yaml format)
-#   argv[3] - Model name (used for type names)
-#   argv[4] - Output file suffix (appended to model name)
+#   argv[2] - Model name (used for type names)
+#   argv[3] - Output file suffix (appended to model name)
 #
 if __name__ == "__main__":
-    generate_header(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    generate_header(sys.argv[1], sys.argv[2], sys.argv[3])

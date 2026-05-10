@@ -127,47 +127,41 @@ endfunction()
 # Generate a header file for a target, recursively generating headers for any
 # model dependencies (listed under the `models:` key in the YAML file).
 # The generator auto-detects the model type (peripheral, chip, clock tree).
+#
+# The C++ namespace for each generated header comes from the model YAML's
+# `namespace:` key, falling back to the lowercased innermost containing
+# directory name when the key is absent.  Chips, peripheral blocks, and
+# clock-trees each declare their own namespace independently.
+#
 # Parameters:
 #   target      - Target to which the generated header is added as a source file
 #   language    - Generator language (e.g. "cxx"); must be fetched first via sodacat_fetch_generator()
-#   namespace   - Either a plain namespace name for the generated header, or an
-#                 absolute path to a YAML namespaces map of the form
-#                   ""   : <default_ns>
-#                   <ns> : [<model_a>, <model_b>, ...]
-#                 The map's default namespace is used for output dir, dedup,
-#                 and recursive sub-models that aren't listed elsewhere; the
-#                 named alternates apply per-model (e.g. PL08x → arm).  The
-#                 file path is forwarded verbatim to the chip generator,
-#                 which uses it to qualify per-instance integration types.
-#   model_path  - Path to model file relative to SODACAT_LOCAL_DIR (e.g., ST/H757/H757)
+#   model_path  - Path to model file relative to SODACAT_LOCAL_DIR (e.g., ST/H7/H757/STM32H757_CM7)
 #   suffix      - File name suffix of generated header file
-function(generate_header target language namespace model_path suffix)
+function(generate_header target language model_path suffix)
     # Extract model name from path (last component)
     get_filename_component(model "${model_path}" NAME)
 
-    # If `namespace` is a path to a YAML map file, resolve the default
-    # namespace string from it and remember the file for forwarding to the
-    # generator and for per-model lookup during recursion.
-    set(_ns_yaml "")
-    set(_ns "${namespace}")
-    if(IS_ABSOLUTE "${namespace}" AND EXISTS "${namespace}")
-        set(_ns_yaml "${namespace}")
-        execute_process(
-            COMMAND ${Python3_EXECUTABLE} -c
-                "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${_ns_yaml}')); print(d.get('', ''))"
-            OUTPUT_VARIABLE _ns
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            RESULT_VARIABLE _ns_result
-        )
-        if(NOT _ns_result EQUAL 0 OR _ns STREQUAL "")
-            message(FATAL_ERROR "Namespaces YAML ${_ns_yaml} has no default ('') namespace key")
-        endif()
-    endif()
+    # Construct the full model file path
+    set(model_file "${SODACAT_LOCAL_DIR}/${model_path}.yaml")
+
+    # Ensure model (and dependencies) are available
+    ensure_model("${model_path}")
+
+    # Resolve namespace from the model YAML (or fall back to lowercased
+    # innermost directory name).  Same rule used by the Python generators
+    # via generators/<lang>/_namespace.py.
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c
+            "from ruamel.yaml import YAML; import re; from pathlib import Path; p=Path('${model_file}'); d=YAML(typ='safe').load(p) or {}; print(d.get('namespace') or re.sub(r'[^a-z0-9_]', '_', p.parent.name.lower()))"
+        OUTPUT_VARIABLE _ns
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
     # Deduplicate: skip if this model path already has a header being generated
-    # for this namespace.  The same peripheral model may legitimately need to
-    # be emitted under multiple namespaces when it's shared by chips that live
-    # in different namespaces, so the dedup key includes the namespace (always
-    # the resolved string, never the YAML path).
+    # for this namespace.  The dedup key includes the namespace because the
+    # same peripheral may be re-emitted into a sibling namespace if its
+    # `namespace:` key changes between revisions.
     string(REPLACE "/" "_" _path_key "${model_path}")
     set(dedup_key "${_ns}_${_path_key}")
     get_property(already_generated GLOBAL PROPERTY _SODACAT_HDR_${dedup_key})
@@ -176,15 +170,9 @@ function(generate_header target language namespace model_path suffix)
     endif()
     set_property(GLOBAL PROPERTY _SODACAT_HDR_${dedup_key} TRUE)
 
-    # Construct the full model file path
-    set(model_file "${SODACAT_LOCAL_DIR}/${model_path}.yaml")
-
-    # Ensure model (and dependencies) are available
-    ensure_model("${model_path}")
-
-    # Recursively generate headers for model dependencies.  When a YAML map
-    # was supplied, look up each dep's namespace there (defaulting to the
-    # map's default); otherwise reuse the parent's plain namespace string.
+    # Recursively generate headers for model dependencies.  Each dep
+    # carries its own `namespace:` key (or directory-based fallback), so
+    # we just forward the path — no namespace-mapping needed at this level.
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c
             "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); m=d.get('models',{}); print(';'.join(m.values()) if m else '')"
@@ -193,25 +181,12 @@ function(generate_header target language namespace model_path suffix)
     )
     if(model_deps)
         foreach(dep IN LISTS model_deps)
-            if(_ns_yaml)
-                get_filename_component(_dep_model "${dep}" NAME)
-                execute_process(
-                    COMMAND ${Python3_EXECUTABLE} -c
-                        "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${_ns_yaml}')); inv={m: ns for ns, ms in d.items() if ns and isinstance(ms, list) for m in ms}; print(inv.get('${_dep_model}', d.get('', '')))"
-                    OUTPUT_VARIABLE _dep_ns
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                )
-                generate_header(${target} ${language} ${_dep_ns} ${dep} ${suffix})
-            else()
-                generate_header(${target} ${language} ${_ns} ${dep} ${suffix})
-            endif()
+            generate_header(${target} ${language} ${dep} ${suffix})
         endforeach()
     endif()
 
-    # Generate the chip's clock-tree header in the same C++ namespace as
-    # the chip itself, so consumers see chip and clock symbols side-by-side.
-    # The dispatcher (generate_header.py) routes clock-tree YAMLs by their
-    # `signals:` key, so no special handling is needed here beyond recursion.
+    # Generate the chip's clock-tree header.  The dispatcher
+    # (generate_header.py) routes clock-tree YAMLs by their `signals:` key.
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c
             "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); print(d.get('clocktree') or '')"
@@ -219,7 +194,7 @@ function(generate_header target language namespace model_path suffix)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     if(clocktree_dep)
-        generate_header(${target} ${language} ${_ns} ${clocktree_dep} ${suffix})
+        generate_header(${target} ${language} ${clocktree_dep} ${suffix})
     endif()
 
     # Resolve generator directory
@@ -247,19 +222,14 @@ function(generate_header target language namespace model_path suffix)
     set(_out_dir "${CMAKE_CURRENT_BINARY_DIR}/${_ns}")
     file(MAKE_DIRECTORY "${_out_dir}")
 
-    # Forward the YAML map to the generator if we have one (the chip
-    # generator consumes it for per-instance type qualification); otherwise
-    # the resolved namespace string.
-    set(_python_ns "${_ns}")
-    if(_ns_yaml)
-        set(_python_ns "${_ns_yaml}")
-    endif()
-
-    # The generator produces both a .hpp header and a .cppm module wrapper
+    # The generator produces both a .hpp header and a .cppm module wrapper.
+    # Namespace comes from the model YAML at generation time (Python side
+    # uses the same resolver as cmake here), so no namespace argument is
+    # forwarded.
     get_filename_component(model_stem "${model}${suffix}" NAME_WE)
     add_custom_command(OUTPUT "${_out_dir}/${model}${suffix}"
                               "${_out_dir}/${model_stem}.cppm"
-        COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" "${_python_ns}" ${model} ${suffix}
+        COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${model} ${suffix}
         WORKING_DIRECTORY "${_out_dir}"
         MAIN_DEPENDENCY "${model_file}"
         DEPENDS ${generator_scripts}

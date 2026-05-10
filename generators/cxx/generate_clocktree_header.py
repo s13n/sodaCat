@@ -556,7 +556,9 @@ def init_types():
     register_type('pll',          'clocktree::PllDesc',         'clocktree::pll_freq')
 
 
-def generate_header(yaml_path, namespace, hpp_path, module_name=None):
+def generate_header(yaml_path, hpp_path, module_name=None):
+    from _namespace import resolve as _resolve_ns
+    namespace = _resolve_ns(yaml_path)
     # Reset module-level caches so successive generate_header calls in the
     # same process don't reuse a chip/peripheral resolved against a different
     # clocktree's context.
@@ -824,4 +826,4 @@ def generate_header(yaml_path, namespace, hpp_path, module_name=None):
 
 
 if __name__ == "__main__":
-    generate_header(sys.argv[1], sys.argv[2], sys.argv[3]+sys.argv[4])
+    generate_header(sys.argv[1], sys.argv[2]+sys.argv[3])

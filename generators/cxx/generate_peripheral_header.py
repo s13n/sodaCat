@@ -452,14 +452,16 @@ def generate_module(mod, header):
     return moduleTemplate.substitute(mod=mod, header=header)
 
 if __name__ == "__main__":
+    from _namespace import resolve as _resolve_ns
     yaml= YAML(typ='safe')
     per = yaml.load(Path(sys.argv[1]))
     if per:
+        ns = _resolve_ns(sys.argv[1])
         fmt = PerFormatter()
-        prefix = prefixTemplate.substitute(ns=sys.argv[2])
-        postfix = postfixTemplate.substitute(ns=sys.argv[2])
+        prefix = prefixTemplate.substitute(ns=ns)
+        postfix = postfixTemplate.substitute(ns=ns)
         txt = fmt.formatPeripheral(per, prefix, postfix)
-        filename = sys.argv[3]+sys.argv[4]
+        filename = sys.argv[2]+sys.argv[3]
         print(txt, file=open(filename, mode = 'w'))
         modid = Path(filename).stem
         cppm = Path(filename).with_suffix('.cppm')

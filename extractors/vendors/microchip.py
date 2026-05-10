@@ -20,6 +20,11 @@ import svd
 use_config_interrupt_map = True
 
 
+def family_namespace(family_code):
+    """Microchip uses a single vendor-level namespace across all families."""
+    return 'microchip'
+
+
 def add_cli_args(parser):
     """Add Microchip-specific CLI arguments."""
     parser.add_argument('svd_source', type=Path,

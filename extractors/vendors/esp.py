@@ -15,6 +15,11 @@ import svd
 use_config_interrupt_map = True
 
 
+def family_namespace(family_code):
+    """ESP32 chips use `esp32<family>` (e.g. P4 → esp32p4)."""
+    return f'esp32{family_code.lower()}'
+
+
 def add_cli_args(parser):
     """Add ESP-specific CLI arguments."""
     parser.add_argument('svd_source', type=Path,

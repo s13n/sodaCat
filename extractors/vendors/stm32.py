@@ -15,6 +15,11 @@ import svd
 use_config_interrupt_map = True
 
 
+def family_namespace(family_code):
+    """STM32 chips use the convention `stm32<family>` (e.g. H7 → stm32h7)."""
+    return f'stm32{family_code.lower()}'
+
+
 def add_cli_args(parser):
     """Add STM32-specific CLI arguments."""
     parser.add_argument('svd_source', type=Path,
