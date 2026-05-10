@@ -109,13 +109,14 @@ A single unified `extractors/generate_models.py` script handles all families (ST
 - `shared_blocks`: cross-family shared block definitions — blocks whose register map is identical across multiple families. Each entry has the same keys as a family block (`from`, `interrupts`, `transforms`, `params`) except `instances`, which is inherently per-family and must be specified in each family's block entry. Shared models are written to `models/ST/` (top level), not under a family directory.
 - `families`: per-family configuration, keyed by family code (C0, F3, ..., U5)
 
-Each family entry has up to four keys:
+Each family entry has up to five optional keys plus `svd`/`subfamilies`/`blocks`:
 
 - `svd`: SVD archive metadata — `{zip, version, date}`. The `zip` filename must match the `ZIP` arg in `svd/ST/CMakeLists.txt`. The `version` and `date` fields are updated automatically by `tools/st_maintenance.py svd --download` when new SVD archives are downloaded.
 - `subfamilies`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
 - `blocks`: block_type → `{from, instances, interrupts, transforms, params, variants}` — declares which SVD peripherals map to which block types, preferred source chip, interrupt name mappings, inline transforms to fix SVD bugs, optional parameter declarations, and optional per-subfamily overrides. A block may use `uses: <shared_block_name>` instead of `from:` to reference a cross-family shared model; `from` triggers SVD extraction while `uses` references the shared model. Defaults from `shared_blocks` are inherited and can be overridden.
 - `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
 - `chip_interrupts` (optional): subfamily-keyed interrupt overrides to inject or correct chip-level interrupt assignments. Same cascade structure as `chip_params`: `chip_interrupts[subfamily|_all][chip|_all][instance_name] = {canonical_name: irq_number}`. First match wins (no merging across levels). Used to fix SVD bugs where interrupts are misattributed, missing, or misnumbered.
+- `chip_instances` (optional): per-chip instance presence overrides, structured as `chip_instances[subfamily|_all][chip] = {exclude: [instance_names...]}`. Drops named instances from the chip model, including their entries in `instances:`, `interrupts:`, and (transitively) `models:`. Used when a single SVD covers a family superset but individual chips lack peripherals (e.g. LPC4310 has no USB; LPC4320 has USB0 but not USB1). Family-wide or subfamily-wide gaps belong in the per-block `instances:` list instead — `chip_instances` is for chip-specific deviations only.
 
 Parameter declarations are arrays of `{name, type, default?, description?}`. Permissible types: `int`, `bool`, `string`. The `type` field is optional and defaults to `int` in the C++ generator. Block models use `params:` for these declarations; chip-instance values appear under `parameters:` (different key, by design).
 

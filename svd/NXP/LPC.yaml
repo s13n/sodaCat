@@ -1238,6 +1238,10 @@ families:
         interrupts:
           USB0: USB
           USB1: USB
+        params:
+          - {name: endpoints, type: int, default: 5, description: 'Number of bidirectional endpoint pairs beyond EP0 (range 0..15). EP0 is always present and not counted. The IN and OUT directions of each pair share one ENDPTCTRL register, so the count applies to both directions.'}
+          - {name: has_hs_phy, type: bool, default: true, description: 'On-chip USB high-speed PHY/transceiver is present.'}
+          - {name: has_fs_phy, type: bool, default: false, description: 'On-chip USB full-speed PHY/transceiver is present.'}
       WWDT:
         uses: WWDT
         instances: [WWDT]
@@ -1249,3 +1253,33 @@ families:
           # UART1 has modem control (MCR/MSR) but lacks the IrDA/smart-card/
           # sync/oversampling/half-duplex registers that USART0/2/3 have.
           UART1: {has_modem: true, has_irda: false, has_smartcard: false, has_synchronous: false, has_oversampling: false, has_halfduplex: false}
+          # USB0 = HS OTG with on-chip HS PHY, EP1..EP5 (5 additional pairs beyond EP0); block defaults already match.
+          # USB1 = FS host/device with on-chip FS PHY, EP1..EP3 (3 additional pairs beyond EP0).
+          USB1: {endpoints: 3, has_hs_phy: false, has_fs_phy: true}
+    # Per-chip instance presence.  The single LPC43xx_43Sxx SVD describes a
+    # superset; the actual peripheral set varies per chip.  Sources:
+    #   USB0 / USB1: UM10503 §3.1 (and Table 2 / Table 4 ordering options).
+    #   ETHERNET:    UM10503 §3.1.
+    #   LCD:         UM10503 §17.1.
+    #   ADCHS:       UM10503 §13.1, §18.1, §47 — only on LPC4370/LPC43S70.
+    # ADC0/ADC1 are on every part — non-LPC4370 chips just tie input channels
+    # together at the pin level (UM10503 §17.1), but both register blocks are
+    # still present, so neither is excluded.
+    chip_instances:
+      _all:
+        # LPC4310 / LPC43S10: no USB, no ETHERNET, no LCD, no ADCHS.
+        LPC4310:  {exclude: [USB0, USB1, ETHERNET, LCD, ADCHS]}
+        LPC43S10: {exclude: [USB0, USB1, ETHERNET, LCD, ADCHS]}
+        # LPC4320 / LPC43S20: USB0 only; no ETHERNET, no LCD, no ADCHS.
+        LPC4320:  {exclude: [USB1, ETHERNET, LCD, ADCHS]}
+        LPC43S20: {exclude: [USB1, ETHERNET, LCD, ADCHS]}
+        # LPC433x / LPC43S3x: ETHERNET, USB0+USB1; no LCD, no ADCHS.
+        LPC4330:  {exclude: [LCD, ADCHS]}
+        LPC43S30: {exclude: [LCD, ADCHS]}
+        LPC43S37: {exclude: [LCD, ADCHS]}
+        # LPC435x / LPC43S5x / LPC43S6x: LCD, ETHERNET, USB0+USB1; no ADCHS.
+        LPC4350:  {exclude: [ADCHS]}
+        LPC43S50: {exclude: [ADCHS]}
+        LPC43S57: {exclude: [ADCHS]}
+        LPC43S67: {exclude: [ADCHS]}
+        # LPC4370: full feature set (ADC0+ADC1+ADCHS, ETHERNET, LCD, USB0+USB1) — no exclusions.

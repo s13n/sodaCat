@@ -109,6 +109,10 @@ def load_family_config(family_code, config_file):
     for sf_key, sf_val in (config.get('chip_interrupts') or {}).items():
         chip_interrupts[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
+    chip_instances = {}
+    for sf_key, sf_val in (config.get('chip_instances') or {}).items():
+        chip_instances[sf_key] = {k: dict(v) for k, v in sf_val.items()}
+
     address_overrides = {}
     for inst, addr in (config.get('address_overrides') or {}).items():
         address_overrides[inst] = int(addr) if isinstance(addr, str) else addr
@@ -123,7 +127,7 @@ def load_family_config(family_code, config_file):
     # subfamily/chip overrides later if a counterexample appears.
     clocktree = config.get('clocktree')
 
-    return families, blocks_config, chip_params, chip_interrupts, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree
+    return families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -173,6 +177,27 @@ def _resolve_chip_interrupts(chip_interrupts, subfamily, chip, instance, block_t
                 if target_key and target_key in chip_section:
                     return dict(chip_section[target_key])
     return {}
+
+
+def _resolve_excluded_instances(chip_instances, subfamily, chip):
+    """Resolve the set of instance names excluded for a given chip.
+
+    Two-level cascade: chip_instances[<subfamily>|_all][<chip>] = {exclude: [...]}.
+    Both levels' exclude lists are unioned.  Family-wide or subfamily-wide
+    exclusions belong in the family config's per-block `instances:` list rather
+    than here — chip_instances is for chip-specific deviations only.
+    """
+    excluded = set()
+    for sf_key in (subfamily, '_all'):
+        sf = chip_instances.get(sf_key)
+        if not sf:
+            continue
+        section = sf.get(chip)
+        if not section:
+            continue
+        for name in section.get('exclude', []) or []:
+            excluded.add(name)
+    return excluded
 
 
 def _resolve_block_config(block_cfg, subfamily_name):
@@ -1473,7 +1498,7 @@ def main():
     ext.validate_args(args)
 
     config_file = ext.config_path(args)
-    families, blocks_config, chip_params, chip_interrupts, shared_blocks, svd_tag, \
+    families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks, svd_tag, \
         address_overrides, svd_chip, clocktree = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
@@ -1904,7 +1929,12 @@ def main():
                 if inst_name in address_overrides:
                     periph['baseAddress'] = address_overrides[inst_name]
 
+            excluded_instances = _resolve_excluded_instances(
+                chip_instances, subfamily_name, chip_name)
+
             for inst_name, periph in summary['peripherals'].items():
+                if inst_name in excluded_instances:
+                    continue  # Instance not present on this chip
                 block_type = instance_to_block.get(inst_name)
                 if not block_type:
                     continue  # Unmodeled peripheral
