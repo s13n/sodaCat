@@ -100,7 +100,23 @@ The chip-header generator enforces **block-YAML order** for designated initializ
 
 A chip declares its clock tree via a top-level `clocktree:` string (path relative to the models root, e.g. `Microchip/SAM_Gen1_clocks` — same shape as `models:` map values). When the cmake macro `generate_header()` processes a chip, it auto-generates the chip's clock-tree header in the same C++ namespace, using the existing dedup mechanism so a clock tree shared by N chips is only emitted once per (namespace, target). The dispatcher (`generate_header.py`) routes clock-tree YAMLs by their `signals:` key. Standalone `generate_header(...)` calls for clock-tree models still work but are redundant once the chip references one.
 
+The legacy `clocktree:` form coexists with the newer subfamily-model layering — chips now usually reach the clock tree via an `inherits:` link to a subfamily YAML whose `clocks:` section holds the topology (see "Subfamily model & inheritance" below).  The two forms are interchangeable from the dispatcher's perspective.
+
 **Clock-tree mux encoding:** in mux input lists, `""` (empty string) is a valid mux setting that switches the output off (0 Hz), while `null` (None) marks an illegal/undefined setting. The distinction is intentional — consult the reference manual to determine which reserved positions are "off" vs truly illegal.
+
+### Subfamily model & inheritance
+
+Family-common facts (clock-tree topology, the common interrupt vector table) live in a subfamily-tier YAML between the chip level and the family-config level.  Chip YAMLs declare `inherits: <models-relative-path>` and carry only their per-chip deltas; the C++ generator walks the chain to assemble the merged view.
+
+**File ownership.**  The subfamily YAML at `models/<Vendor>/<Family>/<Subfamily>/<Subfamily>.yaml` is fully derived — deleting it and re-extracting yields a byte-identical file.  The hand-authored source for everything that ends up in it lives in the vendor config (`svd/<Vendor>/<Family>.yaml`):
+- Clock-tree topology goes under `families.<F>.subfamilies.<S>.clocks:` (same shape as the legacy clock-tree content schema).  References to register/field names cite the extracted RCC/SYSCON block; `tools/validate_clock_refs.py` cross-checks every citation.
+- The interrupt vector table is computed automatically — `extractors/generate_models.py` intersects each chip's per-instance IVT after all existing patches (block-level `interrupts:` mappings, `chip_interrupts:` overrides, `chip_instances:` exclusions) have applied, lifts common entries to the subfamily YAML's `interrupts:` section, and leaves only chip-specific deltas on each chip.
+
+**Loud failure.**  If a subfamily declares `inherits:` but the target file is missing AND no `clocks:` source is in the family config to regenerate from, the extractor exits non-zero — better than producing dangling references.
+
+**Coverage today.**  Migrated subfamilies (Shape A): STM32 H5 H503; STM32 H7 H73x / H742_H753 / H745_H757 / H7A3_B; NXP LPC8 LPC86x; NXP LPC43 LPC43xx; Raspberry RP RP2040 / RP2350.  Out of scope on legacy `clocktree:` form: Microchip SAM_Gen1 and PIC32CZ_Gen2 (both shared across multiple families — Shape A doesn't accommodate "one tree, many families" without a new shared-spec mechanism).
+
+Full details (extraction pipeline order, how to add a new fabric, the patching guarantee): [docs/design/subfamily-model.md](docs/design/subfamily-model.md).
 
 ### Family generator
 
