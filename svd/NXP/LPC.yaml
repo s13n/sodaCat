@@ -187,7 +187,7 @@ shared_blocks:
                 bitWidth: 1
                 access: read-write
                 enumeratedValues:
-                  - {name: HARDWARE_STATUS_MODE, description: Hardware status mode. In this mode, the INUSE(n) flags for all channels are reset., value: 0}
+                  - {name: HARDWARE_STATUS_MODE, description: Hardware status mode. In this mode, the INUSE(n) flags for all channels are reset.: null, value: 0}
                   - {name: MULTI_TASK_MODE, description: Multi-task mode., value: 1}
     interrupts:
       MRT0: MRT
@@ -247,8 +247,7 @@ shared_blocks:
       ERROR: ERROR
       TC: TC
     params:
-      - {name: pl081, type: int, default: 0, max: 1,
-         description: "0 = PL080 (8 channels, 2 AHB masters); 1 = PL081 (2 channels only, single AHB master so CONFIG.M1 endianness bit, C[n].LLI.LM bit, and C[n].CONTROL.S/D master-select bits are reserved). Both variants share the same register layout."}
+      - {name: pl081, type: int, default: 0, max: 1, description: "0 = PL080 (8 channels, 2 AHB masters); 1 = PL081 (2 channels only, single AHB master so CONFIG.M1 endianness bit, C[n].LLI.LM bit, and C[n].CONTROL.S/D master-select bits are reserved). Both variants share the same register layout."}
     transforms:
       - type: clusterArrays
         pattern: 'C%s(.+)'
@@ -294,6 +293,613 @@ families:
       LPC86x:
         chips: [LPC864, LPC865]
         ref_manual: {name: UM11607, rev: "3.1", date: 2025-11-07, url: "https://www.nxp.com/webapp/Download?colCode=UM11607"}
+        inherits: NXP/LPC8/LPC86x/LPC86x
+        clocks:
+          instance: SYSCON
+          signals:
+            - {name: fro_oscout, nominal: 48000000, min: 36000000, max: 60000000, description: "The output of the FRO oscillator"}
+            - {name: fro_div2, description: "FRO oscillator divided by 2"}
+            - {name: fro}
+            - {name: fro_div, description: "FRO output divided by 2 via FROOSCCTRL"}
+            - {name: wkt_div}
+            - {name: clkin, max: 25000000, description: "Internal clock that comes from the main CLKIN pin function."}
+            - {name: sys_osc_clk, max: 25000000, description: "Internal clock that comes from external crystal oscillator"}
+            - {name: external_clk, description: "Internal clock that comes from the crystal oscillator or the CLK_IN pin"}
+            - {name: lp_osc, nominal: 1000000}
+            - {name: pll_in, min: 10000000, max: 25000000}
+            - {name: sys_pll0_clk, max: 100000000}
+            - {name: pll_div_clk, description: "PLL output divided via SYSPLLDIV"}
+            - {name: main_clk_pre_pll}
+            - {name: main_clk, description: "The main clock used to generate the system clock and other clocks"}
+            - {name: system_clk, max: 60000000, description: "The clock used for the CPU and the buses"}
+            - {name: adc_clk, description: "ADC clock source selected via ADCCLKSEL"}
+            - {name: adc_div_clk}
+            - {name: clkout_src, description: "Clock source for CLKOUT pin"}
+            - {name: clkout}
+            - {name: frg0clksel, description: "Clock source for fractional rate generator 0"}
+            - {name: frg0clk}
+            - {name: frg1clksel, description: "Clock source for fractional rate generator 1"}
+            - {name: frg1clk}
+            - {name: lpwr_clk_vulp, nominal: 10000, min: 6000, max: 14000}
+            - {name: lwpwr_clk_vulp}
+            - {name: wdt_clk, description: "WWDT count clock (lp_osc gated by LPOSCEN.WDT_CLK_EN)"}
+            - {name: wkt_lposc_clk, description: "WKT count clock from lp_osc (gated by LPOSCEN.WKT_CLK_EN)"}
+            - {name: acmpclk}
+            - {name: adc_sclk}
+            - {name: crcclk}
+            - {name: dmaclk}
+            - {name: fclk0, description: "Functional clock for UART0"}
+            - {name: fclk1, description: "Functional clock for UART1"}
+            - {name: fclk10, description: "Functional clock for SPI1"}
+            - {name: fclk2, description: "Functional clock for UART2"}
+            - {name: fclk5, description: "Functional clock for I2C0"}
+            - {name: fclk9, description: "Functional clock for SPI0"}
+            - {name: flashclk}
+            - {name: ftm0clk, description: "Register clock for FTM0"}
+            - {name: ftm1clk, description: "Register clock for FTM1"}
+            - {name: gpio0clk}
+            - {name: gpio1clk}
+            - {name: gpiointclk}
+            - {name: i2c0clk}
+            - {name: ioconclk, description: "Register clock for IOCON"}
+            - {name: mrtclk}
+            - {name: ramclk}
+            - {name: romclk}
+            - {name: spi0clk}
+            - {name: spi1clk}
+            - {name: swmclk}
+            - {name: uart0clk}
+            - {name: uart1clk}
+            - {name: uart2clk}
+            - {name: i3cclk, description: "Register clock for I3C"}
+            - {name: i3cfclk}
+            - {name: i3c_fclk}
+            - {name: i3cslowtcclk}
+            - {name: i3c_clk_slow_tc}
+            - {name: i3c_clk_slow}
+            - {name: ftm0fclk, description: "Counter clock for FTM0"}
+            - {name: ftm1fclk, description: "Counter clock for FTM1"}
+            - {name: ftm0_extclk, description: "External clock for FTM0"}
+            - {name: ftm1_extclk, description: "External clock for FTM1"}
+            - {name: wkt_counter_clk, description: "The counter clock in the WKT"}
+            - {name: wkt_int_clk, description: "The WKT internal counter clock alternative"}
+            - {name: wktclk}
+            - {name: wktclkin, max: 10000000, description: "The clock at the WKTCLKIN input"}
+            - {name: wwdtclk}
+            - {name: ioconclkdiv0}
+            - {name: ioconclkdiv1}
+            - {name: ioconclkdiv2}
+            - {name: ioconclkdiv3}
+            - {name: ioconclkdiv4}
+            - {name: ioconclkdiv5}
+            - {name: ioconclkdiv6}
+
+          generators:
+            - name: FRO
+              output: fro_oscout
+              control:
+                state: stateFRO
+                set: |-
+                  struct PWRD { void (*set_fro_freq)(unsigned); };
+                  struct ROM { const PWRD *pPWRD; };
+                  ROM **rom = (ROM **)0x0F001D98;
+                  (*rom)->pPWRD->set_fro_freq(val/1000);
+                values: [0, 36000000, 48000000, 60000000]
+                default: 48000000
+            - name: CLKIN
+              output: clkin
+              control:
+                state: stateCLKIN
+              description: Special function of PIO0_1
+            - name: XTALIN
+              output: sys_osc_clk
+              control:
+                state: stateXTAL
+                reg: SYSOSCCTRL
+                field: BYPASS
+            - name: FTM0_EXTCLK
+              output: ftm0_extclk
+              control:
+                state: stateFTM0ext
+              description: External clock source for FTM0
+            - name: FTM1_EXTCLK
+              output: ftm1_extclk
+              control:
+                state: stateFTM1ext
+              description: External clock source for FTM1
+            - name: WKTCLKIN
+              output: wktclkin
+              control:
+                state: stateWKTCLKIN
+              description: Special function of PIO0_28
+            - name: LPOSC
+              output: lp_osc
+            - name: ULPOSC
+              output: lpwr_clk_vulp
+              control:
+                instance: PMU
+                reg: DPDCTRL
+                field: ULPOSCEN
+                values: [0, 10000]
+
+          muxes:
+            - name: EXTCLKSEL
+              output: external_clk
+              inputs: [sys_osc_clk, clkin]
+              control:
+                reg: EXTCLKSEL
+                field: SEL
+  # WKT clocking uses three muxes. WKTCLKSEL is in SYSCON; the other two
+  # (WKT_CLKSEL, WKT_EXTCLK) are in the WKT block via CTRL register bits.
+  # Figures 7, 8, and 43 mislabel WKTCLKSEL as WKT_CTRL[CLKSEL].
+  # Note: "low power clock" in WKT CTRL.CLKSEL description means the ULP
+  # oscillator (~10 kHz), not lp_osc (~1 MHz). These are distinct oscillators.
+            - name: WKTCLKSEL
+              output: lwpwr_clk_vulp
+              inputs: [fro, lp_osc]
+              control:
+                reg: WKTCLKSEL
+                field: SEL
+            - name: FROOSCCTRL
+              output: fro
+              inputs: [fro_div2, fro_oscout]
+              control:
+                reg: FROOSCCTRL
+                field: FRO_DIRECT
+            - name: SYSPLLCLKSEL
+              output: pll_in
+              inputs: [fro, external_clk, lp_osc, fro_div]
+              control:
+                reg: SYSPLLCLKSEL
+                field: SEL
+            - name: MAINCLKSEL
+              output: main_clk_pre_pll
+              inputs: [fro, external_clk, lp_osc, fro_div]
+              control:
+                reg: MAINCLKSEL
+                field: SEL
+              description: Selects main clock source before PLL
+            - name: MAINCLKPLLSEL
+              output: main_clk
+              inputs: [main_clk_pre_pll, sys_pll0_clk, "", ""]
+              control:
+                reg: MAINCLKPLLSEL
+                field: SEL
+              description: Selects final main clock source (PLL or pre-PLL)
+            - name: CLKOUTSEL
+              output: clkout_src
+              inputs: [fro, main_clk, pll_div_clk, external_clk, lp_osc, "", "", ""]
+              control:
+                reg: CLKOUTSEL
+                field: SEL
+            - name: ADCCLKSEL
+              output: adc_clk
+              inputs: [fro, pll_div_clk, "", ""]
+              control:
+                reg: ADCCLKSEL
+                field: SEL
+              description: Selects ADC clock source
+            - name: FRG0CLKSEL
+              output: frg0clksel
+              inputs: [fro, main_clk, pll_div_clk, ""]
+              control:
+                reg: FRG[0].FRGCLKSEL
+                field: SEL
+            - name: FRG1CLKSEL
+              output: frg1clksel
+              inputs: [fro, main_clk, pll_div_clk, ""]
+              control:
+                reg: FRG[1].FRGCLKSEL
+                field: SEL
+            - name: UART0CLKSEL
+              output: uart0clk
+              inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+              control:
+                reg: FCLKSEL[0]
+                field: SEL
+            - name: UART1CLKSEL
+              output: uart1clk
+              inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+              control:
+                reg: FCLKSEL[1]
+                field: SEL
+            - name: UART2CLKSEL
+              output: uart2clk
+              inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+              control:
+                reg: FCLKSEL[2]
+                field: SEL
+            - name: SPI0CLKSEL
+              output: spi0clk
+              inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+              control:
+                reg: FCLKSEL2[0]
+                field: SEL
+            - name: SPI1CLKSEL
+              output: spi1clk
+              inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+              control:
+                reg: FCLKSEL2[1]
+                field: SEL
+            - name: I2C0CLKSEL
+              output: i2c0clk
+              inputs: [fro, main_clk, frg0clk, frg1clk, fro_div, "", "", ""]
+              control:
+                reg: FCLKSEL[5]
+                field: SEL
+            - name: I3CFCLKSEL
+              output: i3cfclk
+              inputs: [fro, external_clk, null, null, null, null, null, ""]
+              control:
+                reg: I3CCLKSEL
+                field: SEL
+            - name: I3CSLOWTCCLKSEL
+              output: i3cslowtcclk
+              inputs: [i3cfclk, lp_osc, null, null, null, null, null, ""]
+              control:
+                reg: I3CSLOWTCCLKSEL
+                field: SEL
+            - name: FTM0SC
+              description: Clock multiplexer within the FTM.
+              output: ftm0fclk
+              inputs: ["", system_clk, null, ftm0_extclk]
+              control:
+                instance: FTM0
+                reg: SC
+                field: CLKS
+            - name: FTM1SC
+              description: Clock multiplexer within the FTM.
+              output: ftm1fclk
+              inputs: ["", system_clk, null, ftm1_extclk]
+              control:
+                instance: FTM1
+                reg: SC
+                field: CLKS
+            - name: WKT_CLKSEL
+              description: This is the first in a chain of multiplexers in the WKT. See UM11607 Fig 43.
+              control:
+                instance: WKT
+                reg: CTRL
+                field: CLKSEL
+              inputs: [wkt_div, lpwr_clk_vulp]
+              output: wkt_int_clk
+            - name: WKT_EXTCLK
+              description: This is the second in a chain of multiplexers in the WKT. See UM11607 Fig 43.
+              control:
+                instance: WKT
+                reg: CTRL
+                field: SEL_EXTCLK
+              inputs: [wkt_int_clk, wktclkin]
+              output: wkt_counter_clk
+
+          plls:
+            - name: SYSPLL
+              input: pll_in
+              output: sys_pll0_clk
+              feedback_integer:
+                reg: SYSPLLCTRL
+                field: MSEL
+                value_range: {min: 1, max: 32, offset: 1}
+              post_divider:
+                reg: SYSPLLCTRL
+                field: PSEL
+                values: [2, 4, 8, 16]
+              vco_limits: {min: 156000000, max: 320000000}
+
+          dividers:
+            - name: FRO_HALF_DIV
+              input: fro_oscout
+              output: fro_div2
+              value: 2
+            - name: FRO_DIV
+              input: fro
+              output: fro_div
+              value: 2
+            - name: WKT_DIV
+              input: lwpwr_clk_vulp
+              output: wkt_div
+              value: 16
+              description: Divider in the WKT block
+            - name: SYSPLLDIV
+              input: sys_pll0_clk
+              output: pll_div_clk
+              factor:
+                reg: SYSPLLDIV
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: SYSAHBCLKDIV
+              input: main_clk
+              output: system_clk
+              factor:
+                reg: SYSAHBCLKDIV
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+              description: Divides main clock to generate system clock
+            - name: IOCONCLKDIV0
+              input: main_clk
+              output: ioconclkdiv0
+              factor:
+                reg: IOCONCLKDIV0
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: IOCONCLKDIV1
+              input: main_clk
+              output: ioconclkdiv1
+              factor:
+                reg: IOCONCLKDIV1
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: IOCONCLKDIV2
+              input: main_clk
+              output: ioconclkdiv2
+              factor:
+                reg: IOCONCLKDIV2
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: IOCONCLKDIV3
+              input: main_clk
+              output: ioconclkdiv3
+              factor:
+                reg: IOCONCLKDIV3
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: IOCONCLKDIV4
+              input: main_clk
+              output: ioconclkdiv4
+              factor:
+                reg: IOCONCLKDIV4
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: IOCONCLKDIV5
+              input: main_clk
+              output: ioconclkdiv5
+              factor:
+                reg: IOCONCLKDIV5
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: IOCONCLKDIV6
+              input: main_clk
+              output: ioconclkdiv6
+              factor:
+                reg: IOCONCLKDIV6
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: ADCCLKDIV
+              input: adc_clk
+              output: adc_div_clk
+              factor:
+                reg: ADCCLKDIV
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+              description: Divides ADC clock source
+            - name: I3CFCLKDIV
+              input: i3cfclk
+              output: i3c_fclk
+              factor:
+                reg: I3CCLKDIV
+                field: I3C_FCLK_DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: I3CSLOWTCCLKDIV
+              input: i3cslowtcclk
+              output: i3c_clk_slow_tc
+              factor:
+                reg: I3CCLKDIV
+                field: I3C_SLOW_TC_CLK_DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: I3CSLOWCLKDIV
+              input: lp_osc
+              output: i3c_clk_slow
+              factor:
+                reg: I3CCLKDIV
+                field: I3C_SLOW_CLK_DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: CLKOUTDIV
+              input: clkout_src
+              output: clkout
+              factor:
+                reg: CLKOUTDIV
+                field: DIV
+                value_range:
+                  min: 0 # Zero turns off divider
+                  max: 255
+            - name: FRG0
+              input: frg0clksel
+              output: frg0clk
+              factor: {reg: "FRG[0].FRGMULT", field: MULT}
+              denominator: {reg: "FRG[0].FRGDIV", field: DIV, value_range: {min: 0, max: 255, offset: 1}}
+              value: 1
+            - name: FRG1
+              input: frg1clksel
+              output: frg1clk
+              factor: {reg: "FRG[1].FRGMULT", field: MULT}
+              denominator: {reg: "FRG[1].FRGDIV", field: DIV, value_range: {min: 0, max: 255, offset: 1}}
+              value: 1
+
+          gates:
+            - name: ROMCLK
+              output: romclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: ROM
+            - name: RAMCLK
+              output: ramclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: RAM
+            - name: FLASHCLK
+              output: flashclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: FLASH
+            - name: I2C0CLK
+              output: fclk5
+              input: i2c0clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: I2C0
+            - name: GPIO0CLK
+              output: gpio0clk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: GPIO0
+            - name: SWMCLK
+              output: swmclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: SWM
+            - name: WKTCLK
+              output: wktclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: WKT
+            - name: MRTCLK
+              output: mrtclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: MRT
+            - name: SPI0CLK
+              output: fclk9
+              input: spi0clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: SPI0
+            - name: SPI1CLK
+              output: fclk10
+              input: spi1clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: SPI1
+            - name: CRCCLK
+              output: crcclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: CRC
+            - name: UART0CLK
+              output: fclk0
+              input: uart0clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: UART0
+            - name: UART1CLK
+              output: fclk1
+              input: uart1clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: UART1
+            - name: UART2CLK
+              output: fclk2
+              input: uart2clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: UART2
+            - name: WWDTCLK
+              output: wwdtclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: WWDT
+            - name: IOCONCLK
+              output: ioconclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: IOCON
+            - name: ACMPCLK
+              output: acmpclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: ACMP
+            - name: GPIO1CLK
+              output: gpio1clk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: GPIO1
+            - name: FTM0CLK
+              output: ftm0clk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: FTM0
+            - name: FTM1CLK
+              output: ftm1clk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: FTM1
+            - name: I3CCLK
+              output: i3cclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: I3C0
+            - name: ADC
+              output: adc_sclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: ADC
+            - name: GPIOINTCLK
+              output: gpiointclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: GPIO_INT
+            - name: DMACLK
+              output: dmaclk
+              input: system_clk
+              control:
+                reg: SYSAHBCLKCTRL0
+                field: DMA
+            - name: LPOSC_WDT
+              output: wdt_clk
+              input: lp_osc
+              control:
+                reg: LPOSCEN
+                field: WDT_CLK_EN
+              description: Gates lp_osc to WWDT count clock
+            - name: LPOSC_WKT
+              output: wkt_lposc_clk
+              input: lp_osc
+              control:
+                reg: LPOSCEN
+                field: WKT_CLK_EN
+              description: Gates lp_osc to WKT count clock
     blocks:
       ACOMP:
         from: LPC865.ACOMP
@@ -524,15 +1130,13 @@ families:
   LPC54:
     subfamilies:
       LPC540xx:
-        chips: [LPC54005, LPC54016, LPC54018, LPC54018M,
-                LPC54S005, LPC54S016, LPC54S018, LPC54S018M]
+        chips: [LPC54005, LPC54016, LPC54018, LPC54018M, LPC54S005, LPC54S016, LPC54S018, LPC54S018M]
         ref_manual: {name: UM11060, rev: "1.5", date: 2019-11-25, url: "https://www.nxp.com/webapp/Download?colCode=UM11060"}
       LPC5411x:
         chips: [LPC54113, LPC54114]
         ref_manual: {name: UM10914, rev: "2.0", date: 2018-05-09, url: "https://www.nxp.com/webapp/Download?colCode=UM10914"}
       LPC546xx:
-        chips: [LPC54605, LPC54606, LPC54607, LPC54608,
-                LPC54616, LPC54618, LPC54628]
+        chips: [LPC54605, LPC54606, LPC54607, LPC54608, LPC54616, LPC54618, LPC54628]
         ref_manual: {name: UM10912, rev: "2.4", date: 2019-11-12, url: "https://www.nxp.com/webapp/Download?colCode=UM10912"}
     blocks:
       ADC:
@@ -591,9 +1195,7 @@ families:
         instances: [ETM]
       FLEXCOMM:
         from: LPC54S018.FLEXCOMM0
-        instances: [FLEXCOMM0, FLEXCOMM1, FLEXCOMM2, FLEXCOMM3, FLEXCOMM4,
-                    FLEXCOMM5, FLEXCOMM6, FLEXCOMM7, FLEXCOMM8, FLEXCOMM9,
-                    FLEXCOMM10]
+        instances: [FLEXCOMM0, FLEXCOMM1, FLEXCOMM2, FLEXCOMM3, FLEXCOMM4, FLEXCOMM5, FLEXCOMM6, FLEXCOMM7, FLEXCOMM8, FLEXCOMM9, FLEXCOMM10]
         interrupts:
           FLEXCOMM0: INTR
       GINT:
@@ -725,8 +1327,7 @@ families:
         instances: [SYSCON]
       USART:
         from: LPC54S018.USART0
-        instances: [USART0, USART1, USART2, USART3, USART4, USART5,
-                    USART6, USART7, USART8, USART9]
+        instances: [USART0, USART1, USART2, USART3, USART4, USART5, USART6, USART7, USART8, USART9]
         interrupts:
           FLEXCOMM0: FLEXCOMM
           FLEXCOMM1: FLEXCOMM
@@ -806,8 +1407,7 @@ families:
         # Includes both non-secure (LPC43xx) and secure (LPC43Sxx) parts.
         # The "S" variants only add AES/OTP features over the base parts;
         # all peripherals modelled here are identical between the two.
-        chips: [LPC4310, LPC4320, LPC4330, LPC4350, LPC4370,
-                LPC43S10, LPC43S20, LPC43S30, LPC43S37, LPC43S50, LPC43S57, LPC43S67]
+        chips: [LPC4310, LPC4320, LPC4330, LPC4350, LPC4370, LPC43S10, LPC43S20, LPC43S30, LPC43S37, LPC43S50, LPC43S57, LPC43S67]
     blocks:
       ADC:
         from: LPC43xx_43Sxx.ADC0
@@ -875,17 +1475,17 @@ families:
               - name: Branch
                 description: 'Clock-control branch identifier. CCU1 populates branches 0..10; CCU2 populates 0..7 with different per-branch semantics (consult RM).'
                 values:
-                  - {name: APB3,     value: 0,  description: 'APB peripheral block 3 (CCU1)'}
-                  - {name: APB1,     value: 1,  description: 'APB peripheral block 1 (CCU1)'}
-                  - {name: SPIFI,    value: 2,  description: 'SPIFI clock (CCU1)'}
-                  - {name: M4_PART1, value: 3,  description: 'M4 clock set, region 1 (CCU1)'}
-                  - {name: M4_PART2, value: 4,  description: 'M4 clock set, region 2 (CCU1)'}
-                  - {name: M4_PART3, value: 5,  description: 'M4 clock set, region 3 (CCU1)'}
-                  - {name: PERIPH,   value: 6,  description: 'Cortex-M0 subsystem peripherals (CCU1)'}
-                  - {name: USB0,     value: 7,  description: 'USB0 peripheral (CCU1)'}
-                  - {name: USB1,     value: 8,  description: 'USB1 peripheral (CCU1)'}
-                  - {name: SPI,      value: 9,  description: 'SPI peripheral (CCU1)'}
-                  - {name: ADCHS,    value: 10, description: 'ADCHS peripheral (CCU1)'}
+                  - {name: APB3, value: 0, description: 'APB peripheral block 3 (CCU1)'}
+                  - {name: APB1, value: 1, description: 'APB peripheral block 1 (CCU1)'}
+                  - {name: SPIFI, value: 2, description: 'SPIFI clock (CCU1)'}
+                  - {name: M4_PART1, value: 3, description: 'M4 clock set, region 1 (CCU1)'}
+                  - {name: M4_PART2, value: 4, description: 'M4 clock set, region 2 (CCU1)'}
+                  - {name: M4_PART3, value: 5, description: 'M4 clock set, region 3 (CCU1)'}
+                  - {name: PERIPH, value: 6, description: 'Cortex-M0 subsystem peripherals (CCU1)'}
+                  - {name: USB0, value: 7, description: 'USB0 peripheral (CCU1)'}
+                  - {name: USB1, value: 8, description: 'USB1 peripheral (CCU1)'}
+                  - {name: SPI, value: 9, description: 'SPI peripheral (CCU1)'}
+                  - {name: ADCHS, value: 10, description: 'ADCHS peripheral (CCU1)'}
           # Replace BASE_STAT's CCU1-specific field names with generic
           # per-branch indicators that match the CLK[i][j] indexing.
           # Each bit n reports whether at least one slot in CLK[n] is
@@ -899,16 +1499,16 @@ families:
               - name: BASE_STAT
                 description: 'Per-branch active indicator. Bit n reports whether at least one slot in CLK[n] is currently enabled. CCU1 caveat: bit 3 covers branches 3, 4 and 5 jointly (the M4 clock set spans three branches sharing one indicator).'
                 fields:
-                  - {name: CLK_0_IND,  bitOffset: 0,  bitWidth: 1, description: 'Active indicator for CLK[0]'}
-                  - {name: CLK_1_IND,  bitOffset: 1,  bitWidth: 1, description: 'Active indicator for CLK[1]'}
-                  - {name: CLK_2_IND,  bitOffset: 2,  bitWidth: 1, description: 'Active indicator for CLK[2]'}
-                  - {name: CLK_3_IND,  bitOffset: 3,  bitWidth: 1, description: 'Active indicator for CLK[3] (CCU1: also covers CLK[4] and CLK[5])'}
-                  - {name: CLK_4_IND,  bitOffset: 4,  bitWidth: 1, description: 'Active indicator for CLK[4]'}
-                  - {name: CLK_5_IND,  bitOffset: 5,  bitWidth: 1, description: 'Active indicator for CLK[5]'}
-                  - {name: CLK_6_IND,  bitOffset: 6,  bitWidth: 1, description: 'Active indicator for CLK[6]'}
-                  - {name: CLK_7_IND,  bitOffset: 7,  bitWidth: 1, description: 'Active indicator for CLK[7]'}
-                  - {name: CLK_8_IND,  bitOffset: 8,  bitWidth: 1, description: 'Active indicator for CLK[8]'}
-                  - {name: CLK_9_IND,  bitOffset: 9,  bitWidth: 1, description: 'Active indicator for CLK[9]'}
+                  - {name: CLK_0_IND, bitOffset: 0, bitWidth: 1, description: 'Active indicator for CLK[0]'}
+                  - {name: CLK_1_IND, bitOffset: 1, bitWidth: 1, description: 'Active indicator for CLK[1]'}
+                  - {name: CLK_2_IND, bitOffset: 2, bitWidth: 1, description: 'Active indicator for CLK[2]'}
+                  - {name: CLK_3_IND, bitOffset: 3, bitWidth: 1, description: 'Active indicator for CLK[3] (CCU1: also covers CLK[4] and CLK[5])'}
+                  - {name: CLK_4_IND, bitOffset: 4, bitWidth: 1, description: 'Active indicator for CLK[4]'}
+                  - {name: CLK_5_IND, bitOffset: 5, bitWidth: 1, description: 'Active indicator for CLK[5]'}
+                  - {name: CLK_6_IND, bitOffset: 6, bitWidth: 1, description: 'Active indicator for CLK[6]'}
+                  - {name: CLK_7_IND, bitOffset: 7, bitWidth: 1, description: 'Active indicator for CLK[7]'}
+                  - {name: CLK_8_IND, bitOffset: 8, bitWidth: 1, description: 'Active indicator for CLK[8]'}
+                  - {name: CLK_9_IND, bitOffset: 9, bitWidth: 1, description: 'Active indicator for CLK[9]'}
                   - {name: CLK_10_IND, bitOffset: 10, bitWidth: 1, description: 'Active indicator for CLK[10]'}
                   - {name: CLK_11_IND, bitOffset: 11, bitWidth: 1, description: 'Active indicator for CLK[11]'}
                   - {name: CLK_12_IND, bitOffset: 12, bitWidth: 1, description: 'Active indicator for CLK[12]'}
@@ -941,28 +1541,28 @@ families:
               name: BaseClock
               description: 'LPC43 base-clock identifier (UM10503 Table 144 output stage). Slots 21..24 are reserved and therefore unenumerated.'
               values:
-                - {name: SAFE,     value: 0,  description: 'Safe clock (IRC, output stage 0)'}
-                - {name: USB0,     value: 1,  description: 'USB0 clock (output stage 1)'}
-                - {name: PERIPH,   value: 2,  description: 'M0SUB peripheral clock (output stage 2)'}
-                - {name: USB1,     value: 3,  description: 'USB1 clock (output stage 3)'}
-                - {name: M4,       value: 4,  description: 'Main M4 clock (output stage 4)'}
-                - {name: SPIFI,    value: 5,  description: 'SPIFI clock (output stage 5)'}
-                - {name: SPI,      value: 6,  description: 'SPI clock (output stage 6)'}
-                - {name: PHY_RX,   value: 7,  description: 'Ethernet PHY RX clock (output stage 7)'}
-                - {name: PHY_TX,   value: 8,  description: 'Ethernet PHY TX clock (output stage 8)'}
-                - {name: APB1,     value: 9,  description: 'APB1 peripheral clock (output stage 9)'}
-                - {name: APB3,     value: 10, description: 'APB3 peripheral clock (output stage 10)'}
-                - {name: LCD,      value: 11, description: 'LCD clock (output stage 11)'}
-                - {name: ADCHS,    value: 12, description: 'High-speed ADC clock (output stage 12, LPC4370/43S70 only)'}
-                - {name: SDIO,     value: 13, description: 'SDIO clock (output stage 13)'}
-                - {name: SSP0,     value: 14, description: 'SSP0 clock (output stage 14)'}
-                - {name: SSP1,     value: 15, description: 'SSP1 clock (output stage 15)'}
-                - {name: UART0,    value: 16, description: 'USART0 clock (output stage 16)'}
-                - {name: UART1,    value: 17, description: 'UART1 clock (output stage 17)'}
-                - {name: UART2,    value: 18, description: 'USART2 clock (output stage 18)'}
-                - {name: UART3,    value: 19, description: 'USART3 clock (output stage 19)'}
-                - {name: OUT,      value: 20, description: 'CLKOUT pin clock (output stage 20)'}
-                - {name: AUDIO,    value: 25, description: 'Audio clock (output stage 25)'}
+                - {name: SAFE, value: 0, description: 'Safe clock (IRC, output stage 0)'}
+                - {name: USB0, value: 1, description: 'USB0 clock (output stage 1)'}
+                - {name: PERIPH, value: 2, description: 'M0SUB peripheral clock (output stage 2)'}
+                - {name: USB1, value: 3, description: 'USB1 clock (output stage 3)'}
+                - {name: M4, value: 4, description: 'Main M4 clock (output stage 4)'}
+                - {name: SPIFI, value: 5, description: 'SPIFI clock (output stage 5)'}
+                - {name: SPI, value: 6, description: 'SPI clock (output stage 6)'}
+                - {name: PHY_RX, value: 7, description: 'Ethernet PHY RX clock (output stage 7)'}
+                - {name: PHY_TX, value: 8, description: 'Ethernet PHY TX clock (output stage 8)'}
+                - {name: APB1, value: 9, description: 'APB1 peripheral clock (output stage 9)'}
+                - {name: APB3, value: 10, description: 'APB3 peripheral clock (output stage 10)'}
+                - {name: LCD, value: 11, description: 'LCD clock (output stage 11)'}
+                - {name: ADCHS, value: 12, description: 'High-speed ADC clock (output stage 12, LPC4370/43S70 only)'}
+                - {name: SDIO, value: 13, description: 'SDIO clock (output stage 13)'}
+                - {name: SSP0, value: 14, description: 'SSP0 clock (output stage 14)'}
+                - {name: SSP1, value: 15, description: 'SSP1 clock (output stage 15)'}
+                - {name: UART0, value: 16, description: 'USART0 clock (output stage 16)'}
+                - {name: UART1, value: 17, description: 'UART1 clock (output stage 17)'}
+                - {name: UART2, value: 18, description: 'USART2 clock (output stage 18)'}
+                - {name: UART3, value: 19, description: 'USART3 clock (output stage 19)'}
+                - {name: OUT, value: 20, description: 'CLKOUT pin clock (output stage 20)'}
+                - {name: AUDIO, value: 25, description: 'Audio clock (output stage 25)'}
                 - {name: CGU_OUT0, value: 26, description: 'CGU_OUT0 pin clock (output stage 26)'}
                 - {name: CGU_OUT1, value: 27, description: 'CGU_OUT1 pin clock (output stage 27)'}
       CREG:
@@ -1013,36 +1613,36 @@ families:
               name: Input
               description: 'GIMA destination identifier (UM10503 §17.4 input-multiplexer table).'
               values:
-                - {name: CAP0_0,            value: 0,  description: 'Capture timer 0, capture channel 0'}
-                - {name: CAP0_1,            value: 1,  description: 'Capture timer 0, capture channel 1'}
-                - {name: CAP0_2,            value: 2,  description: 'Capture timer 0, capture channel 2'}
-                - {name: CAP0_3,            value: 3,  description: 'Capture timer 0, capture channel 3'}
-                - {name: CAP1_0,            value: 4,  description: 'Capture timer 1, capture channel 0'}
-                - {name: CAP1_1,            value: 5,  description: 'Capture timer 1, capture channel 1'}
-                - {name: CAP1_2,            value: 6,  description: 'Capture timer 1, capture channel 2'}
-                - {name: CAP1_3,            value: 7,  description: 'Capture timer 1, capture channel 3'}
-                - {name: CAP2_0,            value: 8,  description: 'Capture timer 2, capture channel 0'}
-                - {name: CAP2_1,            value: 9,  description: 'Capture timer 2, capture channel 1'}
-                - {name: CAP2_2,            value: 10, description: 'Capture timer 2, capture channel 2'}
-                - {name: CAP2_3,            value: 11, description: 'Capture timer 2, capture channel 3'}
-                - {name: CAP3_0,            value: 12, description: 'Capture timer 3, capture channel 0'}
-                - {name: CAP3_1,            value: 13, description: 'Capture timer 3, capture channel 1'}
-                - {name: CAP3_2,            value: 14, description: 'Capture timer 3, capture channel 2'}
-                - {name: CAP3_3,            value: 15, description: 'Capture timer 3, capture channel 3'}
-                - {name: CTIN_0,            value: 16, description: 'SCT input 0'}
-                - {name: CTIN_1,            value: 17, description: 'SCT input 1'}
-                - {name: CTIN_2,            value: 18, description: 'SCT input 2'}
-                - {name: CTIN_3,            value: 19, description: 'SCT input 3'}
-                - {name: CTIN_4,            value: 20, description: 'SCT input 4'}
-                - {name: CTIN_5,            value: 21, description: 'SCT input 5'}
-                - {name: CTIN_6,            value: 22, description: 'SCT input 6'}
-                - {name: CTIN_7,            value: 23, description: 'SCT input 7'}
-                - {name: ADCHS_TRIGGER,     value: 24, description: 'High-speed ADC trigger'}
-                - {name: EVENTROUTER_13,    value: 25, description: 'Event router input 13'}
-                - {name: EVENTROUTER_14,    value: 26, description: 'Event router input 14'}
-                - {name: EVENTROUTER_16,    value: 27, description: 'Event router input 16'}
-                - {name: ADCSTART0,         value: 28, description: 'ADC0 start signal'}
-                - {name: ADCSTART1,         value: 29, description: 'ADC1 start signal'}
+                - {name: CAP0_0, value: 0, description: 'Capture timer 0, capture channel 0'}
+                - {name: CAP0_1, value: 1, description: 'Capture timer 0, capture channel 1'}
+                - {name: CAP0_2, value: 2, description: 'Capture timer 0, capture channel 2'}
+                - {name: CAP0_3, value: 3, description: 'Capture timer 0, capture channel 3'}
+                - {name: CAP1_0, value: 4, description: 'Capture timer 1, capture channel 0'}
+                - {name: CAP1_1, value: 5, description: 'Capture timer 1, capture channel 1'}
+                - {name: CAP1_2, value: 6, description: 'Capture timer 1, capture channel 2'}
+                - {name: CAP1_3, value: 7, description: 'Capture timer 1, capture channel 3'}
+                - {name: CAP2_0, value: 8, description: 'Capture timer 2, capture channel 0'}
+                - {name: CAP2_1, value: 9, description: 'Capture timer 2, capture channel 1'}
+                - {name: CAP2_2, value: 10, description: 'Capture timer 2, capture channel 2'}
+                - {name: CAP2_3, value: 11, description: 'Capture timer 2, capture channel 3'}
+                - {name: CAP3_0, value: 12, description: 'Capture timer 3, capture channel 0'}
+                - {name: CAP3_1, value: 13, description: 'Capture timer 3, capture channel 1'}
+                - {name: CAP3_2, value: 14, description: 'Capture timer 3, capture channel 2'}
+                - {name: CAP3_3, value: 15, description: 'Capture timer 3, capture channel 3'}
+                - {name: CTIN_0, value: 16, description: 'SCT input 0'}
+                - {name: CTIN_1, value: 17, description: 'SCT input 1'}
+                - {name: CTIN_2, value: 18, description: 'SCT input 2'}
+                - {name: CTIN_3, value: 19, description: 'SCT input 3'}
+                - {name: CTIN_4, value: 20, description: 'SCT input 4'}
+                - {name: CTIN_5, value: 21, description: 'SCT input 5'}
+                - {name: CTIN_6, value: 22, description: 'SCT input 6'}
+                - {name: CTIN_7, value: 23, description: 'SCT input 7'}
+                - {name: ADCHS_TRIGGER, value: 24, description: 'High-speed ADC trigger'}
+                - {name: EVENTROUTER_13, value: 25, description: 'Event router input 13'}
+                - {name: EVENTROUTER_14, value: 26, description: 'Event router input 14'}
+                - {name: EVENTROUTER_16, value: 27, description: 'Event router input 16'}
+                - {name: ADCSTART0, value: 28, description: 'ADC0 start signal'}
+                - {name: ADCSTART1, value: 29, description: 'ADC1 start signal'}
       GPIO_GROUP_INT:
         from: LPC43xx_43Sxx.GPIO_GROUP_INT0
         instances: [GPIO_GROUP_INT0, GPIO_GROUP_INT1]
@@ -1241,9 +1841,9 @@ families:
                 fields:
                   - {name: DTRCTRL, description: 'DTR Control. Source for modem output DTR; reads as 0 in loopback mode.', bitOffset: 0, bitWidth: 1}
                   - {name: RTSCTRL, description: 'RTS Control. Source for modem output RTS; reads as 0 in loopback mode.', bitOffset: 1, bitWidth: 1}
-                  - {name: LMS,     description: 'Loopback Mode Select.', bitOffset: 4, bitWidth: 1}
-                  - {name: RTSEN,   description: 'Auto-RTS flow control enable.', bitOffset: 6, bitWidth: 1}
-                  - {name: CTSEN,   description: 'Auto-CTS flow control enable.', bitOffset: 7, bitWidth: 1}
+                  - {name: LMS, description: 'Loopback Mode Select.', bitOffset: 4, bitWidth: 1}
+                  - {name: RTSEN, description: 'Auto-RTS flow control enable.', bitOffset: 6, bitWidth: 1}
+                  - {name: CTSEN, description: 'Auto-CTS flow control enable.', bitOffset: 7, bitWidth: 1}
               - name: MSR
                 displayName: MSR
                 description: 'Modem Status Register (UART1 only). Handshake-signal status flags.'
@@ -1257,10 +1857,10 @@ families:
                   - {name: DDSR, description: 'Delta DSR. Set on DSR state change; cleared on read.', bitOffset: 1, bitWidth: 1}
                   - {name: TERI, description: 'Trailing Edge RI. Set on RI low-to-high transition; cleared on read.', bitOffset: 2, bitWidth: 1}
                   - {name: DDCD, description: 'Delta DCD. Set on DCD state change; cleared on read.', bitOffset: 3, bitWidth: 1}
-                  - {name: CTS,  description: 'Clear To Send (complement of CTS pin; mirrors MCR[1] in loopback).', bitOffset: 4, bitWidth: 1}
-                  - {name: DSR,  description: 'Data Set Ready (complement of DSR pin; mirrors MCR[0] in loopback).', bitOffset: 5, bitWidth: 1}
-                  - {name: RI,   description: 'Ring Indicator (complement of RI pin; mirrors MCR[2] in loopback).', bitOffset: 6, bitWidth: 1}
-                  - {name: DCD,  description: 'Data Carrier Detect (complement of DCD pin; mirrors MCR[3] in loopback).', bitOffset: 7, bitWidth: 1}
+                  - {name: CTS, description: 'Clear To Send (complement of CTS pin; mirrors MCR[1] in loopback).', bitOffset: 4, bitWidth: 1}
+                  - {name: DSR, description: 'Data Set Ready (complement of DSR pin; mirrors MCR[0] in loopback).', bitOffset: 5, bitWidth: 1}
+                  - {name: RI, description: 'Ring Indicator (complement of RI pin; mirrors MCR[2] in loopback).', bitOffset: 6, bitWidth: 1}
+                  - {name: DCD, description: 'Data Carrier Detect (complement of DCD pin; mirrors MCR[3] in loopback).', bitOffset: 7, bitWidth: 1}
       USB:
         uses: ChipIdeaHS
         instances: [USB0, USB1]
@@ -1281,11 +1881,9 @@ families:
           # ChipIdeaHS defaults assume the full MCXN feature set; LPC43
           # turns off the HW-cap prefix, GPTIMER, SBUSCFG, CONFIGFLAG and
           # DCCPARAMS (none are wired up) and turns on TTCTRL / BINTERVAL.
-          USB:  {has_hw_caps: false, has_gptimer: false, has_sbuscfg: false,
-                 has_configflag: false, has_dccparams: false,
-                 has_ttctrl: true, has_binterval: true}
+          USB: {has_hw_caps: false, has_gptimer: false, has_sbuscfg: false, has_configflag: false, has_dccparams: false, has_ttctrl: true, has_binterval: true}
           # USB0 = HS OTG with on-chip HS PHY, EP1..EP5 (5 additional pairs beyond EP0).
-          USB0: {endpoints: 5, has_hs_phy: true,  has_fs_phy: false}
+          USB0: {endpoints: 5, has_hs_phy: true, has_fs_phy: false}
           # USB1 = FS host/device with on-chip FS PHY, EP1..EP3 (3 additional pairs beyond EP0).
           USB1: {endpoints: 3, has_hs_phy: false, has_fs_phy: true}
     # Per-chip instance presence.  The single LPC43xx_43Sxx SVD describes a
@@ -1300,17 +1898,17 @@ families:
     chip_instances:
       _all:
         # LPC4310 / LPC43S10: no USB, no ETHERNET, no LCD, no ADCHS.
-        LPC4310:  {exclude: [USB0, USB1, ETHERNET, LCD, ADCHS]}
+        LPC4310: {exclude: [USB0, USB1, ETHERNET, LCD, ADCHS]}
         LPC43S10: {exclude: [USB0, USB1, ETHERNET, LCD, ADCHS]}
         # LPC4320 / LPC43S20: USB0 only; no ETHERNET, no LCD, no ADCHS.
-        LPC4320:  {exclude: [USB1, ETHERNET, LCD, ADCHS]}
+        LPC4320: {exclude: [USB1, ETHERNET, LCD, ADCHS]}
         LPC43S20: {exclude: [USB1, ETHERNET, LCD, ADCHS]}
         # LPC433x / LPC43S3x: ETHERNET, USB0+USB1; no LCD, no ADCHS.
-        LPC4330:  {exclude: [LCD, ADCHS]}
+        LPC4330: {exclude: [LCD, ADCHS]}
         LPC43S30: {exclude: [LCD, ADCHS]}
         LPC43S37: {exclude: [LCD, ADCHS]}
         # LPC435x / LPC43S5x / LPC43S6x: LCD, ETHERNET, USB0+USB1; no ADCHS.
-        LPC4350:  {exclude: [ADCHS]}
+        LPC4350: {exclude: [ADCHS]}
         LPC43S50: {exclude: [ADCHS]}
         LPC43S57: {exclude: [ADCHS]}
         LPC43S67: {exclude: [ADCHS]}
