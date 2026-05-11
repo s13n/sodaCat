@@ -2371,6 +2371,13 @@ families:
         interrupts:
           I2C1_EV: EV
           I2C1_ER: ER
+          # F413/F423 SVDs misattribute I2C interrupts to I2C3 with raw
+          # names I2C1_EVT (vec 31) and I2C1_ERR (vec 32).  Without these
+          # mappings the algorithmic resolver picks up the shared-block
+          # canonical ERR (intended for I3C variants), producing an
+          # out-of-family interrupt name.  Map to the F4-family canonicals.
+          I2C1_EVT: EV
+          I2C1_ERR: ER
         params:
           - {name: has_noise_filter, type: bool, default: true, description: Digital and analog noise filter (FLTR register)}
       IWDG:
@@ -4488,8 +4495,11 @@ families:
       SAES:
         uses: SAES
         instances: [SAES]
-        interrupts:
-          AES: AES
+        # No interrupts override: the H7RS SVD attributes a stray AES IRQ
+        # to the SAES peripheral.  Letting the shared SAES mapping
+        # (SAES: INTR) handle the real interrupt drops the bogus AES
+        # entry — H7RS has no separate AES instance, and even if it did
+        # the IRQ would belong there, not on SAES.
       SAI:
         uses: SAI
         instances: [SAI1, SAI2]
@@ -5287,8 +5297,11 @@ families:
       FMC:
         uses: FMC
         instances: [FMC]
-        interrupts:
-          FPU: FPU
+        # No interrupts override: the L4P SVD misattributes the FPU IRQ
+        # (IRQ 81, vector 97) to the FMC peripheral.  Letting the shared
+        # FMC mapping (FMC: INTR) handle FMC's real interrupt drops the
+        # bogus FPU entry on the floor — FPU is a CPU exception, not part
+        # of the FMC abstraction.
       Flash:
         instances: [FLASH]
         interrupts:
