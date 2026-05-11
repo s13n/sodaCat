@@ -227,11 +227,81 @@ is satisfied; no real C++ content lives at that tier.
     section) if the family config has no `clocks:` — useful as a migration
     halfway state, but not a long-term arrangement.
 
+## Clock-tree audit
+
+`tools/audit_clock_block.py` is a complement to `validate_clock_refs.py`.
+The latter answers "does every cited register/field exist?"; the audit
+answers harder questions the SVD can't always reliably support:
+
+  **Tier A — width/count mismatches (errors, exit non-zero).**  High-
+  confidence checks: a mux's `inputs:` list must fit within the
+  selector field's `bitWidth`; if the field's `enumeratedValues` cover
+  every encoding (`count == 2^bitWidth`), the input count must agree;
+  same idea for divider `values:` lists.  Many vendors list only the
+  "active half" of an encoding space (STM32 HPRE: 16 logical positions,
+  8 enumeratedValues, with the low half implicitly "divide by 1"), so
+  the check only fires when the enum is complete — avoids the obvious
+  false-positive class.
+
+  **Tier B — coverage audit (informational).**  Walks the controller
+  block and lists fields whose name matches a clock-tree pattern but
+  that aren't cited anywhere in the spec:
+
+  | Pattern         | Likely role       |
+  | --------------- | ----------------- |
+  | `*EN`           | gate enable       |
+  | `*SEL`/`*SRC`/`*MUX` | selector mux |
+  | `*DIV`/`*PRE`/`*PSC` | divider      |
+
+  Output is necessarily noisy — these regexes catch any field with a
+  matching suffix, including LP-mode gates, autonomous-mode bits,
+  memory-block enables, and peripheral-internal fields that share the
+  naming convention.  Real findings are surfaced *among* the noise;
+  reading the list requires human judgement.  The STM32 H7 MCO1PRE /
+  MCO2PRE prescalers were found this way — the spec modelled the MCO
+  selectors but stopped before the output-pin prescaler.
+
+  **Tier C — fuzzy enum-name hints (warnings).**  When a selector
+  field has enumeratedValues with non-trivial names, compare those
+  names against the mux's `inputs:` list.  Token-based match (split
+  at letter/digit boundaries: `gclkgen0` → `{gclk, gen, 0}` overlaps
+  `GCLK0` → `{gclk, 0}`).  A hint fires only when:
+
+    - the enum is complete (sparse-enum guard);
+    - the enum names are non-trivial (filters `PSEL_0`/`PSEL_1` style);
+    - at least one input in the same mux *does* match the enums
+      (i.e. the author broadly aligns with SVD names — an isolated
+      divergence stands out; if every input diverges, the author
+      chose a different convention and per-input nags are pure noise).
+
+  Useful for catching one-off naming inconsistencies; the SAM_Gen1
+  `slck` vs `SLOW_CLK` divergence was the first finding.
+
+**When to run.**  During clock-tree authoring (Tier B coverage helps
+ensure nothing is forgotten); as a periodic spot-check on the whole
+repo.  Not a CI gate today — Tier B's false-positive rate would block
+most PRs.  Tier A is reliable enough to be one if desired, but it's
+quiet on the current trees so the value is limited.
+
+**Limitations.**
+
+  - Sparse SVD enums limit Tier A's reach.  H7's RCC has almost no
+    enumeratedValues at all, so most of the spec is unchecked.
+  - The Tier B regex catches non-clock fields whose names happen to
+    match the pattern (e.g. `WPSR.WPVSRC` = write-protection
+    violation source).  Triage by hand.
+  - Fully automatic extraction of mux input names or divider value
+    lists from SVD content is not attempted — the data is too noisy.
+    See the audit-tool commit message for the analysis behind this
+    choice.
+
 ## See also
 
   - `schemas/subfamily.schema.yaml` — the file-level shape.
   - `tools/validate_clock_refs.py` — cross-references clock-spec citations
     against extracted block models.
+  - `tools/audit_clock_block.py` — three-tier audit (Tier A errors,
+    Tier B coverage, Tier C name-divergence hints).
   - `extractors/generate_models.py` — the extractor implementation:
     `_ivt_intersection`, `_ivt_delta`, `_emit_subfamily_yaml`,
     `_update_subfamily_yaml`.

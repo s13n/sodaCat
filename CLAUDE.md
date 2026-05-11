@@ -200,6 +200,11 @@ GitHub Actions runs four validators, each on a separate workflow:
 
 The first three follow the two-phase pattern: Phase 1 = JSON Schema (structural); Phase 2 = Python code for checks the schema can't express, including per-scope name uniqueness (registers within a block, fields within a register, enum values within a field, parameters within an instance, ...). Standard JSON Schema's `uniqueItems` only checks whole-item equality, not equality of a sub-property like `name`, so uniqueness must live in code. Shared bits (schema loading, schema-error extraction, the duplicate-detection helper, CLI driver) are factored into `tools/validate_lib.py`. The chip-interrupt validator is a cross-reference check rather than a schema check — it walks every chip and resolves each instance's `model:` against the chip's `models:` map to load the block YAML, so it doesn't fit the per-file `validate_lib.run()` driver and is standalone.
 
+Two additional cross-reference checkers for clock specs are available but not in CI:
+
+- `tools/validate_clock_refs.py` — verifies every `{instance, reg, field}` citation in a clock spec resolves to a real field in the referenced block model.  Should be CI-grade but currently invoked manually.
+- `tools/audit_clock_block.py` — three-tier audit (Tier A width/count mismatches, Tier B fields-not-cited coverage list, Tier C fuzzy enum-name divergence hints).  Tier B is too noisy for CI; the tool is designed for periodic spot-checks and during clock-tree authoring.  See [docs/design/subfamily-model.md](docs/design/subfamily-model.md#clock-tree-audit) for the full description of what each tier catches and what it can't.
+
 ### Reserved bit-fields
 
 The extractor drops fields named `RESERVED` (case-insensitive) from every register and cluster, and drops RESERVED enum values from every field. Bits not declared in `fields` are reserved by definition; the C++ generator fills bit-position gaps with uniquely numbered placeholders (`_0:1`, `_1:24`, ...). Models with multiple explicit RESERVED entries in the same register would otherwise violate the field-name-uniqueness rule and produce duplicate C++ bit-field declarations.
