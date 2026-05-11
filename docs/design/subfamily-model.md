@@ -50,6 +50,24 @@ The extractor copies this content verbatim into the subfamily YAML's `clocks:`
 section, stripping ruamel comment metadata so source-file dividers don't leak
 into output string values.
 
+### Instances and models map (computed by intersection)
+
+Both the peripheral-instance map (`instances:`) and the block-model
+index (`models:`) follow the same intersection pattern as the IVT.
+After per-chip processing, the extractor extracts entries that appear
+with byte-identical content in every chip in the subfamily, lifts them
+to the subfamily YAML, and reduces each chip's own map to the delta.
+
+For a typical multi-chip subfamily (e.g. H745_H757 with 8 chips, 114
+instances each), 108 instances and 51 of 53 model paths are common —
+so chip YAMLs shrink to ~6 instance entries each.  Single-chip
+subfamilies (RP2040, SAM-Gen1 consumers) lift their entire instance
+set up; the chip YAML becomes a thin header.
+
+Chip-level entries override ancestor entries by key (instance name /
+block name).  The chip-header generator walks the `inherits:` chain to
+assemble the merged view.
+
 ### Interrupt vector table (computed by intersection)
 
 The IVT is fully derived from the per-chip data the extractor already
