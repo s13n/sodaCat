@@ -219,13 +219,27 @@ def validate_graph(data):
 def main():
     ap = argparse.ArgumentParser(
         description="Validate clock-tree YAML models (schema + graph checks)")
-    ap.add_argument("-s", "--schema", required=True, help="Path to JSON/YAML schema")
+    ap.add_argument("-s", "--schema", required=True,
+                    help="Path to clock-tree schema (used for legacy "
+                         "standalone clock files)")
+    ap.add_argument("--subfamily-schema",
+                    help="Path to subfamily schema; required when input may "
+                         "include subfamily-shaped files with a top-level "
+                         "`clocks:` section.  When omitted, such files are "
+                         "rejected.")
     ap.add_argument("-d", "--docs", nargs="+", required=True, help="YAML spec files or globs")
     args = ap.parse_args()
 
     schema = yaml.safe_load(pathlib.Path(args.schema).read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
-    validator = Draft202012Validator(schema)
+    clock_validator = Draft202012Validator(schema)
+
+    subfamily_validator = None
+    if args.subfamily_schema:
+        sf_schema = yaml.safe_load(
+            pathlib.Path(args.subfamily_schema).read_text(encoding="utf-8"))
+        Draft202012Validator.check_schema(sf_schema)
+        subfamily_validator = Draft202012Validator(sf_schema)
 
     files = []
     for pattern in args.docs:
@@ -239,11 +253,30 @@ def main():
         if not (f.endswith(".yaml") or f.endswith(".yml")):
             continue
         data = yaml.safe_load(pathlib.Path(f).read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            continue
 
-        # Phase 1: schema
-        schema_errors = validate_schema(data, validator)
-        # Phase 2: graph (only if schema passes — malformed data may crash graph checks)
-        graph_errors = validate_graph(data) if not schema_errors else []
+        # Dispatch by file shape.  Subfamily files have `clocks:` at top
+        # level and validate against the subfamily schema; the graph checks
+        # then run against the `clocks:` section.  Legacy clock-tree files
+        # have `signals:` at top level and validate as before.
+        if 'clocks' in data:
+            if subfamily_validator is None:
+                had_errors = True
+                print(f"❌ {f}: subfamily-shaped file but --subfamily-schema "
+                      f"not provided", file=sys.stderr)
+                continue
+            schema_errors = validate_schema(data, subfamily_validator)
+            graph_data = data['clocks'] if not schema_errors else None
+        elif 'signals' in data:
+            schema_errors = validate_schema(data, clock_validator)
+            graph_data = data if not schema_errors else None
+        else:
+            # Not a clock model at all — skip silently so this validator can
+            # be pointed at a broad glob alongside other validators.
+            continue
+
+        graph_errors = validate_graph(graph_data) if graph_data else []
 
         if schema_errors or graph_errors:
             had_errors = True

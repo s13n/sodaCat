@@ -6,6 +6,8 @@
 #   - 'registers' key  → peripheral block header (generate_peripheral_header)
 #   - 'instances' key  → chip/SoC integration header (generate_chip_header)
 #   - 'signals' key    → clock tree header (generate_clocktree_header)
+#   - 'clocks' key     → subfamily model; route to clocktree generator,
+#                        which descends into the `clocks:` section.
 #
 # The C++ namespace for the generated header is read from the model YAML's
 # `namespace:` key, falling back to the lowercased innermost containing
@@ -50,7 +52,9 @@ elif 'instances' in model:
     from generate_chip_header import generate_header
     generate_header(sys.argv[1], sys.argv[2], sys.argv[3], modid)
 
-elif 'signals' in model:
+elif 'signals' in model or 'clocks' in model:
+    # Both shapes share the clocktree generator; the generator detects
+    # `clocks:` and descends into it internally.
     from generate_clocktree_header import generate_header
     generate_header(sys.argv[1], sys.argv[2]+sys.argv[3], modid)
 

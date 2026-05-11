@@ -1,0 +1,252 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://example.org/schemas/mcu-subfamily.schema.json
+title: MCU Subfamily Model
+description: |
+  A subfamily-level model groups chip-level facts that are shared by every
+  chip variant in the subfamily — initially the clock tree (under `clocks:`),
+  with room for siblings (DMA fabric, interrupt vector table, EXTI fabric, ...)
+  added under their own top-level keys as the fabric model develops.
+
+  Chips reference their subfamily via the `inherits:` key and override or
+  add facts as needed.  The same `inherits:` key can connect a subfamily to
+  a higher family-level model when one is introduced; the chain has no fixed
+  depth.
+
+  The shape of `clocks:` matches the content of the legacy clock-tree schema
+  (`clock-tree.schema.yaml`), minus its file-level header keys which now
+  live at the subfamily level so other fabrics can share them.
+type: object
+properties:
+  version:
+    type: string
+    description: Schema/document version (e.g., '1.0.0').
+  namespace:
+    type: string
+    description: |
+      Optional C++ namespace this subfamily lives in.  When absent, the
+      lowercased innermost containing directory name is used.
+  family:
+    type: string
+    description: Marketing family or SoC series name (e.g., 'STM32H7').
+  devices:
+    type: array
+    items:
+      type: string
+    description: Devices (chip part numbers) covered by this subfamily.
+  documents:
+    type: array
+    items:
+      type: object
+      additionalProperties: true
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        revision:
+          type: string
+        url:
+          type: string
+    description: Documents that back the facts in this subfamily model.
+  inherits:
+    type: string
+    description: |
+      Path (relative to the models root, without .yaml suffix) of a higher-
+      level model whose facts this subfamily inherits and may override.
+  clocks:
+    type: object
+    description: Clock-tree fabric.  Same shape as the legacy clock-tree
+      content (instance, signals, generators, muxes, plls, dividers, gates).
+    required:
+      - signals
+    properties:
+      instance:
+        type: string
+        description: Default module instance used in register identification
+          when no instance is given.
+      signals:
+        type: array
+        minItems: 1
+        items:
+          $ref: '#/$defs/Signal'
+      generators:
+        type: array
+        items:
+          $ref: '#/$defs/Generator'
+      muxes:
+        type: array
+        items:
+          $ref: '#/$defs/Mux'
+      plls:
+        type: array
+        items:
+          $ref: '#/$defs/Pll'
+      dividers:
+        type: array
+        items:
+          $ref: '#/$defs/Divider'
+      gates:
+        type: array
+        items:
+          $ref: '#/$defs/Gate'
+$defs:
+  BlockBase:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      notes:
+        type: string
+    required:
+      - name
+  Signal:
+    allOf:
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          nominal:
+            type: integer
+          min:
+            type: integer
+          max:
+            type: integer
+  Generator:
+    allOf:
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          output:
+            type: string
+          control:
+            $ref: '#/$defs/RegisterField'
+        required:
+          - output
+  Mux:
+    allOf:
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          inputs:
+            type: array
+            items:
+              type:
+                - string
+                - "null"
+            minItems: 1
+          output:
+            type: string
+          control:
+            $ref: '#/$defs/RegisterField'
+        required:
+          - inputs
+          - output
+  Pll:
+    allOf:
+      - $ref: '#/$defs/BlockBase'
+      - required:
+          - input
+          - output
+          - feedback_integer
+          - vco_limits
+        properties:
+          input:
+            type: string
+          output:
+            type: string
+          feedback_integer:
+            $ref: '#/$defs/RegisterField'
+          feedback_fraction:
+            $ref: '#/$defs/RegisterField'
+          post_divider:
+            $ref: '#/$defs/RegisterField'
+          vco_limits:
+            type: object
+            required: [ min, max ]
+            properties:
+              min:
+                type: integer
+              max:
+                type: integer
+  Divider:
+    allOf:
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          input:
+            type: string
+          output:
+            type: string
+          factor:
+            $ref: '#/$defs/RegisterField'
+          denominator:
+            $ref: '#/$defs/RegisterField'
+          value:
+            type: integer
+            default: 0
+        required:
+          - input
+          - output
+  Gate:
+    allOf:
+      - $ref: '#/$defs/BlockBase'
+      - properties:
+          input:
+            type: string
+          output:
+            type: string
+          control:
+            $ref: '#/$defs/EnableControl'
+        required:
+          - input
+          - output
+  RegisterField:
+    type: object
+    anyOf:
+      - required:
+          - reg
+      - required:
+          - state
+    not:
+      required:
+        - value_range
+        - values
+    properties:
+      state:
+        type: string
+      set:
+        type: string
+      instance:
+        type: string
+      reg:
+        type: string
+      field:
+        type: string
+      value_range:
+        type: object
+        required:
+          - max
+        properties:
+          max:
+            type: integer
+          min:
+            type: integer
+            default: 0
+          offset:
+            type: integer
+            default: 0
+          scale:
+            type: integer
+            default: 1
+      values:
+        type: array
+        items:
+          type: integer
+      default:
+        type: integer
+  EnableControl:
+    allOf:
+      - $ref: '#/$defs/RegisterField'
+      - properties:
+          inverted:
+            type: boolean
+            default: false

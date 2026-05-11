@@ -574,13 +574,20 @@ def generate_header(yaml_path, hpp_path, module_name=None):
     # resolve via the correct chip's instances/models map.
     _load_chip_cached(model_dir, devices=data.get('devices'))
 
-    instance = data.get('instance', '')
-    signals = data.get('signals', [])
-    generators = data.get('generators', [])
-    plls = data.get('plls', [])
-    gates = data.get('gates', [])
-    dividers = data.get('dividers', [])
-    muxes = data.get('muxes', [])
+    # Subfamily-shaped files carry the clock-tree content under a `clocks:`
+    # key; legacy clock-tree files have the same fields at the top level.
+    # Flatten by hoisting `clocks:` into the local lookups below — the
+    # top-level header keys (version, family, devices, ...) are still read
+    # from `data` above.
+    content = data.get('clocks', data)
+
+    instance = content.get('instance', '')
+    signals = content.get('signals', [])
+    generators = content.get('generators', [])
+    plls = content.get('plls', [])
+    gates = content.get('gates', [])
+    dividers = content.get('dividers', [])
+    muxes = content.get('muxes', [])
 
     # Insert empty signal at index 0
     signals.insert(0, {'name': '_', 'description': 'Empty signal'})

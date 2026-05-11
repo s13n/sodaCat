@@ -109,11 +109,13 @@ function(ensure_model model_path)
     endif()
 
     # Check for transitive dependencies: peripheral block models referenced
-    # under `models:`, plus an optional clock-tree model under `clocktree:`
-    # for chip YAMLs.  Both kinds of dep need their YAML files locally.
+    # under `models:`, plus optional chip-side links — `clocktree:` (legacy,
+    # points directly at a clock-tree YAML) or `inherits:` (newer, points at
+    # a subfamily/family model whose own dependencies will be followed once
+    # ensure_model fetches it).  All of these need their YAML files locally.
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c
-            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); deps=list(d.get('models',{}).values()); ct=d.get('clocktree'); deps += [ct] if ct else []; print(';'.join(deps))"
+            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); deps=list(d.get('models',{}).values()); ct=d.get('clocktree'); deps += [ct] if ct else []; ih=d.get('inherits'); deps += [ih] if ih else []; print(';'.join(deps))"
         OUTPUT_VARIABLE model_deps
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
@@ -185,11 +187,13 @@ function(generate_header target language model_path suffix)
         endforeach()
     endif()
 
-    # Generate the chip's clock-tree header.  The dispatcher
-    # (generate_header.py) routes clock-tree YAMLs by their `signals:` key.
+    # Follow the chip's fabric link.  Either `clocktree:` (legacy — points
+    # directly at a clock-tree YAML) or `inherits:` (newer — points at a
+    # subfamily model whose `clocks:` section is the clock tree); the
+    # dispatcher routes by file shape in either case.
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c
-            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); print(d.get('clocktree') or '')"
+            "from ruamel.yaml import YAML; d=YAML(typ='safe').load(open('${model_file}')); print(d.get('clocktree') or d.get('inherits') or '')"
         OUTPUT_VARIABLE clocktree_dep
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )

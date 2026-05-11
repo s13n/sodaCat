@@ -89,8 +89,13 @@ def load_family_config(family_code, config_file):
     families = {}
     for name, info in config['subfamilies'].items():
         sf = {'chips': list(info['chips'])}
+        # `clocktree:` points at a legacy clock-tree YAML; `inherits:` points
+        # at a subfamily/family model whose `clocks:` section is the tree.
+        # They are mutually exclusive — the chip emits whichever was set.
         if info.get('clocktree') is not None:
             sf['clocktree'] = info['clocktree']
+        if info.get('inherits') is not None:
+            sf['inherits'] = info['inherits']
         families[name] = sf
 
     blocks_config = {}
@@ -120,14 +125,16 @@ def load_family_config(family_code, config_file):
     svd_tag = full_config.get('svd', {}).get('tag', '')
     svd_chip = config.get('svd_chip')
 
-    # Optional family-wide clock-tree association.  The chip generator emits
-    # this verbatim into each chip model's `clocktree:` key so the cmake macro
-    # can recurse into it.  Modelled at family granularity because every
-    # family observed so far has a single clock-tree topology — extend to
-    # subfamily/chip overrides later if a counterexample appears.
+    # Optional family-wide fabric link, used as the fallback when no subfamily
+    # entry specifies one.  `clocktree:` points at a legacy clock-tree YAML;
+    # `inherits:` points at a subfamily/family model whose `clocks:` section
+    # is the tree.  Modelled at family granularity because every family
+    # observed so far has a single clock-tree topology — subfamily-level
+    # entries override.
     clocktree = config.get('clocktree')
+    inherits = config.get('inherits')
 
-    return families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree
+    return families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree, inherits
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -1511,7 +1518,7 @@ def main():
 
     config_file = ext.config_path(args)
     families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks, svd_tag, \
-        address_overrides, svd_chip, clocktree = load_family_config(family_code, config_file)
+        address_overrides, svd_chip, clocktree, inherits = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
     family_chips = set()
@@ -2061,9 +2068,16 @@ def main():
                 'namespace': family_ns,
                 'source': source,
             }
-            chip_clocktree = (
-                families.get(subfamily_name, {}).get('clocktree') or clocktree)
-            if chip_clocktree:
+            # Fabric link: prefer subfamily entry, fall back to family-level.
+            # Subfamilies/families can use either `clocktree:` (legacy) or
+            # `inherits:` (newer subfamily-model form); the chip emits the
+            # same key shape that was specified.
+            sf_info = families.get(subfamily_name, {})
+            chip_inherits = sf_info.get('inherits') or inherits
+            chip_clocktree = sf_info.get('clocktree') or clocktree
+            if chip_inherits:
+                chip_model['inherits'] = chip_inherits
+            elif chip_clocktree:
                 chip_model['clocktree'] = chip_clocktree
             chip_model.update({
                 'cpu': device_meta.get('cpu', {}),
