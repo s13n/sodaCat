@@ -205,6 +205,8 @@ Two additional cross-reference checkers for clock specs are available but not in
 - `tools/validate_clock_refs.py` — verifies every `{instance, reg, field}` citation in a clock spec resolves to a real field in the referenced block model.  Should be CI-grade but currently invoked manually.
 - `tools/audit_clock_block.py` — three-tier audit (Tier A width/count mismatches, Tier B fields-not-cited coverage list, Tier C fuzzy enum-name divergence hints).  Tier B is too noisy for CI; the tool is designed for periodic spot-checks and during clock-tree authoring.  See [docs/design/subfamily-model.md](docs/design/subfamily-model.md#clock-tree-audit) for the full description of what each tier catches and what it can't.
 
+When chip-level information needs to come from a PDF reference manual rather than the SVD (e.g. clock-tree topology, corrected interrupt tables, memory maps), see the method guide at [docs/design/manual-extraction.md](docs/design/manual-extraction.md).  The basic tools are `tools/pdf_table_extractor.py` and `tools/pdf_diagram_extractor.py`; the guide describes the two-stage offline-extract / online-consume pattern, target priorities, and the judgement calls that scripted extraction can't make.
+
 ### Reserved bit-fields
 
 The extractor drops fields named `RESERVED` (case-insensitive) from every register and cluster, and drops RESERVED enum values from every field. Bits not declared in `fields` are reserved by definition; the C++ generator fills bit-position gaps with uniquely numbered placeholders (`_0:1`, `_1:24`, ...). Models with multiple explicit RESERVED entries in the same register would otherwise violate the field-name-uniqueness rule and produce duplicate C++ bit-field declarations.
