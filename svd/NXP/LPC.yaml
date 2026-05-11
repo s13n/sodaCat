@@ -236,6 +236,16 @@ shared_blocks:
     designer: ARM
     from: LPC4350.GPDMA
     description: ARM PrimeCell DMA Controller (PL080/PL081)
+    # The PL080 IP has three interrupt outputs (DMACINTERR, DMACINTTC, and
+    # the combined DMACINTR).  LPC43 only routes the combined OR to NVIC
+    # (mapped per-family as DMA: COMBINED below); other SoCs (e.g. ARM
+    # MPS2 reference designs) route all three.  Declare ERROR and TC here
+    # as canonical-only entries so the shared model carries the IP's full
+    # interrupt surface.  Keep them as synthetic raw_name: canonical pairs
+    # because the LPC43 SVD doesn't supply raw names for them.
+    interrupts:
+      ERROR: ERROR
+      TC: TC
     params:
       - {name: pl081, type: int, default: 0, max: 1,
          description: "0 = PL080 (8 channels, 2 AHB masters); 1 = PL081 (2 channels only, single AHB master so CONFIG.M1 endianness bit, C[n].LLI.LM bit, and C[n].CONTROL.S/D master-select bits are reserved). Both variants share the same register layout."}
@@ -1067,7 +1077,9 @@ families:
         uses: PL08x
         instances: [GPDMA]
         interrupts:
-          DMA: DMA
+          # PL080 has three interrupt outputs (DMACINTERR, DMACINTTC, and the
+          # combined DMACINTR).  LPC43 wires only the combined output to NVIC.
+          DMA: COMBINED
       I2C:
         from: LPC43xx_43Sxx.I2C0
         instances: [I2C0, I2C1]
