@@ -1378,8 +1378,13 @@ def _build_config_interrupt_mapping(blocks_config, shared_blocks):
             for raw, canonical_spec in (variant_cfg.get('interrupts') or {}).items():
                 canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
                 mapping[(bt, raw)] = canonical
+    # Shared block mappings fill in entries that no family overrides.
+    # Family-level mappings win, mirroring how `_resolve_uses_config` lets
+    # a family override shared defaults.
     for bt, bc in shared_blocks.items():
         for raw, canonical_spec in (bc.get('interrupts') or {}).items():
+            if (bt, raw) in mapping:
+                continue
             canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
             mapping[(bt, raw)] = canonical
     return mapping
