@@ -9,11 +9,11 @@ import stm32h7.DMA;
 import stm32h7.MDMA;
 import stm32h7.STM32H757_CM7;
 import microchip.ATSAME70Q21B;
-import microchip.SAM_Gen1_clocks;
+import microchip.SAM_Gen1;
 #else
 #include "stm32h7/STM32H757_CM7.hpp"
 #include "microchip/ATSAME70Q21B.hpp"
-#include "microchip/SAM_Gen1_clocks.hpp"
+#include "microchip/SAM_Gen1.hpp"
 #endif
 
 using namespace stm32h7::DMA;
