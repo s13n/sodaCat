@@ -2167,7 +2167,20 @@ def main():
             common_ivt = _ivt_intersection(
                 [cm['interrupts'] for _, cm, _ in chip_models_here])
             sf_yaml_path = output_dir.parent / (sf_inherits_path + '.yaml')
-            if sf_yaml_path.exists() and common_ivt:
+            if not sf_yaml_path.exists():
+                # Loud fail: the subfamily declared inherits: in the family
+                # config but the target file is gone.  Chip YAMLs will carry
+                # `inherits:` pointing nowhere — the build would break later
+                # in CMake.  Better to refuse to write inconsistent output.
+                print(f"\n  ERROR: subfamily '{subfamily_name}' declares "
+                      f"`inherits: {sf_inherits_path}` but the target file "
+                      f"{sf_yaml_path} does not exist.", file=sys.stderr)
+                print(f"  The subfamily model carries hand-authored content "
+                      f"(e.g. the clock tree) that cannot be regenerated.  "
+                      f"Restore the file from version control before re-"
+                      f"extracting.", file=sys.stderr)
+                sys.exit(1)
+            if common_ivt:
                 _update_subfamily_yaml(
                     sf_yaml_path,
                     interrupts={vec: list(entries)
