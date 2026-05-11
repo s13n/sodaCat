@@ -172,13 +172,14 @@ Names that are YAML 1.1 boolean literals (`NO`, `ON`, `OFF`, ...) are quoted via
 
 ## CI
 
-GitHub Actions runs three validators, each on a separate workflow:
+GitHub Actions runs four validators, each on a separate workflow:
 
 - `tools/validate_clocks.py` — clock-tree specs at `spec/clock-tree/**/*.yaml` against `schemas/clock-tree.schema.yaml` (Draft 2020-12).
 - `tools/validate_peripherals.py` — peripheral block models at `models/**/*.yaml` against `schemas/peripheral.schema.yaml` (Draft 7). Skips files that don't have a top-level `registers` list.
 - `tools/validate_chips.py` — chip-level models at `models/**/*.yaml` against `schemas/chip.schema.yaml` (Draft 7). Skips files that don't have a top-level `instances` map.
+- `tools/validate_chip_interrupts.py` — chip-vs-block interrupt-name consistency. For every chip-level instance, checks that each declared interrupt name appears in the referenced block model's canonical `interrupts:` list. Catches stale SVD-raw names left over after a canonical rename and hand-maintained chips that invented names the block doesn't know about.
 
-All three follow the two-phase pattern: Phase 1 = JSON Schema (structural); Phase 2 = Python code for checks the schema can't express, including per-scope name uniqueness (registers within a block, fields within a register, enum values within a field, parameters within an instance, ...). Standard JSON Schema's `uniqueItems` only checks whole-item equality, not equality of a sub-property like `name`, so uniqueness must live in code. Shared bits (schema loading, schema-error extraction, the duplicate-detection helper, CLI driver) are factored into `tools/validate_lib.py`.
+The first three follow the two-phase pattern: Phase 1 = JSON Schema (structural); Phase 2 = Python code for checks the schema can't express, including per-scope name uniqueness (registers within a block, fields within a register, enum values within a field, parameters within an instance, ...). Standard JSON Schema's `uniqueItems` only checks whole-item equality, not equality of a sub-property like `name`, so uniqueness must live in code. Shared bits (schema loading, schema-error extraction, the duplicate-detection helper, CLI driver) are factored into `tools/validate_lib.py`. The chip-interrupt validator is a cross-reference check rather than a schema check — it walks every chip and resolves each instance's `model:` against the chip's `models:` map to load the block YAML, so it doesn't fit the per-file `validate_lib.run()` driver and is standalone.
 
 ### Reserved bit-fields
 

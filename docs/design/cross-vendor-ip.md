@@ -54,12 +54,14 @@ Other known licensees (not in sodaCat):
 
 ## ARM PrimeCell PL08x (PL080 / PL081)
 
-**Status:** Wired up in sodaCat as `models/ARM/PL08x.yaml`, owned by NXP LPC43
-(only PL08x-bearing chip currently in the repo). Mechanism: shared block in
-`svd/NXP/LPC.yaml` with `designer: ARM`, which routes the generated model to
-`models/<designer>/` instead of `models/NXP/`. LPC43's GPDMA family-block uses
-`uses: PL08x`. ARM is a "designer" namespace, not a chip-vendor — a convention
-introduced for licensed-IP shared blocks.
+**Status:** Wired up in sodaCat as `models/ARM/PL08x.yaml`, extracted from NXP
+LPC43 (the only PL08x-bearing chip with an SVD source in the repo). Also
+referenced by ARM MPS2 reference designs (AN505, AN521 — hand-maintained chip
+YAMLs), where each board instantiates four PL081 controllers as DMA0..DMA3.
+Mechanism: shared block in `svd/NXP/LPC.yaml` with `designer: ARM`, which
+routes the generated model to `models/<designer>/` instead of `models/NXP/`.
+LPC43's GPDMA family-block uses `uses: PL08x`. ARM is a "designer" namespace,
+not a chip-vendor — a convention introduced for licensed-IP shared blocks.
 
 **PL080 vs PL081 unification:** The two ARM-published variants (DDI 0196 vs
 DDI 0218) share one register layout — PL081 is a strict subset of PL080
@@ -70,11 +72,21 @@ was deleted. C++-side: the unified struct is sized for the PL080 superset;
 PL081 instances get six phantom channels and a few reserved bits (M1, LM,
 S, D) — accepted because PL081 is rare in real silicon.
 
+**Interrupt surface:** The PL080 IP has three interrupt outputs — `DMACINTERR`
+(error), `DMACINTTC` (terminal count), and the combined `DMACINTR` — so the
+shared block declares all three canonicals (`ERROR`, `TC`, `COMBINED`).  LPC43
+only routes the combined OR to NVIC (family-block mapping `DMA: COMBINED`);
+the MPS2 chips wire each PL081's three outputs separately as `ERROR`/`TC`/
+`COMBINED` interrupts.  The shared block's `interrupts:` map carries `ERROR`
+and `TC` as synthetic raw_name: canonical pairs (no SVD raw entry feeds them)
+so the model declares the IP's full surface even though the only extracted
+SVD source supplies just one of the three.
+
 **Other known PL08x instances (not in sodaCat):** NXP LPC17xx, LPC178x/LPC408x,
 LPC18xx, LPC24xx; ST SPEAr, ST-Ericsson Nomadik; Samsung S3C6410 (2× PL080);
-Faraday FTDMAC020 derivative; ARM RealView/Versatile reference platforms. All
-real PL080 silicon is 8-channel; the 32-bit-wide channel-mask register fields
-are synthesis-time headroom that nobody uses.
+Faraday FTDMAC020 derivative.  All real PL080 silicon is 8-channel; the
+32-bit-wide channel-mask register fields are synthesis-time headroom that
+nobody uses.
 
 **Deferred work — needed before a second PL08x vendor can be added cleanly:**
 
@@ -82,10 +94,14 @@ The current `models/ARM/PL08x.yaml` carries LPC43-specific enum values on
 `SRCPERIPHERAL` and `DESTPERIPHERAL` (5-bit DMA-request-routing fields):
 `SOURCE_SPIFI`, `SOURCE_SSP0_9`, `DESTINATION_TIMER_3`, etc. These names are
 wrong for any non-LPC43 PL080 — the request-line matrix is vendor-specific
-silicon-routing, not part of the IP. Accepted as a known wart for now since
-LPC43 is the only PL080 instance.
+silicon-routing, not part of the IP.  This is now a literal wart on ARM MPS2
+(AN505, AN521), which inherits LPC43's routing names via `model: PL08x` even
+though MPS2's DMA-request matrix is different.  Until the deferred work below
+lands, MPS2 driver code that touches `SRCPERIPHERAL`/`DESTPERIPHERAL` should
+treat them as raw 5-bit ints and ignore the enum names.
 
-When a second PL080 vendor lands (LPC17/18/178/408 most likely), do this:
+To factor cleanly (motivated by ARM MPS2 today, and by future LPC17/18/178/408
+landings):
 1. Strip the enum values from `SRCPERIPHERAL` / `DESTPERIPHERAL` in the shared
    model — leave them as plain 5-bit integer fields.
 2. Add a way for each family's `uses: PL080` block-cfg to layer routing-name
@@ -94,10 +110,10 @@ When a second PL080 vendor lands (LPC17/18/178/408 most likely), do this:
    during family-extraction, not during shared-block consumption — so this
    needs a small new code path (e.g. a `post_uses_transforms:` list that
    runs when generating chip models that reference the shared block).
-3. Move the per-family enum tables into each family's `blocks.GPDMA` entry.
-
-Until then: any second PL080 vendor would inherit LPC43's routing names,
-which would be misleading. Better to factor first, then add.
+3. Move the per-family enum tables into each family's `blocks.GPDMA` entry,
+   and add an MPS2-specific table for the AN505/AN521 hand-maintained chips
+   (mechanism TBD — possibly a `models/ARM/MPS2/` block override applied at
+   chip-header generation time).
 
 ## NXP Ethernet Models (Not Unifiable)
 
