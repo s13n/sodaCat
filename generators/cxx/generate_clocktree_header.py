@@ -252,12 +252,44 @@ def load_chip_model(model_dir, devices=None):
 
 
 def resolve_base_addresses(model_dir):
-    """Load chip model and populate base addresses in peripheral cache."""
+    """Load chip model and populate base addresses in peripheral cache.
+
+    Walks the chip's `inherits:` chain so instances lifted to the subfamily
+    (or shared-spec) tier are still discoverable when the clock tree
+    references them.  Chip entries override ancestor entries by name.
+    """
     chip = load_chip_model(model_dir)
     if not chip:
         return
-    instances = chip.get('instances', {})
-    for name, info in instances.items():
+    # Build the merged instance view: root-first so chip-level wins.
+    chain = []
+    node, node_dir = chip, Path(model_dir)
+    while node is not None:
+        chain.append(node)
+        parent_ref = node.get('inherits')
+        if not parent_ref:
+            break
+        # The inherits path is models-root-relative.  Walk up from node_dir
+        # to find the `models/` root, then resolve.
+        d = node_dir
+        models_root = None
+        while d != d.parent:
+            if d.name == 'models':
+                models_root = d
+                break
+            d = d.parent
+        if models_root is None:
+            break
+        parent_path = models_root / f'{parent_ref}.yaml'
+        if not parent_path.exists():
+            break
+        node = YAML(typ='safe').load(parent_path)
+        node_dir = parent_path.parent
+    merged = {}
+    for node in reversed(chain):
+        for name, info in (node.get('instances') or {}).items():
+            merged[name] = info
+    for name, info in merged.items():
         if name in _periph_cache and isinstance(info, dict):
             _periph_cache[name]['base'] = info.get('baseAddress', 0)
 

@@ -105,7 +105,18 @@ def run(parser_desc, default_schema, draft_class, phase2_func,
         n_validated += 1
         s_errs = schema_errors(data, validator)
         # Skip Phase 2 if Phase 1 failed — malformed input can confuse it.
-        p_errs = phase2_func(data) if not s_errs else []
+        # Pass the file path so semantic checks that need filesystem context
+        # (e.g. walking an inherits: chain to load parent YAMLs) can do so;
+        # phase2 funcs that don't need it can keep accepting only `data`.
+        if s_errs:
+            p_errs = []
+        else:
+            import inspect
+            sig = inspect.signature(phase2_func)
+            if len(sig.parameters) >= 2:
+                p_errs = phase2_func(data, f)
+            else:
+                p_errs = phase2_func(data)
         if s_errs or p_errs:
             had_errors = True
             print(f"❌ {f}:")

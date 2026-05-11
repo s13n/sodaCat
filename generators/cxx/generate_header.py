@@ -4,14 +4,19 @@
 #
 # Model type detection:
 #   - 'registers' key  → peripheral block header (generate_peripheral_header)
-#   - 'instances' key  → chip/SoC integration header (generate_chip_header)
+#   - 'cpu' key        → chip/SoC integration header (generate_chip_header).
+#                        Subfamily YAMLs now also carry an `instances:` map
+#                        (the subfamily-common subset) but no `cpu:` — only
+#                        chips have one, so it's the reliable discriminator.
 #   - 'signals' key    → clock tree header (generate_clocktree_header)
 #   - 'clocks' key     → subfamily model; route to clocktree generator,
 #                        which descends into the `clocks:` section.
-#   - 'inherits:' but neither 'clocks:' nor 'signals:' → subfamily
-#                        passthrough; nothing to emit at this level
-#                        (the CMake macro walks `inherits:` to find a
-#                        parent that does carry the topology).
+#   - 'inherits:'/'interrupts:'/'instances:'/'models:' without 'cpu:' →
+#                        subfamily passthrough; no header emitted at this
+#                        tier (the CMake macro walks `inherits:` to find a
+#                        parent that carries the topology, and the chip
+#                        header generator walks the chain to assemble the
+#                        merged instance view).
 #
 # The C++ namespace for the generated header is read from the model YAML's
 # `namespace:` key, falling back to the lowercased innermost containing
@@ -52,7 +57,7 @@ if 'registers' in model:
     cppm = Path(filename).with_suffix('.cppm')
     print(generate_module(modid, Path(filename).name), file=open(cppm, mode='w'))
 
-elif 'instances' in model:
+elif 'cpu' in model:
     from generate_chip_header import generate_header
     generate_header(sys.argv[1], sys.argv[2], sys.argv[3], modid)
 
@@ -62,7 +67,8 @@ elif 'signals' in model or 'clocks' in model:
     from generate_clocktree_header import generate_header
     generate_header(sys.argv[1], sys.argv[2]+sys.argv[3], modid)
 
-elif 'inherits' in model or 'interrupts' in model:
+elif ('inherits' in model or 'interrupts' in model
+      or 'instances' in model or 'models' in model):
     # Subfamily passthrough: this file only contributes an `inherits:`
     # link and/or an interrupt-vector intersection; no real C++ content
     # is emitted at this level (the CMake macro will already have

@@ -1318,6 +1318,51 @@ def _inject_params(block_data, params):
     return ordered
 
 
+def _dict_intersection(dicts):
+    """Return {key: value} entries that appear with identical content in
+    every input dict.  Used for the subfamily-common instances and the
+    subfamily-common models map.  Equality is by JSON-serialised value
+    so nested structures (instance.parameters, instance.interrupts) are
+    compared structurally.
+    """
+    if not dicts:
+        return {}
+    import json
+    common = {}
+    base = dicts[0]
+    for key, value in base.items():
+        try:
+            base_serial = json.dumps(value, sort_keys=True)
+        except (TypeError, ValueError):
+            continue  # unhashable contents — skip
+        if all(key in d
+               and json.dumps(d[key], sort_keys=True) == base_serial
+               for d in dicts[1:]):
+            common[key] = value
+    return common
+
+
+def _dict_delta(chip_dict, common_dict):
+    """Return entries from chip_dict whose key+value differs from common_dict.
+
+    For instance/model maps: an entry is in the delta iff the chip has the
+    key but either (a) the subfamily doesn't, or (b) the value differs.
+    """
+    import json
+    delta = {}
+    for key, value in chip_dict.items():
+        if key not in common_dict:
+            delta[key] = value
+            continue
+        try:
+            if (json.dumps(value, sort_keys=True)
+                    != json.dumps(common_dict[key], sort_keys=True)):
+                delta[key] = value
+        except (TypeError, ValueError):
+            delta[key] = value
+    return delta
+
+
 def _ivt_intersection(ivts):
     """Return the (Instance.Signal) entries present in EVERY chip's IVT, per vector.
 
@@ -1449,7 +1494,7 @@ def _emit_shared_subfamily_yaml(path, *, name, ref_manual, clocks):
         rt.dump(data, f)
 
 
-def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupts, inherits_target=None):
+def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupts, inherits_target=None, instances=None, models=None):
     """Write a fresh subfamily YAML from scratch.  Used when STM32.yaml carries
     a `clocks:` section for this subfamily; the file is then a pure derived
     artifact (no hand-edited content survives across re-extraction).
@@ -1479,6 +1524,10 @@ def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupt
         data['clocks'] = _strip_yaml_metadata(clocks)
     if interrupts:
         data['interrupts'] = interrupts
+    if models:
+        data['models'] = dict(sorted(models.items()))
+    if instances:
+        data['instances'] = dict(sorted(instances.items()))
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'w') as f:
@@ -2319,6 +2368,10 @@ def main():
         if sf_inherits_path and chip_models_here:
             common_ivt = _ivt_intersection(
                 [cm['interrupts'] for _, cm, _ in chip_models_here])
+            common_instances = _dict_intersection(
+                [cm['instances'] for _, cm, _ in chip_models_here])
+            common_models = _dict_intersection(
+                [cm['models'] for _, cm, _ in chip_models_here])
             sf_yaml_path = output_dir.parent / (sf_inherits_path + '.yaml')
             sf_clocks = subfamily_info.get('clocks')
             interrupts_section = (
@@ -2350,11 +2403,20 @@ def main():
                     ref_manual=subfamily_info.get('ref_manual'),
                     clocks=sf_clocks if inherits_target is None else None,
                     interrupts=interrupts_section,
-                    inherits_target=inherits_target)
-                if common_ivt:
-                    for chip_name, chip_model, _ in chip_models_here:
+                    inherits_target=inherits_target,
+                    instances=common_instances or None,
+                    models=common_models or None)
+                # Reduce each chip's interrupts/instances/models to its delta.
+                for chip_name, chip_model, _ in chip_models_here:
+                    if common_ivt:
                         chip_model['interrupts'] = dict(sorted(
                             _ivt_delta(chip_model['interrupts'], common_ivt).items()))
+                    if common_instances:
+                        chip_model['instances'] = dict(sorted(
+                            _dict_delta(chip_model['instances'], common_instances).items()))
+                    if common_models:
+                        chip_model['models'] = dict(sorted(
+                            _dict_delta(chip_model['models'], common_models).items()))
             elif not sf_yaml_path.exists():
                 # Loud fail: the subfamily declared inherits: in the family
                 # config but the target file is gone AND no `clocks:` source
@@ -2370,17 +2432,30 @@ def main():
                       f"or restore the file from version control.",
                       file=sys.stderr)
                 sys.exit(1)
-            elif common_ivt:
+            elif common_ivt or common_instances or common_models:
                 # Subfamily YAML exists and is partially hand-maintained
                 # (clocks: still hand-authored, not yet in STM32.yaml).
-                # Update only the interrupts: section.
-                _update_subfamily_yaml(
-                    sf_yaml_path,
-                    interrupts={vec: list(entries)
-                                for vec, entries in sorted(common_ivt.items())})
+                # Update the extractor-owned sections in place.
+                updates = {}
+                if common_ivt:
+                    updates['interrupts'] = {
+                        vec: list(entries)
+                        for vec, entries in sorted(common_ivt.items())}
+                if common_instances:
+                    updates['instances'] = dict(sorted(common_instances.items()))
+                if common_models:
+                    updates['models'] = dict(sorted(common_models.items()))
+                _update_subfamily_yaml(sf_yaml_path, **updates)
                 for chip_name, chip_model, _ in chip_models_here:
-                    chip_model['interrupts'] = dict(sorted(
-                        _ivt_delta(chip_model['interrupts'], common_ivt).items()))
+                    if common_ivt:
+                        chip_model['interrupts'] = dict(sorted(
+                            _ivt_delta(chip_model['interrupts'], common_ivt).items()))
+                    if common_instances:
+                        chip_model['instances'] = dict(sorted(
+                            _dict_delta(chip_model['instances'], common_instances).items()))
+                    if common_models:
+                        chip_model['models'] = dict(sorted(
+                            _dict_delta(chip_model['models'], common_models).items()))
         # Write all chips for this subfamily.
         for chip_name, chip_model, subfamily_dir in chip_models_here:
             svd.dumpDevice(chip_model, subfamily_dir / chip_name)

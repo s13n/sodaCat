@@ -136,8 +136,11 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         based fallback via _namespace.resolve).
         """
         from _namespace import resolve as _resolve_ns
-        instances = chip['instances']
-        models_map = chip.get('models', {})
+        # Walk the `inherits:` chain so instances and models declared at the
+        # subfamily/shared-spec tier feed into the per-chip integration view.
+        # Chip-level entries override ancestor entries by key (instance name
+        # / block name).
+        instances, models_map = self._collectInstances(chip, chip_path)
         chip_dir = Path(chip_path).parent
         model_to_ns = {}
         decl = ''
@@ -171,18 +174,14 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         header = prefix.substitute(chip, ns=namespace, incl=incl, interruptCount=interruptCount) + decl + postfix.substitute(ns=namespace)
         return header, imports
 
-    def _collectInterrupts(self, chip, chip_path):
-        """Union the chip's `interrupts:` map with each ancestor reached via
-        `inherits:`.  Same-vector entries are concatenated (union of lists).
+    def _walkInheritsChain(self, chip, chip_path):
+        """Return [(node, node_path), ...] from chip up to the root of the
+        `inherits:` chain.  Used by the collect-merge helpers below.
         """
-        merged = {}
-        # Walk the inheritance chain root-first so chip entries appear last
-        # in any shared-vector list (preserves "chip-specific first" ordering
-        # the extractor produces today, while keeping subfamily contributions).
         chain = []
         node, node_path = chip, chip_path
         while node is not None:
-            chain.append(node)
+            chain.append((node, node_path))
             parent_ref = node.get('inherits')
             if not parent_ref:
                 break
@@ -191,13 +190,43 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                 break
             node = YAML(typ='safe').load(parent_path)
             node_path = str(parent_path)
-        for node in reversed(chain):
+        return chain
+
+    def _collectInterrupts(self, chip, chip_path):
+        """Union the chip's `interrupts:` map with each ancestor reached via
+        `inherits:`.  Same-vector entries are concatenated (union of lists).
+        """
+        merged = {}
+        # Walk root-first so chip entries appear last in any shared-vector list
+        # (preserves "chip-specific first" ordering the extractor produces).
+        for node, _ in reversed(self._walkInheritsChain(chip, chip_path)):
             for vec, entries in (node.get('interrupts') or {}).items():
                 bucket = merged.setdefault(vec, [])
                 for e in entries:
                     if e not in bucket:
                         bucket.append(e)
         return merged
+
+    def _collectInstances(self, chip, chip_path):
+        """Merge the chip's `instances:` and `models:` maps with each
+        ancestor reached via `inherits:`.  Chip-level entries override
+        ancestor entries by key (instance name / block name).
+
+        Returns (instances_dict, models_dict).
+        """
+        instances = {}
+        models = {}
+        # Walk root-first so chip entries are applied last and win.
+        for node, _ in reversed(self._walkInheritsChain(chip, chip_path)):
+            for name, entry in (node.get('instances') or {}).items():
+                instances[name] = entry
+            for name, path in (node.get('models') or {}).items():
+                models[name] = path
+        # Sort by key so the emitted integration struct order stays stable
+        # regardless of where each instance is materialised in the chain.
+        instances = dict(sorted(instances.items()))
+        models = dict(sorted(models.items()))
+        return instances, models
                 
 prefixTemplate = Template("""// File was generated, do not edit!
 #pragma once
