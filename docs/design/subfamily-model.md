@@ -141,12 +141,63 @@ Migrated to Shape A (9 subfamily YAMLs are derived artifacts):
   - NXP LPC43: LPC43xx
   - Raspberry RP: RP2040, RP2350
 
-Out of scope, on legacy `clocktree:` form:
+Migrated using the cross-family shared-spec mechanism:
 
-  - Microchip SAM_Gen1 (shared across 6 families — Shape A doesn't fit
-    "one tree, many families" without a new shared-spec mechanism)
-  - Microchip PIC32CZ_Gen2 (same cross-family issue + pre-existing block
-    model drift around `MCLK.CLKMSK[N].MASK` vs. individual bit fields)
+  - Microchip SAM_Gen1   (consumed by SAME70, SAMS70, SAMV70, SAMV71,
+                          PIC32CZ-CA70, PIC32CZ-MC70)
+  - Microchip PIC32CZ_Gen2 (consumed by PIC32CZ-CA80, PIC32CZ-CA90)
+    Note: still flags `MCLK.CLKMSK[N].MSK0..MSK31` field-citation drift
+    against the block model's single `MASK` field — orthogonal to the
+    migration, to be addressed by splitting the block model.
+
+## Cross-family shared specs
+
+When a clock-tree topology is shared across multiple *families* (not just
+subfamilies — e.g. Microchip SAM_Gen1 is shared by 6 families), the vendor
+config grows a top-level `shared_subfamilies:` map that mirrors the
+existing `shared_blocks:` mechanism for peripherals.  Each entry holds the
+topology and a `ref_manual:` pointing at the document that backs it.  The
+extractor emits each entry to `models/<Vendor>/<Name>.yaml` at the start
+of the run (idempotent — invoking any single consuming family produces
+the same shared spec).
+
+Consuming subfamilies use the new `extends:` key to chain to the shared
+spec, distinct from `inherits:`:
+
+  - `inherits:` (existing) — the path the *chip's* `inherits:` field points
+    at; also where the subfamily YAML emits.  For a non-shared subfamily,
+    this is the only link and the subfamily YAML carries `clocks:` inline.
+  - `extends:` (new) — what the *subfamily YAML's* own `inherits:` field
+    is set to.  When set, the subfamily YAML emits with that link instead
+    of inlining `clocks:`; the topology comes from the chained parent.
+
+Concretely for Microchip SAME70:
+
+```yaml
+shared_subfamilies:
+  SAM_Gen1:
+    ref_manual: {name: ..., url: ..., rev: ...}
+    clocks:
+      instance: PMC
+      signals: [...]
+      ...
+
+families:
+  SAME70:
+    subfamilies:
+      SAME70:
+        chips: [ATSAME70Q21B]
+        inherits: Microchip/SAME70/SAME70/SAME70   # chip's target
+        extends:  Microchip/SAM_Gen1               # subfamily YAML's parent
+```
+
+This yields a three-tier chain at C++ generation time:
+
+  chip.hpp → subfamily.hpp (passthrough) → shared-spec.hpp (carries clocks)
+
+The dispatcher emits trivial placeholder `.hpp`/`.cppm` files for the
+subfamily passthrough tier so the CMake custom-command output contract
+is satisfied; no real C++ content lives at that tier.
 
 ## Resilience
 

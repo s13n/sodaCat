@@ -114,7 +114,9 @@ Family-common facts (clock-tree topology, the common interrupt vector table) liv
 
 **Loud failure.**  If a subfamily declares `inherits:` but the target file is missing AND no `clocks:` source is in the family config to regenerate from, the extractor exits non-zero — better than producing dangling references.
 
-**Coverage today.**  Migrated subfamilies (Shape A): STM32 H5 H503; STM32 H7 H73x / H742_H753 / H745_H757 / H7A3_B; NXP LPC8 LPC86x; NXP LPC43 LPC43xx; Raspberry RP RP2040 / RP2350.  Out of scope on legacy `clocktree:` form: Microchip SAM_Gen1 and PIC32CZ_Gen2 (both shared across multiple families — Shape A doesn't accommodate "one tree, many families" without a new shared-spec mechanism).
+**Cross-family shared specs.**  When a clock tree is shared across multiple *families* (e.g. Microchip SAM_Gen1 covers 6 families), the topology lives under a top-level `shared_subfamilies:` map in the vendor config (mirroring `shared_blocks:`), and each consuming subfamily uses an additional `extends:` key pointing at the shared spec.  This produces a three-tier chain: chip → subfamily YAML (passthrough, no `clocks:` of its own) → shared-spec YAML (carries the topology).
+
+**Coverage today.**  All known clock trees migrated to Shape A: STM32 H5 H503; STM32 H7 H73x / H742_H753 / H745_H757 / H7A3_B; NXP LPC8 LPC86x; NXP LPC43 LPC43xx; Raspberry RP RP2040 / RP2350; Microchip SAM_Gen1 (consumed by SAME70/SAMS70/SAMV70/SAMV71/PIC32CZ-CA70/MC70 via `extends:`); Microchip PIC32CZ_Gen2 (consumed by CA80/CA90).  No clock trees remain on legacy `clocktree:` form.
 
 Full details (extraction pipeline order, how to add a new fabric, the patching guarantee): [docs/design/subfamily-model.md](docs/design/subfamily-model.md).
 
