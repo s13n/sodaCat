@@ -1294,6 +1294,67 @@ def _inject_params(block_data, params):
     return ordered
 
 
+def _ivt_intersection(ivts):
+    """Return the (Instance.Signal) entries present in EVERY chip's IVT, per vector.
+
+    Input: list of {vec: [entries]} dicts (one per chip).
+    Output: {vec: [entries]} containing only entries shared by all chips at
+    that vector.  Vectors with no shared entry are omitted.
+    """
+    if not ivts:
+        return {}
+    # For each (vec, entry) pair, count how many chips have it.
+    counts = defaultdict(int)
+    for ivt in ivts:
+        seen = set()  # avoid double-counting within one chip
+        for vec, entries in ivt.items():
+            for entry in entries:
+                if (vec, entry) not in seen:
+                    seen.add((vec, entry))
+                    counts[(vec, entry)] += 1
+    n = len(ivts)
+    common = defaultdict(list)
+    # Walk in original chip order so the intersection's ordering is stable.
+    for vec, entries in ivts[0].items():
+        for entry in entries:
+            if counts.get((vec, entry)) == n and entry not in common[vec]:
+                common[vec].append(entry)
+    # Drop empty buckets.
+    return {vec: entries for vec, entries in common.items() if entries}
+
+
+def _ivt_delta(chip_ivt, common_ivt):
+    """Return chip_ivt minus the entries present in common_ivt at the same vector."""
+    delta = {}
+    for vec, entries in chip_ivt.items():
+        common_entries = set(common_ivt.get(vec, []))
+        kept = [e for e in entries if e not in common_entries]
+        if kept:
+            delta[vec] = kept
+    return delta
+
+
+def _update_subfamily_yaml(path, **sections):
+    """Replace the named top-level sections in a subfamily YAML, preserving
+    other content and key order.  Sections that are None are removed.
+    """
+    from ruamel.yaml import YAML
+    from ruamel.yaml.comments import CommentedMap
+    rt = YAML()
+    rt.width = 4096
+    rt.indent(mapping=2, sequence=4, offset=2)
+    rt.preserve_quotes = True
+    with open(path) as f:
+        data = rt.load(f) or CommentedMap()
+    for key, value in sections.items():
+        if value is None:
+            data.pop(key, None)
+        else:
+            data[key] = value
+    with open(path, 'w') as f:
+        rt.dump(data, f)
+
+
 def _inject_interrupts(block_data, interrupt_map):
     """Ensure all canonical interrupt names from config appear in block_data.
 
@@ -1920,6 +1981,9 @@ def main():
         config_interrupt_map = {}
     chip_model_count = 0
     unmatched_interrupts = defaultdict(set)  # block_type -> set of unmatched raw names
+    # Per-subfamily accumulator: write chips after the whole subfamily is built
+    # so we can lift the common IVT into the subfamily YAML when `inherits:` is set.
+    subfamily_chip_models = {}
 
     for subfamily_name, subfamily_info in families.items():
         instance_to_block = _build_instance_to_block(blocks_config, subfamily_name)
@@ -2087,9 +2151,33 @@ def main():
                 'models': dict(sorted(models_index.items())),
             })
 
-            # Write chip model
+            # Defer write: accumulate per-subfamily so we can extract the
+            # common IVT into the subfamily YAML when `inherits:` is set.
             subfamily_dir = output_dir / family_code / subfamily_name
             subfamily_dir.mkdir(parents=True, exist_ok=True)
+            subfamily_chip_models.setdefault(subfamily_name, []).append(
+                (chip_name, chip_model, subfamily_dir))
+
+        # End of per-chip loop for this subfamily.  Now write all chips,
+        # lifting common IVT entries into the subfamily YAML if the
+        # subfamily declares `inherits:` (i.e. has a subfamily model file).
+        chip_models_here = subfamily_chip_models.get(subfamily_name, [])
+        sf_inherits_path = subfamily_info.get('inherits') or inherits
+        if sf_inherits_path and len(chip_models_here) >= 2:
+            common_ivt = _ivt_intersection(
+                [cm['interrupts'] for _, cm, _ in chip_models_here])
+            sf_yaml_path = output_dir.parent / (sf_inherits_path + '.yaml')
+            if sf_yaml_path.exists() and common_ivt:
+                _update_subfamily_yaml(
+                    sf_yaml_path,
+                    interrupts={vec: list(entries)
+                                for vec, entries in sorted(common_ivt.items())})
+                # Reduce each chip's IVT to its delta.
+                for chip_name, chip_model, _ in chip_models_here:
+                    chip_model['interrupts'] = dict(sorted(
+                        _ivt_delta(chip_model['interrupts'], common_ivt).items()))
+        # Write all chips for this subfamily.
+        for chip_name, chip_model, subfamily_dir in chip_models_here:
             svd.dumpDevice(chip_model, subfamily_dir / chip_name)
             chip_model_count += 1
 

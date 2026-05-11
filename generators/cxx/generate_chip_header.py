@@ -163,10 +163,41 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
     def createHeader(self, chip, chip_path, namespace, incl_suffix, prefix, postfix):
         decl, incl, model_to_ns = self.createIntegration(chip, chip_path, namespace, incl_suffix)
         imports = [f'{ns}.{m}' for m, ns in model_to_ns.items()]
-        interrupts = chip.get('interrupts', {})
+        # Vector table is the union of the chip's `interrupts:` and every
+        # ancestor reachable via `inherits:`.  This lets a subfamily own the
+        # common entries while each chip carries only its per-chip deltas.
+        interrupts = self._collectInterrupts(chip, chip_path)
         interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
         header = prefix.substitute(chip, ns=namespace, incl=incl, interruptCount=interruptCount) + decl + postfix.substitute(ns=namespace)
         return header, imports
+
+    def _collectInterrupts(self, chip, chip_path):
+        """Union the chip's `interrupts:` map with each ancestor reached via
+        `inherits:`.  Same-vector entries are concatenated (union of lists).
+        """
+        merged = {}
+        # Walk the inheritance chain root-first so chip entries appear last
+        # in any shared-vector list (preserves "chip-specific first" ordering
+        # the extractor produces today, while keeping subfamily contributions).
+        chain = []
+        node, node_path = chip, chip_path
+        while node is not None:
+            chain.append(node)
+            parent_ref = node.get('inherits')
+            if not parent_ref:
+                break
+            parent_path = self._resolve_block_path(Path(node_path).parent, parent_ref)
+            if parent_path is None:
+                break
+            node = YAML(typ='safe').load(parent_path)
+            node_path = str(parent_path)
+        for node in reversed(chain):
+            for vec, entries in (node.get('interrupts') or {}).items():
+                bucket = merged.setdefault(vec, [])
+                for e in entries:
+                    if e not in bucket:
+                        bucket.append(e)
+        return merged
                 
 prefixTemplate = Template("""// File was generated, do not edit!
 #pragma once
