@@ -96,6 +96,14 @@ def load_family_config(family_code, config_file):
             sf['clocktree'] = info['clocktree']
         if info.get('inherits') is not None:
             sf['inherits'] = info['inherits']
+        # `clocks:` carries the clock-tree topology authored in the family
+        # config (Shape A).  When present, the subfamily YAML's `clocks:`
+        # section is emitted from this — the subfamily file becomes a pure
+        # derived artifact rather than a partially hand-maintained one.
+        if info.get('clocks') is not None:
+            sf['clocks'] = info['clocks']
+        if info.get('ref_manual') is not None:
+            sf['ref_manual'] = info['ref_manual']
         families[name] = sf
 
     blocks_config = {}
@@ -1355,6 +1363,78 @@ def _update_subfamily_yaml(path, **sections):
         rt.dump(data, f)
 
 
+def _derive_devices(chips):
+    """Strip per-CPU suffixes (_CM4/_CM7/_CM33/...) from chip names and dedupe."""
+    seen = set()
+    devices = []
+    for chip in chips:
+        dev = re.sub(r'_CM[0-9]+(?:_S)?$', '', chip)
+        if dev not in seen:
+            seen.add(dev)
+            devices.append(dev)
+    return devices
+
+
+def _derive_documents(ref_manual):
+    """Map an STM32.yaml ref_manual entry to a subfamily-YAML documents entry."""
+    if not ref_manual:
+        return []
+    doc = {}
+    if ref_manual.get('name'):
+        doc['id'] = ref_manual['name']
+    if ref_manual.get('title'):
+        doc['title'] = ref_manual['title']
+    if ref_manual.get('rev') is not None:
+        doc['revision'] = str(ref_manual['rev'])
+    if ref_manual.get('url'):
+        doc['url'] = ref_manual['url']
+    return [doc] if doc else []
+
+
+def _strip_yaml_metadata(node):
+    """Convert ruamel CommentedMap/CommentedSeq trees to plain dicts/lists.
+
+    Strips comment-attachment metadata so the content can be re-emitted into
+    a different YAML file without dragging the source file's comments along.
+    """
+    if isinstance(node, dict):
+        return {k: _strip_yaml_metadata(v) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_strip_yaml_metadata(v) for v in node]
+    return node
+
+
+def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupts):
+    """Write a fresh subfamily YAML from scratch.  Used when STM32.yaml carries
+    a `clocks:` section for this subfamily; the file is then a pure derived
+    artifact (no hand-edited content survives across re-extraction).
+    """
+    from ruamel.yaml import YAML
+    from ruamel.yaml.comments import CommentedMap
+    rt = YAML()
+    rt.width = 4096
+    rt.indent(mapping=2, sequence=4, offset=2)
+    rt.preserve_quotes = True
+
+    data = CommentedMap()
+    data['version'] = '1.0.0'
+    data['family'] = family
+    data['devices'] = list(devices)
+    documents = _derive_documents(ref_manual)
+    if documents:
+        data['documents'] = documents
+    if clocks is not None:
+        # Strip source-file comment metadata so banners and dividers from
+        # STM32.yaml don't drift into output values during the re-emit.
+        data['clocks'] = _strip_yaml_metadata(clocks)
+    if interrupts:
+        data['interrupts'] = interrupts
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'w') as f:
+        rt.dump(data, f)
+
+
 def _inject_interrupts(block_data, interrupt_map):
     """Ensure all canonical interrupt names from config appear in block_data.
 
@@ -2167,25 +2247,48 @@ def main():
             common_ivt = _ivt_intersection(
                 [cm['interrupts'] for _, cm, _ in chip_models_here])
             sf_yaml_path = output_dir.parent / (sf_inherits_path + '.yaml')
-            if not sf_yaml_path.exists():
+            sf_clocks = subfamily_info.get('clocks')
+            if sf_clocks is not None:
+                # Family config carries the clock topology — the subfamily
+                # YAML is a fully derived artifact.  Write it from scratch.
+                interrupts_section = (
+                    {vec: list(entries)
+                     for vec, entries in sorted(common_ivt.items())}
+                    if common_ivt else None)
+                _emit_subfamily_yaml(
+                    sf_yaml_path,
+                    family=f'STM32{family_code}',
+                    devices=_derive_devices(subfamily_info['chips']),
+                    ref_manual=subfamily_info.get('ref_manual'),
+                    clocks=sf_clocks,
+                    interrupts=interrupts_section)
+                if common_ivt:
+                    for chip_name, chip_model, _ in chip_models_here:
+                        chip_model['interrupts'] = dict(sorted(
+                            _ivt_delta(chip_model['interrupts'], common_ivt).items()))
+            elif not sf_yaml_path.exists():
                 # Loud fail: the subfamily declared inherits: in the family
-                # config but the target file is gone.  Chip YAMLs will carry
+                # config but the target file is gone AND no `clocks:` source
+                # in STM32.yaml to regenerate from.  Chip YAMLs will carry
                 # `inherits:` pointing nowhere — the build would break later
                 # in CMake.  Better to refuse to write inconsistent output.
                 print(f"\n  ERROR: subfamily '{subfamily_name}' declares "
                       f"`inherits: {sf_inherits_path}` but the target file "
                       f"{sf_yaml_path} does not exist.", file=sys.stderr)
-                print(f"  The subfamily model carries hand-authored content "
-                      f"(e.g. the clock tree) that cannot be regenerated.  "
-                      f"Restore the file from version control before re-"
-                      f"extracting.", file=sys.stderr)
+                print(f"  Either add a `clocks:` section to "
+                      f"families.{family_code}.subfamilies.{subfamily_name} "
+                      f"in the family config so the file can be regenerated, "
+                      f"or restore the file from version control.",
+                      file=sys.stderr)
                 sys.exit(1)
-            if common_ivt:
+            elif common_ivt:
+                # Subfamily YAML exists and is partially hand-maintained
+                # (clocks: still hand-authored, not yet in STM32.yaml).
+                # Update only the interrupts: section.
                 _update_subfamily_yaml(
                     sf_yaml_path,
                     interrupts={vec: list(entries)
                                 for vec, entries in sorted(common_ivt.items())})
-                # Reduce each chip's IVT to its delta.
                 for chip_name, chip_model, _ in chip_models_here:
                     chip_model['interrupts'] = dict(sorted(
                         _ivt_delta(chip_model['interrupts'], common_ivt).items()))
