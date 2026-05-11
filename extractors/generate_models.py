@@ -96,6 +96,13 @@ def load_family_config(family_code, config_file):
             sf['clocktree'] = info['clocktree']
         if info.get('inherits') is not None:
             sf['inherits'] = info['inherits']
+        # `extends:` (optional) is the subfamily YAML's own inherits target —
+        # used when the subfamily inherits its clocks (and other fabrics)
+        # from a vendor-wide shared spec (e.g. Microchip SAM_Gen1 covering 6
+        # families).  Distinct from `inherits:`, which is the chip's target
+        # (= the subfamily YAML's path on disk).
+        if info.get('extends') is not None:
+            sf['extends'] = info['extends']
         # `clocks:` carries the clock-tree topology authored in the family
         # config (Shape A).  When present, the subfamily YAML's `clocks:`
         # section is emitted from this — the subfamily file becomes a pure
@@ -113,6 +120,15 @@ def load_family_config(family_code, config_file):
     shared_blocks_config = {}
     for block_type, block_cfg in (full_config.get('shared_blocks') or {}).items():
         shared_blocks_config[block_type] = _parse_block_cfg(block_cfg)
+
+    # Vendor-wide shared subfamily specs.  Each entry is a chip-architecture-
+    # level description (currently: a `clocks:` topology shared by multiple
+    # families, e.g. Microchip SAM_Gen1 covering 6 SAM/PIC32CZ families).
+    # Consuming subfamilies reference these by path through their `inherits:`
+    # key, just like a per-subfamily inherits target — the only difference is
+    # that this spec lives at the vendor root rather than under a family's
+    # subfamily directory, and is shared across families.
+    shared_subfamilies_config = dict(full_config.get('shared_subfamilies') or {})
 
     chip_params = {}
     for sf_key, sf_val in (config.get('chip_params') or {}).items():
@@ -142,7 +158,7 @@ def load_family_config(family_code, config_file):
     clocktree = config.get('clocktree')
     inherits = config.get('inherits')
 
-    return families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree, inherits
+    return families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree, inherits, shared_subfamilies_config
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -1404,7 +1420,36 @@ def _strip_yaml_metadata(node):
     return node
 
 
-def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupts):
+def _emit_shared_subfamily_yaml(path, *, name, ref_manual, clocks):
+    """Write a vendor-wide shared subfamily spec to its top-level path.
+
+    Used for cross-family clock-tree topologies (Microchip SAM_Gen1 etc.)
+    that multiple families inherit from.  The emitted file has the same
+    shape as a normal subfamily YAML, minus `devices:` and `interrupts:`
+    (a shared spec has no chips of its own).
+    """
+    from ruamel.yaml import YAML
+    from ruamel.yaml.comments import CommentedMap
+    rt = YAML()
+    rt.width = 4096
+    rt.indent(mapping=2, sequence=4, offset=2)
+    rt.preserve_quotes = True
+
+    data = CommentedMap()
+    data['version'] = '1.0.0'
+    data['family'] = name
+    documents = _derive_documents(ref_manual)
+    if documents:
+        data['documents'] = documents
+    if clocks is not None:
+        data['clocks'] = _strip_yaml_metadata(clocks)
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, 'w') as f:
+        rt.dump(data, f)
+
+
+def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupts, inherits_target=None):
     """Write a fresh subfamily YAML from scratch.  Used when STM32.yaml carries
     a `clocks:` section for this subfamily; the file is then a pure derived
     artifact (no hand-edited content survives across re-extraction).
@@ -1423,9 +1468,14 @@ def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupt
     documents = _derive_documents(ref_manual)
     if documents:
         data['documents'] = documents
-    if clocks is not None:
+    # When the subfamily inherits clocks from a parent (e.g. a vendor-wide
+    # shared spec), emit the `inherits:` link instead of inlining `clocks:`.
+    # The C++ generator and CMake macro walk the chain to find the topology.
+    if inherits_target:
+        data['inherits'] = inherits_target
+    elif clocks is not None:
         # Strip source-file comment metadata so banners and dividers from
-        # STM32.yaml don't drift into output values during the re-emit.
+        # the family config don't drift into output values during the re-emit.
         data['clocks'] = _strip_yaml_metadata(clocks)
     if interrupts:
         data['interrupts'] = interrupts
@@ -1659,7 +1709,7 @@ def main():
 
     config_file = ext.config_path(args)
     families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks, svd_tag, \
-        address_overrides, svd_chip, clocktree, inherits = load_family_config(family_code, config_file)
+        address_overrides, svd_chip, clocktree, inherits, shared_subfamilies = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
     family_chips = set()
@@ -2065,6 +2115,25 @@ def main():
     # so we can lift the common IVT into the subfamily YAML when `inherits:` is set.
     subfamily_chip_models = {}
 
+    # Emit any vendor-wide shared subfamily specs declared in the family config.
+    # These hold chip-architecture-level fabrics (currently: a clock-tree
+    # topology) shared across multiple families — e.g. Microchip SAM_Gen1
+    # covers 6 families.  Consuming subfamilies reach the topology via an
+    # `inherits:` chain: chip -> subfamily -> shared spec.
+    # The emission is idempotent: invoking the extractor for any consuming
+    # family writes the same shared spec to the same path.
+    vendor_prefix = output_dir.name  # e.g. "Microchip", "ST", "NXP"
+    shared_spec_paths = set()  # `<vendor>/<name>` strings for inherits-target matching
+    for shared_name, shared_cfg in shared_subfamilies.items():
+        spec_path = output_dir / f'{shared_name}.yaml'
+        _emit_shared_subfamily_yaml(
+            spec_path,
+            name=shared_name,
+            ref_manual=shared_cfg.get('ref_manual'),
+            clocks=shared_cfg.get('clocks'))
+        shared_spec_paths.add(f'{vendor_prefix}/{shared_name}')
+        print(f"  Generated shared subfamily spec: {vendor_prefix}/{shared_name}.yaml")
+
     for subfamily_name, subfamily_info in families.items():
         instance_to_block = _build_instance_to_block(blocks_config, subfamily_name)
 
@@ -2252,26 +2321,36 @@ def main():
                 [cm['interrupts'] for _, cm, _ in chip_models_here])
             sf_yaml_path = output_dir.parent / (sf_inherits_path + '.yaml')
             sf_clocks = subfamily_info.get('clocks')
-            if sf_clocks is not None:
-                # Family config carries the clock topology — the subfamily
-                # YAML is a fully derived artifact.  Write it from scratch.
-                interrupts_section = (
-                    {vec: list(entries)
-                     for vec, entries in sorted(common_ivt.items())}
-                    if common_ivt else None)
-                # Vendor extensions supply the marketing-style family label
-                # (e.g. STM32 -> "STM32H7"; LPC -> subfamily code).  Fall back
-                # to the family code if the extension didn't override.
-                family_label = (
-                    ext.family_label(family_code, subfamily_name)
-                    if hasattr(ext, 'family_label') else family_code)
+            interrupts_section = (
+                {vec: list(entries)
+                 for vec, entries in sorted(common_ivt.items())}
+                if common_ivt else None)
+            # Vendor extensions supply the marketing-style family label
+            # (e.g. STM32 -> "STM32H7"; LPC -> subfamily code).  Fall back
+            # to the family code if the extension didn't override.
+            family_label = (
+                ext.family_label(family_code, subfamily_name)
+                if hasattr(ext, 'family_label') else family_code)
+            # If the subfamily declares `extends:`, the subfamily YAML's own
+            # `inherits:` field is set to that — used to chain to a vendor-
+            # wide shared spec (the path is validated against the emitted
+            # shared specs so typos become extractor errors via the
+            # loud-fail path further below if the target file is missing).
+            inherits_target = subfamily_info.get('extends')
+            if (sf_clocks is not None
+                    or (inherits_target is not None
+                        and inherits_target in shared_spec_paths)):
+                # Either the family config carries the clock topology (sole
+                # source) or it inherits from a vendor-wide shared spec —
+                # in both cases the subfamily YAML is a fully derived artifact.
                 _emit_subfamily_yaml(
                     sf_yaml_path,
                     family=family_label,
                     devices=_derive_devices(subfamily_info['chips']),
                     ref_manual=subfamily_info.get('ref_manual'),
-                    clocks=sf_clocks,
-                    interrupts=interrupts_section)
+                    clocks=sf_clocks if inherits_target is None else None,
+                    interrupts=interrupts_section,
+                    inherits_target=inherits_target)
                 if common_ivt:
                     for chip_name, chip_model, _ in chip_models_here:
                         chip_model['interrupts'] = dict(sorted(

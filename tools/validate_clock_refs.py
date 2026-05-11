@@ -75,16 +75,35 @@ def build_chip_index(models_root):
     """Pre-scan all chip YAMLs once, building {clock-spec-target: chip-path}.
 
     Avoids O(M×N) re-scanning when validating multiple clock specs in one run.
+    The index follows `inherits:` chains so a chip that inherits from a
+    subfamily that itself inherits from a shared spec ends up under the
+    shared spec's target as well — letting `validate_clock_refs` resolve
+    vendor-wide shared specs (e.g. Microchip SAM_Gen1) via their consumers.
     """
-    index = {}
+    # First pass: gather every file's inherits link and whether it's a chip.
+    inherits_link = {}        # rel-path -> rel-path-of-parent
+    chip_paths = {}           # rel-path -> filesystem path
     for f in models_root.rglob('*.yaml'):
         data = _safe_load(f)
-        if not isinstance(data, dict) or 'instances' not in data:
+        if not isinstance(data, dict):
             continue
-        for key in ('clocktree', 'inherits'):
-            target = data.get(key)
-            if target:
-                index.setdefault(target, f)
+        rel = f.relative_to(models_root).with_suffix('').as_posix()
+        parent = data.get('clocktree') or data.get('inherits')
+        if parent:
+            inherits_link[rel] = parent
+        if 'instances' in data:
+            chip_paths[rel] = f
+
+    # Second pass: each chip propagates as a consumer of every ancestor
+    # reachable via the inherits chain.
+    index = {}
+    for chip_rel, chip_path in chip_paths.items():
+        cursor = inherits_link.get(chip_rel)
+        seen = set()
+        while cursor and cursor not in seen:
+            seen.add(cursor)
+            index.setdefault(cursor, chip_path)
+            cursor = inherits_link.get(cursor)
     return index
 
 

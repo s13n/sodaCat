@@ -8,6 +8,10 @@
 #   - 'signals' key    → clock tree header (generate_clocktree_header)
 #   - 'clocks' key     → subfamily model; route to clocktree generator,
 #                        which descends into the `clocks:` section.
+#   - 'inherits:' but neither 'clocks:' nor 'signals:' → subfamily
+#                        passthrough; nothing to emit at this level
+#                        (the CMake macro walks `inherits:` to find a
+#                        parent that does carry the topology).
 #
 # The C++ namespace for the generated header is read from the model YAML's
 # `namespace:` key, falling back to the lowercased innermost containing
@@ -57,6 +61,25 @@ elif 'signals' in model or 'clocks' in model:
     # `clocks:` and descends into it internally.
     from generate_clocktree_header import generate_header
     generate_header(sys.argv[1], sys.argv[2]+sys.argv[3], modid)
+
+elif 'inherits' in model or 'interrupts' in model:
+    # Subfamily passthrough: this file only contributes an `inherits:`
+    # link and/or an interrupt-vector intersection; no real C++ content
+    # is emitted at this level (the CMake macro will already have
+    # followed `inherits:` to a parent that carries the topology).
+    # Still write trivial placeholder .hpp/.cppm files so the CMake
+    # custom-command output contract is satisfied — without them ninja
+    # complains about missing build outputs.
+    with open(filename, 'w') as f:
+        f.write(f"// generated header file, please don't edit.\n"
+                f"// subfamily passthrough — no C++ content at this tier.\n"
+                f"#pragma once\n")
+    cppm = Path(filename).with_suffix('.cppm')
+    with open(cppm, 'w') as f:
+        f.write(f"// generated module file, please don't edit.\n"
+                f"// subfamily passthrough — no C++ content at this tier.\n"
+                f"module;\n"
+                f"export module {modid};\n")
 
 else:
     keys = ', '.join(model.keys())
