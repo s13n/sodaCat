@@ -2241,9 +2241,13 @@ def main():
         # End of per-chip loop for this subfamily.  Now write all chips,
         # lifting common IVT entries into the subfamily YAML if the
         # subfamily declares `inherits:` (i.e. has a subfamily model file).
+        # The IVT intersection is only useful with 2+ chips, but a
+        # single-chip subfamily still benefits from Shape A — its
+        # subfamily YAML carries the (sole chip's) IVT and the clocks
+        # topology, and the chip YAML keeps only what isn't shared.
         chip_models_here = subfamily_chip_models.get(subfamily_name, [])
         sf_inherits_path = subfamily_info.get('inherits') or inherits
-        if sf_inherits_path and len(chip_models_here) >= 2:
+        if sf_inherits_path and chip_models_here:
             common_ivt = _ivt_intersection(
                 [cm['interrupts'] for _, cm, _ in chip_models_here])
             sf_yaml_path = output_dir.parent / (sf_inherits_path + '.yaml')
