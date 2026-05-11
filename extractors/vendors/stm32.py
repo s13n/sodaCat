@@ -20,6 +20,12 @@ def family_namespace(family_code):
     return f'stm32{family_code.lower()}'
 
 
+def family_label(family_code, subfamily_name):
+    """STM32 marketing family label (`STM32H7`); used as `family:` in
+    extractor-emitted subfamily YAMLs."""
+    return f'STM32{family_code}'
+
+
 def add_cli_args(parser):
     """Add STM32-specific CLI arguments."""
     parser.add_argument('svd_source', type=Path,

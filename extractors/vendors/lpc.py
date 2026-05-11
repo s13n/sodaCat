@@ -102,3 +102,9 @@ def errata_path():
 def get_interrupt_offset(cpu_info):
     """Return interrupt vector offset for Cortex-M (16 system exceptions)."""
     return 16
+
+
+def family_label(family_code, subfamily_name):
+    """LPC convention: the subfamily code is the marketing label (e.g.
+    LPC86x).  Used as `family:` in extractor-emitted subfamily YAMLs."""
+    return subfamily_name

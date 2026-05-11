@@ -2255,9 +2255,15 @@ def main():
                     {vec: list(entries)
                      for vec, entries in sorted(common_ivt.items())}
                     if common_ivt else None)
+                # Vendor extensions supply the marketing-style family label
+                # (e.g. STM32 -> "STM32H7"; LPC -> subfamily code).  Fall back
+                # to the family code if the extension didn't override.
+                family_label = (
+                    ext.family_label(family_code, subfamily_name)
+                    if hasattr(ext, 'family_label') else family_code)
                 _emit_subfamily_yaml(
                     sf_yaml_path,
-                    family=f'STM32{family_code}',
+                    family=family_label,
                     devices=_derive_devices(subfamily_info['chips']),
                     ref_manual=subfamily_info.get('ref_manual'),
                     clocks=sf_clocks,
