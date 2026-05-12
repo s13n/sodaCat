@@ -51,9 +51,11 @@ For a single-chip check, the relevant files are:
 ### 1.2 Extract the chip summary
 
 From the chip model YAML, extract:
-- **Interrupt vector table**: IRQ number → name mapping (the `interrupts:` section)
-- **Peripheral instance table**: instance name, base address, model type, interrupts,
-  parameters
+- **Peripheral instance table**: instance name, base address, model type,
+  per-instance `outputs:` (signal → destination list), parameters.
+- **Interrupt vector table**: derived by walking every instance's `outputs:`
+  map and collecting destinations of the form `NVIC.<vector>` — the chip YAML
+  no longer carries the IVT as a separate top-level section.
 
 Format as a readable table. Example:
 

@@ -261,8 +261,11 @@ explicit per-slot entries in the config's `interrupts` mapping.
   `models/<Vendor>/`, family blocks to `models/<Vendor>/<Family>/`, variant
   blocks to subfamily subdirectories.
 - **Pass 3:** Write chip YAML models. For each chip: resolve interrupts via
-  config mapping, resolve params via 7-level cascade, assemble instances, write
-  to `models/<Vendor>/<Family>/<Subfamily>/<Chip>.yaml`.
+  config mapping (raw SVD name → canonical block-output name), build each
+  instance's `outputs:` map with destinations of the form `NVIC.<abs_vec>`
+  (`abs_vec = svd_value + interrupt_offset`), resolve params via 7-level
+  cascade, assemble instances, write to
+  `models/<Vendor>/<Family>/<Subfamily>/<Chip>.yaml`.
 
 ---
 
@@ -274,7 +277,7 @@ Start with the simpler family (fewer peripherals, no architectural quirks):
 1. Configure and build: `cmake --build . --target <vendor><id>-models`
 2. Compare output models against any existing legacy models
 3. Verify register names, offsets, fields match expectations
-4. Check chip model: instances, base addresses, interrupts, parameters
+4. Check chip model: instances, base addresses, per-instance `outputs:` (NVIC wiring), parameters
 
 ### 4.2 Add the second family and shared blocks
 

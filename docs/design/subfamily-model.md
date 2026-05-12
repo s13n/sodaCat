@@ -5,26 +5,28 @@ facts are owned at the right tier and how chips inherit and override them.
 
 ## Why this exists
 
-Before the layering, every chip YAML carried its full picture: the full
-interrupt vector table, a `clocktree:` pointer to a separate file, every
-peripheral instance, every parameter.  For an 8-chip subfamily, the same 117
-common IVT entries appeared 8 times, the clock tree lived in a separate
-hand-authored file with no schematic link to the rest of the chip data, and
-mixed-ownership creep (parts of the chip YAML hand-edited, parts
-extractor-managed) crept in unannounced.
+Before the layering, every chip YAML carried its full picture: every
+peripheral instance with its interrupt wiring, a `clocktree:` pointer to
+a separate file, every parameter.  For an 8-chip subfamily, the same 114
+common peripheral-instance entries (with their NVIC vector assignments)
+appeared 8 times, the clock tree lived in a separate hand-authored file
+with no schematic link to the rest of the chip data, and mixed-ownership
+creep (parts of the chip YAML hand-edited, parts extractor-managed)
+crept in unannounced.
 
 The subfamily-model tier addresses both problems.  Family-common facts
-(currently: clock-tree topology and the common interrupt vector table; later:
-DMA-request fabric, EXTI routing, ...) live in one place per subfamily.  Chip
-YAMLs carry only what's chip-specific.
+(currently: clock-tree topology and the common peripheral-instance set
+with its wiring; later: DMA-request fabric as a first-class instance,
+EXTI routing fabric, ...) live in one place per subfamily.  Chip YAMLs
+carry only what's chip-specific.
 
 ## Tiers and what lives where
 
 | Tier      | File location                                         | Owner       | Contents |
 | --------- | ----------------------------------------------------- | ----------- | -------- |
 | Family    | `svd/<Vendor>/<Family>.yaml`                          | hand-author | Extraction config: chips, blocks, patches, **clock-tree topology** |
-| Subfamily | `models/<Vendor>/<Family>/<Subfamily>/<Subfamily>.yaml` | extractor | Derived artifact: header metadata, **clocks: section**, **interrupts: section** (common IVT) |
-| Chip      | `models/<Vendor>/<Family>/<Subfamily>/<Chip>.yaml`     | extractor | Derived artifact: per-instance data, IVT delta, `inherits:` link |
+| Subfamily | `models/<Vendor>/<Family>/<Subfamily>/<Subfamily>.yaml` | extractor | Derived artifact: header metadata, **clocks: section**, **instances:** (common subset, with wiring) |
+| Chip      | `models/<Vendor>/<Family>/<Subfamily>/<Chip>.yaml`     | extractor | Derived artifact: chip-specific instance entries, `inherits:` link |
 
 The subfamily YAML is fully derived: deleting it and re-extracting yields a
 byte-identical file.  Chip YAMLs reach their subfamily via an `inherits:` key
@@ -35,7 +37,8 @@ whose value is the model-root-relative path of the subfamily YAML.
 The pattern accommodates both **hand-authored** fabrics (topology that has to
 come from a human reading the reference manual — currently just the clock
 tree) and **computed** fabrics (data derivable mechanically from per-chip
-SVD-extracted content — currently the interrupt vector table).
+SVD-extracted content — currently the peripheral-instance set with its
+interrupt wiring, and the block-model index).
 
 ### Clock tree (hand-authored, family-config source)
 
@@ -53,14 +56,24 @@ into output string values.
 ### Instances and models map (computed by intersection)
 
 Both the peripheral-instance map (`instances:`) and the block-model
-index (`models:`) follow the same intersection pattern as the IVT.
-After per-chip processing, the extractor extracts entries that appear
-with byte-identical content in every chip in the subfamily, lifts them
-to the subfamily YAML, and reduces each chip's own map to the delta.
+index (`models:`) follow an intersection pattern.  After per-chip
+processing, the extractor extracts entries that appear with
+byte-identical content in every chip in the subfamily, lifts them to
+the subfamily YAML, and reduces each chip's own map to the delta.
+
+Each instance entry carries its own wiring under `outputs:` — a map
+from each block-declared output signal to its dotted-string
+destination list (e.g. `outputs: {INTR: ["NVIC.53"]}`).  Vector-table
+merging is therefore implicit in the instance lift: an instance whose
+entire entry (baseAddress + model + outputs + parameters) is
+byte-identical across every chip lifts wholesale; an instance whose
+output map differs across chips (e.g. one chip routes USART1.INTR to
+NVIC.37 and another to NVIC.38) stays per-chip on every chip in the
+subfamily.
 
 For a typical multi-chip subfamily (e.g. H745_H757 with 8 chips, 114
-instances each), 108 instances and 51 of 53 model paths are common —
-so chip YAMLs shrink to ~6 instance entries each.  Single-chip
+instances each), most instances and model paths are common — so chip
+YAMLs shrink to a handful of instance entries each.  Single-chip
 subfamilies (RP2040, SAM-Gen1 consumers) lift their entire instance
 set up; the chip YAML becomes a thin header.
 
@@ -68,29 +81,15 @@ Chip-level entries override ancestor entries by key (instance name /
 block name).  The chip-header generator walks the `inherits:` chain to
 assemble the merged view.
 
-### Interrupt vector table (computed by intersection)
-
-The IVT is fully derived from the per-chip data the extractor already
-produces.  The algorithm runs **after** every existing patch mechanism:
-
-1. SVD raw interrupt names → canonical names via the block's `interrupts:`
-   map and the algorithmic prefix-stripping resolver.
-2. `chip_interrupts:` overrides applied (injects or corrects per chip).
-3. `chip_instances:` exclusions remove un-present instances and their IRQs.
-4. Each chip's per-instance interrupts assemble into a chip-level IVT keyed
-   by vector number.
-
-Only then, after every chip in the subfamily has gone through 1–4, the
-extractor computes the *intersection*: a (vector, "Instance.Signal") pair
-survives into the subfamily IVT iff it appears at the same vector in **every**
-chip's IVT.  Each chip's `interrupts:` is then reduced to its delta.
-
-This means patches behave as before — they shape the per-chip IVTs that feed
-the intersection.  A patch that makes one chip agree with its siblings causes
-the corrected entry to lift cleanly into the subfamily section (the patch
-becomes invisible in the output, which is the right behaviour: the family
-config is the durable record of "here's a fix"; the YAML reflects what the
-silicon does).
+The patching pipeline still applies per-chip *before* the
+intersection: SVD raw interrupt names → canonical via the block's
+`interrupts:` map; `chip_interrupts:` overrides; `chip_instances:`
+exclusions.  The intersection sees the post-patch state — so a patch
+that makes one chip agree with its siblings causes the corrected entry
+to lift cleanly into the subfamily (the patch becomes invisible in
+the output, which is the right behaviour: the family config is the
+durable record of "here's a fix"; the YAML reflects what the silicon
+does).
 
 ## Extraction pipeline order
 
@@ -101,35 +100,41 @@ for subfamily in family:
     for chip in subfamily:
         # 1. Per-chip processing (existing logic):
         #    block presence, instance addresses, interrupt canonicalisation,
-        #    chip_interrupts overrides, chip_instances exclusions, ...
+        #    chip_interrupts overrides, chip_instances exclusions,
+        #    per-instance outputs map assembly ...
         chip_model = assemble(chip)
         accumulate(chip_model)        # NOT written to disk yet
 
     # 2. Subfamily-level synthesis:
     if subfamily has `inherits:`:
-        common_ivt = intersect([cm.interrupts for cm in accumulated])
+        common_instances = dict_intersect([cm.instances for cm in accumulated])
+        common_models    = dict_intersect([cm.models    for cm in accumulated])
         if subfamily has `clocks:`:
             emit_subfamily_yaml(
                 family_label,         # via vendor extension family_label()
                 devices,              # dedupe chip names, strip _CMn suffix
                 ref_manual → documents,
                 clocks,               # from family config
-                interrupts=common_ivt,
+                instances=common_instances,
+                models=common_models,
             )
         elif subfamily YAML exists:
-            update_subfamily_yaml(interrupts=common_ivt)  # preserves clocks:
+            update_subfamily_yaml(instances=common_instances, models=common_models)
         else:
             FAIL: inherits target doesn't exist, no clocks: to regenerate from
 
         for chip in accumulated:
-            chip.interrupts = ivt_delta(chip.interrupts, common_ivt)
+            chip.instances = dict_delta(chip.instances, common_instances)
+            chip.models    = dict_delta(chip.models,    common_models)
 
     write all accumulated chip YAMLs
 ```
 
-The C++ side (`generators/cxx/generate_chip_header.py`) walks `inherits:` when
-computing the merged vector-table view — so consumers see the full IVT
-regardless of where each entry lives in the YAML hierarchy.
+The C++ side (`generators/cxx/generate_chip_header.py`) walks `inherits:`
+when computing the merged instance view; the vector-table view is derived on
+the fly from each instance's `outputs:` map by parsing `NVIC.<n>` destinations,
+so consumers see the full IVT regardless of where each instance lives in the
+YAML hierarchy.
 
 ## Adding a new fabric
 
@@ -138,16 +143,19 @@ routing, event router, ...), the pattern is:
 
 1. Decide whether the fabric is **hand-authored** (topology requires RM
    knowledge — model it like clocks) or **computed** (mechanically derivable
-   from per-chip SVD data — model it like interrupts).
+   from per-chip SVD data — model it like the instance set).
 2. Add the section to `schemas/subfamily.schema.yaml`.
 3. For hand-authored: read the section from the family config, pass it to
    `_emit_subfamily_yaml(...)`, deep-strip ruamel metadata before write.
-4. For computed: write the intersection-and-delta logic over the per-chip
-   field, applying *after* every existing per-chip patch.
+4. For computed: if the fabric is *part of* the instance entry (additional
+   destination kinds on `outputs:`, new instance fields), it lifts
+   automatically with `_dict_intersection`.  If it's a sibling top-level
+   section, add an intersection-and-delta helper over the per-chip field,
+   applied *after* every existing per-chip patch.
 5. Update the C++ generator that consumes the section to walk `inherits:` and
    merge ancestor entries.
 6. Add a cross-reference validator if the fabric cites registers/fields in
-   block models.
+   block models, or destination instances that must exist in the chip.
 
 ## Coverage today
 
@@ -223,9 +231,9 @@ is satisfied; no real C++ content lives at that tier.
   - Subfamily declares `inherits:` but target is missing AND no `clocks:`
     source in the family config: extractor exits non-zero with a clear
     diagnostic naming the missing file.
-  - Subfamily YAML can be partially extractor-managed (only the `interrupts:`
-    section) if the family config has no `clocks:` — useful as a migration
-    halfway state, but not a long-term arrangement.
+  - Subfamily YAML can be partially extractor-managed (only the `instances:`
+    and `models:` sections) if the family config has no `clocks:` yet —
+    useful as a migration halfway state, but not a long-term arrangement.
 
 ## Clock-tree audit
 
@@ -303,7 +311,8 @@ quiet on the current trees so the value is limited.
   - `tools/audit_clock_block.py` — three-tier audit (Tier A errors,
     Tier B coverage, Tier C name-divergence hints).
   - `extractors/generate_models.py` — the extractor implementation:
-    `_ivt_intersection`, `_ivt_delta`, `_emit_subfamily_yaml`,
+    `_dict_intersection`, `_dict_delta`, `_emit_subfamily_yaml`,
     `_update_subfamily_yaml`.
-  - `generators/cxx/generate_chip_header.py:_collectInterrupts` — the C++
-    side merging IVTs along the inheritance chain.
+  - `generators/cxx/generate_chip_header.py:_collectInterrupts` — derives
+    the merged NVIC vector table on the fly by walking each instance's
+    `outputs:` map across the inheritance chain.

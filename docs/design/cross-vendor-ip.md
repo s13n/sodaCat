@@ -74,13 +74,14 @@ S, D) — accepted because PL081 is rare in real silicon.
 
 **Interrupt surface:** The PL080 IP has three interrupt outputs — `DMACINTERR`
 (error), `DMACINTTC` (terminal count), and the combined `DMACINTR` — so the
-shared block declares all three canonicals (`ERROR`, `TC`, `COMBINED`).  LPC43
-only routes the combined OR to NVIC (family-block mapping `DMA: COMBINED`);
-the MPS2 chips wire each PL081's three outputs separately as `ERROR`/`TC`/
-`COMBINED` interrupts.  The shared block's `interrupts:` map carries `ERROR`
-and `TC` as synthetic raw_name: canonical pairs (no SVD raw entry feeds them)
-so the model declares the IP's full surface even though the only extracted
-SVD source supplies just one of the three.
+shared block's `outputs:` list declares all three canonicals (`ERROR`, `TC`,
+`COMBINED`).  LPC43 only wires the combined OR to NVIC (family-block mapping
+`DMA: COMBINED`); the MPS2 chips wire each PL081's three outputs separately
+as `ERROR` / `TC` / `COMBINED` destinations on NVIC.  The shared-block entry
+in the family config carries `ERROR` and `TC` as synthetic raw_name: canonical
+pairs under its `interrupts:` mapping (no SVD raw entry feeds them) so the
+extractor injects them into the model's `outputs:` list even though the only
+extracted SVD source supplies just one of the three.
 
 **Other known PL08x instances (not in sodaCat):** NXP LPC17xx, LPC178x/LPC408x,
 LPC18xx, LPC24xx; ST SPEAr, ST-Ericsson Nomadik; Samsung S3C6410 (2× PL080);
