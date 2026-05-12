@@ -106,6 +106,8 @@ Phase 2 (planned) will introduce DMAMUX / EXTI / trigger-crossbar destinations. 
 
 The `validate_chip_interrupts.py` validator strict-checks that every per-instance output name appears in the referenced block's `outputs:` list, and that every destination parses as `NVIC.<int>` (the Phase 1 strictness will relax as new kinds land).
 
+Full architectural rationale (the "kind = property of destination, not source" rule, the dual-CPU example that motivates it, the Phase 2 plan): [docs/design/output-wiring.md](docs/design/output-wiring.md).
+
 ### Clock-tree association
 
 A chip declares its clock tree via a top-level `clocktree:` string (path relative to the models root, e.g. `Microchip/SAM_Gen1_clocks` — same shape as `models:` map values). When the cmake macro `generate_header()` processes a chip, it auto-generates the chip's clock-tree header in the same C++ namespace, using the existing dedup mechanism so a clock tree shared by N chips is only emitted once per (namespace, target). The dispatcher (`generate_header.py`) routes clock-tree YAMLs by their `signals:` key. Standalone `generate_header(...)` calls for clock-tree models still work but are redundant once the chip references one.
@@ -134,7 +136,7 @@ Full details (extraction pipeline order, how to add a new fabric, the patching g
 
 A single unified `extractors/generate_models.py` script handles all families (STM32, LPC). Vendor-specific behavior (SVD access, source formatting) is provided by lightweight extension modules in `extractors/vendors/`. All STM32 family configuration lives in a single consolidated file `svd/ST/STM32.yaml` with two top-level keys:
 
-- `shared_blocks`: cross-family shared block definitions — blocks whose register map is identical across multiple families. Each entry has the same keys as a family block (`from`, `interrupts`, `transforms`, `params`) except `instances`, which is inherently per-family and must be specified in each family's block entry. Shared models are written to `models/ST/` (top level), not under a family directory.
+- `shared_blocks`: cross-family shared block definitions — blocks whose register map is identical across multiple families. Each entry has the same keys as a family block (`from`, `interrupts`, `transforms`, `params`) except `instances`, which is inherently per-family and must be specified in each family's block entry. Shared models are written to `models/ST/` (top level), not under a family directory.  The design rule behind unification (drive driver reuse via boolean feature-flag params on the integration struct; treat a `false`-flag register access as a bug) lives in [docs/design/feature-flag-params.md](docs/design/feature-flag-params.md); the procedural how-to is [tasks/shared-block-unification.md](tasks/shared-block-unification.md).
 - `families`: per-family configuration, keyed by family code (C0, F3, ..., U5)
 
 Each family entry has up to five optional keys plus `svd`/`subfamilies`/`blocks`:
