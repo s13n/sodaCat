@@ -3,9 +3,9 @@ $id: https://example.org/schemas/mcu-subfamily.schema.json
 title: MCU Subfamily Model
 description: |
   A subfamily-level model groups chip-level facts that are shared by every
-  chip variant in the subfamily — initially the clock tree (under `clocks:`),
-  with room for siblings (DMA fabric, interrupt vector table, EXTI fabric, ...)
-  added under their own top-level keys as the fabric model develops.
+  chip variant in the subfamily — initially the clock tree (under `clocks:`)
+  and the common peripheral instances (under `instances:`), with room for
+  sibling fabrics added under their own top-level keys as the model develops.
 
   Chips reference their subfamily via the `inherits:` key and override or
   add facts as needed.  The same `inherits:` key can connect a subfamily to
@@ -55,29 +55,18 @@ properties:
     description: |
       Path (relative to the models root, without .yaml suffix) of a higher-
       level model whose facts this subfamily inherits and may override.
-  interrupts:
-    type: object
-    description: |
-      Subfamily-common interrupt vector table.  Keys are integer vector
-      numbers; values are arrays of "Instance.Signal" entries (multiple
-      entries on one vector represent shared / OR'd interrupts).  Chips
-      inheriting from this subfamily may add per-chip entries via their
-      own top-level `interrupts:` map; the two are unioned at generation
-      time (chip entries are appended to the subfamily's, never replacing).
-    additionalProperties:
-      type: array
-      items:
-        type: string
-        pattern: ^[A-Za-z0-9_]+\.[A-Za-z0-9_]+$
   instances:
     type: object
     description: |
       Subfamily-common peripheral instances.  Keyed by instance name.
       Each entry has the same shape as a chip-level instance entry —
-      baseAddress, model, parameters, interrupts — and represents an
+      baseAddress, model, parameters, outputs — and represents an
       instance that is identical across every chip in the subfamily.
       Chips override entries by name in their own `instances:` map; for
       lookup purposes the merged view is (subfamily ∪ chip-overrides).
+      Output wiring (NVIC vectors, DMA request lines, ...) is per-
+      instance under `outputs:` and lifts to the subfamily naturally
+      when the entire instance entry is identical across all chips.
     additionalProperties:
       type: object
   models:

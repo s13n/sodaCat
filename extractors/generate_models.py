@@ -1322,8 +1322,10 @@ def _dict_intersection(dicts):
     """Return {key: value} entries that appear with identical content in
     every input dict.  Used for the subfamily-common instances and the
     subfamily-common models map.  Equality is by JSON-serialised value
-    so nested structures (instance.parameters, instance.interrupts) are
-    compared structurally.
+    so nested structures (instance.parameters, instance.outputs) are
+    compared structurally — an instance with the same destinations on
+    every chip lifts; an instance whose output map differs across chips
+    stays per-chip.
     """
     if not dicts:
         return {}
@@ -1360,46 +1362,6 @@ def _dict_delta(chip_dict, common_dict):
                 delta[key] = value
         except (TypeError, ValueError):
             delta[key] = value
-    return delta
-
-
-def _ivt_intersection(ivts):
-    """Return the (Instance.Signal) entries present in EVERY chip's IVT, per vector.
-
-    Input: list of {vec: [entries]} dicts (one per chip).
-    Output: {vec: [entries]} containing only entries shared by all chips at
-    that vector.  Vectors with no shared entry are omitted.
-    """
-    if not ivts:
-        return {}
-    # For each (vec, entry) pair, count how many chips have it.
-    counts = defaultdict(int)
-    for ivt in ivts:
-        seen = set()  # avoid double-counting within one chip
-        for vec, entries in ivt.items():
-            for entry in entries:
-                if (vec, entry) not in seen:
-                    seen.add((vec, entry))
-                    counts[(vec, entry)] += 1
-    n = len(ivts)
-    common = defaultdict(list)
-    # Walk in original chip order so the intersection's ordering is stable.
-    for vec, entries in ivts[0].items():
-        for entry in entries:
-            if counts.get((vec, entry)) == n and entry not in common[vec]:
-                common[vec].append(entry)
-    # Drop empty buckets.
-    return {vec: entries for vec, entries in common.items() if entries}
-
-
-def _ivt_delta(chip_ivt, common_ivt):
-    """Return chip_ivt minus the entries present in common_ivt at the same vector."""
-    delta = {}
-    for vec, entries in chip_ivt.items():
-        common_entries = set(common_ivt.get(vec, []))
-        kept = [e for e in entries if e not in common_entries]
-        if kept:
-            delta[vec] = kept
     return delta
 
 
@@ -1470,7 +1432,7 @@ def _emit_shared_subfamily_yaml(path, *, name, ref_manual, clocks):
 
     Used for cross-family clock-tree topologies (Microchip SAM_Gen1 etc.)
     that multiple families inherit from.  The emitted file has the same
-    shape as a normal subfamily YAML, minus `devices:` and `interrupts:`
+    shape as a normal subfamily YAML, minus `devices:` and `instances:`
     (a shared spec has no chips of its own).
     """
     from ruamel.yaml import YAML
@@ -1494,7 +1456,7 @@ def _emit_shared_subfamily_yaml(path, *, name, ref_manual, clocks):
         rt.dump(data, f)
 
 
-def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupts, inherits_target=None, instances=None, models=None):
+def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, inherits_target=None, instances=None, models=None):
     """Write a fresh subfamily YAML from scratch.  Used when STM32.yaml carries
     a `clocks:` section for this subfamily; the file is then a pure derived
     artifact (no hand-edited content survives across re-extraction).
@@ -1522,8 +1484,6 @@ def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupt
         # Strip source-file comment metadata so banners and dividers from
         # the family config don't drift into output values during the re-emit.
         data['clocks'] = _strip_yaml_metadata(clocks)
-    if interrupts:
-        data['interrupts'] = interrupts
     if models:
         data['models'] = dict(sorted(models.items()))
     if instances:
@@ -1535,16 +1495,17 @@ def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, interrupt
 
 
 def _inject_interrupts(block_data, interrupt_map):
-    """Ensure all canonical interrupt names from config appear in block_data.
+    """Ensure all canonical interrupt-output names from config appear in
+    block_data's `outputs:` list.
 
-    The interrupt_map (raw_name -> canonical) may define canonical names that the
-    SVD source chip didn't have (e.g. WKUP, EP1_IN for OTG).  This adds any
-    missing canonical names so the model declares all interrupts that any family
-    might use.
+    The interrupt_map (raw_name -> canonical) may define canonical names
+    that the SVD source chip didn't have (e.g. WKUP, EP1_IN for OTG).
+    This adds any missing canonical names so the model declares the
+    superset of interrupt outputs that any family might wire to NVIC.
     """
     if not interrupt_map:
         return block_data
-    existing = block_data.get('interrupts', [])
+    existing = block_data.get('outputs', [])
     seen = {i['name'] for i in existing}
     for raw_name, mapping in interrupt_map.items():
         canonical = mapping['name'] if isinstance(mapping, dict) else mapping
@@ -1556,7 +1517,7 @@ def _inject_interrupts(block_data, interrupt_map):
                 entry['description'] = desc
             existing.append(entry)
     if existing:
-        block_data['interrupts'] = existing
+        block_data['outputs'] = existing
     return block_data
 
 
@@ -1951,7 +1912,7 @@ def main():
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
 
-            # Strip instance prefix from interrupt descriptions
+            # Strip instance prefix from output descriptions
             from_spec = shared_cfg.get('from', '')
             if '.' in from_spec:
                 inst = from_spec.split('.', 1)[1]
@@ -1959,7 +1920,7 @@ def main():
                 pfx = re.compile(
                     r'^(?:' + re.escape(inst) + r'|' + re.escape(inst_base)
                     + r')\d*\s+', re.IGNORECASE)
-                for irq in block_data.get('interrupts', []):
+                for irq in block_data.get('outputs', []):
                     desc = irq.get('description', '')
                     if desc:
                         stripped = pfx.sub('', desc)
@@ -1982,7 +1943,7 @@ def main():
                 block_data['namespace'] = vendor_ns
             svd.dumpModel(block_data, shared_path)
             model_interrupt_order[shared_name] = [
-                irq['name'] for irq in block_data.get('interrupts', [])]
+                irq['name'] for irq in block_data.get('outputs', [])]
             model_paths[shared_name] = f"{model_prefix}/{shared_name}"
             origin = f"{designer} (licensed IP)" if designer else "cross-family shared"
             print(f"  * {shared_name:20} -> top-level ({origin})")
@@ -2034,7 +1995,7 @@ def main():
                 v_block_data['namespace'] = family_ns
                 svd.dumpModel(v_block_data, family_dir / block_name)
                 model_interrupt_order[(block_name, fam_name)] = [
-                    irq['name'] for irq in v_block_data.get('interrupts', [])]
+                    irq['name'] for irq in v_block_data.get('outputs', [])]
                 model_paths[(block_name, fam_name)] = (
                     f"{vendor_prefix}/{family_code}/{fam_name}/{block_name}")
                 print(f"  + {block_name:20} -> {family_code}/{fam_name} "
@@ -2070,7 +2031,7 @@ def main():
                 block_data['namespace'] = family_ns
                 svd.dumpModel(block_data, family_dir / block_name)
                 model_interrupt_order[(block_name, fam_name)] = [
-                    irq['name'] for irq in block_data.get('interrupts', [])]
+                    irq['name'] for irq in block_data.get('outputs', [])]
                 model_paths[(block_name, fam_name)] = f"{vendor_prefix}/{family_code}/{fam_name}/{block_name}"
 
         # Non-variant subfamilies -> shared or subfamily-specific placement
@@ -2090,7 +2051,7 @@ def main():
             if block_cfg.get('description'):
                 block_data['description'] = block_cfg['description']
 
-            intr_order = [irq['name'] for irq in block_data.get('interrupts', [])]
+            intr_order = [irq['name'] for irq in block_data.get('outputs', [])]
             # Non-variant blocks are emitted at family level regardless of
             # how many subfamilies use the default config.  A redundant
             # subfamily-level nesting in single-subfamily families adds no
@@ -2130,14 +2091,14 @@ def main():
             # chip models in other families reference it by relative path.
             if model_name not in model_paths:
                 model_paths[model_name] = rel_path
-            # When the file is present, read interrupt order and (for uses:
+            # When the file is present, read output order and (for uses:
             # blocks without explicit shared-block params) lift any params
             # declared inline in the model file.
             if model_path.exists():
                 model = yaml_loader.load(model_path)
                 if model:
                     model_interrupt_order[model_name] = [
-                        irq['name'] for irq in model.get('interrupts', [])]
+                        irq['name'] for irq in model.get('outputs', [])]
                     if bc.get('uses') and model.get('params'):
                         existing = shared_blocks.get(model_name) or {}
                         if not existing.get('params'):
@@ -2201,9 +2162,13 @@ def main():
 
             device_meta = summary['device_meta']
 
-            # Build instances and interrupt table
+            # Build instances.  Per-instance `outputs:` is the source-side
+            # record of where each block-declared output signal is routed;
+            # destinations are dotted "instance.input" strings (e.g.
+            # "NVIC.53") with the input ID in the destination's own numbering
+            # convention.  For NVIC that's the absolute vector index, so the
+            # SVD's offset-relative value gets `interrupt_offset` added here.
             instances = {}
-            interrupt_table = defaultdict(list)
             if hasattr(ext, 'get_interrupt_offset'):
                 interrupt_offset = ext.get_interrupt_offset(
                     device_meta.get('cpu', {}))
@@ -2278,12 +2243,14 @@ def main():
                     mapped_intrs.sort(
                         key=lambda x: order_map.get(x['name'], len(order_map)))
 
-                # Build interrupt table from final mapped interrupts
+                # Build per-instance outputs map: canonical signal name ->
+                # list of dotted destination strings.  For NVIC, the input ID
+                # is the absolute exception vector (SVD value + offset);
+                # output names map 1:1 to the block model's `outputs:` list.
+                outputs_map = {}
                 for intr in mapped_intrs:
-                    vec = intr['value'] + interrupt_offset
-                    entry = f"{inst_name}.{intr['name']}"
-                    if entry not in interrupt_table[vec]:
-                        interrupt_table[vec].append(entry)
+                    outputs_map[intr['name']] = [
+                        f"NVIC.{intr['value'] + interrupt_offset}"]
 
                 # Resolve parameters.  When the resolved value matches the
                 # declared default we omit the param from the chip yaml: the
@@ -2304,12 +2271,18 @@ def main():
                         continue
                     params_list.append({'name': param['name'], 'value': value})
 
-                instances[inst_name] = {
+                # Omit `outputs:` / `parameters:` keys entirely when they'd
+                # be empty — the consumer side reads via `.get(..., default)`,
+                # and skipping the empty case keeps the chip YAMLs tidier.
+                inst_entry = {
                     'baseAddress': periph['baseAddress'],
                     'model': block_model_names.get(block_type, block_type),
-                    'interrupts': mapped_intrs,
-                    'parameters': params_list,
                 }
+                if outputs_map:
+                    inst_entry['outputs'] = outputs_map
+                if params_list:
+                    inst_entry['parameters'] = params_list
+                instances[inst_name] = inst_entry
 
             # Build models index: unique model names -> relative paths
             models_index = {}
@@ -2344,40 +2317,35 @@ def main():
             chip_model.update({
                 'cpu': device_meta.get('cpu', {}),
                 'interruptOffset': interrupt_offset,
-                'interrupts': dict(sorted(interrupt_table.items())),
                 'instances': dict(sorted(instances.items())),
                 'models': dict(sorted(models_index.items())),
             })
 
-            # Defer write: accumulate per-subfamily so we can extract the
-            # common IVT into the subfamily YAML when `inherits:` is set.
+            # Defer write: accumulate per-subfamily so the common
+            # instances/models can be lifted into the subfamily YAML when
+            # `inherits:` is set.
             subfamily_dir = output_dir / family_code / subfamily_name
             subfamily_dir.mkdir(parents=True, exist_ok=True)
             subfamily_chip_models.setdefault(subfamily_name, []).append(
                 (chip_name, chip_model, subfamily_dir))
 
         # End of per-chip loop for this subfamily.  Now write all chips,
-        # lifting common IVT entries into the subfamily YAML if the
-        # subfamily declares `inherits:` (i.e. has a subfamily model file).
-        # The IVT intersection is only useful with 2+ chips, but a
-        # single-chip subfamily still benefits from Shape A — its
-        # subfamily YAML carries the (sole chip's) IVT and the clocks
-        # topology, and the chip YAML keeps only what isn't shared.
+        # lifting common instances/models into the subfamily YAML if the
+        # subfamily declares `inherits:`.  Per-instance `outputs:` lives
+        # inside each instance entry, so it lifts with the instance: an
+        # instance whose entire entry (baseAddress + outputs + parameters)
+        # is byte-identical across every chip lifts to the subfamily;
+        # otherwise it stays per-chip.  Single-chip subfamilies still
+        # benefit — their sole chip's instance map lifts wholesale.
         chip_models_here = subfamily_chip_models.get(subfamily_name, [])
         sf_inherits_path = subfamily_info.get('inherits') or inherits
         if sf_inherits_path and chip_models_here:
-            common_ivt = _ivt_intersection(
-                [cm['interrupts'] for _, cm, _ in chip_models_here])
             common_instances = _dict_intersection(
                 [cm['instances'] for _, cm, _ in chip_models_here])
             common_models = _dict_intersection(
                 [cm['models'] for _, cm, _ in chip_models_here])
             sf_yaml_path = output_dir.parent / (sf_inherits_path + '.yaml')
             sf_clocks = subfamily_info.get('clocks')
-            interrupts_section = (
-                {vec: list(entries)
-                 for vec, entries in sorted(common_ivt.items())}
-                if common_ivt else None)
             # Vendor extensions supply the marketing-style family label
             # (e.g. STM32 -> "STM32H7"; LPC -> subfamily code).  Fall back
             # to the family code if the extension didn't override.
@@ -2402,15 +2370,11 @@ def main():
                     devices=_derive_devices(subfamily_info['chips']),
                     ref_manual=subfamily_info.get('ref_manual'),
                     clocks=sf_clocks if inherits_target is None else None,
-                    interrupts=interrupts_section,
                     inherits_target=inherits_target,
                     instances=common_instances or None,
                     models=common_models or None)
-                # Reduce each chip's interrupts/instances/models to its delta.
+                # Reduce each chip's instances/models to its delta.
                 for chip_name, chip_model, _ in chip_models_here:
-                    if common_ivt:
-                        chip_model['interrupts'] = dict(sorted(
-                            _ivt_delta(chip_model['interrupts'], common_ivt).items()))
                     if common_instances:
                         chip_model['instances'] = dict(sorted(
                             _dict_delta(chip_model['instances'], common_instances).items()))
@@ -2432,24 +2396,17 @@ def main():
                       f"or restore the file from version control.",
                       file=sys.stderr)
                 sys.exit(1)
-            elif common_ivt or common_instances or common_models:
+            elif common_instances or common_models:
                 # Subfamily YAML exists and is partially hand-maintained
                 # (clocks: still hand-authored, not yet in STM32.yaml).
                 # Update the extractor-owned sections in place.
                 updates = {}
-                if common_ivt:
-                    updates['interrupts'] = {
-                        vec: list(entries)
-                        for vec, entries in sorted(common_ivt.items())}
                 if common_instances:
                     updates['instances'] = dict(sorted(common_instances.items()))
                 if common_models:
                     updates['models'] = dict(sorted(common_models.items()))
                 _update_subfamily_yaml(sf_yaml_path, **updates)
                 for chip_name, chip_model, _ in chip_models_here:
-                    if common_ivt:
-                        chip_model['interrupts'] = dict(sorted(
-                            _ivt_delta(chip_model['interrupts'], common_ivt).items()))
                     if common_instances:
                         chip_model['instances'] = dict(sorted(
                             _dict_delta(chip_model['instances'], common_instances).items()))

@@ -391,7 +391,7 @@ $postfix"""))
             type = (f'HwPtr<struct {per['name']} volatile> ') if block['usage'] == 'registers' else 'std::span<std::byte> '
             blocks += self.addressTemplate.substitute(block, type=type)
         ints = ''
-        for int in per.get('interrupts', []):
+        for int in per.get('outputs', []):
             desc = int.get('description', '')
             ints += self.interruptTemplate.substitute(int, description=desc)
         params = ''

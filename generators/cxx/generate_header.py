@@ -11,7 +11,7 @@
 #   - 'signals' key    → clock tree header (generate_clocktree_header)
 #   - 'clocks' key     → subfamily model; route to clocktree generator,
 #                        which descends into the `clocks:` section.
-#   - 'inherits:'/'interrupts:'/'instances:'/'models:' without 'cpu:' →
+#   - 'inherits:'/'instances:'/'models:' without 'cpu:' →
 #                        subfamily passthrough; no header emitted at this
 #                        tier (the CMake macro walks `inherits:` to find a
 #                        parent that carries the topology, and the chip
@@ -67,12 +67,11 @@ elif 'signals' in model or 'clocks' in model:
     from generate_clocktree_header import generate_header
     generate_header(sys.argv[1], sys.argv[2]+sys.argv[3], modid)
 
-elif ('inherits' in model or 'interrupts' in model
-      or 'instances' in model or 'models' in model):
+elif ('inherits' in model or 'instances' in model or 'models' in model):
     # Subfamily passthrough: this file only contributes an `inherits:`
-    # link and/or an interrupt-vector intersection; no real C++ content
-    # is emitted at this level (the CMake macro will already have
-    # followed `inherits:` to a parent that carries the topology).
+    # link and/or a subfamily-common `instances:`/`models:` map; no real
+    # C++ content is emitted at this level (the CMake macro will already
+    # have followed `inherits:` to a parent that carries the topology).
     # Still write trivial placeholder .hpp/.cppm files so the CMake
     # custom-command output contract is satisfied — without them ninja
     # complains about missing build outputs.

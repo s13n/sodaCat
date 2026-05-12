@@ -6,7 +6,6 @@ required:
 - name
 - cpu
 - interruptOffset
-- interrupts
 - instances
 - models
 additionalProperties: false
@@ -59,16 +58,14 @@ properties:
         type: boolean
     additionalProperties: true   # tolerate vendor CMSIS-SVD extras (dcachePresent, dspPresent, sauNumRegions, deviceNumInterrupts, ...)
   interruptOffset:
+    description: |
+      The NVIC's own convention for how its input numbering aligns with
+      the Cortex-M exception space (typically 16, since vectors 0-15 are
+      system exceptions).  Purely descriptive — destination strings in
+      per-instance `outputs:` already encode absolute vector indices.
+      Will migrate onto an NVIC instance once NVIC becomes a first-class
+      block; non-NVIC interrupt controllers use their own conventions.
     type: integer
-    description: Offset added to NVIC interrupt numbers (typically 16 for Cortex-M)
-  interrupts:
-    type: object
-    description: "Interrupt vector table: IRQ number -> list of instance.signal assignments"
-    additionalProperties:
-      type: array
-      items:
-        type: string
-        pattern: ^[A-Za-z0-9_]+\.[A-Za-z0-9_]+$
   instances:
     type: object
     description: Peripheral instances keyed by instance name
@@ -89,17 +86,15 @@ properties:
   inherits:
     type: string
     description: "Path to a subfamily or family-tier model whose facts the
-      chip inherits.  Subfamily fabrics (e.g. clock tree, interrupt vector
-      table) are merged into the chip view at C++ generation time.  Chip-
-      level `interrupts:` entries are unioned with the inherited table."
+      chip inherits.  Subfamily fabrics (e.g. clock tree, common instances)
+      are merged into the chip view at C++ generation time.  Chip-level
+      `instances:` entries override ancestor entries by name."
 definitions:
   instance:
     type: object
     required:
     - baseAddress
     - model
-    - interrupts
-    - parameters
     additionalProperties: true   # tolerate vestigial SVD metadata (description, id, version, ...)
     properties:
       baseAddress:
@@ -108,21 +103,23 @@ definitions:
       model:
         type: string
         description: Block type name referencing the models table
-      interrupts:
-        type: array
-        items:
-          type: object
-          required:
-          - name
-          - value
-          additionalProperties: false
-          properties:
-            name:
-              type: string
-              description: Canonical interrupt signal name
-            value:
-              type: integer
-              description: NVIC interrupt number
+      outputs:
+        type: object
+        description: |
+          Wiring map from each block-declared output signal name to the
+          list of destinations the chip routes it to.  A destination is
+          a dotted "instance.input" string identifying the consumer
+          instance (NVIC, DMAMUX, EXTI, ...) and its input port.  The
+          same output may have multiple destinations (e.g. a dual-CPU
+          chip wires one wakeup signal to both cores' NVICs).  Output
+          names must appear in the referenced block model's `outputs:`
+          declaration; unmapped outputs are omitted from the map (not
+          listed with an empty list).
+        additionalProperties:
+          type: array
+          items:
+            type: string
+            pattern: ^[A-Za-z0-9_]+\.[A-Za-z0-9_]+$
       parameters:
         type: array
         items:

@@ -14,7 +14,11 @@ import re
 class ChipFormatter:
     def __init__(self, **keywords):
         self.instanceParamTemplate= Template(keywords.get('instanceParam',  '\n\t.$name = ${value}u,'))
-        self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.ex$name = ${value}u + interruptOffset,'))
+        # Destination strings in chip YAML's per-instance `outputs:` map carry
+        # the absolute vector index (NVIC's own input numbering), so the
+        # emit no longer applies `interruptOffset` — that offset is purely
+        # descriptive of NVIC's relationship to the Cortex-M exception space.
+        self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.ex$name = ${value}u,'))
         self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$ns/$model$incl_suffix"'))
         self.instanceDeclTemplate = Template(keywords.get('instanceDecl', """
 /** Integration parameters for $name */
@@ -39,7 +43,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             p = p.parent
 
     def _loadBlockOrder(self, chip_dir, models_map, model_name):
-        """Return (param_names, interrupt_names, param_defaults) declared
+        """Return (param_names, output_names, param_defaults) declared
         by the block model.
 
         param_defaults is a {name: value} map for params that declare a
@@ -63,7 +67,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             params_decl = block.get('params', [])
             result = (
                 [p['name'] for p in params_decl],
-                [i['name'] for i in block.get('interrupts', [])],
+                [i['name'] for i in block.get('outputs', [])],
                 {p['name']: p['default']
                  for p in params_decl if 'default' in p},
             )
@@ -112,20 +116,38 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         return params
 
     def createInterrupts(self, instance_name, instance, int_order):
-        by_name = {}
-        for i in instance.get('interrupts', []):
-            by_name.setdefault(i['name'], i)  # dedup, first occurrence wins
+        """Emit ex<NAME> designated initialisers for this instance's NVIC-bound
+        outputs.
+
+        Reads `instance['outputs']` — a {signal_name: [destination_string]}
+        map.  Only destinations of the form 'NVIC.<vector>' produce an
+        initialiser; non-NVIC destinations (DMAMUX, EXTI, ...) are silently
+        ignored at this Phase-1 stage and will get their own emit paths as
+        the C++ side grows field-type dispatch.
+        """
+        outputs = instance.get('outputs') or {}
         if int_order is None:
-            ordered = list(by_name.values())
+            names = list(outputs.keys())
         else:
-            unknown = set(by_name) - set(int_order)
+            unknown = set(outputs.keys()) - set(int_order)
             if unknown:
                 raise ValueError(
                     f"chip instance '{instance_name}' (model '{instance['model']}'): "
-                    f"interrupt(s) {sorted(unknown)!r} not declared by block model"
+                    f"output(s) {sorted(unknown)!r} not declared by block model"
                 )
-            ordered = [by_name[n] for n in int_order if n in by_name]
-        return ''.join(self.instanceIntTemplate.substitute(i) for i in ordered)
+            names = [n for n in int_order if n in outputs]
+        out = ''
+        for name in names:
+            for dest in outputs[name]:
+                inst_pfx, dot, port = dest.partition('.')
+                if not dot or inst_pfx != 'NVIC':
+                    continue
+                try:
+                    vec = int(port)
+                except ValueError:
+                    continue
+                out += self.instanceIntTemplate.substitute(name=name, value=vec)
+        return out
 
     def createIntegration(self, chip, chip_path, namespace, incl_suffix):
         """ create list of integration structs.
@@ -193,19 +215,30 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         return chain
 
     def _collectInterrupts(self, chip, chip_path):
-        """Union the chip's `interrupts:` map with each ancestor reached via
-        `inherits:`.  Same-vector entries are concatenated (union of lists).
+        """Derive the NVIC vector table by walking each instance's per-output
+        destinations across the chip + every ancestor reached via `inherits:`.
+
+        Returns {vec: ["inst.signal", ...]}.  Only destinations of the form
+        `NVIC.<vector>` contribute; vectors are absolute (NVIC's own input
+        numbering).  Used by createHeader to size `interruptCount`.
         """
-        merged = {}
-        # Walk root-first so chip entries appear last in any shared-vector list
-        # (preserves "chip-specific first" ordering the extractor produces).
-        for node, _ in reversed(self._walkInheritsChain(chip, chip_path)):
-            for vec, entries in (node.get('interrupts') or {}).items():
-                bucket = merged.setdefault(vec, [])
-                for e in entries:
-                    if e not in bucket:
-                        bucket.append(e)
-        return merged
+        instances, _ = self._collectInstances(chip, chip_path)
+        table = {}
+        for inst_name, inst in instances.items():
+            for sig, dests in (inst.get('outputs') or {}).items():
+                for dest in dests:
+                    inst_pfx, dot, port = dest.partition('.')
+                    if not dot or inst_pfx != 'NVIC':
+                        continue
+                    try:
+                        vec = int(port)
+                    except ValueError:
+                        continue
+                    entry = f"{inst_name}.{sig}"
+                    bucket = table.setdefault(vec, [])
+                    if entry not in bucket:
+                        bucket.append(entry)
+        return dict(sorted(table.items()))
 
     def _collectInstances(self, chip, chip_path):
         """Merge the chip's `instances:` and `models:` maps with each

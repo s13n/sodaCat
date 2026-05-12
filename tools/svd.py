@@ -227,7 +227,6 @@ def collateCpu(device:dict):
             "vtorPresent", "vendorSystickConfig",
         ])
     device['interruptOffset'] = 16     #TODO: Make this dependent on CPU type
-    device['interrupts'] = device.get('interrupts', [])
 
 def collateDevice(root:dict):
     """ go through the device and collate all its information
@@ -421,7 +420,7 @@ def processChip(svd_root, chip_name, blocks_config):
                             entry['description'] = desc
                         intrs.append(entry)
                 if intrs:
-                    block_data['interrupts'] = intrs
+                    block_data['outputs'] = intrs
 
         return blocks, chip_peripheral_refs, chip
     except Exception as e:

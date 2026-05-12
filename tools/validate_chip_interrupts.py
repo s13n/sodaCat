@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Validate that chip-level interrupt names match their block model's canonical list.
+"""Validate that chip-level output names match their block model's canonical list.
 
 For every chip model (top-level `instances:` map), for every instance, look up
 the referenced block YAML via the chip's `models:` map and verify that each
-interrupt name the chip declares appears in the block's `interrupts:` list.
+output name the chip declares (under per-instance `outputs:`) appears in the
+block's `outputs:` list.
 
 This catches:
 
-  * Stale chip YAMLs that still use a SVD-raw interrupt name after the block's
+  * Stale chip YAMLs that still use a SVD-raw signal name after the block's
     canonical name was renamed.
-  * Hand-maintained chip YAMLs that invented an interrupt name the block
-    doesn't know about — drivers that switch on the block's canonical names
-    would never see those entries.
+  * Hand-maintained chip YAMLs that invented an output name the block doesn't
+    know about — drivers that switch on the block's canonical names would
+    never see those entries.
 
 The block index is built once over the full `--models-root` tree so cross-vendor
 chips (e.g. ARM/MPS2 chips referencing models in models/ARM/) resolve correctly
@@ -24,10 +25,14 @@ Usage:
 
 import argparse
 import glob
+import re
 import sys
 from pathlib import Path
 
 import yaml
+
+
+_DEST_RE = re.compile(r'^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)$')
 
 
 def _safe_load(path):
@@ -38,7 +43,7 @@ def _safe_load(path):
 
 
 def build_block_index(models_root):
-    """Map 'Vendor/.../BlockName' (no extension) -> set of canonical IRQ names.
+    """Map 'Vendor/.../BlockName' (no extension) -> set of declared output names.
 
     A YAML file is treated as a block model if it has a top-level `registers`
     key.  Chip models (which have `instances` instead) are skipped.
@@ -50,7 +55,7 @@ def build_block_index(models_root):
         if not isinstance(data, dict) or 'registers' not in data:
             continue
         rel = f.relative_to(root).with_suffix('').as_posix()
-        index[rel] = {i['name'] for i in (data.get('interrupts') or [])}
+        index[rel] = {i['name'] for i in (data.get('outputs') or [])}
     return index
 
 
@@ -59,7 +64,8 @@ def is_chip(data):
 
 
 def check_chip(chip_path, data, block_index):
-    """Return [(check_id, message)] for IRQ name mismatches in one chip."""
+    """Return [(check_id, message)] for output-name mismatches and malformed
+    destinations in one chip."""
     errors = []
     models_map = data.get('models') or {}
     for inst_name, inst in data['instances'].items():
@@ -70,20 +76,40 @@ def check_chip(chip_path, data, block_index):
             continue
         block_path = models_map.get(model, model)
         canon = block_index.get(block_path)
-        if canon is None:
-            # No matching block file — could be an external IP not in the repo.
-            # The chip schema validator catches missing models-map entries; we
-            # only flag interrupt mismatches here.
-            continue
-        for irq in inst.get('interrupts') or []:
-            name = irq.get('name')
-            if name and name not in canon:
-                errors.append((
-                    'intr-canon',
-                    f"instance '{inst_name}' (model={model}, "
-                    f"block={block_path}): interrupt '{name}' not in "
-                    f"block's canonical list {sorted(canon)}"
-                ))
+        outputs = inst.get('outputs') or {}
+        if canon is not None:
+            for name in outputs:
+                if name not in canon:
+                    errors.append((
+                        'out-canon',
+                        f"instance '{inst_name}' (model={model}, "
+                        f"block={block_path}): output '{name}' not in "
+                        f"block's declared outputs {sorted(canon)}"
+                    ))
+        # Phase 1: every destination should be 'NVIC.<int>'.  Looser checks
+        # (other destination kinds) come in Phase 2 once DMAMUX/EXTI are
+        # modelled as instances and the schema can validate against them.
+        for name, dests in outputs.items():
+            for dest in (dests or []):
+                m = _DEST_RE.match(dest) if isinstance(dest, str) else None
+                if not m:
+                    errors.append((
+                        'out-dest',
+                        f"instance '{inst_name}': output '{name}' has "
+                        f"malformed destination '{dest}'"
+                    ))
+                    continue
+                target, port = m.group(1), m.group(2)
+                if target == 'NVIC':
+                    try:
+                        int(port)
+                    except ValueError:
+                        errors.append((
+                            'out-dest',
+                            f"instance '{inst_name}': output '{name}' "
+                            f"destination '{dest}' has non-integer NVIC "
+                            f"vector"
+                        ))
     return errors
 
 
