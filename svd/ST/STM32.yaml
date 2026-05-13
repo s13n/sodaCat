@@ -2411,29 +2411,29 @@ families:
           - {name: has_fmssr, type: bool, default: false, description: Flash Memory Stop / Flash Interface Stop while System Run}
           - {name: wakeup_pins, type: int, default: 1, max: 3, description: 'Number of WKUP pins (1, 2, or 3)'}
         transforms:
-      # Fix EWUP naming to numbered convention (RM uses EWUP1 on multi-pin chips)
+          # Fix EWUP naming to numbered convention (RM uses EWUP1 on multi-pin chips)
           - {type: renameFields, register: CSR, pattern: ^EWUP$, replacement: EWUP1}
-      # Add EWUP3 (bit 6) for 3-pin chips (F410/F412/F413)
+          # Add EWUP3 (bit 6) for 3-pin chips (F410/F412/F413)
           - type: patchFields
             register: CSR
             fields:
               - {name: EWUP3, description: Enable WKUP3 pin, bitOffset: 6, bitWidth: 1, access: read-write}
-      # Clone CR → CR_LVDS (non-OD variant): remove OD-only fields
+          # Clone CR → CR_LVDS (non-OD variant): remove OD-only fields
           - type: cloneRegister
             source: CR
             name: CR_LVDS
             removeFields: [ODEN, ODSWEN, UDEN]
-      # Set CR_LVDS resetValue to 0x8000 (VOS=0b10, Scale 2)
+          # Set CR_LVDS resetValue to 0x8000 (VOS=0b10, Scale 2)
           - {type: patchRegisters, registers: [{name: CR_LVDS, resetValue: 32768}]}
-      # Rename CR fields to OD names (CR becomes the OD variant)
+          # Rename CR fields to OD names (CR becomes the OD variant)
           - {type: renameFields, register: CR, pattern: LPLVDS, replacement: LPUDS}
           - {type: renameFields, register: CR, pattern: MRLVDS, replacement: MRUDS}
-      # Clone CSR → CSR_LVDS (non-OD variant): remove OD status fields
+          # Clone CSR → CSR_LVDS (non-OD variant): remove OD status fields
           - type: cloneRegister
             source: CSR
             name: CSR_LVDS
             removeFields: [ODRDY, ODSWRDY, UDRDY]
-      # Fix addressBlock size (2 registers × 4 bytes = 8)
+          # Fix addressBlock size (2 registers × 4 bytes = 8)
           - {type: patchAddressBlock, size: 8}
       QUADSPI:
         uses: QUADSPI
@@ -2884,7 +2884,7 @@ families:
         from: STM32F722.SYSCFG
         instances: [SYSCFG]
         transforms:
-      # F722 MEMRMP is correct (MEM_BOOT + SWP_FMC), add SWP_FB for F76x
+          # F722 MEMRMP is correct (MEM_BOOT + SWP_FMC), add SWP_FB for F76x
           - type: patchFields
             register: MEMRMP
             fields:
@@ -2892,8 +2892,8 @@ families:
                 description: Flash Bank swap
                 bitOffset: 8
                 bitWidth: 1
-      # F722 PMC has I2C1-3_FMP + PBx_FMP + ADCDC2(16:3); add I2C4_FMP,
-      # split ADCDC2 into individual fields, add MII_RMII_SEL
+          # F722 PMC has I2C1-3_FMP + PBx_FMP + ADCDC2(16:3); add I2C4_FMP,
+          # split ADCDC2 into individual fields, add MII_RMII_SEL
           - type: patchFields
             register: PMC
             fields:
@@ -3407,7 +3407,7 @@ families:
         clocks:
           instance: RCC
           signals:
-  # --- Oscillators ---
+            # --- Oscillators ---
             - name: hsi_osc
               description: High-speed internal RC oscillator raw output (before HSIDIV)
               nominal: 64000000
@@ -3437,11 +3437,11 @@ families:
               description: 48 MHz internal RC oscillator (CRS-trimmable, kernel-clock side)
               nominal: 48000000
 
-  # --- External inputs ---
+            # --- External inputs ---
             - name: AUDIOCLK
               description: External audio clock input pin (alternate function)
 
-  # --- PLL reference clocks ---
+            # --- PLL reference clocks ---
             - name: pll1_src
               description: PLL1 source clock (selected by PLL1SRC, before DIVM1)
             - name: pll2_src
@@ -3455,13 +3455,13 @@ families:
               min: 1000000
               max: 16000000
 
-  # --- PLL VCO outputs ---
+            # --- PLL VCO outputs ---
             - name: vco1_ck
               description: PLL1 VCO output
             - name: vco2_ck
               description: PLL2 VCO output
 
-  # --- PLL post-divider outputs ---
+            # --- PLL post-divider outputs ---
             - name: pll1_p_raw
               description: PLL1 P divider output (system clock candidate) (before enable gate)
               max: 250000000
@@ -3499,7 +3499,7 @@ families:
               description: PLL2 R divider output (gated)
               max: 250000000
 
-  # --- System / domain clocks ---
+            # --- System / domain clocks ---
             - name: sys_ck
               description: System clock (SYSCLK)
               max: 250000000
@@ -3519,7 +3519,7 @@ families:
               description: APB3 peripheral bus clock
               max: 250000000
 
-  # --- Timer kernel clocks ---
+            # --- Timer kernel clocks ---
             - name: rcc_timx_ker_ck
               description: APB1/APB3 timer kernel clock (TIM2/3/6/7, LPTIM1/2)
               max: 250000000
@@ -3527,7 +3527,7 @@ families:
               description: APB2 timer kernel clock (TIM1)
               max: 250000000
 
-  # --- Kernel clocks (per-peripheral muxes) ---
+            # --- Kernel clocks (per-peripheral muxes) ---
             - name: per_ck
               description: Direct kernel clock for peripherals (HSI/CSI/HSE selectable via CKPERSEL)
             - name: usart1_ker_ck
@@ -3571,7 +3571,7 @@ families:
             - name: tim_ic_internal_ck
               description: Internal source for TIM2/3/LPTIM2 input-capture frequency measurement (TIMICSEL output)
 
-  # --- RTC ---
+            # --- RTC ---
             - name: hse_1M_ck
               description: HSE divided by RTCPRE for RTC clock candidate
             - name: rtc_pre
@@ -3579,7 +3579,7 @@ families:
             - name: rtc_ck
               description: RTC clock (gated)
 
-  # --- MCO outputs ---
+            # --- MCO outputs ---
             - name: mco1_pre
               description: MCO1 source after MCO1SEL mux (before MCO1PRE prescaler)
             - name: mco1
@@ -3591,7 +3591,7 @@ families:
             - name: lsco
               description: Low-speed clock output
 
-  # --- Peripheral bus clocks (gate outputs) ---
+            # --- Peripheral bus clocks (gate outputs) ---
             - name: gpdma1_hclk
               max: 250000000
             - name: gpdma2_hclk
@@ -3683,9 +3683,9 @@ families:
             - name: rtcapb_pclk
               max: 250000000
 
-# ===========================================================================
-# Generators (oscillators and external inputs)
-# ===========================================================================
+          # ===========================================================================
+          # Generators (oscillators and external inputs)
+          # ===========================================================================
           generators:
             - name: HSI64
               description: 64 MHz high-speed internal RC oscillator
@@ -3739,11 +3739,11 @@ families:
               description: External audio clock input pin (alternate function)
               output: AUDIOCLK
 
-# ===========================================================================
-# Muxes
-# ===========================================================================
+          # ===========================================================================
+          # Muxes
+          # ===========================================================================
           muxes:
-  # --- PLL source muxes (independent per PLL on H5, unlike H7) ---
+            # --- PLL source muxes (independent per PLL on H5, unlike H7) ---
             - name: PLL1SRC
               description: PLL1 reference clock source
               output: pll1_src
@@ -3768,7 +3768,7 @@ families:
                 reg: PLL2CFGR
                 field: PLL2SRC
 
-  # --- System clock ---
+            # --- System clock ---
             - name: SW
               description: System clock switch
               output: sys_ck
@@ -3781,7 +3781,7 @@ families:
                 reg: CFGR1
                 field: SW
 
-  # --- per_ck (peripheral clock from oscillators) ---
+            # --- per_ck (peripheral clock from oscillators) ---
             - name: CKPERSEL
               description: per_ck source selection (kernel clock for several peripherals)
               output: per_ck
@@ -3794,7 +3794,7 @@ families:
                 reg: CCIPR5
                 field: CKPERSEL
 
-  # --- RTC source ---
+            # --- RTC source ---
             - name: RTCSEL
               description: RTC clock source selection
               output: rtc_pre
@@ -3807,7 +3807,7 @@ families:
                 reg: BDCR
                 field: RTCSEL
 
-  # --- MCO outputs ---
+            # --- MCO outputs ---
             - name: MCO1SEL
               description: Microcontroller clock output 1 source
               output: mco1_pre
@@ -3845,7 +3845,7 @@ families:
                 reg: BDCR
                 field: LSCOSEL
 
-  # --- USART per-instance kernel clock muxes (CCIPR1) ---
+            # --- USART per-instance kernel clock muxes (CCIPR1) ---
             - name: USART1SEL
               description: USART1 kernel clock source selection
               output: usart1_ker_ck
@@ -3888,12 +3888,12 @@ families:
                 reg: CCIPR1
                 field: USART3SEL
 
-  # --- TIM2/3/LPTIM2 input-capture internal source (CCIPR1.TIMICSEL) ---
-  # 1-bit field: 0 = no internal clock; 1 = a bundle of hsi_ker_ck/1024,
-  # hsi_ker_ck/8 and csi_ker_ck/128 is presented to the timer input-capture
-  # multiplexer.  Modelled here as a simple gate-style mux selecting
-  # hsi_ker_ck (the dominant entry of the bundle); the divisors and the
-  # bundling are not separately representable in this schema.
+            # --- TIM2/3/LPTIM2 input-capture internal source (CCIPR1.TIMICSEL) ---
+            # 1-bit field: 0 = no internal clock; 1 = a bundle of hsi_ker_ck/1024,
+            # hsi_ker_ck/8 and csi_ker_ck/128 is presented to the timer input-capture
+            # multiplexer.  Modelled here as a simple gate-style mux selecting
+            # hsi_ker_ck (the dominant entry of the bundle); the divisors and the
+            # bundling are not separately representable in this schema.
             - name: TIMICSEL
               description: TIM2/3/LPTIM2 input-capture internal clock source enable
               output: tim_ic_internal_ck
@@ -3904,7 +3904,7 @@ families:
                 reg: CCIPR1
                 field: TIMICSEL
 
-  # --- LPTIM kernel clock muxes (CCIPR2) ---
+            # --- LPTIM kernel clock muxes (CCIPR2) ---
             - name: LPTIM1SEL
               description: LPTIM1 kernel clock source selection
               output: lptim1_ker_ck
@@ -3933,7 +3933,7 @@ families:
                 reg: CCIPR2
                 field: LPTIM2SEL
 
-  # --- SPI / LPUART kernel clock muxes (CCIPR3) ---
+            # --- SPI / LPUART kernel clock muxes (CCIPR3) ---
             - name: SPI1SEL
               description: SPI1 kernel clock source selection
               output: spi1_ker_ck
@@ -3987,7 +3987,7 @@ families:
                 reg: CCIPR3
                 field: LPUART1SEL
 
-  # --- SysTick / USB / I2C / I3C kernel clock muxes (CCIPR4) ---
+            # --- SysTick / USB / I2C / I3C kernel clock muxes (CCIPR4) ---
             - name: SYSTICKSEL
               description: Cortex SysTick clock source selection
               output: systick_ker_ck
@@ -4060,7 +4060,7 @@ families:
                 reg: CCIPR4
                 field: I3C2SEL
 
-  # --- ADC/DAC, RNG, FDCAN kernel clock muxes (CCIPR5) ---
+            # --- ADC/DAC, RNG, FDCAN kernel clock muxes (CCIPR5) ---
             - name: ADCDACSEL
               description: ADC and DAC kernel clock source selection
               output: adcdac_ker_ck
@@ -4109,9 +4109,9 @@ families:
                 reg: CCIPR5
                 field: FDCAN1SEL
 
-# ===========================================================================
-# PLLs
-# ===========================================================================
+          # ===========================================================================
+          # PLLs
+          # ===========================================================================
           plls:
             - name: PLL1
               description: Main PLL (fractional-N), system clock and high-bandwidth peripheral kernel clocks
@@ -4156,11 +4156,11 @@ families:
                 min: 150000000
                 max: 836000000
 
-# ===========================================================================
-# Dividers
-# ===========================================================================
+          # ===========================================================================
+          # Dividers
+          # ===========================================================================
           dividers:
-  # --- HSI predivider ---
+            # --- HSI predivider ---
             - name: HSIDIV
               description: HSI oscillator prescaler (selects 8/16/32/64 MHz)
               input: hsi_osc
@@ -4170,7 +4170,7 @@ families:
                 field: HSIDIV
                 values: [1, 2, 4, 8]
 
-  # --- PLL input prescalers ---
+            # --- PLL input prescalers ---
             - name: DIVM1
               description: PLL1 input prescaler (DIVM1 in PLL1CFGR)
               input: pll1_src
@@ -4194,7 +4194,7 @@ families:
                   min: 0
                   max: 63
 
-  # --- PLL1 output dividers ---
+            # --- PLL1 output dividers ---
             - name: DIVP1
               description: PLL1 P output divider
               input: vco1_ck
@@ -4233,7 +4233,7 @@ families:
                   offset: 1
               notes: Field value 0 is not allowed.
 
-  # --- PLL2 output dividers ---
+            # --- PLL2 output dividers ---
             - name: DIVP2
               description: PLL2 P output divider
               input: vco2_ck
@@ -4270,7 +4270,7 @@ families:
                   max: 127
                   offset: 1
 
-  # --- Bus prescalers ---
+            # --- Bus prescalers ---
             - name: HPRE
               description: AHB prescaler (sys_ck to rcc_hclk)
               input: sys_ck
@@ -4307,7 +4307,7 @@ families:
                 field: PPRE3
                 values: [1, 1, 1, 1, 2, 4, 8, 16]
 
-  # --- Timer kernel-clock prescalers ---
+            # --- Timer kernel-clock prescalers ---
             - name: TIMX_PRESCALER
               description: APB1/APB3 timer kernel-clock prescaler from rcc_hclk
               input: rcc_hclk
@@ -4326,14 +4326,14 @@ families:
               output: rcc_timy_ker_ck
               notes: Same logic as TIMX_PRESCALER but using PPRE2 instead of PPRE1.
 
-  # --- Fixed /8 divider for SysTick ---
+            # --- Fixed /8 divider for SysTick ---
             - name: SYSTICK_DIV8
               description: Fixed /8 divider feeding the SysTick clock candidate
               input: rcc_hclk
               output: rcc_hclk_div8
               value: 8
 
-  # --- HSE division for RTC ---
+            # --- HSE division for RTC ---
             - name: RTCPRE
               description: HSE division factor for RTC clock (programmable /1..63)
               input: hse_ck
@@ -4346,7 +4346,7 @@ families:
                   max: 63
               notes: Values 0 and 1 produce no clock. Values 2-63 divide HSE by that amount.
 
-  # --- MCO output prescalers ---
+            # --- MCO output prescalers ---
             - name: MCO1PRE
               description: MCO1 output prescaler
               input: mco1_pre
@@ -4371,11 +4371,11 @@ families:
                   max: 15
               notes: Value 0 disables the MCO2 output. Values 1-15 divide by that amount.
 
-# ===========================================================================
-# Gates
-# ===========================================================================
+          # ===========================================================================
+          # Gates
+          # ===========================================================================
           gates:
-  # --- Oscillator kernel-clock gates ---
+            # --- Oscillator kernel-clock gates ---
             - name: HSIKERON
               description: HSI kernel clock enable for Stop mode
               input: hsi_ck
@@ -4392,7 +4392,7 @@ families:
                 reg: CR
                 field: CSIKERON
 
-  # --- PLL output enable gates ---
+            # --- PLL output enable gates ---
             - name: PLL1PEN
               description: PLL1 P output enable
               input: pll1_p_raw
@@ -4441,7 +4441,7 @@ families:
                 reg: PLL2CFGR
                 field: PLL2REN
 
-  # --- RTC gate ---
+            # --- RTC gate ---
             - name: RTCEN
               description: RTC clock enable
               input: rtc_pre
@@ -4450,9 +4450,9 @@ families:
                 reg: BDCR
                 field: RTCEN
 
-  # =========================================================================
-  # Peripheral clock gates — AHB1 (RCC_AHB1ENR)
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB1 (RCC_AHB1ENR)
+            # =========================================================================
             - name: GPDMA1EN
               description: GPDMA1 clock enable
               input: rcc_hclk
@@ -4489,9 +4489,9 @@ families:
               output: sram1_hclk
               control: {reg: AHB1ENR, field: SRAM1EN}
 
-  # =========================================================================
-  # Peripheral clock gates — AHB2 (RCC_AHB2ENR)
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB2 (RCC_AHB2ENR)
+            # =========================================================================
             - name: GPIOAEN
               description: GPIOA clock enable
               input: rcc_hclk
@@ -4543,9 +4543,9 @@ families:
               output: sram2_hclk
               control: {reg: AHB2ENR, field: SRAM2EN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB1L (RCC_APB1LENR)
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1L (RCC_APB1LENR)
+            # =========================================================================
             - name: TIM2EN
               description: TIM2 clock enable
               input: rcc_pclk1
@@ -4622,9 +4622,9 @@ families:
               output: crs_pclk
               control: {reg: APB1LENR, field: CRSEN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB1H (RCC_APB1HENR)
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1H (RCC_APB1HENR)
+            # =========================================================================
             - name: DTSEN
               description: DTS clock enable
               input: rcc_pclk1
@@ -4641,9 +4641,9 @@ families:
               output: fdcan1_pclk
               control: {reg: APB1HENR, field: FDCAN1EN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB2 (RCC_APB2ENR)
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB2 (RCC_APB2ENR)
+            # =========================================================================
             - name: TIM1EN
               description: TIM1 clock enable
               input: rcc_pclk2
@@ -4665,9 +4665,9 @@ families:
               output: usbfs_pclk
               control: {reg: APB2ENR, field: USBFSEN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB3 (RCC_APB3ENR)
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB3 (RCC_APB3ENR)
+            # =========================================================================
             - name: SBSEN
               description: SBS clock enable
               input: rcc_pclk3
@@ -5079,7 +5079,7 @@ families:
         clocks:
           instance: RCC
           signals:
-  # --- Oscillators ---
+            # --- Oscillators ---
             - name: hsi_osc
               description: High-speed internal RC oscillator raw output (before HSIDIV)
               nominal: 64000000
@@ -5112,11 +5112,11 @@ families:
               description: 48 MHz internal RC oscillator (trimmable via CRS)
               nominal: 48000000
 
-  # --- External inputs ---
+            # --- External inputs ---
             - name: I2S_CKIN
               description: External I2S clock input pin
 
-  # --- PLL reference clocks ---
+            # --- PLL reference clocks ---
             - name: pll_src
               description: Common PLL source clock (before per-PLL prescalers)
             - name: ref1_ck
@@ -5132,7 +5132,7 @@ families:
               min: 1000000
               max: 16000000
 
-  # --- PLL VCO outputs ---
+            # --- PLL VCO outputs ---
             - name: vco1_ck
               description: PLL1 VCO output
             - name: vco2_ck
@@ -5140,7 +5140,7 @@ families:
             - name: vco3_ck
               description: PLL3 VCO output
 
-  # --- PLL post-divider outputs ---
+            # --- PLL post-divider outputs ---
             - name: pll1_p_raw
               description: PLL1 P divider output (system clock candidate) (before enable gate)
               max: 480000000
@@ -5196,7 +5196,7 @@ families:
               description: PLL3 R divider output (gated)
               max: 480000000
 
-  # --- System / domain clocks ---
+            # --- System / domain clocks ---
             - name: sys_ck
               description: System clock
               max: 480000000
@@ -5219,7 +5219,7 @@ families:
               description: APB4 peripheral bus clock (D3 domain)
               max: 120000000
 
-  # --- Timer clocks ---
+            # --- Timer clocks ---
             - name: rcc_timx_ker_ck
               description: Timer kernel clock for APB1 timers (TIM2-7, TIM12-14)
               max: 480000000
@@ -5227,7 +5227,7 @@ families:
               description: Timer kernel clock for APB2 timers (TIM1, TIM8, TIM15-17)
               max: 480000000
 
-  # --- Kernel clocks ---
+            # --- Kernel clocks ---
             - name: per_ck
               description: Direct kernel clock for peripherals (hsi/csi/hse selectable)
             - name: sdmmc_ker_ck
@@ -5281,7 +5281,7 @@ families:
             - name: dfsdm1_ker_ck
               description: DFSDM1 processing clock
 
-  # --- RTC ---
+            # --- RTC ---
             - name: hse_rtc_ck
               description: HSE divided for RTC
             - name: rtc_pre
@@ -5289,15 +5289,15 @@ families:
             - name: rtc_ck
               description: RTC/AWU clock source (gated)
 
-  # --- MCO outputs ---
+            # --- MCO outputs ---
             - name: mco1
               description: Microcontroller clock output 1
             - name: mco2
               description: Microcontroller clock output 2
 
-# ===========================================================================
-# Generators (oscillators and external inputs)
-# ===========================================================================
+            # ===========================================================================
+            # Generators (oscillators and external inputs)
+            # ===========================================================================
             - name: adc12_hclk
               max: 240000000
             - name: adc3_hclk
@@ -5560,11 +5560,11 @@ families:
               description: External I2S clock input pin
               output: I2S_CKIN
 
-# ===========================================================================
-# Muxes
-# ===========================================================================
+          # ===========================================================================
+          # Muxes
+          # ===========================================================================
           muxes:
-  # --- PLL source ---
+            # --- PLL source ---
             - name: PLLSRC
               description: Common source for all three PLLs
               output: pll_src
@@ -5577,7 +5577,7 @@ families:
                 reg: PLLCKSELR
                 field: PLLSRC
 
-  # --- System clock ---
+            # --- System clock ---
             - name: SW
               description: System clock switch
               output: sys_ck
@@ -5594,7 +5594,7 @@ families:
                 reg: CFGR
                 field: SW
 
-  # --- per_ck ---
+            # --- per_ck ---
             - name: CKPERSEL
               description: External peripheral clock source selection
               output: per_ck
@@ -5607,7 +5607,7 @@ families:
                 reg: D1CCIPR
                 field: CKPERSEL
 
-  # --- RTC source ---
+            # --- RTC source ---
             - name: RTCSEL
               description: RTC clock source selection
               output: rtc_pre
@@ -5620,7 +5620,7 @@ families:
                 reg: BDCR
                 field: RTCSEL
 
-  # --- MCO1 ---
+            # --- MCO1 ---
             - name: MCO1SEL
               description: Microcontroller clock output 1 source
               output: mco1_pre_ck
@@ -5637,7 +5637,7 @@ families:
                 reg: CFGR
                 field: MCO1
 
-  # --- MCO2 ---
+            # --- MCO2 ---
             - name: MCO2SEL
               description: Microcontroller clock output 2 source
               output: mco2_pre_ck
@@ -5655,7 +5655,7 @@ families:
                 field: MCO2
 
 
-  # --- D1 domain kernel clock muxes ---
+            # --- D1 domain kernel clock muxes ---
             - name: SDMMCSEL
               description: SDMMC1/2 kernel clock source selection
               output: sdmmc_ker_ck
@@ -5690,7 +5690,7 @@ families:
                 reg: D1CCIPR
                 field: FMCSEL
 
-  # --- D2 domain kernel clock muxes ---
+            # --- D2 domain kernel clock muxes ---
             - name: FDCANSEL
               description: FDCAN kernel clock source selection
               output: fdcan_ker_ck
@@ -5879,7 +5879,7 @@ families:
                 reg: D2CCIP2R
                 field: LPTIM1SEL
 
-  # --- D3 domain kernel clock muxes ---
+            # --- D3 domain kernel clock muxes ---
             - name: SPI6SEL
               description: SPI6 kernel clock source selection
               output: spi6_ker_ck
@@ -6000,9 +6000,9 @@ families:
                 reg: D3CCIPR
                 field: LPUART1SEL
 
-# ===========================================================================
-# PLLs
-# ===========================================================================
+          # ===========================================================================
+          # PLLs
+          # ===========================================================================
           plls:
             - name: PLL1
               description: Main system PLL (fractional-N)
@@ -6068,11 +6068,11 @@ families:
                 min: 150000000
                 max: 960000000
 
-# ===========================================================================
-# Dividers
-# ===========================================================================
+          # ===========================================================================
+          # Dividers
+          # ===========================================================================
           dividers:
-  # --- HSI divider ---
+            # --- HSI divider ---
             - name: HSIDIV
               description: HSI oscillator prescaler
               input: hsi_osc
@@ -6082,14 +6082,14 @@ families:
                 field: HSIDIV
                 values: [1, 2, 4, 8]
 
-  # --- CEC fixed divider ---
+            # --- CEC fixed divider ---
             - name: CSI_CEC_DIV
               description: Fixed /122 divider for HDMI-CEC from CSI kernel clock
               input: csi_ker_ck
               output: csi_ker_div122
               value: 122
 
-  # --- PLL input prescalers ---
+            # --- PLL input prescalers ---
             - name: DIVM1
               description: PLL1 prescaler (division factor for PLL1 reference clock)
               input: pll_src
@@ -6124,7 +6124,7 @@ families:
                   min: 0
                   max: 63
 
-  # --- PLL output dividers ---
+            # --- PLL output dividers ---
             - name: DIVP1
               description: PLL1 P output divider
               input: vco1_ck
@@ -6235,7 +6235,7 @@ families:
                   max: 127
                   offset: 1
 
-  # --- Domain prescalers ---
+            # --- Domain prescalers ---
             - name: D1CPRE
               description: D1 domain CPU clock prescaler (sys_ck to CPU1)
               input: sys_ck
@@ -6290,7 +6290,7 @@ families:
                 field: D3PPRE
                 values: [1, 1, 1, 1, 2, 4, 8, 16]
 
-  # --- Timer clock prescalers ---
+            # --- Timer clock prescalers ---
             - name: TIMX_PRESCALER
               description: APB1 timer clock prescaler from HCLK
               input: rcc_hclk
@@ -6311,7 +6311,7 @@ families:
                 With TIMPRE=0: divisor = max(1, D2PPRE2_ratio / 2). With TIMPRE=1:
                 divisor = max(1, D2PPRE2_ratio / 4).
 
-  # --- HSE division for RTC ---
+            # --- HSE division for RTC ---
             - name: RTCPRE
               description: HSE division factor for RTC clock
               input: hse_ck
@@ -6324,9 +6324,9 @@ families:
                   max: 63
               notes: Values 0 and 1 produce no clock. Values 2-63 divide HSE by that amount.
 
-# ===========================================================================
-# Gates
-# ===========================================================================
+            # ===========================================================================
+            # Gates
+            # ===========================================================================
             - name: MCO1PRE
               description: MCO1 output-pin prescaler
               input: mco1_pre_ck
@@ -6348,7 +6348,7 @@ families:
                   max: 15
               notes: 4-bit field at CFGR[28:25].  Value 0 disables the MCO output entirely; values 1-15 divide by the corresponding integer.
           gates:
-  # --- HSI/CSI kernel clock gates ---
+            # --- HSI/CSI kernel clock gates ---
             - name: HSIKERON
               description: HSI kernel clock enable for Stop mode
               input: hsi_ck
@@ -6365,7 +6365,7 @@ families:
                 reg: CR
                 field: CSIKERON
 
-  # --- PLL output enable gates ---
+            # --- PLL output enable gates ---
             - name: DIVP1EN
               description: PLL1 P output enable
               input: pll1_p_raw
@@ -6438,7 +6438,7 @@ families:
                 reg: PLLCFGR
                 field: DIVR3EN
 
-  # --- RTC gate ---
+            # --- RTC gate ---
             - name: RTCEN
               description: RTC clock enable
               input: rtc_pre
@@ -6447,10 +6447,10 @@ families:
                 reg: BDCR
                 field: RTCEN
 
-  # =========================================================================
-  # Peripheral clock gates — AHB3 (D1 domain)
-  # Register: RCC_AHB3ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB3 (D1 domain)
+            # Register: RCC_AHB3ENR
+            # =========================================================================
             - name: MDMAEN
               description: MDMA peripheral clock enable
               input: rcc_hclk
@@ -6487,10 +6487,10 @@ families:
               output: octospim_hclk
               control: {reg: 'C1_AHB3ENR', field: IOMNGREN}
 
-  # =========================================================================
-  # Peripheral clock gates — AHB1 (D2 domain)
-  # Register: RCC_AHB1ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB1 (D2 domain)
+            # Register: RCC_AHB1ENR
+            # =========================================================================
             - name: DMA1EN
               description: DMA1 clock enable
               input: rcc_hclk
@@ -6567,10 +6567,10 @@ families:
               output: fmac_hclk
               control: {reg: 'C1_AHB2ENR', field: FMACEN}
 
-  # =========================================================================
-  # Peripheral clock gates — AHB4 (D3 domain)
-  # Register: RCC_AHB4ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB4 (D3 domain)
+            # Register: RCC_AHB4ENR
+            # =========================================================================
             - name: GPIOAEN
               description: GPIOA clock enable
               input: rcc_hclk
@@ -6647,10 +6647,10 @@ families:
               output: bkpram_hclk
               control: {reg: 'C1_AHB4ENR', field: BKPRAMEN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB3 (D1 domain)
-  # Register: RCC_APB3ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB3 (D1 domain)
+            # Register: RCC_APB3ENR
+            # =========================================================================
             - name: LTDCEN
               description: LTDC peripheral clock enable
               input: rcc_pclk3
@@ -6662,10 +6662,10 @@ families:
               output: wwdg_pclk
               control: {reg: 'C1_APB3ENR', field: WWDG1EN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB1 low (D2 domain)
-  # Register: RCC_APB1LENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1 low (D2 domain)
+            # Register: RCC_APB1LENR
+            # =========================================================================
             - name: TIM2EN
               description: TIM2 clock enable
               input: rcc_pclk1
@@ -6827,10 +6827,10 @@ families:
               output: tim24_pclk
               control: {reg: 'C1_APB1HENR', field: TIM24EN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB2 (D2 domain)
-  # Register: RCC_APB2ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB2 (D2 domain)
+            # Register: RCC_APB2ENR
+            # =========================================================================
             - name: TIM1EN
               description: TIM1 clock enable
               input: rcc_pclk2
@@ -6972,7 +6972,7 @@ families:
         clocks:
           instance: RCC
           signals:
-  # --- Oscillators ---
+            # --- Oscillators ---
             - name: hsi_osc
               description: High-speed internal RC oscillator raw output (before HSIDIV)
               nominal: 64000000
@@ -7005,11 +7005,11 @@ families:
               description: 48 MHz internal RC oscillator (trimmable via CRS)
               nominal: 48000000
 
-  # --- External inputs ---
+            # --- External inputs ---
             - name: I2S_CKIN
               description: External I2S clock input pin
 
-  # --- PLL reference clocks ---
+            # --- PLL reference clocks ---
             - name: pll_src
               description: Common PLL source clock (before per-PLL prescalers)
             - name: ref1_ck
@@ -7025,7 +7025,7 @@ families:
               min: 1000000
               max: 16000000
 
-  # --- PLL VCO outputs ---
+            # --- PLL VCO outputs ---
             - name: vco1_ck
               description: PLL1 VCO output
             - name: vco2_ck
@@ -7033,7 +7033,7 @@ families:
             - name: vco3_ck
               description: PLL3 VCO output
 
-  # --- PLL post-divider outputs ---
+            # --- PLL post-divider outputs ---
             - name: pll1_p_raw
               description: PLL1 P divider output (system clock candidate) (before enable gate)
               max: 480000000
@@ -7089,7 +7089,7 @@ families:
               description: PLL3 R divider output (gated)
               max: 480000000
 
-  # --- System / domain clocks ---
+            # --- System / domain clocks ---
             - name: sys_ck
               description: System clock
               max: 480000000
@@ -7112,7 +7112,7 @@ families:
               description: APB4 peripheral bus clock (D3 domain)
               max: 120000000
 
-  # --- Timer clocks ---
+            # --- Timer clocks ---
             - name: rcc_timx_ker_ck
               description: Timer kernel clock for APB1 timers (TIM2-7, TIM12-14)
               max: 480000000
@@ -7123,7 +7123,7 @@ families:
               description: HRTIM kernel clock
               max: 480000000
 
-  # --- Kernel clocks ---
+            # --- Kernel clocks ---
             - name: per_ck
               description: Direct kernel clock for peripherals (hsi/csi/hse selectable)
             - name: sdmmc_ker_ck
@@ -7179,7 +7179,7 @@ families:
             - name: dfsdm1_ker_ck
               description: DFSDM1 processing clock
 
-  # --- RTC ---
+            # --- RTC ---
             - name: hse_rtc_ck
               description: HSE divided for RTC
             - name: rtc_pre
@@ -7187,15 +7187,15 @@ families:
             - name: rtc_ck
               description: RTC/AWU clock source (gated)
 
-  # --- MCO outputs ---
+            # --- MCO outputs ---
             - name: mco1
               description: Microcontroller clock output 1
             - name: mco2
               description: Microcontroller clock output 2
 
-# ===========================================================================
-# Generators (oscillators and external inputs)
-# ===========================================================================
+            # ===========================================================================
+            # Generators (oscillators and external inputs)
+            # ===========================================================================
             - name: adc12_hclk
               max: 240000000
             - name: adc3_hclk
@@ -7443,11 +7443,11 @@ families:
               description: External I2S clock input pin
               output: I2S_CKIN
 
-# ===========================================================================
-# Muxes
-# ===========================================================================
+          # ===========================================================================
+          # Muxes
+          # ===========================================================================
           muxes:
-  # --- PLL source ---
+            # --- PLL source ---
             - name: PLLSRC
               description: Common source for all three PLLs
               output: pll_src
@@ -7460,7 +7460,7 @@ families:
                 reg: PLLCKSELR
                 field: PLLSRC
 
-  # --- System clock ---
+            # --- System clock ---
             - name: SW
               description: System clock switch
               output: sys_ck
@@ -7477,7 +7477,7 @@ families:
                 reg: CFGR
                 field: SW
 
-  # --- per_ck ---
+            # --- per_ck ---
             - name: CKPERSEL
               description: External peripheral clock source selection
               output: per_ck
@@ -7490,7 +7490,7 @@ families:
                 reg: D1CCIPR
                 field: CKPERSEL
 
-  # --- RTC source ---
+            # --- RTC source ---
             - name: RTCSEL
               description: RTC clock source selection
               output: rtc_pre
@@ -7503,7 +7503,7 @@ families:
                 reg: BDCR
                 field: RTCSRC
 
-  # --- MCO1 ---
+            # --- MCO1 ---
             - name: MCO1SEL
               description: Microcontroller clock output 1 source
               output: mco1_pre_ck
@@ -7520,7 +7520,7 @@ families:
                 reg: CFGR
                 field: MCO1SEL
 
-  # --- MCO2 ---
+            # --- MCO2 ---
             - name: MCO2SEL
               description: Microcontroller clock output 2 source
               output: mco2_pre_ck
@@ -7537,7 +7537,7 @@ families:
                 reg: CFGR
                 field: MCO2SEL
 
-  # --- HRTIM clock source ---
+            # --- HRTIM clock source ---
             - name: HRTIMSEL
               description: HRTIM kernel clock source selection
               output: hrtim_ker_ck
@@ -7548,7 +7548,7 @@ families:
                 reg: CFGR
                 field: HRTIMSEL
 
-  # --- D1 domain kernel clock muxes ---
+            # --- D1 domain kernel clock muxes ---
             - name: SDMMCSEL
               description: SDMMC1/2 kernel clock source selection
               output: sdmmc_ker_ck
@@ -7583,7 +7583,7 @@ families:
                 reg: D1CCIPR
                 field: FMCSEL
 
-  # --- D2 domain kernel clock muxes ---
+            # --- D2 domain kernel clock muxes ---
             - name: FDCANSEL
               description: FDCAN kernel clock source selection
               output: fdcan_ker_ck
@@ -7788,7 +7788,7 @@ families:
                 reg: D2CCIP2R
                 field: LPTIM1SEL
 
-  # --- D3 domain kernel clock muxes ---
+            # --- D3 domain kernel clock muxes ---
             - name: SPI6SEL
               description: SPI6 kernel clock source selection
               output: spi6_ker_ck
@@ -7909,9 +7909,9 @@ families:
                 reg: D3CCIPR
                 field: LPUART1SEL
 
-# ===========================================================================
-# PLLs
-# ===========================================================================
+          # ===========================================================================
+          # PLLs
+          # ===========================================================================
           plls:
             - name: PLL1
               description: Main system PLL (fractional-N)
@@ -7977,11 +7977,11 @@ families:
                 min: 150000000
                 max: 960000000
 
-# ===========================================================================
-# Dividers
-# ===========================================================================
+          # ===========================================================================
+          # Dividers
+          # ===========================================================================
           dividers:
-  # --- HSI divider ---
+            # --- HSI divider ---
             - name: HSIDIV
               description: HSI oscillator prescaler
               input: hsi_osc
@@ -7991,14 +7991,14 @@ families:
                 field: HSIDIV
                 values: [1, 2, 4, 8]
 
-  # --- CEC fixed divider ---
+            # --- CEC fixed divider ---
             - name: CSI_CEC_DIV
               description: Fixed /122 divider for HDMI-CEC from CSI kernel clock
               input: csi_ker_ck
               output: csi_ker_div122
               value: 122
 
-  # --- PLL input prescalers ---
+            # --- PLL input prescalers ---
             - name: DIVM1
               description: PLL1 prescaler (division factor for PLL1 reference clock)
               input: pll_src
@@ -8033,7 +8033,7 @@ families:
                   min: 0
                   max: 63
 
-  # --- PLL output dividers ---
+            # --- PLL output dividers ---
             - name: DIVP1
               description: PLL1 P output divider
               input: vco1_ck
@@ -8144,7 +8144,7 @@ families:
                   max: 127
                   offset: 1
 
-  # --- Domain prescalers ---
+            # --- Domain prescalers ---
             - name: D1CPRE
               description: D1 domain CPU clock prescaler (sys_ck to CPU1)
               input: sys_ck
@@ -8199,7 +8199,7 @@ families:
                 field: D3PPRE
                 values: [1, 1, 1, 1, 2, 4, 8, 16]
 
-  # --- Timer clock prescalers ---
+            # --- Timer clock prescalers ---
             - name: TIMX_PRESCALER
               description: APB1 timer clock prescaler from HCLK
               input: rcc_hclk
@@ -8220,7 +8220,7 @@ families:
                 With TIMPRE=0: divisor = max(1, D2PPRE2_ratio / 2). With TIMPRE=1:
                 divisor = max(1, D2PPRE2_ratio / 4).
 
-  # --- HSE division for RTC ---
+            # --- HSE division for RTC ---
             - name: RTCPRE
               description: HSE division factor for RTC clock
               input: hse_ck
@@ -8233,9 +8233,9 @@ families:
                   max: 63
               notes: Values 0 and 1 produce no clock. Values 2-63 divide HSE by that amount.
 
-# ===========================================================================
-# Gates
-# ===========================================================================
+            # ===========================================================================
+            # Gates
+            # ===========================================================================
             - name: MCO1PRE
               description: MCO1 output-pin prescaler
               input: mco1_pre_ck
@@ -8257,7 +8257,7 @@ families:
                   max: 15
               notes: 4-bit field at CFGR[28:25].  Value 0 disables the MCO output entirely; values 1-15 divide by the corresponding integer.
           gates:
-  # --- HSI/CSI kernel clock gates ---
+            # --- HSI/CSI kernel clock gates ---
             - name: HSIKERON
               description: HSI kernel clock enable for Stop mode
               input: hsi_ck
@@ -8274,7 +8274,7 @@ families:
                 reg: CR
                 field: CSIKERON
 
-  # --- PLL output enable gates ---
+            # --- PLL output enable gates ---
             - name: DIVP1EN
               description: PLL1 P output enable
               input: pll1_p_raw
@@ -8347,7 +8347,7 @@ families:
                 reg: PLLCFGR
                 field: DIVR3EN
 
-  # --- RTC gate ---
+            # --- RTC gate ---
             - name: RTCEN
               description: RTC clock enable
               input: rtc_pre
@@ -8356,10 +8356,10 @@ families:
                 reg: BDCR
                 field: RTCEN
 
-  # =========================================================================
-  # Peripheral clock gates — AHB3 (D1 domain)
-  # Register: RCC_AHB3ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB3 (D1 domain)
+            # Register: RCC_AHB3ENR
+            # =========================================================================
             - name: MDMAEN
               description: MDMA peripheral clock enable
               input: rcc_hclk
@@ -8391,10 +8391,10 @@ families:
               output: sdmmc1_hclk
               control: {reg: 'C1_AHB3ENR', field: SDMMC1EN}
 
-  # =========================================================================
-  # Peripheral clock gates — AHB1 (D2 domain)
-  # Register: RCC_AHB1ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB1 (D2 domain)
+            # Register: RCC_AHB1ENR
+            # =========================================================================
             - name: DMA1EN
               description: DMA1 clock enable
               input: rcc_hclk
@@ -8446,10 +8446,10 @@ families:
               output: usb2otghsulpi_hclk
               control: {reg: 'C1_AHB1ENR', field: USB2OTGHSULPIEN}
 
-  # =========================================================================
-  # Peripheral clock gates — AHB2 (D2 domain)
-  # Register: RCC_AHB2ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB2 (D2 domain)
+            # Register: RCC_AHB2ENR
+            # =========================================================================
             - name: DCMIEN
               description: DCMI peripheral clock enable
               input: rcc_hclk
@@ -8476,10 +8476,10 @@ families:
               output: sdmmc2_hclk
               control: {reg: 'C1_AHB2ENR', field: SDMMC2EN}
 
-  # =========================================================================
-  # Peripheral clock gates — AHB4 (D3 domain)
-  # Register: RCC_AHB4ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB4 (D3 domain)
+            # Register: RCC_AHB4ENR
+            # =========================================================================
             - name: GPIOAEN
               description: GPIOA clock enable
               input: rcc_hclk
@@ -8561,10 +8561,10 @@ families:
               output: bkpram_hclk
               control: {reg: 'C1_AHB4ENR', field: BKPRAMEN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB3 (D1 domain)
-  # Register: RCC_APB3ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB3 (D1 domain)
+            # Register: RCC_APB3ENR
+            # =========================================================================
             - name: LTDCEN
               description: LTDC peripheral clock enable
               input: rcc_pclk3
@@ -8576,10 +8576,10 @@ families:
               output: wwdg_pclk
               control: {reg: 'C1_APB3ENR', field: WWDG1EN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB1 low (D2 domain)
-  # Register: RCC_APB1LENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1 low (D2 domain)
+            # Register: RCC_APB1LENR
+            # =========================================================================
             - name: TIM2EN
               description: TIM2 clock enable
               input: rcc_pclk1
@@ -8701,10 +8701,10 @@ families:
               output: uart8_pclk
               control: {reg: 'C1_APB1LENR', field: USART8EN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB1 high (D2 domain)
-  # Register: RCC_APB1HENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1 high (D2 domain)
+            # Register: RCC_APB1HENR
+            # =========================================================================
             - name: CRSEN
               description: CRS clock enable
               input: rcc_pclk1
@@ -8731,10 +8731,10 @@ families:
               output: fdcan_pclk
               control: {reg: 'C1_APB1HENR', field: FDCANEN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB2 (D2 domain)
-  # Register: RCC_APB2ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB2 (D2 domain)
+            # Register: RCC_APB2ENR
+            # =========================================================================
             - name: TIM1EN
               description: TIM1 clock enable
               input: rcc_pclk2
@@ -8811,10 +8811,10 @@ families:
               output: hrtim_pclk
               control: {reg: 'C1_APB2ENR', field: HRTIMEN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB4 (D3 domain)
-  # Register: RCC_APB4ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB4 (D3 domain)
+            # Register: RCC_APB4ENR
+            # =========================================================================
             - name: SYSCFGEN
               description: SYSCFG clock enable
               input: rcc_pclk4
@@ -8899,7 +8899,7 @@ families:
         clocks:
           instance: RCC
           signals:
-          # --- Oscillators ---
+            # --- Oscillators ---
             - name: hsi_osc
               description: High-speed internal RC oscillator raw output (before HSIDIV)
               nominal: 64000000
@@ -8932,11 +8932,11 @@ families:
               description: 48 MHz internal RC oscillator (trimmable via CRS)
               nominal: 48000000
 
-          # --- External inputs ---
+            # --- External inputs ---
             - name: I2S_CKIN
               description: External I2S clock input pin
 
-          # --- PLL reference clocks ---
+            # --- PLL reference clocks ---
             - name: pll_src
               description: Common PLL source clock (before per-PLL prescalers)
             - name: ref1_ck
@@ -8952,7 +8952,7 @@ families:
               min: 1000000
               max: 16000000
 
-          # --- PLL VCO outputs ---
+            # --- PLL VCO outputs ---
             - name: vco1_ck
               description: PLL1 VCO output
             - name: vco2_ck
@@ -8960,7 +8960,7 @@ families:
             - name: vco3_ck
               description: PLL3 VCO output
 
-          # --- PLL post-divider outputs ---
+            # --- PLL post-divider outputs ---
             - name: pll1_p_raw
               description: PLL1 P divider output (system clock candidate) (before enable gate)
               max: 480000000
@@ -9016,7 +9016,7 @@ families:
               description: PLL3 R divider output (gated)
               max: 480000000
 
-          # --- DSI PLL ---
+            # --- DSI PLL ---
             - name: dsi_ref_ck
               description: DSI PLL reference clock (HSE divided by IDF)
               min: 8000000
@@ -9030,7 +9030,7 @@ families:
               min: 62500000
               max: 1000000000
 
-          # --- System / domain clocks ---
+            # --- System / domain clocks ---
             - name: sys_ck
               description: System clock
               max: 480000000
@@ -9056,7 +9056,7 @@ families:
               description: APB4 peripheral bus clock (D3 domain)
               max: 120000000
 
-          # --- Timer clocks ---
+            # --- Timer clocks ---
             - name: rcc_timx_ker_ck
               description: Timer kernel clock for APB1 timers (TIM2-7, TIM12-14)
               max: 480000000
@@ -9067,7 +9067,7 @@ families:
               description: HRTIM kernel clock
               max: 480000000
 
-          # --- Kernel clocks ---
+            # --- Kernel clocks ---
             - name: per_ck
               description: Direct kernel clock for peripherals (hsi/csi/hse selectable)
             - name: sdmmc_ker_ck
@@ -9125,7 +9125,7 @@ families:
             - name: dsi_ker_ck
               description: DSI byte lane clock
 
-          # --- RTC ---
+            # --- RTC ---
             - name: hse_rtc_ck
               description: HSE divided for RTC
             - name: rtc_pre
@@ -9133,15 +9133,15 @@ families:
             - name: rtc_ck
               description: RTC/AWU clock source (gated)
 
-          # --- MCO outputs ---
+            # --- MCO outputs ---
             - name: mco1
               description: Microcontroller clock output 1
             - name: mco2
               description: Microcontroller clock output 2
 
-        # ===========================================================================
-        # Generators (oscillators and external inputs)
-        # ===========================================================================
+            # ===========================================================================
+            # Generators (oscillators and external inputs)
+            # ===========================================================================
             - name: adc12_hclk
               max: 240000000
             - name: adc3_hclk
@@ -9395,11 +9395,11 @@ families:
               description: External I2S clock input pin
               output: I2S_CKIN
 
-        # ===========================================================================
-        # Muxes
-        # ===========================================================================
+          # ===========================================================================
+          # Muxes
+          # ===========================================================================
           muxes:
-          # --- PLL source ---
+            # --- PLL source ---
             - name: PLLSRC
               description: Common source for all three PLLs
               output: pll_src
@@ -9412,7 +9412,7 @@ families:
                 reg: PLLCKSELR
                 field: PLLSRC
 
-          # --- System clock ---
+            # --- System clock ---
             - name: SW
               description: System clock switch
               output: sys_ck
@@ -9429,7 +9429,7 @@ families:
                 reg: CFGR
                 field: SW
 
-          # --- per_ck ---
+            # --- per_ck ---
             - name: CKPERSEL
               description: External peripheral clock source selection
               output: per_ck
@@ -9442,7 +9442,7 @@ families:
                 reg: D1CCIPR
                 field: CKPERSEL
 
-          # --- RTC source ---
+            # --- RTC source ---
             - name: RTCSEL
               description: RTC clock source selection
               output: rtc_pre
@@ -9455,7 +9455,7 @@ families:
                 reg: BDCR
                 field: RTCSRC
 
-          # --- MCO1 ---
+            # --- MCO1 ---
             - name: MCO1SEL
               description: Microcontroller clock output 1 source
               output: mco1_pre_ck
@@ -9472,7 +9472,7 @@ families:
                 reg: CFGR
                 field: MCO1SEL
 
-          # --- MCO2 ---
+            # --- MCO2 ---
             - name: MCO2SEL
               description: Microcontroller clock output 2 source
               output: mco2_pre_ck
@@ -9489,7 +9489,7 @@ families:
                 reg: CFGR
                 field: MCO2SEL
 
-          # --- HRTIM clock source ---
+            # --- HRTIM clock source ---
             - name: HRTIMSEL
               description: HRTIM kernel clock source selection
               output: hrtim_ker_ck
@@ -9500,7 +9500,7 @@ families:
                 reg: CFGR
                 field: HRTIMSEL
 
-          # --- D1 domain kernel clock muxes ---
+            # --- D1 domain kernel clock muxes ---
             - name: SDMMCSEL
               description: SDMMC1/2 kernel clock source selection
               output: sdmmc_ker_ck
@@ -9545,7 +9545,7 @@ families:
                 reg: D1CCIPR
                 field: FMCSEL
 
-          # --- D2 domain kernel clock muxes ---
+            # --- D2 domain kernel clock muxes ---
             - name: FDCANSEL
               description: FDCAN kernel clock source selection
               output: fdcan_ker_ck
@@ -9750,7 +9750,7 @@ families:
                 reg: D2CCIP2R
                 field: LPTIM1SEL
 
-          # --- D3 domain kernel clock muxes ---
+            # --- D3 domain kernel clock muxes ---
             - name: SPI6SEL
               description: SPI6 kernel clock source selection
               output: spi6_ker_ck
@@ -9871,9 +9871,9 @@ families:
                 reg: D3CCIPR
                 field: LPUART1SEL
 
-        # ===========================================================================
-        # PLLs
-        # ===========================================================================
+          # ===========================================================================
+          # PLLs
+          # ===========================================================================
           plls:
             - name: PLL1
               description: Main system PLL (fractional-N)
@@ -9958,11 +9958,11 @@ families:
                 means the PLL locks at VCO/2 = ref * NDIV. The vco_limits here reflect the
                 VCO/2 node (500 MHz - 1 GHz). The ODF output divider is modeled separately.
 
-        # ===========================================================================
-        # Dividers
-        # ===========================================================================
+          # ===========================================================================
+          # Dividers
+          # ===========================================================================
           dividers:
-          # --- HSI divider ---
+            # --- HSI divider ---
             - name: HSIDIV
               description: HSI oscillator prescaler
               input: hsi_osc
@@ -9972,14 +9972,14 @@ families:
                 field: HSIDIV
                 values: [1, 2, 4, 8]
 
-          # --- CEC fixed divider ---
+            # --- CEC fixed divider ---
             - name: CSI_CEC_DIV
               description: Fixed /122 divider for HDMI-CEC from CSI kernel clock
               input: csi_ker_ck
               output: csi_ker_div122
               value: 122
 
-          # --- PLL input prescalers ---
+            # --- PLL input prescalers ---
             - name: DIVM1
               description: PLL1 prescaler (division factor for PLL1 reference clock)
               input: pll_src
@@ -10014,7 +10014,7 @@ families:
                   min: 0
                   max: 63
 
-          # --- PLL output dividers ---
+            # --- PLL output dividers ---
             - name: DIVP1
               description: PLL1 P output divider
               input: vco1_ck
@@ -10125,7 +10125,7 @@ families:
                   max: 127
                   offset: 1
 
-          # --- DSI PLL dividers ---
+            # --- DSI PLL dividers ---
             - name: DSI_IDF
               description: DSI PLL input division factor
               input: hse_ck
@@ -10147,7 +10147,7 @@ families:
                 field: ODF
                 values: [1, 2, 4, 8]
 
-          # --- Domain prescalers ---
+            # --- Domain prescalers ---
             - name: D1CPRE
               description: D1 domain CPU clock prescaler (sys_ck to CPU1)
               input: sys_ck
@@ -10202,7 +10202,7 @@ families:
                 field: D3PPRE
                 values: [1, 1, 1, 1, 2, 4, 8, 16]
 
-          # --- Timer clock prescalers ---
+            # --- Timer clock prescalers ---
             - name: TIMX_PRESCALER
               description: APB1 timer clock prescaler from HCLK
               input: rcc_hclk
@@ -10223,7 +10223,7 @@ families:
                 With TIMPRE=0: divisor = max(1, D2PPRE2_ratio / 2). With TIMPRE=1:
                 divisor = max(1, D2PPRE2_ratio / 4).
 
-          # --- HSE division for RTC ---
+            # --- HSE division for RTC ---
             - name: RTCPRE
               description: HSE division factor for RTC clock
               input: hse_ck
@@ -10236,9 +10236,9 @@ families:
                   max: 63
               notes: Values 0 and 1 produce no clock. Values 2-63 divide HSE by that amount.
 
-        # ===========================================================================
-        # Gates
-        # ===========================================================================
+            # ===========================================================================
+            # Gates
+            # ===========================================================================
             - name: MCO1PRE
               description: MCO1 output-pin prescaler
               input: mco1_pre_ck
@@ -10260,7 +10260,7 @@ families:
                   max: 15
               notes: 4-bit field at CFGR[28:25].  Value 0 disables the MCO output entirely; values 1-15 divide by the corresponding integer.
           gates:
-          # --- HSI/CSI kernel clock gates ---
+            # --- HSI/CSI kernel clock gates ---
             - name: HSIKERON
               description: HSI kernel clock enable for Stop mode
               input: hsi_ck
@@ -10277,13 +10277,13 @@ families:
                 reg: CR
                 field: CSIKERON
 
-          # --- CPU2 clock (always-on, rcc_hclk with different name) ---
+            # --- CPU2 clock (always-on, rcc_hclk with different name) ---
             - name: C2_CLK
               description: CPU2 (Cortex-M4) clock, always equal to rcc_hclk
               input: rcc_hclk
               output: rcc_c2_ck
 
-          # --- PLL output enable gates ---
+            # --- PLL output enable gates ---
             - name: DIVP1EN
               description: PLL1 P output enable
               input: pll1_p_raw
@@ -10356,7 +10356,7 @@ families:
                 reg: PLLCFGR
                 field: DIVR3EN
 
-          # --- RTC gate ---
+            # --- RTC gate ---
             - name: RTCEN
               description: RTC clock enable
               input: rtc_pre
@@ -10365,10 +10365,10 @@ families:
                 reg: BDCR
                 field: RTCEN
 
-          # =========================================================================
-          # Peripheral clock gates — AHB3 (D1 domain)
-          # Register: RCC_AHB3ENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB3 (D1 domain)
+            # Register: RCC_AHB3ENR
+            # =========================================================================
             - name: MDMAEN
               description: MDMA peripheral clock enable
               input: rcc_hclk
@@ -10400,10 +10400,10 @@ families:
               output: sdmmc1_hclk
               control: {reg: 'C[0].AHB3ENR', field: SDMMC1EN}
 
-          # =========================================================================
-          # Peripheral clock gates — AHB1 (D2 domain)
-          # Register: RCC_AHB1ENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB1 (D2 domain)
+            # Register: RCC_AHB1ENR
+            # =========================================================================
             - name: DMA1EN
               description: DMA1 clock enable
               input: rcc_hclk
@@ -10460,10 +10460,10 @@ families:
               output: usb2otghsulpi_hclk
               control: {reg: 'C[0].AHB1ENR', field: USB2OTGHSULPIEN}
 
-          # =========================================================================
-          # Peripheral clock gates — AHB2 (D2 domain)
-          # Register: RCC_AHB2ENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB2 (D2 domain)
+            # Register: RCC_AHB2ENR
+            # =========================================================================
             - name: DCMIEN
               description: DCMI peripheral clock enable
               input: rcc_hclk
@@ -10490,10 +10490,10 @@ families:
               output: sdmmc2_hclk
               control: {reg: 'C[0].AHB2ENR', field: SDMMC2EN}
 
-          # =========================================================================
-          # Peripheral clock gates — AHB4 (D3 domain)
-          # Register: RCC_AHB4ENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB4 (D3 domain)
+            # Register: RCC_AHB4ENR
+            # =========================================================================
             - name: GPIOAEN
               description: GPIOA clock enable
               input: rcc_hclk
@@ -10575,10 +10575,10 @@ families:
               output: bkpram_hclk
               control: {reg: 'C[0].AHB4ENR', field: BKPRAMEN}
 
-          # =========================================================================
-          # Peripheral clock gates — APB3 (D1 domain)
-          # Register: RCC_APB3ENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB3 (D1 domain)
+            # Register: RCC_APB3ENR
+            # =========================================================================
             - name: LTDCEN
               description: LTDC peripheral clock enable
               input: rcc_pclk3
@@ -10595,10 +10595,10 @@ families:
               output: wwdg1_pclk
               control: {reg: 'C[0].APB3ENR', field: WWDG1EN}
 
-          # =========================================================================
-          # Peripheral clock gates — APB1 low (D2 domain)
-          # Register: RCC_APB1LENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1 low (D2 domain)
+            # Register: RCC_APB1LENR
+            # =========================================================================
             - name: TIM2EN
               description: TIM2 clock enable
               input: rcc_pclk1
@@ -10725,10 +10725,10 @@ families:
               output: uart8_pclk
               control: {reg: 'C[0].APB1LENR', field: USART8EN}
 
-          # =========================================================================
-          # Peripheral clock gates — APB1 high (D2 domain)
-          # Register: RCC_APB1HENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1 high (D2 domain)
+            # Register: RCC_APB1HENR
+            # =========================================================================
             - name: CRSEN
               description: CRS clock enable
               input: rcc_pclk1
@@ -10755,10 +10755,10 @@ families:
               output: fdcan_pclk
               control: {reg: 'C[0].APB1HENR', field: FDCANEN}
 
-          # =========================================================================
-          # Peripheral clock gates — APB2 (D2 domain)
-          # Register: RCC_APB2ENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB2 (D2 domain)
+            # Register: RCC_APB2ENR
+            # =========================================================================
             - name: TIM1EN
               description: TIM1 clock enable
               input: rcc_pclk2
@@ -10835,10 +10835,10 @@ families:
               output: hrtim_pclk
               control: {reg: 'C[0].APB2ENR', field: HRTIMEN}
 
-          # =========================================================================
-          # Peripheral clock gates — APB4 (D3 domain)
-          # Register: RCC_APB4ENR
-          # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB4 (D3 domain)
+            # Register: RCC_APB4ENR
+            # =========================================================================
             - name: SYSCFGEN
               description: SYSCFG clock enable
               input: rcc_pclk4
@@ -10909,7 +10909,7 @@ families:
         clocks:
           instance: RCC
           signals:
-  # --- Oscillators ---
+            # --- Oscillators ---
             - name: hsi_osc
               description: High-speed internal RC oscillator raw output (before HSIDIV)
               nominal: 64000000
@@ -10942,11 +10942,11 @@ families:
               description: 48 MHz internal RC oscillator (trimmable via CRS)
               nominal: 48000000
 
-  # --- External inputs ---
+            # --- External inputs ---
             - name: I2S_CKIN
               description: External I2S clock input pin
 
-  # --- PLL reference clocks ---
+            # --- PLL reference clocks ---
             - name: pll_src
               description: Common PLL source clock (before per-PLL prescalers)
             - name: ref1_ck
@@ -10962,7 +10962,7 @@ families:
               min: 1000000
               max: 16000000
 
-  # --- PLL VCO outputs ---
+            # --- PLL VCO outputs ---
             - name: vco1_ck
               description: PLL1 VCO output
             - name: vco2_ck
@@ -10970,7 +10970,7 @@ families:
             - name: vco3_ck
               description: PLL3 VCO output
 
-  # --- PLL post-divider outputs ---
+            # --- PLL post-divider outputs ---
             - name: pll1_p_raw
               description: PLL1 P divider output (system clock candidate) (before enable gate)
               max: 480000000
@@ -11026,7 +11026,7 @@ families:
               description: PLL3 R divider output (gated)
               max: 480000000
 
-  # --- System / domain clocks ---
+            # --- System / domain clocks ---
             - name: sys_ck
               description: System clock
               max: 480000000
@@ -11049,7 +11049,7 @@ families:
               description: APB4 peripheral bus clock (D3 domain)
               max: 120000000
 
-  # --- Timer clocks ---
+            # --- Timer clocks ---
             - name: rcc_timx_ker_ck
               description: Timer kernel clock for APB1 timers (TIM2-7, TIM12-14)
               max: 480000000
@@ -11057,7 +11057,7 @@ families:
               description: Timer kernel clock for APB2 timers (TIM1, TIM8, TIM15-17)
               max: 480000000
 
-  # --- Kernel clocks ---
+            # --- Kernel clocks ---
             - name: per_ck
               description: Direct kernel clock for peripherals (hsi/csi/hse selectable)
             - name: sdmmc_ker_ck
@@ -11113,7 +11113,7 @@ families:
             - name: dfsdm1_ker_ck
               description: DFSDM1 processing clock
 
-  # --- RTC ---
+            # --- RTC ---
             - name: hse_rtc_ck
               description: HSE divided for RTC
             - name: rtc_pre
@@ -11121,15 +11121,15 @@ families:
             - name: rtc_ck
               description: RTC/AWU clock source (gated)
 
-  # --- MCO outputs ---
+            # --- MCO outputs ---
             - name: mco1
               description: Microcontroller clock output 1
             - name: mco2
               description: Microcontroller clock output 2
 
-# ===========================================================================
-# Generators (oscillators and external inputs)
-# ===========================================================================
+            # ===========================================================================
+            # Generators (oscillators and external inputs)
+            # ===========================================================================
             - name: adc12_hclk
               max: 240000000
             - name: bdma1_hclk
@@ -11383,11 +11383,11 @@ families:
               description: External I2S clock input pin
               output: I2S_CKIN
 
-# ===========================================================================
-# Muxes
-# ===========================================================================
+          # ===========================================================================
+          # Muxes
+          # ===========================================================================
           muxes:
-  # --- PLL source ---
+            # --- PLL source ---
             - name: PLLSRC
               description: Common source for all three PLLs
               output: pll_src
@@ -11400,7 +11400,7 @@ families:
                 reg: PLLCKSELR
                 field: PLLSRC
 
-  # --- System clock ---
+            # --- System clock ---
             - name: SW
               description: System clock switch
               output: sys_ck
@@ -11417,7 +11417,7 @@ families:
                 reg: CFGR
                 field: SW
 
-  # --- per_ck ---
+            # --- per_ck ---
             - name: CKPERSEL
               description: External peripheral clock source selection
               output: per_ck
@@ -11430,7 +11430,7 @@ families:
                 reg: CDCCIPR
                 field: CKPERSEL
 
-  # --- RTC source ---
+            # --- RTC source ---
             - name: RTCSEL
               description: RTC clock source selection
               output: rtc_pre
@@ -11443,7 +11443,7 @@ families:
                 reg: BDCR
                 field: RTCSEL
 
-  # --- MCO1 ---
+            # --- MCO1 ---
             - name: MCO1SEL
               description: Microcontroller clock output 1 source
               output: mco1_pre_ck
@@ -11460,7 +11460,7 @@ families:
                 reg: CFGR
                 field: MCO1SEL
 
-  # --- MCO2 ---
+            # --- MCO2 ---
             - name: MCO2SEL
               description: Microcontroller clock output 2 source
               output: mco2_pre_ck
@@ -11477,7 +11477,7 @@ families:
                 reg: CFGR
                 field: MCO2SEL
 
-  # --- HRTIM clock source ---
+            # --- HRTIM clock source ---
             - name: SDMMCSEL
               description: SDMMC1/2 kernel clock source selection
               output: sdmmc_ker_ck
@@ -11512,7 +11512,7 @@ families:
                 reg: CDCCIPR
                 field: FMCSEL
 
-  # --- D2 domain kernel clock muxes ---
+            # --- D2 domain kernel clock muxes ---
             - name: FDCANSEL
               description: FDCAN kernel clock source selection
               output: fdcan_ker_ck
@@ -11743,7 +11743,7 @@ families:
                 reg: CDCCIP2R
                 field: LPTIM1SEL
 
-  # --- D3 domain kernel clock muxes ---
+            # --- D3 domain kernel clock muxes ---
             - name: SPI6SEL
               description: SPI6 kernel clock source selection
               output: spi6_ker_ck
@@ -11832,9 +11832,9 @@ families:
                 reg: SRDCCIPR
                 field: LPUART1SEL
 
-# ===========================================================================
-# PLLs
-# ===========================================================================
+          # ===========================================================================
+          # PLLs
+          # ===========================================================================
           plls:
             - name: PLL1
               description: Main system PLL (fractional-N)
@@ -11900,11 +11900,11 @@ families:
                 min: 150000000
                 max: 960000000
 
-# ===========================================================================
-# Dividers
-# ===========================================================================
+          # ===========================================================================
+          # Dividers
+          # ===========================================================================
           dividers:
-  # --- HSI divider ---
+            # --- HSI divider ---
             - name: HSIDIV
               description: HSI oscillator prescaler
               input: hsi_osc
@@ -11914,14 +11914,14 @@ families:
                 field: HSIDIV
                 values: [1, 2, 4, 8]
 
-  # --- CEC fixed divider ---
+            # --- CEC fixed divider ---
             - name: CSI_CEC_DIV
               description: Fixed /122 divider for HDMI-CEC from CSI kernel clock
               input: csi_ker_ck
               output: csi_ker_div122
               value: 122
 
-  # --- PLL input prescalers ---
+            # --- PLL input prescalers ---
             - name: DIVM1
               description: PLL1 prescaler (division factor for PLL1 reference clock)
               input: pll_src
@@ -11956,7 +11956,7 @@ families:
                   min: 0
                   max: 63
 
-  # --- PLL output dividers ---
+            # --- PLL output dividers ---
             - name: DIVP1
               description: PLL1 P output divider
               input: vco1_ck
@@ -12067,7 +12067,7 @@ families:
                   max: 127
                   offset: 1
 
-  # --- Domain prescalers (RM0455 nomenclature: CD = CPU Domain, SRD = Smart Run Domain) ---
+            # --- Domain prescalers (RM0455 nomenclature: CD = CPU Domain, SRD = Smart Run Domain) ---
             - name: CDCPRE
               description: CPU domain CPU-clock prescaler (sys_ck to CPU)
               input: sys_ck
@@ -12122,7 +12122,7 @@ families:
                 field: SRDPPRE
                 values: [1, 1, 1, 1, 2, 4, 8, 16]
 
-  # --- Timer clock prescalers ---
+            # --- Timer clock prescalers ---
             - name: TIMX_PRESCALER
               description: APB1 timer clock prescaler from HCLK
               input: rcc_hclk
@@ -12143,7 +12143,7 @@ families:
                 With TIMPRE=0: divisor = max(1, D2PPRE2_ratio / 2). With TIMPRE=1:
                 divisor = max(1, D2PPRE2_ratio / 4).
 
-  # --- HSE division for RTC ---
+            # --- HSE division for RTC ---
             - name: RTCPRE
               description: HSE division factor for RTC clock
               input: hse_ck
@@ -12156,9 +12156,9 @@ families:
                   max: 63
               notes: Values 0 and 1 produce no clock. Values 2-63 divide HSE by that amount.
 
-# ===========================================================================
-# Gates
-# ===========================================================================
+            # ===========================================================================
+            # Gates
+            # ===========================================================================
             - name: MCO1PRE
               description: MCO1 output-pin prescaler
               input: mco1_pre_ck
@@ -12180,7 +12180,7 @@ families:
                   max: 15
               notes: 4-bit field at CFGR[28:25].  Value 0 disables the MCO output entirely; values 1-15 divide by the corresponding integer.
           gates:
-  # --- HSI/CSI kernel clock gates ---
+            # --- HSI/CSI kernel clock gates ---
             - name: HSIKERON
               description: HSI kernel clock enable for Stop mode
               input: hsi_ck
@@ -12197,7 +12197,7 @@ families:
                 reg: CR
                 field: CSIKERON
 
-  # --- PLL output enable gates ---
+            # --- PLL output enable gates ---
             - name: DIVP1EN
               description: PLL1 P output enable
               input: pll1_p_raw
@@ -12270,7 +12270,7 @@ families:
                 reg: PLLCFGR
                 field: DIVR3EN
 
-  # --- RTC gate ---
+            # --- RTC gate ---
             - name: RTCEN
               description: RTC clock enable
               input: rtc_pre
@@ -12279,10 +12279,10 @@ families:
                 reg: BDCR
                 field: RTCEN
 
-  # =========================================================================
-  # Peripheral clock gates — AHB3 (D1 domain)
-  # Register: RCC_AHB3ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB3 (D1 domain)
+            # Register: RCC_AHB3ENR
+            # =========================================================================
             - name: MDMAEN
               description: MDMA peripheral clock enable
               input: rcc_hclk
@@ -12329,10 +12329,10 @@ families:
               output: gfxmmu_hclk
               control: {reg: 'AHB3ENR', field: GFXMMUEN}
 
-  # =========================================================================
-  # Peripheral clock gates — AHB1 (CD domain)
-  # Register: RCC_AHB1ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB1 (CD domain)
+            # Register: RCC_AHB1ENR
+            # =========================================================================
             - name: DMA1EN
               description: DMA1 clock enable
               input: rcc_hclk
@@ -12389,10 +12389,10 @@ families:
               output: sdmmc2_hclk
               control: {reg: 'AHB2ENR', field: SDMMC2EN}
 
-  # =========================================================================
-  # Peripheral clock gates — AHB4 (D3 domain)
-  # Register: RCC_AHB4ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — AHB4 (D3 domain)
+            # Register: RCC_AHB4ENR
+            # =========================================================================
             - name: GPIOAEN
               description: GPIOA clock enable
               input: rcc_hclk
@@ -12469,10 +12469,10 @@ families:
               output: bdma2_hclk
               control: {reg: 'AHB4ENR', field: BDMA2EN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB3 (CD domain)
-  # Register: RCC_APB3ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB3 (CD domain)
+            # Register: RCC_APB3ENR
+            # =========================================================================
             - name: LTDCEN
               description: LTDC peripheral clock enable
               input: rcc_pclk3
@@ -12484,10 +12484,10 @@ families:
               output: wwdg_pclk
               control: {reg: 'APB3ENR', field: WWDGEN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB1 low (D2 domain)
-  # Register: RCC_APB1LENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1 low (D2 domain)
+            # Register: RCC_APB1LENR
+            # =========================================================================
             - name: TIM2EN
               description: TIM2 clock enable
               input: rcc_pclk1
@@ -12609,10 +12609,10 @@ families:
               output: dac1_pclk
               control: {reg: 'APB1LENR', field: DAC1EN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB1 high (CD domain)
-  # Register: RCC_APB1HENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB1 high (CD domain)
+            # Register: RCC_APB1HENR
+            # =========================================================================
             - name: CRSEN
               description: CRS clock enable
               input: rcc_pclk1
@@ -12639,10 +12639,10 @@ families:
               output: swpmi_pclk
               control: {reg: 'APB1HENR', field: SWPMIEN}
 
-  # =========================================================================
-  # Peripheral clock gates — APB2 (CD domain)
-  # Register: RCC_APB2ENR
-  # =========================================================================
+            # =========================================================================
+            # Peripheral clock gates — APB2 (CD domain)
+            # Register: RCC_APB2ENR
+            # =========================================================================
             - name: TIM1EN
               description: TIM1 clock enable
               input: rcc_pclk2
@@ -12972,12 +12972,12 @@ families:
         params:
           - {name: semaphores, type: int, default: 32, max: 32, description: Number of hardware semaphores (16 or 32)}
         transforms:
-      # MASTERID (RM0433): 4-bit at [11:8]; H743 SVD has 8-bit — narrow to 4
-      # H745 SVD uses COREID (RM0399 name) at correct 4-bit width — no fix needed
+          # MASTERID (RM0433): 4-bit at [11:8]; H743 SVD has 8-bit — narrow to 4
+          # H745 SVD uses COREID (RM0399 name) at correct 4-bit width — no fix needed
           - {type: patchFields, register_pattern: ^R\d+$, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
           - {type: patchFields, register_pattern: ^RLR\d+$, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
           - {type: patchFields, register: CR, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
-      # H743 SVD: CR is read-write, RM says write-only
+          # H743 SVD: CR is read-write, RM says write-only
           - {type: patchRegisters, registers: [{name: CR, access: write-only}]}
         variants:
           H745_H757:
@@ -13042,12 +13042,12 @@ families:
         params:
           - {name: has_smps, type: bool, default: true, description: Has SMPS step-down converter (false for H742/H753 which use SCUEN instead of SDEN)}
         transforms:
-      # H723/H745 SVDs: USB33DEN marked write-only, RM says read-write
+          # H723/H745 SVDs: USB33DEN marked write-only, RM says read-write
           - type: patchFields
             register: CR3
             fields:
               - {name: USB33DEN, access: read-write}
-      # H742/H753 has no SMPS — bit 2 is SCUEN (Supply Config Update Enable) not SDEN
+          # H742/H753 has no SMPS — bit 2 is SCUEN (Supply Config Update Enable) not SDEN
           - type: cloneRegister
             source: CR3
             name: CR3_SCUEN
@@ -13068,8 +13068,8 @@ families:
         params:
           - {name: monitors, type: int, default: 5, max: 5, description: Number of ECC monitoring units in this RAMECC instance}
         transforms:
-      # All H7 SVDs: M2FECR/M3FECR/M4FECR at wrong offsets (RM says regular 0x20 stride)
-      # All H7 SVDs: scattered access bugs on FAR/FDRH/FECR (RM says all read-only)
+          # All H7 SVDs: M2FECR/M3FECR/M4FECR at wrong offsets (RM says regular 0x20 stride)
+          # All H7 SVDs: scattered access bugs on FAR/FDRH/FECR (RM says all read-only)
           - type: patchRegisters
             registers:
               - {name: M1FECR, access: read-only}

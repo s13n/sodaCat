@@ -20,7 +20,7 @@ families:
         clocks:
           instance: CLOCKS
           signals:
-  # Free-running oscillators
+            # Free-running oscillators
             - name: xosc
               description: Crystal oscillator output
               nominal: 12000000
@@ -32,19 +32,19 @@ families:
               description: Ring oscillator phase-shifted/divided output (rosc_clksrc_ph)
               min: 1000000
               max: 130000000
-  # External GPIO clock inputs
+            # External GPIO clock inputs
             - name: gpin0
               description: External clock input on GPIO20
             - name: gpin1
               description: External clock input on GPIO22
-  # PLL outputs
+            # PLL outputs
             - name: pll_sys
               description: System PLL output
               max: 133000000
             - name: pll_usb
               description: USB PLL output
               nominal: 48000000
-  # Generated clocks
+            # Generated clocks
             - name: clk_ref
               description: Reference clock, used by watchdog and timer. Typically 12MHz (XOSC).
               max: 12000000
@@ -71,7 +71,7 @@ families:
               description: GPIO clock output 2
             - name: clk_gpout3
               description: GPIO clock output 3
-  # Intermediate signals (mux/divider interconnects)
+            # Intermediate signals (mux/divider interconnects)
             - name: clk_ref_aux
               description: Output of CLK_REF auxiliary mux (glitchy), feeds CLK_REF glitchless mux at SRC=1
             - name: clk_ref_src
@@ -111,9 +111,9 @@ families:
             - name: clk_gpout3_div_out
               description: Output of CLK_GPOUT3 divider, feeds CLK_GPOUT3 gate
 
-  # Per-peripheral wake-mode gate outputs (WAKE_EN0 / WAKE_EN1 fields).
-  # Each signal is the clock delivered to one peripheral instance after
-  # the wake-mode gate.  Listed here so the gates below have named outputs.
+            # Per-peripheral wake-mode gate outputs (WAKE_EN0 / WAKE_EN1 fields).
+            # Each signal is the clock delivered to one peripheral instance after
+            # the wake-mode gate.  Listed here so the gates below have named outputs.
             - {name: clk_sys_clocks}
             - {name: clk_adc_adc}
             - {name: clk_sys_adc}
@@ -189,8 +189,8 @@ families:
               output: gpin1
 
           muxes:
-  # CLK_REF: glitchless 2-level mux
-  # SRC selects directly between ROSC, AUX output, or XOSC
+            # CLK_REF: glitchless 2-level mux
+            # SRC selects directly between ROSC, AUX output, or XOSC
             - name: clk_ref_src
               description: >
                 CLK_REF glitchless source mux. SRC=1 selects the AUX mux output.
@@ -217,7 +217,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 2 bits at [6:5].
 
-  # CLK_SYS: glitchless 2-level mux
+            # CLK_SYS: glitchless 2-level mux
             - name: clk_sys_src
               description: >
                 CLK_SYS glitchless source mux. SRC=0 selects CLK_REF (safe fallback),
@@ -246,7 +246,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_PERI: AUX mux only (no glitchless SRC)
+            # CLK_PERI: AUX mux only (no glitchless SRC)
             - name: clk_peri_src
               description: >
                 CLK_PERI auxiliary source mux. CLK_PERI has no integer divider;
@@ -265,7 +265,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_USB: AUX mux only
+            # CLK_USB: AUX mux only
             - name: clk_usb_src
               description: CLK_USB auxiliary source mux.
               inputs:
@@ -281,7 +281,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_ADC: AUX mux only
+            # CLK_ADC: AUX mux only
             - name: clk_adc_src
               description: CLK_ADC auxiliary source mux.
               inputs:
@@ -297,7 +297,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_RTC: AUX mux only
+            # CLK_RTC: AUX mux only
             - name: clk_rtc_src
               description: CLK_RTC auxiliary source mux.
               inputs:
@@ -313,8 +313,8 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_GPOUTx: AUX mux only
-  # Note: GPOUT0/1 use rosc_clksrc (index 4); GPOUT2/3 use rosc_clksrc_ph (index 4)
+            # CLK_GPOUTx: AUX mux only
+            # Note: GPOUT0/1 use rosc_clksrc (index 4); GPOUT2/3 use rosc_clksrc_ph (index 4)
             - name: clk_gpout0_src
               description: CLK_GPOUT0 auxiliary source mux.
               inputs:
@@ -441,7 +441,7 @@ families:
                 Typical configuration: 12MHz * 40 / 5 / 2 = 48MHz.
 
           dividers:
-  # ROSC internal divider — splits rosc into rosc (undivided) and rosc_ph (divided/phase-shifted)
+            # ROSC internal divider — splits rosc into rosc (undivided) and rosc_ph (divided/phase-shifted)
             - name: rosc_div
               description: >
                 ROSC output divider. DIV[11:0] = 0xAA0 + n, where n=0 -> /32, n=1..31 -> /n.
@@ -456,7 +456,7 @@ families:
                   Raw field encodes as 0xAA0 + divisor. Divisor 0 means divide by 32;
                   1-31 divide by that value; reset default is divide-by-16 (raw 0xAA0).
 
-  # CLK_REF divider (integer only, 2-bit)
+            # CLK_REF divider (integer only, 2-bit)
             - name: clk_ref_div
               description: CLK_REF integer divider (1-3). No fractional part.
               input: clk_ref_src
@@ -470,7 +470,7 @@ families:
                 raw 1 = divide by 1, raw 2 = divide by 2, raw 3 = divide by 3.
                 In practice, CLK_REF is typically left undivided (INT=1).
 
-  # CLK_SYS fractional divider
+            # CLK_SYS fractional divider
             - name: clk_sys_div
               description: CLK_SYS divider with 8-bit fraction. Effective divisor = INT + FRAC/256.
               input: clk_sys_src
@@ -489,7 +489,7 @@ families:
 
   # CLK_PERI has no divider (passthrough)
 
-  # CLK_USB integer divider (2-bit)
+            # CLK_USB integer divider (2-bit)
             - name: clk_usb_div
               description: CLK_USB integer divider (1-3).
               input: clk_usb_src
@@ -500,7 +500,7 @@ families:
                 value_range: {min: 1, max: 3}
               notes: INT field is 2 bits at [9:8]. Typically left at 1.
 
-  # CLK_ADC integer divider (2-bit)
+            # CLK_ADC integer divider (2-bit)
             - name: clk_adc_div
               description: CLK_ADC integer divider (1-3).
               input: clk_adc_src
@@ -511,7 +511,7 @@ families:
                 value_range: {min: 1, max: 3}
               notes: INT field is 2 bits at [9:8].
 
-  # CLK_RTC fractional divider
+            # CLK_RTC fractional divider
             - name: clk_rtc_div
               description: CLK_RTC divider with 8-bit fraction. Typically 48MHz / 1024 ≈ 46.875kHz.
               input: clk_rtc_src
@@ -525,7 +525,7 @@ families:
                 field: FRAC
               notes: INT is 24 bits at [31:8]; FRAC is 8 bits at [7:0].
 
-  # CLK_GPOUT0 fractional divider
+            # CLK_GPOUT0 fractional divider
             - name: clk_gpout0_div
               description: CLK_GPOUT0 divider with 8-bit fraction.
               input: clk_gpout0_src
@@ -572,7 +572,7 @@ families:
                 field: FRAC
 
           gates:
-  # CLK_PERI gate
+            # CLK_PERI gate
             - name: clk_peri_gate
               description: CLK_PERI enable gate. CLK_PERI has no divider; this gate follows the mux directly.
               input: clk_peri_src
@@ -581,7 +581,7 @@ families:
                 reg: CLK_PERI.CTRL
                 field: ENABLE
 
-  # CLK_USB gate (after divider)
+            # CLK_USB gate (after divider)
             - name: clk_usb_gate
               description: CLK_USB enable gate.
               input: clk_usb_div_out
@@ -590,7 +590,7 @@ families:
                 reg: CLK_USB.CTRL
                 field: ENABLE
 
-  # CLK_ADC gate
+            # CLK_ADC gate
             - name: clk_adc_gate
               description: CLK_ADC enable gate.
               input: clk_adc_div_out
@@ -599,7 +599,7 @@ families:
                 reg: CLK_ADC.CTRL
                 field: ENABLE
 
-  # CLK_RTC gate
+            # CLK_RTC gate
             - name: clk_rtc_gate
               description: CLK_RTC enable gate.
               input: clk_rtc_div_out
@@ -608,7 +608,7 @@ families:
                 reg: CLK_RTC.CTRL
                 field: ENABLE
 
-  # CLK_GPOUTx gates (after dividers)
+            # CLK_GPOUTx gates (after dividers)
             - name: clk_gpout0_gate
               description: CLK_GPOUT0 enable gate.
               input: clk_gpout0_div_out
@@ -653,7 +653,7 @@ families:
   # so every peripheral starts with its clock enabled in wake mode.
   # ==========================================================================
 
-  # --- WAKE_EN0 ---
+            # --- WAKE_EN0 ---
             - name: CLK_SYS_CLOCKS
               description: CLOCKS register-interface clock
               input: clk_sys
@@ -815,7 +815,7 @@ families:
               output: clk_sys_sram3
               control: {reg: WAKE_EN0, field: CLK_SYS_SRAM3}
 
-  # --- WAKE_EN1 ---
+            # --- WAKE_EN1 ---
             - name: CLK_SYS_SRAM4
               description: SRAM bank 4 clock
               input: clk_sys
@@ -902,7 +902,7 @@ families:
         clocks:
           instance: CLOCKS
           signals:
-  # Free-running oscillators
+            # Free-running oscillators
             - name: xosc
               description: Crystal oscillator output
               nominal: 12000000
@@ -916,12 +916,12 @@ families:
               description: Low-power oscillator output, used by POWMAN timer
               nominal: 32000
               notes: Approximately 32kHz. No SVD model available; internal oscillator.
-  # External GPIO clock inputs
+            # External GPIO clock inputs
             - name: gpin0
               description: External clock input on GPIO20
             - name: gpin1
               description: External clock input on GPIO22
-  # PLL outputs
+            # PLL outputs
             - name: pll_sys
               description: System PLL output
               max: 150000000
@@ -931,7 +931,7 @@ families:
             - name: pll_usb_primary_ref_opcg
               description: USB PLL primary reference output for on-chip clock generation (test/DFT path)
               notes: Used in CLK_REF AUXSRC at index 3. Typically not used in normal operation.
-  # Generated clocks
+            # Generated clocks
             - name: clk_ref
               description: Reference clock, used by watchdog, tick generators, and POWMAN.
               max: 12000000
@@ -958,7 +958,7 @@ families:
               description: GPIO clock output 2
             - name: clk_gpout3
               description: GPIO clock output 3
-  # Intermediate signals (mux/divider interconnects)
+            # Intermediate signals (mux/divider interconnects)
             - name: clk_ref_aux
               description: Output of CLK_REF auxiliary mux (glitchy), feeds CLK_REF glitchless mux at SRC=1
             - name: clk_ref_src
@@ -998,13 +998,13 @@ families:
             - name: clk_gpout3_div_out
               description: Output of CLK_GPOUT3 divider, feeds CLK_GPOUT3 gate
 
-  # Per-peripheral wake-mode gate outputs (WAKE_EN0 / WAKE_EN1 fields).
-  # Each signal is the clock delivered to one peripheral instance after
-  # the wake-mode gate.  Listed here so the gates below have named outputs.
-  # The clk_adc_adc / clk_hstx_hstx / clk_usb_usb pattern is used where the
-  # WAKE_EN bit is named bare CLK_ADC / CLK_HSTX / CLK_USB (the manufacturer
-  # elides the redundant peripheral suffix); the upstream signal already
-  # carries that name, so the post-wake-gate output needs a distinct one.
+            # Per-peripheral wake-mode gate outputs (WAKE_EN0 / WAKE_EN1 fields).
+            # Each signal is the clock delivered to one peripheral instance after
+            # the wake-mode gate.  Listed here so the gates below have named outputs.
+            # The clk_adc_adc / clk_hstx_hstx / clk_usb_usb pattern is used where the
+            # WAKE_EN bit is named bare CLK_ADC / CLK_HSTX / CLK_USB (the manufacturer
+            # elides the redundant peripheral suffix); the upstream signal already
+            # carries that name, so the post-wake-gate output needs a distinct one.
             - {name: clk_sys_clocks}
             - {name: clk_sys_accessctrl}
             - {name: clk_adc_adc}
@@ -1107,8 +1107,8 @@ families:
               output: gpin1
 
           muxes:
-  # CLK_REF: glitchless 2-level mux
-  # RP2350 adds LPOSC as a 4th direct source (SRC=3)
+            # CLK_REF: glitchless 2-level mux
+            # RP2350 adds LPOSC as a 4th direct source (SRC=3)
             - name: clk_ref_src
               description: >
                 CLK_REF glitchless source mux. SRC=1 selects the AUX mux output.
@@ -1137,7 +1137,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 2 bits at [6:5].
 
-  # CLK_SYS: glitchless 2-level mux (same as RP2040)
+            # CLK_SYS: glitchless 2-level mux (same as RP2040)
             - name: clk_sys_src
               description: >
                 CLK_SYS glitchless source mux. SRC=0 selects CLK_REF (safe fallback),
@@ -1166,7 +1166,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_PERI: AUX mux only (same inputs as RP2040)
+            # CLK_PERI: AUX mux only (same inputs as RP2040)
             - name: clk_peri_src
               description: CLK_PERI auxiliary source mux. CLK_PERI has no divider.
               inputs:
@@ -1183,7 +1183,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_HSTX: AUX mux only (new in RP2350)
+            # CLK_HSTX: AUX mux only (new in RP2350)
             - name: clk_hstx_src
               description: CLK_HSTX auxiliary source mux (new in RP2350). No ROSC or XOSC direct inputs.
               inputs:
@@ -1198,7 +1198,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_USB: AUX mux only (same as RP2040)
+            # CLK_USB: AUX mux only (same as RP2040)
             - name: clk_usb_src
               description: CLK_USB auxiliary source mux.
               inputs:
@@ -1214,7 +1214,7 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_ADC: AUX mux only (same as RP2040)
+            # CLK_ADC: AUX mux only (same as RP2040)
             - name: clk_adc_src
               description: CLK_ADC auxiliary source mux.
               inputs:
@@ -1230,9 +1230,9 @@ families:
                 field: AUXSRC
               notes: AUXSRC field is 3 bits at [7:5].
 
-  # CLK_GPOUTx: AUX mux only
-  # RP2350 GPOUT0/1 use rosc_clksrc (index 5); GPOUT2/3 use rosc_clksrc_ph (index 5)
-  # RP2350 adds pll_usb_primary_ref_opcg(4), lposc(7), clk_peri(12), clk_hstx(13), otp_clk2fc(14)
+            # CLK_GPOUTx: AUX mux only
+            # RP2350 GPOUT0/1 use rosc_clksrc (index 5); GPOUT2/3 use rosc_clksrc_ph (index 5)
+            # RP2350 adds pll_usb_primary_ref_opcg(4), lposc(7), clk_peri(12), clk_hstx(13), otp_clk2fc(14)
             - name: clk_gpout0_src
               description: CLK_GPOUT0 auxiliary source mux.
               inputs:
@@ -1380,7 +1380,7 @@ families:
                 Typical configuration: 12MHz * 40 / 5 / 2 = 48MHz.
 
           dividers:
-  # ROSC internal divider
+            # ROSC internal divider
             - name: rosc_div
               description: >
                 ROSC output divider. DIV[15:0] = 0xAA00 + n, where n=0 -> /128, n=1..127 -> /n.
@@ -1395,7 +1395,7 @@ families:
                   16-bit field. Raw 0xAA00 + divisor. Divisor 0 = /128; 1-127 = /n;
                   reset default is divide-by-32 (raw 0xAA20). Any other value sets div=128.
 
-  # CLK_REF divider (integer only, 8-bit at offset 16)
+            # CLK_REF divider (integer only, 8-bit at offset 16)
             - name: clk_ref_div
               description: CLK_REF integer divider (1-255). No fractional part.
               input: clk_ref_src
@@ -1408,7 +1408,7 @@ families:
                 INT field is 8 bits at [23:16]. Reset value 0x10000 = INT=1 (divide by 1).
                 Raw value 0 = divide by 256.
 
-  # CLK_SYS fractional divider
+            # CLK_SYS fractional divider
             - name: clk_sys_div
               description: CLK_SYS divider with 16-bit fraction. Effective divisor = INT + FRAC/65536.
               input: clk_sys_src
@@ -1427,7 +1427,7 @@ families:
 
   # CLK_PERI has no divider (passthrough after mux/gate)
 
-  # CLK_HSTX integer divider (2-bit)
+            # CLK_HSTX integer divider (2-bit)
             - name: clk_hstx_div
               description: CLK_HSTX integer divider (1-3). No fractional part.
               input: clk_hstx_src
@@ -1438,7 +1438,7 @@ families:
                 value_range: {min: 1, max: 3}
               notes: INT field is 2 bits at [17:16].
 
-  # CLK_USB integer divider (4-bit at offset 16)
+            # CLK_USB integer divider (4-bit at offset 16)
             - name: clk_usb_div
               description: CLK_USB integer divider (1-15).
               input: clk_usb_src
@@ -1449,7 +1449,7 @@ families:
                 value_range: {min: 1, max: 15}
               notes: INT field is 4 bits at [19:16]. Typically set to 1.
 
-  # CLK_ADC integer divider (4-bit at offset 16)
+            # CLK_ADC integer divider (4-bit at offset 16)
             - name: clk_adc_div
               description: CLK_ADC integer divider (1-15).
               input: clk_adc_src
@@ -1460,7 +1460,7 @@ families:
                 value_range: {min: 1, max: 15}
               notes: INT field is 4 bits at [19:16].
 
-  # CLK_GPOUT0-3 fractional dividers
+            # CLK_GPOUT0-3 fractional dividers
             - name: clk_gpout0_div
               description: CLK_GPOUT0 divider with 16-bit fraction.
               input: clk_gpout0_src
@@ -1507,7 +1507,7 @@ families:
                 field: FRAC
 
           gates:
-  # CLK_PERI gate
+            # CLK_PERI gate
             - name: clk_peri_gate
               description: CLK_PERI enable gate. CLK_PERI has no divider; gate follows the mux directly.
               input: clk_peri_src
@@ -1516,7 +1516,7 @@ families:
                 reg: CLK_PERI.CTRL
                 field: ENABLE
 
-  # CLK_HSTX gate (after divider)
+            # CLK_HSTX gate (after divider)
             - name: clk_hstx_gate
               description: CLK_HSTX enable gate.
               input: clk_hstx_div_out
@@ -1525,7 +1525,7 @@ families:
                 reg: CLK_HSTX.CTRL
                 field: ENABLE
 
-  # CLK_USB gate
+            # CLK_USB gate
             - name: clk_usb_gate
               description: CLK_USB enable gate.
               input: clk_usb_div_out
@@ -1534,7 +1534,7 @@ families:
                 reg: CLK_USB.CTRL
                 field: ENABLE
 
-  # CLK_ADC gate
+            # CLK_ADC gate
             - name: clk_adc_gate
               description: CLK_ADC enable gate.
               input: clk_adc_div_out
@@ -1543,7 +1543,7 @@ families:
                 reg: CLK_ADC.CTRL
                 field: ENABLE
 
-  # CLK_GPOUTx gates
+            # CLK_GPOUTx gates
             - name: clk_gpout0_gate
               description: CLK_GPOUT0 enable gate.
               input: clk_gpout0_div_out
@@ -1593,7 +1593,7 @@ families:
   # to stay distinct from the upstream bus signals of the same name.
   # ==========================================================================
 
-  # --- WAKE_EN0 ---
+            # --- WAKE_EN0 ---
             - name: CLK_SYS_CLOCKS
               description: CLOCKS register-interface clock
               input: clk_sys
@@ -1755,7 +1755,7 @@ families:
               output: clk_sys_sio
               control: {reg: WAKE_EN0, field: CLK_SYS_SIO}
 
-  # --- WAKE_EN1 ---
+            # --- WAKE_EN1 ---
             - name: CLK_PERI_SPI0
               description: SPI0 serial bit clock
               input: clk_peri
