@@ -20,6 +20,7 @@ from ruamel.yaml import YAML
 # Add sodaCat tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
+import outputs_schema
 from transform import renameEntries, createClusterArray, createArray, create2DArray, clusterArrays, createCluster2DArray, createIndexedRegisterArray
 from enum_namer import simplify_block_enums
 
@@ -1501,111 +1502,6 @@ def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, inherits_
         rt.dump(data, f)
 
 
-def _is_new_outputs_schema(output_map):
-    """True iff output_map uses the new canonical-keyed schema.
-
-    Old schema: keys are SVD raw names; values are either a canonical-name
-    string (short form) or a dict with a `name:` key (full form).
-    New schema: keys ARE canonical names; values are dicts with optional
-    `description:` and `pattern:` (regex or null), or YAML null for a
-    bare entry.
-
-    Detection: if any value is a string or a dict containing `name:`, the
-    map is old schema.  Otherwise (every value is null / empty dict /
-    dict without `name:`) it's new schema.  Empty map → new (no consumer
-    cares).
-    """
-    if not output_map:
-        return True
-    for value in output_map.values():
-        if isinstance(value, str):
-            return False
-        if isinstance(value, dict) and 'name' in value:
-            return False
-    return True
-
-
-def _normalize_outputs(output_map):
-    """Return a list of (canonical, description, pattern) triples in
-    declaration order, regardless of whether output_map uses old or new
-    schema.
-
-    pattern semantics:
-        None: never matches (non-SVD output / opt-out).
-        str:  regex matched against SVD raw names via `re.fullmatch`.
-              Default `.*` (match everything) when omitted in new schema.
-
-    Old schema is converted by grouping entries by canonical: multiple
-    raws mapping to the same canonical become one entry with an anchored
-    alternation pattern.  A self-mapping single entry (raw == canonical)
-    becomes a never-match entry — that's the canonical-name-only
-    convention old schema used for non-SVD outputs.
-    """
-    if not output_map:
-        return []
-
-    if _is_new_outputs_schema(output_map):
-        result = []
-        for canonical, spec in output_map.items():
-            if spec is None:
-                description = ''
-                pattern = '.*'
-            elif isinstance(spec, dict):
-                description = spec.get('description', '') or ''
-                if 'pattern' in spec:
-                    pattern = spec['pattern']  # may be None for never-match
-                else:
-                    pattern = '.*'
-            else:
-                raise ValueError(
-                    f"new-schema output '{canonical}' value must be a dict "
-                    f"or null, got {type(spec).__name__}")
-            result.append((canonical, description, pattern))
-        return result
-
-    # Old schema → group entries by canonical, preserving first appearance.
-    groups = {}  # canonical -> [(raw, description), ...]
-    canonical_order = []
-    for raw_name, mapping in output_map.items():
-        if isinstance(mapping, dict):
-            canonical = mapping['name']
-            desc = mapping.get('description', '') or ''
-        else:
-            canonical = mapping
-            desc = ''
-        if canonical not in groups:
-            canonical_order.append(canonical)
-            groups[canonical] = []
-        groups[canonical].append((raw_name, desc))
-
-    result = []
-    for canonical in canonical_order:
-        entries = groups[canonical]
-        raws = [r for r, _ in entries]
-        description = next((d for _, d in entries if d), '')
-        if len(raws) == 1 and raws[0] == canonical:
-            pattern = None  # self-mapping = non-SVD output (legacy form)
-        elif len(raws) == 1:
-            pattern = '^' + re.escape(raws[0]) + '$'
-        else:
-            pattern = '^(' + '|'.join(re.escape(r) for r in raws) + ')$'
-        result.append((canonical, description, pattern))
-    return result
-
-
-def _resolve_via_outputs_decl(decl_list, raw_name):
-    """Walk decl_list in declaration order and return the canonical whose
-    pattern matches raw_name (via `re.fullmatch`).  Returns None if no
-    entry matches.  Entries with `pattern is None` are skipped.
-    """
-    for canonical, _desc, pattern in decl_list:
-        if pattern is None:
-            continue
-        if re.fullmatch(pattern, raw_name):
-            return canonical
-    return None
-
-
 def _inject_outputs(block_data, output_map):
     """Ensure all canonical output names from config appear in block_data's
     `outputs:` list.
@@ -1617,7 +1513,7 @@ def _inject_outputs(block_data, output_map):
         return block_data
     existing = block_data.get('outputs', [])
     seen = {i['name'] for i in existing}
-    for canonical, description, _pattern in _normalize_outputs(output_map):
+    for canonical, description, _pattern in outputs_schema.normalize_outputs(output_map):
         if canonical not in seen:
             seen.add(canonical)
             entry = {'name': canonical}
@@ -1665,14 +1561,14 @@ def _build_canonical_outputs(blocks_config, shared_blocks):
     result = defaultdict(set)
     for bt, bc in blocks_config.items():
         family_outputs = bc.get('outputs') or {}
-        for c, _, _ in _normalize_outputs(family_outputs):
+        for c, _, _ in outputs_schema.normalize_outputs(family_outputs):
             result[bt].add(c)
         for variant_cfg in (bc.get('variants') or {}).values():
-            for c, _, _ in _normalize_outputs(variant_cfg.get('outputs') or {}):
+            for c, _, _ in outputs_schema.normalize_outputs(variant_cfg.get('outputs') or {}):
                 result[bt].add(c)
         if not family_outputs and bc.get('uses'):
             shared = shared_blocks.get(bc['uses'], {})
-            for c, _, _ in _normalize_outputs(shared.get('outputs') or {}):
+            for c, _, _ in outputs_schema.normalize_outputs(shared.get('outputs') or {}):
                 result[bt].add(c)
     return result
 
@@ -1698,12 +1594,12 @@ def _build_outputs_decl(blocks_config, shared_blocks):
     """
     result = {}
     for bt, bc in blocks_config.items():
-        decl = list(_normalize_outputs(bc.get('outputs') or {}))
+        decl = list(outputs_schema.normalize_outputs(bc.get('outputs') or {}))
         for variant_cfg in (bc.get('variants') or {}).values():
-            decl.extend(_normalize_outputs(variant_cfg.get('outputs') or {}))
+            decl.extend(outputs_schema.normalize_outputs(variant_cfg.get('outputs') or {}))
         if bc.get('uses'):
             shared = shared_blocks.get(bc['uses'], {})
-            decl.extend(_normalize_outputs(shared.get('outputs') or {}))
+            decl.extend(outputs_schema.normalize_outputs(shared.get('outputs') or {}))
         result[bt] = decl
     return result
 
@@ -2321,7 +2217,7 @@ def main():
                 seen_canonical = set()
                 for raw_intr in periph.get('interrupts', []):
                     raw_name = raw_intr['name']
-                    canonical = _resolve_via_outputs_decl(decl_list, raw_name)
+                    canonical, _ = outputs_schema.resolve_canonical(decl_list, raw_name)
                     if not canonical:
                         canonical = _resolve_interrupt_name(
                             raw_name, inst_name, canonical_names)

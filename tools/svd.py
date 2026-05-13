@@ -7,6 +7,8 @@ from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString
 import re
 
+import outputs_schema
+
 # Strings that YAML parsers interpret as booleans (YAML 1.1 spec).
 # Must be quoted to preserve their string type through a dump/load roundtrip.
 _YAML_BOOL_LITERALS = frozenset({
@@ -315,34 +317,30 @@ def printInterrupts(interrupts:dict):
 def _applyInterruptMapping(interrupts, interrupt_map):
     """Apply data-driven interrupt name mapping from blocks config.
 
-    interrupt_map maps raw SVD interrupt names to canonical block-level names.
-    Values can be a string (canonical name) or a dict with 'name' and optional
-    'description' (overrides SVD description).
-    Interrupts not in the map are dropped (this handles filtering of
-    shared/misattributed vectors).
+    interrupt_map accepts both the old SVD-raw-keyed schema and the new
+    canonical-keyed schema (see `tools/outputs_schema.py` for the
+    detection rules).  Resolution walks the normalised entries in
+    declaration order and uses `re.fullmatch` for pattern matching;
+    interrupts that match nothing are dropped (filtering shared /
+    misattributed vectors).
     """
     if not interrupts or not interrupt_map:
         return []
 
+    decl_list = outputs_schema.normalize_outputs(interrupt_map)
     mapped = []
     seen = set()
     for intr in interrupts:
-        mapping = interrupt_map.get(intr['name'])
-        if mapping is not None:
-            if isinstance(mapping, dict):
-                canonical = mapping['name']
-                desc_override = mapping.get('description')
-            else:
-                canonical = mapping
-                desc_override = None
-            if canonical not in seen:
-                seen.add(canonical)
-                new_intr = {'name': canonical}
-                if desc_override:
-                    new_intr['description'] = desc_override
-                elif 'description' in intr:
-                    new_intr['description'] = intr['description']
-                mapped.append(new_intr)
+        canonical, desc_override = outputs_schema.resolve_canonical(
+            decl_list, intr['name'])
+        if canonical is not None and canonical not in seen:
+            seen.add(canonical)
+            new_intr = {'name': canonical}
+            if desc_override:
+                new_intr['description'] = desc_override
+            elif 'description' in intr:
+                new_intr['description'] = intr['description']
+            mapped.append(new_intr)
     return mapped
 
 def processChip(svd_root, chip_name, blocks_config):
@@ -416,9 +414,7 @@ def processChip(svd_root, chip_name, blocks_config):
                     intrs.append(mapped)
                 # Then: any canonical names from the mapping the SVD didn't
                 # provide — non-SVD outputs land here unconditionally.
-                for raw_name, mapping in output_map.items():
-                    canonical = mapping['name'] if isinstance(mapping, dict) else mapping
-                    desc = mapping.get('description', '') if isinstance(mapping, dict) else ''
+                for canonical, desc, _pattern in outputs_schema.normalize_outputs(output_map):
                     if canonical not in seen:
                         seen.add(canonical)
                         entry = {'name': canonical}
