@@ -1605,14 +1605,22 @@ def _build_outputs_decl(blocks_config, shared_blocks):
 
 
 def _resolve_interrupt_name(raw_name, instance_name, canonical_names):
-    """Map a raw SVD interrupt name to a canonical block-level name.
+    """Map a raw SVD interrupt name to a canonical block-level name via
+    prefix-strip + suffix-trim heuristics.
 
     Algorithm:
-    1. Direct match against canonical names
-    2. Strip instance-name prefix (INSTANCE_ or BASEn_), then exact match
+    1. Direct match against canonical names.
+    2. Strip instance-name prefix (INSTANCE_ or BASEn_), then exact match.
     3. After stripping, progressively remove trailing _SUFFIX segments
-       (handles shared vectors like TIM8_BRK_TIM12 -> BRK)
-    Returns the canonical name, or None if no match.
+       (handles shared vectors like TIM8_BRK_TIM12 → BRK).
+    Returns the canonical name, or None if no step matches.
+
+    Used as the fallback path when the config-driven pattern resolver in
+    `tools/outputs_schema.py` doesn't match the raw name.  The pattern
+    resolver gets first crack; this function handles raws whose mapping
+    follows the universal "<instance>_<canonical-suffix>" naming pattern
+    that would otherwise require enumerating every (instance, canonical)
+    pair in the config.
     """
     if not canonical_names:
         return None
@@ -1642,15 +1650,6 @@ def _resolve_interrupt_name(raw_name, instance_name, canonical_names):
                 if candidate in canonical_names:
                     return candidate
             break  # Only try the best-matching prefix
-
-    # 5. Instance-name-as-interrupt: raw name matches instance or base name,
-    #    and the block has exactly one canonical interrupt (common for
-    #    single-interrupt peripherals like TIM3 -> INTR, USART1 -> INTR)
-    if len(canonical_names) == 1:
-        raw_base = re.sub(r'\d+$', '', raw_name)
-        if raw_name == instance_name or raw_name == base \
-                or raw_base == base or raw_base == instance_name:
-            return next(iter(canonical_names))
 
     return None
 
