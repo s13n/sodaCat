@@ -140,7 +140,7 @@ Create `svd/<Vendor>/<Config>.yaml` with the same two-level schema as
 shared_blocks:
   <BlockType>:
     from: <Chip>.<Instance>      # Which SVD to extract from
-    interrupts: {<raw>: <canonical>}
+    outputs: {<raw>: <canonical>}
     params: [{name, type, default?, description?}]
     transforms: [...]            # Fix SVD bugs
 
@@ -155,7 +155,7 @@ families:
       <BlockType>:
         from: <Chip>.<Instance>  # OR uses: <SharedBlockName>
         instances: [<Inst1>, <Inst2>, ...]
-        interrupts: {<raw>: <canonical>}
+        outputs: {<raw>: <canonical>}
         params: [...]
         transforms: [...]
         variants:                # Optional per-subfamily overrides

@@ -86,9 +86,12 @@ def check_chip(chip_path, data, block_index):
                         f"block={block_path}): output '{name}' not in "
                         f"block's declared outputs {sorted(canon)}"
                     ))
-        # Phase 1: every destination should be 'NVIC.<int>'.  Looser checks
-        # (other destination kinds) come in Phase 2 once DMAMUX/EXTI are
-        # modelled as instances and the schema can validate against them.
+        # Destinations are 'instance.port' strings (e.g. NVIC.53,
+        # DMAMUX1.42, EXTI.7).  The dot-pair shape is enforced for every
+        # target; the input-port format is only known statically for NVIC
+        # (always an integer), so that's the only port-level check we
+        # apply here.  Other targets' port grammars will land alongside
+        # their schema definitions in Phase 2.
         for name, dests in outputs.items():
             for dest in (dests or []):
                 m = _DEST_RE.match(dest) if isinstance(dest, str) else None

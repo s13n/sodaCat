@@ -83,7 +83,7 @@ assemble the merged view.
 
 The patching pipeline still applies per-chip *before* the
 intersection: SVD raw interrupt names → canonical via the block's
-`interrupts:` map; `chip_interrupts:` overrides; `chip_instances:`
+`outputs:` map; `chip_outputs:` overrides; `chip_instances:`
 exclusions.  The intersection sees the post-patch state — so a patch
 that makes one chip agree with its siblings causes the corrected entry
 to lift cleanly into the subfamily (the patch becomes invisible in
@@ -100,7 +100,7 @@ for subfamily in family:
     for chip in subfamily:
         # 1. Per-chip processing (existing logic):
         #    block presence, instance addresses, interrupt canonicalisation,
-        #    chip_interrupts overrides, chip_instances exclusions,
+        #    chip_outputs overrides, chip_instances exclusions,
         #    per-instance outputs map assembly ...
         chip_model = assemble(chip)
         accumulate(chip_model)        # NOT written to disk yet

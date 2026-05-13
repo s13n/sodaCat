@@ -395,22 +395,28 @@ def processChip(svd_root, chip_name, blocks_config):
                 block_data['name'] = block_type
                 blocks[block_type] = block_data
 
-        # Inject canonical interrupt declarations from config mapping.
-        # The mapping values define the interrupt types this block supports,
+        # Inject canonical output declarations from the config's `outputs:`
+        # mapping.  The values define the output names this block supports,
         # regardless of which SVD chip provided the source registers.
+        # The map plays two roles: raw-SVD-name → canonical for interrupt
+        # outputs (driven by `<interrupt>` elements), and direct declaration
+        # of canonical names for non-SVD outputs (DMA requests, wakeups).
         for block_type, block_data in blocks.items():
             block_cfg = blocks_config[block_type]
-            interrupt_map = block_cfg.get('interrupts')
-            if interrupt_map:
+            output_map = block_cfg.get('outputs')
+            if output_map:
                 seen = set()
                 intrs = []
-                # First: add interrupts matched from SVD data (preserves descriptions)
+                # First: declarations matched to SVD interrupt entries (carries
+                # SVD-supplied descriptions when the mapping value is a bare
+                # string and the SVD entry has its own <description>).
                 for mapped in _applyInterruptMapping(
-                        block_raw_interrupts.get(block_type, []), interrupt_map):
+                        block_raw_interrupts.get(block_type, []), output_map):
                     seen.add(mapped['name'])
                     intrs.append(mapped)
-                # Then: add any canonical names from the mapping that SVD didn't provide
-                for raw_name, mapping in interrupt_map.items():
+                # Then: any canonical names from the mapping the SVD didn't
+                # provide — non-SVD outputs land here unconditionally.
+                for raw_name, mapping in output_map.items():
                     canonical = mapping['name'] if isinstance(mapping, dict) else mapping
                     desc = mapping.get('description', '') if isinstance(mapping, dict) else ''
                     if canonical not in seen:

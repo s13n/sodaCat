@@ -123,7 +123,7 @@ shared_blocks:
     params:
       - {name: param1, type: bool, default: true, description: What it controls}
       - {name: param2, type: int, default: 0, description: Capability level}
-    interrupts:
+    outputs:
       RAW_SVD_NAME: CANONICAL_NAME
     transforms:
       - {type: renameRegisters, pattern: ..., replacement: ...}
@@ -138,7 +138,7 @@ Change each family from `from:` to `uses:`:
 BlockType:
   from: FamilyChip.Instance
   instances: [INST1, INST2, ...]
-  interrupts: { ... }
+  outputs: { ... }
 
 # After (shared reference) — non-owning families:
 BlockType:
@@ -146,12 +146,12 @@ BlockType:
   instances: [INST1, INST2, ...]
 ```
 
-Non-owning families only need `uses:` and `instances:`. The `interrupts:` key
-is **not needed** — extraction is skipped for `uses:` blocks, so the interrupt
+Non-owning families only need `uses:` and `instances:`. The `outputs:` key
+is **not needed** — extraction is skipped for `uses:` blocks, so the output
 mapping has no effect. Remove it to avoid dead config.
 
 The **owning family** (the one whose chip is in the shared block's `from:`)
-does need `interrupts:` because it performs the actual extraction. If the SVD
+does need `outputs:` because it performs the actual extraction. If the SVD
 interrupt description contains an instance name (e.g. "UART4 Global interrupt"),
 use the dict form to override it with a generic description:
 
@@ -160,7 +160,7 @@ use the dict form to override it with a generic description:
 BlockType:
   uses: BlockType
   instances: [INST1, INST2, ...]
-  interrupts:
+  outputs:
     UART4: {name: INTR, description: Global interrupt}
 ```
 
@@ -291,13 +291,13 @@ These patterns emerged during the GpTimer work and apply to future blocks:
     "UART4 Global interrupt"). Replace with a generic description (e.g.
     "Global interrupt") since the model is shared across many instances and
     families. Use the dict form `{name: INTR, description: Global interrupt}`
-    in the owning family's `interrupts:` mapping, and check the generated model
+    in the owning family's `outputs:` mapping, and check the generated model
     output after generation.
 
-11. **Non-owning families don't need `interrupts:`.** For families with `uses:`
+11. **Non-owning families don't need `outputs:`.** For families with `uses:`
     that aren't the owning family, extraction is skipped entirely — the
-    `interrupts:` mapping has no effect. Only `uses:` and `instances:` are
-    needed. Remove `interrupts:` to avoid dead config.
+    `outputs:` mapping has no effect. Only `uses:` and `instances:` are
+    needed. Remove `outputs:` to avoid dead config.
 
 ---
 

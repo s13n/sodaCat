@@ -51,8 +51,8 @@ def _parse_block_cfg(block_cfg):
         entry['uses'] = block_cfg['uses']
     if block_cfg.get('instances') is not None:
         entry['instances'] = list(block_cfg['instances'])
-    if block_cfg.get('interrupts') is not None:
-        entry['interrupts'] = dict(block_cfg['interrupts'])
+    if block_cfg.get('outputs') is not None:
+        entry['outputs'] = dict(block_cfg['outputs'])
     if block_cfg.get('transforms') is not None:
         entry['transforms'] = [dict(t) for t in block_cfg['transforms']]
     if block_cfg.get('params') is not None:
@@ -69,7 +69,7 @@ def _parse_block_cfg(block_cfg):
 def load_family_config(family_code, config_file):
     """Load the YAML config for a given family code.
 
-    Returns (families, blocks_config, chip_params, chip_interrupts,
+    Returns (families, blocks_config, chip_params, chip_outputs,
              shared_blocks_config, svd_tag, address_overrides, svd_chip,
              clocktree).
     """
@@ -134,9 +134,9 @@ def load_family_config(family_code, config_file):
     for sf_key, sf_val in (config.get('chip_params') or {}).items():
         chip_params[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
-    chip_interrupts = {}
-    for sf_key, sf_val in (config.get('chip_interrupts') or {}).items():
-        chip_interrupts[sf_key] = {k: dict(v) for k, v in sf_val.items()}
+    chip_outputs = {}
+    for sf_key, sf_val in (config.get('chip_outputs') or {}).items():
+        chip_outputs[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
     chip_instances = {}
     for sf_key, sf_val in (config.get('chip_instances') or {}).items():
@@ -158,7 +158,7 @@ def load_family_config(family_code, config_file):
     clocktree = config.get('clocktree')
     inherits = config.get('inherits')
 
-    return families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree, inherits, shared_subfamilies_config
+    return families, blocks_config, chip_params, chip_outputs, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree, inherits, shared_subfamilies_config
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -190,13 +190,17 @@ def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, para
     return default
 
 
-def _resolve_chip_interrupts(chip_interrupts, subfamily, chip, instance, block_type):
-    """Resolve manual interrupt overrides for an instance.
+def _resolve_chip_outputs(chip_outputs, subfamily, chip, instance, block_type):
+    """Resolve manual output-routing overrides for an instance.
 
-    Same cascade as _resolve_chip_param. Returns {canonical_name: irq_number}.
+    Same cascade as _resolve_chip_param.  Returns a {canonical_name:
+    [destination_string, ...]} dict where each destination is a dotted
+    "instance.input" string (e.g. "NVIC.53", "DMAMUX1.42").  Override
+    semantics: a matching entry REPLACES the full destination list for
+    that signal — it does not merge with any SVD-derived destinations.
     """
     for sf_key in (subfamily, '_all'):
-        sf = chip_interrupts.get(sf_key)
+        sf = chip_outputs.get(sf_key)
         if not sf:
             continue
         chip_keys = [chip, '_all'] if sf_key != '_all' else ['_all']
@@ -206,7 +210,10 @@ def _resolve_chip_interrupts(chip_interrupts, subfamily, chip, instance, block_t
                 continue
             for target_key in (instance, block_type):
                 if target_key and target_key in chip_section:
-                    return dict(chip_section[target_key])
+                    # Defensive copy: destinations are lists; copy the inner
+                    # lists so downstream mutation (sort, append) doesn't
+                    # propagate back into the shared config dict.
+                    return {k: list(v) for k, v in chip_section[target_key].items()}
     return {}
 
 
@@ -1494,20 +1501,26 @@ def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, inherits_
         rt.dump(data, f)
 
 
-def _inject_interrupts(block_data, interrupt_map):
-    """Ensure all canonical interrupt-output names from config appear in
-    block_data's `outputs:` list.
+def _inject_outputs(block_data, output_map):
+    """Ensure all canonical output names from config appear in block_data's
+    `outputs:` list.
 
-    The interrupt_map (raw_name -> canonical) may define canonical names
-    that the SVD source chip didn't have (e.g. WKUP, EP1_IN for OTG).
-    This adds any missing canonical names so the model declares the
-    superset of interrupt outputs that any family might wire to NVIC.
+    The output_map serves a dual role.  For interrupt outputs sourced from
+    SVD, entries are `raw_svd_name: canonical_name` (or `raw_name: {name,
+    description}`); the raw key drives SVD-resolution elsewhere while the
+    canonical value is what gets injected here.  For non-SVD outputs (DMA
+    requests, wakeups), entries are still `key: canonical_name` (often
+    with `key == canonical_name`); the dict-value form lets the caller
+    attach a description that lands on the block-model output entry.
+
+    The function deduplicates by canonical name, so the same canonical
+    can appear in multiple raw-name entries without producing duplicates.
     """
-    if not interrupt_map:
+    if not output_map:
         return block_data
     existing = block_data.get('outputs', [])
     seen = {i['name'] for i in existing}
-    for raw_name, mapping in interrupt_map.items():
+    for raw_name, mapping in output_map.items():
         canonical = mapping['name'] if isinstance(mapping, dict) else mapping
         desc = mapping.get('description', '') if isinstance(mapping, dict) else ''
         if canonical not in seen:
@@ -1537,60 +1550,66 @@ def _inject_source(block_data, source):
 # Interrupt resolution
 # ============================================================================
 
-def _build_canonical_interrupts(blocks_config, shared_blocks):
-    """Build a dict of block_type -> set of canonical interrupt names.
+def _build_canonical_outputs(blocks_config, shared_blocks):
+    """Build a dict of block_type -> set of canonical output names.
 
-    Sources names from interrupt mappings in both family and shared block configs.
-    For blocks with 'uses:', inherits from the referenced shared block.
+    Sources names from output declarations in both family and shared block
+    configs.  For blocks with 'uses:', inherits from the referenced shared
+    block.  Used by the chip-build pass to validate SVD-derived interrupt
+    canonicals and (when relevant) to seed the set of declarable outputs.
     """
     result = defaultdict(set)
     for bt, bc in blocks_config.items():
-        interrupt_map = bc.get('interrupts') or {}
-        if not interrupt_map and bc.get('uses'):
+        output_map = bc.get('outputs') or {}
+        if not output_map and bc.get('uses'):
             shared = shared_blocks.get(bc['uses'], {})
-            interrupt_map = shared.get('interrupts') or {}
-        # Also check variants for interrupt overrides
+            output_map = shared.get('outputs') or {}
+        # Also check variants for output overrides
         for variant_cfg in (bc.get('variants') or {}).values():
-            for raw, mapping in (variant_cfg.get('interrupts') or {}).items():
+            for raw, mapping in (variant_cfg.get('outputs') or {}).items():
                 canonical = mapping['name'] if isinstance(mapping, dict) else mapping
                 result[bt].add(canonical)
-        for raw, mapping in interrupt_map.items():
+        for raw, mapping in output_map.items():
             canonical = mapping['name'] if isinstance(mapping, dict) else mapping
             result[bt].add(canonical)
     for bt, bc in shared_blocks.items():
-        for raw, mapping in (bc.get('interrupts') or {}).items():
+        for raw, mapping in (bc.get('outputs') or {}).items():
             canonical = mapping['name'] if isinstance(mapping, dict) else mapping
             result[bt].add(canonical)
     return result
 
 
-def _build_config_interrupt_mapping(blocks_config, shared_blocks):
-    """Build a direct raw_name -> canonical mapping per block type from config.
+def _build_config_output_mapping(blocks_config, shared_blocks):
+    """Build a direct raw_svd_name -> canonical mapping per block type from
+    config.  Provides a config-driven lookup tried before algorithmic
+    SVD-name resolution.  Useful when interrupt names don't follow
+    prefix-stripping patterns.
 
-    Provides a config-driven lookup that is tried before algorithmic resolution.
-    Useful when interrupt names don't follow prefix-stripping patterns.
+    Non-SVD entries in `outputs:` (DMA requests, wakeups) typically use
+    key == canonical, so their entries here are no-op self-mappings; they
+    never match an actual SVD raw name and the cost is just a dict entry.
 
-    Returns: dict of (block_type, raw_name) -> canonical_name
+    Returns: dict of (block_type, raw_name) -> canonical_name.
     """
     mapping = {}
     for bt, bc in blocks_config.items():
-        interrupt_map = bc.get('interrupts') or {}
-        if not interrupt_map and bc.get('uses'):
+        output_map = bc.get('outputs') or {}
+        if not output_map and bc.get('uses'):
             shared = shared_blocks.get(bc['uses'], {})
-            interrupt_map = shared.get('interrupts') or {}
-        for raw, canonical_spec in interrupt_map.items():
+            output_map = shared.get('outputs') or {}
+        for raw, canonical_spec in output_map.items():
             canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
             mapping[(bt, raw)] = canonical
-        # Also include interrupt mappings from variants
+        # Also include mappings from variants
         for variant_cfg in (bc.get('variants') or {}).values():
-            for raw, canonical_spec in (variant_cfg.get('interrupts') or {}).items():
+            for raw, canonical_spec in (variant_cfg.get('outputs') or {}).items():
                 canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
                 mapping[(bt, raw)] = canonical
     # Shared block mappings fill in entries that no family overrides.
     # Family-level mappings win, mirroring how `_resolve_uses_config` lets
     # a family override shared defaults.
     for bt, bc in shared_blocks.items():
-        for raw, canonical_spec in (bc.get('interrupts') or {}).items():
+        for raw, canonical_spec in (bc.get('outputs') or {}).items():
             if (bt, raw) in mapping:
                 continue
             canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
@@ -1718,7 +1737,7 @@ def main():
     vendor_ns = output_dir.name.lower()
 
     config_file = ext.config_path(args)
-    families, blocks_config, chip_params, chip_interrupts, chip_instances, shared_blocks, svd_tag, \
+    families, blocks_config, chip_params, chip_outputs, chip_instances, shared_blocks, svd_tag, \
         address_overrides, svd_chip, clocktree, inherits, shared_subfamilies = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
@@ -1908,7 +1927,7 @@ def main():
                 all_findings.extend(_apply_transforms(
                     block_data, transforms, audit=args.audit,
                     block_name=f"{shared_name} (shared)"))
-            block_data = _inject_interrupts(block_data, shared_cfg.get('interrupts'))
+            block_data = _inject_outputs(block_data, shared_cfg.get('outputs'))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
 
@@ -2112,11 +2131,11 @@ def main():
     print("PASS 3: Generating chip models")
     print(f"{'='*60}")
 
-    canonical_interrupts = _build_canonical_interrupts(blocks_config, shared_blocks)
+    canonical_outputs = _build_canonical_outputs(blocks_config, shared_blocks)
     # Config-driven interrupt lookup: used by LPC (interrupt names don't follow
     # prefix-stripping patterns). STM32 uses algorithmic resolution only.
     if hasattr(ext, 'use_config_interrupt_map') and ext.use_config_interrupt_map:
-        config_interrupt_map = _build_config_interrupt_mapping(blocks_config, shared_blocks)
+        config_interrupt_map = _build_config_output_mapping(blocks_config, shared_blocks)
     else:
         config_interrupt_map = {}
     chip_model_count = 0
@@ -2190,7 +2209,7 @@ def main():
                 if not block_type:
                     continue  # Unmodeled peripheral
 
-                canonical_names = canonical_interrupts.get(block_type, set())
+                canonical_names = canonical_outputs.get(block_type, set())
 
                 # Map interrupts: config-driven lookup first, then algorithmic.
                 # Dedup by canonical name with first-wins policy.  Two cases
@@ -2220,29 +2239,6 @@ def main():
                     else:
                         unmatched_interrupts[block_type].add(raw_name)
 
-                # Apply chip_interrupts overrides/injections
-                intr_overrides = _resolve_chip_interrupts(
-                    chip_interrupts, subfamily_name, chip_name,
-                    inst_name, block_type)
-                if intr_overrides:
-                    existing = {i['name']: i for i in mapped_intrs}
-                    for canonical_name, irq_value in intr_overrides.items():
-                        existing[canonical_name] = {
-                            'name': canonical_name, 'value': irq_value}
-                    mapped_intrs = sorted(
-                        existing.values(), key=lambda i: i['value'])
-
-                # Sort interrupts to match peripheral model's declaration order
-                model_name = block_model_names.get(block_type, block_type)
-                intr_order = (
-                    model_interrupt_order.get((block_type, subfamily_name))
-                    or model_interrupt_order.get(model_name)
-                    or model_interrupt_order.get(block_type, []))
-                if intr_order:
-                    order_map = {name: i for i, name in enumerate(intr_order)}
-                    mapped_intrs.sort(
-                        key=lambda x: order_map.get(x['name'], len(order_map)))
-
                 # Build per-instance outputs map: canonical signal name ->
                 # list of dotted destination strings.  For NVIC, the input ID
                 # is the absolute exception vector (SVD value + offset);
@@ -2251,6 +2247,35 @@ def main():
                 for intr in mapped_intrs:
                     outputs_map[intr['name']] = [
                         f"NVIC.{intr['value'] + interrupt_offset}"]
+
+                # Apply chip_outputs overrides/injections: each entry REPLACES
+                # the destination list for that signal (does not merge with
+                # SVD-derived NVIC destinations).  This is the mechanism for
+                # NVIC IRQ corrections (override existing NVIC.<n> entry) and
+                # for adding non-SVD destinations like DMAMUX request lines.
+                output_overrides = _resolve_chip_outputs(
+                    chip_outputs, subfamily_name, chip_name,
+                    inst_name, block_type)
+                if output_overrides:
+                    for canonical_name, destinations in output_overrides.items():
+                        outputs_map[canonical_name] = list(destinations)
+
+                # Sort outputs_map to match the block model's `outputs:`
+                # declaration order.  Done after override application so
+                # canonicals injected only via chip_outputs (e.g. a DMA
+                # request line on an instance whose SVD lacks DMA entries)
+                # land in their block-declared slot rather than at the
+                # dict's tail.
+                model_name = block_model_names.get(block_type, block_type)
+                intr_order = (
+                    model_interrupt_order.get((block_type, subfamily_name))
+                    or model_interrupt_order.get(model_name)
+                    or model_interrupt_order.get(block_type, []))
+                if intr_order and outputs_map:
+                    order_map = {name: i for i, name in enumerate(intr_order)}
+                    outputs_map = dict(sorted(
+                        outputs_map.items(),
+                        key=lambda kv: order_map.get(kv[0], len(order_map))))
 
                 # Resolve parameters.  When the resolved value matches the
                 # declared default we omit the param from the chip yaml: the

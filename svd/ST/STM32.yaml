@@ -2,7 +2,7 @@ displayPrefix: STM32
 shared_blocks:
   WWDG:
     from: STM32L412.WWDG
-    interrupts: {WWDG: INTR}
+    outputs: {WWDG: INTR}
     params:
       - {name: cfr_version, type: int, default: 1, max: 2, description: 'CFR register layout: 1 = v1 (2-bit WDGTB at [8:7]), 2 = v2 (3-bit WDGTB at [13:11])'}
     transforms:
@@ -23,7 +23,7 @@ shared_blocks:
     # Gen 3 (EW+ONF): +ONF in SR — H5, H7RS, U0
     # N6 stays separate (Gen 4: EWIF@bit15, separate ICR register)
     from: STM32H7S.IWDG
-    interrupts: {IWDG: INTR}
+    outputs: {IWDG: INTR}
     params:
       - {name: gen, type: int, default: 1, max: 3, description: 'IWDG generation: 0=basic (KR/PR/RLR/SR), 1=+window (WINR/WVU), 2=+early wakeup (EWCR/4-bit PR/EWU/EWIF), 3=+ONF status'}
     transforms:
@@ -38,7 +38,7 @@ shared_blocks:
     # Gen 3 (+ARDIS+NSCR): +ARDIS in CR, +NSCR register — H5, H7RS, U0, U5, N6
     # U3 stays separate (8-bit CONFIG1, BUSY in SR, 4 HTCR registers)
     from: STM32N645.RNG
-    interrupts: {RNG: INTR}
+    outputs: {RNG: INTR}
     params:
       - {name: gen, type: int, default: 1, max: 3, description: 'RNG generation: 0=basic (CR:RNGEN+IE), 1=+CED, 2=+HTCR/config/CONDRST/CONFIGLOCK, 3=+ARDIS+NSCR'}
     transforms:
@@ -49,14 +49,14 @@ shared_blocks:
     # Gen 1 (+NPBLB): +NPBLB[23:20] in CR — H7(H745_H757, H73x, H7A3_B)
     # Gen 2 (+KMOD+IPRST+KERF+KEYVALID): +KMOD, +IPRST in CR; +KERF, +KEYVALID in SR — H7RS, N6
     from: STM32N655.CRYP
-    interrupts: {CRYP: INTR}
+    outputs: {CRYP: INTR}
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'CRYP generation: 0=basic, 1=+NPBLB, 2=+KMOD/IPRST/KERF/KEYVALID'}
   AES_V1:
     # AES co-processor V1 (basic, AES-128 only): L0, L1, F4, L4, L4+
     # 12 registers: CR(flag clear+interrupt in-band), SR{CCF,RDERR,WRERR}, DINR, DOUTR, KEYR0-3, IVR0-3
     from: STM32L431.AES
-    interrupts:
+    outputs:
       AES: INTR
       CRYPTO: INTR
       AES_RNG_LPUART1: INTR
@@ -65,7 +65,7 @@ shared_blocks:
     # AES co-processor V2 (extended, 256-bit key + GCM/CCM + suspend): F7, G0, G4, L5
     # 24 registers: V1 + GCMPH/CHMOD2/KEYSIZE/NPBLB in CR, BUSY in SR, KEYR4-7, SUSP0R-7
     from: STM32G431.AES
-    interrupts:
+    outputs:
       AES: INTR
       AES_RNG: INTR
     description: AES co-processor V2 (256-bit key, GCM/CCM, suspend)
@@ -74,7 +74,7 @@ shared_blocks:
     # 27 registers: V2 base + KMOD/IPRST in CR, KEYVALID in SR, separate IER/ISR/ICR at 0x300+
     # Flag clear/interrupt enable moved from CR to dedicated IER/ISR/ICR registers
     from: STM32H533.AES
-    interrupts:
+    outputs:
       AES: INTR
       AES_RNG: INTR
     description: AES co-processor V3 (separate IER/ISR/ICR, key mode)
@@ -84,7 +84,7 @@ shared_blocks:
     # Gen 1 (+extended SR): CR{ALGO[17:18] unified 2-bit}, SR{+NBWP,DINNE,NBWE} — H5, U5
     # Gen 2 (+SHA-512): CR{ALGO[17:20] unified 4-bit, +SHA-384/512}, SR extended — H7RS, N6, U3
     from: STM32N645.HASH
-    interrupts: {HASH: INTR}
+    outputs: {HASH: INTR}
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-512 (4-bit ALGO)'}
   PKA:
@@ -94,7 +94,7 @@ shared_blocks:
     # Gen 2 (+LMF): SR{+LMF} — H5, H7RS, N6
     # Gen 3 (+chaining mode): CR{+CMFIE}, SR{+CCEN,+RNGOKF,+DATAOKF,+INCRERRF,+DATAZF,+TRZERRF,+MDERRF,+RNGERRF,+CMF}, CLRFR{+CMFC} — U3
     from: STM32U385.PKA
-    interrupts: {PKA: INTR}
+    outputs: {PKA: INTR}
     params:
       - {name: gen, type: int, default: 2, max: 3, description: 'PKA generation: 0=basic, 1=+OPER error/INITOK, 2=+LMF, 3=+chaining mode'}
   DMA2D:
@@ -104,7 +104,7 @@ shared_blocks:
     # Gen 2 (+LOM/wideMode/wideLO/SB): CR{+LOM}, MODE→3-bit, LO→16-bit, OPFCCR{+SB}, 4 OCOLR variants — U5
     # Gen 3 (+CSS): FGPFCCR{+CSS} — H7RS, N6
     from: STM32H7S.DMA2D
-    interrupts: {DMA2D: INTR}
+    outputs: {DMA2D: INTR}
     params:
       - {name: gen, type: int, default: 0, max: 3, description: 'DMA2D generation: 0=basic, 1=+AI/RBS, 2=+LOM/wideMode/wideLO/SB/OCOLR variants, 3=+CSS'}
     transforms:
@@ -114,7 +114,7 @@ shared_blocks:
   JPEG:
     # JPEG codec: F7, H7, H7RS, N6, U5
     from: STM32N645.JPEG
-    interrupts:
+    outputs:
       JPEG: INTR
     transforms:
       - {type: createArray, pattern: DHTMEM(\d+), name: DHTMEM, description: DHT memory}
@@ -132,7 +132,7 @@ shared_blocks:
     # Families: F3, G4, H7. Model is hand-maintained (no from:).
     params:
       - {name: timers, type: int, default: 5, description: 'Number of timer units (5=A-E, 6=A-F)'}
-    interrupts:
+    outputs:
       HRTIM1_MST: MST
       HRTIM_Master_IRQn: MST
       HRTIM1_TIMA: TIMA
@@ -153,7 +153,7 @@ shared_blocks:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
     from: STM32N645.TIM1
-    interrupts:
+    outputs:
       TIM2: {name: INTR, description: Global interrupt}
       TIM1_BRK: BRK
       TIM1_UP: UP
@@ -199,7 +199,7 @@ shared_blocks:
       - {type: patchAddressBlock, size: 996}
   BasicTimer:
     from: STM32N645.TIM6
-    interrupts:
+    outputs:
       TIM6: INTR
       TIM6_DAC: INTR
       TIM6_DAC1: INTR
@@ -209,7 +209,7 @@ shared_blocks:
       TIM18: INTR
   I2C:
     from: STM32U535.I2C1
-    interrupts:
+    outputs:
       I2C: INTR
       I2C1: INTR
       I2C1_EV: EV
@@ -219,7 +219,7 @@ shared_blocks:
       I2C1_ERR: ERR
   USART:
     from: STM32N645.USART1
-    interrupts:
+    outputs:
       USART1: {name: INTR, description: Global interrupt}
       LPUART1: {name: INTR, description: Global interrupt}
     params:
@@ -287,7 +287,7 @@ shared_blocks:
       - {type: patchRegisters, registers: [{name: OR, displayName: OR, description: OPAMP option register, addressOffset: 12, size: 32, access: read-write, resetValue: 0}]}
   LPTIM:
     from: STM32U031.LPTIM1
-    interrupts:
+    outputs:
       LPTIM1: INTR
       LPTIM2: INTR2
       LP_Timer1: INTR
@@ -330,7 +330,7 @@ shared_blocks:
     # Classic timer (V1 layout): DCR@0x48, CCR5@0x58
     # Unified GP + AdvCtrl. Families: F4, F7, H7, C0, G0, U0, L4, L4P, L5, L0, L1
     from: STM32H723.TIM1
-    interrupts:
+    outputs:
       TIM2: {name: INTR, description: Global interrupt}
       TIM1_BRK: BRK
       TIM1_UP: UP
@@ -376,7 +376,7 @@ shared_blocks:
     # Modern SPI/I2S: split TX/RX data registers, CFG1/CFG2 configuration
     # Families: H5, H7, H7RS, N6, U3, U5
     from: STM32N645.SPI1
-    interrupts:
+    outputs:
       SPI1: INTR
     params:
       - {name: has_tser, type: bool, default: false, description: 'TSER transfer reload (H7): TSER in CR2, TSERFIE/TSERF/TSERFC, UDRDET/UDRCFG widened in CFG1'}
@@ -427,7 +427,7 @@ shared_blocks:
     # Legacy SPI/I2S: single data register, CR1/CR2/SR/DR architecture
     # Families: C0, F3, F4, F7, G0, G4, L0, L1, L4, L4P, L5, U0
     from: STM32G030.SPI1
-    interrupts:
+    outputs:
       SPI1: INTR
       SPI3: INTR
     params:
@@ -446,7 +446,7 @@ shared_blocks:
     # Serial Audio Interface: dual audio block (A/B) with optional GCR, PDM
     # Families: F4, F7, G4, H5, H7, H7RS, L4, L4P, L5, N6, U3, U5
     from: STM32U535.SAI1
-    interrupts:
+    outputs:
       SAI1: INTR
       SAI1_A: A
       SAI1_B: B
@@ -478,13 +478,13 @@ shared_blocks:
       - {name: base, type: int, default: 144, max: 255, description: Top 8 bits of memory-mapped base address (0x90 = 0x90000000)}
       - {name: logsize, type: int, default: 28, max: 31, description: Memory window size as log2 (28 = 256 MB)}
       - {name: dual, type: bool, default: true, description: Dual-flash mode support (DFM bit in CR)}
-    interrupts:
+    outputs:
       QUADSPI: INTR
   XSPI:
     # Extended-SPI flash memory interface (unified OCTOSPI/XSPI)
     # Families: H5, H7, H7RS, L5, N6, U3, U5 (L4P has different IP variants, stays family-specific)
     from: STM32N645.XSPI1
-    interrupts:
+    outputs:
       OCTOSPI1: INTR
       XSPI1: INTR
       OSPI1: INTR
@@ -505,7 +505,7 @@ shared_blocks:
     # S/PDIF audio receiver interface
     # Families: F4, F7, H7, H7RS, N6
     from: STM32N645.SPDIFRX
-    interrupts:
+    outputs:
       SPDIFRX: INTR
       SPDIF_Rx: INTR
       SPDIF: INTR
@@ -516,7 +516,7 @@ shared_blocks:
     # Touch Sensing Controller: F3, L0, L4, L4P, L5, U0, U3, U5
     # 8 IO groups max (G1-G8); some chips implement 6 or 7
     from: STM32U535.TSC
-    interrupts:
+    outputs:
       TSC: INTR
     params:
       - {name: groups, type: int, default: 8, description: 'Number of touch sensing IO groups (6, 7, or 8)'}
@@ -526,24 +526,24 @@ shared_blocks:
     # Single Wire Protocol Master Interface: H7, L4, L4P
     # H7 is superset (transceiver enable/ready bits, OR register, 8-bit BRR)
     from: STM32H723.SWPMI
-    interrupts:
+    outputs:
       SWPMI1: INTR
   CORDIC:
     # CORDIC co-processor: G4, H5, H7, H7RS, U5
     from: STM32H562.CORDIC
-    interrupts:
+    outputs:
       Cordic: INTR
       CORDIC_IT: INTR
       CORDIC: INTR
   FMAC:
     # Filter Math Accelerator: G4, H5, H7, U5
     from: STM32H723.FMAC
-    interrupts:
+    outputs:
       FMAC: INTR
   FMC:
     # Flexible Memory Controller (NOR/SRAM/NAND/SDRAM): F3, F4, F7, G4, H5, H7, H7RS, L4, L4P, L5, U5
     from: STM32H523.FMC
-    interrupts:
+    outputs:
       FMC: INTR
     description: Flexible Memory Controller
     params:
@@ -590,7 +590,7 @@ shared_blocks:
   GPDMA:
     # General-purpose DMA: H5, H7RS, N6, U3, U5
     from: STM32N645.GPDMA
-    interrupts:
+    outputs:
       GPDMA1_CH0: CH0
       GPDMA1_CH1: CH1
       GPDMA1_CH2: CH2
@@ -665,13 +665,13 @@ shared_blocks:
   MDIOS:
     # Management Data Input/Output Slave: F7, H7, H7RS, N6
     from: STM32H723.MDIOS
-    interrupts:
+    outputs:
       MDIOS_WKUP: WKUP
       MDIOS: INTR
   OTG:
     # USB OTG (Synopsys DWC2): F4, F7, H7, H7RS, L4, L4P, N6, U5
     from: STM32H7S.OTG_HS
-    interrupts:
+    outputs:
       OTG_FS: INTR
       OTG_HS: INTR
       OTG1: INTR
@@ -743,7 +743,7 @@ shared_blocks:
     # TX (TX_ORDSET/TX_PAYSZ/TXDR), RX (RX_ORDSET/RX_PAYSZ/RXDR/RX_ORDEXT1/RX_ORDEXT2),
     # ID (IPVER/IPID/MID). G0 source is superset (DBATTEN in CR, all CFG3 trim fields, ID regs)
     from: STM32G070.UCPD1
-    interrupts:
+    outputs:
       UCPD1_UCPD2: INTR
       UCPD1: INTR
       UCPD: INTR
@@ -756,7 +756,7 @@ shared_blocks:
   USB_DRD:
     # USB full-speed dual-role device (CHEPnR, PMA-based): C0, G0, H5, U0, U3
     from: STM32H503.USB
-    interrupts:
+    outputs:
       USB: INTR
       USB_FS: INTR
     description: USB full-speed dual-role device interface (PMA-based, CHEPnR)
@@ -766,7 +766,7 @@ shared_blocks:
   USB_DEV:
     # USB full-speed device (EPnR, PMA-based): F3, G4, L0, L1, L5
     from: STM32L552.USB
-    interrupts:
+    outputs:
       USB_HP: HP
       USB_LP: LP
       USB_WAKEUP: WAKEUP
@@ -787,27 +787,27 @@ shared_blocks:
   CRS:
     # Clock Recovery System: C0, G4, H5, H7, H7RS, L0, L4, L4P, L5, U0, U3, U5
     from: STM32U375.CRS
-    interrupts:
+    outputs:
       CRS: INTR
     params:
       - {name: trim_width, type: int, default: 6, description: TRIM field width in CR register (6 or 7 bits)}
   PSSI:
     # Parallel Synchronous Slave Interface: H5, H7, H7RS, N6, U5
     from: STM32H7S.PSSI
-    interrupts:
+    outputs:
       PSSI: INTR
     params:
       - {name: has_cksrc, type: bool, default: false, description: CKSRC field in CR for clock source selection}
   CEC:
     # Gen2 HDMI-CEC: F4, F7, G0, H7, H7RS (F3 Gen1 stays separate)
     from: STM32H723.CEC
-    interrupts:
+    outputs:
       CEC: INTR
       HDMI_CEC: INTR
   DCMI:
     # Digital Camera Interface: F4, F7, H5, H7, L4, L4P, N6, U5
     from: STM32H723.DCMI
-    interrupts:
+    outputs:
       DCMI: INTR
       DCMI_PSSI: INTR
     params:
@@ -815,7 +815,7 @@ shared_blocks:
   bxCAN:
     # Basic Extended CAN: F3, F4, F7, L4, L4P
     from: STM32F446.CAN1
-    interrupts:
+    outputs:
       CAN1_TX: TX
       CAN1_RX0: RX0
       CAN1_RX1: RX1
@@ -851,14 +851,14 @@ shared_blocks:
   FDCAN:
     # Basic FDCAN (37-register Bosch M_CAN): C0, G0, G4, H5, H7RS, L5, U3, U5
     from: STM32H523.FDCAN
-    interrupts: {FDCAN1_IT0: IT0, FDCAN1_IT1: IT1}
+    outputs: {FDCAN1_IT0: IT0, FDCAN1_IT1: IT1}
     transforms:
       - {type: patchAddressBlock, size: 1024}
     description: Controller area network with flexible data-rate (Bosch M_CAN)
   SDIO:
     # Legacy SD/SDIO/MMC (ARM PrimeCell PL18x): F4, F7, L1, L4
     from: STM32F401.SDIO
-    interrupts:
+    outputs:
       SDIO: INTR
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
     params:
@@ -867,7 +867,7 @@ shared_blocks:
   SDMMC:
     # Modern SDMMC with IDMA: H5, H7, H7RS, L4P, L5, N6, U3, U5
     from: STM32H743.SDMMC1
-    interrupts:
+    outputs:
       SDMMC1: INTR
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
     transforms:
@@ -910,7 +910,7 @@ shared_blocks:
   ETH:
     # Synopsys DWC Ethernet QoS (EQOS): H5, H7, H7RS, C5
     from: STM32H5E5.ETH
-    interrupts:
+    outputs:
       ETH: INTR
       ETH_WKUP: WKUP
     description: Ethernet MAC (Synopsys DWC EQOS)
@@ -994,7 +994,7 @@ shared_blocks:
       - {type: renameRegisters, pattern: ^DFSDM\d+_, replacement: ''}
       - {type: createClusterArray, pattern: CH(\d+)(.+), name: CH, description: Serial channel}
       - {type: createClusterArray, pattern: FLT(\d+)(.+), name: FLT, description: Digital filter}
-    interrupts:
+    outputs:
       DFSDM1_FLT0: FLT0
       DFSDM1_FLT1: FLT1
       DFSDM1_FLT2: FLT2
@@ -1072,7 +1072,7 @@ shared_blocks:
                 bitOffset: 7
                 bitWidth: 1
                 access: read-write
-    interrupts:
+    outputs:
       RTC_WKUP: WKUP
       RTC_ALARM: ALARM
       RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
@@ -1130,7 +1130,7 @@ shared_blocks:
             description: Global RTC protection
             bitOffset: 15
             bitWidth: 1
-    interrupts:
+    outputs:
       RTC: INTR
       RTC_STAMP: INTR
       RTC_TAMP: INTR
@@ -1141,7 +1141,7 @@ shared_blocks:
   I3C:
     # Improved Inter-Integrated Circuit: C5, H5, N6, U3
     from: STM32U375.I3C1
-    interrupts:
+    outputs:
       I3C1_EV: EV
       I3C1_ER: ER
       I3C1_ERR: ERR
@@ -1166,7 +1166,7 @@ shared_blocks:
   DCACHE:
     # Data cache controller: H5, U5
     from: STM32H523.DCACHE
-    interrupts:
+    outputs:
       DCACHE: INTR
       DCACHE1: INTR
       DCACHE2: INTR
@@ -1174,13 +1174,13 @@ shared_blocks:
   ICACHE:
     # Instruction cache: C5, H5, H7RS
     from: STM32H503.ICACHE
-    interrupts:
+    outputs:
       ICACHE: INTR
     description: Instruction cache controller (ICACHE)
   SAES:
     # Secure AES coprocessor: C5, H5, H7RS, N6, U3, U5
     from: STM32H533.SAES
-    interrupts:
+    outputs:
       SAES: INTR
     description: Secure AES coprocessor (SAES)
   LTDC:
@@ -1190,7 +1190,7 @@ shared_blocks:
     # CKCR/PFCR/CACR/DCCR/BFCR/CFBAR/CFBLR/CFBLNR/CLUTWR)
     # N6 has a fundamentally different extended LTDC (70 registers, YCbCr, gamma) — separate block
     from: STM32H7S.LTDC
-    interrupts:
+    outputs:
       LCD_TFT: INTR
       LCD_TFT_1: ER
       LCD_TFT_ER: ER
@@ -1205,7 +1205,7 @@ shared_blocks:
     # (DLY0CR), interrupts (DFLT0IER/DFLT0ISR), sound activity (SADCR/SADCFGR/
     # SADSDLVR/SADANLVR). U3 adds TRGISEL (trigger input selection).
     from: STM32H7S.ADF
-    interrupts:
+    outputs:
       ADF1_FLT0: INTR
       ADF1: INTR
     description: Audio Digital Filter
@@ -1228,7 +1228,7 @@ shared_blocks:
     # SCDxCR/DFLTxIER/DFLTxISR/OECxCR/SNPSxDR/DFLTxDR). N6 source has richer
     # descriptions/enums and correct MCICD field splitting (8+1 vs U5 single 9-bit).
     from: STM32N645.MDF1
-    interrupts:
+    outputs:
       MDF1_FLT0: FLT0
       MDF1_FLT1: FLT1
       MDF1_FLT2: FLT2
@@ -1247,7 +1247,7 @@ shared_blocks:
     # (WCFGR/WCR/WIER/WISR/WIFCR/WPCR1-5/WRPCR). U5 has newer revision
     # with different PLL/PHY fields — stays family-specific.
     from: STM32F767.DSI
-    interrupts:
+    outputs:
       DSIHOST: INTR
       DSIHSOT: INTR
     description: MIPI DSI host controller (Synopsys DesignWare)
@@ -1268,7 +1268,7 @@ shared_blocks:
     # (TrustZone/non-TZ/L5 naming at 0x020), OR/OR_Remap/MONCFGR (option
     # register variants at 0x050), RPCFGR/ERCFGR (resource protection at 0x054).
     from: STM32N645.TAMP
-    interrupts:
+    outputs:
       TAMP: INTR
     description: Tamper detection
     params:
@@ -1456,7 +1456,7 @@ families:
       ADC:
         from: STM32C071.ADC
         instances: [ADC]
-        interrupts:
+        outputs:
           ADC: INTR
         params:
           - {name: ext_channels, type: int, default: 19, max: 19, description: Number of external input channels}
@@ -1472,7 +1472,7 @@ families:
       DMA:
         from: STM32C071.DMA
         instances: [DMA]
-        interrupts:
+        outputs:
           DMA1_Channel1: Channel1
           DMA1_Channel2_3: Channel2_3
         params:
@@ -1480,14 +1480,14 @@ families:
       DMAMUX:
         from: STM32C071.DMAMUX
         instances: [DMAMUX]
-        interrupts:
+        outputs:
           DMAMUX_DMA1_Channel4_5: INTR
         params:
           - {name: channels, type: int, default: 5, max: 5, description: Number of DMA request multiplexer channels}
       EXTI:
         from: STM32C071.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVM: PVM
           EXTI0_1: INTR0_1
           EXTI2_3: INTR2_3
@@ -1495,14 +1495,14 @@ families:
       FDCAN:
         uses: FDCAN
         instances: [FDCAN]
-        interrupts:
+        outputs:
           FDCAN_IT0: IT0
           FDCAN_IT1: IT1
         description: Controller area network with flexible data-rate (Bosch M_CAN)
       Flash:
         from: STM32C071.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
         params:
           - {name: pages, type: int, max: 128, description: Number of flash memory pages}
@@ -1524,12 +1524,12 @@ families:
       RCC:
         from: STM32C071.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC_CRS: INTR
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
       SPI:
         uses: LegacySPI
@@ -1625,7 +1625,7 @@ families:
       Timer:
         uses: TimerV2
         instances: [TIM1, TIM2, TIM3, TIM4, TIM5, TIM8, TIM12, TIM15, TIM16, TIM17]
-        interrupts:
+        outputs:
           TIM1_BRK_TERR_IERR: BRK_TERR_IERR
           TIM1_UPD: UP
           TIM1_TRGI_COM_DIR_IDX: TRG_COM_DIR_IDX
@@ -1645,7 +1645,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6: INTR
           TIM7: INTR
       GPIO:
@@ -1654,7 +1654,7 @@ families:
       I2C:
         uses: I2C
         instances: [I2C1, I2C2]
-        interrupts:
+        outputs:
           I2C1_EV: EV
           I2C1_ER: ER
           I2C2_EV: EV
@@ -1662,7 +1662,7 @@ families:
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, UART4, UART5, USART6, UART7]
-        interrupts:
+        outputs:
           USART1: INTR
           USART2: INTR
           USART3: INTR
@@ -1673,24 +1673,24 @@ families:
       LPUART:
         uses: USART
         instances: [LPUART1]
-        interrupts:
+        outputs:
           LPUART1: INTR
       SPI:
         uses: ModernSPI
         instances: [SPI1, SPI2, SPI3]
-        interrupts:
+        outputs:
           SPI1: INTR
           SPI2: INTR
           SPI3: INTR
       LPTIM:
         uses: LPTIM
         instances: [LPTIM1]
-        interrupts:
+        outputs:
           LPTIM1: INTR
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1, FDCAN2]
-        interrupts:
+        outputs:
           FDCAN1_IT0: IT0
           FDCAN1_IT1: IT1
           FDCAN2_IT0: IT0
@@ -1698,13 +1698,13 @@ families:
       ETH:
         uses: ETH
         instances: [ETH]
-        interrupts:
+        outputs:
           ETH1: INTR
           ETH1_WKUP: WKUP
       USB:
         uses: USB_DRD
         instances: [USB]
-        interrupts:
+        outputs:
           USB_DRD_FS: INTR
       CRC:
         uses: CRC
@@ -1712,38 +1712,38 @@ families:
       CRS:
         uses: CRS
         instances: [CRS]
-        interrupts:
+        outputs:
           CRS: INTR
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
-        interrupts:
+        outputs:
           CORDIC: INTR
       IWDG:
         uses: IWDG
         instances: [IWDG]
-        interrupts:
+        outputs:
           IWDG: INTR
       WWDG:
         uses: WWDG
         instances: [WWDG]
-        interrupts:
+        outputs:
           WWDG: INTR
       HASH:
         uses: HASH
         instances: [HASH]
-        interrupts:
+        outputs:
           HASH: INTR
       PKA:
         uses: PKA
         instances: [PKA]
-        interrupts:
+        outputs:
           PKA: INTR
       # --- Family-specific blocks (need SVD extraction) ---
       ADC:
         from: ''  # TBD: pending SVD
         instances: [ADC1, ADC2, ADC3]
-        interrupts:
+        outputs:
           ADC1: INTR
           ADC2: INTR
           ADC3: INTR
@@ -1756,17 +1756,17 @@ families:
       COMP:
         from: ''  # TBD: pending SVD
         instances: [COMP1, COMP12]
-        interrupts:
+        outputs:
           COMP1: INTR
       DAC:
         from: ''  # TBD: pending SVD
         instances: [DAC1]
-        interrupts:
+        outputs:
           DAC1: INTR
       EXTI:
         from: ''  # TBD: pending SVD
         instances: [EXTI]
-        interrupts:
+        outputs:
           EXTI0: INTR0
           EXTI1: INTR1
           EXTI2: INTR2
@@ -1787,7 +1787,7 @@ families:
       Flash:
         from: ''  # TBD: pending SVD
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
       I3C:
         uses: I3C
@@ -1798,7 +1798,7 @@ families:
       LPDMA:
         from: ''  # TBD: pending SVD
         instances: [LPDMA1, LPDMA2]
-        interrupts:
+        outputs:
           LPDMA1_CH0: CH0
           LPDMA1_CH1: CH1
           LPDMA1_CH2: CH2
@@ -1821,27 +1821,27 @@ families:
       PWR:
         from: ''  # TBD: pending SVD
         instances: [PWR]
-        interrupts:
+        outputs:
           PWR_PVD: INTR
       RAMCFG:
         from: ''  # TBD: pending SVD
         instances: [RAMCFG]
-        interrupts:
+        outputs:
           RAMCFG: INTR
       RCC:
         from: ''  # TBD: pending SVD
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RNG:
         from: ''  # TBD: newer RNG gen with expanded health test regs
         instances: [RNG]
-        interrupts:
+        outputs:
           RNG: INTR
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
       SAES:
         uses: SAES
@@ -1865,7 +1865,7 @@ families:
       XSPI:
         from: ''  # TBD: pending SVD, C59x/C5A3 only
         instances: [XSPI1]
-        interrupts:
+        outputs:
           XSPI1: INTR
     chip_params:
       _all:
@@ -1895,10 +1895,10 @@ families:
           CRS: {trim_width: 7}
           RTC: {has_binary: true, has_privcfgr: true}
           ETH: {has_mdio_intr: true}
-    chip_interrupts:
+    chip_outputs:
       _all:
         _all:
-          ETH: {INTR: 94, WKUP: 95}  # SVD bug: ETH interrupts missing (RM0522 Table 114)
+          ETH: {INTR: [NVIC.110], WKUP: [NVIC.111]}  # SVD bug: ETH interrupts missing (RM0522 Table 114)
   F3:
     svd:
       zip: stm32f3-svd.zip
@@ -1929,7 +1929,7 @@ families:
     blocks:
       ADC:
         instances: [ADC, ADC1, ADC2, ADC3, ADC4]
-        interrupts:
+        outputs:
           ADC1_IRQ: INTR
         variants:
           F301:
@@ -1944,7 +1944,7 @@ families:
             from: STM32F3x4.ADC1
       ADC_Common:
         instances: [ADC1_2, ADC3_4, ADC_Common]
-        interrupts:
+        outputs:
           ADC1_2: INTR
         variants:
           F302:
@@ -1957,7 +1957,7 @@ families:
               - {type: renameRegisters, pattern: ^ADC1_, replacement: ''}
       AdvCtrlTimer:
         instances: [TIM1, TIM20, TIM8]
-        interrupts:
+        outputs:
           TIM1_BRK_TIM15: BRK
           TIM1_UP_TIM16: UP
           TIM1_TRG_COM_TIM17: TRG
@@ -1973,12 +1973,12 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM18, TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6_DAC1: INTR
       CEC:
         from: STM32F373.CEC
         instances: [CEC]
-        interrupts:
+        outputs:
           CEC: INTR
       CRC:
         from: STM32F301.CRC
@@ -2002,7 +2002,7 @@ families:
       DMA:
         from: STM32F301.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_CH1: CH1
           DMA1_CH2: CH2
           DMA1_CH3: CH3
@@ -2012,7 +2012,7 @@ families:
           DMA1_CH7: CH7
       EXTI:
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_IRQ: PVD_IRQ
           TAMP: TAMP
           EXTI0_IRQ: IT0
@@ -2040,7 +2040,7 @@ families:
         instances: [FMC]
       Flash:
         instances: [Flash]
-        interrupts:
+        outputs:
           FLASH: INTR
         variants:
           F301:
@@ -2070,7 +2070,7 @@ families:
         instances: [IWDG]
       PWR:
         instances: [PWR]
-        interrupts:
+        outputs:
           PVD: INTR
         variants:
           F301:
@@ -2085,7 +2085,7 @@ families:
             from: STM32F3x4.PWR
       RCC:
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
         variants:
           F301:
@@ -2100,7 +2100,7 @@ families:
             from: STM32F3x4.RCC
       RTC:
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_WKUP_IRQ: WKUP
           RTC_ALARM_IT_IRQ: ALARM
         variants:
@@ -2117,14 +2117,14 @@ families:
       SDADC:
         from: STM32F373.SDADC1
         instances: [SDADC1, SDADC2, SDADC3]
-        interrupts:
+        outputs:
           SDADC1: INTR
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3, SPI4]
       SYSCFG:
         instances: [SYSCFG_COMP_OPAMP]
-        interrupts:
+        outputs:
           COMP123: COMP123
           COMP456: COMP456
           COMP7: COMP7
@@ -2142,7 +2142,7 @@ families:
       TSC:
         uses: TSC
         instances: [TSC]
-        interrupts:
+        outputs:
           EXTI2_TSC: INTR
       USART:
         uses: USART
@@ -2189,10 +2189,10 @@ families:
         _all:
           SPI2: {has_i2s: false}
           SPI3: {has_i2s: false}
-    chip_interrupts:
+    chip_outputs:
       F334:
         _all:
-          HRTIM_Master: {MST: 103, TIMA: 104, TIMB: 105, TIMC: 106, TIMD: 107, TIME: 108, FLT: 109}
+          HRTIM_Master: {MST: [NVIC.119], TIMA: [NVIC.120], TIMB: [NVIC.121], TIMC: [NVIC.122], TIMD: [NVIC.123], TIME: [NVIC.124], FLT: [NVIC.125]}
   F4:
     svd:
       zip: stm32f4-svd.zip
@@ -2244,7 +2244,7 @@ families:
       ADC:
         from: STM32F401.ADC1
         instances: [ADC1, ADC2, ADC3]
-        interrupts:
+        outputs:
           ADC: INTR
       ADC_Common:
         from: STM32F405.ADC_Common
@@ -2259,7 +2259,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6_DAC1: INTR
       CEC:
         uses: CEC
@@ -2273,7 +2273,7 @@ families:
       DAC:
         from: STM32F410.DAC
         instances: [DAC]
-        interrupts:
+        outputs:
           TIM6_DAC: INTR
       DBGMCU:
         from: STM32F401.DBG
@@ -2284,13 +2284,13 @@ families:
       DFSDM:
         uses: DFSDM
         instances: [DFSDM, DFSDM1, DFSDM2]
-        interrupts:
+        outputs:
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
       DMA:
         from: STM32F401.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_Stream0: Stream0
           DMA1_Stream1: Stream1
           DMA1_Stream2: Stream2
@@ -2308,7 +2308,7 @@ families:
       EXTI:
         from: STM32F401.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           TAMP_STAMP: TAMP_STAMP
           EXTI0: INTR0
           EXTI1: INTR1
@@ -2324,7 +2324,7 @@ families:
       Ethernet_MAC:
         from: STM32F405.Ethernet_MAC
         instances: [Ethernet_MAC]
-        interrupts:
+        outputs:
           ETH: IT
           ETH_WKUP: WKUP
         description: Ethernet MAC (Synopsys GMAC)
@@ -2347,12 +2347,12 @@ families:
       FSMC:
         from: STM32F405.FSMC
         instances: [FSMC]
-        interrupts:
+        outputs:
           FSMC: INTR
       Flash:
         from: STM32F401.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
       GPIO:
         uses: GPIO
@@ -2363,12 +2363,12 @@ families:
       HASH:
         uses: HASH
         instances: [HASH]
-        interrupts:
+        outputs:
           HASH_RNG: INTR
       I2C:
         from: STM32F429.I2C1
         instances: [I2C1, I2C2, I2C3, I2C4]
-        interrupts:
+        outputs:
           I2C1_EV: EV
           I2C1_ER: ER
           # F413/F423 SVDs misattribute I2C interrupts to I2C3 with raw
@@ -2392,13 +2392,13 @@ families:
       OTG_FS:
         uses: OTG
         instances: [OTG_FS_GLOBAL]
-        interrupts:
+        outputs:
           OTG_FS_WKUP: WKUP
           OTG_FS: INTR
       OTG_HS:
         uses: OTG
         instances: [OTG_HS_GLOBAL]
-        interrupts:
+        outputs:
           OTG_HS_EP1_OUT: EP1_OUT
           OTG_HS_EP1_IN: EP1_IN
           OTG_HS_WKUP: WKUP
@@ -2440,7 +2440,7 @@ families:
         instances: [QUADSPI]
       RCC:
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
         variants:
           F401:
@@ -2465,7 +2465,7 @@ families:
       RTC:
         uses: RTC_V1
         instances: [RTC]
-        interrupts:
+        outputs:
           EXTI22_RTC_WKUP: WKUP
           EXTI17_RTC_Alarm: ALARM
       SAI:
@@ -2487,7 +2487,7 @@ families:
       USART:
         from: STM32F413.UART10
         instances: [UART10, UART4, UART5, UART7, UART8, UART9, USART1, USART2, USART3, USART6]
-        interrupts:
+        outputs:
           UART5: INTR
         params:
           - {name: synchronous, type: int, default: 2, max: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
@@ -2593,10 +2593,10 @@ families:
           OTG_FS: {has_lpm: true}
           ADC_Common: {multi: true}
           PWR: {power_mode: overdrive}
-    chip_interrupts:
+    chip_outputs:
       _all:
         _all:
-          SPDIF_RX: {INTR: 94}
+          SPDIF_RX: {INTR: [NVIC.110]}
   F7:
     svd:
       zip: stm32f7-svd.zip
@@ -2632,12 +2632,12 @@ families:
       ADC:
         from: STM32F722.ADC1
         instances: [ADC1, ADC2, ADC3]
-        interrupts:
+        outputs:
           ADC: INTR
       ADC_Common:
         from: STM32F722.C_ADC
         instances: [ADC_Common, C_ADC]
-        interrupts:
+        outputs:
           ADC: INTR
         transforms:
           - {type: renameFields, register: CCR, pattern: ^MULT$, replacement: MULTI}
@@ -2648,7 +2648,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6_DAC: INTR
       CEC:
         uses: CEC
@@ -2665,7 +2665,7 @@ families:
       DBGMCU:
         from: STM32F745.DBG
         instances: [DBG, DBGMCU]
-        interrupts:
+        outputs:
           FPU: INTR
         transforms:
           - {type: renameFields, register: APB1_FZ, pattern: ^DBG_J2C, replacement: DBG_I2C}
@@ -2683,7 +2683,7 @@ families:
       DFSDM:
         uses: DFSDM
         instances: [DFSDM]
-        interrupts:
+        outputs:
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
           DFSDM1_FLT2: FLT2
@@ -2691,7 +2691,7 @@ families:
       DMA:
         from: STM32F722.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_Stream0: Stream0
           DMA1_Stream1: Stream1
           DMA1_Stream2: Stream2
@@ -2720,7 +2720,7 @@ families:
       EXTI:
         from: STM32F722.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           TAMP_STAMP: TAMP_STAMP
           EXTI0: INTR0
           EXTI1: INTR1
@@ -2731,14 +2731,14 @@ families:
       Ethernet_DMA:
         from: STM32F745.Ethernet_DMA
         instances: [Ethernet_DMA]
-        interrupts:
+        outputs:
           ETH: INTR
           ETH_WKUP: ETH_WKUP
         description: Ethernet DMA (Synopsys GMAC)
       Ethernet_MAC:
         from: STM32F745.Ethernet_MAC
         instances: [Ethernet_MAC]
-        interrupts:
+        outputs:
           ETH: INTR
           ETH_WKUP: ETH_WKUP
         description: Ethernet MAC (Synopsys GMAC)
@@ -2753,12 +2753,12 @@ families:
       FMC:
         uses: FMC
         instances: [FMC]
-        interrupts:
+        outputs:
           FSMC: INTR
       Flash:
         from: STM32F767.FLASH
         instances: [FLASH, Flash]
-        interrupts:
+        outputs:
           FLASH: INTR
         params:
           - {name: has_pcrop, type: bool, default: false, description: 'PCROP protection support (RDERR, RDERRIE, OPTCR2)'}
@@ -2808,7 +2808,7 @@ families:
       LPTIM:
         uses: LPTIM
         instances: [LPTIM1]
-        interrupts:
+        outputs:
           LP_Timer1: INTR
       LTDC:
         uses: LTDC
@@ -2819,13 +2819,13 @@ families:
       OTG_FS:
         uses: OTG
         instances: [OTG_FS_GLOBAL]
-        interrupts:
+        outputs:
           OTG_FS: INTR
           OTG_FS_WKUP: WKUP
       OTG_HS:
         uses: OTG
         instances: [OTG_HS_GLOBAL]
-        interrupts:
+        outputs:
           OTG_HS_EP1_OUT: EP1_OUT
           OTG_HS_EP1_IN: EP1_IN
           OTG_HS_WKUP: WKUP
@@ -2833,7 +2833,7 @@ families:
       PWR:
         from: STM32F767.PWR
         instances: [PWR]
-        interrupts:
+        outputs:
           PVD: INTR
         params:
           - {name: has_eiwup, type: bool, default: true, description: Internal wakeup line gated by EIWUP bit (false = always enabled)}
@@ -2847,7 +2847,7 @@ families:
         instances: [QUADSPI]
       RCC:
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
         variants:
           F72x_F73x:
@@ -2862,7 +2862,7 @@ families:
       RTC:
         uses: RTC_V1
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_WKUP: WKUP
           RTC_ALARM: ALARM
       SAI:
@@ -2871,7 +2871,7 @@ families:
       SDMMC:
         uses: SDIO
         instances: [SDMMC1, SDMMC2]
-        interrupts:
+        outputs:
           SDMMC1: INTR
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
@@ -2983,10 +2983,10 @@ families:
           PWR: {has_eiwup: false}
           CAN1: {linked_to_slave: CAN2}
           CAN2: {linked_to_master: CAN1}
-    chip_interrupts:
+    chip_outputs:
       _all:
         _all:
-          SPDIF_RX: {INTR: 97}
+          SPDIF_RX: {INTR: [NVIC.113]}
   G0:
     svd:
       zip: stm32g0-svd.zip
@@ -3015,7 +3015,7 @@ families:
       ADC:
         from: STM32G030.ADC
         instances: [ADC]
-        interrupts:
+        outputs:
           ADC: INTR
       AES:
         uses: AES_V2
@@ -3023,7 +3023,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6: INTR
       CEC:
         uses: CEC
@@ -3039,7 +3039,7 @@ families:
       DAC:
         from: STM32G051.DAC
         instances: [DAC]
-        interrupts:
+        outputs:
           TIM6_DAC_LPTIM1: INTR
       DBGMCU:
         from: STM32G030.DBG
@@ -3047,19 +3047,19 @@ families:
       DMA:
         from: STM32G030.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_Channel1: Channel1
           DMA1_Channel2_3: Channel2_3
           DMA1_Channel4_5_6_7_DMAMUX_DMA2_Channel1_2_3_4_5: Channel4_5_6_7
       DMAMUX:
         from: STM32G030.DMAMUX
         instances: [DMAMUX]
-        interrupts:
+        outputs:
           DMA1_Channel4_5_6_7_DMAMUX_DMA2_Channel1_2_3_4_5: INTR
       EXTI:
         from: STM32G030.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           EXTI0_1: INTR0_1
           EXTI2_3: INTR2_3
           EXTI4_15: INTR4_15
@@ -3070,7 +3070,7 @@ families:
       Flash:
         from: STM32G030.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
       GPIO:
         uses: GPIO
@@ -3093,22 +3093,22 @@ families:
       PWR:
         from: STM32G030.PWR
         instances: [PWR]
-        interrupts:
+        outputs:
           PVD: INTR
       RCC:
         from: STM32G030.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RNG:
         uses: RNG
         instances: [RNG]
-        interrupts:
+        outputs:
           AES_RNG: INTR
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_STAMP: INTR
       SPI:
         uses: LegacySPI
@@ -3188,7 +3188,7 @@ families:
       ADC:
         from: STM32G431.ADC1
         instances: [ADC1, ADC2, ADC3, ADC4, ADC5]
-        interrupts:
+        outputs:
           ADC1_2: INTR
       ADC_Common:
         from: STM32G431.ADC12_Common
@@ -3199,12 +3199,12 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6_DACUNDER: INTR
       COMP:
         from: STM32G431.COMP
         instances: [COMP]
-        interrupts:
+        outputs:
           COMP1_2_3: INTR1_2_3
           COMP4_5_6: INTR4_5_6
           COMP7: INTR7
@@ -3226,7 +3226,7 @@ families:
       DMA:
         from: STM32G431.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_CH1: CH1
           DMA1_CH2: CH2
           DMA1_CH3: CH3
@@ -3236,12 +3236,12 @@ families:
       DMAMUX:
         from: STM32G431.DMAMUX
         instances: [DMAMUX]
-        interrupts:
+        outputs:
           DMAMUX_OVR: INTR
       EXTI:
         from: STM32G431.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_PVM: PVD_PVM
           EXTI0: INTR0
           EXTI1: INTR1
@@ -3264,7 +3264,7 @@ families:
       Flash:
         from: STM32G474.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
         params:
           - {name: pages, type: int, max: 256, description: Number of flash memory pages}
@@ -3305,7 +3305,7 @@ families:
       RCC:
         from: STM32G431.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RNG:
         uses: RNG
@@ -3313,7 +3313,7 @@ families:
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_TAMP_CSS_LSE: TAMP_CSS_LSE
           RTC_WKUP: WKUP
           RTC_ALARM: ALARM
@@ -3389,10 +3389,10 @@ families:
           Flash: {pages: 256, pb4_pupen: true}
         STM32G4A1:
           Flash: {pages: 256, pb4_pupen: true}
-    chip_interrupts:
+    chip_outputs:
       G4xx:
         _all:
-          HRTIM_Master: {MST: 67, TIMA: 68, TIMB: 69, TIMC: 70, TIMD: 71, TIME: 72, FLT: 73, TIMF: 74}
+          HRTIM_Master: {MST: [NVIC.83], TIMA: [NVIC.84], TIMB: [NVIC.85], TIMC: [NVIC.86], TIMD: [NVIC.87], TIME: [NVIC.88], FLT: [NVIC.89], TIMF: [NVIC.90]}
   H5:
     svd:
       zip: stm32h5-svd.zip
@@ -4717,7 +4717,7 @@ families:
       ADC:
         from: STM32H503.ADC
         instances: [ADC, ADC1, ADC2, ADC2_S, ADC_S]
-        interrupts:
+        outputs:
           ADC1: INTR
       ADC_Common:
         from: STM32H523.ADCC
@@ -4733,12 +4733,12 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM6_S, TIM7, TIM7_S]
-        interrupts:
+        outputs:
           TIM6: INTR
       COMP:
         from: STM32H503.COMP
         instances: [COMP]
-        interrupts:
+        outputs:
           COMP: INTR
       CORDIC:
         uses: CORDIC
@@ -4758,7 +4758,7 @@ families:
       DAC:
         from: STM32H503.DAC
         instances: [DAC]
-        interrupts:
+        outputs:
           DAC1: INTR
       DAC_S:
         from: STM32H523.DAC_S
@@ -4787,7 +4787,7 @@ families:
       DTS:
         from: STM32H503.DTS
         instances: [DTS]
-        interrupts:
+        outputs:
           DTS_WKUP: INTR
       DTS_S:
         from: STM32H523.DTS_S
@@ -4798,7 +4798,7 @@ families:
       EXTI:
         from: STM32H503.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           EXTI0: INTR0
           EXTI1: INTR1
           EXTI2: INTR2
@@ -4825,7 +4825,7 @@ families:
       FLASH_S:
         from: STM32H523.FLASH_S
         instances: [FLASH_S]
-        interrupts:
+        outputs:
           FLASH_S: INTR
       FMAC:
         uses: FMAC
@@ -4839,7 +4839,7 @@ families:
       Flash:
         from: STM32H503.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
       GPDMA:
         uses: GPDMA
@@ -4862,7 +4862,7 @@ families:
       I3C:
         uses: I3C
         instances: [I3C, I3C1, I3C2, I3C2_S, I3C_S]
-        interrupts:
+        outputs:
           I3C1_ERR: ERR
       ICACHE:
         uses: ICACHE
@@ -4894,7 +4894,7 @@ families:
       OTFDEC:
         from: STM32H533.OTFDEC
         instances: [OTFDEC, OTFDEC1, OTFDEC_S]
-        interrupts:
+        outputs:
           OTFDEC1: INTR
       PKA:
         uses: PKA
@@ -4917,7 +4917,7 @@ families:
       RAMCFG:
         from: STM32H503.RAMCFG
         instances: [RAMCFG]
-        interrupts:
+        outputs:
           RAMCFG: INTR
       RAMCFG_S:
         from: STM32H523.RAMCFG_S
@@ -4925,7 +4925,7 @@ families:
       RCC:
         from: STM32H503.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RCC_S:
         from: STM32H523.RCC_S
@@ -4939,7 +4939,7 @@ families:
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
       RTC_S:
         from: STM32H523.RTC_S
@@ -12777,7 +12777,7 @@ families:
       ADC:
         from: STM32H723.ADC1
         instances: [ADC1, ADC2, ADC3]
-        interrupts:
+        outputs:
           ADC1_2: INTR
         transforms:
           - type: patchAddressBlock
@@ -12797,7 +12797,7 @@ families:
       BDMA:
         from: STM32H723.BDMA
         instances: [BDMA, BDMA1, BDMA2]
-        interrupts:
+        outputs:
           BDMA_CH0: CH0
           BDMA_CH1: CH1
           BDMA_CH2: CH2
@@ -12809,7 +12809,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6_DAC: INTR
       CAN_CCU:
         from: STM32H723.CAN_CCU
@@ -12820,7 +12820,7 @@ families:
       COMP:
         from: STM32H723.COMP1
         instances: [COMP1]
-        interrupts:
+        outputs:
           COMP: INTR
       CORDIC:
         uses: CORDIC
@@ -12837,7 +12837,7 @@ families:
       DAC:
         from: STM32H7A3.DAC2
         instances: [DAC, DAC1, DAC2]
-        interrupts:
+        outputs:
           DAC2: INTR
       DBGMCU:
         instances: [DBGMCU]
@@ -12856,7 +12856,7 @@ families:
       DFSDM:
         uses: DFSDM
         instances: [DFSDM, DFSDM1, DFSDM2]
-        interrupts:
+        outputs:
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
           DFSDM1_FLT2: FLT2
@@ -12867,7 +12867,7 @@ families:
       DMA:
         from: STM32H723.DMA1
         instances: [DMA1, DMA2, DMA2D, DMAMUX1, DMAMUX2]
-        interrupts:
+        outputs:
           DMA_STR0: STR0
           DMA_STR1: STR1
           DMA_STR2: STR2
@@ -12890,7 +12890,7 @@ families:
       EXTI:
         from: STM32H723.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           EXTI1: INTR1
           EXTI2: INTR2
           EXTI3: INTR3
@@ -12904,7 +12904,7 @@ families:
       FDCAN:
         from: STM32H7A3.FDCAN
         instances: [FDCAN, FDCAN1, FDCAN2]
-        interrupts:
+        outputs:
           FDCAN2_CAL: CAL
           FDCAN2_IT1: IT1
           FDCAN1_IT1: IT1
@@ -12914,7 +12914,7 @@ families:
       FDCAN3:
         from: STM32H723.FDCAN3
         instances: [FDCAN3]
-        interrupts:
+        outputs:
           FDCAN3_IT0: IT0
           FDCAN3_IT1: IT1
       FMAC:
@@ -12925,7 +12925,7 @@ families:
         instances: [FMC]
       Flash:
         instances: [FLASH, Flash]
-        interrupts:
+        outputs:
           FLASH: INTR
         transforms:
           - {type: renameRegisters, pattern: ^FLASH_, replacement: ''}
@@ -12950,7 +12950,7 @@ families:
       HASH:
         uses: HASH
         instances: [HASH]
-        interrupts:
+        outputs:
           HASH_RNG: INTR
       HRTIM:
         uses: HRTIM
@@ -12967,7 +12967,7 @@ families:
       HSEM:
         from: STM32H743.HSEM
         instances: [HSEM]
-        interrupts:
+        outputs:
           HSEM0: INTR
         params:
           - {name: semaphores, type: int, default: 32, max: 32, description: Number of hardware semaphores (16 or 32)}
@@ -13007,7 +13007,7 @@ families:
       MDMA:
         from: STM32H743.MDMA
         instances: [MDMA]
-        interrupts:
+        outputs:
           MDMA: INTR
         transforms:
           - {type: renameFields, register: C0ISR, pattern: 0$, replacement: ''}
@@ -13022,13 +13022,13 @@ families:
       OTFDEC:
         from: STM32H725.OTFDEC1
         instances: [OTFDEC1, OTFDEC2]
-        interrupts:
+        outputs:
           OTFDEC1: INTR
           OTFDEC2: INTR
       OTG_HS:
         uses: OTG
         instances: [OTG1_HS_GLOBAL, OTG2_HS_GLOBAL]
-        interrupts:
+        outputs:
           OTG_HS: INTR
           OTG_HS_WKUP: WKUP
           OTG_HS_EP1_IN: EP1_IN
@@ -13063,7 +13063,7 @@ families:
       RAMECC:
         from: STM32H743.RAMECC1
         instances: [RAMECC, RAMECC1, RAMECC2, RAMECC3]
-        interrupts:
+        outputs:
           ECC_DIAG_IT: INTR
         params:
           - {name: monitors, type: int, default: 5, max: 5, description: Number of ECC monitoring units in this RAMECC instance}
@@ -13080,7 +13080,7 @@ families:
               - {name: M5FAR, access: read-only}
       RCC:
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
         variants:
           H73x:
@@ -13106,12 +13106,12 @@ families:
       RNG:
         uses: RNG
         instances: [RNG]
-        interrupts:
+        outputs:
           HASH_RNG: INTR
       RTC:
         uses: RTC_V1
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
           RTC_WKUP: WKUP
           RTC_ALARM: ALARM
@@ -13137,7 +13137,7 @@ families:
       SYSCFG:
         from: STM32H723.SYSCFG
         instances: [SYSCFG]
-        interrupts:
+        outputs:
           LPUART: INTR
         variants:
           H742_H753:
@@ -13161,25 +13161,25 @@ families:
       WWDG:
         uses: WWDG
         instances: [WWDG, WWDG1, WWDG2]
-    chip_interrupts:
+    chip_outputs:
       _all:
         _all:
-          SPDIFRX: {INTR: 97}
-          HRTIM_Master: {MST: 103, TIMA: 104, TIMB: 105, TIMC: 106, TIMD: 107, TIME: 108, FLT: 109}
+          SPDIFRX: {INTR: [NVIC.113]}
+          HRTIM_Master: {MST: [NVIC.119], TIMA: [NVIC.120], TIMB: [NVIC.121], TIMC: [NVIC.122], TIMD: [NVIC.123], TIME: [NVIC.124], FLT: [NVIC.125]}
       H742_H753:
         _all:
-          SDMMC1: {INTR: 49}
-          SDMMC2: {INTR: 124}
+          SDMMC1: {INTR: [NVIC.65]}
+          SDMMC2: {INTR: [NVIC.140]}
       H745_H757:
         _all:
-          BDMA: {CH0: 129, CH1: 130, CH2: 131, CH3: 132, CH4: 133, CH5: 134, CH6: 135, CH7: 136}
-          OTG1_HS_GLOBAL: {EP1_OUT: 74, EP1_IN: 75, WKUP: 76, INTR: 77}
-          OTG2_HS_GLOBAL: {EP1_OUT: 98, EP1_IN: 99, WKUP: 100, INTR: 101}
-          SDMMC1: {INTR: 49}
-          SDMMC2: {INTR: 124}
+          BDMA: {CH0: [NVIC.145], CH1: [NVIC.146], CH2: [NVIC.147], CH3: [NVIC.148], CH4: [NVIC.149], CH5: [NVIC.150], CH6: [NVIC.151], CH7: [NVIC.152]}
+          OTG1_HS_GLOBAL: {EP1_OUT: [NVIC.90], EP1_IN: [NVIC.91], WKUP: [NVIC.92], INTR: [NVIC.93]}
+          OTG2_HS_GLOBAL: {EP1_OUT: [NVIC.114], EP1_IN: [NVIC.115], WKUP: [NVIC.116], INTR: [NVIC.117]}
+          SDMMC1: {INTR: [NVIC.65]}
+          SDMMC2: {INTR: [NVIC.140]}
       H7A3_B:
         _all:
-          DFSDM2: {FLT0: 42}
+          DFSDM2: {FLT0: [NVIC.58]}
     chip_params:
       _all:
         _all:
@@ -13267,7 +13267,7 @@ families:
       ADC_Common:
         from: STM32H7S.ADC12_common
         instances: [ADC12_common]
-        interrupts:
+        outputs:
           ADC1_2: INTR
       ADF:
         uses: ADF
@@ -13275,7 +13275,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6: INTR
       CEC:
         uses: CEC
@@ -13298,7 +13298,7 @@ families:
       DCMIPP:
         from: STM32H7S.DCMIPP
         instances: [DCMIPP]
-        interrupts:
+        outputs:
           DCMIPP: INTR
       DLYB:
         uses: DLYB
@@ -13309,7 +13309,7 @@ families:
       DTS:
         from: STM32H7S.DTS
         instances: [DTS]
-        interrupts:
+        outputs:
           DTS: INTR
       ETH:
         uses: ETH
@@ -13317,7 +13317,7 @@ families:
       EXTI:
         from: STM32H7S.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_AVD: PVD_AVD
           LOOKUP: LOOKUP
           CACHE_ECC: CACHE_ECC
@@ -13347,7 +13347,7 @@ families:
       Flash:
         from: STM32H7S.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
       FMC:
         uses: FMC
@@ -13355,12 +13355,12 @@ families:
       GFXMMU:
         from: STM32H7S.GFXMMU
         instances: [GFXMMU]
-        interrupts:
+        outputs:
           GFXMMU: INTR
       GFXTIM:
         from: STM32H7S.GFXTIM
         instances: [GFXTIM]
-        interrupts:
+        outputs:
           GFXTIM: INTR
       GPIO:
         uses: GPIO
@@ -13377,7 +13377,7 @@ families:
       HPDMA:
         from: STM32H7S.HPDMA
         instances: [HPDMA]
-        interrupts:
+        outputs:
           HPDMA1_CH0: CH0
           HPDMA1_CH1: CH1
           HPDMA1_CH2: CH2
@@ -13418,7 +13418,7 @@ families:
       MCE:
         from: STM32H7S.MCE1
         instances: [MCE1, MCE2, MCE3]
-        interrupts:
+        outputs:
           MCE1: INTR
       MDIOS:
         uses: MDIOS
@@ -13426,7 +13426,7 @@ families:
       OTG:
         uses: OTG
         instances: [OTG_HS, OTG_FS]
-        interrupts:
+        outputs:
           OTG_HS: INTR
           OTG_FS: INTR
       PKA:
@@ -13446,7 +13446,7 @@ families:
       RCC:
         from: STM32H7S.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RNG:
         uses: RNG
@@ -13454,7 +13454,7 @@ families:
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
       SAES:
         uses: SAES
@@ -13473,7 +13473,7 @@ families:
       SDMMC:
         uses: SDMMC
         instances: [SDMMC1, SDMMC2]
-        interrupts:
+        outputs:
           SDMMC1: INTR
           SDMMC2: INTR
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
@@ -13492,7 +13492,7 @@ families:
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, UART4, UART5, UART7, UART8]
-        interrupts:
+        outputs:
           USART1: {name: INTR, description: Global interrupt}
       VREFBUF:
         uses: VREFBUF
@@ -13503,15 +13503,15 @@ families:
       XSPI:
         uses: XSPI
         instances: [XSPI1, XSPI2]
-        interrupts:
+        outputs:
           OSPI1: INTR
       XSPIM:
         from: STM32H7S.XSPIM1
         instances: [XSPIM1]
-    chip_interrupts:
+    chip_outputs:
       _all:
         _all:
-          SPDIFRX: {INTR: 124}
+          SPDIFRX: {INTR: [NVIC.140]}
     chip_params:
       _all:
         _all:
@@ -13589,7 +13589,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6: INTR
       CRC:
         uses: CRC
@@ -13606,7 +13606,7 @@ families:
       DMA:
         from: STM32L0x0.DMA1
         instances: [DMA1]
-        interrupts:
+        outputs:
           DMA1_Channel1: Channel1
           DMA1_Channel2_3: Channel2_3
           DMA1_Channel4_7: Channel4_7
@@ -13616,7 +13616,7 @@ families:
       Flash:
         from: STM32L0x0.Flash
         instances: [Flash]
-        interrupts:
+        outputs:
           FLASH: INTR
       GPIO:
         uses: GPIO
@@ -13633,7 +13633,7 @@ families:
       LCD:
         from: STM32L053.LCD
         instances: [LCD]
-        interrupts:
+        outputs:
           LCD: INTR
       LPTIM:
         uses: LPTIM
@@ -13654,7 +13654,7 @@ families:
             from: STM32L0x3.PWR
       RCC:
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
         variants:
           L0x0:
@@ -13671,7 +13671,7 @@ families:
       RTC:
         uses: RTC_V1
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
       SPI:
         uses: LegacySPI
@@ -13740,7 +13740,7 @@ families:
       ADC:
         from: STM32L100.ADC
         instances: [ADC]
-        interrupts:
+        outputs:
           ADC1: INTR
       AES:
         uses: AES_V1
@@ -13748,12 +13748,12 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM7: INTR
       COMP:
         from: STM32L100.COMP
         instances: [COMP]
-        interrupts:
+        outputs:
           COMP_ACQ: INTR
       CRC:
         from: STM32L100.CRC
@@ -13761,7 +13761,7 @@ families:
       DAC:
         from: STM32L100.DAC
         instances: [DAC]
-        interrupts:
+        outputs:
           DAC: INTR
       DBGMCU:
         from: STM32L100.DBGMCU
@@ -13769,7 +13769,7 @@ families:
       DMA:
         from: STM32L100.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_Channel1: Channel1
           DMA1_Channel2: Channel2
           DMA1_Channel3: Channel3
@@ -13780,7 +13780,7 @@ families:
       EXTI:
         from: STM32L100.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           TAMPER_STAMP: TAMPER_STAMP
           EXTI0: INTR0
           EXTI1: INTR1
@@ -13795,7 +13795,7 @@ families:
       Flash:
         from: STM32L100.Flash
         instances: [Flash]
-        interrupts:
+        outputs:
           FLASH: INTR
       GPIO:
         uses: GPIO
@@ -13806,7 +13806,7 @@ families:
       I2C:
         from: STM32L100.I2C1
         instances: [I2C1, I2C2]
-        interrupts:
+        outputs:
           I2C1_EV: EV
           I2C1_ER: ER
       IWDG:
@@ -13815,7 +13815,7 @@ families:
       LCD:
         from: STM32L100.LCD
         instances: [LCD]
-        interrupts:
+        outputs:
           LCD: INTR
       OPAMP:
         from: STM32L100.OPAMP
@@ -13823,12 +13823,12 @@ families:
       PWR:
         from: STM32L100.PWR
         instances: [PWR]
-        interrupts:
+        outputs:
           PVD: INTR
       RCC:
         from: STM32L100.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RI:
         from: STM32L100.RI
@@ -13836,7 +13836,7 @@ families:
       RTC:
         uses: RTC_V1
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_WKUP: WKUP
           RTC_Alarm: ALARM
       SDIO:
@@ -13852,7 +13852,7 @@ families:
       USART:
         from: STM32L151.UART4
         instances: [UART4, UART5, USART1, USART2, USART3, USART4, USART5]
-        interrupts:
+        outputs:
           UART4: INTR
         params:
           - {name: synchronous, type: int, default: 2, max: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
@@ -13917,7 +13917,7 @@ families:
       ADC:
         from: STM32L412.ADC1
         instances: [ADC1, ADC2, ADC3]
-        interrupts:
+        outputs:
           ADC1: INTR
       ADC_Common:
         from: STM32L471.ADC_Common
@@ -13928,14 +13928,14 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6_DACUNDER: INTR
       COMP:
         from: STM32L412.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
-        interrupts:
+        outputs:
           COMP: INTR
       CRC:
         uses: CRC
@@ -13955,7 +13955,7 @@ families:
       DFSDM:
         uses: DFSDM
         instances: [DFSDM, DFSDM1]
-        interrupts:
+        outputs:
           DFSDM1_FLT3: FLT3
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
@@ -13963,7 +13963,7 @@ families:
       DMA:
         from: STM32L412.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_Channel1: Channel1
           DMA1_Channel2: Channel2
           DMA1_Channel3: Channel3
@@ -13977,7 +13977,7 @@ families:
       EXTI:
         from: STM32L412.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_PVM: PVD_PVM
           EXTI0: INTR0
           EXTI1: INTR1
@@ -13992,7 +13992,7 @@ families:
       Flash:
         from: STM32L412.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
       GPIO:
         uses: GPIO
@@ -14012,7 +14012,7 @@ families:
       LCD:
         from: STM32L431.LCD
         instances: [LCD]
-        interrupts:
+        outputs:
           LCD: INTR
       LPTIM:
         uses: LPTIM
@@ -14026,7 +14026,7 @@ families:
       OTG_FS:
         uses: OTG
         instances: [OTG_FS_GLOBAL]
-        interrupts:
+        outputs:
           OTG_FS: INTR
       PWR:
         from: STM32L412.PWR
@@ -14037,7 +14037,7 @@ families:
       RCC:
         from: STM32L412.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RNG:
         uses: RNG
@@ -14045,7 +14045,7 @@ families:
       RTC:
         uses: RTC_V1
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_TAMP_STAMP: TAMP_STAMP_CSS_LSE
           RTC_WKUP: WKUP
           RTC_Alarm: ALARM
@@ -14058,7 +14058,7 @@ families:
       SDMMC:
         uses: SDIO
         instances: [SDMMC, SDMMC1]
-        interrupts:
+        outputs:
           SDMMC1: INTR
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
@@ -14079,7 +14079,7 @@ families:
       USB:
         from: STM32L412.USB_FS
         instances: [USB_FS]
-        interrupts:
+        outputs:
           USB_FS: INTR
       VREFBUF:
         uses: VREFBUF
@@ -14168,7 +14168,7 @@ families:
       ADC:
         from: STM32L4R5.ADC
         instances: [ADC]
-        interrupts:
+        outputs:
           ADC1_2: INTR
         transforms:
           - type: patchFields
@@ -14192,14 +14192,14 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6_DACUNDER: INTR
       COMP:
         from: STM32L4P5.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
-        interrupts:
+        outputs:
           COMP: INTR
       CRC:
         uses: CRC
@@ -14219,7 +14219,7 @@ families:
       DFSDM:
         uses: DFSDM
         instances: [DFSDM1]
-        interrupts:
+        outputs:
           DFSDM1_FLT3: FLT3
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
@@ -14227,7 +14227,7 @@ families:
       DMA:
         from: STM32L4P5.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_CH1: CH1
           DMA1_CH2: CH2
           DMA1_CH3: CH3
@@ -14241,7 +14241,7 @@ families:
       DMAMUX:
         from: STM32L4P5.DMAMUX1
         instances: [DMAMUX1]
-        interrupts:
+        outputs:
           DMAMUX1_OVR: INTR
       DSI:
         uses: DSI
@@ -14249,7 +14249,7 @@ families:
       EXTI:
         from: STM32L4P5.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_PVM: PVD_PVM
           EXTI0: INTR0
           EXTI1: INTR1
@@ -14268,7 +14268,7 @@ families:
         # of the FMC abstraction.
       Flash:
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
         variants:
           L4Px_L4Qx:
@@ -14278,7 +14278,7 @@ families:
       GFXMMU:
         from: STM32L4R5.GFXMMU
         instances: [GFXMMU]
-        interrupts:
+        outputs:
           GFXMMU: INTR
       GPIO:
         uses: GPIO
@@ -14306,7 +14306,7 @@ families:
         instances: [LTCD]
       OCTOSPI:
         instances: [OCTOSPI1, OCTOSPI2]
-        interrupts:
+        outputs:
           OCTOSPI1: INTR
         variants:
           L4Px_L4Qx:
@@ -14319,14 +14319,14 @@ families:
       OTG_FS:
         uses: OTG
         instances: [OTG_FS_GLOBAL]
-        interrupts:
+        outputs:
           OTG_FS: INTR
       PWR:
         from: STM32L4P5.PWR
         instances: [PWR]
       RCC:
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
         variants:
           L4Px_L4Qx:
@@ -14336,12 +14336,12 @@ families:
       RNG:
         uses: RNG
         instances: [RNG]
-        interrupts:
+        outputs:
           RNG_HASH: INTR
       RTC:
         uses: RTC_V1
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
           RTC_WKUP: WKUP
           RTC_ALARM: ALARM
@@ -14351,7 +14351,7 @@ families:
       SDMMC:
         uses: SDMMC
         instances: [SDMMC1, SDMMC2]
-        interrupts:
+        outputs:
           SDMMC1: INTR
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
@@ -14434,14 +14434,14 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6: INTR
       COMP:
         from: STM32L552.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
-        interrupts:
+        outputs:
           COMP: INTR
       CRC:
         uses: CRC
@@ -14452,7 +14452,7 @@ families:
       DAC:
         from: STM32L552.DAC
         instances: [DAC]
-        interrupts:
+        outputs:
           DAC: INTR
       DBGMCU:
         from: STM32L552.DBGMCU
@@ -14460,7 +14460,7 @@ families:
       DFSDM:
         uses: DFSDM
         instances: [DFSDM1]
-        interrupts:
+        outputs:
           DFSDM1_FLT0: FLT0
           DFSDM1_FLT1: FLT1
           DFSDM1_FLT2: FLT2
@@ -14468,7 +14468,7 @@ families:
       DMA:
         from: STM32L552.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_Channel1: Channel1
           DMA1_Channel2: Channel2
           DMA1_Channel3: Channel3
@@ -14480,13 +14480,13 @@ families:
       DMAMUX:
         from: STM32L552.DMAMUX1
         instances: [DMAMUX1]
-        interrupts:
+        outputs:
           DMAMUX1_OVR: OVR
           DMAMUX1_OVR_S: OVR_S
       EXTI:
         from: STM32L552.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_PVM: PVD_PVM
           EXTI0: INTR0
           EXTI1: INTR1
@@ -14514,7 +14514,7 @@ families:
       Flash:
         from: STM32L552.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
           FLASH_S: S
       GPIO:
@@ -14535,7 +14535,7 @@ families:
       LPTIM:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3]
-        interrupts:
+        outputs:
           LPTIM1: INTR
           LPTIM2: INTR2
       LPUART:
@@ -14550,7 +14550,7 @@ families:
       OTFDEC:
         from: STM32L562.OTFDEC1
         instances: [OTFDEC1]
-        interrupts:
+        outputs:
           OTFDEC1: INTR
       PKA:
         uses: PKA
@@ -14561,7 +14561,7 @@ families:
       RCC:
         from: STM32L552.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
           RCC_S: S
       RNG:
@@ -14570,7 +14570,7 @@ families:
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
           RTC_S: S
       SAI:
@@ -14656,7 +14656,7 @@ families:
       ADC_Common:
         from: STM32N645.ADC12
         instances: [ADC12]
-        interrupts:
+        outputs:
           ADC12: INTR
       ADF:
         uses: ADF
@@ -14664,7 +14664,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7, TIM18]
-        interrupts:
+        outputs:
           TIM6: INTR
           TIM18: INTR
       CRC:
@@ -14676,7 +14676,7 @@ families:
       CSI:
         from: STM32N645.CSI
         instances: [CSI]
-        interrupts:
+        outputs:
           CSI_DBG: INTR
       DBGMCU:
         from: STM32N645.DBGMCU
@@ -14687,7 +14687,7 @@ families:
       DCMIPP:
         from: STM32N645.DCMIPP
         instances: [DCMIPP]
-        interrupts:
+        outputs:
           DCMIPP: INTR
       DMA2D:
         uses: DMA2D
@@ -14695,17 +14695,17 @@ families:
       DTS:
         from: STM32N645.DTS
         instances: [DTS]
-        interrupts:
+        outputs:
           DTS: INTR
       ETH:
         from: STM32N645.ETH
         instances: [ETH]
-        interrupts:
+        outputs:
           ETH1: INTR
       EXTI:
         from: STM32N645.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_PVM: PVD_PVM
           LOCKUP: LOCKUP
           CACHE_ECC: CACHE_ECC
@@ -14740,7 +14740,7 @@ families:
       FDCAN:
         from: STM32N645.FDCAN1
         instances: [FDCAN1, FDCAN2, FDCAN3]
-        interrupts:
+        outputs:
           FDCAN1_IT0: IT0
           FDCAN1_IT1: IT1
           FDCAN_CU: CU
@@ -14748,17 +14748,17 @@ families:
       FMC:
         from: STM32N645.FMC1
         instances: [FMC1]
-        interrupts:
+        outputs:
           FMC: INTR
       GFXMMU:
         from: STM32N645.GFXMMU
         instances: [GFXMMU]
-        interrupts:
+        outputs:
           GFXMMU: INTR
       GFXTIM:
         from: STM32N645.GFXTIM
         instances: [GFXTIM]
-        interrupts:
+        outputs:
           GFXTIM: INTR
       GPDMA:
         uses: GPDMA
@@ -14775,7 +14775,7 @@ families:
       HPDMA:
         from: STM32N645.HPDMA
         instances: [HPDMA]
-        interrupts:
+        outputs:
           HPDMA1_CH0: CH0
           HPDMA1_CH1: CH1
           HPDMA1_CH2: CH2
@@ -14813,7 +14813,7 @@ families:
       LTDC:
         from: STM32N645.LTDC
         instances: [LTDC]
-        interrupts:
+        outputs:
           LTDC_LO: LO
           LTDC_LO_ERR: LO_ERR
           LTDC_UP: UP
@@ -14830,7 +14830,7 @@ families:
       OTG:
         uses: OTG
         instances: [OTG1, OTG2]
-        interrupts:
+        outputs:
           OTG1: INTR
       PKA:
         uses: PKA
@@ -14847,7 +14847,7 @@ families:
       RCC:
         from: STM32N645.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RNG:
         uses: RNG
@@ -14855,7 +14855,7 @@ families:
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
       SAES:
         uses: SAES
@@ -14866,7 +14866,7 @@ families:
       SDMMC:
         uses: SDMMC
         instances: [SDMMC1, SDMMC2]
-        interrupts:
+        outputs:
           SDMMC1: INTR
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
@@ -14887,12 +14887,12 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, UART7, UART8, UART9, USART1, USART10, USART2, USART3, USART6]
-        interrupts:
+        outputs:
           UART4: {name: INTR, description: Global interrupt}
       VENC:
         from: STM32N645.VENC
         instances: [VENC]
-        interrupts:
+        outputs:
           VENC: INTR
       VREFBUF:
         uses: VREFBUF
@@ -14903,7 +14903,7 @@ families:
       XSPI:
         uses: XSPI
         instances: [XSPI1, XSPI2, XSPI3]
-        interrupts:
+        outputs:
           XSPI1: INTR
       XSPIM:
         from: STM32N645.XSPIM
@@ -14970,7 +14970,7 @@ families:
       ADC:
         from: STM32U031.ADC
         instances: [ADC]
-        interrupts:
+        outputs:
           ADC_COMP: INTR
       AES:
         uses: AES_V3
@@ -14978,7 +14978,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6_DAC_LPTIM1: INTR
       COMP:
         from: STM32U083.COMP
@@ -15000,7 +15000,7 @@ families:
       DMA:
         from: STM32U031.DMA1
         instances: [DMA1, DMA2]
-        interrupts:
+        outputs:
           DMA1_CHannel1: CHannel1
           DMA1_Channel2_3: Channel2_3
           DMA1_Channel4_5_6_7: Channel4_5_6_7
@@ -15010,7 +15010,7 @@ families:
       EXTI:
         from: STM32U031.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_PVM: PVD_PVM
           EXTI0_1: INTR0_1
           EXTI2_3: INTR2_3
@@ -15018,7 +15018,7 @@ families:
       Flash:
         from: STM32U031.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
       GPIO:
         uses: GPIO
@@ -15035,7 +15035,7 @@ families:
       LCD:
         from: STM32U073.LCD
         instances: [LCD]
-        interrupts:
+        outputs:
           LCD: INTR
       LPTIM:
         uses: LPTIM
@@ -15052,7 +15052,7 @@ families:
       RCC:
         from: STM32U073.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC_CRS: INTR
       RNG:
         uses: RNG
@@ -15060,7 +15060,7 @@ families:
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC_TAMP: INTR
       SPI:
         uses: LegacySPI
@@ -15126,7 +15126,7 @@ families:
       ADC:
         from: STM32U375.ADC1
         instances: [ADC1, ADC2]
-        interrupts:
+        outputs:
           ADC1: INTR
       ADC_Common:
         from: STM32U375.ADC12
@@ -15140,7 +15140,7 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6: INTR
       CCB:
         from: STM32U375.CCB
@@ -15150,7 +15150,7 @@ families:
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
-        interrupts:
+        outputs:
           COMP: INTR
       CRC:
         uses: CRC
@@ -15161,7 +15161,7 @@ families:
       DAC:
         from: STM32U375.DAC
         instances: [DAC]
-        interrupts:
+        outputs:
           DAC1: INTR
       DBGMCU:
         from: STM32U375.DBGMCU
@@ -15172,7 +15172,7 @@ families:
       EXTI:
         from: STM32U375.ExTI
         instances: [ExTI]
-        interrupts:
+        outputs:
           PVD_PVM: PVD_PVM
           ExTI0: INTR0
           ExTI1: INTR1
@@ -15198,7 +15198,7 @@ families:
       Flash:
         from: STM32U375.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
       GPDMA:
         uses: GPDMA
@@ -15244,27 +15244,27 @@ families:
       PWR:
         from: STM32U375.PWR
         instances: [PWR]
-        interrupts:
+        outputs:
           PWR: INTR
       RAMCFG:
         from: STM32U375.RAMCFG
         instances: [RAMCFG]
-        interrupts:
+        outputs:
           RAMCFG: INTR
       RCC:
         from: STM32U375.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
       RNG:
         from: STM32U375.RNG
         instances: [RNG]
-        interrupts:
+        outputs:
           RNG: INTR
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
       SAES:
         uses: SAES
@@ -15356,7 +15356,7 @@ families:
       ADC:
         from: STM32U535.ADC1
         instances: [ADC1, ADC2, ADC4]
-        interrupts:
+        outputs:
           ADC12: INTR
       ADC_Common:
         from: STM32U5Fx.ADC12
@@ -15370,14 +15370,14 @@ families:
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
-        interrupts:
+        outputs:
           TIM6: INTR
       COMP:
         from: STM32U535.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
-        interrupts:
+        outputs:
           COMP: INTR
       CORDIC:
         uses: CORDIC
@@ -15391,7 +15391,7 @@ families:
       DAC:
         from: STM32U535.DAC1
         instances: [DAC1]
-        interrupts:
+        outputs:
           DAC1: INTR
       DBGMCU:
         from: STM32U5Fx.DBGMCU
@@ -15414,13 +15414,13 @@ families:
       DSI:
         from: STM32U599.DSI
         instances: [DSI]
-        interrupts:
+        outputs:
           DSIHOST: INTR
         description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32U535.EXTI
         instances: [EXTI]
-        interrupts:
+        outputs:
           PVD_PVM: PVD_PVM
           EXTI0: INTR0
           EXTI1: INTR1
@@ -15455,19 +15455,19 @@ families:
       Flash:
         from: STM32U5Fx.FLASH
         instances: [FLASH]
-        interrupts:
+        outputs:
           FLASH: INTR
           FLASH_S: S
           USB: USB
       GFXMMU:
         from: STM32U599.GFXMMU
         instances: [GFXMMU]
-        interrupts:
+        outputs:
           GFXMMU: INTR
       GFXTIM:
         from: STM32U5Fx.GFXTIM
         instances: [GFXTIM]
-        interrupts:
+        outputs:
           GFXTIM: INTR
       GPDMA:
         uses: GPDMA
@@ -15490,7 +15490,7 @@ families:
       ICACHE:
         from: STM32U535.ICache
         instances: [ICache]
-        interrupts:
+        outputs:
           ICACHE: INTR
       IWDG:
         uses: IWDG
@@ -15501,7 +15501,7 @@ families:
       LPDMA:
         from: STM32U5Fx.LPDMA1
         instances: [LPDMA1]
-        interrupts:
+        outputs:
           LPDMA1_CH0: CH0
           LPDMA1_CH1: CH1
           LPDMA1_CH2: CH2
@@ -15530,17 +15530,17 @@ families:
       OTFDEC:
         from: STM32U5Gx.OTFDEC1
         instances: [OTFDEC1, OTFDEC2]
-        interrupts:
+        outputs:
           OTFDEC1: INTR
       OTG_FS:
         uses: OTG
         instances: [OTG_FS]
-        interrupts:
+        outputs:
           OTG_FS: INTR
       OTG_HS:
         uses: OTG
         instances: [OTG_HS]
-        interrupts:
+        outputs:
           OTG_HS: INTR
       PKA:
         uses: PKA
@@ -15551,17 +15551,17 @@ families:
       PWR:
         from: STM32U5Fx.PWR
         instances: [PWR]
-        interrupts:
+        outputs:
           PWR_S3WU: INTR
       RAMCFG:
         from: STM32U5Fx.RAMCFG
         instances: [RAMCFG]
-        interrupts:
+        outputs:
           RAMCFG: INTR
       RCC:
         from: STM32U535.RCC
         instances: [RCC]
-        interrupts:
+        outputs:
           RCC: INTR
           RCC_S: S
       RNG:
@@ -15570,7 +15570,7 @@ families:
       RTC:
         uses: RTC_V2
         instances: [RTC]
-        interrupts:
+        outputs:
           RTC: INTR
           RTC_S: S
       SAES:

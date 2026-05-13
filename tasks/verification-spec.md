@@ -30,8 +30,9 @@ in at least one SVD file within the family. Flag phantom instances.
 
 ### 4. Interrupt name validity
 
-Every raw SVD interrupt name in `interrupts:` mappings should exist in the SVD.
-Flag stale interrupt names that no longer match any SVD entry.
+Every raw SVD interrupt name in a block's `outputs:` mapping should exist in
+the SVD (the raw-name → canonical entries that feed interrupt outputs).
+Flag stale raw names that no longer match any SVD entry.
 
 ### 5. Parameter completeness
 

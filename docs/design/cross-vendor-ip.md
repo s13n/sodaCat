@@ -79,7 +79,7 @@ shared block's `outputs:` list declares all three canonicals (`ERROR`, `TC`,
 `DMA: COMBINED`); the MPS2 chips wire each PL081's three outputs separately
 as `ERROR` / `TC` / `COMBINED` destinations on NVIC.  The shared-block entry
 in the family config carries `ERROR` and `TC` as synthetic raw_name: canonical
-pairs under its `interrupts:` mapping (no SVD raw entry feeds them) so the
+pairs under its `outputs:` mapping (no SVD raw entry feeds them) so the
 extractor injects them into the model's `outputs:` list even though the only
 extracted SVD source supplies just one of the three.
 
