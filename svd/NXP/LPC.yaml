@@ -12,11 +12,8 @@ shared_blocks:
     params:
       - {name: has_debug_en, type: bool, default: false, description: Has DEBUG_EN field in MOD register}
     outputs:
-      WDT: INTR
-      WDT_BOD: INTR
-      WWDT: INTR
-      WWDT0: INTR
-      WWDT1: INTR
+      INTR:
+        pattern: '^(WDT|WDT_BOD|WWDT|WWDT0|WWDT1)$'
     transforms:
       - type: patchFields
         register: MOD
@@ -51,8 +48,8 @@ shared_blocks:
   CTIMER:
     from: LPC54S018.CTIMER0
     outputs:
-      CTIMER0: CTIMER
-
+      CTIMER:
+        pattern: '^CTIMER0$'
   SCT:
     from: LPC54S018.SCT0
     params:
@@ -61,8 +58,8 @@ shared_blocks:
       - {name: outputs, type: int, default: 10, max: 16, description: Number of output channels}
       - {name: has_fractional_match, type: bool, default: false, description: Has DITHER and FRACMAT registers for fractional match}
     outputs:
-      SCT0: INTR
-      SCT: INTR
+      INTR:
+        pattern: '^(SCT0|SCT)$'
     transforms:
       - type: patchRegisters
         registers:
@@ -190,33 +187,41 @@ shared_blocks:
                   - {name: HARDWARE_STATUS_MODE, description: Hardware status mode. In this mode, the INUSE(n) flags for all channels are reset.: null, value: 0}
                   - {name: MULTI_TASK_MODE, description: Multi-task mode., value: 1}
     outputs:
-      MRT0: MRT
-
+      MRT:
+        pattern: '^MRT0$'
   PINT:
     from: LPC865.PINT
     outputs:
-      PIN_INT0: INT0
-      PIN_INT1: INT1
-      PIN_INT2: INT2
-      PIN_INT3: INT3
-      PIN_INT4: INT4
-      PIN_INT5: INT5
-      PIN_INT6: INT6
-      PIN_INT7: INT7
-      PINT0: PINT
-
+      INT0:
+        pattern: '^PIN_INT0$'
+      INT1:
+        pattern: '^PIN_INT1$'
+      INT2:
+        pattern: '^PIN_INT2$'
+      INT3:
+        pattern: '^PIN_INT3$'
+      INT4:
+        pattern: '^PIN_INT4$'
+      INT5:
+        pattern: '^PIN_INT5$'
+      INT6:
+        pattern: '^PIN_INT6$'
+      INT7:
+        pattern: '^PIN_INT7$'
+      PINT:
+        pattern: '^PINT0$'
   UTICK:
     from: LPC54S018.UTICK0
     outputs:
-      UTICK0: INTR
-
+      INTR:
+        pattern: '^UTICK0$'
   LCD:
     from: LPC4350.LCD
     params:
       - {name: num_palette, type: int, default: 256, description: Number of palette entries}
     outputs:
-      LCD: INTR
-
+      INTR:
+        pattern: '^LCD$'
   ChipIdeaHS:
     # Synopsys/ChipIdea USB 2.0 OTG HS — the canonical model is owned by
     # MCX.yaml (extracted from MCXN947).  This stub carries only the
@@ -244,8 +249,10 @@ shared_blocks:
     # interrupt surface.  Keep them as synthetic raw_name: canonical pairs
     # because the LPC43 SVD doesn't supply raw names for them.
     outputs:
-      ERROR: ERROR
-      TC: TC
+      ERROR:
+        pattern: '^ERROR$'
+      TC:
+        pattern: '^TC$'
     params:
       - {name: pl081, type: int, default: 0, max: 1, description: "0 = PL080 (8 channels, 2 AHB masters); 1 = PL081 (2 channels only, single AHB master so CONFIG.M1 endianness bit, C[n].LLI.LM bit, and C[n].CONTROL.S/D master-select bits are reserved). Both variants share the same register layout."}
     transforms:
@@ -266,9 +273,8 @@ shared_blocks:
       - {name: data_base, type: int, default: 0, max: 255, description: 'Top 8 bits of data-only memory-mapped base address (0 = no separate data window)'}
       - {name: data_logsize, type: int, default: 0, max: 31, description: 'Data-only window size as log2 (0 = none)'}
     outputs:
-      SPIFI: INTR
-      SPIFI0: INTR
-
+      INTR:
+        pattern: '^(SPIFI|SPIFI0)$'
 families:
   LPC8:
     subfamilies:
@@ -905,26 +911,26 @@ families:
         from: LPC865.ACOMP
         instances: [ACOMP]
         outputs:
-          CMP: COMPEDGE
-          CMP_CAPT: COMPEDGE
-          COMPEDGE: COMPEDGE
+          COMPEDGE:
+            pattern: '^(CMP|CMP_CAPT|COMPEDGE)$'
       ADC:
         from: LPC865.ADC0
         instances: [ADC, ADC0]
         outputs:
-          ADC0_SEQA: SEQA
-          ADC0_SEQB: SEQB
-          ADC0_THCMP: THCMP
-          ADC0_OVR: OVR
-          ADC_SEQA: SEQA
-          ADC_SEQB: SEQB
-          ADC_THCMP: THCMP
-          ADC_OVR: OVR
+          SEQA:
+            pattern: '^(ADC0_SEQA|ADC_SEQA)$'
+          SEQB:
+            pattern: '^(ADC0_SEQB|ADC_SEQB)$'
+          THCMP:
+            pattern: '^(ADC0_THCMP|ADC_THCMP)$'
+          OVR:
+            pattern: '^(ADC0_OVR|ADC_OVR)$'
       CAPT:
         from: LPC845.CAPT
         instances: [CAPT]
         outputs:
-          CMP_CAPT: CAPT
+          CAPT:
+            pattern: '^CMP_CAPT$'
       CRC:
         uses: CRC
         instances: [CRC]
@@ -932,30 +938,34 @@ families:
         uses: CTIMER
         instances: [CTIMER0]
         outputs:
-          CTIMER0: CTIMER
+          CTIMER:
+            pattern: '^CTIMER0$'
       DAC:
         from: LPC845.DAC0
         instances: [DAC0, DAC1]
         outputs:
-          DAC0: DAC
-          PIN_INT5_DAC1: DAC
+          DAC:
+            pattern: '^(DAC0|PIN_INT5_DAC1)$'
       SmartDMA:
         from: LPC865.DMA0
         instances: [DMA0]
         outputs:
-          DMA0: DMA
+          DMA:
+            pattern: '^DMA0$'
         params:
           - {name: max_channel, type: int, default: 15, max: 15, description: Index of last DMA channel}
       FLASH_CTRL:
         from: LPC865.FLASH_CTRL
         instances: [FLASH_CTRL]
         outputs:
-          FLASH: FLASH
+          FLASH:
+            pattern: '^FLASH$'
       FTM:
         from: LPC865.FTM0
         instances: [FTM0, FTM1]
         outputs:
-          FTM0: FTM
+          FTM:
+            pattern: '^FTM0$'
         transforms:
           - {type: renameRegisters, pattern: "^CONTROLS\\[%s\\]$", replacement: "C[%s]"}
           - {type: renameRegisters, pattern: "^CSC$", replacement: SC}
@@ -973,7 +983,8 @@ families:
         from: LPC865.I2C0
         instances: [I2C0, I2C1, I2C2, I2C3]
         outputs:
-          I2C0: I2C
+          I2C:
+            pattern: '^I2C0$'
         params:
           - {name: rx_req, type: int, description: DMA receive channel}
           - {name: tx_req, type: int, description: DMA transmit channel}
@@ -981,7 +992,8 @@ families:
         from: LPC864.I3C0
         instances: [I3C0]
         outputs:
-          I3C0: I3C
+          I3C:
+            pattern: '^I3C0$'
         params:
           - {name: rx_req, type: int, description: DMA receive channel}
           - {name: tx_req, type: int, description: DMA transmit channel}
@@ -1002,22 +1014,28 @@ families:
         uses: MRT
         instances: [MRT0]
         outputs:
-          MRT0: MRT
+          MRT:
+            pattern: '^MRT0$'
       PINT:
         uses: PINT
         instances: [PINT]
         outputs:
-          PIN_INT0: INT0
-          PIN_INT1: INT1
-          PIN_INT2: INT2
-          PIN_INT3: INT3
-          PIN_INT4: INT4
-          PIN_INT5: INT5
-          PIN_INT6: INT6
-          PIN_INT7: INT7
-          PIN_INT5_DAC1: INT5
-          PIN_INT6_USART3: INT6
-          PIN_INT7_USART4: INT7
+          INT0:
+            pattern: '^PIN_INT0$'
+          INT1:
+            pattern: '^PIN_INT1$'
+          INT2:
+            pattern: '^PIN_INT2$'
+          INT3:
+            pattern: '^PIN_INT3$'
+          INT4:
+            pattern: '^PIN_INT4$'
+          INT5:
+            pattern: '^(PIN_INT5|PIN_INT5_DAC1)$'
+          INT6:
+            pattern: '^(PIN_INT6|PIN_INT6_USART3)$'
+          INT7:
+            pattern: '^(PIN_INT7|PIN_INT7_USART4)$'
       PLU:
         from: LPC804.PLU
         instances: [PLU]
@@ -1028,12 +1046,14 @@ families:
         uses: SCT
         instances: [SCT0]
         outputs:
-          SCT0: INTR
+          INTR:
+            pattern: '^SCT0$'
       SPI:
         from: LPC865.SPI0
         instances: [SPI0, SPI1]
         outputs:
-          SPI0: SPI
+          SPI:
+            pattern: '^SPI0$'
         params:
           - {name: rx_req, type: int, description: DMA receive channel}
           - {name: tx_req, type: int, description: DMA transmit channel}
@@ -1058,7 +1078,8 @@ families:
         from: LPC864.SYSCON
         instances: [SYSCON]
         outputs:
-          BOD: BOD
+          BOD:
+            pattern: '^BOD$'
         variants:
           LPC802:
             from: LPC802.SYSCON
@@ -1076,9 +1097,8 @@ families:
         from: LPC865.USART0
         instances: [USART0, USART1, USART2, USART3, USART4]
         outputs:
-          USART0: USART
-          PIN_INT6_USART3: USART
-          PIN_INT7_USART4: USART
+          USART:
+            pattern: '^(USART0|PIN_INT6_USART3|PIN_INT7_USART4)$'
         params:
           - {name: rx_req, type: int, description: DMA receive channel}
           - {name: tx_req, type: int, description: DMA transmit channel}
@@ -1086,7 +1106,8 @@ families:
         from: LPC865.WKT
         instances: [WKT]
         outputs:
-          WKT: WKT
+          WKT:
+            pattern: '^WKT$'
       WWDT:
         uses: WWDT
         instances: [WWDT]
@@ -1143,10 +1164,14 @@ families:
         from: LPC54S018.ADC0
         instances: [ADC0]
         outputs:
-          ADC0_SEQA: SEQA
-          ADC0_SEQB: SEQB
-          ADC0_THCMP: THCMP
-          ADC0_OVR: OVR
+          SEQA:
+            pattern: '^ADC0_SEQA$'
+          SEQB:
+            pattern: '^ADC0_SEQB$'
+          THCMP:
+            pattern: '^ADC0_THCMP$'
+          OVR:
+            pattern: '^ADC0_OVR$'
       AES:
         from: LPC54S018.AES0
         instances: [AES0]
@@ -1157,8 +1182,10 @@ families:
         from: LPC54S018.CAN0
         instances: [CAN0, CAN1]
         outputs:
-          CAN0_IRQ0: IRQ0
-          CAN0_IRQ1: IRQ1
+          IRQ0:
+            pattern: '^CAN0_IRQ0$'
+          IRQ1:
+            pattern: '^CAN0_IRQ1$'
       CRC:
         uses: CRC
         instances: [CRC_ENGINE]
@@ -1166,20 +1193,24 @@ families:
         uses: CTIMER
         instances: [CTIMER0, CTIMER1, CTIMER2, CTIMER3, CTIMER4]
         outputs:
-          CTIMER0: CTIMER
+          CTIMER:
+            pattern: '^CTIMER0$'
       SmartDMA:
         from: LPC54S018.DMA0
         instances: [DMA0]
         outputs:
-          DMA0: DMA
+          DMA:
+            pattern: '^DMA0$'
         params:
           - {name: max_channel, type: int, default: 31, max: 31, description: Index of last DMA channel}
       DMIC:
         from: LPC54S018.DMIC0
         instances: [DMIC0]
         outputs:
-          DMIC0: DMIC
-          HWVAD0: HWVAD
+          DMIC:
+            pattern: '^DMIC0$'
+          HWVAD:
+            pattern: '^HWVAD0$'
       EMC:
         from: LPC54S018.EMC
         instances: [EMC]
@@ -1187,9 +1218,12 @@ families:
         from: LPC54S018.ENET
         instances: [ENET]
         outputs:
-          ETHERNET: INTR
-          ETHERNET_MACLP: MACLP
-          ETHERNET_PMT: PMT
+          INTR:
+            pattern: '^ETHERNET$'
+          MACLP:
+            pattern: '^ETHERNET_MACLP$'
+          PMT:
+            pattern: '^ETHERNET_PMT$'
       ETM:
         from: LPC54S018.ETM
         instances: [ETM]
@@ -1197,12 +1231,14 @@ families:
         from: LPC54S018.FLEXCOMM0
         instances: [FLEXCOMM0, FLEXCOMM1, FLEXCOMM2, FLEXCOMM3, FLEXCOMM4, FLEXCOMM5, FLEXCOMM6, FLEXCOMM7, FLEXCOMM8, FLEXCOMM9, FLEXCOMM10]
         outputs:
-          FLEXCOMM0: INTR
+          INTR:
+            pattern: '^FLEXCOMM0$'
       GINT:
         from: LPC54S018.GINT0
         instances: [GINT0, GINT1]
         outputs:
-          GINT0: GINT
+          GINT:
+            pattern: '^GINT0$'
       GPIO:
         uses: GPIO
         instances: [GPIO]
@@ -1210,16 +1246,8 @@ families:
         from: LPC54S018.I2C0
         instances: [I2C0, I2C1, I2C2, I2C3, I2C4, I2C5, I2C6, I2C7, I2C8, I2C9]
         outputs:
-          FLEXCOMM0: FLEXCOMM
-          FLEXCOMM1: FLEXCOMM
-          FLEXCOMM2: FLEXCOMM
-          FLEXCOMM3: FLEXCOMM
-          FLEXCOMM4: FLEXCOMM
-          FLEXCOMM5: FLEXCOMM
-          FLEXCOMM6: FLEXCOMM
-          FLEXCOMM7: FLEXCOMM
-          FLEXCOMM8: FLEXCOMM
-          FLEXCOMM9: FLEXCOMM
+          FLEXCOMM:
+            pattern: '^(FLEXCOMM0|FLEXCOMM1|FLEXCOMM2|FLEXCOMM3|FLEXCOMM4|FLEXCOMM5|FLEXCOMM6|FLEXCOMM7|FLEXCOMM8|FLEXCOMM9)$'
         params:
           - {name: rx_req, type: int, description: DMA receive channel}
           - {name: tx_req, type: int, description: DMA transmit channel}
@@ -1227,16 +1255,8 @@ families:
         from: LPC54S018.I2S0
         instances: [I2S0, I2S1]
         outputs:
-          FLEXCOMM0: FLEXCOMM
-          FLEXCOMM1: FLEXCOMM
-          FLEXCOMM2: FLEXCOMM
-          FLEXCOMM3: FLEXCOMM
-          FLEXCOMM4: FLEXCOMM
-          FLEXCOMM5: FLEXCOMM
-          FLEXCOMM6: FLEXCOMM
-          FLEXCOMM7: FLEXCOMM
-          FLEXCOMM8: FLEXCOMM
-          FLEXCOMM9: FLEXCOMM
+          FLEXCOMM:
+            pattern: '^(FLEXCOMM0|FLEXCOMM1|FLEXCOMM2|FLEXCOMM3|FLEXCOMM4|FLEXCOMM5|FLEXCOMM6|FLEXCOMM7|FLEXCOMM8|FLEXCOMM9)$'
       INPUTMUX:
         from: LPC54S018.INPUTMUX
         instances: [INPUTMUX]
@@ -1247,12 +1267,14 @@ families:
         uses: LCD
         instances: [LCD]
         outputs:
-          LCD: INTR
+          INTR:
+            pattern: '^LCD$'
       MRT:
         uses: MRT
         instances: [MRT0]
         outputs:
-          MRT0: MRT
+          MRT:
+            pattern: '^MRT0$'
       OTPC:
         from: LPC54S018.OTPC
         instances: [OTPC]
@@ -1260,59 +1282,64 @@ families:
         uses: PINT
         instances: [PINT]
         outputs:
-          PIN_INT0: INT0
-          PIN_INT1: INT1
-          PIN_INT2: INT2
-          PIN_INT3: INT3
-          PIN_INT4: INT4
-          PIN_INT5: INT5
-          PIN_INT6: INT6
-          PIN_INT7: INT7
+          INT0:
+            pattern: '^PIN_INT0$'
+          INT1:
+            pattern: '^PIN_INT1$'
+          INT2:
+            pattern: '^PIN_INT2$'
+          INT3:
+            pattern: '^PIN_INT3$'
+          INT4:
+            pattern: '^PIN_INT4$'
+          INT5:
+            pattern: '^PIN_INT5$'
+          INT6:
+            pattern: '^PIN_INT6$'
+          INT7:
+            pattern: '^PIN_INT7$'
       PUF:
         from: LPC54S018.PUF
         instances: [PUF]
         outputs:
-          PUF: INTR
+          INTR:
+            pattern: '^PUF$'
       RIT:
         from: LPC54S018.RIT
         instances: [RIT]
         outputs:
-          RIT: INTR
+          INTR:
+            pattern: '^RIT$'
       RTC:
         from: LPC54S018.RTC
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       SCT:
         uses: SCT
         instances: [SCT0]
         outputs:
-          SCT0: INTR
+          INTR:
+            pattern: '^SCT0$'
       SMARTCARD:
         from: LPC54S018.SMARTCARD0
         instances: [SMARTCARD0, SMARTCARD1]
         outputs:
-          SMARTCARD0: INTR
+          INTR:
+            pattern: '^SMARTCARD0$'
       SDIF:
         from: LPC54S018.SDIF
         instances: [SDIF]
         outputs:
-          SDIO: INTR
+          INTR:
+            pattern: '^SDIO$'
       SPI:
         from: LPC54S018.SPI0
         instances: [SPI0, SPI1, SPI2, SPI3, SPI4, SPI5, SPI6, SPI7, SPI8, SPI9, SPI10]
         outputs:
-          FLEXCOMM0: FLEXCOMM
-          FLEXCOMM1: FLEXCOMM
-          FLEXCOMM2: FLEXCOMM
-          FLEXCOMM3: FLEXCOMM
-          FLEXCOMM4: FLEXCOMM
-          FLEXCOMM5: FLEXCOMM
-          FLEXCOMM6: FLEXCOMM
-          FLEXCOMM7: FLEXCOMM
-          FLEXCOMM8: FLEXCOMM
-          FLEXCOMM9: FLEXCOMM
-          FLEXCOMM10: FLEXCOMM
+          FLEXCOMM:
+            pattern: '^(FLEXCOMM0|FLEXCOMM1|FLEXCOMM2|FLEXCOMM3|FLEXCOMM4|FLEXCOMM5|FLEXCOMM6|FLEXCOMM7|FLEXCOMM8|FLEXCOMM9|FLEXCOMM10)$'
         params:
           - {name: rx_req, type: int, description: DMA receive channel}
           - {name: tx_req, type: int, description: DMA transmit channel}
@@ -1321,7 +1348,8 @@ families:
         uses: SPIFI
         instances: [SPIFI0]
         outputs:
-          SPIFI0: INTR
+          INTR:
+            pattern: '^SPIFI0$'
       SYSCON:
         from: LPC54S018.SYSCON
         instances: [SYSCON]
@@ -1329,16 +1357,8 @@ families:
         from: LPC54S018.USART0
         instances: [USART0, USART1, USART2, USART3, USART4, USART5, USART6, USART7, USART8, USART9]
         outputs:
-          FLEXCOMM0: FLEXCOMM
-          FLEXCOMM1: FLEXCOMM
-          FLEXCOMM2: FLEXCOMM
-          FLEXCOMM3: FLEXCOMM
-          FLEXCOMM4: FLEXCOMM
-          FLEXCOMM5: FLEXCOMM
-          FLEXCOMM6: FLEXCOMM
-          FLEXCOMM7: FLEXCOMM
-          FLEXCOMM8: FLEXCOMM
-          FLEXCOMM9: FLEXCOMM
+          FLEXCOMM:
+            pattern: '^(FLEXCOMM0|FLEXCOMM1|FLEXCOMM2|FLEXCOMM3|FLEXCOMM4|FLEXCOMM5|FLEXCOMM6|FLEXCOMM7|FLEXCOMM8|FLEXCOMM9)$'
         params:
           - {name: rx_req, type: int, description: DMA receive channel}
           - {name: tx_req, type: int, description: DMA transmit channel}
@@ -1346,32 +1366,42 @@ families:
         from: LPC54S018.USB0
         instances: [USB0]
         outputs:
-          USB0_NEEDCLK: NEEDCLK
-          USB0: USB
+          NEEDCLK:
+            pattern: '^USB0_NEEDCLK$'
+          USB:
+            pattern: '^USB0$'
       USBFSH:
         from: LPC54S018.USBFSH
         instances: [USBFSH]
         outputs:
-          USB0: INTR
-          USB0_NEEDCLK: NEEDCLK
+          INTR:
+            pattern: '^USB0$'
+          NEEDCLK:
+            pattern: '^USB0_NEEDCLK$'
       USBHSD:
         from: LPC54S018.USBHSD
         instances: [USBHSD]
         outputs:
-          USB1_PHY: PHY
-          USB1: USB
-          USB1_NEEDCLK: NEEDCLK
+          PHY:
+            pattern: '^USB1_PHY$'
+          USB:
+            pattern: '^USB1$'
+          NEEDCLK:
+            pattern: '^USB1_NEEDCLK$'
       USBHSH:
         from: LPC54S018.USBHSH
         instances: [USBHSH]
         outputs:
-          USB1: INTR
-          USB1_NEEDCLK: NEEDCLK
+          INTR:
+            pattern: '^USB1$'
+          NEEDCLK:
+            pattern: '^USB1_NEEDCLK$'
       UTICK:
         uses: UTICK
         instances: [UTICK0]
         outputs:
-          UTICK0: INTR
+          INTR:
+            pattern: '^UTICK0$'
       WWDT:
         uses: WWDT
         instances: [WWDT]
@@ -1581,7 +1611,7 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
               control:
                 reg: PLL0USB_CTRL
@@ -1596,7 +1626,7 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
               control:
                 reg: PLL0AUDIO_CTRL
@@ -1611,7 +1641,7 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
               control:
                 reg: PLL1_CTRL
@@ -1626,7 +1656,7 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
                 - pll0usb_clk # 0x07
                 - pll0audio_clk # 0x08
@@ -1644,13 +1674,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
-                - ~     # 0x07 reserved (PLL0USB not allowed for IDIVB)
+                -       # 0x07 reserved (PLL0USB not allowed for IDIVB)
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
               control:
                 reg: IDIVB_CTRL
@@ -1665,13 +1695,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
-                - ~     # 0x07 reserved (PLL0USB not allowed for IDIVC)
+                -       # 0x07 reserved (PLL0USB not allowed for IDIVC)
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
               control:
                 reg: IDIVC_CTRL
@@ -1686,13 +1716,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
-                - ~     # 0x07 reserved (PLL0USB not allowed for IDIVD)
+                -       # 0x07 reserved (PLL0USB not allowed for IDIVD)
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
               control:
                 reg: IDIVD_CTRL
@@ -1707,13 +1737,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
-                - ~     # 0x07 reserved (PLL0USB not allowed for IDIVE)
+                -       # 0x07 reserved (PLL0USB not allowed for IDIVE)
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
               control:
                 reg: IDIVE_CTRL
@@ -1728,7 +1758,7 @@ families:
             - name: BASE_SAFE_CLKSEL
               output: base_safe_clk
               inputs:
-                - ~     # 0x00
+                -       # 0x00
                 - irc_12mhz # 0x01 (only valid encoding)
               control:
                 reg: BASE_CLK[SAFE]
@@ -1738,13 +1768,13 @@ families:
             - name: BASE_USB0_CLKSEL
               output: base_usb0_clk
               inputs:
-                - ~     # 0x00
-                - ~     # 0x01
-                - ~     # 0x02
-                - ~     # 0x03
-                - ~     # 0x04
-                - ~     # 0x05
-                - ~     # 0x06
+                -       # 0x00
+                -       # 0x01
+                -       # 0x02
+                -       # 0x03
+                -       # 0x04
+                -       # 0x05
+                -       # 0x06
                 - pll0usb_clk # 0x07 (only valid encoding)
               control:
                 reg: BASE_CLK[USB0]
@@ -1762,13 +1792,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
                 - pll0usb_clk # 0x07
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
                 - idivb_clk # 0x0D
                 - idivc_clk # 0x0E
@@ -1787,13 +1817,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
                 - pll0usb_clk # 0x07
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
                 - idivb_clk # 0x0D
                 - idivc_clk # 0x0E
@@ -1812,13 +1842,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
                 - pll0usb_clk # 0x07
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
                 - idivb_clk # 0x0D
                 - idivc_clk # 0x0E
@@ -1837,13 +1867,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
                 - pll0usb_clk # 0x07
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
                 - idivb_clk # 0x0D
                 - idivc_clk # 0x0E
@@ -1865,13 +1895,13 @@ families:
                 - enet_rx_clk_in # 0x02
                 - enet_tx_clk_in # 0x03
                 - gp_clkin_in # 0x04
-                - ~     # 0x05 reserved
+                -       # 0x05 reserved
                 - xtal_clk # 0x06
-                - ~     # 0x07 reserved (PLL0USB not selectable)
+                -       # 0x07 reserved (PLL0USB not selectable)
                 - pll0audio_clk # 0x08
                 - pll1_clk # 0x09
-                - ~     # 0x0A reserved
-                - ~     # 0x0B reserved
+                -       # 0x0A reserved
+                -       # 0x0B reserved
                 - idiva_clk # 0x0C
                 - idivb_clk # 0x0D
                 - idivc_clk # 0x0E
@@ -1892,7 +1922,7 @@ families:
                 - gp_clkin_in
                 - 
                 - xtal_clk
-                - ~     # 0x07 reserved
+                -       # 0x07 reserved
                 - pll0audio_clk
                 - pll1_clk
                 - 
@@ -2926,31 +2956,28 @@ families:
         from: LPC43xx_43Sxx.ADC0
         instances: [ADC0, ADC1]
         outputs:
-          ADC0: ADC
-          ADC1: ADC
+          ADC:
+            pattern: '^(ADC0|ADC1)$'
       ADCHS:
         from: LPC43xx_43Sxx.ADCHS
         instances: [ADCHS]
         outputs:
-          ADCHS: INTR
-        # The SVD describes the two descriptor tables as separate 1D
-        # arrays DESCRIPTOR0_[%s] and DESCRIPTOR1_[%s] (each dim=8) at
-        # back-to-back addresses 0x300 / 0x320.  Field layout, widths,
-        # and increments are identical, so fuse them into one 2D array
-        # DESCRIPTOR[2][8] for a more honest representation.
+          INTR:
+            pattern: '^ADCHS$'
         transforms:
           - {type: create2DArray, pattern: '^DESCRIPTOR(\d+)_\[%s\]$', name: DESCRIPTOR, description: 'Table m descriptor n, m=0..1, n=0..7'}
       ATIMER:
         from: LPC43xx_43Sxx.ATIMER
         instances: [ATIMER]
         outputs:
-          ATIMER: INTR
+          INTR:
+            pattern: '^ATIMER$'
       C_CAN:
         from: LPC43xx_43Sxx.C_CAN1
         instances: [C_CAN0, C_CAN1]
         outputs:
-          C_CAN0: INTR
-          C_CAN1: INTR
+          INTR:
+            pattern: '^(C_CAN0|C_CAN1)$'
       CCU:
         from: LPC43xx_43Sxx.CCU1
         instances: [CCU1, CCU2]
@@ -3085,12 +3112,14 @@ families:
         from: LPC43xx_43Sxx.DAC
         instances: [DAC]
         outputs:
-          DAC: INTR
+          INTR:
+            pattern: '^DAC$'
       EEPROM:
         from: LPC43xx_43Sxx.EEPROM
         instances: [EEPROM]
         outputs:
-          FLASH: FLASH
+          FLASH:
+            pattern: '^FLASH$'
       EMC:
         from: LPC43xx_43Sxx.EMC
         instances: [EMC]
@@ -3098,12 +3127,14 @@ families:
         from: LPC43xx_43Sxx.ETHERNET
         instances: [ETHERNET]
         outputs:
-          ETHERNET: INTR
+          INTR:
+            pattern: '^ETHERNET$'
       EVENTROUTER:
         from: LPC43xx_43Sxx.EVENTROUTER
         instances: [EVENTROUTER]
         outputs:
-          EVENTROUTER: INTR
+          INTR:
+            pattern: '^EVENTROUTER$'
       GIMA:
         from: LPC43xx_43Sxx.GIMA
         instances: [GIMA]
@@ -3160,20 +3191,28 @@ families:
         from: LPC43xx_43Sxx.GPIO_GROUP_INT0
         instances: [GPIO_GROUP_INT0, GPIO_GROUP_INT1]
         outputs:
-          GINT0: GINT
-          GINT1: GINT
+          GINT:
+            pattern: '^(GINT0|GINT1)$'
       GPIO_PIN_INT:
         from: LPC43xx_43Sxx.GPIO_PIN_INT
         instances: [GPIO_PIN_INT]
         outputs:
-          PIN_INT0: INT0
-          PIN_INT1: INT1
-          PIN_INT2: INT2
-          PIN_INT3: INT3
-          PIN_INT4: INT4
-          PIN_INT5: INT5
-          PIN_INT6: INT6
-          PIN_INT7: INT7
+          INT0:
+            pattern: '^PIN_INT0$'
+          INT1:
+            pattern: '^PIN_INT1$'
+          INT2:
+            pattern: '^PIN_INT2$'
+          INT3:
+            pattern: '^PIN_INT3$'
+          INT4:
+            pattern: '^PIN_INT4$'
+          INT5:
+            pattern: '^PIN_INT5$'
+          INT6:
+            pattern: '^PIN_INT6$'
+          INT7:
+            pattern: '^PIN_INT7$'
       GPIO_PORT:
         from: LPC43xx_43Sxx.GPIO_PORT
         instances: [GPIO_PORT]
@@ -3192,29 +3231,32 @@ families:
         outputs:
           # PL080 has three interrupt outputs (DMACINTERR, DMACINTTC, and the
           # combined DMACINTR).  LPC43 wires only the combined output to NVIC.
-          DMA: COMBINED
+          COMBINED:
+            pattern: '^DMA$'
       I2C:
         from: LPC43xx_43Sxx.I2C0
         instances: [I2C0, I2C1]
         outputs:
-          I2C0: I2C
-          I2C1: I2C
+          I2C:
+            pattern: '^(I2C0|I2C1)$'
       I2S:
         from: LPC43xx_43Sxx.I2S0
         instances: [I2S0, I2S1]
         outputs:
-          I2S0: I2S
-          I2S1: I2S
+          I2S:
+            pattern: '^(I2S0|I2S1)$'
       LCD:
         uses: LCD
         instances: [LCD]
         outputs:
-          LCD: INTR
+          INTR:
+            pattern: '^LCD$'
       MCPWM:
         from: LPC43xx_43Sxx.MCPWM
         instances: [MCPWM]
         outputs:
-          MCPWM: INTR
+          INTR:
+            pattern: '^MCPWM$'
       PMC:
         from: LPC43xx_43Sxx.PMC
         instances: [PMC]
@@ -3222,7 +3264,8 @@ families:
         from: LPC43xx_43Sxx.QEI
         instances: [QEI]
         outputs:
-          QEI: INTR
+          INTR:
+            pattern: '^QEI$'
       REGFILE:
         from: LPC43xx_43Sxx.REGFILE
         instances: [REGFILE]
@@ -3233,17 +3276,20 @@ families:
         from: LPC43xx_43Sxx.RITIMER
         instances: [RITIMER]
         outputs:
-          RITIMER: INTR
+          INTR:
+            pattern: '^RITIMER$'
       RTC:
         from: LPC43xx_43Sxx.RTC
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       SCT:
         uses: SCT
         instances: [SCT]
         outputs:
-          SCT: INTR
+          INTR:
+            pattern: '^SCT$'
       SCU:
         from: LPC43xx_43Sxx.SCU
         instances: [SCU]
@@ -3273,36 +3319,38 @@ families:
         from: LPC43xx_43Sxx.SDMMC
         instances: [SDMMC]
         outputs:
-          SDIO: INTR
+          INTR:
+            pattern: '^SDIO$'
       SGPIO:
         from: LPC43xx_43Sxx.SGPIO
         instances: [SGPIO]
         outputs:
-          SGPIO_IINT: INTR
+          INTR:
+            pattern: '^SGPIO_IINT$'
       SPI:
         from: LPC43xx_43Sxx.SPI
         instances: [SPI]
         outputs:
-          SPI_INT: INTR
+          INTR:
+            pattern: '^SPI_INT$'
       SPIFI:
         uses: SPIFI
         instances: [SPIFI]
         outputs:
-          SPIFI: INTR
+          INTR:
+            pattern: '^SPIFI$'
       SSP:
         from: LPC43xx_43Sxx.SSP0
         instances: [SSP0, SSP1]
         outputs:
-          SSP0: SSP
-          SSP1: SSP
+          SSP:
+            pattern: '^(SSP0|SSP1)$'
       TIMER:
         from: LPC43xx_43Sxx.TIMER0
         instances: [TIMER0, TIMER1, TIMER2, TIMER3]
         outputs:
-          TIMER0: TIMER
-          TIMER1: TIMER
-          TIMER2: TIMER
-          TIMER3: TIMER
+          TIMER:
+            pattern: '^(TIMER0|TIMER1|TIMER2|TIMER3)$'
       USART:
         # Unified UART/USART block.  UART1 has modem control (MCR/MSR) but
         # lacks the IrDA/smart-card/sync/oversampling/half-duplex extras the
@@ -3314,10 +3362,8 @@ families:
         instances: [UART1, USART0, USART2, USART3]
         description: Universal (a)synchronous receiver/transmitter (UART/USART)
         outputs:
-          UART1: INTR
-          USART0: INTR
-          USART2: INTR
-          USART3: INTR
+          INTR:
+            pattern: '^(UART1|USART0|USART2|USART3)$'
         params:
           - {name: has_modem, type: bool, default: false, description: 'Modem control: MCR/MSR registers and CTSIE/MSIE bits in IER, SEL bit in RS485CTRL (UART1 only)'}
           - {name: has_irda, type: bool, default: true, description: 'IrDA encoder/decoder (ICR register)'}
@@ -3378,8 +3424,8 @@ families:
         uses: ChipIdeaHS
         instances: [USB0, USB1]
         outputs:
-          USB0: USB
-          USB1: USB
+          USB:
+            pattern: '^(USB0|USB1)$'
       WWDT:
         uses: WWDT
         instances: [WWDT]

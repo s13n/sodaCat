@@ -2,7 +2,9 @@ displayPrefix: STM32
 shared_blocks:
   WWDG:
     from: STM32L412.WWDG
-    outputs: {WWDG: INTR}
+    outputs:
+      INTR:
+        pattern: '^WWDG$'
     params:
       - {name: cfr_version, type: int, default: 1, max: 2, description: 'CFR register layout: 1 = v1 (2-bit WDGTB at [8:7]), 2 = v2 (3-bit WDGTB at [13:11])'}
     transforms:
@@ -23,7 +25,9 @@ shared_blocks:
     # Gen 3 (EW+ONF): +ONF in SR — H5, H7RS, U0
     # N6 stays separate (Gen 4: EWIF@bit15, separate ICR register)
     from: STM32H7S.IWDG
-    outputs: {IWDG: INTR}
+    outputs:
+      INTR:
+        pattern: '^IWDG$'
     params:
       - {name: gen, type: int, default: 1, max: 3, description: 'IWDG generation: 0=basic (KR/PR/RLR/SR), 1=+window (WINR/WVU), 2=+early wakeup (EWCR/4-bit PR/EWU/EWIF), 3=+ONF status'}
     transforms:
@@ -38,7 +42,9 @@ shared_blocks:
     # Gen 3 (+ARDIS+NSCR): +ARDIS in CR, +NSCR register — H5, H7RS, U0, U5, N6
     # U3 stays separate (8-bit CONFIG1, BUSY in SR, 4 HTCR registers)
     from: STM32N645.RNG
-    outputs: {RNG: INTR}
+    outputs:
+      INTR:
+        pattern: '^RNG$'
     params:
       - {name: gen, type: int, default: 1, max: 3, description: 'RNG generation: 0=basic (CR:RNGEN+IE), 1=+CED, 2=+HTCR/config/CONDRST/CONFIGLOCK, 3=+ARDIS+NSCR'}
     transforms:
@@ -49,7 +55,9 @@ shared_blocks:
     # Gen 1 (+NPBLB): +NPBLB[23:20] in CR — H7(H745_H757, H73x, H7A3_B)
     # Gen 2 (+KMOD+IPRST+KERF+KEYVALID): +KMOD, +IPRST in CR; +KERF, +KEYVALID in SR — H7RS, N6
     from: STM32N655.CRYP
-    outputs: {CRYP: INTR}
+    outputs:
+      INTR:
+        pattern: '^CRYP$'
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'CRYP generation: 0=basic, 1=+NPBLB, 2=+KMOD/IPRST/KERF/KEYVALID'}
   AES_V1:
@@ -57,17 +65,16 @@ shared_blocks:
     # 12 registers: CR(flag clear+interrupt in-band), SR{CCF,RDERR,WRERR}, DINR, DOUTR, KEYR0-3, IVR0-3
     from: STM32L431.AES
     outputs:
-      AES: INTR
-      CRYPTO: INTR
-      AES_RNG_LPUART1: INTR
+      INTR:
+        pattern: '^(AES|CRYPTO|AES_RNG_LPUART1)$'
     description: AES co-processor V1 (basic, 128-bit key)
   AES_V2:
     # AES co-processor V2 (extended, 256-bit key + GCM/CCM + suspend): F7, G0, G4, L5
     # 24 registers: V1 + GCMPH/CHMOD2/KEYSIZE/NPBLB in CR, BUSY in SR, KEYR4-7, SUSP0R-7
     from: STM32G431.AES
     outputs:
-      AES: INTR
-      AES_RNG: INTR
+      INTR:
+        pattern: '^(AES|AES_RNG)$'
     description: AES co-processor V2 (256-bit key, GCM/CCM, suspend)
   AES_V3:
     # AES co-processor V3 (restructured interrupts): H5, U0, U3, U5, C5
@@ -75,8 +82,8 @@ shared_blocks:
     # Flag clear/interrupt enable moved from CR to dedicated IER/ISR/ICR registers
     from: STM32H533.AES
     outputs:
-      AES: INTR
-      AES_RNG: INTR
+      INTR:
+        pattern: '^(AES|AES_RNG)$'
     description: AES co-processor V3 (separate IER/ISR/ICR, key mode)
   HASH:
     # Hash processor (Gen 0-2 superset chain)
@@ -84,7 +91,9 @@ shared_blocks:
     # Gen 1 (+extended SR): CR{ALGO[17:18] unified 2-bit}, SR{+NBWP,DINNE,NBWE} — H5, U5
     # Gen 2 (+SHA-512): CR{ALGO[17:20] unified 4-bit, +SHA-384/512}, SR extended — H7RS, N6, U3
     from: STM32N645.HASH
-    outputs: {HASH: INTR}
+    outputs:
+      INTR:
+        pattern: '^HASH$'
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-512 (4-bit ALGO)'}
   PKA:
@@ -94,7 +103,9 @@ shared_blocks:
     # Gen 2 (+LMF): SR{+LMF} — H5, H7RS, N6
     # Gen 3 (+chaining mode): CR{+CMFIE}, SR{+CCEN,+RNGOKF,+DATAOKF,+INCRERRF,+DATAZF,+TRZERRF,+MDERRF,+RNGERRF,+CMF}, CLRFR{+CMFC} — U3
     from: STM32U385.PKA
-    outputs: {PKA: INTR}
+    outputs:
+      INTR:
+        pattern: '^PKA$'
     params:
       - {name: gen, type: int, default: 2, max: 3, description: 'PKA generation: 0=basic, 1=+OPER error/INITOK, 2=+LMF, 3=+chaining mode'}
   DMA2D:
@@ -104,7 +115,9 @@ shared_blocks:
     # Gen 2 (+LOM/wideMode/wideLO/SB): CR{+LOM}, MODE→3-bit, LO→16-bit, OPFCCR{+SB}, 4 OCOLR variants — U5
     # Gen 3 (+CSS): FGPFCCR{+CSS} — H7RS, N6
     from: STM32H7S.DMA2D
-    outputs: {DMA2D: INTR}
+    outputs:
+      INTR:
+        pattern: '^DMA2D$'
     params:
       - {name: gen, type: int, default: 0, max: 3, description: 'DMA2D generation: 0=basic, 1=+AI/RBS, 2=+LOM/wideMode/wideLO/SB/OCOLR variants, 3=+CSS'}
     transforms:
@@ -115,7 +128,8 @@ shared_blocks:
     # JPEG codec: F7, H7, H7RS, N6, U5
     from: STM32N645.JPEG
     outputs:
-      JPEG: INTR
+      INTR:
+        pattern: '^JPEG$'
     transforms:
       - {type: createArray, pattern: DHTMEM(\d+), name: DHTMEM, description: DHT memory}
       - {type: createArray, pattern: HUFFBASE(\d+), name: HUFFBASE, description: Huffman base}
@@ -133,37 +147,44 @@ shared_blocks:
     params:
       - {name: timers, type: int, default: 5, description: 'Number of timer units (5=A-E, 6=A-F)'}
     outputs:
-      HRTIM1_MST: MST
-      HRTIM_Master_IRQn: MST
-      HRTIM1_TIMA: TIMA
-      HRTIM1_TIMB: TIMB
-      HRTIM1_TIMC: TIMC
-      HRTIM1_TIMD: TIMD
-      HRTIM1_TIME: TIME
-      HRTIM1_TIMF: TIMF
-      HRTIM1_FLT: FLT
-      HRTIM_TIMA_IRQn: TIMA
-      HRTIM_TIMB_IRQn: TIMB
-      HRTIM_TIMC_IRQn: TIMC
-      HRTIM_TIMD_IRQn: TIMD
-      HRTIM_TIME_IRQn: TIME
-      HRTIM_TIMF_IRQn: TIMF
-      HRTIM_TIM_FLT_IRQn: FLT
+      MST:
+        pattern: '^(HRTIM1_MST|HRTIM_Master_IRQn)$'
+      TIMA:
+        pattern: '^(HRTIM1_TIMA|HRTIM_TIMA_IRQn)$'
+      TIMB:
+        pattern: '^(HRTIM1_TIMB|HRTIM_TIMB_IRQn)$'
+      TIMC:
+        pattern: '^(HRTIM1_TIMC|HRTIM_TIMC_IRQn)$'
+      TIMD:
+        pattern: '^(HRTIM1_TIMD|HRTIM_TIMD_IRQn)$'
+      TIME:
+        pattern: '^(HRTIM1_TIME|HRTIM_TIME_IRQn)$'
+      TIMF:
+        pattern: '^(HRTIM1_TIMF|HRTIM_TIMF_IRQn)$'
+      FLT:
+        pattern: '^(HRTIM1_FLT|HRTIM_TIM_FLT_IRQn)$'
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
     # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
     from: STM32N645.TIM1
     outputs:
-      TIM2: {name: INTR, description: Global interrupt}
-      TIM1_BRK: BRK
-      TIM1_UP: UP
-      TIM1_TRG_COM: TRG_COM
-      TIM1_TRG_CCU: TRG_CCU
-      TIM1_CC: CC
-      TIM1_BRK_TERR_IERR: BRK_TERR_IERR
-      TIM1_TRG_COM_DIR_IDX: TRG_COM_DIR_IDX
-      TIM1_BRK_TIM15: BRK
-      TIM1_UP_TIM16: UP
+      INTR:
+        description: Global interrupt
+        pattern: '^TIM2$'
+      BRK:
+        pattern: '^(TIM1_BRK|TIM1_BRK_TIM15)$'
+      UP:
+        pattern: '^(TIM1_UP|TIM1_UP_TIM16)$'
+      TRG_COM:
+        pattern: '^TIM1_TRG_COM$'
+      TRG_CCU:
+        pattern: '^TIM1_TRG_CCU$'
+      CC:
+        pattern: '^TIM1_CC$'
+      BRK_TERR_IERR:
+        pattern: '^TIM1_BRK_TERR_IERR$'
+      TRG_COM_DIR_IDX:
+        pattern: '^TIM1_TRG_COM_DIR_IDX$'
     params:
       - {name: width32, type: bool, default: false, description: 32-bit counter width}
       - {name: max_channel, type: int, default: 3, max: 5, description: Highest capture/compare channel index (0-5)}
@@ -200,30 +221,31 @@ shared_blocks:
   BasicTimer:
     from: STM32N645.TIM6
     outputs:
-      TIM6: INTR
-      TIM6_DAC: INTR
-      TIM6_DAC1: INTR
-      TIM6_DACUNDER: INTR
-      TIM6_DAC_LPTIM1: INTR
-      TIM7: INTR
-      TIM18: INTR
+      INTR:
+        pattern: '^(TIM6|TIM6_DAC|TIM6_DAC1|TIM6_DACUNDER|TIM6_DAC_LPTIM1|TIM7|TIM18)$'
   I2C:
     from: STM32U535.I2C1
     outputs:
-      I2C: INTR
-      I2C1: INTR
-      I2C1_EV: EV
-      I2C1_ER: ER
-      I2C1_EV_IRQ: EV
-      I2C1_ER_IRQ: ER
-      I2C1_ERR: ERR
+      INTR:
+        pattern: '^(I2C|I2C1)$'
+      EV:
+        pattern: '^(I2C1_EV|I2C1_EV_IRQ)$'
+      ER:
+        pattern: '^(I2C1_ER|I2C1_ER_IRQ)$'
+      ERR:
+        pattern: '^I2C1_ERR$'
   USART:
     from: STM32N645.USART1
     outputs:
-      USART1: {name: INTR, description: Global interrupt}
-      LPUART1: {name: INTR, description: Global interrupt}
-      TX_DMA: {name: TX_DMA, description: DMA request for transmit (TXFIFO threshold / TXE)}
-      RX_DMA: {name: RX_DMA, description: DMA request for receive (RXFIFO threshold / RXNE)}
+      INTR:
+        description: Global interrupt
+        pattern: '^(USART1|LPUART1)$'
+      TX_DMA:
+        description: DMA request for transmit (TXFIFO threshold / TXE)
+        pattern: '^TX_DMA$'
+      RX_DMA:
+        description: DMA request for receive (RXFIFO threshold / RXNE)
+        pattern: '^RX_DMA$'
     params:
       - {name: lpbaud, type: bool, default: false, description: Low-power baud rate generation (BRR_LP variant; no OVER8/ONEBIT/GTPR/RTOR; no RTOIE/RTOEN/RTOF/RTOCF; no TECLREN in AUTOCR)}
       - {name: synchronous, type: int, default: 3, max: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous+SPI slave (CLKEN/CPHA/CPOL/LBCL/SLVEN/DIS_NSS/UDR/UDRCF/TXFECF), 2=sync+smartcard (NACK/SCEN/SCARCNT/EOBIE/EOBF/EOBCF), 3=sync+smartcard+TCBGT'}
@@ -290,9 +312,10 @@ shared_blocks:
   LPTIM:
     from: STM32U031.LPTIM1
     outputs:
-      LPTIM1: INTR
-      LPTIM2: INTR2
-      LP_Timer1: INTR
+      INTR:
+        pattern: '^(LPTIM1|LP_Timer1)$'
+      INTR2:
+        pattern: '^LPTIM2$'
     params:
       - {name: max_channel, type: int, default: 0, max: 3, description: 'Highest CC channel index (0=CCR1 only, 1=CCR1+CCR2, 3=CCR1-CCR4)'}
       - {name: has_counter_reset, type: bool, default: true, description: COUNTRST/RSTARE in CR}
@@ -333,19 +356,19 @@ shared_blocks:
     # Unified GP + AdvCtrl. Families: F4, F7, H7, C0, G0, U0, L4, L4P, L5, L0, L1
     from: STM32H723.TIM1
     outputs:
-      TIM2: {name: INTR, description: Global interrupt}
-      TIM1_BRK: BRK
-      TIM1_UP: UP
-      TIM1_TRG_COM: TRG_COM
-      TIM1_CC: CC
-      TIM_CC: CC
-      TIM1_BRK_TIM9: BRK
-      TIM1_UP_TIM10: UP
-      TIM1_TRG_COM_TIM11: TRG_COM
-      TIM1_BRK_UP_TRG_COM: BRK_UP_TRG_COM
-      TIM1_BRK_TIM15: BRK
-      TIM1_UP_TIM16: UP
-      TIM1_TRG_COM_TIM17: TRG_COM
+      INTR:
+        description: Global interrupt
+        pattern: '^TIM2$'
+      BRK:
+        pattern: '^(TIM1_BRK|TIM1_BRK_TIM9|TIM1_BRK_TIM15)$'
+      UP:
+        pattern: '^(TIM1_UP|TIM1_UP_TIM10|TIM1_UP_TIM16)$'
+      TRG_COM:
+        pattern: '^(TIM1_TRG_COM|TIM1_TRG_COM_TIM11|TIM1_TRG_COM_TIM17)$'
+      CC:
+        pattern: '^(TIM1_CC|TIM_CC)$'
+      BRK_UP_TRG_COM:
+        pattern: '^TIM1_BRK_UP_TRG_COM$'
     params:
       - {name: width32, type: bool, default: false, description: 32-bit counter width}
       - {name: max_channel, type: int, default: 3, max: 5, description: Highest capture/compare channel index (0-5)}
@@ -379,7 +402,8 @@ shared_blocks:
     # Families: H5, H7, H7RS, N6, U3, U5
     from: STM32N645.SPI1
     outputs:
-      SPI1: INTR
+      INTR:
+        pattern: '^SPI1$'
     params:
       - {name: has_tser, type: bool, default: false, description: 'TSER transfer reload (H7): TSER in CR2, TSERFIE/TSERF/TSERFC, UDRDET/UDRCFG widened in CFG1'}
       - {name: has_autocr, type: bool, default: false, description: Autonomous mode (AUTOCR register at 0x1C)}
@@ -430,8 +454,8 @@ shared_blocks:
     # Families: C0, F3, F4, F7, G0, G4, L0, L1, L4, L4P, L5, U0
     from: STM32G030.SPI1
     outputs:
-      SPI1: INTR
-      SPI3: INTR
+      INTR:
+        pattern: '^(SPI1|SPI3)$'
     params:
       - {name: has_fifo, type: bool, default: true, description: 'FIFO capability (DS/FRXTH/LDMA_RX/LDMA_TX/NSSP in CR2, FRLVL/FTLVL in SR)'}
       - {name: has_i2s, type: bool, default: false, description: I2S audio capability (per-instance)}
@@ -449,9 +473,12 @@ shared_blocks:
     # Families: F4, F7, G4, H5, H7, H7RS, L4, L4P, L5, N6, U3, U5
     from: STM32U535.SAI1
     outputs:
-      SAI1: INTR
-      SAI1_A: A
-      SAI1_B: B
+      INTR:
+        pattern: '^SAI1$'
+      A:
+        pattern: '^SAI1_A$'
+      B:
+        pattern: '^SAI1_B$'
     params:
       - {name: has_gcr, type: bool, default: true, description: GCR register (inter-SAI synchronization)}
       - {name: has_pdm, type: bool, default: false, description: PDM support (PDMCR/PDMDLY registers + OSR in xCR1)}
@@ -481,16 +508,15 @@ shared_blocks:
       - {name: logsize, type: int, default: 28, max: 31, description: Memory window size as log2 (28 = 256 MB)}
       - {name: dual, type: bool, default: true, description: Dual-flash mode support (DFM bit in CR)}
     outputs:
-      QUADSPI: INTR
+      INTR:
+        pattern: '^QUADSPI$'
   XSPI:
     # Extended-SPI flash memory interface (unified OCTOSPI/XSPI)
     # Families: H5, H7, H7RS, L5, N6, U3, U5 (L4P has different IP variants, stays family-specific)
     from: STM32N645.XSPI1
     outputs:
-      OCTOSPI1: INTR
-      XSPI1: INTR
-      OSPI1: INTR
-      HSPI1: INTR
+      INTR:
+        pattern: '^(OCTOSPI1|XSPI1|OSPI1|HSPI1)$'
     description: Extended-SPI flash memory interface
     params:
       - {name: variant, type: int, default: 0, description: "IP variant: 0 = OCTOSPI, 1 = HSPI, 2 = XSPI"}
@@ -508,10 +534,8 @@ shared_blocks:
     # Families: F4, F7, H7, H7RS, N6
     from: STM32N645.SPDIFRX
     outputs:
-      SPDIFRX: INTR
-      SPDIF_Rx: INTR
-      SPDIF: INTR
-      SPDIF_RX: INTR
+      INTR:
+        pattern: '^(SPDIFRX|SPDIF_Rx|SPDIF|SPDIF_RX)$'
     params:
       - {name: has_symbol_clock, type: bool, default: true, description: 'CR symbol clock fields (CKSEN, CKSBKPEN)'}
   TSC:
@@ -519,7 +543,8 @@ shared_blocks:
     # 8 IO groups max (G1-G8); some chips implement 6 or 7
     from: STM32U535.TSC
     outputs:
-      TSC: INTR
+      INTR:
+        pattern: '^TSC$'
     params:
       - {name: groups, type: int, default: 8, description: 'Number of touch sensing IO groups (6, 7, or 8)'}
     transforms:
@@ -529,24 +554,26 @@ shared_blocks:
     # H7 is superset (transceiver enable/ready bits, OR register, 8-bit BRR)
     from: STM32H723.SWPMI
     outputs:
-      SWPMI1: INTR
+      INTR:
+        pattern: '^SWPMI1$'
   CORDIC:
     # CORDIC co-processor: G4, H5, H7, H7RS, U5
     from: STM32H562.CORDIC
     outputs:
-      Cordic: INTR
-      CORDIC_IT: INTR
-      CORDIC: INTR
+      INTR:
+        pattern: '^(Cordic|CORDIC_IT|CORDIC)$'
   FMAC:
     # Filter Math Accelerator: G4, H5, H7, U5
     from: STM32H723.FMAC
     outputs:
-      FMAC: INTR
+      INTR:
+        pattern: '^FMAC$'
   FMC:
     # Flexible Memory Controller (NOR/SRAM/NAND/SDRAM): F3, F4, F7, G4, H5, H7, H7RS, L4, L4P, L5, U5
     from: STM32H523.FMC
     outputs:
-      FMC: INTR
+      INTR:
+        pattern: '^FMC$'
     description: Flexible Memory Controller
     params:
       - {name: sdram, type: bool, default: false, description: "SDRAM controller present"}
@@ -593,70 +620,70 @@ shared_blocks:
     # General-purpose DMA: H5, H7RS, N6, U3, U5
     from: STM32N645.GPDMA
     outputs:
-      GPDMA1_CH0: CH0
-      GPDMA1_CH1: CH1
-      GPDMA1_CH2: CH2
-      GPDMA1_CH3: CH3
-      GPDMA1_CH4: CH4
-      GPDMA1_CH5: CH5
-      GPDMA1_CH6: CH6
-      GPDMA1_CH7: CH7
-      GPDMA1_CH8: CH8
-      GPDMA1_CH9: CH9
-      GPDMA1_CH10: CH10
-      GPDMA1_CH11: CH11
-      GPDMA1_CH12: CH12
-      GPDMA1_CH13: CH13
-      GPDMA1_CH14: CH14
-      GPDMA1_CH15: CH15
-      GPDMA1_CH16: CH16
-      GPDMA1_CH17: CH17
-      GPDMA1_CH18: CH18
-      GPDMA1_CH19: CH19
-      GPDMA1_CH20: CH20
-      GPDMA1_CH21: CH21
-      GPDMA1_CH22: CH22
-      GPDMA1_CH23: CH23
-      GPDMA1_CH24: CH24
-      GPDMA1_CH25: CH25
-      GPDMA1_CH26: CH26
-      GPDMA1_CH27: CH27
-      GPDMA1_CH28: CH28
-      GPDMA1_CH29: CH29
-      GPDMA1_CH30: CH30
-      GPDMA1_CH31: CH31
-      GPDMA1_CHannel0: CH0
-      GPDMA1_CHannel1: CH1
-      GPDMA1_CHannel2: CH2
-      GPDMA1_CHannel3: CH3
-      GPDMA1_CHannel4: CH4
-      GPDMA1_CHannel5: CH5
-      GPDMA1_CHannel6: CH6
-      GPDMA1_CHannel7: CH7
-      GPDMA1_CHannel8: CH8
-      GPDMA1_CHannel9: CH9
-      GPDMA1_CHannel10: CH10
-      GPDMA1_CHannel11: CH11
-      GPDMA1_CHannel12: CH12
-      GPDMA1_CHannel13: CH13
-      GPDMA1_CHannel14: CH14
-      GPDMA1_CHannel15: CH15
-      GPDMA1_CHannel16: CH16
-      GPDMA1_CHannel17: CH17
-      GPDMA1_CHannel18: CH18
-      GPDMA1_CHannel19: CH19
-      GPDMA1_CHannel20: CH20
-      GPDMA1_CHannel21: CH21
-      GPDMA1_CHannel22: CH22
-      GPDMA1_CHannel23: CH23
-      GPDMA1_CHannel24: CH24
-      GPDMA1_CHannel25: CH25
-      GPDMA1_CHannel26: CH26
-      GPDMA1_CHannel27: CH27
-      GPDMA1_CHannel28: CH28
-      GPDMA1_CHannel29: CH29
-      GPDMA1_CHannel30: CH30
-      GPDMA1_CHannel31: CH31
+      CH0:
+        pattern: '^(GPDMA1_CH0|GPDMA1_CHannel0)$'
+      CH1:
+        pattern: '^(GPDMA1_CH1|GPDMA1_CHannel1)$'
+      CH2:
+        pattern: '^(GPDMA1_CH2|GPDMA1_CHannel2)$'
+      CH3:
+        pattern: '^(GPDMA1_CH3|GPDMA1_CHannel3)$'
+      CH4:
+        pattern: '^(GPDMA1_CH4|GPDMA1_CHannel4)$'
+      CH5:
+        pattern: '^(GPDMA1_CH5|GPDMA1_CHannel5)$'
+      CH6:
+        pattern: '^(GPDMA1_CH6|GPDMA1_CHannel6)$'
+      CH7:
+        pattern: '^(GPDMA1_CH7|GPDMA1_CHannel7)$'
+      CH8:
+        pattern: '^(GPDMA1_CH8|GPDMA1_CHannel8)$'
+      CH9:
+        pattern: '^(GPDMA1_CH9|GPDMA1_CHannel9)$'
+      CH10:
+        pattern: '^(GPDMA1_CH10|GPDMA1_CHannel10)$'
+      CH11:
+        pattern: '^(GPDMA1_CH11|GPDMA1_CHannel11)$'
+      CH12:
+        pattern: '^(GPDMA1_CH12|GPDMA1_CHannel12)$'
+      CH13:
+        pattern: '^(GPDMA1_CH13|GPDMA1_CHannel13)$'
+      CH14:
+        pattern: '^(GPDMA1_CH14|GPDMA1_CHannel14)$'
+      CH15:
+        pattern: '^(GPDMA1_CH15|GPDMA1_CHannel15)$'
+      CH16:
+        pattern: '^(GPDMA1_CH16|GPDMA1_CHannel16)$'
+      CH17:
+        pattern: '^(GPDMA1_CH17|GPDMA1_CHannel17)$'
+      CH18:
+        pattern: '^(GPDMA1_CH18|GPDMA1_CHannel18)$'
+      CH19:
+        pattern: '^(GPDMA1_CH19|GPDMA1_CHannel19)$'
+      CH20:
+        pattern: '^(GPDMA1_CH20|GPDMA1_CHannel20)$'
+      CH21:
+        pattern: '^(GPDMA1_CH21|GPDMA1_CHannel21)$'
+      CH22:
+        pattern: '^(GPDMA1_CH22|GPDMA1_CHannel22)$'
+      CH23:
+        pattern: '^(GPDMA1_CH23|GPDMA1_CHannel23)$'
+      CH24:
+        pattern: '^(GPDMA1_CH24|GPDMA1_CHannel24)$'
+      CH25:
+        pattern: '^(GPDMA1_CH25|GPDMA1_CHannel25)$'
+      CH26:
+        pattern: '^(GPDMA1_CH26|GPDMA1_CHannel26)$'
+      CH27:
+        pattern: '^(GPDMA1_CH27|GPDMA1_CHannel27)$'
+      CH28:
+        pattern: '^(GPDMA1_CH28|GPDMA1_CHannel28)$'
+      CH29:
+        pattern: '^(GPDMA1_CH29|GPDMA1_CHannel29)$'
+      CH30:
+        pattern: '^(GPDMA1_CH30|GPDMA1_CHannel30)$'
+      CH31:
+        pattern: '^(GPDMA1_CH31|GPDMA1_CHannel31)$'
     description: General-purpose DMA controller
     transforms:
       - {type: createClusterArray, pattern: C(\d+)(.+), name: C, description: DMA channel, template: 12}
@@ -668,19 +695,22 @@ shared_blocks:
     # Management Data Input/Output Slave: F7, H7, H7RS, N6
     from: STM32H723.MDIOS
     outputs:
-      MDIOS_WKUP: WKUP
-      MDIOS: INTR
+      WKUP:
+        pattern: '^MDIOS_WKUP$'
+      INTR:
+        pattern: '^MDIOS$'
   OTG:
     # USB OTG (Synopsys DWC2): F4, F7, H7, H7RS, L4, L4P, N6, U5
     from: STM32H7S.OTG_HS
     outputs:
-      OTG_FS: INTR
-      OTG_HS: INTR
-      OTG1: INTR
-      OTG_FS_WKUP: WKUP
-      OTG_HS_WKUP: WKUP
-      OTG_HS_EP1_OUT: EP1_OUT
-      OTG_HS_EP1_IN: EP1_IN
+      INTR:
+        pattern: '^(OTG_FS|OTG_HS|OTG1)$'
+      WKUP:
+        pattern: '^(OTG_FS_WKUP|OTG_HS_WKUP)$'
+      EP1_OUT:
+        pattern: '^OTG_HS_EP1_OUT$'
+      EP1_IN:
+        pattern: '^OTG_HS_EP1_IN$'
     description: USB on-the-go (Synopsys DWC2)
     params:
       - {name: max_in_endpoint, type: int, default: 8, max: 15, description: 'Highest device IN endpoint index (DIEPCTL registers, 0=EP0 only)'}
@@ -746,9 +776,8 @@ shared_blocks:
     # ID (IPVER/IPID/MID). G0 source is superset (DBATTEN in CR, all CFG3 trim fields, ID regs)
     from: STM32G070.UCPD1
     outputs:
-      UCPD1_UCPD2: INTR
-      UCPD1: INTR
-      UCPD: INTR
+      INTR:
+        pattern: '^(UCPD1_UCPD2|UCPD1|UCPD)$'
     description: USB Type-C Power Delivery controller
     transforms:
       - type: patchFields
@@ -759,8 +788,8 @@ shared_blocks:
     # USB full-speed dual-role device (CHEPnR, PMA-based): C0, G0, H5, U0, U3
     from: STM32H503.USB
     outputs:
-      USB: INTR
-      USB_FS: INTR
+      INTR:
+        pattern: '^(USB|USB_FS)$'
     description: USB full-speed dual-role device interface (PMA-based, CHEPnR)
     params:
       - {name: has_ddisc, type: bool, default: true, description: 'Device disconnection detection (DDISCM in CNTR, DDISC in ISTR)'}
@@ -769,13 +798,16 @@ shared_blocks:
     # USB full-speed device (EPnR, PMA-based): F3, G4, L0, L1, L5
     from: STM32L552.USB
     outputs:
-      USB_HP: HP
-      USB_LP: LP
-      USB_WAKEUP: WAKEUP
-      USBWakeUP: WAKEUP
-      USB_FS_WKUP: FS_WKUP
-      USB: INTR
-      USB_FS: INTR
+      HP:
+        pattern: '^USB_HP$'
+      LP:
+        pattern: '^USB_LP$'
+      WAKEUP:
+        pattern: '^(USB_WAKEUP|USBWakeUP)$'
+      FS_WKUP:
+        pattern: '^USB_FS_WKUP$'
+      INTR:
+        pattern: '^(USB|USB_FS)$'
     description: USB full-speed device interface (PMA-based, EPnR)
     params:
       - {name: has_lpm, type: bool, default: true, description: 'LPM support (L1RESUME/L1REQM in CNTR, L1REQ in ISTR)'}
@@ -790,42 +822,48 @@ shared_blocks:
     # Clock Recovery System: C0, G4, H5, H7, H7RS, L0, L4, L4P, L5, U0, U3, U5
     from: STM32U375.CRS
     outputs:
-      CRS: INTR
+      INTR:
+        pattern: '^CRS$'
     params:
       - {name: trim_width, type: int, default: 6, description: TRIM field width in CR register (6 or 7 bits)}
   PSSI:
     # Parallel Synchronous Slave Interface: H5, H7, H7RS, N6, U5
     from: STM32H7S.PSSI
     outputs:
-      PSSI: INTR
+      INTR:
+        pattern: '^PSSI$'
     params:
       - {name: has_cksrc, type: bool, default: false, description: CKSRC field in CR for clock source selection}
   CEC:
     # Gen2 HDMI-CEC: F4, F7, G0, H7, H7RS (F3 Gen1 stays separate)
     from: STM32H723.CEC
     outputs:
-      CEC: INTR
-      HDMI_CEC: INTR
+      INTR:
+        pattern: '^(CEC|HDMI_CEC)$'
   DCMI:
     # Digital Camera Interface: F4, F7, H5, H7, L4, L4P, N6, U5
     from: STM32H723.DCMI
     outputs:
-      DCMI: INTR
-      DCMI_PSSI: INTR
+      INTR:
+        pattern: '^(DCMI|DCMI_PSSI)$'
     params:
       - {name: has_pixel_select, type: bool, default: true, description: BSM/OEBS/LSM/OELS fields in CR for byte/line selection}
   bxCAN:
     # Basic Extended CAN: F3, F4, F7, L4, L4P
     from: STM32F446.CAN1
     outputs:
-      CAN1_TX: TX
-      CAN1_RX0: RX0
-      CAN1_RX1: RX1
-      CAN1_SCE: SCE
-      USB_HP_CAN_TX: CAN_TX
-      USB_LP_CAN_RX0: CAN_RX0
-      CAN_RX1: RX1
-      CAN_SCE: SCE
+      TX:
+        pattern: '^CAN1_TX$'
+      RX0:
+        pattern: '^CAN1_RX0$'
+      RX1:
+        pattern: '^(CAN1_RX1|CAN_RX1)$'
+      SCE:
+        pattern: '^(CAN1_SCE|CAN_SCE)$'
+      CAN_TX:
+        pattern: '^USB_HP_CAN_TX$'
+      CAN_RX0:
+        pattern: '^USB_LP_CAN_RX0$'
     params:
       - {name: filter_banks, type: int, default: 28, description: Number of CAN filter banks (14 or 28)}
       - {name: linked_to_slave, type: string, default: '', description: Instance name of slave CAN sharing this master filter banks}
@@ -853,7 +891,11 @@ shared_blocks:
   FDCAN:
     # Basic FDCAN (37-register Bosch M_CAN): C0, G0, G4, H5, H7RS, L5, U3, U5
     from: STM32H523.FDCAN
-    outputs: {FDCAN1_IT0: IT0, FDCAN1_IT1: IT1}
+    outputs:
+      IT0:
+        pattern: '^FDCAN1_IT0$'
+      IT1:
+        pattern: '^FDCAN1_IT1$'
     transforms:
       - {type: patchAddressBlock, size: 1024}
     description: Controller area network with flexible data-rate (Bosch M_CAN)
@@ -861,7 +903,8 @@ shared_blocks:
     # Legacy SD/SDIO/MMC (ARM PrimeCell PL18x): F4, F7, L1, L4
     from: STM32F401.SDIO
     outputs:
-      SDIO: INTR
+      INTR:
+        pattern: '^SDIO$'
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
     params:
       - {name: has_ceata, type: bool, default: true, description: CE-ATA support fields in CMD/STA/ICR/MASK}
@@ -870,7 +913,8 @@ shared_blocks:
     # Modern SDMMC with IDMA: H5, H7, H7RS, L4P, L5, N6, U3, U5
     from: STM32H743.SDMMC1
     outputs:
-      SDMMC1: INTR
+      INTR:
+        pattern: '^SDMMC1$'
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
     transforms:
       - type: patchFields
@@ -913,8 +957,10 @@ shared_blocks:
     # Synopsys DWC Ethernet QoS (EQOS): H5, H7, H7RS, C5
     from: STM32H5E5.ETH
     outputs:
-      ETH: INTR
-      ETH_WKUP: WKUP
+      INTR:
+        pattern: '^ETH$'
+      WKUP:
+        pattern: '^ETH_WKUP$'
     description: Ethernet MAC (Synopsys DWC EQOS)
     params:
       - {name: has_mdio_intr, type: bool, default: false, description: MDIO completion interrupt (MDIOIS/MDIOIE in MACISR/MACIER)}
@@ -997,14 +1043,22 @@ shared_blocks:
       - {type: createClusterArray, pattern: CH(\d+)(.+), name: CH, description: Serial channel}
       - {type: createClusterArray, pattern: FLT(\d+)(.+), name: FLT, description: Digital filter}
     outputs:
-      DFSDM1_FLT0: FLT0
-      DFSDM1_FLT1: FLT1
-      DFSDM1_FLT2: FLT2
-      DFSDM1_FLT3: FLT3
-      DFSDM1_FLT4: FLT4
-      DFSDM1_FLT5: FLT5
-      DFSDM1_FLT6: FLT6
-      DFSDM1_FLT7: FLT7
+      FLT0:
+        pattern: '^DFSDM1_FLT0$'
+      FLT1:
+        pattern: '^DFSDM1_FLT1$'
+      FLT2:
+        pattern: '^DFSDM1_FLT2$'
+      FLT3:
+        pattern: '^DFSDM1_FLT3$'
+      FLT4:
+        pattern: '^DFSDM1_FLT4$'
+      FLT5:
+        pattern: '^DFSDM1_FLT5$'
+      FLT6:
+        pattern: '^DFSDM1_FLT6$'
+      FLT7:
+        pattern: '^DFSDM1_FLT7$'
   RTC_V1:
     # Old-IP RTC: ISR register, embedded BKPxR, TAFCR/TAMPCR
     # Gen 1 (L1, F4): CALIBR + TAFCR (TAMP1INSEL/TSINSEL/ALARMOUTTYPE)
@@ -1075,14 +1129,14 @@ shared_blocks:
                 bitWidth: 1
                 access: read-write
     outputs:
-      RTC_WKUP: WKUP
-      RTC_ALARM: ALARM
-      RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
-      RTC: INTR
-      RTC_Alarm: ALARM
-      EXTI22_RTC_WKUP: WKUP
-      EXTI17_RTC_Alarm: ALARM
-      RTC_TAMP_STAMP: TAMP_STAMP_CSS_LSE
+      WKUP:
+        pattern: '^(RTC_WKUP|EXTI22_RTC_WKUP)$'
+      ALARM:
+        pattern: '^(RTC_ALARM|RTC_Alarm|EXTI17_RTC_Alarm)$'
+      TAMP_STAMP_CSS_LSE:
+        pattern: '^(RTC_TAMP_STAMP_CSS_LSE|RTC_TAMP_STAMP)$'
+      INTR:
+        pattern: '^RTC$'
   RTC_V2:
     # New-IP RTC: ICSR register, no embedded BKP, separate TAMP peripheral
     # Spans C0, G0, G4, H5, H7RS, L5, N6, U0, U3, U5
@@ -1133,20 +1187,26 @@ shared_blocks:
             bitOffset: 15
             bitWidth: 1
     outputs:
-      RTC: INTR
-      RTC_STAMP: INTR
-      RTC_TAMP: INTR
-      RTC_TAMP_CSS_LSE: TAMP_CSS_LSE
-      RTC_WKUP: WKUP
-      RTC_ALARM: ALARM
-      RTC_S: S
+      INTR:
+        pattern: '^(RTC|RTC_STAMP|RTC_TAMP)$'
+      TAMP_CSS_LSE:
+        pattern: '^RTC_TAMP_CSS_LSE$'
+      WKUP:
+        pattern: '^RTC_WKUP$'
+      ALARM:
+        pattern: '^RTC_ALARM$'
+      S:
+        pattern: '^RTC_S$'
   I3C:
     # Improved Inter-Integrated Circuit: C5, H5, N6, U3
     from: STM32U375.I3C1
     outputs:
-      I3C1_EV: EV
-      I3C1_ER: ER
-      I3C1_ERR: ERR
+      EV:
+        pattern: '^I3C1_EV$'
+      ER:
+        pattern: '^I3C1_ER$'
+      ERR:
+        pattern: '^I3C1_ERR$'
     description: Improved Inter-Integrated Circuit (I3C)
     transforms:
       # Fix mixed-case register names (U3 SVD bug)
@@ -1169,21 +1229,22 @@ shared_blocks:
     # Data cache controller: H5, U5
     from: STM32H523.DCACHE
     outputs:
-      DCACHE: INTR
-      DCACHE1: INTR
-      DCACHE2: INTR
+      INTR:
+        pattern: '^(DCACHE|DCACHE1|DCACHE2)$'
     description: Data cache controller (DCACHE)
   ICACHE:
     # Instruction cache: C5, H5, H7RS
     from: STM32H503.ICACHE
     outputs:
-      ICACHE: INTR
+      INTR:
+        pattern: '^ICACHE$'
     description: Instruction cache controller (ICACHE)
   SAES:
     # Secure AES coprocessor: C5, H5, H7RS, N6, U3, U5
     from: STM32H533.SAES
     outputs:
-      SAES: INTR
+      INTR:
+        pattern: '^SAES$'
     description: Secure AES coprocessor (SAES)
   LTDC:
     # LCD-TFT Display Controller: F4, F7, H7, H7RS, L4+, U5
@@ -1193,12 +1254,10 @@ shared_blocks:
     # N6 has a fundamentally different extended LTDC (70 registers, YCbCr, gamma) — separate block
     from: STM32H7S.LTDC
     outputs:
-      LCD_TFT: INTR
-      LCD_TFT_1: ER
-      LCD_TFT_ER: ER
-      LCD_TFT_ERR: ER
-      LTDC: INTR
-      LTDC_ER: ER
+      INTR:
+        pattern: '^(LCD_TFT|LTDC)$'
+      ER:
+        pattern: '^(LCD_TFT_1|LCD_TFT_ER|LCD_TFT_ERR|LTDC_ER)$'
     description: LCD-TFT Display Controller (standard 2-layer)
   ADF:
     # Audio Digital Filter: H7RS, N6, U3, U5
@@ -1208,8 +1267,8 @@ shared_blocks:
     # SADSDLVR/SADANLVR). U3 adds TRGISEL (trigger input selection).
     from: STM32H7S.ADF
     outputs:
-      ADF1_FLT0: INTR
-      ADF1: INTR
+      INTR:
+        pattern: '^(ADF1_FLT0|ADF1)$'
     description: Audio Digital Filter
     transforms:
       - type: patchRegisters
@@ -1231,12 +1290,18 @@ shared_blocks:
     # descriptions/enums and correct MCICD field splitting (8+1 vs U5 single 9-bit).
     from: STM32N645.MDF1
     outputs:
-      MDF1_FLT0: FLT0
-      MDF1_FLT1: FLT1
-      MDF1_FLT2: FLT2
-      MDF1_FLT3: FLT3
-      MDF1_FLT4: FLT4
-      MDF1_FLT5: FLT5
+      FLT0:
+        pattern: '^MDF1_FLT0$'
+      FLT1:
+        pattern: '^MDF1_FLT1$'
+      FLT2:
+        pattern: '^MDF1_FLT2$'
+      FLT3:
+        pattern: '^MDF1_FLT3$'
+      FLT4:
+        pattern: '^MDF1_FLT4$'
+      FLT5:
+        pattern: '^MDF1_FLT5$'
     description: Multi-function Digital Filter
 
   DSI:
@@ -1250,8 +1315,8 @@ shared_blocks:
     # with different PLL/PHY fields — stays family-specific.
     from: STM32F767.DSI
     outputs:
-      DSIHOST: INTR
-      DSIHSOT: INTR
+      INTR:
+        pattern: '^(DSIHOST|DSIHSOT)$'
     description: MIPI DSI host controller (Synopsys DesignWare)
     transforms:
       - type: renameFields
@@ -1271,7 +1336,8 @@ shared_blocks:
     # register variants at 0x050), RPCFGR/ERCFGR (resource protection at 0x054).
     from: STM32N645.TAMP
     outputs:
-      TAMP: INTR
+      INTR:
+        pattern: '^TAMP$'
     description: Tamper detection
     params:
       - {name: pom, type: bool, default: false, description: 'CR2/CR3 tamper output control: false=NOER (no-erase), true=POM (potential output masking)'}
@@ -1459,7 +1525,8 @@ families:
         from: STM32C071.ADC
         instances: [ADC]
         outputs:
-          ADC: INTR
+          INTR:
+            pattern: '^ADC$'
         params:
           - {name: ext_channels, type: int, default: 19, max: 19, description: Number of external input channels}
       CRC:
@@ -1475,37 +1542,47 @@ families:
         from: STM32C071.DMA
         instances: [DMA]
         outputs:
-          DMA1_Channel1: Channel1
-          DMA1_Channel2_3: Channel2_3
+          Channel1:
+            pattern: '^DMA1_Channel1$'
+          Channel2_3:
+            pattern: '^DMA1_Channel2_3$'
         params:
           - {name: channels, type: int, default: 5, max: 5, description: Number of DMA channels}
       DMAMUX:
         from: STM32C071.DMAMUX
         instances: [DMAMUX]
         outputs:
-          DMAMUX_DMA1_Channel4_5: INTR
+          INTR:
+            pattern: '^DMAMUX_DMA1_Channel4_5$'
         params:
           - {name: channels, type: int, default: 5, max: 5, description: Number of DMA request multiplexer channels}
       EXTI:
         from: STM32C071.EXTI
         instances: [EXTI]
         outputs:
-          PVM: PVM
-          EXTI0_1: INTR0_1
-          EXTI2_3: INTR2_3
-          EXTI4_15: INTR4_15
+          PVM:
+            pattern: '^PVM$'
+          INTR0_1:
+            pattern: '^EXTI0_1$'
+          INTR2_3:
+            pattern: '^EXTI2_3$'
+          INTR4_15:
+            pattern: '^EXTI4_15$'
       FDCAN:
         uses: FDCAN
         instances: [FDCAN]
         outputs:
-          FDCAN_IT0: IT0
-          FDCAN_IT1: IT1
+          IT0:
+            pattern: '^FDCAN_IT0$'
+          IT1:
+            pattern: '^FDCAN_IT1$'
         description: Controller area network with flexible data-rate (Bosch M_CAN)
       Flash:
         from: STM32C071.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
         params:
           - {name: pages, type: int, max: 128, description: Number of flash memory pages}
       GPIO:
@@ -1527,12 +1604,14 @@ families:
         from: STM32C071.RCC
         instances: [RCC]
         outputs:
-          RCC_CRS: INTR
+          INTR:
+            pattern: '^RCC_CRS$'
       RTC:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2]
@@ -1543,10 +1622,8 @@ families:
         uses: USART
         instances: [USART1, USART2, USART3, USART4]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART3: INTR
-          USART4: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART3|USART4)$'
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -1633,28 +1710,22 @@ families:
         uses: TimerV2
         instances: [TIM1, TIM2, TIM3, TIM4, TIM5, TIM8, TIM12, TIM15, TIM16, TIM17]
         outputs:
-          TIM1_BRK_TERR_IERR: BRK_TERR_IERR
-          TIM1_UPD: UP
-          TIM1_TRGI_COM_DIR_IDX: TRG_COM_DIR_IDX
-          TIM1_CC: CC
-          TIM2: INTR
-          TIM3: INTR
-          TIM4: INTR
-          TIM5: INTR
-          TIM8_BRK_TERR_IERR: BRK_TERR_IERR
-          TIM8_UPD: UP
-          TIM8_TRGI_COM_DIR_IDX: TRG_COM_DIR_IDX
-          TIM8_CC: CC
-          TIM12: INTR
-          TIM15: INTR
-          TIM16: INTR
-          TIM17: INTR
+          BRK_TERR_IERR:
+            pattern: '^(TIM1_BRK_TERR_IERR|TIM8_BRK_TERR_IERR)$'
+          UP:
+            pattern: '^(TIM1_UPD|TIM8_UPD)$'
+          TRG_COM_DIR_IDX:
+            pattern: '^(TIM1_TRGI_COM_DIR_IDX|TIM8_TRGI_COM_DIR_IDX)$'
+          CC:
+            pattern: '^(TIM1_CC|TIM8_CC)$'
+          INTR:
+            pattern: '^(TIM2|TIM3|TIM4|TIM5|TIM12|TIM15|TIM16|TIM17)$'
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6: INTR
-          TIM7: INTR
+          INTR:
+            pattern: '^(TIM6|TIM7)$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
@@ -1662,57 +1733,56 @@ families:
         uses: I2C
         instances: [I2C1, I2C2]
         outputs:
-          I2C1_EV: EV
-          I2C1_ER: ER
-          I2C2_EV: EV
-          I2C2_ER: ER
+          EV:
+            pattern: '^(I2C1_EV|I2C2_EV)$'
+          ER:
+            pattern: '^(I2C1_ER|I2C2_ER)$'
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, UART4, UART5, USART6, UART7]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART3: INTR
-          UART4: INTR
-          UART5: INTR
-          USART6: INTR
-          UART7: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART3|UART4|UART5|USART6|UART7)$'
       LPUART:
         uses: USART
         instances: [LPUART1]
         outputs:
-          LPUART1: INTR
+          INTR:
+            pattern: '^LPUART1$'
       SPI:
         uses: ModernSPI
         instances: [SPI1, SPI2, SPI3]
         outputs:
-          SPI1: INTR
-          SPI2: INTR
-          SPI3: INTR
+          INTR:
+            pattern: '^(SPI1|SPI2|SPI3)$'
       LPTIM:
         uses: LPTIM
         instances: [LPTIM1]
         outputs:
-          LPTIM1: INTR
+          INTR:
+            pattern: '^LPTIM1$'
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1, FDCAN2]
         outputs:
-          FDCAN1_IT0: IT0
-          FDCAN1_IT1: IT1
-          FDCAN2_IT0: IT0
-          FDCAN2_IT1: IT1
+          IT0:
+            pattern: '^(FDCAN1_IT0|FDCAN2_IT0)$'
+          IT1:
+            pattern: '^(FDCAN1_IT1|FDCAN2_IT1)$'
       ETH:
         uses: ETH
         instances: [ETH]
         outputs:
-          ETH1: INTR
-          ETH1_WKUP: WKUP
+          INTR:
+            pattern: '^ETH1$'
+          WKUP:
+            pattern: '^ETH1_WKUP$'
       USB:
         uses: USB_DRD
         instances: [USB]
         outputs:
-          USB_DRD_FS: INTR
+          INTR:
+            pattern: '^USB_DRD_FS$'
       CRC:
         uses: CRC
         instances: [CRC]
@@ -1720,40 +1790,44 @@ families:
         uses: CRS
         instances: [CRS]
         outputs:
-          CRS: INTR
+          INTR:
+            pattern: '^CRS$'
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
         outputs:
-          CORDIC: INTR
+          INTR:
+            pattern: '^CORDIC$'
       IWDG:
         uses: IWDG
         instances: [IWDG]
         outputs:
-          IWDG: INTR
+          INTR:
+            pattern: '^IWDG$'
       WWDG:
         uses: WWDG
         instances: [WWDG]
         outputs:
-          WWDG: INTR
+          INTR:
+            pattern: '^WWDG$'
       HASH:
         uses: HASH
         instances: [HASH]
         outputs:
-          HASH: INTR
+          INTR:
+            pattern: '^HASH$'
       PKA:
         uses: PKA
         instances: [PKA]
         outputs:
-          PKA: INTR
-      # --- Family-specific blocks (need SVD extraction) ---
+          INTR:
+            pattern: '^PKA$'
       ADC:
         from: ''  # TBD: pending SVD
         instances: [ADC1, ADC2, ADC3]
         outputs:
-          ADC1: INTR
-          ADC2: INTR
-          ADC3: INTR
+          INTR:
+            pattern: '^(ADC1|ADC2|ADC3)$'
       ADC_Common:
         from: ''  # TBD: pending SVD
         instances: [ADCC12, ADCC3]
@@ -1764,38 +1838,58 @@ families:
         from: ''  # TBD: pending SVD
         instances: [COMP1, COMP12]
         outputs:
-          COMP1: INTR
+          INTR:
+            pattern: '^COMP1$'
       DAC:
         from: ''  # TBD: pending SVD
         instances: [DAC1]
         outputs:
-          DAC1: INTR
+          INTR:
+            pattern: '^DAC1$'
       EXTI:
         from: ''  # TBD: pending SVD
         instances: [EXTI]
         outputs:
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI5: INTR5
-          EXTI6: INTR6
-          EXTI7: INTR7
-          EXTI8: INTR8
-          EXTI9: INTR9
-          EXTI10: INTR10
-          EXTI11: INTR11
-          EXTI12: INTR12
-          EXTI13: INTR13
-          EXTI14: INTR14
-          EXTI15: INTR15
-          FPU: FPU
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR5:
+            pattern: '^EXTI5$'
+          INTR6:
+            pattern: '^EXTI6$'
+          INTR7:
+            pattern: '^EXTI7$'
+          INTR8:
+            pattern: '^EXTI8$'
+          INTR9:
+            pattern: '^EXTI9$'
+          INTR10:
+            pattern: '^EXTI10$'
+          INTR11:
+            pattern: '^EXTI11$'
+          INTR12:
+            pattern: '^EXTI12$'
+          INTR13:
+            pattern: '^EXTI13$'
+          INTR14:
+            pattern: '^EXTI14$'
+          INTR15:
+            pattern: '^EXTI15$'
+          FPU:
+            pattern: '^FPU$'
       Flash:
         from: ''  # TBD: pending SVD
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       I3C:
         uses: I3C
         instances: [I3C1]
@@ -1806,22 +1900,22 @@ families:
         from: ''  # TBD: pending SVD
         instances: [LPDMA1, LPDMA2]
         outputs:
-          LPDMA1_CH0: CH0
-          LPDMA1_CH1: CH1
-          LPDMA1_CH2: CH2
-          LPDMA1_CH3: CH3
-          LPDMA1_CH4: CH4
-          LPDMA1_CH5: CH5
-          LPDMA1_CH6: CH6
-          LPDMA1_CH7: CH7
-          LPDMA2_CH0: CH0
-          LPDMA2_CH1: CH1
-          LPDMA2_CH2: CH2
-          LPDMA2_CH3: CH3
-          LPDMA2_CH4: CH4
-          LPDMA2_CH5: CH5
-          LPDMA2_CH6: CH6
-          LPDMA2_CH7: CH7
+          CH0:
+            pattern: '^(LPDMA1_CH0|LPDMA2_CH0)$'
+          CH1:
+            pattern: '^(LPDMA1_CH1|LPDMA2_CH1)$'
+          CH2:
+            pattern: '^(LPDMA1_CH2|LPDMA2_CH2)$'
+          CH3:
+            pattern: '^(LPDMA1_CH3|LPDMA2_CH3)$'
+          CH4:
+            pattern: '^(LPDMA1_CH4|LPDMA2_CH4)$'
+          CH5:
+            pattern: '^(LPDMA1_CH5|LPDMA2_CH5)$'
+          CH6:
+            pattern: '^(LPDMA1_CH6|LPDMA2_CH6)$'
+          CH7:
+            pattern: '^(LPDMA1_CH7|LPDMA2_CH7)$'
       OPAMP:
         from: ''  # TBD: G4-style OPAMP (CSR+TCMR, no OTR)
         instances: [OPAMP1]
@@ -1829,27 +1923,32 @@ families:
         from: ''  # TBD: pending SVD
         instances: [PWR]
         outputs:
-          PWR_PVD: INTR
+          INTR:
+            pattern: '^PWR_PVD$'
       RAMCFG:
         from: ''  # TBD: pending SVD
         instances: [RAMCFG]
         outputs:
-          RAMCFG: INTR
+          INTR:
+            pattern: '^RAMCFG$'
       RCC:
         from: ''  # TBD: pending SVD
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RNG:
         from: ''  # TBD: newer RNG gen with expanded health test regs
         instances: [RNG]
         outputs:
-          RNG: INTR
+          INTR:
+            pattern: '^RNG$'
       RTC:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       SAES:
         uses: SAES
         instances: [SAES]
@@ -1873,7 +1972,8 @@ families:
         from: ''  # TBD: pending SVD, C59x/C5A3 only
         instances: [XSPI1]
         outputs:
-          XSPI1: INTR
+          INTR:
+            pattern: '^XSPI1$'
     chip_params:
       _all:
         _all:
@@ -1937,7 +2037,8 @@ families:
       ADC:
         instances: [ADC, ADC1, ADC2, ADC3, ADC4]
         outputs:
-          ADC1_IRQ: INTR
+          INTR:
+            pattern: '^ADC1_IRQ$'
         variants:
           F301:
             from: STM32F301.ADC
@@ -1952,7 +2053,8 @@ families:
       ADC_Common:
         instances: [ADC1_2, ADC3_4, ADC_Common]
         outputs:
-          ADC1_2: INTR
+          INTR:
+            pattern: '^ADC1_2$'
         variants:
           F302:
             from: STM32F302.ADC1_2
@@ -1965,9 +2067,12 @@ families:
       AdvCtrlTimer:
         instances: [TIM1, TIM20, TIM8]
         outputs:
-          TIM1_BRK_TIM15: BRK
-          TIM1_UP_TIM16: UP
-          TIM1_TRG_COM_TIM17: TRG
+          BRK:
+            pattern: '^TIM1_BRK_TIM15$'
+          UP:
+            pattern: '^TIM1_UP_TIM16$'
+          TRG:
+            pattern: '^TIM1_TRG_COM_TIM17$'
         variants:
           F301:
             from: STM32F301.TIM1
@@ -1981,12 +2086,14 @@ families:
         uses: BasicTimer
         instances: [TIM18, TIM6, TIM7]
         outputs:
-          TIM6_DAC1: INTR
+          INTR:
+            pattern: '^TIM6_DAC1$'
       CEC:
         from: STM32F373.CEC
         instances: [CEC]
         outputs:
-          CEC: INTR
+          INTR:
+            pattern: '^CEC$'
       CRC:
         from: STM32F301.CRC
         instances: [CRC]
@@ -2010,27 +2117,45 @@ families:
         from: STM32F301.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_CH1: CH1
-          DMA1_CH2: CH2
-          DMA1_CH3: CH3
-          DMA1_CH4: CH4
-          DMA1_CH5: CH5
-          DMA1_CH6: CH6
-          DMA1_CH7: CH7
+          CH1:
+            pattern: '^DMA1_CH1$'
+          CH2:
+            pattern: '^DMA1_CH2$'
+          CH3:
+            pattern: '^DMA1_CH3$'
+          CH4:
+            pattern: '^DMA1_CH4$'
+          CH5:
+            pattern: '^DMA1_CH5$'
+          CH6:
+            pattern: '^DMA1_CH6$'
+          CH7:
+            pattern: '^DMA1_CH7$'
       EXTI:
         instances: [EXTI]
         outputs:
-          PVD_IRQ: PVD_IRQ
-          TAMP: TAMP
-          EXTI0_IRQ: IT0
-          EXTI1_IRQ: IT1
-          EXTI2_RI_IRQ: IT2
-          EXTI3_IRQ: IT3
-          EXTI4_IRQ: IT4
-          EXTI5_9_IRQ: IT5_9
-          EXTI15_10_IRQ: IT15_10
-          COMP2_IRQ: COMP2
-          COMP4_6_IRQ: COMP4_6
+          PVD_IRQ:
+            pattern: '^PVD_IRQ$'
+          TAMP:
+            pattern: '^TAMP$'
+          IT0:
+            pattern: '^EXTI0_IRQ$'
+          IT1:
+            pattern: '^EXTI1_IRQ$'
+          IT2:
+            pattern: '^EXTI2_RI_IRQ$'
+          IT3:
+            pattern: '^EXTI3_IRQ$'
+          IT4:
+            pattern: '^EXTI4_IRQ$'
+          IT5_9:
+            pattern: '^EXTI5_9_IRQ$'
+          IT15_10:
+            pattern: '^EXTI15_10_IRQ$'
+          COMP2:
+            pattern: '^COMP2_IRQ$'
+          COMP4_6:
+            pattern: '^COMP4_6_IRQ$'
         variants:
           F301:
             from: STM32F301.EXTI
@@ -2048,7 +2173,8 @@ families:
       Flash:
         instances: [Flash]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
         variants:
           F301:
             from: STM32F301.Flash
@@ -2078,7 +2204,8 @@ families:
       PWR:
         instances: [PWR]
         outputs:
-          PVD: INTR
+          INTR:
+            pattern: '^PVD$'
         variants:
           F301:
             from: STM32F301.PWR
@@ -2093,7 +2220,8 @@ families:
       RCC:
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
         variants:
           F301:
             from: STM32F301.RCC
@@ -2108,8 +2236,10 @@ families:
       RTC:
         instances: [RTC]
         outputs:
-          RTC_WKUP_IRQ: WKUP
-          RTC_ALARM_IT_IRQ: ALARM
+          WKUP:
+            pattern: '^RTC_WKUP_IRQ$'
+          ALARM:
+            pattern: '^RTC_ALARM_IT_IRQ$'
         variants:
           F301:
             from: STM32F301.RTC
@@ -2125,16 +2255,20 @@ families:
         from: STM32F373.SDADC1
         instances: [SDADC1, SDADC2, SDADC3]
         outputs:
-          SDADC1: INTR
+          INTR:
+            pattern: '^SDADC1$'
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3, SPI4]
       SYSCFG:
         instances: [SYSCFG_COMP_OPAMP]
         outputs:
-          COMP123: COMP123
-          COMP456: COMP456
-          COMP7: COMP7
+          COMP123:
+            pattern: '^COMP123$'
+          COMP456:
+            pattern: '^COMP456$'
+          COMP7:
+            pattern: '^COMP7$'
         variants:
           F301:
             from: STM32F301.SYSCFG_COMP_OPAMP
@@ -2150,7 +2284,8 @@ families:
         uses: TSC
         instances: [TSC]
         outputs:
-          EXTI2_TSC: INTR
+          INTR:
+            pattern: '^EXTI2_TSC$'
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
@@ -2159,19 +2294,8 @@ families:
           # plain instance and EXTI-aliased / _IRQ-suffixed duplicates of the
           # same vector.  Map them all to the single canonical so dedup at
           # connections-build time leaves one INTR entry per instance.
-          USART1: INTR
-          USART1_EXTI25: INTR
-          USART1_IRQ: INTR
-          USART2: INTR
-          USART2_EXTI26: INTR
-          USART2_IRQ: INTR
-          USART3: INTR
-          USART3_EXTI28: INTR
-          USART3_IRQ: INTR
-          UART4: INTR
-          UART4_EXTI34: INTR
-          UART5: INTR
-          UART5_EXTI35: INTR
+          INTR:
+            pattern: '^(USART1|USART1_EXTI25|USART1_IRQ|USART2|USART2_EXTI26|USART2_IRQ|USART3|USART3_EXTI28|USART3_IRQ|UART4|UART4_EXTI34|UART5|UART5_EXTI35)$'
       USB:
         uses: USB_DEV
         instances: [USB, USB_FS]
@@ -2270,7 +2394,8 @@ families:
         from: STM32F401.ADC1
         instances: [ADC1, ADC2, ADC3]
         outputs:
-          ADC: INTR
+          INTR:
+            pattern: '^ADC$'
       ADC_Common:
         from: STM32F405.ADC_Common
         instances: [ADC_Common, C_ADC]
@@ -2285,7 +2410,8 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6_DAC1: INTR
+          INTR:
+            pattern: '^TIM6_DAC1$'
       CEC:
         uses: CEC
         instances: [HDMI_CEC]
@@ -2299,7 +2425,8 @@ families:
         from: STM32F410.DAC
         instances: [DAC]
         outputs:
-          TIM6_DAC: INTR
+          INTR:
+            pattern: '^TIM6_DAC$'
       DBGMCU:
         from: STM32F401.DBG
         instances: [DBG]
@@ -2310,20 +2437,30 @@ families:
         uses: DFSDM
         instances: [DFSDM, DFSDM1, DFSDM2]
         outputs:
-          DFSDM1_FLT0: FLT0
-          DFSDM1_FLT1: FLT1
+          FLT0:
+            pattern: '^DFSDM1_FLT0$'
+          FLT1:
+            pattern: '^DFSDM1_FLT1$'
       DMA:
         from: STM32F401.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_Stream0: Stream0
-          DMA1_Stream1: Stream1
-          DMA1_Stream2: Stream2
-          DMA1_Stream3: Stream3
-          DMA1_Stream4: Stream4
-          DMA1_Stream5: Stream5
-          DMA1_Stream6: Stream6
-          DMA1_Stream7: Stream7
+          Stream0:
+            pattern: '^DMA1_Stream0$'
+          Stream1:
+            pattern: '^DMA1_Stream1$'
+          Stream2:
+            pattern: '^DMA1_Stream2$'
+          Stream3:
+            pattern: '^DMA1_Stream3$'
+          Stream4:
+            pattern: '^DMA1_Stream4$'
+          Stream5:
+            pattern: '^DMA1_Stream5$'
+          Stream6:
+            pattern: '^DMA1_Stream6$'
+          Stream7:
+            pattern: '^DMA1_Stream7$'
       DMA2D:
         uses: DMA2D
         instances: [DMA2D]
@@ -2334,14 +2471,22 @@ families:
         from: STM32F401.EXTI
         instances: [EXTI]
         outputs:
-          TAMP_STAMP: TAMP_STAMP
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI9_5: INTR9_5
-          EXTI15_10: INTR15_10
+          TAMP_STAMP:
+            pattern: '^TAMP_STAMP$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR9_5:
+            pattern: '^EXTI9_5$'
+          INTR15_10:
+            pattern: '^EXTI15_10$'
       Ethernet_DMA:
         from: STM32F405.Ethernet_DMA
         instances: [Ethernet_DMA]
@@ -2350,8 +2495,10 @@ families:
         from: STM32F405.Ethernet_MAC
         instances: [Ethernet_MAC]
         outputs:
-          ETH: IT
-          ETH_WKUP: WKUP
+          IT:
+            pattern: '^ETH$'
+          WKUP:
+            pattern: '^ETH_WKUP$'
         description: Ethernet MAC (Synopsys GMAC)
       Ethernet_MMC:
         from: STM32F405.Ethernet_MMC
@@ -2373,12 +2520,14 @@ families:
         from: STM32F405.FSMC
         instances: [FSMC]
         outputs:
-          FSMC: INTR
+          INTR:
+            pattern: '^FSMC$'
       Flash:
         from: STM32F401.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK]
@@ -2389,20 +2538,16 @@ families:
         uses: HASH
         instances: [HASH]
         outputs:
-          HASH_RNG: INTR
+          INTR:
+            pattern: '^HASH_RNG$'
       I2C:
         from: STM32F429.I2C1
         instances: [I2C1, I2C2, I2C3, I2C4]
         outputs:
-          I2C1_EV: EV
-          I2C1_ER: ER
-          # F413/F423 SVDs misattribute I2C interrupts to I2C3 with raw
-          # names I2C1_EVT (vec 31) and I2C1_ERR (vec 32).  Without these
-          # mappings the algorithmic resolver picks up the shared-block
-          # canonical ERR (intended for I3C variants), producing an
-          # out-of-family interrupt name.  Map to the F4-family canonicals.
-          I2C1_EVT: EV
-          I2C1_ERR: ER
+          EV:
+            pattern: '^(I2C1_EV|I2C1_EVT)$'
+          ER:
+            pattern: '^(I2C1_ER|I2C1_ERR)$'
         params:
           - {name: has_noise_filter, type: bool, default: true, description: Digital and analog noise filter (FLTR register)}
       IWDG:
@@ -2418,16 +2563,22 @@ families:
         uses: OTG
         instances: [OTG_FS_GLOBAL]
         outputs:
-          OTG_FS_WKUP: WKUP
-          OTG_FS: INTR
+          WKUP:
+            pattern: '^OTG_FS_WKUP$'
+          INTR:
+            pattern: '^OTG_FS$'
       OTG_HS:
         uses: OTG
         instances: [OTG_HS_GLOBAL]
         outputs:
-          OTG_HS_EP1_OUT: EP1_OUT
-          OTG_HS_EP1_IN: EP1_IN
-          OTG_HS_WKUP: WKUP
-          OTG_HS: INTR
+          EP1_OUT:
+            pattern: '^OTG_HS_EP1_OUT$'
+          EP1_IN:
+            pattern: '^OTG_HS_EP1_IN$'
+          WKUP:
+            pattern: '^OTG_HS_WKUP$'
+          INTR:
+            pattern: '^OTG_HS$'
       PWR:
         from: STM32F446.PWR
         instances: [PWR]
@@ -2466,7 +2617,8 @@ families:
       RCC:
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
         variants:
           F401:
             from: STM32F401.RCC
@@ -2491,8 +2643,10 @@ families:
         uses: RTC_V1
         instances: [RTC]
         outputs:
-          EXTI22_RTC_WKUP: WKUP
-          EXTI17_RTC_Alarm: ALARM
+          WKUP:
+            pattern: '^EXTI22_RTC_WKUP$'
+          ALARM:
+            pattern: '^EXTI17_RTC_Alarm$'
       SAI:
         uses: SAI
         instances: [SAI, SAI1, SAI2]
@@ -2513,7 +2667,8 @@ families:
         from: STM32F413.UART10
         instances: [UART10, UART4, UART5, UART7, UART8, UART9, USART1, USART2, USART3, USART6]
         outputs:
-          UART5: INTR
+          INTR:
+            pattern: '^UART5$'
         params:
           - {name: synchronous, type: int, default: 2, max: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
       WWDG:
@@ -2658,12 +2813,14 @@ families:
         from: STM32F722.ADC1
         instances: [ADC1, ADC2, ADC3]
         outputs:
-          ADC: INTR
+          INTR:
+            pattern: '^ADC$'
       ADC_Common:
         from: STM32F722.C_ADC
         instances: [ADC_Common, C_ADC]
         outputs:
-          ADC: INTR
+          INTR:
+            pattern: '^ADC$'
         transforms:
           - {type: renameFields, register: CCR, pattern: ^MULT$, replacement: MULTI}
           - {type: patchAddressBlock, size: 12}
@@ -2674,7 +2831,8 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6_DAC: INTR
+          INTR:
+            pattern: '^TIM6_DAC$'
       CEC:
         uses: CEC
         instances: [CEC]
@@ -2691,7 +2849,8 @@ families:
         from: STM32F745.DBG
         instances: [DBG, DBGMCU]
         outputs:
-          FPU: INTR
+          INTR:
+            pattern: '^FPU$'
         transforms:
           - {type: renameFields, register: APB1_FZ, pattern: ^DBG_J2C, replacement: DBG_I2C}
           - {type: renameFields, register: APB1_FZ, pattern: ^DBG_IWDEG_STOP$, replacement: DBG_IWDG_STOP}
@@ -2709,22 +2868,34 @@ families:
         uses: DFSDM
         instances: [DFSDM]
         outputs:
-          DFSDM1_FLT0: FLT0
-          DFSDM1_FLT1: FLT1
-          DFSDM1_FLT2: FLT2
-          DFSDM1_FLT3: FLT3
+          FLT0:
+            pattern: '^DFSDM1_FLT0$'
+          FLT1:
+            pattern: '^DFSDM1_FLT1$'
+          FLT2:
+            pattern: '^DFSDM1_FLT2$'
+          FLT3:
+            pattern: '^DFSDM1_FLT3$'
       DMA:
         from: STM32F722.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_Stream0: Stream0
-          DMA1_Stream1: Stream1
-          DMA1_Stream2: Stream2
-          DMA1_Stream3: Stream3
-          DMA1_Stream4: Stream4
-          DMA1_Stream5: Stream5
-          DMA1_Stream6: Stream6
-          DMA1_Stream7: Stream7
+          Stream0:
+            pattern: '^DMA1_Stream0$'
+          Stream1:
+            pattern: '^DMA1_Stream1$'
+          Stream2:
+            pattern: '^DMA1_Stream2$'
+          Stream3:
+            pattern: '^DMA1_Stream3$'
+          Stream4:
+            pattern: '^DMA1_Stream4$'
+          Stream5:
+            pattern: '^DMA1_Stream5$'
+          Stream6:
+            pattern: '^DMA1_Stream6$'
+          Stream7:
+            pattern: '^DMA1_Stream7$'
         params:
           - {name: channel_count, type: int, max: 16, description: Number of DMA request channels per stream}
         transforms:
@@ -2746,26 +2917,35 @@ families:
         from: STM32F722.EXTI
         instances: [EXTI]
         outputs:
-          TAMP_STAMP: TAMP_STAMP
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
+          TAMP_STAMP:
+            pattern: '^TAMP_STAMP$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
         transforms:
           - {type: renameFields, register: IMR, pattern: ^MI9$, replacement: IM9}
       Ethernet_DMA:
         from: STM32F745.Ethernet_DMA
         instances: [Ethernet_DMA]
         outputs:
-          ETH: INTR
-          ETH_WKUP: ETH_WKUP
+          INTR:
+            pattern: '^ETH$'
+          ETH_WKUP:
+            pattern: '^ETH_WKUP$'
         description: Ethernet DMA (Synopsys GMAC)
       Ethernet_MAC:
         from: STM32F745.Ethernet_MAC
         instances: [Ethernet_MAC]
         outputs:
-          ETH: INTR
-          ETH_WKUP: ETH_WKUP
+          INTR:
+            pattern: '^ETH$'
+          ETH_WKUP:
+            pattern: '^ETH_WKUP$'
         description: Ethernet MAC (Synopsys GMAC)
       Ethernet_MMC:
         from: STM32F745.Ethernet_MMC
@@ -2779,12 +2959,14 @@ families:
         uses: FMC
         instances: [FMC]
         outputs:
-          FSMC: INTR
+          INTR:
+            pattern: '^FSMC$'
       Flash:
         from: STM32F767.FLASH
         instances: [FLASH, Flash]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
         params:
           - {name: has_pcrop, type: bool, default: false, description: 'PCROP protection support (RDERR, RDERRIE, OPTCR2)'}
           - {name: has_dual_bank, type: bool, default: false, description: 'Dual-bank Flash support (MER2, nDBOOT, nDBANK)'}
@@ -2834,7 +3016,8 @@ families:
         uses: LPTIM
         instances: [LPTIM1]
         outputs:
-          LP_Timer1: INTR
+          INTR:
+            pattern: '^LP_Timer1$'
       LTDC:
         uses: LTDC
         instances: [LTCD, LTDC]
@@ -2845,21 +3028,28 @@ families:
         uses: OTG
         instances: [OTG_FS_GLOBAL]
         outputs:
-          OTG_FS: INTR
-          OTG_FS_WKUP: WKUP
+          INTR:
+            pattern: '^OTG_FS$'
+          WKUP:
+            pattern: '^OTG_FS_WKUP$'
       OTG_HS:
         uses: OTG
         instances: [OTG_HS_GLOBAL]
         outputs:
-          OTG_HS_EP1_OUT: EP1_OUT
-          OTG_HS_EP1_IN: EP1_IN
-          OTG_HS_WKUP: WKUP
-          OTG_HS: INTR
+          EP1_OUT:
+            pattern: '^OTG_HS_EP1_OUT$'
+          EP1_IN:
+            pattern: '^OTG_HS_EP1_IN$'
+          WKUP:
+            pattern: '^OTG_HS_WKUP$'
+          INTR:
+            pattern: '^OTG_HS$'
       PWR:
         from: STM32F767.PWR
         instances: [PWR]
         outputs:
-          PVD: INTR
+          INTR:
+            pattern: '^PVD$'
         params:
           - {name: has_eiwup, type: bool, default: true, description: Internal wakeup line gated by EIWUP bit (false = always enabled)}
         transforms:
@@ -2873,7 +3063,8 @@ families:
       RCC:
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
         variants:
           F72x_F73x:
             from: STM32F722.RCC
@@ -2888,8 +3079,10 @@ families:
         uses: RTC_V1
         instances: [RTC]
         outputs:
-          RTC_WKUP: WKUP
-          RTC_ALARM: ALARM
+          WKUP:
+            pattern: '^RTC_WKUP$'
+          ALARM:
+            pattern: '^RTC_ALARM$'
       SAI:
         uses: SAI
         instances: [SAI1, SAI2]
@@ -2897,7 +3090,8 @@ families:
         uses: SDIO
         instances: [SDMMC1, SDMMC2]
         outputs:
-          SDMMC1: INTR
+          INTR:
+            pattern: '^SDMMC1$'
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
         uses: SPDIFRX
@@ -2947,14 +3141,8 @@ families:
         uses: USART
         instances: [UART4, UART5, UART7, UART8, USART1, USART2, USART3, USART6]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART3: INTR
-          USART6: INTR
-          UART4: INTR
-          UART5: INTR
-          UART7: INTR
-          UART8: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART3|USART6|UART4|UART5|UART7|UART8)$'
       USBPHYC:
         from: STM32F730.USBPHYC
         instances: [USBPHYC]
@@ -3050,7 +3238,8 @@ families:
         from: STM32G030.ADC
         instances: [ADC]
         outputs:
-          ADC: INTR
+          INTR:
+            pattern: '^ADC$'
       AES:
         uses: AES_V2
         instances: [AES]
@@ -3058,7 +3247,8 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6: INTR
+          INTR:
+            pattern: '^TIM6$'
       CEC:
         uses: CEC
         instances: [HDMI_CEC]
@@ -3074,7 +3264,8 @@ families:
         from: STM32G051.DAC
         instances: [DAC]
         outputs:
-          TIM6_DAC_LPTIM1: INTR
+          INTR:
+            pattern: '^TIM6_DAC_LPTIM1$'
       DBGMCU:
         from: STM32G030.DBG
         instances: [DBG]
@@ -3082,21 +3273,28 @@ families:
         from: STM32G030.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_Channel1: Channel1
-          DMA1_Channel2_3: Channel2_3
-          DMA1_Channel4_5_6_7_DMAMUX_DMA2_Channel1_2_3_4_5: Channel4_5_6_7
+          Channel1:
+            pattern: '^DMA1_Channel1$'
+          Channel2_3:
+            pattern: '^DMA1_Channel2_3$'
+          Channel4_5_6_7:
+            pattern: '^DMA1_Channel4_5_6_7_DMAMUX_DMA2_Channel1_2_3_4_5$'
       DMAMUX:
         from: STM32G030.DMAMUX
         instances: [DMAMUX]
         outputs:
-          DMA1_Channel4_5_6_7_DMAMUX_DMA2_Channel1_2_3_4_5: INTR
+          INTR:
+            pattern: '^DMA1_Channel4_5_6_7_DMAMUX_DMA2_Channel1_2_3_4_5$'
       EXTI:
         from: STM32G030.EXTI
         instances: [EXTI]
         outputs:
-          EXTI0_1: INTR0_1
-          EXTI2_3: INTR2_3
-          EXTI4_15: INTR4_15
+          INTR0_1:
+            pattern: '^EXTI0_1$'
+          INTR2_3:
+            pattern: '^EXTI2_3$'
+          INTR4_15:
+            pattern: '^EXTI4_15$'
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1, FDCAN2]
@@ -3105,7 +3303,8 @@ families:
         from: STM32G030.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF]
@@ -3129,29 +3328,32 @@ families:
           # higher-density parts also USART5/6); each peripheral lists the
           # full composite name in its SVD <interrupt> entry.  Map all the
           # alternates to INTR — dedup at connections-build keeps one entry.
-          USART3_USART4_LPUART1: INTR
-          USART3_USART4_USART5_USART6_LPUART1: INTR
-          USART2_LPUART2: INTR
+          INTR:
+            pattern: '^(USART3_USART4_LPUART1|USART3_USART4_USART5_USART6_LPUART1|USART2_LPUART2)$'
       PWR:
         from: STM32G030.PWR
         instances: [PWR]
         outputs:
-          PVD: INTR
+          INTR:
+            pattern: '^PVD$'
       RCC:
         from: STM32G030.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RNG:
         uses: RNG
         instances: [RNG]
         outputs:
-          AES_RNG: INTR
+          INTR:
+            pattern: '^AES_RNG$'
       RTC:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC_STAMP: INTR
+          INTR:
+            pattern: '^RTC_STAMP$'
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
@@ -3174,11 +3376,8 @@ families:
           # See LPUART block above for the shared-vector pattern.  USART2's
           # raw is USART2_LPUART2 (shared with LPUART2), USART3..6 share the
           # composite vectors below.
-          USART1: INTR
-          USART2: INTR
-          USART2_LPUART2: INTR
-          USART3_USART4_LPUART1: INTR
-          USART3_USART4_USART5_USART6_LPUART1: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART2_LPUART2|USART3_USART4_LPUART1|USART3_USART4_USART5_USART6_LPUART1)$'
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -3240,7 +3439,8 @@ families:
         from: STM32G431.ADC1
         instances: [ADC1, ADC2, ADC3, ADC4, ADC5]
         outputs:
-          ADC1_2: INTR
+          INTR:
+            pattern: '^ADC1_2$'
       ADC_Common:
         from: STM32G431.ADC12_Common
         instances: [ADC12_Common, ADC345_Common]
@@ -3251,14 +3451,18 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6_DACUNDER: INTR
+          INTR:
+            pattern: '^TIM6_DACUNDER$'
       COMP:
         from: STM32G431.COMP
         instances: [COMP]
         outputs:
-          COMP1_2_3: INTR1_2_3
-          COMP4_5_6: INTR4_5_6
-          COMP7: INTR7
+          INTR1_2_3:
+            pattern: '^COMP1_2_3$'
+          INTR4_5_6:
+            pattern: '^COMP4_5_6$'
+          INTR7:
+            pattern: '^COMP7$'
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
@@ -3278,30 +3482,46 @@ families:
         from: STM32G431.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_CH1: CH1
-          DMA1_CH2: CH2
-          DMA1_CH3: CH3
-          DMA1_CH4: CH4
-          DMA1_CH5: CH5
-          DMA1_CH6: CH6
+          CH1:
+            pattern: '^DMA1_CH1$'
+          CH2:
+            pattern: '^DMA1_CH2$'
+          CH3:
+            pattern: '^DMA1_CH3$'
+          CH4:
+            pattern: '^DMA1_CH4$'
+          CH5:
+            pattern: '^DMA1_CH5$'
+          CH6:
+            pattern: '^DMA1_CH6$'
       DMAMUX:
         from: STM32G431.DMAMUX
         instances: [DMAMUX]
         outputs:
-          DMAMUX_OVR: INTR
+          INTR:
+            pattern: '^DMAMUX_OVR$'
       EXTI:
         from: STM32G431.EXTI
         instances: [EXTI]
         outputs:
-          PVD_PVM: PVD_PVM
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI9_5: INTR9_5
-          EXTI15_10: INTR15_10
-          FPU: FPU
+          PVD_PVM:
+            pattern: '^PVD_PVM$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR9_5:
+            pattern: '^EXTI9_5$'
+          INTR15_10:
+            pattern: '^EXTI15_10$'
+          FPU:
+            pattern: '^FPU$'
       FDCAN:
         uses: FDCAN
         instances: [FDCAN, FDCAN1, FDCAN2, FDCAN3]
@@ -3316,7 +3536,8 @@ families:
         from: STM32G474.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
         params:
           - {name: pages, type: int, max: 256, description: Number of flash memory pages}
           - {name: dual_bank, type: bool, default: false, description: Dual-bank flash organization supported}
@@ -3343,7 +3564,8 @@ families:
         uses: USART
         instances: [LPUART1]
         outputs:
-          LPUART: INTR  # SVD raw name omits the trailing 1
+          INTR:
+            pattern: '^LPUART$'
       OPAMP:
         from: STM32G431.OPAMP
         instances: [OPAMP]
@@ -3359,7 +3581,8 @@ families:
         from: STM32G431.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RNG:
         uses: RNG
         instances: [RNG]
@@ -3367,9 +3590,12 @@ families:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC_TAMP_CSS_LSE: TAMP_CSS_LSE
-          RTC_WKUP: WKUP
-          RTC_ALARM: ALARM
+          TAMP_CSS_LSE:
+            pattern: '^RTC_TAMP_CSS_LSE$'
+          WKUP:
+            pattern: '^RTC_WKUP$'
+          ALARM:
+            pattern: '^RTC_ALARM$'
       SAI:
         uses: SAI
         instances: [SAI]
@@ -3389,11 +3615,8 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART3: INTR
-          UART4: INTR
-          UART5: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART3|UART4|UART5)$'
       USB:
         uses: USB_DEV
         instances: [USB_FS_device]
@@ -4777,7 +5000,8 @@ families:
         from: STM32H503.ADC
         instances: [ADC, ADC1, ADC2, ADC2_S, ADC_S]
         outputs:
-          ADC1: INTR
+          INTR:
+            pattern: '^ADC1$'
       ADC_Common:
         from: STM32H523.ADCC
         instances: [ADCC]
@@ -4793,12 +5017,14 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM6_S, TIM7, TIM7_S]
         outputs:
-          TIM6: INTR
+          INTR:
+            pattern: '^TIM6$'
       COMP:
         from: STM32H503.COMP
         instances: [COMP]
         outputs:
-          COMP: INTR
+          INTR:
+            pattern: '^COMP$'
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
@@ -4818,7 +5044,8 @@ families:
         from: STM32H503.DAC
         instances: [DAC]
         outputs:
-          DAC1: INTR
+          INTR:
+            pattern: '^DAC1$'
       DAC_S:
         from: STM32H523.DAC_S
         instances: [DAC_S]
@@ -4847,7 +5074,8 @@ families:
         from: STM32H503.DTS
         instances: [DTS]
         outputs:
-          DTS_WKUP: INTR
+          INTR:
+            pattern: '^DTS_WKUP$'
       DTS_S:
         from: STM32H523.DTS_S
         instances: [DTS_S]
@@ -4858,22 +5086,38 @@ families:
         from: STM32H503.EXTI
         instances: [EXTI]
         outputs:
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI5: INTR5
-          EXTI6: INTR6
-          EXTI7: INTR7
-          EXTI8: INTR8
-          EXTI9: INTR9
-          EXTI10: INTR10
-          EXTI11: INTR11
-          EXTI12: INTR12
-          EXTI13: INTR13
-          EXTI14: INTR14
-          EXTI15: INTR15
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR5:
+            pattern: '^EXTI5$'
+          INTR6:
+            pattern: '^EXTI6$'
+          INTR7:
+            pattern: '^EXTI7$'
+          INTR8:
+            pattern: '^EXTI8$'
+          INTR9:
+            pattern: '^EXTI9$'
+          INTR10:
+            pattern: '^EXTI10$'
+          INTR11:
+            pattern: '^EXTI11$'
+          INTR12:
+            pattern: '^EXTI12$'
+          INTR13:
+            pattern: '^EXTI13$'
+          INTR14:
+            pattern: '^EXTI14$'
+          INTR15:
+            pattern: '^EXTI15$'
       EXTI_S:
         from: STM32H523.EXTI_S
         instances: [EXTI_S]
@@ -4885,7 +5129,8 @@ families:
         from: STM32H523.FLASH_S
         instances: [FLASH_S]
         outputs:
-          FLASH_S: INTR
+          INTR:
+            pattern: '^FLASH_S$'
       FMAC:
         uses: FMAC
         instances: [FMAC]
@@ -4899,7 +5144,8 @@ families:
         from: STM32H503.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       GPDMA:
         uses: GPDMA
         instances: [GPDMA, GPDMA1, GPDMA2, GPDMA2_S, GPDMA_S]
@@ -4922,7 +5168,8 @@ families:
         uses: I3C
         instances: [I3C, I3C1, I3C2, I3C2_S, I3C_S]
         outputs:
-          I3C1_ERR: ERR
+          ERR:
+            pattern: '^I3C1_ERR$'
       ICACHE:
         uses: ICACHE
         instances: [ICACHE]
@@ -4954,7 +5201,8 @@ families:
         from: STM32H533.OTFDEC
         instances: [OTFDEC, OTFDEC1, OTFDEC_S]
         outputs:
-          OTFDEC1: INTR
+          INTR:
+            pattern: '^OTFDEC1$'
       PKA:
         uses: PKA
         instances: [PKA]
@@ -4977,7 +5225,8 @@ families:
         from: STM32H503.RAMCFG
         instances: [RAMCFG]
         outputs:
-          RAMCFG: INTR
+          INTR:
+            pattern: '^RAMCFG$'
       RAMCFG_S:
         from: STM32H523.RAMCFG_S
         instances: [RAMCFG_S]
@@ -4985,7 +5234,8 @@ families:
         from: STM32H503.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RCC_S:
         from: STM32H523.RCC_S
         instances: [RCC_S]
@@ -4999,7 +5249,8 @@ families:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       RTC_S:
         from: STM32H523.RTC_S
         instances: [RTC_S]
@@ -5038,18 +5289,8 @@ families:
         uses: USART
         instances: [UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART8, UART9, USART, USART1, USART10, USART11, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART3: INTR
-          USART6: INTR
-          USART10: INTR
-          USART11: INTR
-          UART4: INTR
-          UART5: INTR
-          UART7: INTR
-          UART8: INTR
-          UART9: INTR
-          UART12: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART3|USART6|USART10|USART11|UART4|UART5|UART7|UART8|UART9|UART12)$'
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -12850,7 +13091,8 @@ families:
         from: STM32H723.ADC1
         instances: [ADC1, ADC2, ADC3]
         outputs:
-          ADC1_2: INTR
+          INTR:
+            pattern: '^ADC1_2$'
         transforms:
           - type: patchAddressBlock
             size: 256
@@ -12870,19 +13112,28 @@ families:
         from: STM32H723.BDMA
         instances: [BDMA, BDMA1, BDMA2]
         outputs:
-          BDMA_CH0: CH0
-          BDMA_CH1: CH1
-          BDMA_CH2: CH2
-          BDMA_CH3: CH3
-          BDMA_CH4: CH4
-          BDMA_CH5: CH5
-          BDMA_CH6: CH6
-          BDMA_CH7: CH7
+          CH0:
+            pattern: '^BDMA_CH0$'
+          CH1:
+            pattern: '^BDMA_CH1$'
+          CH2:
+            pattern: '^BDMA_CH2$'
+          CH3:
+            pattern: '^BDMA_CH3$'
+          CH4:
+            pattern: '^BDMA_CH4$'
+          CH5:
+            pattern: '^BDMA_CH5$'
+          CH6:
+            pattern: '^BDMA_CH6$'
+          CH7:
+            pattern: '^BDMA_CH7$'
       BasicTimer:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6_DAC: INTR
+          INTR:
+            pattern: '^TIM6_DAC$'
       CAN_CCU:
         from: STM32H723.CAN_CCU
         instances: [CAN_CCU]
@@ -12893,7 +13144,8 @@ families:
         from: STM32H723.COMP1
         instances: [COMP1]
         outputs:
-          COMP: INTR
+          INTR:
+            pattern: '^COMP$'
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
@@ -12910,7 +13162,8 @@ families:
         from: STM32H7A3.DAC2
         instances: [DAC, DAC1, DAC2]
         outputs:
-          DAC2: INTR
+          INTR:
+            pattern: '^DAC2$'
       DBGMCU:
         instances: [DBGMCU]
         variants:
@@ -12929,10 +13182,14 @@ families:
         uses: DFSDM
         instances: [DFSDM, DFSDM1, DFSDM2]
         outputs:
-          DFSDM1_FLT0: FLT0
-          DFSDM1_FLT1: FLT1
-          DFSDM1_FLT2: FLT2
-          DFSDM1_FLT3: FLT3
+          FLT0:
+            pattern: '^DFSDM1_FLT0$'
+          FLT1:
+            pattern: '^DFSDM1_FLT1$'
+          FLT2:
+            pattern: '^DFSDM1_FLT2$'
+          FLT3:
+            pattern: '^DFSDM1_FLT3$'
       DLYB:
         uses: DLYB
         instances: [DELAY_Block_SDMMC1, DELAY_Block_SDMMC2, DELAY_Block_QUADSPI, Delay_Block_OCTOSPI1, Delay_Block_OCTOSPI2]
@@ -12940,14 +13197,22 @@ families:
         from: STM32H723.DMA1
         instances: [DMA1, DMA2, DMA2D, DMAMUX1, DMAMUX2]
         outputs:
-          DMA_STR0: STR0
-          DMA_STR1: STR1
-          DMA_STR2: STR2
-          DMA_STR3: STR3
-          DMA_STR4: STR4
-          DMA_STR5: STR5
-          DMA_STR6: STR6
-          DMA1_STR7: STR7
+          STR0:
+            pattern: '^DMA_STR0$'
+          STR1:
+            pattern: '^DMA_STR1$'
+          STR2:
+            pattern: '^DMA_STR2$'
+          STR3:
+            pattern: '^DMA_STR3$'
+          STR4:
+            pattern: '^DMA_STR4$'
+          STR5:
+            pattern: '^DMA_STR5$'
+          STR6:
+            pattern: '^DMA_STR6$'
+          STR7:
+            pattern: '^DMA1_STR7$'
         transforms:
           - {type: createClusterArray, pattern: S(\d+)(\w+), name: S, description: DMA stream}
       DSIHOST:
@@ -12963,32 +13228,45 @@ families:
         from: STM32H723.EXTI
         instances: [EXTI]
         outputs:
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI9_5: INTR9_5
-          EXTI15_10: INTR15_10
-          WKUP: WKUP
-          FPU: FPU
-          ECC_DIAG_IT: ECC_DIAG_IT
-          TEMP_IT: TEMP_IT
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR9_5:
+            pattern: '^EXTI9_5$'
+          INTR15_10:
+            pattern: '^EXTI15_10$'
+          WKUP:
+            pattern: '^WKUP$'
+          FPU:
+            pattern: '^FPU$'
+          ECC_DIAG_IT:
+            pattern: '^ECC_DIAG_IT$'
+          TEMP_IT:
+            pattern: '^TEMP_IT$'
       FDCAN:
         from: STM32H7A3.FDCAN
         instances: [FDCAN, FDCAN1, FDCAN2]
         outputs:
-          FDCAN2_CAL: CAL
-          FDCAN2_IT1: IT1
-          FDCAN1_IT1: IT1
-          FDCAN2_IT0: IT0
-          FDCAN1_IT0: IT0
+          CAL:
+            pattern: '^FDCAN2_CAL$'
+          IT1:
+            pattern: '^(FDCAN2_IT1|FDCAN1_IT1)$'
+          IT0:
+            pattern: '^(FDCAN2_IT0|FDCAN1_IT0)$'
         description: Controller area network with flexible data-rate (Bosch M_CAN)
       FDCAN3:
         from: STM32H723.FDCAN3
         instances: [FDCAN3]
         outputs:
-          FDCAN3_IT0: IT0
-          FDCAN3_IT1: IT1
+          IT0:
+            pattern: '^FDCAN3_IT0$'
+          IT1:
+            pattern: '^FDCAN3_IT1$'
       FMAC:
         uses: FMAC
         instances: [FMAC]
@@ -12998,7 +13276,8 @@ families:
       Flash:
         instances: [FLASH, Flash]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
         transforms:
           - {type: renameRegisters, pattern: ^FLASH_, replacement: ''}
         variants:
@@ -13023,7 +13302,8 @@ families:
         uses: HASH
         instances: [HASH]
         outputs:
-          HASH_RNG: INTR
+          INTR:
+            pattern: '^HASH_RNG$'
       HRTIM:
         uses: HRTIM
         instances: [HRTIM_Master]
@@ -13040,7 +13320,8 @@ families:
         from: STM32H743.HSEM
         instances: [HSEM]
         outputs:
-          HSEM0: INTR
+          INTR:
+            pattern: '^HSEM0$'
         params:
           - {name: semaphores, type: int, default: 32, max: 32, description: Number of hardware semaphores (16 or 32)}
         transforms:
@@ -13071,7 +13352,8 @@ families:
         uses: USART
         instances: [LPUART1]
         outputs:
-          LPUART: INTR  # SVD raw name omits the trailing 1
+          INTR:
+            pattern: '^LPUART$'
       LTDC:
         uses: LTDC
         instances: [LTDC]
@@ -13082,7 +13364,8 @@ families:
         from: STM32H743.MDMA
         instances: [MDMA]
         outputs:
-          MDMA: INTR
+          INTR:
+            pattern: '^MDMA$'
         transforms:
           - {type: renameFields, register: C0ISR, pattern: 0$, replacement: ''}
           - {type: renameFields, register: C0IFCR, pattern: 0$, replacement: ''}
@@ -13097,16 +13380,20 @@ families:
         from: STM32H725.OTFDEC1
         instances: [OTFDEC1, OTFDEC2]
         outputs:
-          OTFDEC1: INTR
-          OTFDEC2: INTR
+          INTR:
+            pattern: '^(OTFDEC1|OTFDEC2)$'
       OTG_HS:
         uses: OTG
         instances: [OTG1_HS_GLOBAL, OTG2_HS_GLOBAL]
         outputs:
-          OTG_HS: INTR
-          OTG_HS_WKUP: WKUP
-          OTG_HS_EP1_IN: EP1_IN
-          OTG_HS_EP1_OUT: EP1_OUT
+          INTR:
+            pattern: '^OTG_HS$'
+          WKUP:
+            pattern: '^OTG_HS_WKUP$'
+          EP1_IN:
+            pattern: '^OTG_HS_EP1_IN$'
+          EP1_OUT:
+            pattern: '^OTG_HS_EP1_OUT$'
       PSSI:
         uses: PSSI
         instances: [PSSI]
@@ -13138,7 +13425,8 @@ families:
         from: STM32H743.RAMECC1
         instances: [RAMECC, RAMECC1, RAMECC2, RAMECC3]
         outputs:
-          ECC_DIAG_IT: INTR
+          INTR:
+            pattern: '^ECC_DIAG_IT$'
         params:
           - {name: monitors, type: int, default: 5, max: 5, description: Number of ECC monitoring units in this RAMECC instance}
         transforms:
@@ -13155,7 +13443,8 @@ families:
       RCC:
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
         variants:
           H73x:
             from: STM32H723.RCC
@@ -13181,14 +13470,18 @@ families:
         uses: RNG
         instances: [RNG]
         outputs:
-          HASH_RNG: INTR
+          INTR:
+            pattern: '^HASH_RNG$'
       RTC:
         uses: RTC_V1
         instances: [RTC]
         outputs:
-          RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
-          RTC_WKUP: WKUP
-          RTC_ALARM: ALARM
+          TAMP_STAMP_CSS_LSE:
+            pattern: '^RTC_TAMP_STAMP_CSS_LSE$'
+          WKUP:
+            pattern: '^RTC_WKUP$'
+          ALARM:
+            pattern: '^RTC_ALARM$'
         variants:
           H7A3_B:
             from: STM32H7A3.RTC
@@ -13212,7 +13505,8 @@ families:
         from: STM32H723.SYSCFG
         instances: [SYSCFG]
         outputs:
-          LPUART: INTR
+          INTR:
+            pattern: '^LPUART$'
         variants:
           H742_H753:
             from: STM32H743.SYSCFG
@@ -13234,16 +13528,8 @@ families:
         # raw==instance to the single canonical no longer fires once non-SVD outputs (TX_DMA/RX_DMA)
         # bring the canonical set above 1.
         outputs:
-          USART2: INTR
-          USART3: INTR
-          USART6: INTR
-          USART10: INTR
-          UART4: INTR
-          UART5: INTR
-          UART7: INTR
-          UART8: INTR
-          UART9: INTR
-          UART10: INTR
+          INTR:
+            pattern: '^(USART2|USART3|USART6|USART10|UART4|UART5|UART7|UART8|UART9|UART10)$'
       VREFBUF:
         uses: VREFBUF
         instances: [VREFBUF]
@@ -13270,11 +13556,11 @@ families:
           USART1: {TX_DMA: [DMAMUX1.42], RX_DMA: [DMAMUX1.41]}
           USART2: {TX_DMA: [DMAMUX1.44], RX_DMA: [DMAMUX1.43]}
           USART3: {TX_DMA: [DMAMUX1.46], RX_DMA: [DMAMUX1.45]}
-          UART4:  {TX_DMA: [DMAMUX1.64], RX_DMA: [DMAMUX1.63]}
-          UART5:  {TX_DMA: [DMAMUX1.66], RX_DMA: [DMAMUX1.65]}
+          UART4: {TX_DMA: [DMAMUX1.64], RX_DMA: [DMAMUX1.63]}
+          UART5: {TX_DMA: [DMAMUX1.66], RX_DMA: [DMAMUX1.65]}
           USART6: {TX_DMA: [DMAMUX1.72], RX_DMA: [DMAMUX1.71]}
-          UART7:  {TX_DMA: [DMAMUX1.80], RX_DMA: [DMAMUX1.79]}
-          UART8:  {TX_DMA: [DMAMUX1.82], RX_DMA: [DMAMUX1.81]}
+          UART7: {TX_DMA: [DMAMUX1.80], RX_DMA: [DMAMUX1.79]}
+          UART8: {TX_DMA: [DMAMUX1.82], RX_DMA: [DMAMUX1.81]}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
@@ -13366,7 +13652,8 @@ families:
         from: STM32H7S.ADC12_common
         instances: [ADC12_common]
         outputs:
-          ADC1_2: INTR
+          INTR:
+            pattern: '^ADC1_2$'
       ADF:
         uses: ADF
         instances: [ADF]
@@ -13374,7 +13661,8 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6: INTR
+          INTR:
+            pattern: '^TIM6$'
       CEC:
         uses: CEC
         instances: [CEC]
@@ -13397,7 +13685,8 @@ families:
         from: STM32H7S.DCMIPP
         instances: [DCMIPP]
         outputs:
-          DCMIPP: INTR
+          INTR:
+            pattern: '^DCMIPP$'
       DLYB:
         uses: DLYB
         instances: [DLYB1, DLYB2]
@@ -13408,7 +13697,8 @@ families:
         from: STM32H7S.DTS
         instances: [DTS]
         outputs:
-          DTS: INTR
+          INTR:
+            pattern: '^DTS$'
       ETH:
         uses: ETH
         instances: [ETH]
@@ -13416,28 +13706,50 @@ families:
         from: STM32H7S.EXTI
         instances: [EXTI]
         outputs:
-          PVD_AVD: PVD_AVD
-          LOOKUP: LOOKUP
-          CACHE_ECC: CACHE_ECC
-          ECC_FPU: ECC_FPU
-          FPU: FPU
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI5: INTR5
-          EXTI6: INTR6
-          EXTI7: INTR7
-          EXTI8: INTR8
-          EXTI9: INTR9
-          EXTI10: INTR10
-          EXTI11: INTR11
-          EXTI12: INTR12
-          EXTI13: INTR13
-          EXTI14: INTR14
-          EXTI15: INTR15
-          WAKEUP_PIN: WAKEUP_PIN
+          PVD_AVD:
+            pattern: '^PVD_AVD$'
+          LOOKUP:
+            pattern: '^LOOKUP$'
+          CACHE_ECC:
+            pattern: '^CACHE_ECC$'
+          ECC_FPU:
+            pattern: '^ECC_FPU$'
+          FPU:
+            pattern: '^FPU$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR5:
+            pattern: '^EXTI5$'
+          INTR6:
+            pattern: '^EXTI6$'
+          INTR7:
+            pattern: '^EXTI7$'
+          INTR8:
+            pattern: '^EXTI8$'
+          INTR9:
+            pattern: '^EXTI9$'
+          INTR10:
+            pattern: '^EXTI10$'
+          INTR11:
+            pattern: '^EXTI11$'
+          INTR12:
+            pattern: '^EXTI12$'
+          INTR13:
+            pattern: '^EXTI13$'
+          INTR14:
+            pattern: '^EXTI14$'
+          INTR15:
+            pattern: '^EXTI15$'
+          WAKEUP_PIN:
+            pattern: '^WAKEUP_PIN$'
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1, FDCAN2]
@@ -13446,7 +13758,8 @@ families:
         from: STM32H7S.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       FMC:
         uses: FMC
         instances: [FMC]
@@ -13454,12 +13767,14 @@ families:
         from: STM32H7S.GFXMMU
         instances: [GFXMMU]
         outputs:
-          GFXMMU: INTR
+          INTR:
+            pattern: '^GFXMMU$'
       GFXTIM:
         from: STM32H7S.GFXTIM
         instances: [GFXTIM]
         outputs:
-          GFXTIM: INTR
+          INTR:
+            pattern: '^GFXTIM$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOM, GPION, GPIOO, GPIOP]
@@ -13476,22 +13791,38 @@ families:
         from: STM32H7S.HPDMA
         instances: [HPDMA]
         outputs:
-          HPDMA1_CH0: CH0
-          HPDMA1_CH1: CH1
-          HPDMA1_CH2: CH2
-          HPDMA1_CH3: CH3
-          HPDMA1_CH4: CH4
-          HPDMA1_CH5: CH5
-          HPDMA1_CH6: CH6
-          HPDMA1_CH7: CH7
-          HPDMA1_CH8: CH8
-          HPDMA1_CH9: CH9
-          HPDMA1_CH10: CH10
-          HPDMA1_CH11: CH11
-          HPDMA1_CH12: CH12
-          HPDMA1_CH13: CH13
-          HPDMA1_CH14: CH14
-          HPDMA1_CH15: CH15
+          CH0:
+            pattern: '^HPDMA1_CH0$'
+          CH1:
+            pattern: '^HPDMA1_CH1$'
+          CH2:
+            pattern: '^HPDMA1_CH2$'
+          CH3:
+            pattern: '^HPDMA1_CH3$'
+          CH4:
+            pattern: '^HPDMA1_CH4$'
+          CH5:
+            pattern: '^HPDMA1_CH5$'
+          CH6:
+            pattern: '^HPDMA1_CH6$'
+          CH7:
+            pattern: '^HPDMA1_CH7$'
+          CH8:
+            pattern: '^HPDMA1_CH8$'
+          CH9:
+            pattern: '^HPDMA1_CH9$'
+          CH10:
+            pattern: '^HPDMA1_CH10$'
+          CH11:
+            pattern: '^HPDMA1_CH11$'
+          CH12:
+            pattern: '^HPDMA1_CH12$'
+          CH13:
+            pattern: '^HPDMA1_CH13$'
+          CH14:
+            pattern: '^HPDMA1_CH14$'
+          CH15:
+            pattern: '^HPDMA1_CH15$'
       I2C:
         uses: I2C
         instances: [I2C1_I3C1, I2C2, I2C3]
@@ -13517,7 +13848,8 @@ families:
         from: STM32H7S.MCE1
         instances: [MCE1, MCE2, MCE3]
         outputs:
-          MCE1: INTR
+          INTR:
+            pattern: '^MCE1$'
       MDIOS:
         uses: MDIOS
         instances: [MDIOS]
@@ -13525,8 +13857,8 @@ families:
         uses: OTG
         instances: [OTG_HS, OTG_FS]
         outputs:
-          OTG_HS: INTR
-          OTG_FS: INTR
+          INTR:
+            pattern: '^(OTG_HS|OTG_FS)$'
       PKA:
         uses: PKA
         instances: [PKA]
@@ -13545,7 +13877,8 @@ families:
         from: STM32H7S.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RNG:
         uses: RNG
         instances: [RNG]
@@ -13553,7 +13886,8 @@ families:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       SAES:
         uses: SAES
         instances: [SAES]
@@ -13572,8 +13906,8 @@ families:
         uses: SDMMC
         instances: [SDMMC1, SDMMC2]
         outputs:
-          SDMMC1: INTR
-          SDMMC2: INTR
+          INTR:
+            pattern: '^(SDMMC1|SDMMC2)$'
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
         uses: SPDIFRX
@@ -13591,7 +13925,9 @@ families:
         uses: USART
         instances: [USART1, USART2, USART3, UART4, UART5, UART7, UART8]
         outputs:
-          USART1: {name: INTR, description: Global interrupt}
+          INTR:
+            description: Global interrupt
+            pattern: '^USART1$'
       VREFBUF:
         uses: VREFBUF
         instances: [VREFBUF]
@@ -13602,7 +13938,8 @@ families:
         uses: XSPI
         instances: [XSPI1, XSPI2]
         outputs:
-          OSPI1: INTR
+          INTR:
+            pattern: '^OSPI1$'
       XSPIM:
         from: STM32H7S.XSPIM1
         instances: [XSPIM1]
@@ -13688,7 +14025,8 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6: INTR
+          INTR:
+            pattern: '^TIM6$'
       CRC:
         uses: CRC
         instances: [CRC]
@@ -13705,9 +14043,12 @@ families:
         from: STM32L0x0.DMA1
         instances: [DMA1]
         outputs:
-          DMA1_Channel1: Channel1
-          DMA1_Channel2_3: Channel2_3
-          DMA1_Channel4_7: Channel4_7
+          Channel1:
+            pattern: '^DMA1_Channel1$'
+          Channel2_3:
+            pattern: '^DMA1_Channel2_3$'
+          Channel4_7:
+            pattern: '^DMA1_Channel4_7$'
       EXTI:
         from: STM32L0x0.EXTI
         instances: [EXTI]
@@ -13715,7 +14056,8 @@ families:
         from: STM32L0x0.Flash
         instances: [Flash]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOH]
@@ -13732,7 +14074,8 @@ families:
         from: STM32L053.LCD
         instances: [LCD]
         outputs:
-          LCD: INTR
+          INTR:
+            pattern: '^LCD$'
       LPTIM:
         uses: LPTIM
         instances: [LPTIM]
@@ -13753,7 +14096,8 @@ families:
       RCC:
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
         variants:
           L0x0:
             from: STM32L0x0.RCC
@@ -13770,7 +14114,8 @@ families:
         uses: RTC_V1
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2]
@@ -13792,9 +14137,8 @@ families:
         uses: USART
         instances: [USART1, USART2, USART4, USART5]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART4_USART5: INTR  # L0 shares one NVIC vector across USART4 + USART5
+          INTR:
+            pattern: '^(USART1|USART2|USART4_USART5)$'
       USB:
         uses: USB_DEV
         instances: [USB_FS]
@@ -13843,7 +14187,8 @@ families:
         from: STM32L100.ADC
         instances: [ADC]
         outputs:
-          ADC1: INTR
+          INTR:
+            pattern: '^ADC1$'
       AES:
         uses: AES_V1
         instances: [AES]
@@ -13851,12 +14196,14 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM7: INTR
+          INTR:
+            pattern: '^TIM7$'
       COMP:
         from: STM32L100.COMP
         instances: [COMP]
         outputs:
-          COMP_ACQ: INTR
+          INTR:
+            pattern: '^COMP_ACQ$'
       CRC:
         from: STM32L100.CRC
         instances: [CRC]
@@ -13864,7 +14211,8 @@ families:
         from: STM32L100.DAC
         instances: [DAC]
         outputs:
-          DAC: INTR
+          INTR:
+            pattern: '^DAC$'
       DBGMCU:
         from: STM32L100.DBGMCU
         instances: [DBGMCU]
@@ -13872,25 +14220,40 @@ families:
         from: STM32L100.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_Channel1: Channel1
-          DMA1_Channel2: Channel2
-          DMA1_Channel3: Channel3
-          DMA1_Channel4: Channel4
-          DMA1_Channel5: Channel5
-          DMA1_Channel6: Channel6
-          DMA1_Channel7: Channel7
+          Channel1:
+            pattern: '^DMA1_Channel1$'
+          Channel2:
+            pattern: '^DMA1_Channel2$'
+          Channel3:
+            pattern: '^DMA1_Channel3$'
+          Channel4:
+            pattern: '^DMA1_Channel4$'
+          Channel5:
+            pattern: '^DMA1_Channel5$'
+          Channel6:
+            pattern: '^DMA1_Channel6$'
+          Channel7:
+            pattern: '^DMA1_Channel7$'
       EXTI:
         from: STM32L100.EXTI
         instances: [EXTI]
         outputs:
-          TAMPER_STAMP: TAMPER_STAMP
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI9_5: INTR9_5
-          EXTI15_10: INTR15_10
+          TAMPER_STAMP:
+            pattern: '^TAMPER_STAMP$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR9_5:
+            pattern: '^EXTI9_5$'
+          INTR15_10:
+            pattern: '^EXTI15_10$'
       FSMC:
         from: STM32L100.FSMC
         instances: [FSMC]
@@ -13898,7 +14261,8 @@ families:
         from: STM32L100.Flash
         instances: [Flash]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
@@ -13909,8 +14273,10 @@ families:
         from: STM32L100.I2C1
         instances: [I2C1, I2C2]
         outputs:
-          I2C1_EV: EV
-          I2C1_ER: ER
+          EV:
+            pattern: '^I2C1_EV$'
+          ER:
+            pattern: '^I2C1_ER$'
       IWDG:
         uses: IWDG
         instances: [IWDG]
@@ -13918,7 +14284,8 @@ families:
         from: STM32L100.LCD
         instances: [LCD]
         outputs:
-          LCD: INTR
+          INTR:
+            pattern: '^LCD$'
       OPAMP:
         from: STM32L100.OPAMP
         instances: [OPAMP]
@@ -13926,12 +14293,14 @@ families:
         from: STM32L100.PWR
         instances: [PWR]
         outputs:
-          PVD: INTR
+          INTR:
+            pattern: '^PVD$'
       RCC:
         from: STM32L100.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RI:
         from: STM32L100.RI
         instances: [RI]
@@ -13939,8 +14308,10 @@ families:
         uses: RTC_V1
         instances: [RTC]
         outputs:
-          RTC_WKUP: WKUP
-          RTC_Alarm: ALARM
+          WKUP:
+            pattern: '^RTC_WKUP$'
+          ALARM:
+            pattern: '^RTC_Alarm$'
       SDIO:
         uses: SDIO
         instances: [SDIO]
@@ -13955,7 +14326,8 @@ families:
         from: STM32L151.UART4
         instances: [UART4, UART5, USART1, USART2, USART3, USART4, USART5]
         outputs:
-          UART4: INTR
+          INTR:
+            pattern: '^UART4$'
         params:
           - {name: synchronous, type: int, default: 2, max: 2, description: 'Synchronous/smartcard capability: 0=none, 2=sync+smartcard'}
       USB:
@@ -14020,7 +14392,8 @@ families:
         from: STM32L412.ADC1
         instances: [ADC1, ADC2, ADC3]
         outputs:
-          ADC1: INTR
+          INTR:
+            pattern: '^ADC1$'
       ADC_Common:
         from: STM32L471.ADC_Common
         instances: [ADC123_Common, ADC12_Common, ADC_Common]
@@ -14031,14 +14404,16 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6_DACUNDER: INTR
+          INTR:
+            pattern: '^TIM6_DACUNDER$'
       COMP:
         from: STM32L412.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
         outputs:
-          COMP: INTR
+          INTR:
+            pattern: '^COMP$'
       CRC:
         uses: CRC
         instances: [CRC]
@@ -14058,21 +14433,32 @@ families:
         uses: DFSDM
         instances: [DFSDM, DFSDM1]
         outputs:
-          DFSDM1_FLT3: FLT3
-          DFSDM1_FLT0: FLT0
-          DFSDM1_FLT1: FLT1
-          DFSDM1_FLT2: FLT2
+          FLT3:
+            pattern: '^DFSDM1_FLT3$'
+          FLT0:
+            pattern: '^DFSDM1_FLT0$'
+          FLT1:
+            pattern: '^DFSDM1_FLT1$'
+          FLT2:
+            pattern: '^DFSDM1_FLT2$'
       DMA:
         from: STM32L412.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_Channel1: Channel1
-          DMA1_Channel2: Channel2
-          DMA1_Channel3: Channel3
-          DMA1_Channel4: Channel4
-          DMA1_Channel5: Channel5
-          DMA1_Channel6: Channel6
-          DMA1_Channel7: Channel7
+          Channel1:
+            pattern: '^DMA1_Channel1$'
+          Channel2:
+            pattern: '^DMA1_Channel2$'
+          Channel3:
+            pattern: '^DMA1_Channel3$'
+          Channel4:
+            pattern: '^DMA1_Channel4$'
+          Channel5:
+            pattern: '^DMA1_Channel5$'
+          Channel6:
+            pattern: '^DMA1_Channel6$'
+          Channel7:
+            pattern: '^DMA1_Channel7$'
       DMA2D:
         uses: DMA2D
         instances: [DMA2D]
@@ -14080,14 +14466,22 @@ families:
         from: STM32L412.EXTI
         instances: [EXTI]
         outputs:
-          PVD_PVM: PVD_PVM
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI9_5: INTR9_5
-          EXTI15_10: INTR15_10
+          PVD_PVM:
+            pattern: '^PVD_PVM$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR9_5:
+            pattern: '^EXTI9_5$'
+          INTR15_10:
+            pattern: '^EXTI15_10$'
       FMC:
         uses: FMC
         instances: [FMC]
@@ -14095,7 +14489,8 @@ families:
         from: STM32L412.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI]
@@ -14115,7 +14510,8 @@ families:
         from: STM32L431.LCD
         instances: [LCD]
         outputs:
-          LCD: INTR
+          INTR:
+            pattern: '^LCD$'
       LPTIM:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2]
@@ -14129,7 +14525,8 @@ families:
         uses: OTG
         instances: [OTG_FS_GLOBAL]
         outputs:
-          OTG_FS: INTR
+          INTR:
+            pattern: '^OTG_FS$'
       PWR:
         from: STM32L412.PWR
         instances: [PWR]
@@ -14140,7 +14537,8 @@ families:
         from: STM32L412.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RNG:
         uses: RNG
         instances: [RNG]
@@ -14148,9 +14546,12 @@ families:
         uses: RTC_V1
         instances: [RTC]
         outputs:
-          RTC_TAMP_STAMP: TAMP_STAMP_CSS_LSE
-          RTC_WKUP: WKUP
-          RTC_Alarm: ALARM
+          TAMP_STAMP_CSS_LSE:
+            pattern: '^RTC_TAMP_STAMP$'
+          WKUP:
+            pattern: '^RTC_WKUP$'
+          ALARM:
+            pattern: '^RTC_Alarm$'
         variants:
           L41x_L42x:
             from: STM32L412.RTC
@@ -14161,7 +14562,8 @@ families:
         uses: SDIO
         instances: [SDMMC, SDMMC1]
         outputs:
-          SDMMC1: INTR
+          INTR:
+            pattern: '^SDMMC1$'
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: LegacySPI
@@ -14179,16 +14581,14 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART3: INTR
-          UART4: INTR
-          UART5: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART3|UART4|UART5)$'
       USB:
         from: STM32L412.USB_FS
         instances: [USB_FS]
         outputs:
-          USB_FS: INTR
+          INTR:
+            pattern: '^USB_FS$'
       VREFBUF:
         uses: VREFBUF
         instances: [VREFBUF]
@@ -14277,7 +14677,8 @@ families:
         from: STM32L4R5.ADC
         instances: [ADC]
         outputs:
-          ADC1_2: INTR
+          INTR:
+            pattern: '^ADC1_2$'
         transforms:
           - type: patchFields
             register: CFGR
@@ -14301,14 +14702,16 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6_DACUNDER: INTR
+          INTR:
+            pattern: '^TIM6_DACUNDER$'
       COMP:
         from: STM32L4P5.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
         outputs:
-          COMP: INTR
+          INTR:
+            pattern: '^COMP$'
       CRC:
         uses: CRC
         instances: [CRC]
@@ -14328,21 +14731,32 @@ families:
         uses: DFSDM
         instances: [DFSDM1]
         outputs:
-          DFSDM1_FLT3: FLT3
-          DFSDM1_FLT0: FLT0
-          DFSDM1_FLT1: FLT1
-          DFSDM1_FLT2: FLT2
+          FLT3:
+            pattern: '^DFSDM1_FLT3$'
+          FLT0:
+            pattern: '^DFSDM1_FLT0$'
+          FLT1:
+            pattern: '^DFSDM1_FLT1$'
+          FLT2:
+            pattern: '^DFSDM1_FLT2$'
       DMA:
         from: STM32L4P5.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_CH1: CH1
-          DMA1_CH2: CH2
-          DMA1_CH3: CH3
-          DMA1_CH4: CH4
-          DMA1_CH5: CH5
-          DMA1_CH6: CH6
-          DMA1_CH7: CH7
+          CH1:
+            pattern: '^DMA1_CH1$'
+          CH2:
+            pattern: '^DMA1_CH2$'
+          CH3:
+            pattern: '^DMA1_CH3$'
+          CH4:
+            pattern: '^DMA1_CH4$'
+          CH5:
+            pattern: '^DMA1_CH5$'
+          CH6:
+            pattern: '^DMA1_CH6$'
+          CH7:
+            pattern: '^DMA1_CH7$'
       DMA2D:
         uses: DMA2D
         instances: [DMA2D]
@@ -14350,7 +14764,8 @@ families:
         from: STM32L4P5.DMAMUX1
         instances: [DMAMUX1]
         outputs:
-          DMAMUX1_OVR: INTR
+          INTR:
+            pattern: '^DMAMUX1_OVR$'
       DSI:
         uses: DSI
         instances: [DSI]
@@ -14358,14 +14773,22 @@ families:
         from: STM32L4P5.EXTI
         instances: [EXTI]
         outputs:
-          PVD_PVM: PVD_PVM
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI9_5: INTR9_5
-          EXTI15_10: INTR15_10
+          PVD_PVM:
+            pattern: '^PVD_PVM$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR9_5:
+            pattern: '^EXTI9_5$'
+          INTR15_10:
+            pattern: '^EXTI15_10$'
       FMC:
         uses: FMC
         instances: [FMC]
@@ -14377,7 +14800,8 @@ families:
       Flash:
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
         variants:
           L4Px_L4Qx:
             from: STM32L4P5.FLASH
@@ -14387,7 +14811,8 @@ families:
         from: STM32L4R5.GFXMMU
         instances: [GFXMMU]
         outputs:
-          GFXMMU: INTR
+          INTR:
+            pattern: '^GFXMMU$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI]
@@ -14415,7 +14840,8 @@ families:
       OCTOSPI:
         instances: [OCTOSPI1, OCTOSPI2]
         outputs:
-          OCTOSPI1: INTR
+          INTR:
+            pattern: '^OCTOSPI1$'
         variants:
           L4Px_L4Qx:
             from: STM32L4P5.OCTOSPI1
@@ -14428,14 +14854,16 @@ families:
         uses: OTG
         instances: [OTG_FS_GLOBAL]
         outputs:
-          OTG_FS: INTR
+          INTR:
+            pattern: '^OTG_FS$'
       PWR:
         from: STM32L4P5.PWR
         instances: [PWR]
       RCC:
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
         variants:
           L4Px_L4Qx:
             from: STM32L4P5.RCC
@@ -14445,14 +14873,18 @@ families:
         uses: RNG
         instances: [RNG]
         outputs:
-          RNG_HASH: INTR
+          INTR:
+            pattern: '^RNG_HASH$'
       RTC:
         uses: RTC_V1
         instances: [RTC]
         outputs:
-          RTC_TAMP_STAMP_CSS_LSE: TAMP_STAMP_CSS_LSE
-          RTC_WKUP: WKUP
-          RTC_ALARM: ALARM
+          TAMP_STAMP_CSS_LSE:
+            pattern: '^RTC_TAMP_STAMP_CSS_LSE$'
+          WKUP:
+            pattern: '^RTC_WKUP$'
+          ALARM:
+            pattern: '^RTC_ALARM$'
       SAI:
         uses: SAI
         instances: [SAI1, SAI2]
@@ -14460,7 +14892,8 @@ families:
         uses: SDMMC
         instances: [SDMMC1, SDMMC2]
         outputs:
-          SDMMC1: INTR
+          INTR:
+            pattern: '^SDMMC1$'
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: LegacySPI
@@ -14543,14 +14976,16 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6: INTR
+          INTR:
+            pattern: '^TIM6$'
       COMP:
         from: STM32L552.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
         outputs:
-          COMP: INTR
+          INTR:
+            pattern: '^COMP$'
       CRC:
         uses: CRC
         instances: [CRC]
@@ -14561,7 +14996,8 @@ families:
         from: STM32L552.DAC
         instances: [DAC]
         outputs:
-          DAC: INTR
+          INTR:
+            pattern: '^DAC$'
       DBGMCU:
         from: STM32L552.DBGMCU
         instances: [DBGMCU]
@@ -14569,49 +15005,80 @@ families:
         uses: DFSDM
         instances: [DFSDM1]
         outputs:
-          DFSDM1_FLT0: FLT0
-          DFSDM1_FLT1: FLT1
-          DFSDM1_FLT2: FLT2
-          DFSDM1_FLT3: FLT3
+          FLT0:
+            pattern: '^DFSDM1_FLT0$'
+          FLT1:
+            pattern: '^DFSDM1_FLT1$'
+          FLT2:
+            pattern: '^DFSDM1_FLT2$'
+          FLT3:
+            pattern: '^DFSDM1_FLT3$'
       DMA:
         from: STM32L552.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_Channel1: Channel1
-          DMA1_Channel2: Channel2
-          DMA1_Channel3: Channel3
-          DMA1_Channel4: Channel4
-          DMA1_Channel5: Channel5
-          DMA1_Channel6: Channel6
-          DMA1_Channel7: Channel7
-          DMA1_Channel8: Channel8
+          Channel1:
+            pattern: '^DMA1_Channel1$'
+          Channel2:
+            pattern: '^DMA1_Channel2$'
+          Channel3:
+            pattern: '^DMA1_Channel3$'
+          Channel4:
+            pattern: '^DMA1_Channel4$'
+          Channel5:
+            pattern: '^DMA1_Channel5$'
+          Channel6:
+            pattern: '^DMA1_Channel6$'
+          Channel7:
+            pattern: '^DMA1_Channel7$'
+          Channel8:
+            pattern: '^DMA1_Channel8$'
       DMAMUX:
         from: STM32L552.DMAMUX1
         instances: [DMAMUX1]
         outputs:
-          DMAMUX1_OVR: OVR
-          DMAMUX1_OVR_S: OVR_S
+          OVR:
+            pattern: '^DMAMUX1_OVR$'
+          OVR_S:
+            pattern: '^DMAMUX1_OVR_S$'
       EXTI:
         from: STM32L552.EXTI
         instances: [EXTI]
         outputs:
-          PVD_PVM: PVD_PVM
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI5: INTR5
-          EXTI6: INTR6
-          EXTI7: INTR7
-          EXTI8: INTR8
-          EXTI9: INTR9
-          EXTI10: INTR10
-          EXTI11: INTR11
-          EXTI12: INTR12
-          EXTI13: INTR13
-          EXTI14: INTR14
-          EXTI15: INTR15
+          PVD_PVM:
+            pattern: '^PVD_PVM$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR5:
+            pattern: '^EXTI5$'
+          INTR6:
+            pattern: '^EXTI6$'
+          INTR7:
+            pattern: '^EXTI7$'
+          INTR8:
+            pattern: '^EXTI8$'
+          INTR9:
+            pattern: '^EXTI9$'
+          INTR10:
+            pattern: '^EXTI10$'
+          INTR11:
+            pattern: '^EXTI11$'
+          INTR12:
+            pattern: '^EXTI12$'
+          INTR13:
+            pattern: '^EXTI13$'
+          INTR14:
+            pattern: '^EXTI14$'
+          INTR15:
+            pattern: '^EXTI15$'
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1]
@@ -14623,8 +15090,10 @@ families:
         from: STM32L552.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
-          FLASH_S: S
+          INTR:
+            pattern: '^FLASH$'
+          S:
+            pattern: '^FLASH_S$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH]
@@ -14644,8 +15113,10 @@ families:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3]
         outputs:
-          LPTIM1: INTR
-          LPTIM2: INTR2
+          INTR:
+            pattern: '^LPTIM1$'
+          INTR2:
+            pattern: '^LPTIM2$'
       LPUART:
         uses: USART
         instances: [LPUART1]
@@ -14659,7 +15130,8 @@ families:
         from: STM32L562.OTFDEC1
         instances: [OTFDEC1]
         outputs:
-          OTFDEC1: INTR
+          INTR:
+            pattern: '^OTFDEC1$'
       PKA:
         uses: PKA
         instances: [PKA]
@@ -14670,8 +15142,10 @@ families:
         from: STM32L552.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
-          RCC_S: S
+          INTR:
+            pattern: '^RCC$'
+          S:
+            pattern: '^RCC_S$'
       RNG:
         uses: RNG
         instances: [RNG]
@@ -14679,8 +15153,10 @@ families:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC: INTR
-          RTC_S: S
+          INTR:
+            pattern: '^RTC$'
+          S:
+            pattern: '^RTC_S$'
       SAI:
         uses: SAI
         instances: [SAI1, SAI2]
@@ -14707,11 +15183,8 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART3: INTR
-          UART4: INTR
-          UART5: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART3|UART4|UART5)$'
       USB:
         uses: USB_DEV
         instances: [USB]
@@ -14771,7 +15244,8 @@ families:
         from: STM32N645.ADC12
         instances: [ADC12]
         outputs:
-          ADC12: INTR
+          INTR:
+            pattern: '^ADC12$'
       ADF:
         uses: ADF
         instances: [ADF]
@@ -14779,8 +15253,8 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7, TIM18]
         outputs:
-          TIM6: INTR
-          TIM18: INTR
+          INTR:
+            pattern: '^(TIM6|TIM18)$'
       CRC:
         uses: CRC
         instances: [CRC]
@@ -14791,7 +15265,8 @@ families:
         from: STM32N645.CSI
         instances: [CSI]
         outputs:
-          CSI_DBG: INTR
+          INTR:
+            pattern: '^CSI_DBG$'
       DBGMCU:
         from: STM32N645.DBGMCU
         instances: [DBGMCU]
@@ -14802,7 +15277,8 @@ families:
         from: STM32N645.DCMIPP
         instances: [DCMIPP]
         outputs:
-          DCMIPP: INTR
+          INTR:
+            pattern: '^DCMIPP$'
       DMA2D:
         uses: DMA2D
         instances: [DMA2D]
@@ -14810,70 +15286,109 @@ families:
         from: STM32N645.DTS
         instances: [DTS]
         outputs:
-          DTS: INTR
+          INTR:
+            pattern: '^DTS$'
       ETH:
         from: STM32N645.ETH
         instances: [ETH]
         outputs:
-          ETH1: INTR
+          INTR:
+            pattern: '^ETH1$'
       EXTI:
         from: STM32N645.EXTI
         instances: [EXTI]
         outputs:
-          PVD_PVM: PVD_PVM
-          LOCKUP: LOCKUP
-          CACHE_ECC: CACHE_ECC
-          TCM_ECC: TCM_ECC
-          BCK_ECC: BCK_ECC
-          FPU: FPU
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI5: INTR5
-          EXTI6: INTR6
-          EXTI7: INTR7
-          EXTI8: INTR8
-          EXTI9: INTR9
-          EXTI10: INTR10
-          EXTI11: INTR11
-          EXTI12: INTR12
-          EXTI13: INTR13
-          EXTI14: INTR14
-          EXTI15: INTR15
-          PAHB_ERR: PAHB_ERR
-          NPU_end_of_epoch: NPU_end_of_epoch
-          NPU1: NPU1
-          NPU2: NPU2
-          NPU3: NPU3
-          NPUCACHE: NPUCACHE
-          WAKEUP_PIN: WAKEUP_PIN
-          CTI0: CTI0
-          CTI1: CTI1
+          PVD_PVM:
+            pattern: '^PVD_PVM$'
+          LOCKUP:
+            pattern: '^LOCKUP$'
+          CACHE_ECC:
+            pattern: '^CACHE_ECC$'
+          TCM_ECC:
+            pattern: '^TCM_ECC$'
+          BCK_ECC:
+            pattern: '^BCK_ECC$'
+          FPU:
+            pattern: '^FPU$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR5:
+            pattern: '^EXTI5$'
+          INTR6:
+            pattern: '^EXTI6$'
+          INTR7:
+            pattern: '^EXTI7$'
+          INTR8:
+            pattern: '^EXTI8$'
+          INTR9:
+            pattern: '^EXTI9$'
+          INTR10:
+            pattern: '^EXTI10$'
+          INTR11:
+            pattern: '^EXTI11$'
+          INTR12:
+            pattern: '^EXTI12$'
+          INTR13:
+            pattern: '^EXTI13$'
+          INTR14:
+            pattern: '^EXTI14$'
+          INTR15:
+            pattern: '^EXTI15$'
+          PAHB_ERR:
+            pattern: '^PAHB_ERR$'
+          NPU_end_of_epoch:
+            pattern: '^NPU_end_of_epoch$'
+          NPU1:
+            pattern: '^NPU1$'
+          NPU2:
+            pattern: '^NPU2$'
+          NPU3:
+            pattern: '^NPU3$'
+          NPUCACHE:
+            pattern: '^NPUCACHE$'
+          WAKEUP_PIN:
+            pattern: '^WAKEUP_PIN$'
+          CTI0:
+            pattern: '^CTI0$'
+          CTI1:
+            pattern: '^CTI1$'
       FDCAN:
         from: STM32N645.FDCAN1
         instances: [FDCAN1, FDCAN2, FDCAN3]
         outputs:
-          FDCAN1_IT0: IT0
-          FDCAN1_IT1: IT1
-          FDCAN_CU: CU
+          IT0:
+            pattern: '^FDCAN1_IT0$'
+          IT1:
+            pattern: '^FDCAN1_IT1$'
+          CU:
+            pattern: '^FDCAN_CU$'
         description: Controller area network with flexible data-rate (Bosch M_CAN)
       FMC:
         from: STM32N645.FMC1
         instances: [FMC1]
         outputs:
-          FMC: INTR
+          INTR:
+            pattern: '^FMC$'
       GFXMMU:
         from: STM32N645.GFXMMU
         instances: [GFXMMU]
         outputs:
-          GFXMMU: INTR
+          INTR:
+            pattern: '^GFXMMU$'
       GFXTIM:
         from: STM32N645.GFXTIM
         instances: [GFXTIM]
         outputs:
-          GFXTIM: INTR
+          INTR:
+            pattern: '^GFXTIM$'
       GPDMA:
         uses: GPDMA
         instances: [GPDMA]
@@ -14890,22 +15405,38 @@ families:
         from: STM32N645.HPDMA
         instances: [HPDMA]
         outputs:
-          HPDMA1_CH0: CH0
-          HPDMA1_CH1: CH1
-          HPDMA1_CH2: CH2
-          HPDMA1_CH3: CH3
-          HPDMA1_CH4: CH4
-          HPDMA1_CH5: CH5
-          HPDMA1_CH6: CH6
-          HPDMA1_CH7: CH7
-          HPDMA1_CH8: CH8
-          HPDMA1_CH9: CH9
-          HPDMA1_CH10: CH10
-          HPDMA1_CH11: CH11
-          HPDMA1_CH12: CH12
-          HPDMA1_CH13: CH13
-          HPDMA1_CH14: CH14
-          HPDMA1_CH15: CH15
+          CH0:
+            pattern: '^HPDMA1_CH0$'
+          CH1:
+            pattern: '^HPDMA1_CH1$'
+          CH2:
+            pattern: '^HPDMA1_CH2$'
+          CH3:
+            pattern: '^HPDMA1_CH3$'
+          CH4:
+            pattern: '^HPDMA1_CH4$'
+          CH5:
+            pattern: '^HPDMA1_CH5$'
+          CH6:
+            pattern: '^HPDMA1_CH6$'
+          CH7:
+            pattern: '^HPDMA1_CH7$'
+          CH8:
+            pattern: '^HPDMA1_CH8$'
+          CH9:
+            pattern: '^HPDMA1_CH9$'
+          CH10:
+            pattern: '^HPDMA1_CH10$'
+          CH11:
+            pattern: '^HPDMA1_CH11$'
+          CH12:
+            pattern: '^HPDMA1_CH12$'
+          CH13:
+            pattern: '^HPDMA1_CH13$'
+          CH14:
+            pattern: '^HPDMA1_CH14$'
+          CH15:
+            pattern: '^HPDMA1_CH15$'
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4]
@@ -14928,13 +15459,20 @@ families:
         from: STM32N645.LTDC
         instances: [LTDC]
         outputs:
-          LTDC_LO: LO
-          LTDC_LO_ERR: LO_ERR
-          LTDC_UP: UP
-          LTDC_UP_ERR: UP_ERR
-          GPU2D: GPU2D
-          GPU2D_ERROR: GPU2D_ERROR
-          GPU_CACHE: GPU_CACHE
+          LO:
+            pattern: '^LTDC_LO$'
+          LO_ERR:
+            pattern: '^LTDC_LO_ERR$'
+          UP:
+            pattern: '^LTDC_UP$'
+          UP_ERR:
+            pattern: '^LTDC_UP_ERR$'
+          GPU2D:
+            pattern: '^GPU2D$'
+          GPU2D_ERROR:
+            pattern: '^GPU2D_ERROR$'
+          GPU_CACHE:
+            pattern: '^GPU_CACHE$'
       MDF:
         uses: MDF
         instances: [MDF1]
@@ -14945,7 +15483,8 @@ families:
         uses: OTG
         instances: [OTG1, OTG2]
         outputs:
-          OTG1: INTR
+          INTR:
+            pattern: '^OTG1$'
       PKA:
         uses: PKA
         instances: [PKA]
@@ -14962,7 +15501,8 @@ families:
         from: STM32N645.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RNG:
         uses: RNG
         instances: [RNG]
@@ -14970,7 +15510,8 @@ families:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       SAES:
         uses: SAES
         instances: [SAES]
@@ -14981,7 +15522,8 @@ families:
         uses: SDMMC
         instances: [SDMMC1, SDMMC2]
         outputs:
-          SDMMC1: INTR
+          INTR:
+            pattern: '^SDMMC1$'
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPDIFRX:
         uses: SPDIFRX
@@ -15002,12 +15544,15 @@ families:
         uses: USART
         instances: [UART4, UART5, UART7, UART8, UART9, USART1, USART10, USART2, USART3, USART6]
         outputs:
-          UART4: {name: INTR, description: Global interrupt}
+          INTR:
+            description: Global interrupt
+            pattern: '^UART4$'
       VENC:
         from: STM32N645.VENC
         instances: [VENC]
         outputs:
-          VENC: INTR
+          INTR:
+            pattern: '^VENC$'
       VREFBUF:
         uses: VREFBUF
         instances: [VREFBUF]
@@ -15018,7 +15563,8 @@ families:
         uses: XSPI
         instances: [XSPI1, XSPI2, XSPI3]
         outputs:
-          XSPI1: INTR
+          INTR:
+            pattern: '^XSPI1$'
       XSPIM:
         from: STM32N645.XSPIM
         instances: [XSPIM]
@@ -15085,7 +15631,8 @@ families:
         from: STM32U031.ADC
         instances: [ADC]
         outputs:
-          ADC_COMP: INTR
+          INTR:
+            pattern: '^ADC_COMP$'
       AES:
         uses: AES_V3
         instances: [AES]
@@ -15093,7 +15640,8 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6_DAC_LPTIM1: INTR
+          INTR:
+            pattern: '^TIM6_DAC_LPTIM1$'
       COMP:
         from: STM32U083.COMP
         instances: [COMP, COMP1]
@@ -15115,9 +15663,12 @@ families:
         from: STM32U031.DMA1
         instances: [DMA1, DMA2]
         outputs:
-          DMA1_CHannel1: CHannel1
-          DMA1_Channel2_3: Channel2_3
-          DMA1_Channel4_5_6_7: Channel4_5_6_7
+          CHannel1:
+            pattern: '^DMA1_CHannel1$'
+          Channel2_3:
+            pattern: '^DMA1_Channel2_3$'
+          Channel4_5_6_7:
+            pattern: '^DMA1_Channel4_5_6_7$'
       DMAMUX:
         from: STM32U031.DMAMUX
         instances: [DMAMUX]
@@ -15125,15 +15676,20 @@ families:
         from: STM32U031.EXTI
         instances: [EXTI]
         outputs:
-          PVD_PVM: PVD_PVM
-          EXTI0_1: INTR0_1
-          EXTI2_3: INTR2_3
-          EXTI4_15: INTR4_15
+          PVD_PVM:
+            pattern: '^PVD_PVM$'
+          INTR0_1:
+            pattern: '^EXTI0_1$'
+          INTR2_3:
+            pattern: '^EXTI2_3$'
+          INTR4_15:
+            pattern: '^EXTI4_15$'
       Flash:
         from: STM32U031.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF]
@@ -15150,7 +15706,8 @@ families:
         from: STM32U073.LCD
         instances: [LCD]
         outputs:
-          LCD: INTR
+          INTR:
+            pattern: '^LCD$'
       LPTIM:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3]
@@ -15167,7 +15724,8 @@ families:
         from: STM32U073.RCC
         instances: [RCC]
         outputs:
-          RCC_CRS: INTR
+          INTR:
+            pattern: '^RCC_CRS$'
       RNG:
         uses: RNG
         instances: [RNG]
@@ -15175,7 +15733,8 @@ families:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC_TAMP: INTR
+          INTR:
+            pattern: '^RTC_TAMP$'
       SPI:
         uses: LegacySPI
         instances: [SPI1, SPI2, SPI3]
@@ -15195,11 +15754,8 @@ families:
           # U0 shares NVIC vectors across USART/LPUART pairs.  USART1
           # is the only standalone one; USART2..4 each share with one
           # or two LPUARTs.
-          USART1: INTR
-          USART2_LPUART2: INTR
-          USART3_LPUART1: INTR
-          USART4: INTR
-          USART4_LPUART3: INTR
+          INTR:
+            pattern: '^(USART1|USART2_LPUART2|USART3_LPUART1|USART4|USART4_LPUART3)$'
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -15250,7 +15806,8 @@ families:
         from: STM32U375.ADC1
         instances: [ADC1, ADC2]
         outputs:
-          ADC1: INTR
+          INTR:
+            pattern: '^ADC1$'
       ADC_Common:
         from: STM32U375.ADC12
         instances: [ADC12]
@@ -15264,7 +15821,8 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6: INTR
+          INTR:
+            pattern: '^TIM6$'
       CCB:
         from: STM32U375.CCB
         instances: [CCB]
@@ -15274,7 +15832,8 @@ families:
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
         outputs:
-          COMP: INTR
+          INTR:
+            pattern: '^COMP$'
       CRC:
         uses: CRC
         instances: [CRC]
@@ -15285,7 +15844,8 @@ families:
         from: STM32U375.DAC
         instances: [DAC]
         outputs:
-          DAC1: INTR
+          INTR:
+            pattern: '^DAC1$'
       DBGMCU:
         from: STM32U375.DBGMCU
         instances: [DBGMCU]
@@ -15296,24 +15856,42 @@ families:
         from: STM32U375.ExTI
         instances: [ExTI]
         outputs:
-          PVD_PVM: PVD_PVM
-          ExTI0: INTR0
-          ExTI1: INTR1
-          ExTI2: INTR2
-          ExTI3: INTR3
-          ExTI4: INTR4
-          ExTI5: INTR5
-          ExTI6: INTR6
-          ExTI7: INTR7
-          ExTI8: INTR8
-          ExTI9: INTR9
-          ExTI10: INTR10
-          ExTI11: INTR11
-          ExTI12: INTR12
-          ExTI13: INTR13
-          ExTI14: INTR14
-          ExTI15: INTR15
-          FPU: FPU
+          PVD_PVM:
+            pattern: '^PVD_PVM$'
+          INTR0:
+            pattern: '^ExTI0$'
+          INTR1:
+            pattern: '^ExTI1$'
+          INTR2:
+            pattern: '^ExTI2$'
+          INTR3:
+            pattern: '^ExTI3$'
+          INTR4:
+            pattern: '^ExTI4$'
+          INTR5:
+            pattern: '^ExTI5$'
+          INTR6:
+            pattern: '^ExTI6$'
+          INTR7:
+            pattern: '^ExTI7$'
+          INTR8:
+            pattern: '^ExTI8$'
+          INTR9:
+            pattern: '^ExTI9$'
+          INTR10:
+            pattern: '^ExTI10$'
+          INTR11:
+            pattern: '^ExTI11$'
+          INTR12:
+            pattern: '^ExTI12$'
+          INTR13:
+            pattern: '^ExTI13$'
+          INTR14:
+            pattern: '^ExTI14$'
+          INTR15:
+            pattern: '^ExTI15$'
+          FPU:
+            pattern: '^FPU$'
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1]
@@ -15322,7 +15900,8 @@ families:
         from: STM32U375.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
+          INTR:
+            pattern: '^FLASH$'
       GPDMA:
         uses: GPDMA
         instances: [GPDMA1]
@@ -15368,27 +15947,32 @@ families:
         from: STM32U375.PWR
         instances: [PWR]
         outputs:
-          PWR: INTR
+          INTR:
+            pattern: '^PWR$'
       RAMCFG:
         from: STM32U375.RAMCFG
         instances: [RAMCFG]
         outputs:
-          RAMCFG: INTR
+          INTR:
+            pattern: '^RAMCFG$'
       RCC:
         from: STM32U375.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
+          INTR:
+            pattern: '^RCC$'
       RNG:
         from: STM32U375.RNG
         instances: [RNG]
         outputs:
-          RNG: INTR
+          INTR:
+            pattern: '^RNG$'
       RTC:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC: INTR
+          INTR:
+            pattern: '^RTC$'
       SAES:
         uses: SAES
         instances: [SAES]
@@ -15415,10 +15999,8 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART3]
         outputs:
-          USART1: INTR
-          USART3: INTR
-          UART4: INTR
-          UART5: INTR
+          INTR:
+            pattern: '^(USART1|USART3|UART4|UART5)$'
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -15485,7 +16067,8 @@ families:
         from: STM32U535.ADC1
         instances: [ADC1, ADC2, ADC4]
         outputs:
-          ADC12: INTR
+          INTR:
+            pattern: '^ADC12$'
       ADC_Common:
         from: STM32U5Fx.ADC12
         instances: [ADC12, ADC12_Common]
@@ -15499,14 +16082,16 @@ families:
         uses: BasicTimer
         instances: [TIM6, TIM7]
         outputs:
-          TIM6: INTR
+          INTR:
+            pattern: '^TIM6$'
       COMP:
         from: STM32U535.COMP
         instances: [COMP]
         transforms:
           - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
         outputs:
-          COMP: INTR
+          INTR:
+            pattern: '^COMP$'
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
@@ -15520,7 +16105,8 @@ families:
         from: STM32U535.DAC1
         instances: [DAC1]
         outputs:
-          DAC1: INTR
+          INTR:
+            pattern: '^DAC1$'
       DBGMCU:
         from: STM32U5Fx.DBGMCU
         instances: [DBGMCU]
@@ -15543,33 +16129,55 @@ families:
         from: STM32U599.DSI
         instances: [DSI]
         outputs:
-          DSIHOST: INTR
+          INTR:
+            pattern: '^DSIHOST$'
         description: MIPI DSI host controller (Synopsys DesignWare)
       EXTI:
         from: STM32U535.EXTI
         instances: [EXTI]
         outputs:
-          PVD_PVM: PVD_PVM
-          EXTI0: INTR0
-          EXTI1: INTR1
-          EXTI2: INTR2
-          EXTI3: INTR3
-          EXTI4: INTR4
-          EXTI5: INTR5
-          EXTI6: INTR6
-          EXTI7: INTR7
-          EXTI8: INTR8
-          EXTI9: INTR9
-          EXTI10: INTR10
-          EXTI11: INTR11
-          EXTI12: INTR12
-          EXTI13: INTR13
-          EXTI14: INTR14
-          EXTI15: INTR15
-          FPU: FPU
-          LSECSSD: LSECSSD
-          GPU2D_IRQ: GPU2D_IRQ
-          GPU2D_IRQSYS: GPU2D_IRQSYS
+          PVD_PVM:
+            pattern: '^PVD_PVM$'
+          INTR0:
+            pattern: '^EXTI0$'
+          INTR1:
+            pattern: '^EXTI1$'
+          INTR2:
+            pattern: '^EXTI2$'
+          INTR3:
+            pattern: '^EXTI3$'
+          INTR4:
+            pattern: '^EXTI4$'
+          INTR5:
+            pattern: '^EXTI5$'
+          INTR6:
+            pattern: '^EXTI6$'
+          INTR7:
+            pattern: '^EXTI7$'
+          INTR8:
+            pattern: '^EXTI8$'
+          INTR9:
+            pattern: '^EXTI9$'
+          INTR10:
+            pattern: '^EXTI10$'
+          INTR11:
+            pattern: '^EXTI11$'
+          INTR12:
+            pattern: '^EXTI12$'
+          INTR13:
+            pattern: '^EXTI13$'
+          INTR14:
+            pattern: '^EXTI14$'
+          INTR15:
+            pattern: '^EXTI15$'
+          FPU:
+            pattern: '^FPU$'
+          LSECSSD:
+            pattern: '^LSECSSD$'
+          GPU2D_IRQ:
+            pattern: '^GPU2D_IRQ$'
+          GPU2D_IRQSYS:
+            pattern: '^GPU2D_IRQSYS$'
       FDCAN:
         uses: FDCAN
         instances: [FDCAN1, FDCAN1_RAM]
@@ -15584,19 +16192,24 @@ families:
         from: STM32U5Fx.FLASH
         instances: [FLASH]
         outputs:
-          FLASH: INTR
-          FLASH_S: S
-          USB: USB
+          INTR:
+            pattern: '^FLASH$'
+          S:
+            pattern: '^FLASH_S$'
+          USB:
+            pattern: '^USB$'
       GFXMMU:
         from: STM32U599.GFXMMU
         instances: [GFXMMU]
         outputs:
-          GFXMMU: INTR
+          INTR:
+            pattern: '^GFXMMU$'
       GFXTIM:
         from: STM32U5Fx.GFXTIM
         instances: [GFXTIM]
         outputs:
-          GFXTIM: INTR
+          INTR:
+            pattern: '^GFXTIM$'
       GPDMA:
         uses: GPDMA
         instances: [GPDMA1]
@@ -15619,7 +16232,8 @@ families:
         from: STM32U535.ICache
         instances: [ICache]
         outputs:
-          ICACHE: INTR
+          INTR:
+            pattern: '^ICACHE$'
       IWDG:
         uses: IWDG
         instances: [IWDG]
@@ -15630,10 +16244,14 @@ families:
         from: STM32U5Fx.LPDMA1
         instances: [LPDMA1]
         outputs:
-          LPDMA1_CH0: CH0
-          LPDMA1_CH1: CH1
-          LPDMA1_CH2: CH2
-          LPDMA1_CH3: CH3
+          CH0:
+            pattern: '^LPDMA1_CH0$'
+          CH1:
+            pattern: '^LPDMA1_CH1$'
+          CH2:
+            pattern: '^LPDMA1_CH2$'
+          CH3:
+            pattern: '^LPDMA1_CH3$'
       LPGPIO:
         from: STM32U5Fx.LPGPIO1
         instances: [LPGPIO1]
@@ -15659,17 +16277,20 @@ families:
         from: STM32U5Gx.OTFDEC1
         instances: [OTFDEC1, OTFDEC2]
         outputs:
-          OTFDEC1: INTR
+          INTR:
+            pattern: '^OTFDEC1$'
       OTG_FS:
         uses: OTG
         instances: [OTG_FS]
         outputs:
-          OTG_FS: INTR
+          INTR:
+            pattern: '^OTG_FS$'
       OTG_HS:
         uses: OTG
         instances: [OTG_HS]
         outputs:
-          OTG_HS: INTR
+          INTR:
+            pattern: '^OTG_HS$'
       PKA:
         uses: PKA
         instances: [PKA]
@@ -15680,18 +16301,22 @@ families:
         from: STM32U5Fx.PWR
         instances: [PWR]
         outputs:
-          PWR_S3WU: INTR
+          INTR:
+            pattern: '^PWR_S3WU$'
       RAMCFG:
         from: STM32U5Fx.RAMCFG
         instances: [RAMCFG]
         outputs:
-          RAMCFG: INTR
+          INTR:
+            pattern: '^RAMCFG$'
       RCC:
         from: STM32U535.RCC
         instances: [RCC]
         outputs:
-          RCC: INTR
-          RCC_S: S
+          INTR:
+            pattern: '^RCC$'
+          S:
+            pattern: '^RCC_S$'
       RNG:
         uses: RNG
         instances: [RNG]
@@ -15699,8 +16324,10 @@ families:
         uses: RTC_V2
         instances: [RTC]
         outputs:
-          RTC: INTR
-          RTC_S: S
+          INTR:
+            pattern: '^RTC$'
+          S:
+            pattern: '^RTC_S$'
       SAES:
         uses: SAES
         instances: [SAES]
@@ -15730,12 +16357,8 @@ families:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3, USART6]
         outputs:
-          USART1: INTR
-          USART2: INTR
-          USART3: INTR
-          USART6: INTR
-          UART4: INTR
-          UART5: INTR
+          INTR:
+            pattern: '^(USART1|USART2|USART3|USART6|UART4|UART5)$'
       VREFBUF:
         uses: VREFBUF
         instances: [VREFBUF]

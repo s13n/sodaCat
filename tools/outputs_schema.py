@@ -4,14 +4,23 @@ Both the family-config interpreter (`extractors/generate_models.py`) and
 the SVD processor (`tools/svd.py`) need to resolve SVD raw interrupt
 names to canonical output names against the same configured outputs
 map.  The map can use either of two schemas — old SVD-raw-keyed or new
-canonical-keyed (see `_is_new_outputs_schema` for detection details).
+canonical-keyed (see `is_new_outputs_schema` for detection details).
 These helpers hide the schema difference behind a uniform list of
 `(canonical, description, pattern)` triples.
 
 `pattern` semantics inside a triple:
-    None: never matches (non-SVD output / opt-out).
+    None: never matches (non-SVD output, or no SVD source).
     str:  regex matched against SVD raw names via `re.fullmatch`.
-          Default '.*' (match everything) when omitted in new schema.
+          Use '.*' to opt into match-everything.
+
+In new-schema entries, omitting `pattern:` (or writing `pattern: ~`)
+yields pattern=None — i.e. the canonical is declared as an available
+output but isn't sourced from any SVD interrupt.  This is the safe
+default: a non-SVD output (DMA request, wakeup line) reads as just
+`<CANONICAL>:` or `<CANONICAL>: {description: ...}` without needing
+an explicit opt-out marker.  Match-everything is opt-in via
+`pattern: '.*'` when the author has confirmed every SVD raw on the
+block legitimately collapses to the one canonical.
 """
 
 import re
@@ -52,13 +61,10 @@ def normalize_outputs(output_map):
         for canonical, spec in output_map.items():
             if spec is None:
                 description = ''
-                pattern = '.*'
+                pattern = None  # default: no SVD source
             elif isinstance(spec, dict):
                 description = spec.get('description', '') or ''
-                if 'pattern' in spec:
-                    pattern = spec['pattern']  # may be None for never-match
-                else:
-                    pattern = '.*'
+                pattern = spec.get('pattern')  # absent or null → None
             else:
                 raise ValueError(
                     f"new-schema output '{canonical}' value must be a dict "

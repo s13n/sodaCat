@@ -18,16 +18,16 @@ shared_blocks:
     from: MCXN947.USBHS1__USBC
     description: Synopsys/ChipIdea USB 2.0 OTG Hi-Speed controller (EHCI-derived).  Originally designed by ChipIdea Microelectronica (Portugal); acquired by MIPS in 2007 and by Synopsys in 2009 (now part of DesignWare USB IP).  Shipped widely in Freescale i.MX/Kinetis/Vybrid, NXP LPC18xx/LPC43xx/MCXN, NVIDIA Tegra 2/3/4, Qualcomm older Snapdragon, Marvell PXA/Kirkwood, Nuvoton NPCM7xx, and others.
     params:
-      - {name: has_hw_caps,    type: bool, default: true,  description: 'HW capability discovery registers ID/HWGENERAL/HWHOST/HWDEVICE/HWTXBUF/HWRXBUF (0x000-0x014) are wired up.  NXP LPC43xx omits this prefix.'}
-      - {name: has_gptimer,    type: bool, default: true,  description: 'General-purpose timers GPTIMER0/1 (0x080-0x08C) are wired up.'}
-      - {name: has_sbuscfg,    type: bool, default: true,  description: 'System bus configuration register SBUSCFG (0x090) is wired up.'}
-      - {name: has_configflag, type: bool, default: true,  description: 'EHCI port-routing CONFIGFLAG register (0x180) is wired up.'}
-      - {name: has_dccparams,  type: bool, default: true,  description: 'Device controller capability register DCCPARAMS (0x124) is wired up.'}
-      - {name: has_ttctrl,     type: bool, default: false, description: 'Transaction Translator Control register TTCTRL (0x15C) is wired up.  Only present when an integrated TT is built into the controller (LPC43 USB0 has it).'}
-      - {name: has_binterval,  type: bool, default: false, description: 'BINTERVAL interrupt-threshold register (0x174) is wired up.'}
-      - {name: endpoints,      type: int,  default: 7,  max: 15, description: 'Number of bidirectional endpoint pairs beyond EP0 (range 0..15).  EP0 is always present and not counted.  The IN and OUT directions of each pair share one ENDPTCTRL register, so the count applies to both directions.'}
-      - {name: has_hs_phy,     type: bool, default: false, description: 'On-chip USB high-speed PHY/transceiver is present.'}
-      - {name: has_fs_phy,     type: bool, default: false, description: 'On-chip USB full-speed PHY/transceiver is present.'}
+      - {name: has_hw_caps, type: bool, default: true, description: 'HW capability discovery registers ID/HWGENERAL/HWHOST/HWDEVICE/HWTXBUF/HWRXBUF (0x000-0x014) are wired up.  NXP LPC43xx omits this prefix.'}
+      - {name: has_gptimer, type: bool, default: true, description: 'General-purpose timers GPTIMER0/1 (0x080-0x08C) are wired up.'}
+      - {name: has_sbuscfg, type: bool, default: true, description: 'System bus configuration register SBUSCFG (0x090) is wired up.'}
+      - {name: has_configflag, type: bool, default: true, description: 'EHCI port-routing CONFIGFLAG register (0x180) is wired up.'}
+      - {name: has_dccparams, type: bool, default: true, description: 'Device controller capability register DCCPARAMS (0x124) is wired up.'}
+      - {name: has_ttctrl, type: bool, default: false, description: 'Transaction Translator Control register TTCTRL (0x15C) is wired up.  Only present when an integrated TT is built into the controller (LPC43 USB0 has it).'}
+      - {name: has_binterval, type: bool, default: false, description: 'BINTERVAL interrupt-threshold register (0x174) is wired up.'}
+      - {name: endpoints, type: int, default: 7, max: 15, description: 'Number of bidirectional endpoint pairs beyond EP0 (range 0..15).  EP0 is always present and not counted.  The IN and OUT directions of each pair share one ENDPTCTRL register, so the count applies to both directions.'}
+      - {name: has_hs_phy, type: bool, default: false, description: 'On-chip USB high-speed PHY/transceiver is present.'}
+      - {name: has_fs_phy, type: bool, default: false, description: 'On-chip USB full-speed PHY/transceiver is present.'}
     transforms:
       # MCXN's SVD doesn't model TTCTRL or BINTERVAL.  Inject them so drivers
       # for chips that wire them up (e.g. LPC43 USB0) can access them through
@@ -85,25 +85,20 @@ families:
         from: MCXN947.ADC0
         instances: [ADC0, ADC1]
         outputs:
-          ADC0: ADC
-          ADC1: ADC
-
+          ADC:
+            pattern: '^(ADC0|ADC1)$'
       CMP:
         from: MCXN947.CMP0
         instances: [CMP0, CMP1, CMP2]
         outputs:
-          HSCMP0: HSCMP
-          HSCMP1: HSCMP
-          HSCMP2: HSCMP
-
+          HSCMP:
+            pattern: '^(HSCMP0|HSCMP1|HSCMP2)$'
       DAC:
         from: MCXN947.DAC0
         instances: [DAC0, DAC1, DAC2]
         outputs:
-          DAC0: DAC
-          DAC1: DAC
-          DAC2: DAC
-
+          DAC:
+            pattern: '^(DAC0|DAC1|DAC2)$'
       OPAMP:
         from: MCXN947.OPAMP0
         instances: [OPAMP0, OPAMP1, OPAMP2]
@@ -112,15 +107,16 @@ families:
         from: MCXN947.SINC0
         instances: [SINC0]
         outputs:
-          SINC_FILTER: FILTER
-
+          FILTER:
+            pattern: '^SINC_FILTER$'
       TSI:
         from: MCXN947.TSI0
         instances: [TSI0]
         outputs:
-          TSI_END_OF_SCAN: END_OF_SCAN
-          TSI_OUT_OF_SCAN: OUT_OF_SCAN
-
+          END_OF_SCAN:
+            pattern: '^TSI_END_OF_SCAN$'
+          OUT_OF_SCAN:
+            pattern: '^TSI_OUT_OF_SCAN$'
       VREF:
         from: MCXN947.VREF0
         instances: [VREF0]
@@ -132,136 +128,90 @@ families:
         from: MCXN947.CAN0
         instances: [CAN0, CAN1]
         outputs:
-          CAN0: CAN
-          CAN1: CAN
-
+          CAN:
+            pattern: '^(CAN0|CAN1)$'
       EMVSIM:
         from: MCXN947.EMVSIM0
         instances: [EMVSIM0, EMVSIM1]
         outputs:
-          EMVSIM0: EMVSIM
-          EMVSIM1: EMVSIM
-
+          EMVSIM:
+            pattern: '^(EMVSIM0|EMVSIM1)$'
       ENET:
         from: MCXN947.ENET0
         instances: [ENET0]
         outputs:
-          ETHERNET: INTR
-          ETHERNET_PMT: PMT
-          ETHERNET_MACLP: MACLP
-
+          INTR:
+            pattern: '^ETHERNET$'
+          PMT:
+            pattern: '^ETHERNET_PMT$'
+          MACLP:
+            pattern: '^ETHERNET_MACLP$'
       FLEXIO:
         from: MCXN947.FLEXIO0
         instances: [FLEXIO0]
         outputs:
-          FLEXIO: FLEXIO
-
+          FLEXIO:
+            pattern: '^FLEXIO$'
       I3C:
         from: MCXN947.I3C0
         instances: [I3C0, I3C1]
         outputs:
-          I3C0: I3C
-          I3C1: I3C
-
+          I3C:
+            pattern: '^(I3C0|I3C1)$'
       LPI2C:
         from: MCXN947.LPI2C0
-        instances: [LPI2C0, LPI2C1, LPI2C2, LPI2C3, LPI2C4,
-                    LPI2C5, LPI2C6, LPI2C7, LPI2C8, LPI2C9]
+        instances: [LPI2C0, LPI2C1, LPI2C2, LPI2C3, LPI2C4, LPI2C5, LPI2C6, LPI2C7, LPI2C8, LPI2C9]
         outputs:
-          LP_FLEXCOMM0: LP_FLEXCOMM
-          LP_FLEXCOMM1: LP_FLEXCOMM
-          LP_FLEXCOMM2: LP_FLEXCOMM
-          LP_FLEXCOMM3: LP_FLEXCOMM
-          LP_FLEXCOMM4: LP_FLEXCOMM
-          LP_FLEXCOMM5: LP_FLEXCOMM
-          LP_FLEXCOMM6: LP_FLEXCOMM
-          LP_FLEXCOMM7: LP_FLEXCOMM
-          LP_FLEXCOMM8: LP_FLEXCOMM
-          LP_FLEXCOMM9: LP_FLEXCOMM
-
+          LP_FLEXCOMM:
+            pattern: '^(LP_FLEXCOMM0|LP_FLEXCOMM1|LP_FLEXCOMM2|LP_FLEXCOMM3|LP_FLEXCOMM4|LP_FLEXCOMM5|LP_FLEXCOMM6|LP_FLEXCOMM7|LP_FLEXCOMM8|LP_FLEXCOMM9)$'
       LP_FLEXCOMM:
         from: MCXN947.LP_FLEXCOMM0
-        instances: [LP_FLEXCOMM0, LP_FLEXCOMM1, LP_FLEXCOMM2, LP_FLEXCOMM3,
-                    LP_FLEXCOMM4, LP_FLEXCOMM5, LP_FLEXCOMM6, LP_FLEXCOMM7,
-                    LP_FLEXCOMM8, LP_FLEXCOMM9]
+        instances: [LP_FLEXCOMM0, LP_FLEXCOMM1, LP_FLEXCOMM2, LP_FLEXCOMM3, LP_FLEXCOMM4, LP_FLEXCOMM5, LP_FLEXCOMM6, LP_FLEXCOMM7, LP_FLEXCOMM8, LP_FLEXCOMM9]
         outputs:
-          LP_FLEXCOMM0: LP_FLEXCOMM
-          LP_FLEXCOMM1: LP_FLEXCOMM
-          LP_FLEXCOMM2: LP_FLEXCOMM
-          LP_FLEXCOMM3: LP_FLEXCOMM
-          LP_FLEXCOMM4: LP_FLEXCOMM
-          LP_FLEXCOMM5: LP_FLEXCOMM
-          LP_FLEXCOMM6: LP_FLEXCOMM
-          LP_FLEXCOMM7: LP_FLEXCOMM
-          LP_FLEXCOMM8: LP_FLEXCOMM
-          LP_FLEXCOMM9: LP_FLEXCOMM
-
+          LP_FLEXCOMM:
+            pattern: '^(LP_FLEXCOMM0|LP_FLEXCOMM1|LP_FLEXCOMM2|LP_FLEXCOMM3|LP_FLEXCOMM4|LP_FLEXCOMM5|LP_FLEXCOMM6|LP_FLEXCOMM7|LP_FLEXCOMM8|LP_FLEXCOMM9)$'
       LPSPI:
         from: MCXN947.LPSPI0
-        instances: [LPSPI0, LPSPI1, LPSPI2, LPSPI3, LPSPI4,
-                    LPSPI5, LPSPI6, LPSPI7, LPSPI8, LPSPI9]
+        instances: [LPSPI0, LPSPI1, LPSPI2, LPSPI3, LPSPI4, LPSPI5, LPSPI6, LPSPI7, LPSPI8, LPSPI9]
         outputs:
-          LP_FLEXCOMM0: LP_FLEXCOMM
-          LP_FLEXCOMM1: LP_FLEXCOMM
-          LP_FLEXCOMM2: LP_FLEXCOMM
-          LP_FLEXCOMM3: LP_FLEXCOMM
-          LP_FLEXCOMM4: LP_FLEXCOMM
-          LP_FLEXCOMM5: LP_FLEXCOMM
-          LP_FLEXCOMM6: LP_FLEXCOMM
-          LP_FLEXCOMM7: LP_FLEXCOMM
-          LP_FLEXCOMM8: LP_FLEXCOMM
-          LP_FLEXCOMM9: LP_FLEXCOMM
-
+          LP_FLEXCOMM:
+            pattern: '^(LP_FLEXCOMM0|LP_FLEXCOMM1|LP_FLEXCOMM2|LP_FLEXCOMM3|LP_FLEXCOMM4|LP_FLEXCOMM5|LP_FLEXCOMM6|LP_FLEXCOMM7|LP_FLEXCOMM8|LP_FLEXCOMM9)$'
       LPUART:
         from: MCXN947.LPUART0
-        instances: [LPUART0, LPUART1, LPUART2, LPUART3, LPUART4,
-                    LPUART5, LPUART6, LPUART7, LPUART8, LPUART9]
+        instances: [LPUART0, LPUART1, LPUART2, LPUART3, LPUART4, LPUART5, LPUART6, LPUART7, LPUART8, LPUART9]
         outputs:
-          LP_FLEXCOMM0: LP_FLEXCOMM
-          LP_FLEXCOMM1: LP_FLEXCOMM
-          LP_FLEXCOMM2: LP_FLEXCOMM
-          LP_FLEXCOMM3: LP_FLEXCOMM
-          LP_FLEXCOMM4: LP_FLEXCOMM
-          LP_FLEXCOMM5: LP_FLEXCOMM
-          LP_FLEXCOMM6: LP_FLEXCOMM
-          LP_FLEXCOMM7: LP_FLEXCOMM
-          LP_FLEXCOMM8: LP_FLEXCOMM
-          LP_FLEXCOMM9: LP_FLEXCOMM
-
+          LP_FLEXCOMM:
+            pattern: '^(LP_FLEXCOMM0|LP_FLEXCOMM1|LP_FLEXCOMM2|LP_FLEXCOMM3|LP_FLEXCOMM4|LP_FLEXCOMM5|LP_FLEXCOMM6|LP_FLEXCOMM7|LP_FLEXCOMM8|LP_FLEXCOMM9)$'
       PDM:
         from: MCXN947.PDM
         instances: [PDM]
         outputs:
-          PDM_EVENT: EVENT
-
+          EVENT:
+            pattern: '^PDM_EVENT$'
       SAI:
         from: MCXN947.SAI0
         instances: [SAI0, SAI1]
         outputs:
-          SAI0: SAI
-          SAI1: SAI
-
-      # ====================================================================
-      # USB
-      # ====================================================================
+          SAI:
+            pattern: '^(SAI0|SAI1)$'
       USBDCD:
         from: MCXN947.USBDCD0
         instances: [USBDCD0]
         outputs:
-          USB0_DCD: DCD
-
+          DCD:
+            pattern: '^USB0_DCD$'
       USBFS:
         from: MCXN947.USBFS0
         instances: [USBFS0]
         outputs:
-          USB0_FS: FS
-
+          FS:
+            pattern: '^USB0_FS$'
       USBHS:
         uses: ChipIdeaHS
         instances: [USBHS1__USBC]
         outputs:
-          USB1_HS: USB
-
+          USB:
+            pattern: '^USB1_HS$'
       USBHS_NC:
         from: MCXN947.USBHS1__USBNC
         instances: [USBHS1__USBNC]
@@ -270,33 +220,22 @@ families:
         from: MCXN947.USBPHY
         instances: [USBPHY]
         outputs:
-          USB1_HS_PHY: PHY
-
+          PHY:
+            pattern: '^USB1_HS_PHY$'
       USDHC:
         from: MCXN947.USDHC0
         instances: [USDHC0]
         outputs:
-          USDHC0: USDHC
-
-      # ====================================================================
-      # GPIO / Port
-      # ====================================================================
+          USDHC:
+            pattern: '^USDHC0$'
       GPIO:
         from: MCXN947.GPIO0
         instances: [GPIO0, GPIO1, GPIO2, GPIO3, GPIO4, GPIO5]
         outputs:
-          GPIO00: INT0
-          GPIO01: INT1
-          GPIO10: INT0
-          GPIO11: INT1
-          GPIO20: INT0
-          GPIO21: INT1
-          GPIO30: INT0
-          GPIO31: INT1
-          GPIO40: INT0
-          GPIO41: INT1
-          GPIO50: INT0
-          GPIO51: INT1
+          INT0:
+            pattern: '^(GPIO00|GPIO10|GPIO20|GPIO30|GPIO40|GPIO50)$'
+          INT1:
+            pattern: '^(GPIO01|GPIO11|GPIO21|GPIO31|GPIO41|GPIO51)$'
         params:
           - {name: pins, type: int, default: 32, description: Number of pins per port}
 
@@ -304,127 +243,114 @@ families:
         from: MCXN947.PORT0
         instances: [PORT0, PORT1, PORT2, PORT3, PORT4, PORT5]
         outputs:
-          PORT_EFT: EFT
-
-      # ====================================================================
-      # Timers / Counters
-      # ====================================================================
+          EFT:
+            pattern: '^PORT_EFT$'
       CTIMER:
         from: MCXN947.CTIMER0
         instances: [CTIMER0, CTIMER1, CTIMER2, CTIMER3, CTIMER4]
         outputs:
-          CTIMER0: CTIMER
-          CTIMER1: CTIMER
-          CTIMER2: CTIMER
-          CTIMER3: CTIMER
-          CTIMER4: CTIMER
-
+          CTIMER:
+            pattern: '^(CTIMER0|CTIMER1|CTIMER2|CTIMER3|CTIMER4)$'
       FlexPWM:
         from: MCXN947.PWM0
         instances: [PWM0, PWM1]
         outputs:
-          FLEXPWM0_FAULT: FAULT
-          FLEXPWM0_RELOAD_ERROR: RELOAD_ERROR
-          FLEXPWM0_SUBMODULE0: SUBMODULE0
-          FLEXPWM0_SUBMODULE1: SUBMODULE1
-          FLEXPWM0_SUBMODULE2: SUBMODULE2
-          FLEXPWM0_SUBMODULE3: SUBMODULE3
-          FLEXPWM1_FAULT: FAULT
-          FLEXPWM1_RELOAD_ERROR: RELOAD_ERROR
-          FLEXPWM1_SUBMODULE0: SUBMODULE0
-          FLEXPWM1_SUBMODULE1: SUBMODULE1
-          FLEXPWM1_SUBMODULE2: SUBMODULE2
-          FLEXPWM1_SUBMODULE3: SUBMODULE3
-
+          FAULT:
+            pattern: '^(FLEXPWM0_FAULT|FLEXPWM1_FAULT)$'
+          RELOAD_ERROR:
+            pattern: '^(FLEXPWM0_RELOAD_ERROR|FLEXPWM1_RELOAD_ERROR)$'
+          SUBMODULE0:
+            pattern: '^(FLEXPWM0_SUBMODULE0|FLEXPWM1_SUBMODULE0)$'
+          SUBMODULE1:
+            pattern: '^(FLEXPWM0_SUBMODULE1|FLEXPWM1_SUBMODULE1)$'
+          SUBMODULE2:
+            pattern: '^(FLEXPWM0_SUBMODULE2|FLEXPWM1_SUBMODULE2)$'
+          SUBMODULE3:
+            pattern: '^(FLEXPWM0_SUBMODULE3|FLEXPWM1_SUBMODULE3)$'
       FREQME:
         from: MCXN947.FREQME0
         instances: [FREQME0]
         outputs:
-          Freqme: FREQME
-
+          FREQME:
+            pattern: '^Freqme$'
       LPTMR:
         from: MCXN947.LPTMR0
         instances: [LPTMR0, LPTMR1]
         outputs:
-          LPTMR0: LPTMR
-          LPTMR1: LPTMR
-
+          LPTMR:
+            pattern: '^(LPTMR0|LPTMR1)$'
       MRT:
         from: MCXN947.MRT0
         instances: [MRT0]
         outputs:
-          MRT0: MRT
-
+          MRT:
+            pattern: '^MRT0$'
       OSTIMER:
         from: MCXN947.OSTIMER0
         instances: [OSTIMER0]
         outputs:
-          OS_EVENT: EVENT
-
+          EVENT:
+            pattern: '^OS_EVENT$'
       QDC:
         from: MCXN947.QDC0
         instances: [QDC0, QDC1]
         outputs:
-          QDC0_COMPARE: COMPARE
-          QDC0_HOME: HOME
-          QDC0_WDG_SAB: WDG_SAB
-          QDC0_IDX: IDX
-          QDC1_COMPARE: COMPARE
-          QDC1_HOME: HOME
-          QDC1_WDG_SAB: WDG_SAB
-          QDC1_IDX: IDX
-
+          COMPARE:
+            pattern: '^(QDC0_COMPARE|QDC1_COMPARE)$'
+          HOME:
+            pattern: '^(QDC0_HOME|QDC1_HOME)$'
+          WDG_SAB:
+            pattern: '^(QDC0_WDG_SAB|QDC1_WDG_SAB)$'
+          IDX:
+            pattern: '^(QDC0_IDX|QDC1_IDX)$'
       SCT:
         uses: SCT
         instances: [SCT0]
         outputs:
-          SCT0: INTR
-
+          INTR:
+            pattern: '^SCT0$'
       UTICK:
         uses: UTICK
         instances: [UTICK0]
         outputs:
-          UTICK0: INTR
-
-      # ====================================================================
-      # DMA
-      # ====================================================================
+          INTR:
+            pattern: '^UTICK0$'
       eDMA:
         from: MCXN947.DMA0
         instances: [DMA0, DMA1]
         outputs:
-          EDMA_0_CH0: CH0
-          EDMA_0_CH1: CH1
-          EDMA_0_CH2: CH2
-          EDMA_0_CH3: CH3
-          EDMA_0_CH4: CH4
-          EDMA_0_CH5: CH5
-          EDMA_0_CH6: CH6
-          EDMA_0_CH7: CH7
-          EDMA_0_CH8: CH8
-          EDMA_0_CH9: CH9
-          EDMA_0_CH10: CH10
-          EDMA_0_CH11: CH11
-          EDMA_0_CH12: CH12
-          EDMA_0_CH13: CH13
-          EDMA_0_CH14: CH14
-          EDMA_0_CH15: CH15
-          EDMA_1_CH0: CH0
-          EDMA_1_CH1: CH1
-          EDMA_1_CH2: CH2
-          EDMA_1_CH3: CH3
-          EDMA_1_CH4: CH4
-          EDMA_1_CH5: CH5
-          EDMA_1_CH6: CH6
-          EDMA_1_CH7: CH7
-          EDMA_1_CH8: CH8
-          EDMA_1_CH9: CH9
-          EDMA_1_CH10: CH10
-          EDMA_1_CH11: CH11
-          EDMA_1_CH12: CH12
-          EDMA_1_CH13: CH13
-          EDMA_1_CH14: CH14
-          EDMA_1_CH15: CH15
+          CH0:
+            pattern: '^(EDMA_0_CH0|EDMA_1_CH0)$'
+          CH1:
+            pattern: '^(EDMA_0_CH1|EDMA_1_CH1)$'
+          CH2:
+            pattern: '^(EDMA_0_CH2|EDMA_1_CH2)$'
+          CH3:
+            pattern: '^(EDMA_0_CH3|EDMA_1_CH3)$'
+          CH4:
+            pattern: '^(EDMA_0_CH4|EDMA_1_CH4)$'
+          CH5:
+            pattern: '^(EDMA_0_CH5|EDMA_1_CH5)$'
+          CH6:
+            pattern: '^(EDMA_0_CH6|EDMA_1_CH6)$'
+          CH7:
+            pattern: '^(EDMA_0_CH7|EDMA_1_CH7)$'
+          CH8:
+            pattern: '^(EDMA_0_CH8|EDMA_1_CH8)$'
+          CH9:
+            pattern: '^(EDMA_0_CH9|EDMA_1_CH9)$'
+          CH10:
+            pattern: '^(EDMA_0_CH10|EDMA_1_CH10)$'
+          CH11:
+            pattern: '^(EDMA_0_CH11|EDMA_1_CH11)$'
+          CH12:
+            pattern: '^(EDMA_0_CH12|EDMA_1_CH12)$'
+          CH13:
+            pattern: '^(EDMA_0_CH13|EDMA_1_CH13)$'
+          CH14:
+            pattern: '^(EDMA_0_CH14|EDMA_1_CH14)$'
+          CH15:
+            pattern: '^(EDMA_0_CH15|EDMA_1_CH15)$'
         params:
           - {name: channels, type: int, default: 16, description: Number of DMA channels}
 
@@ -441,20 +367,20 @@ families:
         from: MCXN947.CMC0
         instances: [CMC0]
         outputs:
-          CMC0: CMC
-
+          CMC:
+            pattern: '^CMC0$'
       SCG:
         from: MCXN947.SCG0
         instances: [SCG0]
         outputs:
-          SCG: SCG
-
+          SCG:
+            pattern: '^SCG$'
       SPC:
         from: MCXN947.SPC0
         instances: [SPC0]
         outputs:
-          SPC: SPC
-
+          SPC:
+            pattern: '^SPC$'
       SYSCON:
         from: MCXN947.SYSCON0
         instances: [SYSCON0]
@@ -463,17 +389,14 @@ families:
         from: MCXN947.VBAT0
         instances: [VBAT0]
         outputs:
-          VBAT0: VBAT
-
+          VBAT:
+            pattern: '^VBAT0$'
       WUU:
         from: MCXN947.WUU0
         instances: [WUU0]
         outputs:
-          WUU: WUU
-
-      # ====================================================================
-      # Memory / Cache
-      # ====================================================================
+          WUU:
+            pattern: '^WUU$'
       CACHE64_CTRL:
         from: MCXN947.CACHE64_CTRL0
         instances: [CACHE64_CTRL0]
@@ -486,14 +409,14 @@ families:
         from: MCXN947.FLEXSPI0
         instances: [FLEXSPI0]
         outputs:
-          FLEXSPI0: FLEXSPI
-
+          FLEXSPI:
+            pattern: '^FLEXSPI0$'
       FMU:
         from: MCXN947.FMU0
         instances: [FMU0]
         outputs:
-          FMU0: FMU
-
+          FMU:
+            pattern: '^FMU0$'
       NPX:
         from: MCXN947.NPX0
         instances: [NPX0]
@@ -505,47 +428,48 @@ families:
         from: MCXN947.AHBSC
         instances: [AHBSC]
         outputs:
-          SEC_HYPERVISOR_CALL: HYPERVISOR_CALL
-
+          HYPERVISOR_CALL:
+            pattern: '^SEC_HYPERVISOR_CALL$'
       CDOG:
         from: MCXN947.CDOG0
         instances: [CDOG0, CDOG1]
         outputs:
-          CDOG0: CDOG
-          CDOG1: CDOG
-
+          CDOG:
+            pattern: '^(CDOG0|CDOG1)$'
       ELS:
         from: MCXN947.ELS
         instances: [ELS]
         outputs:
-          ELS: ELS
-          ELS_ERR: ERR
-
+          ELS:
+            pattern: '^ELS$'
+          ERR:
+            pattern: '^ELS_ERR$'
       GDET:
         from: MCXN947.GDET0
         instances: [GDET0, GDET1]
         outputs:
-          GDET: GDET
-
+          GDET:
+            pattern: '^GDET$'
       ITRC:
         from: MCXN947.ITRC0
         instances: [ITRC0]
         outputs:
-          ITRC0: ITRC
-
+          ITRC:
+            pattern: '^ITRC0$'
       PKC:
         from: MCXN947.PKC0
         instances: [PKC0]
         outputs:
-          PKC: PKC
-          PKC_ERR: ERR
-
+          PKC:
+            pattern: '^PKC$'
+          ERR:
+            pattern: '^PKC_ERR$'
       PUF:
         from: MCXN947.PUF
         instances: [PUF]
         outputs:
-          PUF: PUF
-
+          PUF:
+            pattern: '^PUF$'
       PUF_CTRL:
         from: MCXN947.PUF_CTRL
         instances: [PUF_CTRL]
@@ -554,17 +478,14 @@ families:
         from: MCXN947.TRDC
         instances: [TRDC]
         outputs:
-          SEC_VIO: VIO
-
-      # ====================================================================
-      # Miscellaneous
-      # ====================================================================
+          VIO:
+            pattern: '^SEC_VIO$'
       BSP32:
         from: MCXN947.BSP32_0
         instances: [BSP32_0]
         outputs:
-          BSP32: BSP32
-
+          BSP32:
+            pattern: '^BSP32$'
       CMX_PERFMON:
         from: MCXN947.CMX_PERFMON0
         instances: [CMX_PERFMON0, CMX_PERFMON1]
@@ -585,9 +506,10 @@ families:
         from: MCXN947.ERM0
         instances: [ERM0]
         outputs:
-          ERM_SINGLE_BIT_ERROR: SINGLE_BIT_ERROR
-          ERM_MULTI_BIT_ERROR: MULTI_BIT_ERROR
-
+          SINGLE_BIT_ERROR:
+            pattern: '^ERM_SINGLE_BIT_ERROR$'
+          MULTI_BIT_ERROR:
+            pattern: '^ERM_MULTI_BIT_ERROR$'
       EVTG:
         from: MCXN947.EVTG0
         instances: [EVTG0]
@@ -596,8 +518,8 @@ families:
         from: MCXN947.EWM0
         instances: [EWM0]
         outputs:
-          EWM0: EWM
-
+          EWM:
+            pattern: '^EWM0$'
       INPUTMUX:
         from: MCXN947.INPUTMUX0
         instances: [INPUTMUX0]
@@ -610,8 +532,8 @@ families:
         from: MCXN947.MAILBOX
         instances: [MAILBOX]
         outputs:
-          MAILBOX: MAILBOX
-
+          MAILBOX:
+            pattern: '^MAILBOX$'
       OTPC:
         from: MCXN947.OTPC0
         instances: [OTPC0]
@@ -620,26 +542,26 @@ families:
         uses: PINT
         instances: [PINT0]
         outputs:
-          PINT0: PINT
-
+          PINT:
+            pattern: '^PINT0$'
       PLU:
         from: MCXN947.PLU0
         instances: [PLU0]
         outputs:
-          PLU: PLU
-
+          PLU:
+            pattern: '^PLU$'
       POWERQUAD:
         from: MCXN947.POWERQUAD
         instances: [POWERQUAD]
         outputs:
-          PQ: PQ
-
+          PQ:
+            pattern: '^PQ$'
       RTC:
         from: MCXN947.RTC0
         instances: [RTC0]
         outputs:
-          RTC: RTC
-
+          RTC:
+            pattern: '^RTC$'
       RTC_SUBSYSTEM:
         from: MCXN947.RTC_SUBSYSTEM0
         instances: [RTC_SUBSYSTEM0]
@@ -652,8 +574,8 @@ families:
         from: MCXN947.SMARTDMA0
         instances: [SMARTDMA0]
         outputs:
-          SMARTDMA: SMARTDMA
-
+          SMARTDMA:
+            pattern: '^SMARTDMA$'
       TDET:
         from: MCXN947.TDET0
         instances: [TDET0]
@@ -662,8 +584,8 @@ families:
         uses: WWDT
         instances: [WWDT0, WWDT1]
         outputs:
-          WWDT0: INTR
-          WWDT1: INTR
+          INTR:
+            pattern: '^(WWDT0|WWDT1)$'
     chip_params:
       _all:
         _all:
