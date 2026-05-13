@@ -1572,10 +1572,6 @@ def _build_canonical_outputs(blocks_config, shared_blocks):
         for raw, mapping in output_map.items():
             canonical = mapping['name'] if isinstance(mapping, dict) else mapping
             result[bt].add(canonical)
-    for bt, bc in shared_blocks.items():
-        for raw, mapping in (bc.get('outputs') or {}).items():
-            canonical = mapping['name'] if isinstance(mapping, dict) else mapping
-            result[bt].add(canonical)
     return result
 
 

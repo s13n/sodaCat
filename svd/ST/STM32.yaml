@@ -222,6 +222,8 @@ shared_blocks:
     outputs:
       USART1: {name: INTR, description: Global interrupt}
       LPUART1: {name: INTR, description: Global interrupt}
+      TX_DMA: {name: TX_DMA, description: DMA request for transmit (TXFIFO threshold / TXE)}
+      RX_DMA: {name: RX_DMA, description: DMA request for receive (RXFIFO threshold / RXNE)}
     params:
       - {name: lpbaud, type: bool, default: false, description: Low-power baud rate generation (BRR_LP variant; no OVER8/ONEBIT/GTPR/RTOR; no RTOIE/RTOEN/RTOF/RTOCF; no TECLREN in AUTOCR)}
       - {name: synchronous, type: int, default: 3, max: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous+SPI slave (CLKEN/CPHA/CPOL/LBCL/SLVEN/DIS_NSS/UDR/UDRCF/TXFECF), 2=sync+smartcard (NACK/SCEN/SCARCNT/EOBIE/EOBF/EOBCF), 3=sync+smartcard+TCBGT'}
@@ -1540,6 +1542,11 @@ families:
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, USART4]
+        outputs:
+          USART1: INTR
+          USART2: INTR
+          USART3: INTR
+          USART4: INTR
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -2147,6 +2154,24 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
+        outputs:
+          # F3 SVDs report each USART/UART line under multiple raw names: the
+          # plain instance and EXTI-aliased / _IRQ-suffixed duplicates of the
+          # same vector.  Map them all to the single canonical so dedup at
+          # connections-build time leaves one INTR entry per instance.
+          USART1: INTR
+          USART1_EXTI25: INTR
+          USART1_IRQ: INTR
+          USART2: INTR
+          USART2_EXTI26: INTR
+          USART2_IRQ: INTR
+          USART3: INTR
+          USART3_EXTI28: INTR
+          USART3_IRQ: INTR
+          UART4: INTR
+          UART4_EXTI34: INTR
+          UART5: INTR
+          UART5_EXTI35: INTR
       USB:
         uses: USB_DEV
         instances: [USB, USB_FS]
@@ -2921,6 +2946,15 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, UART7, UART8, USART1, USART2, USART3, USART6]
+        outputs:
+          USART1: INTR
+          USART2: INTR
+          USART3: INTR
+          USART6: INTR
+          UART4: INTR
+          UART5: INTR
+          UART7: INTR
+          UART8: INTR
       USBPHYC:
         from: STM32F730.USBPHYC
         instances: [USBPHYC]
@@ -3090,6 +3124,14 @@ families:
       LPUART:
         uses: USART
         instances: [LPUART, LPUART1, LPUART2]
+        outputs:
+          # G0 shares a single NVIC vector across USART3/4 + LPUART1 (and on
+          # higher-density parts also USART5/6); each peripheral lists the
+          # full composite name in its SVD <interrupt> entry.  Map all the
+          # alternates to INTR — dedup at connections-build keeps one entry.
+          USART3_USART4_LPUART1: INTR
+          USART3_USART4_USART5_USART6_LPUART1: INTR
+          USART2_LPUART2: INTR
       PWR:
         from: STM32G030.PWR
         instances: [PWR]
@@ -3128,6 +3170,15 @@ families:
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, USART4, USART5, USART6]
+        outputs:
+          # See LPUART block above for the shared-vector pattern.  USART2's
+          # raw is USART2_LPUART2 (shared with LPUART2), USART3..6 share the
+          # composite vectors below.
+          USART1: INTR
+          USART2: INTR
+          USART2_LPUART2: INTR
+          USART3_USART4_LPUART1: INTR
+          USART3_USART4_USART5_USART6_LPUART1: INTR
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -3291,6 +3342,8 @@ families:
       LPUART:
         uses: USART
         instances: [LPUART1]
+        outputs:
+          LPUART: INTR  # SVD raw name omits the trailing 1
       OPAMP:
         from: STM32G431.OPAMP
         instances: [OPAMP]
@@ -3335,6 +3388,12 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
+        outputs:
+          USART1: INTR
+          USART2: INTR
+          USART3: INTR
+          UART4: INTR
+          UART5: INTR
       USB:
         uses: USB_DEV
         instances: [USB_FS_device]
@@ -4978,6 +5037,19 @@ families:
       USART:
         uses: USART
         instances: [UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART8, UART9, USART, USART1, USART10, USART11, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
+        outputs:
+          USART1: INTR
+          USART2: INTR
+          USART3: INTR
+          USART6: INTR
+          USART10: INTR
+          USART11: INTR
+          UART4: INTR
+          UART5: INTR
+          UART7: INTR
+          UART8: INTR
+          UART9: INTR
+          UART12: INTR
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -12998,6 +13070,8 @@ families:
       LPUART:
         uses: USART
         instances: [LPUART1]
+        outputs:
+          LPUART: INTR  # SVD raw name omits the trailing 1
       LTDC:
         uses: LTDC
         instances: [LTDC]
@@ -13155,6 +13229,21 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, UART7, UART8, UART9, USART1, USART10, USART2, USART3, USART6, USART9]
+        # SVD-raw interrupt names follow the instance name on H7 (USART2..6, UART4..9); enumerate
+        # them all so chips get explicit INTR routing.  The block-level fallback that auto-mapped
+        # raw==instance to the single canonical no longer fires once non-SVD outputs (TX_DMA/RX_DMA)
+        # bring the canonical set above 1.
+        outputs:
+          USART2: INTR
+          USART3: INTR
+          USART6: INTR
+          USART10: INTR
+          UART4: INTR
+          UART5: INTR
+          UART7: INTR
+          UART8: INTR
+          UART9: INTR
+          UART10: INTR
       VREFBUF:
         uses: VREFBUF
         instances: [VREFBUF]
@@ -13177,6 +13266,15 @@ families:
           OTG2_HS_GLOBAL: {EP1_OUT: [NVIC.114], EP1_IN: [NVIC.115], WKUP: [NVIC.116], INTR: [NVIC.117]}
           SDMMC1: {INTR: [NVIC.65]}
           SDMMC2: {INTR: [NVIC.140]}
+          # DMAMUX1 request lines per RM0399 Table 126 (Phase 2 step 1: DMA wiring proof of concept).
+          USART1: {TX_DMA: [DMAMUX1.42], RX_DMA: [DMAMUX1.41]}
+          USART2: {TX_DMA: [DMAMUX1.44], RX_DMA: [DMAMUX1.43]}
+          USART3: {TX_DMA: [DMAMUX1.46], RX_DMA: [DMAMUX1.45]}
+          UART4:  {TX_DMA: [DMAMUX1.64], RX_DMA: [DMAMUX1.63]}
+          UART5:  {TX_DMA: [DMAMUX1.66], RX_DMA: [DMAMUX1.65]}
+          USART6: {TX_DMA: [DMAMUX1.72], RX_DMA: [DMAMUX1.71]}
+          UART7:  {TX_DMA: [DMAMUX1.80], RX_DMA: [DMAMUX1.79]}
+          UART8:  {TX_DMA: [DMAMUX1.82], RX_DMA: [DMAMUX1.81]}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
@@ -13693,6 +13791,10 @@ families:
       USART:
         uses: USART
         instances: [USART1, USART2, USART4, USART5]
+        outputs:
+          USART1: INTR
+          USART2: INTR
+          USART4_USART5: INTR  # L0 shares one NVIC vector across USART4 + USART5
       USB:
         uses: USB_DEV
         instances: [USB_FS]
@@ -14076,6 +14178,12 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
+        outputs:
+          USART1: INTR
+          USART2: INTR
+          USART3: INTR
+          UART4: INTR
+          UART5: INTR
       USB:
         from: STM32L412.USB_FS
         instances: [USB_FS]
@@ -14598,6 +14706,12 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3]
+        outputs:
+          USART1: INTR
+          USART2: INTR
+          USART3: INTR
+          UART4: INTR
+          UART5: INTR
       USB:
         uses: USB_DEV
         instances: [USB]
@@ -15077,6 +15191,15 @@ families:
       USART:
         uses: USART
         instances: [USART1, USART2, USART3, USART4]
+        outputs:
+          # U0 shares NVIC vectors across USART/LPUART pairs.  USART1
+          # is the only standalone one; USART2..4 each share with one
+          # or two LPUARTs.
+          USART1: INTR
+          USART2_LPUART2: INTR
+          USART3_LPUART1: INTR
+          USART4: INTR
+          USART4_LPUART3: INTR
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -15291,6 +15414,11 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART3]
+        outputs:
+          USART1: INTR
+          USART3: INTR
+          UART4: INTR
+          UART5: INTR
       USB:
         uses: USB_DRD
         instances: [USB]
@@ -15601,6 +15729,13 @@ families:
       USART:
         uses: USART
         instances: [UART4, UART5, USART1, USART2, USART3, USART6]
+        outputs:
+          USART1: INTR
+          USART2: INTR
+          USART3: INTR
+          USART6: INTR
+          UART4: INTR
+          UART5: INTR
       VREFBUF:
         uses: VREFBUF
         instances: [VREFBUF]
