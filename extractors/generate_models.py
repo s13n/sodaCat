@@ -1525,6 +1525,35 @@ def _inject_outputs(block_data, output_map):
     return block_data
 
 
+def _strip_instance_prefix_from_descriptions(block_data, from_spec):
+    """Strip the leading instance name (and any trailing digits) from each
+    output's description, then capitalize.  Source instance is parsed
+    from `from_spec` (a `chip.instance` reference); blank or non-dotted
+    from_spec is a no-op.
+
+    SVD interrupt descriptions are per-instance and carry the source-
+    instance name verbatim (e.g. `ADC3 global interrupt`).  Per-canonical
+    descriptions in the block model should be instance-agnostic; this
+    helper removes the leading reference so the resulting description
+    describes the signal rather than one specific instance of it.
+    Descriptions whose leading word isn't an instance-name match are
+    left alone.
+    """
+    if '.' not in (from_spec or ''):
+        return
+    inst = from_spec.split('.', 1)[1]
+    inst_base = re.sub(r'\d+$', '', inst)
+    pfx = re.compile(
+        r'^(?:' + re.escape(inst) + r'|' + re.escape(inst_base)
+        + r')\d*\s+', re.IGNORECASE)
+    for irq in block_data.get('outputs', []):
+        desc = irq.get('description', '')
+        if desc:
+            stripped = pfx.sub('', desc)
+            if stripped != desc:
+                irq['description'] = stripped[0].upper() + stripped[1:]
+
+
 def _inject_source(block_data, source):
     """Insert source attribution string into block_data before params/registers."""
     ordered = {}
@@ -1916,21 +1945,7 @@ def main():
             block_data = _inject_outputs(block_data, shared_cfg.get('outputs'))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
-
-            # Strip instance prefix from output descriptions
-            from_spec = shared_cfg.get('from', '')
-            if '.' in from_spec:
-                inst = from_spec.split('.', 1)[1]
-                inst_base = re.sub(r'\d+$', '', inst)
-                pfx = re.compile(
-                    r'^(?:' + re.escape(inst) + r'|' + re.escape(inst_base)
-                    + r')\d*\s+', re.IGNORECASE)
-                for irq in block_data.get('outputs', []):
-                    desc = irq.get('description', '')
-                    if desc:
-                        stripped = pfx.sub('', desc)
-                        if stripped != desc:
-                            irq['description'] = stripped[0].upper() + stripped[1:]
+            _strip_instance_prefix_from_descriptions(block_data, shared_cfg.get('from', ''))
             block_data['name'] = shared_name
             if shared_cfg.get('description'):
                 block_data['description'] = shared_cfg['description']
@@ -1994,6 +2009,8 @@ def main():
                     v_block_data, family_block_cfg.get('params'))
                 v_block_data = _inject_source(
                     v_block_data, _format_block_source(entry))
+                _strip_instance_prefix_from_descriptions(
+                    v_block_data, resolved.get('from', ''))
                 if resolved.get('description'):
                     v_block_data['description'] = resolved['description']
 
@@ -2030,6 +2047,8 @@ def main():
                         block_name=f"{block_name} ({fam_name})"))
                 block_data = _inject_params(block_data, block_cfg.get('params'))
                 block_data = _inject_source(block_data, _format_block_source(entry))
+                _strip_instance_prefix_from_descriptions(
+                    block_data, resolved.get('from', ''))
                 if resolved.get('description'):
                     block_data['description'] = resolved['description']
 
@@ -2053,6 +2072,8 @@ def main():
                     block_name=block_name))
             block_data = _inject_params(block_data, block_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
+            _strip_instance_prefix_from_descriptions(
+                block_data, block_cfg.get('from', ''))
             if block_cfg.get('description'):
                 block_data['description'] = block_cfg['description']
 
