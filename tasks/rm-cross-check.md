@@ -52,10 +52,10 @@ For a single-chip check, the relevant files are:
 
 From the chip model YAML, extract:
 - **Peripheral instance table**: instance name, base address, model type,
-  per-instance `outputs:` (signal → destination list), parameters.
-- **Interrupt vector table**: derived by walking every instance's `outputs:`
-  map and collecting destinations of the form `NVIC.<vector>` — the chip YAML
-  no longer carries the IVT as a separate top-level section.
+  per-instance `connections:` (signal → destination list), parameters.
+- **Interrupt vector table**: derived by walking every instance's
+  `connections:` map and collecting destinations of the form `NVIC.<vector>`
+  — the chip YAML no longer carries the IVT as a separate top-level section.
 
 Format as a readable table. Example:
 

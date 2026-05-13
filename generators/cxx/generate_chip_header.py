@@ -14,9 +14,9 @@ import re
 class ChipFormatter:
     def __init__(self, **keywords):
         self.instanceParamTemplate= Template(keywords.get('instanceParam',  '\n\t.$name = ${value}u,'))
-        # Destination strings in chip YAML's per-instance `outputs:` map carry
-        # the absolute vector index (NVIC's own input numbering), so the
-        # emit no longer applies `interruptOffset` — that offset is purely
+        # Destination strings in chip YAML's per-instance `connections:` map
+        # carry the absolute vector index (NVIC's own input numbering), so
+        # the emit no longer applies `interruptOffset` — that offset is purely
         # descriptive of NVIC's relationship to the Cortex-M exception space.
         self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.ex$name = ${value}u,'))
         self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$ns/$model$incl_suffix"'))
@@ -119,26 +119,26 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         """Emit ex<NAME> designated initialisers for this instance's NVIC-bound
         outputs.
 
-        Reads `instance['outputs']` — a {signal_name: [destination_string]}
+        Reads `instance['connections']` — a {signal_name: [destination_string]}
         map.  Only destinations of the form 'NVIC.<vector>' produce an
         initialiser; non-NVIC destinations (DMAMUX, EXTI, ...) are silently
         ignored at this Phase-1 stage and will get their own emit paths as
         the C++ side grows field-type dispatch.
         """
-        outputs = instance.get('outputs') or {}
+        connections = instance.get('connections') or {}
         if int_order is None:
-            names = list(outputs.keys())
+            names = list(connections.keys())
         else:
-            unknown = set(outputs.keys()) - set(int_order)
+            unknown = set(connections.keys()) - set(int_order)
             if unknown:
                 raise ValueError(
                     f"chip instance '{instance_name}' (model '{instance['model']}'): "
                     f"output(s) {sorted(unknown)!r} not declared by block model"
                 )
-            names = [n for n in int_order if n in outputs]
+            names = [n for n in int_order if n in connections]
         out = ''
         for name in names:
-            for dest in outputs[name]:
+            for dest in connections[name]:
                 inst_pfx, dot, port = dest.partition('.')
                 if not dot or inst_pfx != 'NVIC':
                     continue
@@ -225,7 +225,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         instances, _ = self._collectInstances(chip, chip_path)
         table = {}
         for inst_name, inst in instances.items():
-            for sig, dests in (inst.get('outputs') or {}).items():
+            for sig, dests in (inst.get('connections') or {}).items():
                 for dest in dests:
                     inst_pfx, dot, port = dest.partition('.')
                     if not dot or inst_pfx != 'NVIC':

@@ -3,10 +3,16 @@
 Block models declare named output signals in a top-level `outputs:` list —
 flat `{name, description?}` entries with **no kind classification at the
 source**.  Chip-level wiring assigns meaning per-instance via
-`outputs: {signal: [destination, ...]}`, where each destination is a dotted
-`instance.input` string identifying the consumer (NVIC, DMAMUX, EXTI, ...)
-and its input port.  The kind of a signal — interrupt vs DMA request vs
-wakeup vs trigger — follows from which destination instance receives it.
+`connections: {signal: [destination, ...]}`, where each destination is a
+dotted `instance.input` string identifying the consumer (NVIC, DMAMUX,
+EXTI, ...) and its input port.  The kind of a signal — interrupt vs DMA
+request vs wakeup vs trigger — follows from which destination instance
+receives it.
+
+The naming asymmetry is deliberate: the block *declares* `outputs:` (what
+comes out of it); the chip *makes* `connections:` (where those outputs
+wire to on this particular chip).  Source and destination then share no
+key name, so it's always unambiguous which side a piece of data lives on.
 
 ## Why no source-side kind discriminator
 
@@ -37,7 +43,7 @@ under that signal's entry:
 
 ```yaml
 USART1:
-  outputs:
+  connections:
     global_irq:
       - NVIC_CM7.37
     wakeup:
@@ -81,13 +87,13 @@ Each new destination kind lands end-to-end:
    derivable from `cpu.name`).
 
 The C++ side gains field-type dispatch by destination kind (today every
-output emits as `Exception ex<NAME>`).  The schema already accepts
+connection emits as `Exception ex<NAME>`).  The schema already accepts
 multi-kind destinations — Phase 1 deliberately defers the dispatch until
 there's actual heterogeneity to dispatch on.
 
 A subtlety to address in Phase 2: routing fabrics have **configurable**
 edges (DMAMUX's request → channel selector is a register field, not fixed
-wiring).  The chip-level `outputs:` map captures *fixed* wiring; the
+wiring).  The chip-level `connections:` map captures *fixed* wiring; the
 fabric's *configurable* routing belongs in the fabric block's register
 model and is the driver's concern, not the chip's.
 
@@ -103,9 +109,9 @@ mixing fabrics in one change tends to entangle the schema discussion.
 
 - CLAUDE.md "Output wiring" — day-to-day reference.
 - [docs/design/subfamily-model.md](subfamily-model.md) — how per-instance
-  outputs lift through the subfamily inheritance chain.
+  connections lift through the subfamily inheritance chain.
 - `schemas/chip.schema.yaml` — schema for the chip-level wiring shape.
 - `tools/validate_chip_interrupts.py` — destination-format check
   (dotted shape, NVIC-port integer rule).
 - `generators/cxx/generate_chip_header.py:_collectInterrupts` — derives
-  the vector-table view from per-instance outputs on the C++ side.
+  the vector-table view from per-instance connections on the C++ side.

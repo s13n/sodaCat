@@ -61,14 +61,14 @@ processing, the extractor extracts entries that appear with
 byte-identical content in every chip in the subfamily, lifts them to
 the subfamily YAML, and reduces each chip's own map to the delta.
 
-Each instance entry carries its own wiring under `outputs:` — a map
+Each instance entry carries its own wiring under `connections:` — a map
 from each block-declared output signal to its dotted-string
-destination list (e.g. `outputs: {INTR: ["NVIC.53"]}`).  Vector-table
-merging is therefore implicit in the instance lift: an instance whose
-entire entry (baseAddress + model + outputs + parameters) is
+destination list (e.g. `connections: {INTR: ["NVIC.53"]}`).  Vector-
+table merging is therefore implicit in the instance lift: an instance
+whose entire entry (baseAddress + model + connections + parameters) is
 byte-identical across every chip lifts wholesale; an instance whose
-output map differs across chips (e.g. one chip routes USART1.INTR to
-NVIC.37 and another to NVIC.38) stays per-chip on every chip in the
+connection map differs across chips (e.g. one chip routes USART1.INTR
+to NVIC.37 and another to NVIC.38) stays per-chip on every chip in the
 subfamily.
 
 For a typical multi-chip subfamily (e.g. H745_H757 with 8 chips, 114
@@ -83,7 +83,7 @@ assemble the merged view.
 
 The patching pipeline still applies per-chip *before* the
 intersection: SVD raw interrupt names → canonical via the block's
-`outputs:` map; `chip_outputs:` overrides; `chip_instances:`
+`outputs:` map; `chip_connections:` overrides; `chip_instances:`
 exclusions.  The intersection sees the post-patch state — so a patch
 that makes one chip agree with its siblings causes the corrected entry
 to lift cleanly into the subfamily (the patch becomes invisible in
@@ -100,8 +100,8 @@ for subfamily in family:
     for chip in subfamily:
         # 1. Per-chip processing (existing logic):
         #    block presence, instance addresses, interrupt canonicalisation,
-        #    chip_outputs overrides, chip_instances exclusions,
-        #    per-instance outputs map assembly ...
+        #    chip_connections overrides, chip_instances exclusions,
+        #    per-instance connections map assembly ...
         chip_model = assemble(chip)
         accumulate(chip_model)        # NOT written to disk yet
 

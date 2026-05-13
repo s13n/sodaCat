@@ -277,7 +277,7 @@ Start with the simpler family (fewer peripherals, no architectural quirks):
 1. Configure and build: `cmake --build . --target <vendor><id>-models`
 2. Compare output models against any existing legacy models
 3. Verify register names, offsets, fields match expectations
-4. Check chip model: instances, base addresses, per-instance `outputs:` (NVIC wiring), parameters
+4. Check chip model: instances, base addresses, per-instance `connections:` (NVIC wiring), parameters
 
 ### 4.2 Add the second family and shared blocks
 

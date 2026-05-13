@@ -69,7 +69,7 @@ def _parse_block_cfg(block_cfg):
 def load_family_config(family_code, config_file):
     """Load the YAML config for a given family code.
 
-    Returns (families, blocks_config, chip_params, chip_outputs,
+    Returns (families, blocks_config, chip_params, chip_connections,
              shared_blocks_config, svd_tag, address_overrides, svd_chip,
              clocktree).
     """
@@ -134,9 +134,9 @@ def load_family_config(family_code, config_file):
     for sf_key, sf_val in (config.get('chip_params') or {}).items():
         chip_params[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
-    chip_outputs = {}
-    for sf_key, sf_val in (config.get('chip_outputs') or {}).items():
-        chip_outputs[sf_key] = {k: dict(v) for k, v in sf_val.items()}
+    chip_connections = {}
+    for sf_key, sf_val in (config.get('chip_connections') or {}).items():
+        chip_connections[sf_key] = {k: dict(v) for k, v in sf_val.items()}
 
     chip_instances = {}
     for sf_key, sf_val in (config.get('chip_instances') or {}).items():
@@ -158,7 +158,7 @@ def load_family_config(family_code, config_file):
     clocktree = config.get('clocktree')
     inherits = config.get('inherits')
 
-    return families, blocks_config, chip_params, chip_outputs, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree, inherits, shared_subfamilies_config
+    return families, blocks_config, chip_params, chip_connections, chip_instances, shared_blocks_config, svd_tag, address_overrides, svd_chip, clocktree, inherits, shared_subfamilies_config
 
 
 def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, param_name, default=None):
@@ -190,8 +190,8 @@ def _resolve_chip_param(chip_params, subfamily, chip, instance, block_type, para
     return default
 
 
-def _resolve_chip_outputs(chip_outputs, subfamily, chip, instance, block_type):
-    """Resolve manual output-routing overrides for an instance.
+def _resolve_chip_connections(chip_connections, subfamily, chip, instance, block_type):
+    """Resolve manual connection overrides for an instance.
 
     Same cascade as _resolve_chip_param.  Returns a {canonical_name:
     [destination_string, ...]} dict where each destination is a dotted
@@ -200,7 +200,7 @@ def _resolve_chip_outputs(chip_outputs, subfamily, chip, instance, block_type):
     that signal — it does not merge with any SVD-derived destinations.
     """
     for sf_key in (subfamily, '_all'):
-        sf = chip_outputs.get(sf_key)
+        sf = chip_connections.get(sf_key)
         if not sf:
             continue
         chip_keys = [chip, '_all'] if sf_key != '_all' else ['_all']
@@ -1329,9 +1329,9 @@ def _dict_intersection(dicts):
     """Return {key: value} entries that appear with identical content in
     every input dict.  Used for the subfamily-common instances and the
     subfamily-common models map.  Equality is by JSON-serialised value
-    so nested structures (instance.parameters, instance.outputs) are
+    so nested structures (instance.parameters, instance.connections) are
     compared structurally — an instance with the same destinations on
-    every chip lifts; an instance whose output map differs across chips
+    every chip lifts; an instance whose connection map differs across chips
     stays per-chip.
     """
     if not dicts:
@@ -1737,7 +1737,7 @@ def main():
     vendor_ns = output_dir.name.lower()
 
     config_file = ext.config_path(args)
-    families, blocks_config, chip_params, chip_outputs, chip_instances, shared_blocks, svd_tag, \
+    families, blocks_config, chip_params, chip_connections, chip_instances, shared_blocks, svd_tag, \
         address_overrides, svd_chip, clocktree, inherits, shared_subfamilies = load_family_config(family_code, config_file)
 
     # Determine which shared blocks this family is responsible for generating
@@ -2181,8 +2181,8 @@ def main():
 
             device_meta = summary['device_meta']
 
-            # Build instances.  Per-instance `outputs:` is the source-side
-            # record of where each block-declared output signal is routed;
+            # Build instances.  Per-instance `connections:` is the source-side
+            # record of where each block-declared output signal is wired —
             # destinations are dotted "instance.input" strings (e.g.
             # "NVIC.53") with the input ID in the destination's own numbering
             # convention.  For NVIC that's the absolute vector index, so the
@@ -2239,42 +2239,43 @@ def main():
                     else:
                         unmatched_interrupts[block_type].add(raw_name)
 
-                # Build per-instance outputs map: canonical signal name ->
-                # list of dotted destination strings.  For NVIC, the input ID
-                # is the absolute exception vector (SVD value + offset);
-                # output names map 1:1 to the block model's `outputs:` list.
-                outputs_map = {}
+                # Build per-instance connections map: canonical signal name
+                # -> list of dotted destination strings.  For NVIC, the input
+                # ID is the absolute exception vector (SVD value + offset);
+                # signal names map 1:1 to the block model's `outputs:` list.
+                connections_map = {}
                 for intr in mapped_intrs:
-                    outputs_map[intr['name']] = [
+                    connections_map[intr['name']] = [
                         f"NVIC.{intr['value'] + interrupt_offset}"]
 
-                # Apply chip_outputs overrides/injections: each entry REPLACES
-                # the destination list for that signal (does not merge with
-                # SVD-derived NVIC destinations).  This is the mechanism for
-                # NVIC IRQ corrections (override existing NVIC.<n> entry) and
-                # for adding non-SVD destinations like DMAMUX request lines.
-                output_overrides = _resolve_chip_outputs(
-                    chip_outputs, subfamily_name, chip_name,
+                # Apply chip_connections overrides/injections: each entry
+                # REPLACES the destination list for that signal (does not
+                # merge with SVD-derived NVIC destinations).  This is the
+                # mechanism for NVIC IRQ corrections (override existing
+                # NVIC.<n> entry) and for adding non-SVD destinations like
+                # DMAMUX request lines.
+                conn_overrides = _resolve_chip_connections(
+                    chip_connections, subfamily_name, chip_name,
                     inst_name, block_type)
-                if output_overrides:
-                    for canonical_name, destinations in output_overrides.items():
-                        outputs_map[canonical_name] = list(destinations)
+                if conn_overrides:
+                    for canonical_name, destinations in conn_overrides.items():
+                        connections_map[canonical_name] = list(destinations)
 
-                # Sort outputs_map to match the block model's `outputs:`
+                # Sort connections_map to match the block model's `outputs:`
                 # declaration order.  Done after override application so
-                # canonicals injected only via chip_outputs (e.g. a DMA
+                # canonicals injected only via chip_connections (e.g. a DMA
                 # request line on an instance whose SVD lacks DMA entries)
-                # land in their block-declared slot rather than at the
-                # dict's tail.
+                # land in their block-declared slot rather than at the dict's
+                # tail.
                 model_name = block_model_names.get(block_type, block_type)
                 intr_order = (
                     model_interrupt_order.get((block_type, subfamily_name))
                     or model_interrupt_order.get(model_name)
                     or model_interrupt_order.get(block_type, []))
-                if intr_order and outputs_map:
+                if intr_order and connections_map:
                     order_map = {name: i for i, name in enumerate(intr_order)}
-                    outputs_map = dict(sorted(
-                        outputs_map.items(),
+                    connections_map = dict(sorted(
+                        connections_map.items(),
                         key=lambda kv: order_map.get(kv[0], len(order_map))))
 
                 # Resolve parameters.  When the resolved value matches the
@@ -2296,15 +2297,16 @@ def main():
                         continue
                     params_list.append({'name': param['name'], 'value': value})
 
-                # Omit `outputs:` / `parameters:` keys entirely when they'd
-                # be empty — the consumer side reads via `.get(..., default)`,
-                # and skipping the empty case keeps the chip YAMLs tidier.
+                # Omit `connections:` / `parameters:` keys entirely when
+                # they'd be empty — the consumer side reads via `.get(...,
+                # default)`, and skipping the empty case keeps the chip YAMLs
+                # tidier.
                 inst_entry = {
                     'baseAddress': periph['baseAddress'],
                     'model': block_model_names.get(block_type, block_type),
                 }
-                if outputs_map:
-                    inst_entry['outputs'] = outputs_map
+                if connections_map:
+                    inst_entry['connections'] = connections_map
                 if params_list:
                     inst_entry['parameters'] = params_list
                 instances[inst_name] = inst_entry
@@ -2356,9 +2358,9 @@ def main():
 
         # End of per-chip loop for this subfamily.  Now write all chips,
         # lifting common instances/models into the subfamily YAML if the
-        # subfamily declares `inherits:`.  Per-instance `outputs:` lives
+        # subfamily declares `inherits:`.  Per-instance `connections:` lives
         # inside each instance entry, so it lifts with the instance: an
-        # instance whose entire entry (baseAddress + outputs + parameters)
+        # instance whose entire entry (baseAddress + connections + parameters)
         # is byte-identical across every chip lifts to the subfamily;
         # otherwise it stays per-chip.  Single-chip subfamilies still
         # benefit — their sole chip's instance map lifts wholesale.

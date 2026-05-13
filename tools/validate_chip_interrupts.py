@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Validate that chip-level output names match their block model's canonical list.
+"""Validate that chip-level connection signal names match their block
+model's canonical output list.
 
 For every chip model (top-level `instances:` map), for every instance, look up
 the referenced block YAML via the chip's `models:` map and verify that each
-output name the chip declares (under per-instance `outputs:`) appears in the
+signal name the chip wires (under per-instance `connections:`) appears in the
 block's `outputs:` list.
 
 This catches:
@@ -64,7 +65,7 @@ def is_chip(data):
 
 
 def check_chip(chip_path, data, block_index):
-    """Return [(check_id, message)] for output-name mismatches and malformed
+    """Return [(check_id, message)] for signal-name mismatches and malformed
     destinations in one chip."""
     errors = []
     models_map = data.get('models') or {}
@@ -76,14 +77,14 @@ def check_chip(chip_path, data, block_index):
             continue
         block_path = models_map.get(model, model)
         canon = block_index.get(block_path)
-        outputs = inst.get('outputs') or {}
+        connections = inst.get('connections') or {}
         if canon is not None:
-            for name in outputs:
+            for name in connections:
                 if name not in canon:
                     errors.append((
                         'out-canon',
                         f"instance '{inst_name}' (model={model}, "
-                        f"block={block_path}): output '{name}' not in "
+                        f"block={block_path}): connection '{name}' not in "
                         f"block's declared outputs {sorted(canon)}"
                     ))
         # Destinations are 'instance.port' strings (e.g. NVIC.53,
@@ -92,7 +93,7 @@ def check_chip(chip_path, data, block_index):
         # (always an integer), so that's the only port-level check we
         # apply here.  Other targets' port grammars will land alongside
         # their schema definitions in Phase 2.
-        for name, dests in outputs.items():
+        for name, dests in connections.items():
             for dest in (dests or []):
                 m = _DEST_RE.match(dest) if isinstance(dest, str) else None
                 if not m:

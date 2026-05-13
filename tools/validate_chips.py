@@ -11,7 +11,7 @@ Phase 2: Semantic checks not expressible in standard JSON Schema:
   Cross-references:
     * each instance's `model` is present in the chip's `models` index
 
-Per-instance `outputs:` is a YAML mapping, so signal-name uniqueness is
+Per-instance `connections:` is a YAML mapping, so signal-name uniqueness is
 enforced by the parser.  Cross-instance destination validity (e.g. that
 'NVIC.53' refers to a known input) belongs to validate_chip_interrupts.py.
 

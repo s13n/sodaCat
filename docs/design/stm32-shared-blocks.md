@@ -71,4 +71,4 @@ the config:
 - **HRTIM** (hand-maintained, G4 superset) — unified Master + Timer
   cluster + Common, F3/G4/H7. No `from:` (model hand-crafted from 3 SVD
   peripherals). 1 param (`timers`: 5 or 6). All interrupts injected via
-  `chip_outputs` (SVDs scatter them across sub-peripherals).
+  `chip_connections` (SVDs scatter them across sub-peripherals).

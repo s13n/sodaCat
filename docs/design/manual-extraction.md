@@ -68,7 +68,7 @@ record; re-extract only when the RM revision bumps.
 | # | Target | Effort | Value | Notes |
 | - | ------ | ------ | ----- | ----- |
 | 1 | Memory-map / base-address tables | Low | High | Single well-formed table per RM; cross-checks chip YAMLs' `baseAddress`. |
-| 2 | Interrupt vector tables | Medium | High | Multi-page, but cross-checks the per-instance `outputs:` wiring (the IVT view derives from it).  Would have caught F413 / F423 SVD misattribution. |
+| 2 | Interrupt vector tables | Medium | High | Multi-page, but cross-checks the per-instance `connections:` wiring (the IVT view derives from it).  Would have caught F413 / F423 SVD misattribution. |
 | 3 | Mux source lists | Low per-table | Medium | Useful when authoring or auditing a clock tree. |
 | 4 | Bit-field documentation where SVD is silent | Medium | Low | SVD usually has this. |
 | 5 | Pin / alternate-function tables | High | High | Big tables, vendor-specific layout — half-done is worse than nothing. |
