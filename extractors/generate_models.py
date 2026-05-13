@@ -1501,33 +1501,128 @@ def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, inherits_
         rt.dump(data, f)
 
 
+def _is_new_outputs_schema(output_map):
+    """True iff output_map uses the new canonical-keyed schema.
+
+    Old schema: keys are SVD raw names; values are either a canonical-name
+    string (short form) or a dict with a `name:` key (full form).
+    New schema: keys ARE canonical names; values are dicts with optional
+    `description:` and `pattern:` (regex or null), or YAML null for a
+    bare entry.
+
+    Detection: if any value is a string or a dict containing `name:`, the
+    map is old schema.  Otherwise (every value is null / empty dict /
+    dict without `name:`) it's new schema.  Empty map → new (no consumer
+    cares).
+    """
+    if not output_map:
+        return True
+    for value in output_map.values():
+        if isinstance(value, str):
+            return False
+        if isinstance(value, dict) and 'name' in value:
+            return False
+    return True
+
+
+def _normalize_outputs(output_map):
+    """Return a list of (canonical, description, pattern) triples in
+    declaration order, regardless of whether output_map uses old or new
+    schema.
+
+    pattern semantics:
+        None: never matches (non-SVD output / opt-out).
+        str:  regex matched against SVD raw names via `re.fullmatch`.
+              Default `.*` (match everything) when omitted in new schema.
+
+    Old schema is converted by grouping entries by canonical: multiple
+    raws mapping to the same canonical become one entry with an anchored
+    alternation pattern.  A self-mapping single entry (raw == canonical)
+    becomes a never-match entry — that's the canonical-name-only
+    convention old schema used for non-SVD outputs.
+    """
+    if not output_map:
+        return []
+
+    if _is_new_outputs_schema(output_map):
+        result = []
+        for canonical, spec in output_map.items():
+            if spec is None:
+                description = ''
+                pattern = '.*'
+            elif isinstance(spec, dict):
+                description = spec.get('description', '') or ''
+                if 'pattern' in spec:
+                    pattern = spec['pattern']  # may be None for never-match
+                else:
+                    pattern = '.*'
+            else:
+                raise ValueError(
+                    f"new-schema output '{canonical}' value must be a dict "
+                    f"or null, got {type(spec).__name__}")
+            result.append((canonical, description, pattern))
+        return result
+
+    # Old schema → group entries by canonical, preserving first appearance.
+    groups = {}  # canonical -> [(raw, description), ...]
+    canonical_order = []
+    for raw_name, mapping in output_map.items():
+        if isinstance(mapping, dict):
+            canonical = mapping['name']
+            desc = mapping.get('description', '') or ''
+        else:
+            canonical = mapping
+            desc = ''
+        if canonical not in groups:
+            canonical_order.append(canonical)
+            groups[canonical] = []
+        groups[canonical].append((raw_name, desc))
+
+    result = []
+    for canonical in canonical_order:
+        entries = groups[canonical]
+        raws = [r for r, _ in entries]
+        description = next((d for _, d in entries if d), '')
+        if len(raws) == 1 and raws[0] == canonical:
+            pattern = None  # self-mapping = non-SVD output (legacy form)
+        elif len(raws) == 1:
+            pattern = '^' + re.escape(raws[0]) + '$'
+        else:
+            pattern = '^(' + '|'.join(re.escape(r) for r in raws) + ')$'
+        result.append((canonical, description, pattern))
+    return result
+
+
+def _resolve_via_outputs_decl(decl_list, raw_name):
+    """Walk decl_list in declaration order and return the canonical whose
+    pattern matches raw_name (via `re.fullmatch`).  Returns None if no
+    entry matches.  Entries with `pattern is None` are skipped.
+    """
+    for canonical, _desc, pattern in decl_list:
+        if pattern is None:
+            continue
+        if re.fullmatch(pattern, raw_name):
+            return canonical
+    return None
+
+
 def _inject_outputs(block_data, output_map):
     """Ensure all canonical output names from config appear in block_data's
     `outputs:` list.
 
-    The output_map serves a dual role.  For interrupt outputs sourced from
-    SVD, entries are `raw_svd_name: canonical_name` (or `raw_name: {name,
-    description}`); the raw key drives SVD-resolution elsewhere while the
-    canonical value is what gets injected here.  For non-SVD outputs (DMA
-    requests, wakeups), entries are still `key: canonical_name` (often
-    with `key == canonical_name`); the dict-value form lets the caller
-    attach a description that lands on the block-model output entry.
-
-    The function deduplicates by canonical name, so the same canonical
-    can appear in multiple raw-name entries without producing duplicates.
+    Idempotent: existing entries with matching canonical names are kept;
+    new entries from output_map are appended in declaration order.
     """
     if not output_map:
         return block_data
     existing = block_data.get('outputs', [])
     seen = {i['name'] for i in existing}
-    for raw_name, mapping in output_map.items():
-        canonical = mapping['name'] if isinstance(mapping, dict) else mapping
-        desc = mapping.get('description', '') if isinstance(mapping, dict) else ''
+    for canonical, description, _pattern in _normalize_outputs(output_map):
         if canonical not in seen:
             seen.add(canonical)
             entry = {'name': canonical}
-            if desc:
-                entry['description'] = desc
+            if description:
+                entry['description'] = description
             existing.append(entry)
     if existing:
         block_data['outputs'] = existing
@@ -1553,64 +1648,64 @@ def _inject_source(block_data, source):
 def _build_canonical_outputs(blocks_config, shared_blocks):
     """Build a dict of block_type -> set of canonical output names.
 
-    Sources names from output declarations in both family and shared block
-    configs.  For blocks with 'uses:', inherits from the referenced shared
-    block.  Used by the chip-build pass to validate SVD-derived interrupt
-    canonicals and (when relevant) to seed the set of declarable outputs.
+    Exclusive layering, matching the legacy semantics that the step-5
+    fallback in `_resolve_interrupt_name` relies on: if the family block
+    declares its own `outputs:`, only family + variant canonicals are
+    counted; otherwise we fall back to the shared block's canonicals.
+    Keeping the set size driven by family-only declarations is what lets
+    a single-canonical family override (e.g. `{UART4: INTR}`) re-enable
+    step-5 even when the shared block declares additional canonicals
+    (TX_DMA / RX_DMA) that aren't relevant to interrupt resolution.
+
+    Used by the chip-build pass to seed the legacy algorithmic
+    resolver's set of valid canonicals.  Once every block migrates to
+    the new outputs schema the algorithmic resolver becomes dead code
+    and so does this function.
     """
     result = defaultdict(set)
     for bt, bc in blocks_config.items():
-        output_map = bc.get('outputs') or {}
-        if not output_map and bc.get('uses'):
-            shared = shared_blocks.get(bc['uses'], {})
-            output_map = shared.get('outputs') or {}
-        # Also check variants for output overrides
+        family_outputs = bc.get('outputs') or {}
+        for c, _, _ in _normalize_outputs(family_outputs):
+            result[bt].add(c)
         for variant_cfg in (bc.get('variants') or {}).values():
-            for raw, mapping in (variant_cfg.get('outputs') or {}).items():
-                canonical = mapping['name'] if isinstance(mapping, dict) else mapping
-                result[bt].add(canonical)
-        for raw, mapping in output_map.items():
-            canonical = mapping['name'] if isinstance(mapping, dict) else mapping
-            result[bt].add(canonical)
+            for c, _, _ in _normalize_outputs(variant_cfg.get('outputs') or {}):
+                result[bt].add(c)
+        if not family_outputs and bc.get('uses'):
+            shared = shared_blocks.get(bc['uses'], {})
+            for c, _, _ in _normalize_outputs(shared.get('outputs') or {}):
+                result[bt].add(c)
     return result
 
 
-def _build_config_output_mapping(blocks_config, shared_blocks):
-    """Build a direct raw_svd_name -> canonical mapping per block type from
-    config.  Provides a config-driven lookup tried before algorithmic
-    SVD-name resolution.  Useful when interrupt names don't follow
-    prefix-stripping patterns.
+def _build_outputs_decl(blocks_config, shared_blocks):
+    """Return {block_type: [(canonical, description, pattern), ...]} with
+    family entries first (in declaration order), then variants, then
+    shared-block entries.
 
-    Non-SVD entries in `outputs:` (DMA requests, wakeups) typically use
-    key == canonical, so their entries here are no-op self-mappings; they
-    never match an actual SVD raw name and the cost is just a dict entry.
+    Layering is additive: family entries appear before shared entries in
+    the list, so first-match-wins by declaration order gives family
+    precedence for overlapping raw names while still letting shared
+    contribute aliases the family didn't enumerate.  Once configs are
+    fully migrated to the new schema this collapses to "family replaces
+    shared" in practice — duplicate-canonical entries across layers are
+    rare in hand-authored new-schema configs — but during transition the
+    additive behavior is what keeps old-schema family overrides composing
+    correctly with their shared block.
 
-    Returns: dict of (block_type, raw_name) -> canonical_name.
+    Replaces the old `_build_config_output_mapping`: the chip-build pass
+    walks the per-block list and matches SVD raws via `re.fullmatch`
+    rather than direct dict lookup.
     """
-    mapping = {}
+    result = {}
     for bt, bc in blocks_config.items():
-        output_map = bc.get('outputs') or {}
-        if not output_map and bc.get('uses'):
-            shared = shared_blocks.get(bc['uses'], {})
-            output_map = shared.get('outputs') or {}
-        for raw, canonical_spec in output_map.items():
-            canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
-            mapping[(bt, raw)] = canonical
-        # Also include mappings from variants
+        decl = list(_normalize_outputs(bc.get('outputs') or {}))
         for variant_cfg in (bc.get('variants') or {}).values():
-            for raw, canonical_spec in (variant_cfg.get('outputs') or {}).items():
-                canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
-                mapping[(bt, raw)] = canonical
-    # Shared block mappings fill in entries that no family overrides.
-    # Family-level mappings win, mirroring how `_resolve_uses_config` lets
-    # a family override shared defaults.
-    for bt, bc in shared_blocks.items():
-        for raw, canonical_spec in (bc.get('outputs') or {}).items():
-            if (bt, raw) in mapping:
-                continue
-            canonical = canonical_spec['name'] if isinstance(canonical_spec, dict) else canonical_spec
-            mapping[(bt, raw)] = canonical
-    return mapping
+            decl.extend(_normalize_outputs(variant_cfg.get('outputs') or {}))
+        if bc.get('uses'):
+            shared = shared_blocks.get(bc['uses'], {})
+            decl.extend(_normalize_outputs(shared.get('outputs') or {}))
+        result[bt] = decl
+    return result
 
 
 def _resolve_interrupt_name(raw_name, instance_name, canonical_names):
@@ -2128,12 +2223,14 @@ def main():
     print(f"{'='*60}")
 
     canonical_outputs = _build_canonical_outputs(blocks_config, shared_blocks)
-    # Config-driven interrupt lookup: used by LPC (interrupt names don't follow
-    # prefix-stripping patterns). STM32 uses algorithmic resolution only.
-    if hasattr(ext, 'use_config_interrupt_map') and ext.use_config_interrupt_map:
-        config_interrupt_map = _build_config_output_mapping(blocks_config, shared_blocks)
-    else:
-        config_interrupt_map = {}
+    # Per-block output declarations: list of (canonical, description, pattern)
+    # in priority order.  Drives SVD-raw → canonical resolution via
+    # `_resolve_via_outputs_decl`; `_resolve_interrupt_name` stays as a
+    # transition fallback for blocks whose old-schema `outputs:` map doesn't
+    # explicitly enumerate every SVD raw name (the step-5 instance-match
+    # fallback).  Once every block migrates to the new schema, the fallback
+    # path is dead code.
+    outputs_decl = _build_outputs_decl(blocks_config, shared_blocks)
     chip_model_count = 0
     unmatched_interrupts = defaultdict(set)  # block_type -> set of unmatched raw names
     # Per-subfamily accumulator: write chips after the whole subfamily is built
@@ -2206,10 +2303,13 @@ def main():
                     continue  # Unmodeled peripheral
 
                 canonical_names = canonical_outputs.get(block_type, set())
+                decl_list = outputs_decl.get(block_type, [])
 
-                # Map interrupts: config-driven lookup first, then algorithmic.
-                # Dedup by canonical name with first-wins policy.  Two cases
-                # this fixes:
+                # Map interrupts: pattern-based lookup first, then legacy
+                # algorithmic fallback (the step-5 instance-name match still
+                # carries vendors/blocks that haven't yet migrated to the new
+                # outputs schema).  Dedup by canonical name with first-wins
+                # policy.  Two cases this fixes:
                 #   * exact duplicates (shared vectors like TIM1_UP_TIM10
                 #     mapping the same name+value twice);
                 #   * SVD misattribution (e.g. H742 DMA2 lists both
@@ -2221,7 +2321,7 @@ def main():
                 seen_canonical = set()
                 for raw_intr in periph.get('interrupts', []):
                     raw_name = raw_intr['name']
-                    canonical = config_interrupt_map.get((block_type, raw_name))
+                    canonical = _resolve_via_outputs_decl(decl_list, raw_name)
                     if not canonical:
                         canonical = _resolve_interrupt_name(
                             raw_name, inst_name, canonical_names)
