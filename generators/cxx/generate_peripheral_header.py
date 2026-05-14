@@ -173,7 +173,7 @@ class PerFormatter:
         self.fieldsTemplate    = Template(keywords.get('fields'   , '\n/** $description */\nEXPORT struct $name {$fields\n};\n'))
         self.registersTemplate = Template(keywords.get('registers', '\n$types\n/** $description */\nEXPORT struct $name {$regs\n}; // size = $size\n'))
         self.addressTemplate   = Template(keywords.get('address'  , '\t$type$usage;\t// offset = $offset, size = $size\n'))
-        self.interruptTemplate = Template(keywords.get('interrupt', '\tException ex$name;\t//!< $description\n'))
+        self.interruptTemplate = Template(keywords.get('interrupt', '\tConnection conn$name;\t//!< $description\n'))
         self.parameterTemplate = Template(keywords.get('parameter', '\tuint16_t $name:$bits;\t//!< $description\n'))
         self.headerTemplate    = Template(keywords.get('header', """
 $prefix

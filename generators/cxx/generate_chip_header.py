@@ -14,11 +14,11 @@ import re
 class ChipFormatter:
     def __init__(self, **keywords):
         self.instanceParamTemplate= Template(keywords.get('instanceParam',  '\n\t.$name = ${value}u,'))
-        # Destination strings in chip YAML's per-instance `connections:` map
-        # carry the absolute vector index (NVIC's own input numbering), so
-        # the emit no longer applies `interruptOffset` — that offset is purely
-        # descriptive of NVIC's relationship to the Cortex-M exception space.
-        self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.ex$name = ${value}u,'))
+        # Per-instance Intgr-field initialiser.  The field type is hwreg::Connection
+        # (a chip-independent opaque enum); the value is a chip-specific enumerator
+        # of the form `Connection::<INSTANCE>_<SIGNAL>`.  Destination semantics live
+        # in the per-target route tables emitted alongside, not here.
+        self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.conn$name = Connection::${enumerator},'))
         self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$ns/$model$incl_suffix"'))
         self.instanceDeclTemplate = Template(keywords.get('instanceDecl', """
 /** Integration parameters for $name */
@@ -116,14 +116,19 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         return params
 
     def createInterrupts(self, instance_name, instance, int_order):
-        """Emit ex<NAME> designated initialisers for this instance's NVIC-bound
+        """Emit conn<NAME> designated initialisers for this instance's wired
         outputs.
 
         Reads `instance['connections']` — a {signal_name: [destination_string]}
-        map.  Only destinations of the form 'NVIC.<vector>' produce an
-        initialiser; non-NVIC destinations (DMAMUX, EXTI, ...) are silently
-        ignored at this Phase-1 stage and will get their own emit paths as
-        the C++ side grows field-type dispatch.
+        map.  Emits one initialiser per wired signal (regardless of how many
+        destinations it has), with the value being the chip-scope Connection
+        enumerator for this (instance, signal) pair.  The destination wiring
+        itself lives in the per-target route tables emitted separately.
+
+        Outputs the block declares but the chip doesn't wire are skipped —
+        the corresponding Intgr field then default-initialises to
+        Connection::NONE (the value-zero sentinel), so drivers see the
+        absence cleanly.
         """
         connections = instance.get('connections') or {}
         if int_order is None:
@@ -138,16 +143,142 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             names = [n for n in int_order if n in connections]
         out = ''
         for name in names:
-            for dest in connections[name]:
-                inst_pfx, dot, port = dest.partition('.')
-                if not dot or inst_pfx != 'NVIC':
-                    continue
-                try:
-                    vec = int(port)
-                except ValueError:
-                    continue
-                out += self.instanceIntTemplate.substitute(name=name, value=vec)
+            if not connections[name]:
+                continue
+            enumerator = f"{instance_name}_{name}"
+            out += self.instanceIntTemplate.substitute(
+                name=name, enumerator=enumerator)
         return out
+
+    def _collectConnections(self, chip, chip_path):
+        """Walk the merged instance set (chip + inherits chain) and collect:
+
+        - `enumerators` — ordered list of (instance, signal) pairs naming
+          every Connection enumerator the chip needs.  Instance-major,
+          signal-secondary order; matches the order they appear in the
+          merged instances (already sorted by key) and each instance's
+          declared output order.
+        - `target_routes` — {target_prefix: [(enum_name, port_int), ...]}.
+          target_prefix is the part of the destination string up to its
+          final dot (today always a single instance name like `NVIC`; the
+          two-level form `TIM2.ITR` is forward-compatible).  port_int is
+          the integer that followed.
+
+        Malformed destinations (no dot, non-integer port) are silently
+        skipped; the validator in tools/validate_chip_interrupts.py is the
+        place that flags those.
+        """
+        instances, _ = self._collectInstances(chip, chip_path)
+        enumerators = []
+        seen = set()
+        target_routes = {}
+        for inst_name, inst in instances.items():
+            for sig_name, dests in (inst.get('connections') or {}).items():
+                if not dests:
+                    continue
+                enum_name = f"{inst_name}_{sig_name}"
+                if enum_name not in seen:
+                    enumerators.append(enum_name)
+                    seen.add(enum_name)
+                for dest in dests:
+                    prefix, _, port_str = dest.rpartition('.')
+                    if not prefix:
+                        continue
+                    try:
+                        port = int(port_str)
+                    except ValueError:
+                        continue
+                    target_routes.setdefault(prefix, []).append(
+                        (enum_name, port))
+        return enumerators, target_routes
+
+    @staticmethod
+    def _tableName(prefix, shape):
+        """Map (target_prefix, shape) → emitted table identifier.
+
+        `nvic_routes` (pair-list), `tim2_inputs` (direct-array).  Dotted
+        prefixes (`TIM2.ITR` once Phase 2 destinations land) lower-case
+        with the dot collapsed to underscore.
+        """
+        base = prefix.lower().replace('.', '_')
+        return base + ('_routes' if shape == 'pair_list' else '_inputs')
+
+    def emitConnectionEnum(self, enumerators):
+        """Emit the chip-specific Connection enum definition.
+
+        Reopens `namespace hwreg` (the forward declaration in hwreg.hpp
+        lives there) so the enumerators belong to the same type peripheral
+        headers reference.  NONE=0 is reserved as the "no connection"
+        sentinel; subsequent enumerators take sequential values from 1.
+        """
+        if not enumerators:
+            # Even a chip with zero wired outputs still needs a complete
+            # Connection type so its Intgr fields can default-initialise.
+            body = '\n\tNONE = 0,\n'
+        else:
+            lines = ['\tNONE = 0,']
+            for i, name in enumerate(enumerators, start=1):
+                lines.append(f'\t{name} = {i},')
+            body = '\n' + '\n'.join(lines) + '\n'
+        # `inline` matches hwreg.hpp's opening declaration; without it, GCC/Clang
+        # warn about reopening an inline namespace as non-inline.  No EXPORT —
+        # the enum's name is already visible via the forward declaration in
+        # hwreg.hpp, which lives in the consuming TU's translation unit.
+        return (
+            'inline namespace hwreg {\n'
+            'enum class Connection : uint16_t {'
+            f'{body}'
+            '};\n'
+            '} // namespace hwreg\n'
+        )
+
+    def emitTargetTables(self, enumerators, target_routes):
+        """Emit per-target route tables in shapes inferred from the data.
+
+        Pair-list (`RouteEntry[]`, sorted by Connection) when any port has
+        more than one source within the target; direct array
+        (`Connection[]` sized to max(port)+1, slots default to
+        Connection::NONE) otherwise.
+
+        Tables are emitted at chip namespace scope.  Pair-list rows are
+        sorted by the enumerator's declaration index (= its enum value),
+        which is what `resolve()`'s binary search expects.
+        """
+        if not target_routes:
+            return ''
+        enum_index = {name: i for i, name in enumerate(enumerators)}
+        chunks = []
+        # Stable target ordering by prefix for reproducible output.
+        for prefix in sorted(target_routes):
+            routes = target_routes[prefix]
+            ports = [p for _, p in routes]
+            shape = ('pair_list'
+                     if len(ports) != len(set(ports))
+                     else 'array')
+            table_id = self._tableName(prefix, shape)
+            if shape == 'pair_list':
+                # Deduplicate identical (conn, port) rows, then sort.
+                rows = sorted(set(routes), key=lambda r: enum_index[r[0]])
+                body = ''.join(
+                    f'\n\t{{Connection::{n}, {p}}},'
+                    for n, p in rows)
+                chunks.append(
+                    f'\nEXPORT constexpr RouteEntry {table_id}[] = {{{body}\n}};\n'
+                )
+            else:
+                # Direct array: size to max(port)+1, fill with the
+                # Connection wired at each slot (NONE for unwired).
+                size = max(ports) + 1
+                slots = [None] * size
+                for name, port in routes:
+                    slots[port] = name
+                body = ''.join(
+                    f'\n\tConnection::{n if n else "NONE"},'
+                    for n in slots)
+                chunks.append(
+                    f'\nEXPORT constexpr Connection {table_id}[{size}] = {{{body}\n}};\n'
+                )
+        return ''.join(chunks)
 
     def createIntegration(self, chip, chip_path, namespace, incl_suffix):
         """ create list of integration structs.
@@ -193,8 +324,16 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         # common entries while each chip carries only its per-chip deltas.
         interrupts = self._collectInterrupts(chip, chip_path)
         interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
-        header = prefix.substitute(chip, ns=namespace, incl=incl, interruptCount=interruptCount) + decl + postfix.substitute(ns=namespace)
-        return header, imports
+        enumerators, target_routes = self._collectConnections(chip, chip_path)
+        conn_enum = self.emitConnectionEnum(enumerators)
+        target_tables = self.emitTargetTables(enumerators, target_routes)
+        header = (prefix.substitute(chip, ns=namespace, incl=incl,
+                                    interruptCount=interruptCount,
+                                    conn_enum=conn_enum)
+                  + target_tables
+                  + decl
+                  + postfix.substitute(ns=namespace))
+        return header, imports, conn_enum
 
     def _walkInheritsChain(self, chip, chip_path):
         """Return [(node, node_path), ...] from chip up to the root of the
@@ -267,6 +406,7 @@ prefixTemplate = Template("""// File was generated, do not edit!
 #ifndef EXPORT
 $incl
 #include "hwreg.hpp"
+$conn_enum
 #define EXPORT
 #endif
 
@@ -287,6 +427,7 @@ moduleTemplate = Template("""// File was generated, do not edit!
 module;
 
 #include "hwreg.hpp"
+$conn_enum
 
 export module $mod;
 $imports
@@ -295,10 +436,20 @@ $imports
 #undef EXPORT
 """)
 
-def generate_module(mod, header, imports):
-    """Generate a .cppm module wrapper for a chip header."""
+def generate_module(mod, header, imports, conn_enum):
+    """Generate a .cppm module wrapper for a chip header.
+
+    The Connection enum definition has to live in the global module
+    fragment so it shares module attachment with the forward declaration
+    in hwreg.hpp; defining it in the module body would make the chip
+    module's Connection a different entity from peripheral modules'
+    Connection.  The same block is also emitted into the .hpp's
+    `#ifndef EXPORT` branch so standalone non-module consumers get it
+    there.
+    """
     imp_lines = ''.join(f'import {i};\n' for i in imports)
-    return moduleTemplate.substitute(mod=mod, header=header, imports=imp_lines)
+    return moduleTemplate.substitute(
+        mod=mod, header=header, imports=imp_lines, conn_enum=conn_enum)
 
 def generate_header(model_file, model_name, out_suffix, module_name=None):
     from _namespace import resolve as _resolve_ns
@@ -314,11 +465,13 @@ def generate_header(model_file, model_name, out_suffix, module_name=None):
         module_name = (f'{namespace}.{stem}'
                        if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
                        else stem)
-    header, imports = fmt.createHeader(chip, model_file, namespace, out_suffix, prefixTemplate, postfixTemplate)
+    header, imports, conn_enum = fmt.createHeader(
+        chip, model_file, namespace, out_suffix, prefixTemplate, postfixTemplate)
     filename = model_name + out_suffix
     print(header, file=open(filename, mode='w'))
     cppm = Path(filename).with_suffix('.cppm')
-    print(generate_module(module_name, Path(filename).name, imports), file=open(cppm, mode='w'))
+    print(generate_module(module_name, Path(filename).name, imports, conn_enum),
+          file=open(cppm, mode='w'))
 
 # Script arguments:
 #   argv[1] - Model (Name of yaml file)

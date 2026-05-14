@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
 #include <type_traits>
 #include <version>
 
@@ -247,6 +248,65 @@ private:
 
 //! Type for representing exceptions/interrupts.
 typedef uint16_t Exception;
+
+/** Opaque, chip-scoped identity for one (instance, output) wiring pair.
+ *
+ * Forward-declared here so peripheral headers (`USART.hpp`, `SPI.hpp`,
+ * ...) can name the type in their Intgr structs without acquiring a
+ * chip-namespace dependency.  The chip header re-opens `namespace hwreg`
+ * to define the enum with chip-specific enumerators.
+ *
+ * See docs/design/connection-routing.md for the full design.
+ */
+enum class Connection : uint16_t;
+
+/** Port-value type for routing-table lookups.
+ *
+ * Single point of customisation for a future typed-per-target-port
+ * upgrade: `resolve()` returns `port_t`, call sites that write `auto`
+ * stay correct when this becomes deduced from the table.
+ */
+using port_t = uint16_t;
+
+/** One row of a pair-list routing table.
+ *
+ * Used by OR-able targets (NVIC vectors) where multiple Connections
+ * can land on the same `port`.  Tables of this type are generator-sorted
+ * by `conn` so `resolve()` can binary-search.
+ */
+struct RouteEntry {
+    Connection conn;
+    port_t     port;
+};
+
+/** Look up the port that the given Connection lands on, given a routing
+ *  table emitted by the chip header.
+ *
+ *  Two table shapes are dispatched via the element type:
+ *  - `RouteEntry[]` (pair list, OR-able targets) — binary search.
+ *  - `Connection[]` (direct array, exclusive targets) — linear scan,
+ *    returns the array index.
+ *
+ *  Returns 0 when the Connection isn't in the table; callers passing a
+ *  Connection guaranteed to be in their target's table (the constexpr
+ *  Intgr-field path) never observe that case.
+ */
+constexpr port_t resolve(const auto& table, Connection c) {
+    using Elem = std::remove_cvref_t<decltype(table[0])>;
+    if constexpr (std::is_same_v<Elem, Connection>) {
+        for (std::size_t i = 0; i < std::size(table); ++i)
+            if (table[i] == c) return static_cast<port_t>(i);
+        return 0;
+    } else {
+        auto lo = std::begin(table);
+        auto hi = std::end(table);
+        while (lo < hi) {
+            auto mid = lo + (hi - lo) / 2;
+            if (mid->conn < c) lo = mid + 1; else hi = mid;
+        }
+        return (lo != std::end(table) && lo->conn == c) ? lo->port : 0;
+    }
+}
 
 /** Fixed-size hardware array with a configurable starting index and
  * optional typed index.
