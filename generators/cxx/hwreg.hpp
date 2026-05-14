@@ -283,7 +283,7 @@ struct RouteEntry {
  *  table emitted by the chip header.
  *
  *  Two table shapes are dispatched via the element type:
- *  - `RouteEntry[]` (pair list, OR-able targets) — binary search.
+ *  - `RouteEntry[]` (pair list, OR-able targets) — linear search.
  *  - `Connection[]` (direct array, exclusive targets) — linear scan,
  *    returns the array index.
  *
@@ -298,13 +298,9 @@ constexpr port_t resolve(const auto& table, Connection c) {
             if (table[i] == c) return static_cast<port_t>(i);
         return 0;
     } else {
-        auto lo = std::begin(table);
-        auto hi = std::end(table);
-        while (lo < hi) {
-            auto mid = lo + (hi - lo) / 2;
-            if (mid->conn < c) lo = mid + 1; else hi = mid;
-        }
-        return (lo != std::end(table) && lo->conn == c) ? lo->port : 0;
+        for (std::size_t i = 0; i < std::size(table); ++i)
+            if (table[i].conn == c) return table[i].port;
+        return 0;
     }
 }
 
