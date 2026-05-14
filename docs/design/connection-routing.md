@@ -36,26 +36,90 @@ site.
 
 ## The shape
 
-```cpp
-namespace stm32h7 {
+`Connection` is a strong opaque type whose declaration lives in
+`hwreg.hpp` — chip-independent, alongside `Exception` — and whose
+enumerators are populated by the chip header that gets included.  The
+forward declaration with an explicit underlying type is complete
+enough to be a struct member (size and alignment are fixed), but the
+enumerator names only exist after the chip header reopens
+`namespace hwreg` to define the enum.  Peripheral headers (and
+drivers) reference the type, never the values.
 
-// Chip-scope identity for every (instance, output) pair the chip wires.
-// `NONE = 0` is reserved as "no connection" — the absence sentinel,
-// so resolvers can return 0 unambiguously when no route matches.
-enum class Connection : uint16_t {
-    NONE = 0,
-    USART1_INTR    = 1,
-    USART1_TX_DMA  = 2,
-    USART1_RX_DMA  = 3,
-    USART2_INTR    = 4,
-    // ... one enumerator per (instance, canonical) on this chip
-    TIM1_TRGO      = 287,
-    TIM2_TRGO      = 290,
-    COMP1_OUT      = 412,
-    // ...
+```cpp
+// In hwreg.hpp — chip-independent.  Three pieces:
+//   1. The forward-declared Connection type.
+//   2. The pair-list entry struct, RouteEntry.
+//   3. A single resolve() template that dispatches between the two
+//      table shapes via the element type, using constexpr if.
+inline namespace hwreg {
+
+enum class Connection : uint16_t;   // complete type, no enumerators yet
+
+// Single point of customisation for the port-value type.  Today
+// uint16_t — a future per-target typed-port upgrade lands here
+// without touching call sites that write `auto`.  See "Deferred
+// decisions" for the trade-off analysis.
+using port_t = uint16_t;
+
+struct RouteEntry {
+    Connection conn;
+    port_t     port;
 };
 
-// Intgr struct field carries the Connection identity, not a port number.
+// One resolver, two shapes.  Caller passes the table directly; ADL
+// finds this overload via the Connection / RouteEntry types in hwreg::.
+constexpr port_t resolve(const auto& table, Connection c) {
+    using Elem = std::remove_cvref_t<decltype(table[0])>;
+    if constexpr (std::is_same_v<Elem, Connection>) {
+        // Direct-array shape — linear scan, returns the array index.
+        for (std::size_t i = 0; i < std::size(table); ++i)
+            if (table[i] == c) return static_cast<port_t>(i);
+        return 0;
+    } else {
+        // Pair-list shape — binary search (table sorted by Connection).
+        auto lo = std::begin(table);
+        auto hi = std::end(table);
+        while (lo < hi) {
+            auto mid = lo + (hi - lo) / 2;
+            if (mid->conn < c) lo = mid + 1; else hi = mid;
+        }
+        return (lo != std::end(table) && lo->conn == c) ? lo->port : 0;
+    }
+}
+
+}
+
+// In USART.hpp — chip-independent peripheral header.  References the
+// Connection type by name; the chip-specific enumerators are not in
+// scope here and don't need to be.
+struct USART_Intgr {
+    HwPtr<USART_Type> registers;
+    Connection        connINTR;
+    Connection        connTX_DMA;
+    Connection        connRX_DMA;
+    // ... params ...
+};
+
+// In the chip header (e.g. stm32h7.hpp) — chip-specific.  Reopens
+// hwreg to provide the actual enum definition with the chip's
+// inventory of (instance, output) pairs.
+namespace hwreg {
+    enum class Connection : uint16_t {
+        NONE = 0,                  // reserved: "no connection" sentinel
+        USART1_INTR    = 1,
+        USART1_TX_DMA  = 2,
+        USART1_RX_DMA  = 3,
+        USART2_INTR    = 4,
+        // ... one enumerator per (instance, canonical) on this chip
+        TIM1_TRGO      = 287,
+        TIM2_TRGO      = 290,
+        COMP1_OUT      = 412,
+        // ...
+    };
+}
+
+namespace stm32h7 {
+
 constexpr USART_Intgr usart1 = {
     .registers  = HwPtr<...>{0x40011000},
     .connINTR   = Connection::USART1_INTR,
@@ -64,53 +128,75 @@ constexpr USART_Intgr usart1 = {
     // ... params ...
 };
 
-// One pair-list table per target instance.  Each table is its own
-// constexpr symbol — eligible for linker GC.  Sorted by Connection
-// to support constexpr binary-search resolvers.
-struct NvicRoute   { Connection conn; uint16_t vec;   };
-struct DmamuxRoute { Connection conn; uint16_t input; };
-struct TimerRoute  { Connection conn; uint16_t input; };
-
-constexpr NvicRoute nvic_routes[] = {
+// Per-target tables.  Plain constexpr arrays — no class wrapping, no
+// per-target resolver wrapper functions.  The element type alone
+// distinguishes the two shapes:
+//
+// 1. Pair-list of `RouteEntry` — for OR-able targets (multiple
+//    Connections may land on the same target input, dispatch ORs
+//    them).  NVIC is the canonical example: shared vectors are normal
+//    on ST chips.  Sorted by Connection by the generator so resolve()
+//    can binary-search.
+constexpr RouteEntry nvic_routes[] = {
     {Connection::USART1_INTR, 53},
     {Connection::USART2_INTR, 54},
     // ...
 };
-constexpr DmamuxRoute dmamux1_routes[] = {
+constexpr RouteEntry dmamux1_routes[] = {
     {Connection::USART1_RX_DMA, 41},
     {Connection::USART1_TX_DMA, 42},
     // ...
 };
-constexpr TimerRoute tim2_routes[] = {
-    {Connection::TIM1_TRGO, 0},   // TIM2.ITR0
-    {Connection::TIM8_TRGO, 1},   // TIM2.ITR1
+
+// 2. Direct array of `Connection` — for exclusive targets (each input
+//    port is fed by at most one source).  Mux-style: TIM trigger
+//    inputs, EXTI line selector, DMAMUX request mux inputs, trigger
+//    crossbar inputs.  Indexed by port; entries default to
+//    Connection::NONE for unwired slots.
+constexpr Connection tim2_inputs[8] = {
+    Connection::TIM1_TRGO,   // ITR0
+    Connection::TIM8_TRGO,   // ITR1
+    Connection::NONE,        // ITR2 unwired
+    Connection::TIM3_TRGO,   // ITR3
     // ...
 };
-// ... one table per sink instance (NVIC, DMAMUX1, DMAMUX2, BDMAMUX,
-// EXTI, EXTI_S, every TIMx, every ADCx, every DACx, HRTIM, ...).
-
-// One resolver per target instance.  Each references only its own
-// table; the linker drops both when the resolver is uncalled.
-constexpr uint16_t nvic_vector(Connection c) {
-    auto* lo = std::begin(nvic_routes);
-    auto* hi = std::end(nvic_routes);
-    while (lo < hi) {
-        auto* mid = lo + (hi - lo) / 2;
-        if (mid->conn < c) lo = mid + 1; else hi = mid;
-    }
-    return (lo != std::end(nvic_routes) && lo->conn == c) ? lo->vec : 0;
-}
-constexpr uint16_t dmamux1_input(Connection c) { /* same shape */ }
-constexpr uint16_t tim2_input(Connection c)    { /* same shape */ }
 
 }  // namespace stm32h7
+
+// Driver / kernel-side use — call resolve() directly on the chip's
+// tables.  ADL finds hwreg::resolve via the Connection / RouteEntry
+// argument types; no qualification needed at the call site beyond
+// naming the table.
+namespace peLua {
+    using Chip = stm32h7;
+    namespace isr {
+        inline void insert(Connection c, isr_t fn) {
+            isr_table[resolve(Chip::nvic_routes, c)] = fn;
+        }
+    }
+}
 ```
 
 ## Why this shape
 
-**`Connection` is a chip-scope identity, not a destination.**  Each
-enumerator names one signal on one block instance.  The same identity
-appears in *every* table where that signal lands — once in
+**Type chip-independent, values chip-specific.**  The `Connection`
+*type* is forward-declared in `hwreg.hpp` so that peripheral headers
+(`USART.hpp`, `SPI.hpp`, ...) and driver code can name it without
+acquiring a dependency on any chip namespace.  Peripheral headers are
+deliberately portable across chip families — embedding `stm32h7::` or
+any other chip prefix in an Intgr field type would defeat that.  The
+chip header is the sole producer of enumerator constants and the sole
+owner of the route tables and resolvers; everything below the chip
+layer sees only an opaque `Connection` it can pass around but not
+construct.  The forward-declaration form (no enumerator body in
+`hwreg.hpp`) lets the chip header *define* the enum in a re-opened
+`namespace hwreg`, which means the values still belong to the same
+type the peripheral header references — there is no second
+`Connection` floating around to confuse name lookup.
+
+**Connection identifies a source, not a destination.**  Each
+enumerator names one signal on one block instance.  The same
+identifier appears in *every* table where that signal lands — once in
 `nvic_routes` if it goes to NVIC, once in `dmamux1_routes` if it
 generates a DMA request, etc.  The Connection value itself doesn't
 carry destination information; that lives in the route tables.
@@ -132,25 +218,102 @@ matches the design rule already in force on the YAML side (see
 on a fully-modelled H7 has ~58 destination peripherals (RM0399 ch. 14
 Table 102 alone enumerates them).  Most applications use a small
 subset.  Per-target symbols let the linker eliminate the wiring for
-target instances no driver in the binary actually queries — the
-guarantee is that the `(table, resolver)` pair for any unused target
-goes away wholesale.
+target instances no driver in the binary actually queries — an unused
+target's table is a stand-alone constexpr symbol with no references,
+so the linker drops it wholesale.  The single `resolve()` template is
+instantiated only for the table types actually used in the binary
+(once for `RouteEntry[]`, once for `Connection[]`); both
+instantiations are independent of which specific tables exist.
 
-**Pair-list, not sparse table.**  At small fan-in counts the storage
-is identical (one slot per route either way), but the pair list scales
-with route count whereas the sparse table scales with
-`N_connections × N_targets`.  Once the chip has 30+ targets, the
-sparse encoding wastes most of its cells on zeros.  Pair-list also
-mirrors the YAML's `chip_connections` shape one-to-one — each YAML
-destination is one row in some target's table.
+**One resolver, two shapes, tables stay first-class data.**  The
+shape choice is encoded structurally in the table's element type
+(`RouteEntry` vs `Connection`), and the single `resolve()` template
+in `hwreg.hpp` dispatches between binary search and linear scan via
+`constexpr if`.  This factoring keeps the tables as plain constexpr
+arrays — anything that wants to iterate, dump, filter, reverse-look-up,
+or generate documentation from a routing table just uses standard
+array facilities, without going through accessors a class wrapper
+would have to anticipate.  Wrapping the tables in classes would force
+that foresight; leaving them as arrays defers it.
 
-**Sorted + binary-search resolver.**  Both halves are constexpr in
-C++20.  When called with a constexpr `Connection` (the universal case
-from an Intgr struct field), the compiler folds the search to a
+**Two table shapes, picked per target by inference.**  Target inputs
+come in two flavours that are real properties of the silicon, not
+encoding choices:
+
+- *OR-able* targets accept multiple sources on the same input,
+  dispatching them via a chained mechanism — NVIC vectors are the
+  canonical example (shared IRQ vectors run an ISR list).  The
+  (Connection → port) relation is many-to-one; the encoding must
+  preserve every (Connection, port) pair, hence a **pair list**.
+- *Exclusive* targets accept at most one source per input.  Mux-style
+  destinations (DMAMUX request mux, EXTI line selector, TIM ITR
+  selectors, trigger crossbars) all behave this way: a configuration
+  register picks one input per port, and the unselected sources are
+  electrically disconnected.  The (Connection → port) relation is
+  at-most-one-to-one in both directions on the wired subset; the
+  encoding can be a **direct array indexed by port**, dropping the
+  port field entirely.
+
+The generator picks the shape per target by **inferring from the chip's
+`chip_connections` data**: group destinations by their target prefix
+(`NVIC`, `DMAMUX1`, `TIM2.ITR`, ...) and check whether any port appears
+more than once.  Any collision → pair-list.  None → direct-array sized
+to `max(port) + 1`, with unwired slots defaulted to `Connection::NONE`.
+No declarative classification is required; the resolver lives in the
+same translation unit as its table, so the shape choice is local with
+no ABI surface.
+
+The inference is permissive about the (rare, programmer-error) case
+where an exclusive target accidentally has two Connections wired to
+the same port — the generator silently emits a pair-list rather than
+flagging the bug.  If this matters for a specific destination kind,
+the future `inputs:` schema introduced for Phase 2 destination-string
+validation (see [output-wiring.md](output-wiring.md)) is the natural
+home for an opt-in `multiplicity: exclusive` assertion the generator
+can check against the data.  For now: pure inference.
+
+**Pair-list, not sparse table** *(for the OR-able shape).*  At small
+fan-in counts the storage is identical (one slot per route either
+way), but the pair list scales with route count whereas the sparse
+form scales with `N_connections × N_targets`.  Once the chip has 30+
+targets, the sparse encoding wastes most of its cells on zeros.
+Pair-list also mirrors the YAML's `chip_connections` shape one-to-one
+— each YAML destination is one row in some target's table.
+
+**Direct array, not pair-list** *(for the exclusive shape).*  The
+array trades the per-row port field (saving 2 B/row) for one slot per
+port in the target's address space — including unwired slots,
+defaulted to `Connection::NONE`.  Net win when wired density exceeds
+~50%, which is the common case for these mux-style targets where the
+silicon defines a small fixed port count and most are wired.  Bonus:
+the array natively supports the reverse query "what's at port N?"
+via direct indexing, useful for debug and introspection without
+implying any change to the primary `Connection → port` API.
+
+**Sorted + binary search** *(for the pair-list shape).*  When
+`resolve()` is called with a constexpr `Connection` (the universal
+case from an Intgr struct field), the compiler folds the search to a
 constant and the resolver evaporates.  The table only lands in
 `.rodata` if some code path passes a runtime Connection through —
 which most drivers never do.  Sorted ordering is the generator's
 responsibility, not the author's.
+
+**Linear scan** *(for the direct-array shape).*  Same constexpr-fold
+property: with a constexpr Connection argument the compiler unrolls
+the comparison and emits the matching index as a constant.  Linear is
+fine because typical port counts are small (TIM ITR slots: 8; DMAMUX
+inputs: 64–128; EXTI lines: 16–88) and the scan never reaches
+`.rodata` on the constexpr path.
+
+**No per-target wrapper functions.**  Drivers and kernel-side glue
+call `resolve(Chip::nvic_routes, c)` directly rather than going
+through a per-target `nvic_vector(c)` helper.  ADL on the
+`RouteEntry`/`Connection` argument types finds `hwreg::resolve`
+without qualification.  This drops one emission per target from the
+chip header and keeps the resolver in exactly one place; the cost is
+that the call site names the table explicitly, which is fine — the
+table is the entity drivers reference for any purpose (lookup,
+iteration, diagnostics).
 
 ## How drivers consume it
 
@@ -166,16 +329,27 @@ peLua::isr::insert(intgr.connINTR, &my_isr);
 ```
 
 `peLua::isr::insert(Connection, isr_t)` is inline, calls
-`nvic_vector()` to resolve, then runs the existing per-vector ISR list
-insertion.  When the call site's `Connection` is constexpr (always
-true for Intgr-field reads), the whole resolution path folds at
-compile time and the driver pays exactly what it paid before.
+`resolve(Chip::nvic_routes, c)` to look up the vector, then runs the
+existing per-vector ISR list insertion.  When the call site's
+`Connection` is constexpr (always true for Intgr-field reads), the
+whole resolution path folds at compile time and the driver pays
+exactly what it paid before.
 
 The same pattern extends to other targets — a TIM2 driver
-configuring its trigger source consults `tim2_input(source)`; a DMA
-driver subscribing to a peripheral's request consults
-`dmamux1_input(source)`.  Each driver knows which resolver fits its
-local target without needing to inspect the Connection value.
+configuring its trigger source consults `resolve(Chip::tim2_inputs,
+source)`; a DMA driver subscribing to a peripheral's request consults
+`resolve(Chip::dmamux1_routes, source)`.  Each driver names the table
+its local target uses; the same `resolve()` template handles both
+shapes via the table's element type.
+
+**ADL works for `resolve`, table names are explicit.**  Because both
+`Connection` and `RouteEntry` are declared in `hwreg::`, ADL on a
+`resolve(table, c)` call finds `hwreg::resolve` regardless of which
+chip namespace the table lives in.  The table itself must be named
+explicitly (`Chip::nvic_routes`, where `using Chip = stm32h7;` is set
+up once per binary by peLua), but that's appropriate — drivers
+reference tables for other purposes too (iteration, diagnostics), so
+the table-as-named-data shape is load-bearing.
 
 ## Sharing and multi-destination
 
@@ -205,7 +379,9 @@ but filtered per-CPU at generation time.
 a signal split-fed to two NVIC inputs on the same NVIC) is *not*
 supported by the single-result resolver shape.  Two rows with the
 same `Connection` would resolve to whichever the binary search hits
-first.  Accept the limitation; if it materialises in real silicon,
+first; in the direct-array shape the equivalent would be two cells
+holding the same Connection — and the linear scan reports the first
+match.  Accept the limitation; if it materialises in real silicon,
 add a multi-result resolver next to the single-result one without
 changing the table shape.
 
@@ -254,9 +430,23 @@ All three regimes are comfortable on any chip we target.
   drivers that need this info hard-code it from the RM.
 - **Multi-result resolvers** (one Connection → multiple destinations
   on the same target).  Single-result API covers every case we've
-  seen.  When a real instance forces the issue, add a `_for(c)`
-  family of resolvers returning a span next to the existing
-  single-result entry points.  Table shape doesn't need to change.
+  seen.  When a real instance forces the issue, add a `resolve_all()`
+  template alongside `resolve()` that returns a span; the table shape
+  itself doesn't need to change.
+- **Typed per-target ports.**  The port value (NVIC vector number,
+  DMAMUX input number, TIM ITR slot, ...) is `port_t = uint16_t`
+  today.  A per-target opaque enum-class (`NvicVector`, `Dmamux1Input`,
+  `Tim2Itr`, ...) declared in the chip header alongside its table
+  would type-check cross-target port mixing at compile time, at the
+  cost of ~60 type declarations per chip and either a per-table
+  wrapping struct or a parallel `using <target>_port_t = ...;` alias
+  that `resolve()` learns to deduce from.  The bug class it catches is
+  narrow (driver author confused about which target they're writing
+  to) and the constexpr-fold path erases the runtime difference, so
+  the complexity isn't currently paying for itself.  The `port_t`
+  alias in `hwreg.hpp` is the upgrade hook — when we want typed ports,
+  `resolve()`'s return type becomes deduced from the table and call
+  sites that wrote `auto` keep working.
 - **Header sharding.**  One monolithic chip header is fine until the
   table count makes compile times painful for the configuration TUs
   that include it.  C++20 modules will sidestep the issue entirely
@@ -265,33 +455,56 @@ All three regimes are comfortable on any chip we target.
 - **Cross-binary lookups** (CM7 code reasoning about CM4's NVIC
   wiring).  Out of scope for the per-binary table model.  If it ever
   matters, both binaries' tables can be exposed under distinct
-  namespace prefixes (`stm32h7::cm7::nvic_routes` vs `cm4::`) and
-  the resolver functions disambiguated.
+  namespace prefixes (`stm32h7::cm7::nvic_routes` vs `cm4::`) and the
+  caller picks the right table explicitly when calling `resolve()`.
 
 ## Generator implications
 
 The chip-header generator gains responsibility for emitting:
 
-1. The chip-scope `Connection` enum (one enumerator per (instance,
-   canonical) appearing in the chip's wiring graph, with stable
-   ordering — instance-major is the easiest-to-read default).
-2. Per-target route tables, sorted by Connection.  Target instances
-   are discovered by walking the chip's connections and collecting
-   the distinct destination prefixes.
-3. The per-target constexpr resolver functions.
+1. The chip-scope `Connection` enum definition (one enumerator per
+   (instance, canonical) appearing in the chip's wiring graph, with
+   stable ordering — instance-major is the easiest-to-read default).
+   The definition reopens `namespace hwreg` so the enumerators belong
+   to the type the peripheral headers already reference.
+2. Per-target route tables as plain constexpr arrays, in the shape
+   inferred from the data: `RouteEntry[]` sorted by Connection when
+   any port has more than one source, `Connection[]` indexed by port
+   otherwise.  Target instances are discovered by walking the chip's
+   connections and collecting the distinct destination prefixes; the
+   shape choice falls out of the collision check on each group.
+
+No per-target resolver function is emitted — the single
+`hwreg::resolve()` template handles both shapes via the table's
+element type, dispatched with `constexpr if`.  Drivers call
+`resolve(Chip::nvic_routes, c)` directly.
 
 The Intgr struct emit changes too:
 
 - The per-peripheral `Intgr` template (from `generate_peripheral_header.py`)
-  emits `Connection conn$name` fields (was `Exception ex$name`).
+  emits `Connection conn$name` fields (was `Exception ex$name`),
+  referencing the forward-declared `hwreg::Connection` from
+  `hwreg.hpp`.  No chip-namespace dependency is introduced into the
+  peripheral header.
 - The chip-level integration init (from `generate_chip_header.py`)
-  references the chip-scope Connection enumerators instead of raw
-  integers.  The `NVIC.<n>`-only filter at the chip-header level goes
-  away — every destination, regardless of target, becomes a Connection
-  reference resolved through the appropriate target table.
+  references the Connection enumerators directly (they're in `hwreg::`,
+  which is `inline`, so unqualified names resolve from the chip
+  namespace).  The `NVIC.<n>`-only filter at the chip-header level
+  goes away — every destination, regardless of target, becomes a
+  Connection reference resolved through the appropriate target table.
 
-The YAML `chip_connections` schema doesn't need to change.  The
-destination strings (`NVIC.53`, `DMAMUX1.42`, `TIM2.ITR0`) already
-carry exactly what the generator needs.  The generator's job is to
-invert them — keyed-by-source today, indexed-by-(target, source) in
-the per-target tables.
+The YAML `chip_connections` schema doesn't need to change for the
+table-shape work.  The destination strings (`NVIC.53`, `DMAMUX1.42`,
+`TIM2.ITR0`) already carry exactly what the generator needs.  The
+generator's job is to invert them — keyed-by-source today,
+indexed-by-(target, source) in the per-target tables, with the shape
+of each per-target table inferred from the data as described above.
+
+Port-grammar validation (NVIC ports are absolute exception indices,
+DMAMUX ports are mux input numbers, TIM ports may need an `ITR.<n>` /
+`BRK.<n>` / ... structure) is a separate concern handled by the
+Phase-2 extension of `validate_chip_interrupts.py` from
+[output-wiring.md](output-wiring.md).  Table-shape inference and
+port-grammar validation are orthogonal — inference uses only the
+collision structure of `(prefix, port)` tuples, not the meaning of
+the port values.
