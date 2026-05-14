@@ -294,17 +294,14 @@ struct RouteEntry {
 constexpr port_t resolve(const auto& table, Connection c) {
     using Elem = std::remove_cvref_t<decltype(table[0])>;
     if constexpr (std::is_same_v<Elem, Connection>) {
-        for (std::size_t i = 0; i < std::size(table); ++i)
-            if (table[i] == c) return static_cast<port_t>(i);
-        return 0;
+        auto it = std::find(std::begin(table), std::end(table), c);
+        return it != std::end(table)
+            ? static_cast<port_t>(it - std::begin(table))
+            : 0;
     } else {
-        auto lo = std::begin(table);
-        auto hi = std::end(table);
-        while (lo < hi) {
-            auto mid = lo + (hi - lo) / 2;
-            if (mid->conn < c) lo = mid + 1; else hi = mid;
-        }
-        return (lo != std::end(table) && lo->conn == c) ? lo->port : 0;
+        auto it = std::lower_bound(std::begin(table), std::end(table), c,
+            [](const RouteEntry& e, Connection v) { return e.conn < v; });
+        return (it != std::end(table) && it->conn == c) ? it->port : 0;
     }
 }
 
