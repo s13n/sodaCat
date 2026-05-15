@@ -209,6 +209,13 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         lives there) so the enumerators belong to the same type peripheral
         headers reference.  NONE=0 is reserved as the "no connection"
         sentinel; subsequent enumerators take sequential values from 1.
+
+        Wrapped in `extern "C++"` so that when this block is consumed
+        from inside a module purview (via the .cppm's `#include` of the
+        .hpp), the linkage-specification forces global-module attachment
+        — matching the forward declaration in hwreg.hpp regardless of
+        whether the .hpp is included directly or imported as a module.
+        Outside a module purview the linkage-spec is a harmless no-op.
         """
         if not enumerators:
             # Even a chip with zero wired outputs still needs a complete
@@ -220,15 +227,15 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                 lines.append(f'\t{name} = {i},')
             body = '\n' + '\n'.join(lines) + '\n'
         # `inline` matches hwreg.hpp's opening declaration; without it, GCC/Clang
-        # warn about reopening an inline namespace as non-inline.  No EXPORT —
-        # the enum's name is already visible via the forward declaration in
-        # hwreg.hpp, which lives in the consuming TU's translation unit.
+        # warn about reopening an inline namespace as non-inline.
         return (
+            'extern "C++" {\n'
             'inline namespace hwreg {\n'
             'enum class Connection : uint16_t {'
             f'{body}'
             '};\n'
             '} // namespace hwreg\n'
+            '} // extern "C++"\n'
         )
 
     def emitTargetTables(self, enumerators, target_routes):
@@ -332,7 +339,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                   + target_tables
                   + decl
                   + postfix.substitute(ns=namespace))
-        return header, imports, conn_enum
+        return header, imports
 
     def _walkInheritsChain(self, chip, chip_path):
         """Return [(node, node_path), ...] from chip up to the root of the
@@ -405,9 +412,10 @@ prefixTemplate = Template("""// File was generated, do not edit!
 #ifndef EXPORT
 $incl
 #include "hwreg.hpp"
-$conn_enum
 #define EXPORT
 #endif
+
+$conn_enum
 
 namespace $ns {
 
@@ -426,7 +434,6 @@ moduleTemplate = Template("""// File was generated, do not edit!
 module;
 
 #include "hwreg.hpp"
-$conn_enum
 
 export module $mod;
 $imports
@@ -435,20 +442,19 @@ $imports
 #undef EXPORT
 """)
 
-def generate_module(mod, header, imports, conn_enum):
+def generate_module(mod, header, imports):
     """Generate a .cppm module wrapper for a chip header.
 
-    The Connection enum definition has to live in the global module
-    fragment so it shares module attachment with the forward declaration
-    in hwreg.hpp; defining it in the module body would make the chip
-    module's Connection a different entity from peripheral modules'
-    Connection.  The same block is also emitted into the .hpp's
-    `#ifndef EXPORT` branch so standalone non-module consumers get it
-    there.
+    The chip header itself emits the Connection enum inside an
+    `extern "C++"` block, which pins its attachment to the global
+    module even when the .hpp is included inside the module's purview.
+    That keeps the chip module's Connection identical to the type the
+    peripheral headers reference, without needing a duplicate emission
+    in the global module fragment here.
     """
     imp_lines = ''.join(f'import {i};\n' for i in imports)
     return moduleTemplate.substitute(
-        mod=mod, header=header, imports=imp_lines, conn_enum=conn_enum)
+        mod=mod, header=header, imports=imp_lines)
 
 def generate_header(model_file, model_name, out_suffix, module_name=None):
     from _namespace import resolve as _resolve_ns
@@ -464,12 +470,12 @@ def generate_header(model_file, model_name, out_suffix, module_name=None):
         module_name = (f'{namespace}.{stem}'
                        if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', namespace)
                        else stem)
-    header, imports, conn_enum = fmt.createHeader(
+    header, imports = fmt.createHeader(
         chip, model_file, namespace, out_suffix, prefixTemplate, postfixTemplate)
     filename = model_name + out_suffix
     print(header, file=open(filename, mode='w'))
     cppm = Path(filename).with_suffix('.cppm')
-    print(generate_module(module_name, Path(filename).name, imports, conn_enum),
+    print(generate_module(module_name, Path(filename).name, imports),
           file=open(cppm, mode='w'))
 
 # Script arguments:
