@@ -193,15 +193,14 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         return enumerators, target_routes
 
     @staticmethod
-    def _tableName(prefix, shape):
-        """Map (target_prefix, shape) → emitted table identifier.
+    def _tableName(prefix):
+        """Map target_prefix → emitted table identifier.
 
-        `nvic_routes` (pair-list), `tim2_inputs` (direct-array).  Dotted
-        prefixes (`TIM2.ITR` once Phase 2 destinations land) lower-case
-        with the dot collapsed to underscore.
+        `c_NVIC`, `c_TIM2_ITR` (once Phase 2 dotted destinations land).
+        Case is preserved to match the manufacturer's naming; dots in
+        dotted prefixes collapse to underscores.
         """
-        base = prefix.lower().replace('.', '_')
-        return base + ('_routes' if shape == 'pair_list' else '_inputs')
+        return 'c_' + prefix.replace('.', '_')
 
     def emitConnectionEnum(self, enumerators):
         """Emit the chip-specific Connection enum definition.
@@ -255,7 +254,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             shape = ('pair_list'
                      if len(ports) != len(set(ports))
                      else 'array')
-            table_id = self._tableName(prefix, shape)
+            table_id = self._tableName(prefix)
             if shape == 'pair_list':
                 # Deduplicate identical (conn, port) rows, then sort.
                 rows = sorted(set(routes), key=lambda r: enum_index[r[0]])

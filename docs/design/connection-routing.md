@@ -137,12 +137,12 @@ constexpr USART_Intgr usart1 = {
 //    them).  NVIC is the canonical example: shared vectors are normal
 //    on ST chips.  Sorted by Connection by the generator so resolve()
 //    can binary-search.
-constexpr RouteEntry nvic_routes[] = {
+constexpr RouteEntry c_NVIC[] = {
     {Connection::USART1_INTR, 53},
     {Connection::USART2_INTR, 54},
     // ...
 };
-constexpr RouteEntry dmamux1_routes[] = {
+constexpr RouteEntry c_DMAMUX1[] = {
     {Connection::USART1_RX_DMA, 41},
     {Connection::USART1_TX_DMA, 42},
     // ...
@@ -153,7 +153,7 @@ constexpr RouteEntry dmamux1_routes[] = {
 //    inputs, EXTI line selector, DMAMUX request mux inputs, trigger
 //    crossbar inputs.  Indexed by port; entries default to
 //    Connection::NONE for unwired slots.
-constexpr Connection tim2_inputs[8] = {
+constexpr Connection c_TIM2[8] = {
     Connection::TIM1_TRGO,   // ITR0
     Connection::TIM8_TRGO,   // ITR1
     Connection::NONE,        // ITR2 unwired
@@ -171,7 +171,7 @@ namespace peLua {
     using Chip = stm32h7;
     namespace isr {
         inline void insert(Connection c, isr_t fn) {
-            isr_table[resolve(Chip::nvic_routes, c)] = fn;
+            isr_table[resolve(Chip::c_NVIC, c)] = fn;
         }
     }
 }
@@ -197,7 +197,7 @@ type the peripheral header references — there is no second
 **Connection identifies a source, not a destination.**  Each
 enumerator names one signal on one block instance.  The same
 identifier appears in *every* table where that signal lands — once in
-`nvic_routes` if it goes to NVIC, once in `dmamux1_routes` if it
+`c_NVIC` if it goes to NVIC, once in `c_DMAMUX1` if it
 generates a DMA request, etc.  The Connection value itself doesn't
 carry destination information; that lives in the route tables.
 
@@ -306,7 +306,7 @@ inputs: 64–128; EXTI lines: 16–88) and the scan never reaches
 `.rodata` on the constexpr path.
 
 **No per-target wrapper functions.**  Drivers and kernel-side glue
-call `resolve(Chip::nvic_routes, c)` directly rather than going
+call `resolve(Chip::c_NVIC, c)` directly rather than going
 through a per-target `nvic_vector(c)` helper.  ADL on the
 `RouteEntry`/`Connection` argument types finds `hwreg::resolve`
 without qualification.  This drops one emission per target from the
@@ -329,16 +329,16 @@ peLua::isr::insert(intgr.connINTR, &my_isr);
 ```
 
 `peLua::isr::insert(Connection, isr_t)` is inline, calls
-`resolve(Chip::nvic_routes, c)` to look up the vector, then runs the
+`resolve(Chip::c_NVIC, c)` to look up the vector, then runs the
 existing per-vector ISR list insertion.  When the call site's
 `Connection` is constexpr (always true for Intgr-field reads), the
 whole resolution path folds at compile time and the driver pays
 exactly what it paid before.
 
 The same pattern extends to other targets — a TIM2 driver
-configuring its trigger source consults `resolve(Chip::tim2_inputs,
+configuring its trigger source consults `resolve(Chip::c_TIM2,
 source)`; a DMA driver subscribing to a peripheral's request consults
-`resolve(Chip::dmamux1_routes, source)`.  Each driver names the table
+`resolve(Chip::c_DMAMUX1, source)`.  Each driver names the table
 its local target uses; the same `resolve()` template handles both
 shapes via the table's element type.
 
@@ -346,7 +346,7 @@ shapes via the table's element type.
 `Connection` and `RouteEntry` are declared in `hwreg::`, ADL on a
 `resolve(table, c)` call finds `hwreg::resolve` regardless of which
 chip namespace the table lives in.  The table itself must be named
-explicitly (`Chip::nvic_routes`, where `using Chip = stm32h7;` is set
+explicitly (`Chip::c_NVIC`, where `using Chip = stm32h7;` is set
 up once per binary by peLua), but that's appropriate — drivers
 reference tables for other purposes too (iteration, diagnostics), so
 the table-as-named-data shape is load-bearing.
@@ -371,7 +371,7 @@ whichever resolver matches its intent.
 **Dual-NVIC** on H745/H757 is a special case of multi-destination
 that's handled per-binary.  Each CPU's binary is built against its
 own chip header, which carries the wiring for *that* CPU's NVIC.  The
-cm7 binary's `nvic_routes` and the cm4 binary's `nvic_routes` are
+cm7 binary's `c_NVIC` and the cm4 binary's `c_NVIC` are
 separate symbols, populated from the same YAML chip_connections data
 but filtered per-CPU at generation time.
 
@@ -455,7 +455,7 @@ All three regimes are comfortable on any chip we target.
 - **Cross-binary lookups** (CM7 code reasoning about CM4's NVIC
   wiring).  Out of scope for the per-binary table model.  If it ever
   matters, both binaries' tables can be exposed under distinct
-  namespace prefixes (`stm32h7::cm7::nvic_routes` vs `cm4::`) and the
+  namespace prefixes (`stm32h7::cm7::c_NVIC` vs `cm4::`) and the
   caller picks the right table explicitly when calling `resolve()`.
 
 ## Generator implications
@@ -477,7 +477,7 @@ The chip-header generator gains responsibility for emitting:
 No per-target resolver function is emitted — the single
 `hwreg::resolve()` template handles both shapes via the table's
 element type, dispatched with `constexpr if`.  Drivers call
-`resolve(Chip::nvic_routes, c)` directly.
+`resolve(Chip::c_NVIC, c)` directly.
 
 The Intgr struct emit changes too:
 
