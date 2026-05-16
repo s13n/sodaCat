@@ -70,6 +70,15 @@ properties:
         headerStructName:
           type: string
 definitions:
+  # Register/cluster names map directly to struct members in the generated
+  # C++ header with no sanitization, so they must be valid C identifiers.
+  # The array form (`name: FOO[%s]`) is also accepted; further placeholder
+  # and dimIndex-substitution checks live in tools/validate_peripherals.py.
+  registerOrArrayName:
+    oneOf:
+    - type: string
+      pattern: ^[A-Za-z_][A-Za-z0-9_]*$
+    - $ref: '#/definitions/arrayName'
   dimValue:
     oneOf:
     - type: integer
@@ -145,7 +154,7 @@ definitions:
       required: [registers]
     properties:
       name:
-        type: string
+        $ref: '#/definitions/registerOrArrayName'
       description:
         type: string
       addressOffset:
@@ -210,7 +219,7 @@ definitions:
     - registers
     properties:
       name:
-        type: string
+        $ref: '#/definitions/registerOrArrayName'
       description:
         type: string
       addressOffset:

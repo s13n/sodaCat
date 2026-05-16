@@ -958,11 +958,21 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
     if not registers:
         return
 
+    # A strip that would produce an invalid C identifier (empty, or starting
+    # with a digit) is refused so the manufacturer-original name survives.
+    # Example: RP2040 RTC has registers `RTC_0` and `RTC_1` — stripping `RTC_`
+    # would leave bare digits.
+    def _is_valid_ident(s):
+        return bool(s) and (s[0].isalpha() or s[0] == '_')
+
     for reg in registers:
         rname = reg.get('name', '')
         for prefix in candidates:
             if rname.startswith(prefix):
-                reg['name'] = rname[len(prefix):]
+                stripped = rname[len(prefix):]
+                if not _is_valid_ident(stripped):
+                    break
+                reg['name'] = stripped
                 dn = reg.get('displayName', '')
                 if dn.startswith(prefix):
                     reg['displayName'] = dn[len(prefix):]
@@ -973,7 +983,10 @@ def _strip_instance_prefix(block_data, instance_name, block_type):
         if alt:
             for prefix in candidates:
                 if alt.startswith(prefix):
-                    reg['alternateRegister'] = alt[len(prefix):]
+                    stripped = alt[len(prefix):]
+                    if not _is_valid_ident(stripped):
+                        break
+                    reg['alternateRegister'] = stripped
                     break
 
         # Strip instance prefix from description (space separator)
