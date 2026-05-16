@@ -603,8 +603,17 @@ def generate_header(yaml_path, hpp_path, module_name=None):
 
     # Prime the chip cache with the right chip up front, so later
     # load_peripheral_model calls (which don't get devices threaded through)
-    # resolve via the correct chip's instances/models map.
-    _load_chip_cached(model_dir, devices=data.get('devices'))
+    # resolve via the correct chip's instances/models map.  When the input
+    # yaml itself carries instances:, it IS the chip-shaped model — use it
+    # directly.  This matters for subfamily yamls that embed a clocks:
+    # section: their devices: field lists the child chips, which would
+    # otherwise make the devices filter reject the subfamily yaml and pick
+    # a child chip whose instances: lacks the entries lifted to the
+    # subfamily tier (e.g. LPC43xx's CCU1).
+    if data and 'instances' in data:
+        _chip_cache[str(Path(model_dir).resolve())] = data
+    else:
+        _load_chip_cached(model_dir, devices=data.get('devices'))
 
     # Subfamily-shaped files carry the clock-tree content under a `clocks:`
     # key; legacy clock-tree files have the same fields at the top level.
