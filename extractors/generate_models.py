@@ -1477,7 +1477,7 @@ def _emit_shared_subfamily_yaml(path, *, name, ref_manual, clocks):
         rt.dump(data, f)
 
 
-def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, inherits_target=None, instances=None, models=None):
+def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, namespace=None, inherits_target=None, instances=None, models=None):
     """Write a fresh subfamily YAML from scratch.  Used when STM32.yaml carries
     a `clocks:` section for this subfamily; the file is then a pure derived
     artifact (no hand-edited content survives across re-extraction).
@@ -1493,6 +1493,8 @@ def _emit_subfamily_yaml(path, *, family, devices, ref_manual, clocks, inherits_
     data['version'] = '1.0.0'
     data['family'] = family
     data['devices'] = list(devices)
+    if namespace:
+        data['namespace'] = namespace
     documents = _derive_documents(ref_manual)
     if documents:
         data['documents'] = documents
@@ -2422,6 +2424,7 @@ def main():
                     devices=_derive_devices(subfamily_info['chips']),
                     ref_manual=subfamily_info.get('ref_manual'),
                     clocks=sf_clocks if inherits_target is None else None,
+                    namespace=family_ns,
                     inherits_target=inherits_target,
                     instances=common_instances or None,
                     models=common_models or None)

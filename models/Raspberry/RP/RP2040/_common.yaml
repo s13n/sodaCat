@@ -1,11 +1,12 @@
 version: 1.0.0
 family: RP
 devices:
-  - RP2350
+  - RP2040
+namespace: rp
 documents:
-  - id: RP2350 Datasheet
-    title: RP2350 Datasheet
-    url: https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf
+  - id: RP2040 Datasheet
+    title: RP2040 Datasheet
+    url: https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf
 clocks:
   instance: CLOCKS
   signals:
@@ -14,45 +15,40 @@ clocks:
       nominal: 12000000
     - name: rosc
       description: Ring oscillator output (undivided, before ROSC DIV)
-      max: 150000000
+      min: 1000000
+      max: 130000000
     - name: rosc_ph
       description: Ring oscillator phase-shifted/divided output (rosc_clksrc_ph)
-      max: 150000000
-    - name: lposc
-      description: Low-power oscillator output, used by POWMAN timer
-      nominal: 32000
-      notes: Approximately 32kHz. No SVD model available; internal oscillator.
+      min: 1000000
+      max: 130000000
     - name: gpin0
       description: External clock input on GPIO20
     - name: gpin1
       description: External clock input on GPIO22
     - name: pll_sys
       description: System PLL output
-      max: 150000000
+      max: 133000000
     - name: pll_usb
       description: USB PLL output
       nominal: 48000000
-    - name: pll_usb_primary_ref_opcg
-      description: USB PLL primary reference output for on-chip clock generation (test/DFT path)
-      notes: Used in CLK_REF AUXSRC at index 3. Typically not used in normal operation.
     - name: clk_ref
-      description: Reference clock, used by watchdog, tick generators, and POWMAN.
+      description: Reference clock, used by watchdog and timer. Typically 12MHz (XOSC).
       max: 12000000
     - name: clk_sys
       description: Main system clock
-      max: 150000000
+      max: 133000000
     - name: clk_peri
       description: Clock for UART, SPI peripherals
-      max: 150000000
-    - name: clk_hstx
-      description: Clock for HSTX (high-speed transmit) peripheral
-      max: 150000000
+      max: 133000000
     - name: clk_usb
       description: USB clock, must be 48MHz
       nominal: 48000000
     - name: clk_adc
       description: ADC clock, must be 48MHz
       nominal: 48000000
+    - name: clk_rtc
+      description: RTC clock, typically ~46kHz (48MHz / 1024)
+      max: 65536
     - name: clk_gpout0
       description: GPIO clock output 0
     - name: clk_gpout1
@@ -71,10 +67,6 @@ clocks:
       description: Output of CLK_SYS glitchless source mux, feeds CLK_SYS divider
     - name: clk_peri_src
       description: Output of CLK_PERI source mux, feeds CLK_PERI gate
-    - name: clk_hstx_src
-      description: Output of CLK_HSTX source mux, feeds CLK_HSTX divider
-    - name: clk_hstx_div_out
-      description: Output of CLK_HSTX divider, feeds CLK_HSTX gate
     - name: clk_usb_src
       description: Output of CLK_USB source mux, feeds CLK_USB divider
     - name: clk_usb_div_out
@@ -83,6 +75,10 @@ clocks:
       description: Output of CLK_ADC source mux, feeds CLK_ADC divider
     - name: clk_adc_div_out
       description: Output of CLK_ADC divider, feeds CLK_ADC gate
+    - name: clk_rtc_src
+      description: Output of CLK_RTC source mux, feeds CLK_RTC divider
+    - name: clk_rtc_div_out
+      description: Output of CLK_RTC divider, feeds CLK_RTC gate
     - name: clk_gpout0_src
       description: Output of CLK_GPOUT0 source mux, feeds CLK_GPOUT0 divider
     - name: clk_gpout0_div_out
@@ -100,36 +96,28 @@ clocks:
     - name: clk_gpout3_div_out
       description: Output of CLK_GPOUT3 divider, feeds CLK_GPOUT3 gate
     - name: clk_sys_clocks
-    - name: clk_sys_accessctrl
     - name: clk_adc_adc
     - name: clk_sys_adc
-    - name: clk_sys_bootram
     - name: clk_sys_busctrl
     - name: clk_sys_busfabric
     - name: clk_sys_dma
-    - name: clk_sys_glitch_detector
-    - name: clk_hstx_hstx
-    - name: clk_sys_hstx
     - name: clk_sys_i2c0
     - name: clk_sys_i2c1
     - name: clk_sys_io
     - name: clk_sys_jtag
-    - name: clk_ref_otp
-    - name: clk_sys_otp
+    - name: clk_sys_vreg_and_chip_reset
     - name: clk_sys_pads
     - name: clk_sys_pio0
     - name: clk_sys_pio1
-    - name: clk_sys_pio2
     - name: clk_sys_pll_sys
     - name: clk_sys_pll_usb
-    - name: clk_ref_powman
-    - name: clk_sys_powman
+    - name: clk_sys_psm
     - name: clk_sys_pwm
     - name: clk_sys_resets
     - name: clk_sys_rom
     - name: clk_sys_rosc
-    - name: clk_sys_psm
-    - name: clk_sys_sha256
+    - name: clk_rtc_rtc
+    - name: clk_sys_rtc
     - name: clk_sys_sio
     - name: clk_peri_spi0
     - name: clk_sys_spi0
@@ -141,24 +129,16 @@ clocks:
     - name: clk_sys_sram3
     - name: clk_sys_sram4
     - name: clk_sys_sram5
-    - name: clk_sys_sram6
-    - name: clk_sys_sram7
-    - name: clk_sys_sram8
-    - name: clk_sys_sram9
     - name: clk_sys_syscfg
     - name: clk_sys_sysinfo
     - name: clk_sys_tbman
-    - name: clk_ref_ticks
-    - name: clk_sys_ticks
-    - name: clk_sys_timer0
-    - name: clk_sys_timer1
-    - name: clk_sys_trng
+    - name: clk_sys_timer
     - name: clk_peri_uart0
     - name: clk_sys_uart0
     - name: clk_peri_uart1
     - name: clk_sys_uart1
     - name: clk_sys_usbctrl
-    - name: clk_usb_usb
+    - name: clk_usb_usbctrl
     - name: clk_sys_watchdog
     - name: clk_sys_xip
     - name: clk_sys_xosc
@@ -175,7 +155,7 @@ clocks:
           - 4011
         default: 3358
     - name: rosc
-      description: Ring oscillator (~150MHz maximum)
+      description: Ring oscillator
       output: rosc
       control:
         instance: ROSC
@@ -185,17 +165,6 @@ clocks:
           - 3358
           - 4011
         default: 4011
-    - name: lposc
-      description: Low-power oscillator (~32kHz). Always-on during powered operation.
-      output: lposc
-      notes: No enable control; always running when POWMAN domain is powered.
-    - name: pll_usb_primary_ref_opcg
-      description: >
-        USB PLL primary reference output for on-chip clock generation (DFT/test path).
-        Produced by the USB PLL as an alternative output for test purposes.
-        Available in CLK_REF AUXSRC and CLK_GPOUT AUXSRC muxes.
-      output: pll_usb_primary_ref_opcg
-      notes: This is a DFT/test signal; not used in normal operation.
     - name: gpin0
       description: External clock input 0 (GPIO20)
       output: gpin0
@@ -206,12 +175,11 @@ clocks:
     - name: clk_ref_src
       description: >
         CLK_REF glitchless source mux. SRC=1 selects the AUX mux output.
-        RP2350 adds LPOSC as direct source (SRC=3) for ultra-low-power operation.
+        Glitchless switching between ROSC and XOSC; switching through AUX may glitch.
       inputs:
         - rosc_ph
         - clk_ref_aux
         - xosc
-        - lposc
       output: clk_ref_src
       control:
         reg: CLK_REF.CTRL
@@ -223,7 +191,6 @@ clocks:
         - pll_usb
         - gpin0
         - gpin1
-        - pll_usb_primary_ref_opcg
       output: clk_ref_aux
       control:
         reg: CLK_REF.CTRL
@@ -256,7 +223,9 @@ clocks:
         field: AUXSRC
       notes: AUXSRC field is 3 bits at [7:5].
     - name: clk_peri_src
-      description: CLK_PERI auxiliary source mux. CLK_PERI has no divider.
+      description: >
+        CLK_PERI auxiliary source mux. CLK_PERI has no integer divider;
+        the selected source is gated directly.
       inputs:
         - clk_sys
         - pll_sys
@@ -268,19 +237,6 @@ clocks:
       output: clk_peri_src
       control:
         reg: CLK_PERI.CTRL
-        field: AUXSRC
-      notes: AUXSRC field is 3 bits at [7:5].
-    - name: clk_hstx_src
-      description: CLK_HSTX auxiliary source mux (new in RP2350). No ROSC or XOSC direct inputs.
-      inputs:
-        - clk_sys
-        - pll_sys
-        - pll_usb
-        - gpin0
-        - gpin1
-      output: clk_hstx_src
-      control:
-        reg: CLK_HSTX.CTRL
         field: AUXSRC
       notes: AUXSRC field is 3 bits at [7:5].
     - name: clk_usb_src
@@ -311,6 +267,20 @@ clocks:
         reg: CLK_ADC.CTRL
         field: AUXSRC
       notes: AUXSRC field is 3 bits at [7:5].
+    - name: clk_rtc_src
+      description: CLK_RTC auxiliary source mux.
+      inputs:
+        - pll_usb
+        - pll_sys
+        - rosc_ph
+        - xosc
+        - gpin0
+        - gpin1
+      output: clk_rtc_src
+      control:
+        reg: CLK_RTC.CTRL
+        field: AUXSRC
+      notes: AUXSRC field is 3 bits at [7:5].
     - name: clk_gpout0_src
       description: CLK_GPOUT0 auxiliary source mux.
       inputs:
@@ -318,17 +288,13 @@ clocks:
         - gpin0
         - gpin1
         - pll_usb
-        - pll_usb_primary_ref_opcg
         - rosc
         - xosc
-        - lposc
         - clk_sys
         - clk_usb
         - clk_adc
+        - clk_rtc
         - clk_ref
-        - clk_peri
-        - clk_hstx
-        - 
       output: clk_gpout0_src
       control:
         reg: CLK_GPOUT0.CTRL
@@ -341,65 +307,53 @@ clocks:
         - gpin0
         - gpin1
         - pll_usb
-        - pll_usb_primary_ref_opcg
         - rosc
         - xosc
-        - lposc
         - clk_sys
         - clk_usb
         - clk_adc
+        - clk_rtc
         - clk_ref
-        - clk_peri
-        - clk_hstx
-        - 
       output: clk_gpout1_src
       control:
         reg: CLK_GPOUT1.CTRL
         field: AUXSRC
     - name: clk_gpout2_src
       description: >
-        CLK_GPOUT2 auxiliary source mux. Index 5 is rosc_clksrc_ph
+        CLK_GPOUT2 auxiliary source mux. Index 4 is rosc_clksrc_ph
         (phase-shifted/divided) rather than rosc_clksrc.
       inputs:
         - pll_sys
         - gpin0
         - gpin1
         - pll_usb
-        - pll_usb_primary_ref_opcg
         - rosc_ph
         - xosc
-        - lposc
         - clk_sys
         - clk_usb
         - clk_adc
+        - clk_rtc
         - clk_ref
-        - clk_peri
-        - clk_hstx
-        - 
       output: clk_gpout2_src
       control:
         reg: CLK_GPOUT2.CTRL
         field: AUXSRC
     - name: clk_gpout3_src
       description: >
-        CLK_GPOUT3 auxiliary source mux. Index 5 is rosc_clksrc_ph
+        CLK_GPOUT3 auxiliary source mux. Index 4 is rosc_clksrc_ph
         (phase-shifted/divided) rather than rosc_clksrc.
       inputs:
         - pll_sys
         - gpin0
         - gpin1
         - pll_usb
-        - pll_usb_primary_ref_opcg
         - rosc_ph
         - xosc
-        - lposc
         - clk_sys
         - clk_usb
         - clk_adc
+        - clk_rtc
         - clk_ref
-        - clk_peri
-        - clk_hstx
-        - 
       output: clk_gpout3_src
       control:
         reg: CLK_GPOUT3.CTRL
@@ -425,12 +379,11 @@ clocks:
           max: 7
       vco_limits:
         min: 750000000
-        max: 1800000000
+        max: 1600000000
       notes: >
         PRIM.POSTDIV2[14:12] provides a second post-divider stage (1-7).
         CS.REFDIV[5:0] divides the reference input (default 1).
         Full formula: fOut = xosc / REFDIV * FBDIV_INT / POSTDIV1 / POSTDIV2.
-        VCO max is 1800MHz for RP2350 (1600MHz for RP2040).
     - name: pll_usb
       description: USB PLL. Same structure as pll_sys. Typically configured for 48MHz output.
       input: xosc
@@ -451,7 +404,7 @@ clocks:
           max: 7
       vco_limits:
         min: 750000000
-        max: 1800000000
+        max: 1600000000
       notes: >
         PRIM.POSTDIV2[14:12] provides a second post-divider stage (1-7).
         CS.REFDIV[5:0] divides the reference input (default 1).
@@ -459,7 +412,7 @@ clocks:
   dividers:
     - name: rosc_div
       description: >
-        ROSC output divider. DIV[15:0] = 0xAA00 + n, where n=0 -> /128, n=1..127 -> /n.
+        ROSC output divider. DIV[11:0] = 0xAA0 + n, where n=0 -> /32, n=1..31 -> /n.
         Produces the rosc_ph (rosc_clksrc_ph) output used by most clock generators.
       input: rosc
       output: rosc_ph
@@ -468,10 +421,10 @@ clocks:
         reg: DIV
         field: DIV
         notes: >
-          16-bit field. Raw 0xAA00 + divisor. Divisor 0 = /128; 1-127 = /n;
-          reset default is divide-by-32 (raw 0xAA20). Any other value sets div=128.
+          Raw field encodes as 0xAA0 + divisor. Divisor 0 means divide by 32;
+          1-31 divide by that value; reset default is divide-by-16 (raw 0xAA0).
     - name: clk_ref_div
-      description: CLK_REF integer divider (1-255). No fractional part.
+      description: CLK_REF integer divider (1-3). No fractional part.
       input: clk_ref_src
       output: clk_ref
       factor:
@@ -479,12 +432,14 @@ clocks:
         field: INT
         value_range:
           min: 1
-          max: 255
+          max: 3
+          offset: 0
       notes: >
-        INT field is 8 bits at [23:16]. Reset value 0x10000 = INT=1 (divide by 1).
-        Raw value 0 = divide by 256.
+        INT field is 2 bits at [9:8]. Raw value 0 = divide by 4 (2^2),
+        raw 1 = divide by 1, raw 2 = divide by 2, raw 3 = divide by 3.
+        In practice, CLK_REF is typically left undivided (INT=1).
     - name: clk_sys_div
-      description: CLK_SYS divider with 16-bit fraction. Effective divisor = INT + FRAC/65536.
+      description: CLK_SYS divider with 8-bit fraction. Effective divisor = INT + FRAC/256.
       input: clk_sys_src
       output: clk_sys
       factor:
@@ -492,27 +447,16 @@ clocks:
         field: INT
         value_range:
           min: 1
-          max: 65535
+          max: 16777215
       denominator:
         reg: CLK_SYS.DIV
         field: FRAC
       notes: >
-        INT is 16 bits at [31:16]; FRAC is 16 bits at [15:0].
-        Reset value 0x10000 = INT=1, FRAC=0 (divide by 1).
-        Raw INT=0 means divide by 2^16 (maximum division).
-    - name: clk_hstx_div
-      description: CLK_HSTX integer divider (1-3). No fractional part.
-      input: clk_hstx_src
-      output: clk_hstx_div_out
-      factor:
-        reg: CLK_HSTX.DIV
-        field: INT
-        value_range:
-          min: 1
-          max: 3
-      notes: INT field is 2 bits at [17:16].
+        INT is 24 bits at [31:8]; FRAC is 8 bits at [7:0].
+        Reset value 0x100 = INT=1, FRAC=0 (divide by 1).
+        Raw INT=0 means divide by 2^24 (maximum division).
     - name: clk_usb_div
-      description: CLK_USB integer divider (1-15).
+      description: CLK_USB integer divider (1-3).
       input: clk_usb_src
       output: clk_usb_div_out
       factor:
@@ -520,10 +464,10 @@ clocks:
         field: INT
         value_range:
           min: 1
-          max: 15
-      notes: INT field is 4 bits at [19:16]. Typically set to 1.
+          max: 3
+      notes: INT field is 2 bits at [9:8]. Typically left at 1.
     - name: clk_adc_div
-      description: CLK_ADC integer divider (1-15).
+      description: CLK_ADC integer divider (1-3).
       input: clk_adc_src
       output: clk_adc_div_out
       factor:
@@ -531,10 +475,24 @@ clocks:
         field: INT
         value_range:
           min: 1
-          max: 15
-      notes: INT field is 4 bits at [19:16].
+          max: 3
+      notes: INT field is 2 bits at [9:8].
+    - name: clk_rtc_div
+      description: CLK_RTC divider with 8-bit fraction. Typically 48MHz / 1024 ≈ 46.875kHz.
+      input: clk_rtc_src
+      output: clk_rtc_div_out
+      factor:
+        reg: CLK_RTC.DIV
+        field: INT
+        value_range:
+          min: 1
+          max: 16777215
+      denominator:
+        reg: CLK_RTC.DIV
+        field: FRAC
+      notes: INT is 24 bits at [31:8]; FRAC is 8 bits at [7:0].
     - name: clk_gpout0_div
-      description: CLK_GPOUT0 divider with 16-bit fraction.
+      description: CLK_GPOUT0 divider with 8-bit fraction.
       input: clk_gpout0_src
       output: clk_gpout0_div_out
       factor:
@@ -543,9 +501,9 @@ clocks:
       denominator:
         reg: CLK_GPOUT0.DIV
         field: FRAC
-      notes: INT is 16 bits at [31:16]; FRAC is 16 bits at [15:0]. Reset value 0x10000 = divide by 1.
+      notes: INT is 24 bits at [31:8]; FRAC is 8 bits at [7:0]. Reset value 0x100 = divide by 1.
     - name: clk_gpout1_div
-      description: CLK_GPOUT1 divider with 16-bit fraction.
+      description: CLK_GPOUT1 divider with 8-bit fraction.
       input: clk_gpout1_src
       output: clk_gpout1_div_out
       factor:
@@ -555,7 +513,7 @@ clocks:
         reg: CLK_GPOUT1.DIV
         field: FRAC
     - name: clk_gpout2_div
-      description: CLK_GPOUT2 divider with 16-bit fraction.
+      description: CLK_GPOUT2 divider with 8-bit fraction.
       input: clk_gpout2_src
       output: clk_gpout2_div_out
       factor:
@@ -565,7 +523,7 @@ clocks:
         reg: CLK_GPOUT2.DIV
         field: FRAC
     - name: clk_gpout3_div
-      description: CLK_GPOUT3 divider with 16-bit fraction.
+      description: CLK_GPOUT3 divider with 8-bit fraction.
       input: clk_gpout3_src
       output: clk_gpout3_div_out
       factor:
@@ -576,18 +534,11 @@ clocks:
         field: FRAC
   gates:
     - name: clk_peri_gate
-      description: CLK_PERI enable gate. CLK_PERI has no divider; gate follows the mux directly.
+      description: CLK_PERI enable gate. CLK_PERI has no divider; this gate follows the mux directly.
       input: clk_peri_src
       output: clk_peri
       control:
         reg: CLK_PERI.CTRL
-        field: ENABLE
-    - name: clk_hstx_gate
-      description: CLK_HSTX enable gate.
-      input: clk_hstx_div_out
-      output: clk_hstx
-      control:
-        reg: CLK_HSTX.CTRL
         field: ENABLE
     - name: clk_usb_gate
       description: CLK_USB enable gate.
@@ -602,6 +553,13 @@ clocks:
       output: clk_adc
       control:
         reg: CLK_ADC.CTRL
+        field: ENABLE
+    - name: clk_rtc_gate
+      description: CLK_RTC enable gate.
+      input: clk_rtc_div_out
+      output: clk_rtc
+      control:
+        reg: CLK_RTC.CTRL
         field: ENABLE
     - name: clk_gpout0_gate
       description: CLK_GPOUT0 enable gate.
@@ -638,20 +596,13 @@ clocks:
       control:
         reg: WAKE_EN0
         field: CLK_SYS_CLOCKS
-    - name: CLK_SYS_ACCESSCTRL
-      description: ACCESSCTRL clock
-      input: clk_sys
-      output: clk_sys_accessctrl
-      control:
-        reg: WAKE_EN0
-        field: CLK_SYS_ACCESSCTRL
-    - name: CLK_ADC
+    - name: CLK_ADC_ADC
       description: ADC analog/conversion clock (48 MHz)
       input: clk_adc
       output: clk_adc_adc
       control:
         reg: WAKE_EN0
-        field: CLK_ADC
+        field: CLK_ADC_ADC
     - name: CLK_SYS_ADC
       description: ADC register-interface clock
       input: clk_sys
@@ -659,13 +610,6 @@ clocks:
       control:
         reg: WAKE_EN0
         field: CLK_SYS_ADC
-    - name: CLK_SYS_BOOTRAM
-      description: BOOTRAM clock
-      input: clk_sys
-      output: clk_sys_bootram
-      control:
-        reg: WAKE_EN0
-        field: CLK_SYS_BOOTRAM
     - name: CLK_SYS_BUSCTRL
       description: BUSCTRL bus-arbiter clock
       input: clk_sys
@@ -687,27 +631,6 @@ clocks:
       control:
         reg: WAKE_EN0
         field: CLK_SYS_DMA
-    - name: CLK_SYS_GLITCH_DETECTOR
-      description: GLITCH_DETECTOR clock
-      input: clk_sys
-      output: clk_sys_glitch_detector
-      control:
-        reg: WAKE_EN0
-        field: CLK_SYS_GLITCH_DETECTOR
-    - name: CLK_HSTX
-      description: HSTX FIFO data-path clock
-      input: clk_hstx
-      output: clk_hstx_hstx
-      control:
-        reg: WAKE_EN0
-        field: CLK_HSTX
-    - name: CLK_SYS_HSTX
-      description: HSTX_CTRL register-interface clock
-      input: clk_sys
-      output: clk_sys_hstx
-      control:
-        reg: WAKE_EN0
-        field: CLK_SYS_HSTX
     - name: CLK_SYS_I2C0
       description: I2C0 clock
       input: clk_sys
@@ -736,20 +659,13 @@ clocks:
       control:
         reg: WAKE_EN0
         field: CLK_SYS_JTAG
-    - name: CLK_REF_OTP
-      description: OTP slow clock (clk_ref domain)
-      input: clk_ref
-      output: clk_ref_otp
-      control:
-        reg: WAKE_EN0
-        field: CLK_REF_OTP
-    - name: CLK_SYS_OTP
-      description: OTP register-interface clock
+    - name: CLK_SYS_VREG_AND_CHIP_RESET
+      description: VREG_AND_CHIP_RESET clock
       input: clk_sys
-      output: clk_sys_otp
+      output: clk_sys_vreg_and_chip_reset
       control:
         reg: WAKE_EN0
-        field: CLK_SYS_OTP
+        field: CLK_SYS_VREG_AND_CHIP_RESET
     - name: CLK_SYS_PADS
       description: PADS_BANK0 clock
       input: clk_sys
@@ -771,13 +687,6 @@ clocks:
       control:
         reg: WAKE_EN0
         field: CLK_SYS_PIO1
-    - name: CLK_SYS_PIO2
-      description: PIO2 clock
-      input: clk_sys
-      output: clk_sys_pio2
-      control:
-        reg: WAKE_EN0
-        field: CLK_SYS_PIO2
     - name: CLK_SYS_PLL_SYS
       description: PLL_SYS register-interface clock
       input: clk_sys
@@ -792,20 +701,13 @@ clocks:
       control:
         reg: WAKE_EN0
         field: CLK_SYS_PLL_USB
-    - name: CLK_REF_POWMAN
-      description: POWMAN slow clock (clk_ref domain)
-      input: clk_ref
-      output: clk_ref_powman
-      control:
-        reg: WAKE_EN0
-        field: CLK_REF_POWMAN
-    - name: CLK_SYS_POWMAN
-      description: POWMAN register-interface clock
+    - name: CLK_SYS_PSM
+      description: PSM clock
       input: clk_sys
-      output: clk_sys_powman
+      output: clk_sys_psm
       control:
         reg: WAKE_EN0
-        field: CLK_SYS_POWMAN
+        field: CLK_SYS_PSM
     - name: CLK_SYS_PWM
       description: PWM clock
       input: clk_sys
@@ -834,20 +736,20 @@ clocks:
       control:
         reg: WAKE_EN0
         field: CLK_SYS_ROSC
-    - name: CLK_SYS_PSM
-      description: PSM clock
-      input: clk_sys
-      output: clk_sys_psm
+    - name: CLK_RTC_RTC
+      description: RTC counter clock (slow clock from CLK_RTC)
+      input: clk_rtc
+      output: clk_rtc_rtc
       control:
         reg: WAKE_EN0
-        field: CLK_SYS_PSM
-    - name: CLK_SYS_SHA256
-      description: SHA256 clock
+        field: CLK_RTC_RTC
+    - name: CLK_SYS_RTC
+      description: RTC register-interface clock
       input: clk_sys
-      output: clk_sys_sha256
+      output: clk_sys_rtc
       control:
         reg: WAKE_EN0
-        field: CLK_SYS_SHA256
+        field: CLK_SYS_RTC
     - name: CLK_SYS_SIO
       description: SIO clock
       input: clk_sys
@@ -860,56 +762,56 @@ clocks:
       input: clk_peri
       output: clk_peri_spi0
       control:
-        reg: WAKE_EN1
+        reg: WAKE_EN0
         field: CLK_PERI_SPI0
     - name: CLK_SYS_SPI0
       description: SPI0 register-interface clock
       input: clk_sys
       output: clk_sys_spi0
       control:
-        reg: WAKE_EN1
+        reg: WAKE_EN0
         field: CLK_SYS_SPI0
     - name: CLK_PERI_SPI1
       description: SPI1 serial bit clock
       input: clk_peri
       output: clk_peri_spi1
       control:
-        reg: WAKE_EN1
+        reg: WAKE_EN0
         field: CLK_PERI_SPI1
     - name: CLK_SYS_SPI1
       description: SPI1 register-interface clock
       input: clk_sys
       output: clk_sys_spi1
       control:
-        reg: WAKE_EN1
+        reg: WAKE_EN0
         field: CLK_SYS_SPI1
     - name: CLK_SYS_SRAM0
       description: SRAM bank 0 clock
       input: clk_sys
       output: clk_sys_sram0
       control:
-        reg: WAKE_EN1
+        reg: WAKE_EN0
         field: CLK_SYS_SRAM0
     - name: CLK_SYS_SRAM1
       description: SRAM bank 1 clock
       input: clk_sys
       output: clk_sys_sram1
       control:
-        reg: WAKE_EN1
+        reg: WAKE_EN0
         field: CLK_SYS_SRAM1
     - name: CLK_SYS_SRAM2
       description: SRAM bank 2 clock
       input: clk_sys
       output: clk_sys_sram2
       control:
-        reg: WAKE_EN1
+        reg: WAKE_EN0
         field: CLK_SYS_SRAM2
     - name: CLK_SYS_SRAM3
       description: SRAM bank 3 clock
       input: clk_sys
       output: clk_sys_sram3
       control:
-        reg: WAKE_EN1
+        reg: WAKE_EN0
         field: CLK_SYS_SRAM3
     - name: CLK_SYS_SRAM4
       description: SRAM bank 4 clock
@@ -925,34 +827,6 @@ clocks:
       control:
         reg: WAKE_EN1
         field: CLK_SYS_SRAM5
-    - name: CLK_SYS_SRAM6
-      description: SRAM bank 6 clock
-      input: clk_sys
-      output: clk_sys_sram6
-      control:
-        reg: WAKE_EN1
-        field: CLK_SYS_SRAM6
-    - name: CLK_SYS_SRAM7
-      description: SRAM bank 7 clock
-      input: clk_sys
-      output: clk_sys_sram7
-      control:
-        reg: WAKE_EN1
-        field: CLK_SYS_SRAM7
-    - name: CLK_SYS_SRAM8
-      description: SRAM bank 8 clock
-      input: clk_sys
-      output: clk_sys_sram8
-      control:
-        reg: WAKE_EN1
-        field: CLK_SYS_SRAM8
-    - name: CLK_SYS_SRAM9
-      description: SRAM bank 9 clock
-      input: clk_sys
-      output: clk_sys_sram9
-      control:
-        reg: WAKE_EN1
-        field: CLK_SYS_SRAM9
     - name: CLK_SYS_SYSCFG
       description: SYSCFG clock
       input: clk_sys
@@ -974,41 +848,13 @@ clocks:
       control:
         reg: WAKE_EN1
         field: CLK_SYS_TBMAN
-    - name: CLK_REF_TICKS
-      description: TICKS reference clock (clk_ref domain — input to tick generators)
-      input: clk_ref
-      output: clk_ref_ticks
-      control:
-        reg: WAKE_EN1
-        field: CLK_REF_TICKS
-    - name: CLK_SYS_TICKS
-      description: TICKS register-interface clock
+    - name: CLK_SYS_TIMER
+      description: TIMER clock
       input: clk_sys
-      output: clk_sys_ticks
+      output: clk_sys_timer
       control:
         reg: WAKE_EN1
-        field: CLK_SYS_TICKS
-    - name: CLK_SYS_TIMER0
-      description: TIMER0 clock
-      input: clk_sys
-      output: clk_sys_timer0
-      control:
-        reg: WAKE_EN1
-        field: CLK_SYS_TIMER0
-    - name: CLK_SYS_TIMER1
-      description: TIMER1 clock
-      input: clk_sys
-      output: clk_sys_timer1
-      control:
-        reg: WAKE_EN1
-        field: CLK_SYS_TIMER1
-    - name: CLK_SYS_TRNG
-      description: TRNG clock
-      input: clk_sys
-      output: clk_sys_trng
-      control:
-        reg: WAKE_EN1
-        field: CLK_SYS_TRNG
+        field: CLK_SYS_TIMER
     - name: CLK_PERI_UART0
       description: UART0 baud-rate clock
       input: clk_peri
@@ -1044,13 +890,13 @@ clocks:
       control:
         reg: WAKE_EN1
         field: CLK_SYS_USBCTRL
-    - name: CLK_USB
+    - name: CLK_USB_USBCTRL
       description: USB controller core clock (48 MHz)
       input: clk_usb
-      output: clk_usb_usb
+      output: clk_usb_usbctrl
       control:
         reg: WAKE_EN1
-        field: CLK_USB
+        field: CLK_USB_USBCTRL
     - name: CLK_SYS_WATCHDOG
       description: WATCHDOG register-interface clock
       input: clk_sys
@@ -1073,249 +919,167 @@ clocks:
         reg: WAKE_EN1
         field: CLK_SYS_XOSC
 models:
-  ACCESSCTRL: Raspberry/RP/ACCESSCTRL
   ADC: Raspberry/RP/ADC
-  BOOTRAM: Raspberry/RP/BOOTRAM
-  BUSCTRL: Raspberry/RP/RP2350/BUSCTRL
-  CLOCKS: Raspberry/RP/RP2350/CLOCKS
-  CORESIGHT_TRACE: Raspberry/RP/CORESIGHT_TRACE
-  DMA: Raspberry/RP/RP2350/DMA
-  GLITCH_DETECTOR: Raspberry/RP/GLITCH_DETECTOR
-  HSTX_CTRL: Raspberry/RP/HSTX_CTRL
-  HSTX_FIFO: Raspberry/RP/HSTX_FIFO
+  BUSCTRL: Raspberry/RP/BUSCTRL
+  CLOCKS: Raspberry/RP/CLOCKS
+  DMA: Raspberry/RP/DMA
   I2C: Raspberry/RP/I2C
-  IO_BANK0: Raspberry/RP/RP2350/IO_BANK0
-  IO_QSPI: Raspberry/RP/RP2350/IO_QSPI
-  OTP: Raspberry/RP/OTP
-  OTP_DATA: Raspberry/RP/OTP_DATA
-  PADS_BANK0: Raspberry/RP/RP2350/PADS_BANK0
+  IO_BANK0: Raspberry/RP/IO_BANK0
+  IO_QSPI: Raspberry/RP/IO_QSPI
+  PADS_BANK0: Raspberry/RP/PADS_BANK0
   PADS_QSPI: Raspberry/RP/PADS_QSPI
-  PIO: Raspberry/RP/RP2350/PIO
-  PLL: Raspberry/RP/RP2350/PLL
-  POWMAN: Raspberry/RP/POWMAN
+  PIO: Raspberry/RP/PIO
+  PLL: Raspberry/RP/PLL
   PSM: Raspberry/RP/PSM
-  PWM: Raspberry/RP/RP2350/PWM
-  QMI: Raspberry/RP/QMI
+  PWM: Raspberry/RP/PWM
   RESETS: Raspberry/RP/RESETS
-  ROSC: Raspberry/RP/RP2350/ROSC
-  SHA256: Raspberry/RP/SHA256
-  SIO: Raspberry/RP/RP2350/SIO
+  ROSC: Raspberry/RP/ROSC
+  RTC: Raspberry/RP/RTC
+  SIO: Raspberry/RP/SIO
   SPI: Raspberry/RP/SPI
-  SYSCFG: Raspberry/RP/RP2350/SYSCFG
-  SYSINFO: Raspberry/RP/RP2350/SYSINFO
+  SSI: Raspberry/RP/SSI
+  SYSCFG: Raspberry/RP/SYSCFG
+  SYSINFO: Raspberry/RP/SYSINFO
   TBMAN: Raspberry/RP/TBMAN
-  TICKS: Raspberry/RP/TICKS
-  TRNG: Raspberry/RP/TRNG
-  Timer: Raspberry/RP/RP2350/Timer
+  Timer: Raspberry/RP/Timer
   UART: Raspberry/RP/UART
-  USB: Raspberry/RP/RP2350/USB
+  USB: Raspberry/RP/USB
   USB_DPRAM: Raspberry/RP/USB_DPRAM
-  WATCHDOG: Raspberry/RP/RP2350/WATCHDOG
-  XIP_AUX: Raspberry/RP/XIP_AUX
-  XIP_CTRL: Raspberry/RP/RP2350/XIP_CTRL
-  XOSC: Raspberry/RP/RP2350/XOSC
+  VREG_AND_CHIP_RESET: Raspberry/RP/VREG_AND_CHIP_RESET
+  WATCHDOG: Raspberry/RP/WATCHDOG
+  XIP_CTRL: Raspberry/RP/XIP_CTRL
+  XOSC: Raspberry/RP/XOSC
 instances:
-  ACCESSCTRL:
-    baseAddress: 1074135040
-    model: ACCESSCTRL
   ADC:
-    baseAddress: 1074397184
+    baseAddress: 1074053120
     model: ADC
     connections:
       FIFO:
-        - NVIC.51
-  BOOTRAM:
-    baseAddress: 1074659328
-    model: BOOTRAM
+        - NVIC.38
   BUSCTRL:
-    baseAddress: 1074167808
+    baseAddress: 1073938432
     model: BUSCTRL
   CLOCKS:
-    baseAddress: 1073807360
+    baseAddress: 1073774592
     model: CLOCKS
     connections:
       IRQ:
-        - NVIC.46
-  CORESIGHT_TRACE:
-    baseAddress: 1349517312
-    model: CORESIGHT_TRACE
+        - NVIC.33
   DMA:
     baseAddress: 1342177280
     model: DMA
     connections:
       IRQ_0:
-        - NVIC.26
-      IRQ_1:
         - NVIC.27
-      IRQ_2:
+      IRQ_1:
         - NVIC.28
-      IRQ_3:
-        - NVIC.29
-  GLITCH_DETECTOR:
-    baseAddress: 1075150848
-    model: GLITCH_DETECTOR
-  HSTX_CTRL:
-    baseAddress: 1074528256
-    model: HSTX_CTRL
-  HSTX_FIFO:
-    baseAddress: 1348468736
-    model: HSTX_FIFO
   I2C0:
-    baseAddress: 1074331648
+    baseAddress: 1074020352
     model: I2C
-    connections:
-      IRQ:
-        - NVIC.52
-  I2C1:
-    baseAddress: 1074364416
-    model: I2C
-    connections:
-      IRQ:
-        - NVIC.53
-  IO_BANK0:
-    baseAddress: 1073905664
-    model: IO_BANK0
-    connections:
-      IRQ:
-        - NVIC.37
-      IRQ_NS:
-        - NVIC.38
-  IO_QSPI:
-    baseAddress: 1073938432
-    model: IO_QSPI
     connections:
       IRQ:
         - NVIC.39
-      IRQ_NS:
-        - NVIC.40
-  OTP:
-    baseAddress: 1074921472
-    model: OTP
+  I2C1:
+    baseAddress: 1074036736
+    model: I2C
     connections:
       IRQ:
-        - NVIC.54
-  OTP_DATA:
-    baseAddress: 1074987008
-    model: OTP_DATA
-  OTP_DATA_RAW:
-    baseAddress: 1075003392
-    model: OTP_DATA
+        - NVIC.40
+  IO_BANK0:
+    baseAddress: 1073823744
+    model: IO_BANK0
+    connections:
+      IRQ:
+        - NVIC.29
+  IO_QSPI:
+    baseAddress: 1073840128
+    model: IO_QSPI
+    connections:
+      IRQ:
+        - NVIC.30
   PADS_BANK0:
-    baseAddress: 1073971200
+    baseAddress: 1073856512
     model: PADS_BANK0
   PADS_QSPI:
-    baseAddress: 1074003968
+    baseAddress: 1073872896
     model: PADS_QSPI
   PIO0:
     baseAddress: 1344274432
     model: PIO
     connections:
       IRQ_0:
-        - NVIC.31
+        - NVIC.23
       IRQ_1:
-        - NVIC.32
+        - NVIC.24
   PIO1:
     baseAddress: 1345323008
     model: PIO
     connections:
       IRQ_0:
-        - NVIC.33
+        - NVIC.25
       IRQ_1:
-        - NVIC.34
-  PIO2:
-    baseAddress: 1346371584
-    model: PIO
-    connections:
-      IRQ_0:
-        - NVIC.35
-      IRQ_1:
-        - NVIC.36
+        - NVIC.26
   PLL_SYS:
-    baseAddress: 1074069504
+    baseAddress: 1073905664
     model: PLL
-    connections:
-      IRQ:
-        - NVIC.58
   PLL_USB:
-    baseAddress: 1074102272
+    baseAddress: 1073922048
     model: PLL
-    connections:
-      IRQ:
-        - NVIC.59
-  POWMAN:
-    baseAddress: 1074790400
-    model: POWMAN
-    connections:
-      POW:
-        - NVIC.60
-      TIMER:
-        - NVIC.61
   PSM:
-    baseAddress: 1073840128
+    baseAddress: 1073807360
     model: PSM
   PWM:
-    baseAddress: 1074429952
+    baseAddress: 1074069504
     model: PWM
     connections:
-      WRAP_0:
-        - NVIC.24
-      WRAP_1:
-        - NVIC.25
-  QMI:
-    baseAddress: 1074593792
-    model: QMI
+      WRAP:
+        - NVIC.20
   RESETS:
-    baseAddress: 1073872896
+    baseAddress: 1073790976
     model: RESETS
   ROSC:
-    baseAddress: 1074692096
+    baseAddress: 1074135040
     model: ROSC
-  SHA256:
-    baseAddress: 1074757632
-    model: SHA256
+  RTC:
+    baseAddress: 1074118656
+    model: RTC
+    connections:
+      IRQ:
+        - NVIC.41
   SIO:
     baseAddress: 3489660928
     model: SIO
     connections:
-      FIFO:
-        - NVIC.41
-      BELL:
-        - NVIC.42
-      FIFO_NS:
-        - NVIC.43
-      BELL_NS:
-        - NVIC.44
-      MTIMECMP:
-        - NVIC.45
-  SIO_NS:
-    baseAddress: 3489792000
-    model: SIO
+      PROC0:
+        - NVIC.31
+      PROC1:
+        - NVIC.32
   SPI0:
-    baseAddress: 1074266112
+    baseAddress: 1073987584
     model: SPI
     connections:
       IRQ:
-        - NVIC.47
+        - NVIC.34
   SPI1:
-    baseAddress: 1074298880
+    baseAddress: 1074003968
     model: SPI
     connections:
       IRQ:
-        - NVIC.48
+        - NVIC.35
+  SSI:
+    baseAddress: 402653184
+    model: SSI
   SYSCFG:
-    baseAddress: 1073774592
+    baseAddress: 1073758208
     model: SYSCFG
   SYSINFO:
     baseAddress: 1073741824
     model: SYSINFO
   TBMAN:
-    baseAddress: 1075183616
+    baseAddress: 1074184192
     model: TBMAN
-  TICKS:
-    baseAddress: 1074823168
-    model: TICKS
-  TIMER0:
-    baseAddress: 1074462720
+  TIMER:
+    baseAddress: 1074085888
     model: Timer
     connections:
       IRQ_0:
@@ -1326,54 +1090,39 @@ instances:
         - NVIC.18
       IRQ_3:
         - NVIC.19
-  TIMER1:
-    baseAddress: 1074495488
-    model: Timer
-    connections:
-      IRQ_0:
-        - NVIC.20
-      IRQ_1:
-        - NVIC.21
-      IRQ_2:
-        - NVIC.22
-      IRQ_3:
-        - NVIC.23
-  TRNG:
-    baseAddress: 1074724864
-    model: TRNG
-    connections:
-      IRQ:
-        - NVIC.55
   UART0:
-    baseAddress: 1074200576
+    baseAddress: 1073954816
     model: UART
     connections:
       IRQ:
-        - NVIC.49
+        - NVIC.36
   UART1:
-    baseAddress: 1074233344
+    baseAddress: 1073971200
     model: UART
     connections:
       IRQ:
-        - NVIC.50
+        - NVIC.37
   USB:
     baseAddress: 1343291392
     model: USB
     connections:
       IRQ:
-        - NVIC.30
+        - NVIC.21
   USB_DPRAM:
     baseAddress: 1343225856
     model: USB_DPRAM
+  VREG_AND_CHIP_RESET:
+    baseAddress: 1074151424
+    model: VREG_AND_CHIP_RESET
   WATCHDOG:
-    baseAddress: 1074626560
+    baseAddress: 1074102272
     model: WATCHDOG
-  XIP_AUX:
-    baseAddress: 1347420160
-    model: XIP_AUX
   XIP_CTRL:
-    baseAddress: 1074561024
+    baseAddress: 335544320
     model: XIP_CTRL
+    connections:
+      IRQ:
+        - NVIC.22
   XOSC:
-    baseAddress: 1074036736
+    baseAddress: 1073889280
     model: XOSC

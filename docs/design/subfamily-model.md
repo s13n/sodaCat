@@ -32,6 +32,15 @@ The subfamily YAML is fully derived: deleting it and re-extracting yields a
 byte-identical file.  Chip YAMLs reach their subfamily via an `inherits:` key
 whose value is the model-root-relative path of the subfamily YAML.
 
+**Single-chip subfamilies where chip name = subfamily name** (Raspberry RP2040
+/ RP2350) would otherwise produce two YAMLs in the same directory with the
+same stem (`RP2040/RP2040.yaml`) and two header outputs at the same path
+(`rp/RP2040.hpp`).  Convention: the subfamily YAML uses the stem
+`_common.yaml` (`RP2040/_common.yaml`); the chip keeps its own name.  Both
+emit into the same namespace, but their header filenames differ
+(`rp/_common.hpp` carries the clocktree, `rp/RP2040.hpp` carries the chip
+integration).  The vendor config's `inherits:` picks the stem.
+
 ## Two fabric mechanisms
 
 The pattern accommodates both **hand-authored** fabrics (topology that has to
