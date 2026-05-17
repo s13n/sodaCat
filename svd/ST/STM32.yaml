@@ -895,6 +895,9 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^(CEC|HDMI_CEC)$'
+      WKUP:
+        description: Wakeup from Stop mode (HDMI-CEC line activity)
+        pattern: '^WKUP$'
   DCMI:
     # Digital Camera Interface: F4, F7, H5, H7, L4, L4P, N6, U5
     from: STM32H723.DCMI
@@ -13631,9 +13634,9 @@ families:
           SDMMC2: {INTR: [NVIC.140]}
       H745_H757:
         _all:
-          BDMA: {CH0: [NVIC.145], CH1: [NVIC.146], CH2: [NVIC.147], CH3: [NVIC.148], CH4: [NVIC.149], CH5: [NVIC.150], CH6: [NVIC.151], CH7: [NVIC.152]}
-          OTG1_HS_GLOBAL: {EP1_OUT: [NVIC.90], EP1_IN: [NVIC.91], WKUP: [NVIC.92], INTR: [NVIC.93]}
-          OTG2_HS_GLOBAL: {EP1_OUT: [NVIC.114], EP1_IN: [NVIC.115], WKUP: [NVIC.116], INTR: [NVIC.117]}
+          # OTG WKUP gains EXTI destination per RM0399 Table 103 (usb<N>_wkup → WKUP43/44).
+          OTG1_HS_GLOBAL: {EP1_OUT: [NVIC.90], EP1_IN: [NVIC.91], WKUP: [NVIC.92, EXTI.43], INTR: [NVIC.93]}
+          OTG2_HS_GLOBAL: {EP1_OUT: [NVIC.114], EP1_IN: [NVIC.115], WKUP: [NVIC.116, EXTI.44], INTR: [NVIC.117]}
           SDMMC1: {INTR: [NVIC.65]}
           SDMMC2: {INTR: [NVIC.140]}
           # USART/UART DMAMUX1 request lines per RM0399 Table 106; EXTI wakeup
@@ -13689,6 +13692,14 @@ families:
           # Chapter 14 calls this 'DFSDM1' but the chip instance is named 'DFSDM'.
           DFSDM:   {FLT0_DMA: [DMAMUX1.101], FLT1_DMA: [DMAMUX1.102], FLT2_DMA: [DMAMUX1.103], FLT3_DMA: [DMAMUX1.104]}
           SWPMI:   {TX_DMA: [DMAMUX1.92], RX_DMA: [DMAMUX1.91], WKUP: [EXTI.54]}
+          # Additional EXTI destinations on existing interrupt/wakeup outputs
+          # per RM0399 Table 103. The D3-domain peripherals' interrupt signals
+          # ('_it' suffix in Table 103) feed EXTI for cross-domain wakeup;
+          # MDIOS and CEC wakeups feed EXTI for low-power wake.
+          MDIOS:   {WKUP: [NVIC.135, EXTI.42]}
+          RCC:     {INTR: [NVIC.21, EXTI.61]}
+          CEC:     {INTR: [NVIC.110], WKUP: [EXTI.85]}
+          BDMA:    {CH0: [NVIC.145, EXTI.66], CH1: [NVIC.146, EXTI.67], CH2: [NVIC.147, EXTI.68], CH3: [NVIC.148, EXTI.69], CH4: [NVIC.149, EXTI.70], CH5: [NVIC.150, EXTI.71], CH6: [NVIC.151, EXTI.72], CH7: [NVIC.152, EXTI.73]}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
