@@ -775,6 +775,36 @@ two EXTI lines, (b) split inside the LPUART silicon based on which trigger
 fired, or (c) something else, is left unresolved by the available
 documentation.
 
+### Table 103 SPI6/LPUART1 EXTI line typo (RM doc inconsistency, not SVD bug)
+
+**RM0399 Rev.4 (H745 / H747 / H755 / H757):**
+
+Chapter 14 Table 103 (EXTI wakeup inputs) lists both LPUART1's and SPI6's
+interrupt-routed-to-EXTI entries at WKUP64, and skips WKUP65 entirely:
+
+```
+D3 APB4 I2C4    i2c4_err_it   WKUP63 D CPU (1)
+D3 APB4 LPUART1 lpuart1_it    WKUP64 D CPU (1)
+D3 APB4 SPI6    spi6_it       WKUP64 D CPU (1)         ← typo
+        BDMA    bdma_ch0_it   WKUP66 D CPU (1)
+```
+
+Chapter 21.4 Table 152 (EXTI Event input mapping — the EXTI chapter's own
+assignment table) has the correct distinct lines:
+
+| Line | Source                       | Type   | Target       |
+|------|------------------------------|--------|--------------|
+| 64   | LPUART1 global Interrupt     | Direct | CPU1 or CPU2 |
+| 65   | SPI6 interrupt               | Direct | CPU1 or CPU2 |
+| 66   | BDMA CH0 interrupt           | Direct | CPU1 or CPU2 |
+
+The EXTI chapter is the load-bearing source for line numbering (EXTI defines
+its own input port numbers). Table 103 has the typo.
+
+**Modelled per Table 152.** SPI6's INTR → EXTI.65 in the chip wiring; the
+shared destination (one EXTI line fed by two unrelated peripherals) implied
+by Table 103 was a documentation artifact, not silicon reality.
+
 
 ## ST STM32F3
 
