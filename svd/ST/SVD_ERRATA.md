@@ -798,12 +798,15 @@ assignment table) has the correct distinct lines:
 | 65   | SPI6 interrupt               | Direct | CPU1 or CPU2 |
 | 66   | BDMA CH0 interrupt           | Direct | CPU1 or CPU2 |
 
-The EXTI chapter is the load-bearing source for line numbering (EXTI defines
-its own input port numbers). Table 103 has the typo.
+Table 103 is the more likely culprit: the conspicuous absence of WKUP65
+from its sequence (jumping 63 → 64 → 64 → 66) is strong evidence of a
+mis-numbered entry. Table 152's distinct WKUP64/65/66 assignment is
+internally consistent. Neither table is inherently authoritative — both
+can have typos — but the plausibility evidence points at Table 103.
 
 **Modelled per Table 152.** SPI6's INTR → EXTI.65 in the chip wiring; the
-shared destination (one EXTI line fed by two unrelated peripherals) implied
-by Table 103 was a documentation artifact, not silicon reality.
+shared destination (one EXTI line fed by two unrelated peripherals)
+implied by Table 103 was a documentation artifact, not silicon reality.
 
 
 ## ST STM32F3
