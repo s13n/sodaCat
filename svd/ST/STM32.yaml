@@ -363,6 +363,13 @@ shared_blocks:
     # HSOTR-type OPAMP: H7 and H5 share this model
     # LPOTR-type families use LPOPAMP; G4/L1 are distinct IPs; U3 has different VM_SEL width
     from: STM32H723.OPAMP
+    outputs:
+      OUT1:
+        description: Op-amp 1 output (routes to HRTIM event router per RM0399 Table 102)
+        pattern: '^OUT1$'
+      OUT2:
+        description: Op-amp 2 output
+        pattern: '^OUT2$'
     params:
       - {name: single, type: bool, default: false, description: Single operational amplifier (no second amplifier registers)}
     transforms:
@@ -13874,10 +13881,9 @@ families:
           # DFSDM, SWPMI per RM0399 Table 106. ADC3 also has DMAMUX2 routing
           # (Table 107) and an INTR-to-EXTI line (Table 103 adc3_it → WKUP75).
           # ADC: AWD<N> (analog watchdog events) route to TIM1/TIM8 ETR
-          # inputs per Table 102 — ADC1's watchdogs feed TIM1.ETR3-5,
-          # ADC2's feed TIM8.ETR3-5, ADC3's feed both TIMs at ETR6-8.
-          ADC1:    {DMA: [DMAMUX1.9], AWD1: [TIM1.ETR.3], AWD2: [TIM1.ETR.4], AWD3: [TIM1.ETR.5]}
-          ADC2:    {DMA: [DMAMUX1.10], AWD1: [TIM8.ETR.3], AWD2: [TIM8.ETR.4], AWD3: [TIM8.ETR.5]}
+          # inputs and HRTIM events per Table 102.
+          ADC1:    {DMA: [DMAMUX1.9], AWD1: [TIM1.ETR.3, HRTIM_Master.evt1.3], AWD2: [TIM1.ETR.4, HRTIM_Master.evt2.3], AWD3: [TIM1.ETR.5, HRTIM_Master.evt3.3]}
+          ADC2:    {DMA: [DMAMUX1.10], AWD1: [TIM8.ETR.3, HRTIM_Master.evt4.3], AWD2: [TIM8.ETR.4, HRTIM_Master.evt5.3], AWD3: [TIM8.ETR.5, HRTIM_Master.evt6.3]}
           ADC3:    {INTR: [NVIC.143, EXTI.75], DMA: [DMAMUX1.115, DMAMUX2.17], AWD1: [TIM1.ETR.6, TIM8.ETR.6], AWD2: [TIM1.ETR.7, TIM8.ETR.7], AWD3: [TIM1.ETR.8, TIM8.ETR.8]}
           DAC:     {CH1_DMA: [DMAMUX1.67], CH2_DMA: [DMAMUX1.68]}
           DCMI:    {DMA: [DMAMUX1.75]}
@@ -13895,6 +13901,9 @@ families:
           # BREAK3 → TIM8.BRK2.3 (filter 3; only one destination)
           DFSDM:   {FLT0_DMA: [DMAMUX1.101], FLT1_DMA: [DMAMUX1.102], FLT2_DMA: [DMAMUX1.103], FLT3_DMA: [DMAMUX1.104], BREAK0: [TIM1.BRK.3, TIM15.BRK.3], BREAK1: [TIM1.BRK2.3, TIM16.BRK.3], BREAK2: [TIM8.BRK.3, TIM17.BRK.3], BREAK3: [TIM8.BRK2.3]}
           SWPMI:   {TX_DMA: [DMAMUX1.92], RX_DMA: [DMAMUX1.91], WKUP: [EXTI.54]}
+          # OPAMP1 output (the H7 OPAMP peripheral contains 2 amplifiers; Table
+          # 102 lists only OPAMP1's output as feeding HRTIM events 4 and 9).
+          OPAMP:   {OUT1: [HRTIM_Master.evt4.1, HRTIM_Master.evt9.1]}
           # Additional EXTI destinations on existing interrupt/wakeup outputs
           # per RM0399 Table 103. The D3-domain peripherals' interrupt signals
           # ('_it' suffix in Table 103) feed EXTI for cross-domain wakeup;
@@ -13923,17 +13932,17 @@ families:
           # chip-header generator emits per-category route tables (c_TIM2_ITR
           # etc.). The category name comes from the destination's port symbol
           # in Table 102 ('ITR0' → category 'ITR', index 0).
-          TIM1:    {CH1_DMA: [DMAMUX1.11], CH2_DMA: [DMAMUX1.12], CH3_DMA: [DMAMUX1.13], CH4_DMA: [DMAMUX1.14], UP_DMA: [DMAMUX1.15], TRIG_DMA: [DMAMUX1.16], COM_DMA: [DMAMUX1.17], TRGO: [TIM2.ITR.0, TIM3.ITR.0, TIM4.ITR.0, TIM5.ITR.0, TIM8.ITR.0, TIM15.ITR.0, ADC1.ext_trg.9, ADC2.ext_trg.9, ADC1.jext_trg.0, ADC2.jext_trg.0, ADC3.ext_trg.9, ADC3.jext_trg.0], TRGO2: [ADC1.ext_trg.10, ADC2.ext_trg.10, ADC1.jext_trg.8, ADC2.jext_trg.8, ADC3.ext_trg.10, ADC3.jext_trg.8], CC1: [ADC1.ext_trg.0, ADC2.ext_trg.0, ADC3.ext_trg.0], CC2: [ADC1.ext_trg.1, ADC2.ext_trg.1, ADC3.ext_trg.1], CC3: [ADC1.ext_trg.2, ADC2.ext_trg.2, ADC3.ext_trg.2], CC4: [ADC1.jext_trg.1, ADC2.jext_trg.1, ADC3.jext_trg.1]}
-          TIM2:    {CH1_DMA: [DMAMUX1.18], CH2_DMA: [DMAMUX1.19], CH3_DMA: [DMAMUX1.20], CH4_DMA: [DMAMUX1.21], UP_DMA: [DMAMUX1.22], TRGO: [TIM1.ITR.1, TIM3.ITR.1, TIM4.ITR.1, TIM8.ITR.1, ADC1.ext_trg.11, ADC2.ext_trg.11, ADC1.jext_trg.2, ADC2.jext_trg.2, ADC3.ext_trg.11, ADC3.jext_trg.2], CC1: [TIM15.TI1.1, ADC1.jext_trg.3, ADC2.jext_trg.3, ADC3.jext_trg.3], CC2: [TIM15.TI2.1, ADC1.ext_trg.3, ADC2.ext_trg.3, ADC3.ext_trg.3]}
-          TIM3:    {CH1_DMA: [DMAMUX1.23], CH2_DMA: [DMAMUX1.24], CH3_DMA: [DMAMUX1.25], CH4_DMA: [DMAMUX1.26], UP_DMA: [DMAMUX1.27], TRIG_DMA: [DMAMUX1.28], TRGO: [TIM1.ITR.2, TIM2.ITR.2, TIM4.ITR.2, TIM5.ITR.2, TIM15.ITR.1, ADC1.ext_trg.4, ADC2.ext_trg.4, ADC1.jext_trg.12, ADC2.jext_trg.12, ADC3.ext_trg.4, ADC3.jext_trg.12], CC1: [TIM15.TI1.2, ADC1.jext_trg.13, ADC2.jext_trg.13, ADC3.jext_trg.13], CC2: [TIM15.TI2.2], CC3: [ADC1.jext_trg.11, ADC2.jext_trg.11, ADC3.jext_trg.11], CC4: [ADC1.ext_trg.15, ADC2.ext_trg.15, ADC1.jext_trg.4, ADC2.jext_trg.4, ADC3.ext_trg.15, ADC3.jext_trg.4]}
+          TIM1:    {CH1_DMA: [DMAMUX1.11], CH2_DMA: [DMAMUX1.12], CH3_DMA: [DMAMUX1.13], CH4_DMA: [DMAMUX1.14], UP_DMA: [DMAMUX1.15], TRIG_DMA: [DMAMUX1.16], COM_DMA: [DMAMUX1.17], TRGO: [TIM2.ITR.0, TIM3.ITR.0, TIM4.ITR.0, TIM5.ITR.0, TIM8.ITR.0, TIM15.ITR.0, ADC1.ext_trg.9, ADC2.ext_trg.9, ADC1.jext_trg.0, ADC2.jext_trg.0, ADC3.ext_trg.9, ADC3.jext_trg.0, HRTIM_Master.evt1.2], TRGO2: [ADC1.ext_trg.10, ADC2.ext_trg.10, ADC1.jext_trg.8, ADC2.jext_trg.8, ADC3.ext_trg.10, ADC3.jext_trg.8], CC1: [ADC1.ext_trg.0, ADC2.ext_trg.0, ADC3.ext_trg.0], CC2: [ADC1.ext_trg.1, ADC2.ext_trg.1, ADC3.ext_trg.1], CC3: [ADC1.ext_trg.2, ADC2.ext_trg.2, ADC3.ext_trg.2], CC4: [ADC1.jext_trg.1, ADC2.jext_trg.1, ADC3.jext_trg.1]}
+          TIM2:    {CH1_DMA: [DMAMUX1.18], CH2_DMA: [DMAMUX1.19], CH3_DMA: [DMAMUX1.20], CH4_DMA: [DMAMUX1.21], UP_DMA: [DMAMUX1.22], TRGO: [TIM1.ITR.1, TIM3.ITR.1, TIM4.ITR.1, TIM8.ITR.1, ADC1.ext_trg.11, ADC2.ext_trg.11, ADC1.jext_trg.2, ADC2.jext_trg.2, ADC3.ext_trg.11, ADC3.jext_trg.2, HRTIM_Master.evt2.2], CC1: [TIM15.TI1.1, ADC1.jext_trg.3, ADC2.jext_trg.3, ADC3.jext_trg.3], CC2: [TIM15.TI2.1, ADC1.ext_trg.3, ADC2.ext_trg.3, ADC3.ext_trg.3]}
+          TIM3:    {CH1_DMA: [DMAMUX1.23], CH2_DMA: [DMAMUX1.24], CH3_DMA: [DMAMUX1.25], CH4_DMA: [DMAMUX1.26], UP_DMA: [DMAMUX1.27], TRIG_DMA: [DMAMUX1.28], TRGO: [TIM1.ITR.2, TIM2.ITR.2, TIM4.ITR.2, TIM5.ITR.2, TIM15.ITR.1, ADC1.ext_trg.4, ADC2.ext_trg.4, ADC1.jext_trg.12, ADC2.jext_trg.12, ADC3.ext_trg.4, ADC3.jext_trg.12, HRTIM_Master.evt3.2], CC1: [TIM15.TI1.2, ADC1.jext_trg.13, ADC2.jext_trg.13, ADC3.jext_trg.13], CC2: [TIM15.TI2.2], CC3: [ADC1.jext_trg.11, ADC2.jext_trg.11, ADC3.jext_trg.11], CC4: [ADC1.ext_trg.15, ADC2.ext_trg.15, ADC1.jext_trg.4, ADC2.jext_trg.4, ADC3.ext_trg.15, ADC3.jext_trg.4]}
           TIM4:    {CH1_DMA: [DMAMUX1.29], CH2_DMA: [DMAMUX1.30], CH3_DMA: [DMAMUX1.31], UP_DMA: [DMAMUX1.32], TRGO: [TIM1.ITR.3, TIM2.ITR.3, TIM3.ITR.3, TIM5.ITR.3, TIM8.ITR.2, TIM12.ITR.0, ADC1.ext_trg.12, ADC2.ext_trg.12, ADC1.jext_trg.5, ADC2.jext_trg.5, ADC3.ext_trg.12, ADC3.jext_trg.5], CC1: [TIM15.TI1.3], CC2: [TIM15.TI2.3], CC4: [ADC1.ext_trg.5, ADC2.ext_trg.5, ADC3.ext_trg.5]}
           TIM5:    {CH1_DMA: [DMAMUX1.55], CH2_DMA: [DMAMUX1.56], CH3_DMA: [DMAMUX1.57], CH4_DMA: [DMAMUX1.58], UP_DMA: [DMAMUX1.59], TRIG_DMA: [DMAMUX1.60], TRGO: [TIM8.ITR.3, TIM12.ITR.1]}
-          TIM6:    {UP_DMA: [DMAMUX1.69], TRGO: [ADC1.ext_trg.13, ADC2.ext_trg.13, ADC1.jext_trg.14, ADC2.jext_trg.14, ADC3.ext_trg.13, ADC3.jext_trg.14]}
-          TIM7:    {UP_DMA: [DMAMUX1.70]}
+          TIM6:    {UP_DMA: [DMAMUX1.69], TRGO: [ADC1.ext_trg.13, ADC2.ext_trg.13, ADC1.jext_trg.14, ADC2.jext_trg.14, ADC3.ext_trg.13, ADC3.jext_trg.14, HRTIM_Master.evt6.2, HRTIM_Master.evt8.2, HRTIM_Master.upd_en.3]}
+          TIM7:    {UP_DMA: [DMAMUX1.70], TRGO: [HRTIM_Master.evt4.2, HRTIM_Master.evt7.2, HRTIM_Master.bm_trg.0, HRTIM_Master.bm_ck.3]}
           TIM8:    {CH1_DMA: [DMAMUX1.47], CH2_DMA: [DMAMUX1.48], CH3_DMA: [DMAMUX1.49], CH4_DMA: [DMAMUX1.50], UP_DMA: [DMAMUX1.51], TRIG_DMA: [DMAMUX1.52], COM_DMA: [DMAMUX1.53], TRGO: [TIM2.ITR.1, TIM4.ITR.3, TIM5.ITR.1, ADC1.ext_trg.7, ADC2.ext_trg.7, ADC1.jext_trg.9, ADC2.jext_trg.9, ADC3.ext_trg.7, ADC3.jext_trg.9], TRGO2: [ADC1.ext_trg.8, ADC2.ext_trg.8, ADC1.jext_trg.10, ADC2.jext_trg.10, ADC3.ext_trg.8, ADC3.jext_trg.10], CC4: [ADC1.jext_trg.7, ADC2.jext_trg.7, ADC3.jext_trg.7]}
-          TIM15:   {CH1_DMA: [DMAMUX1.105], UP_DMA: [DMAMUX1.106], TRIG_DMA: [DMAMUX1.107], COM_DMA: [DMAMUX1.108], TRGO: [TIM1.ITR.0, TIM3.ITR.2, ADC1.ext_trg.14, ADC2.ext_trg.14, ADC1.jext_trg.15, ADC2.jext_trg.15, ADC3.ext_trg.14, ADC3.jext_trg.15]}
-          TIM16:   {CH1_DMA: [DMAMUX1.109], UP_DMA: [DMAMUX1.110]}
-          TIM17:   {CH1_DMA: [DMAMUX1.111], UP_DMA: [DMAMUX1.112]}
+          TIM15:   {CH1_DMA: [DMAMUX1.105], UP_DMA: [DMAMUX1.106], TRIG_DMA: [DMAMUX1.107], COM_DMA: [DMAMUX1.108], TRGO: [TIM1.ITR.0, TIM3.ITR.2, ADC1.ext_trg.14, ADC2.ext_trg.14, ADC1.jext_trg.15, ADC2.jext_trg.15, ADC3.ext_trg.14, ADC3.jext_trg.15, HRTIM_Master.evt9.2]}
+          TIM16:   {CH1_DMA: [DMAMUX1.109], UP_DMA: [DMAMUX1.110], CC1: [HRTIM_Master.upd_en.1, HRTIM_Master.bm_ck.1]}
+          TIM17:   {CH1_DMA: [DMAMUX1.111], UP_DMA: [DMAMUX1.112], CC1: [HRTIM_Master.upd_en.2, HRTIM_Master.bm_ck.2]}
           # HRTIM1: 6 DMA requests (one per master+sub-timer) per Table 106.
           # Chapter 14 calls the instance HRTIM1 but the chip yaml names it
           # HRTIM_Master (matches the SVD interrupt block prefix).
@@ -13945,15 +13954,14 @@ families:
           # COMP1.OUT also feeds TIM1/TIM2/TIM3/TIM8 ETR1 per Table 102
           # (the comparator output can clock or trigger timers; COMP2 is not
           # on H745_H757 so its analogous TIM ETR2 entries are absent).
-          # COMP1.OUT additionally feeds TIM brake inputs (BRK / BRK2 ports
-          # on TIM1/TIM8/TIM15/TIM16/TIM17), TIM TI input muxes, and LPTIM1/2
-          # ext_trg and IN1_mux selectors per Table 102.
-          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.5, LPTIM2.ext_trg.5, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3]}
+          # COMP1.OUT additionally feeds HRTIM events 1, 6 and the HRTIM
+          # fault input filter 1 per Table 102.
+          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.5, LPTIM2.ext_trg.5, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3, HRTIM_Master.evt1.1, HRTIM_Master.evt6.1, HRTIM_Master.in_flt.1]}
           # LPTIM.OUT additionally feeds LPTIM ext_trg inputs of other
           # LPTIM instances per Table 102 (LPTIM2/3/4/5 form a small
           # routing fabric where each instance's output can clock another).
-          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18]}
-          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0]}
+          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18, HRTIM_Master.evt5.2]}
+          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0, HRTIM_Master.evt10.2]}
           LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20, LPTIM4.ext_trg.1, LPTIM5.ext_trg.1]}
           LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52], OUT: [LPTIM3.ext_trg.2, LPTIM5.ext_trg.2]}
           LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53], OUT: [LPTIM3.ext_trg.3, LPTIM4.ext_trg.3]}
