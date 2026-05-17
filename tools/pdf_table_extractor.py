@@ -305,9 +305,13 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv,
                 if duplicates_found > 0:
                     header_candidates.append((num_headers, duplicates_found))
             
-            # Choose header configuration with most duplicates
+            # Choose header configuration with most duplicates; on ties prefer
+            # the larger header block. Two-row page-break headers (a top-level
+            # category row + a sub-header row) typically dedup with identical
+            # counts; the smaller answer would leave the sub-header row in the
+            # data section.
             if header_candidates:
-                best_header = max(header_candidates, key=lambda x: x[1])
+                best_header = max(header_candidates, key=lambda x: (x[1], x[0]))
                 num_header_rows = best_header[0]
                 num_duplicates = best_header[1]
                 print(f"  Detected: {num_header_rows} header row(s), {num_duplicates} repetition(s) found")

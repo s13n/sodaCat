@@ -14,12 +14,12 @@ models and the `outputs:` declarations on the block-level YAML models.
 
 | File             | Source PDF table         | Routes |
 |------------------|--------------------------|--------|
-| `table-102.csv`  | Peripherals interconnect matrix details (p. 617-632) | 332 |
-| `table-103.csv`  | EXTI wakeup inputs (p. 634-636)                      | 88  |
+| `table-102.csv`  | Peripherals interconnect matrix details (p. 617-632) | 317 |
+| `table-103.csv`  | EXTI wakeup inputs (p. 634-636)                      | 86  |
 | `table-104.csv`  | EXTI pending requests clear inputs (p. 637)          | 4   |
-| `table-105.csv`  | MDMA (p. 639-640)                                    | 33  |
-| `table-106.csv`  | DMAMUX1, DMA1 and DMA2 connections (p. 641-645)      | 142 |
-| `table-107.csv`  | DMAMUX2 and BDMA connections (p. 646-648)            | 65  |
+| `table-105.csv`  | MDMA (p. 639-640)                                    | 32  |
+| `table-106.csv`  | DMAMUX1, DMA1 and DMA2 connections (p. 641-645)      | 138 |
+| `table-107.csv`  | DMAMUX2 and BDMA connections (p. 646-648)            | 63  |
 
 RM0399's Tables 100 and 101 (D2/D3-domain overview matrices on pp. 615-616)
 are intentionally skipped — their headers are typeset vertically, so

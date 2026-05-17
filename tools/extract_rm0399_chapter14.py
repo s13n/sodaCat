@@ -104,7 +104,7 @@ def extract_one(table_num, title, start_page, end_page):
         start_page=start_page,
         end_page=end_page,
         output_csv=str(raw),
-        skip_header_rows=None,
+        skip_header_rows=2,
         drop_columns_spec=DROP_COLUMNS,
         forward_fill_spec=FORWARD_FILL,
     )
