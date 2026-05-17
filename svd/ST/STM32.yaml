@@ -342,6 +342,12 @@ shared_blocks:
       WKUP_TX:
         description: Wakeup from Stop mode on TX-event only (LPUART only; standard USART/UART have no externally accessible TX-only wakeup output)
         pattern: '^WKUP_TX$'
+      TX_IT:
+        description: Transmit-event interrupt flag exposed as a trigger source (LPUART only on H7; routes to DMAMUX gen per RM0399 Table 107 'it_tx_lpuart1'). Finer-grained than the global INTR.
+        pattern: '^TX_IT$'
+      RX_IT:
+        description: Receive-event interrupt flag exposed as a trigger source (LPUART only on H7; routes to DMAMUX gen per RM0399 Table 107 'it_rx_lpuart1')
+        pattern: '^RX_IT$'
     params:
       - {name: lpbaud, type: bool, default: false, description: Low-power baud rate generation (BRR_LP variant; no OVER8/ONEBIT/GTPR/RTOR; no RTOIE/RTOEN/RTOF/RTOCF; no TECLREN in AUTOCR)}
       - {name: synchronous, type: int, default: 3, max: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous+SPI slave (CLKEN/CPHA/CPOL/LBCL/SLVEN/DIS_NSS/UDR/UDRCF/TXFECF), 2=sync+smartcard (NACK/SCEN/SCARCNT/EOBIE/EOBF/EOBCF), 3=sync+smartcard+TCBGT'}
@@ -13477,11 +13483,29 @@ families:
           OVR:
             description: Request-line overrun event. Asserted by DMAMUX when more than one synchronized request fires before the previous was serviced. (Block shared between DMA and DMAMUX; for DMA instances this output is unwired — the per-stream STR<N> outputs carry interrupts.)
             pattern: '^DMAMUX\d+_OV(R)?$'
+          EVT0:
+            description: DMAMUX request-generator event 0 (feeds back to DMAMUX trigger input 0 per RM0399 Tables 106/107)
+            pattern: '^EVT0$'
+          EVT1:
+            description: DMAMUX request-generator event 1
+            pattern: '^EVT1$'
+          EVT2:
+            description: DMAMUX request-generator event 2
+            pattern: '^EVT2$'
+          EVT3:
+            description: DMAMUX request-generator event 3
+            pattern: '^EVT3$'
+          EVT4:
+            description: DMAMUX request-generator event 4
+            pattern: '^EVT4$'
+          EVT5:
+            description: DMAMUX request-generator event 5
+            pattern: '^EVT5$'
           EVT6:
-            description: DMAMUX request-generator event 6 (routes to EXTI D3 pendclear input per RM0399 Table 104)
+            description: DMAMUX request-generator event 6 (also routes to EXTI D3 pendclear input per Table 104)
             pattern: '^EVT6$'
           EVT7:
-            description: DMAMUX request-generator event 7 (routes to EXTI D3 pendclear input per RM0399 Table 104)
+            description: DMAMUX request-generator event 7 (also routes to EXTI D3 pendclear input per Table 104)
             pattern: '^EVT7$'
           INTR:
             description: Global interrupt (used by DMA2D instances; the DMA block is shared across DMA streams, DMAMUX, and DMA2D — the latter has a single combined interrupt rather than per-stream)
@@ -13934,7 +13958,7 @@ families:
           USART6:  {TX_DMA: [DMAMUX1.72], RX_DMA: [DMAMUX1.71], WKUP: [EXTI.29]}
           UART7:   {TX_DMA: [DMAMUX1.80], RX_DMA: [DMAMUX1.79], WKUP: [EXTI.32]}
           UART8:   {TX_DMA: [DMAMUX1.82], RX_DMA: [DMAMUX1.81], WKUP: [EXTI.33]}
-          LPUART1: {INTR: [NVIC.158, EXTI.64], TX_DMA: [DMAMUX2.10], RX_DMA: [DMAMUX2.9], WKUP_RX: [EXTI.34], WKUP_TX: [EXTI.35]}
+          LPUART1: {INTR: [NVIC.158, EXTI.64], TX_DMA: [DMAMUX2.10], RX_DMA: [DMAMUX2.9], WKUP_RX: [EXTI.34, DMAMUX2.gen.7], WKUP_TX: [EXTI.35, DMAMUX2.gen.8], TX_IT: [DMAMUX2.gen.24], RX_IT: [DMAMUX2.gen.25]}
           # SPI: DMAMUX1 request lines (Table 106) for SPI1-5; SPI6 sits on
           # DMAMUX2 (Table 107). EXTI wakeup lines (Table 103) WKUP36-41 plus
           # SPI6's interrupt-routed-to-EXTI on WKUP64 (shared with LPUART1).
@@ -13945,14 +13969,14 @@ families:
           SPI5:    {TX_DMA: [DMAMUX1.86], RX_DMA: [DMAMUX1.85], WKUP: [EXTI.40]}
           # SPI6.INTR → EXTI.65 per RM0399 Table 152 (§21.4); Table 103 in ch.14
           # has a typo placing both LPUART1 and SPI6 at WKUP64. See errata.
-          SPI6:    {INTR: [NVIC.102, EXTI.65], TX_DMA: [DMAMUX2.12], RX_DMA: [DMAMUX2.11], WKUP: [EXTI.41]}
+          SPI6:    {INTR: [NVIC.102, EXTI.65, DMAMUX2.gen.23], TX_DMA: [DMAMUX2.12], RX_DMA: [DMAMUX2.11], WKUP: [EXTI.41, DMAMUX2.gen.16]}
           # I2C: DMAMUX1 request lines (Table 106) for I2C1-3; I2C4 sits on
           # DMAMUX2 (Table 107). EXTI wakeup lines (Table 103) WKUP22-25 plus
           # I2C4's EV/ER interrupts additionally routed to EXTI WKUP62/63.
           I2C1:    {TX_DMA: [DMAMUX1.34], RX_DMA: [DMAMUX1.33], WKUP: [EXTI.22]}
           I2C2:    {TX_DMA: [DMAMUX1.36], RX_DMA: [DMAMUX1.35], WKUP: [EXTI.23]}
           I2C3:    {TX_DMA: [DMAMUX1.74], RX_DMA: [DMAMUX1.73], WKUP: [EXTI.24]}
-          I2C4:    {EV: [NVIC.111, EXTI.62], ER: [NVIC.112, EXTI.63], TX_DMA: [DMAMUX2.14], RX_DMA: [DMAMUX2.13], WKUP: [EXTI.25]}
+          I2C4:    {EV: [NVIC.111, EXTI.62, DMAMUX2.gen.22], ER: [NVIC.112, EXTI.63], TX_DMA: [DMAMUX2.14], RX_DMA: [DMAMUX2.13], WKUP: [EXTI.25, DMAMUX2.gen.15]}
           # SAI: per-sub-block DMA requests (Table 106 SAI1-3 → DMAMUX1,
           # Table 107 SAI4 → DMAMUX2). SAI4's INTR additionally routes to
           # EXTI.76 (Table 103 sai4_gbl_it). Frame-sync routes from Table 102
@@ -13974,7 +13998,7 @@ families:
           # inputs and HRTIM events per Table 102.
           ADC1:    {DMA: [DMAMUX1.9], AWD1: [TIM1.ETR.3, HRTIM_Master.evt1.3], AWD2: [TIM1.ETR.4, HRTIM_Master.evt2.3], AWD3: [TIM1.ETR.5, HRTIM_Master.evt3.3]}
           ADC2:    {DMA: [DMAMUX1.10], AWD1: [TIM8.ETR.3, HRTIM_Master.evt4.3], AWD2: [TIM8.ETR.4, HRTIM_Master.evt5.3], AWD3: [TIM8.ETR.5, HRTIM_Master.evt6.3]}
-          ADC3:    {INTR: [NVIC.143, EXTI.75], DMA: [DMAMUX1.115, DMAMUX2.17], AWD1: [TIM1.ETR.6, TIM8.ETR.6], AWD2: [TIM1.ETR.7, TIM8.ETR.7], AWD3: [TIM1.ETR.8, TIM8.ETR.8]}
+          ADC3:    {INTR: [NVIC.143, EXTI.75, DMAMUX2.gen.26], DMA: [DMAMUX1.115, DMAMUX2.17], AWD1: [TIM1.ETR.6, TIM8.ETR.6, DMAMUX2.gen.27], AWD2: [TIM1.ETR.7, TIM8.ETR.7], AWD3: [TIM1.ETR.8, TIM8.ETR.8]}
           DAC:     {CH1_DMA: [DMAMUX1.67], CH2_DMA: [DMAMUX1.68]}
           DCMI:    {DMA: [DMAMUX1.75]}
           CRYP:    {IN_DMA: [DMAMUX1.76], OUT_DMA: [DMAMUX1.77]}
@@ -14009,7 +14033,7 @@ families:
           # sync source) per Table 102.
           RCC:     {INTR: [NVIC.21, EXTI.61], LSE_CSS: [NVIC.18, EXTI.18], HSE_CSS_WKUP: [EXTI.87], LSE_CK: [TIM2.ETR.3, TIM15.TI1.4, TIM16.TI1.2, CRS.sync.1], LSI_CK: [TIM16.TI1.1], CSI_CK: [TIM15.TI1.5], HSE_1MHZ: [TIM17.TI1.2], MCO1: [TIM17.TI1.3], MCO2: [TIM15.TI1.6]}
           CEC:     {INTR: [NVIC.110], WKUP: [EXTI.85]}
-          BDMA:    {CH0: [NVIC.145, EXTI.66], CH1: [NVIC.146, EXTI.67], CH2: [NVIC.147, EXTI.68], CH3: [NVIC.148, EXTI.69], CH4: [NVIC.149, EXTI.70], CH5: [NVIC.150, EXTI.71], CH6: [NVIC.151, EXTI.72], CH7: [NVIC.152, EXTI.73]}
+          BDMA:    {CH0: [NVIC.145, EXTI.66, DMAMUX2.gen.28], CH1: [NVIC.146, EXTI.67, DMAMUX2.gen.29], CH2: [NVIC.147, EXTI.68], CH3: [NVIC.148, EXTI.69], CH4: [NVIC.149, EXTI.70], CH5: [NVIC.150, EXTI.71], CH6: [NVIC.151, EXTI.72], CH7: [NVIC.152, EXTI.73]}
           # TIM family DMA requests per RM0399 Table 106. Channel set varies
           # by timer variant: advanced-control timers (TIM1, TIM8) have full
           # CH1-4/UP/TRIG/COM set; general-purpose timers vary by capability;
@@ -14035,6 +14059,8 @@ families:
           TIM15:   {CH1_DMA: [DMAMUX1.105], UP_DMA: [DMAMUX1.106], TRIG_DMA: [DMAMUX1.107], COM_DMA: [DMAMUX1.108], TRGO: [TIM1.ITR.0, TIM3.ITR.2, ADC1.ext_trg.14, ADC2.ext_trg.14, ADC1.jext_trg.15, ADC2.jext_trg.15, ADC3.ext_trg.14, ADC3.jext_trg.15, HRTIM_Master.evt9.2, DAC.ch1_trg.7, DAC.ch2_trg.7], OC1: [COMP1.comp_blk.6]}
           TIM16:   {CH1_DMA: [DMAMUX1.109], UP_DMA: [DMAMUX1.110], CC1: [HRTIM_Master.upd_en.1, HRTIM_Master.bm_ck.1], OC1: [DFSDM.TRG.6]}
           TIM17:   {CH1_DMA: [DMAMUX1.111], UP_DMA: [DMAMUX1.112], CC1: [HRTIM_Master.upd_en.2, HRTIM_Master.bm_ck.2]}
+          # TIM12.TRGO feeds DMAMUX1's trigger generator slot 7 (Table 106).
+          TIM12:   {TRGO: [DMAMUX1.trg.7]}
           # HRTIM1: 6 DMA requests (one per master+sub-timer) per Table 106.
           # Chapter 14 calls the instance HRTIM1 but the chip yaml names it
           # HRTIM_Master (matches the SVD interrupt block prefix).
@@ -14048,20 +14074,23 @@ families:
           # on H745_H757 so its analogous TIM ETR2 entries are absent).
           # COMP1.OUT additionally feeds HRTIM events 1, 6 and the HRTIM
           # fault input filter 1 per Table 102.
-          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.5, LPTIM2.ext_trg.5, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3, HRTIM_Master.evt1.1, HRTIM_Master.evt6.1, HRTIM_Master.in_flt.1]}
+          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.5, LPTIM2.ext_trg.5, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3, HRTIM_Master.evt1.1, HRTIM_Master.evt6.1, HRTIM_Master.in_flt.1, DMAMUX2.gen.17]}
           # LPTIM.OUT additionally feeds LPTIM ext_trg inputs of other
           # LPTIM instances per Table 102 (LPTIM2/3/4/5 form a small
           # routing fabric where each instance's output can clock another).
-          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18, HRTIM_Master.evt5.2, DAC.ch1_trg.10, DAC.ch2_trg.10, DFSDM.TRG.26]}
-          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0, HRTIM_Master.evt10.2, DAC.ch1_trg.11, DAC.ch2_trg.11, DFSDM.TRG.27]}
-          LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20, LPTIM4.ext_trg.1, LPTIM5.ext_trg.1, DFSDM.TRG.28]}
-          LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52], OUT: [LPTIM3.ext_trg.2, LPTIM5.ext_trg.2, EXTI.d3_pendclear_in.2]}
-          LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53], OUT: [LPTIM3.ext_trg.3, LPTIM4.ext_trg.3, EXTI.d3_pendclear_in.3]}
+          # LPTIM additionally feeds DMAMUX trg/gen inputs per Table 106/107:
+          # LPTIM1/2/3.OUT → DMAMUX1.trg.3/4/5 (sync triggers for DMAMUX1);
+          # LPTIM2/3.{WKUP,OUT}, LPTIM4/5.WKUP → DMAMUX2.gen (D3-domain).
+          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18, HRTIM_Master.evt5.2, DAC.ch1_trg.10, DAC.ch2_trg.10, DFSDM.TRG.26, DMAMUX1.trg.3]}
+          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48, DMAMUX2.gen.9], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0, HRTIM_Master.evt10.2, DAC.ch1_trg.11, DAC.ch2_trg.11, DFSDM.TRG.27, DMAMUX1.trg.4, DMAMUX2.gen.10]}
+          LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50, DMAMUX2.gen.11], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20, LPTIM4.ext_trg.1, LPTIM5.ext_trg.1, DFSDM.TRG.28, DMAMUX1.trg.5, DMAMUX2.gen.12]}
+          LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52, DMAMUX2.gen.13], OUT: [LPTIM3.ext_trg.2, LPTIM5.ext_trg.2, EXTI.d3_pendclear_in.2]}
+          LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53, DMAMUX2.gen.14], OUT: [LPTIM3.ext_trg.3, LPTIM4.ext_trg.3, EXTI.d3_pendclear_in.3]}
           # RTC.WKUP additionally routes to TIM16.TI1 (Table 102 'WKUP_IT'
           # source name — same wakeup-timer interrupt output). Alarm A/B and
           # tamper events feed all 5 LPTIM ext_trg inputs uniformly per
           # Table 102.
-          RTC:     {TAMP_STAMP_CSS_LSE: [NVIC.18, EXTI.18], WKUP: [NVIC.19, EXTI.19, TIM16.TI1.3], ALARM: [NVIC.57, EXTI.17],
+          RTC:     {TAMP_STAMP_CSS_LSE: [NVIC.18, EXTI.18], WKUP: [NVIC.19, EXTI.19, TIM16.TI1.3, DMAMUX2.gen.19], ALARM: [NVIC.57, EXTI.17],
                     ALARM_A_EVT: [LPTIM1.ext_trg.0, LPTIM2.ext_trg.0],
                     ALARM_B_EVT: [LPTIM1.ext_trg.1, LPTIM2.ext_trg.1],
                     TAMP1_EVT:   [LPTIM1.ext_trg.2, LPTIM2.ext_trg.2],
@@ -14076,9 +14105,11 @@ families:
           #   WWDG1 (CM7 watchdog) and WWDG2 (CM4 watchdog) gain OUT_RST
           #     destinations on EXTI.82 / EXTI.84 — these wake the peer
           #     CPU before the window-watchdog reset fires.
-          # DMAMUX2: OVR interrupt + the two request-generator events that
-          # feed EXTI D3-pendclear inputs per RM0399 Table 104.
-          DMAMUX2: {OVR: [NVIC.144, EXTI.74], EVT6: [EXTI.d3_pendclear_in.0], EVT7: [EXTI.d3_pendclear_in.1]}
+          # DMAMUX request generators: EVT<N> events feed back to the
+          # DMAMUX's own trg/gen input <N> (request-generator self-loop;
+          # Tables 106/107). DMAMUX2.EVT6 also reaches EXTI pendclear.
+          DMAMUX1: {EVT0: [DMAMUX1.trg.0], EVT1: [DMAMUX1.trg.1], EVT2: [DMAMUX1.trg.2]}
+          DMAMUX2: {OVR: [NVIC.144, EXTI.74], EVT0: [DMAMUX2.gen.0], EVT1: [DMAMUX2.gen.1], EVT2: [DMAMUX2.gen.2], EVT3: [DMAMUX2.gen.3], EVT4: [DMAMUX2.gen.4], EVT5: [DMAMUX2.gen.5], EVT6: [EXTI.d3_pendclear_in.0, DMAMUX2.gen.6], EVT7: [EXTI.d3_pendclear_in.1]}
           # MDMA trigger sources per RM0399 Table 105. DMA1/DMA2 stream
           # transfer-complete signals double as MDMA stream-trigger inputs
           # 0-15. Various display/codec/storage peripherals feed inputs 16-31.
