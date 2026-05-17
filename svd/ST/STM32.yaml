@@ -13525,6 +13525,31 @@ families:
           EVT7:
             description: DMAMUX request-generator event 7 (also routes to EXTI D3 pendclear input per Table 104)
             pattern: '^EVT7$'
+          # REQ_GEN<X> are the per-request-generator DMA-request outputs.
+          # Each REQ_GEN<X> output feeds back into the DMAMUX request input
+          # bus at slot X (so a DMA channel can pick it via
+          # DMAMUX_CxCR.DMAREQ_ID = X).  Architecturally hard-wired; the loop
+          # is invisible in Tables 134/135 but is the canonical content of
+          # DMAMUX request-input slots 0..7.  Distinct from EVT<X>: EVT
+          # signals are per-channel SYNC-overrun events that can route to
+          # the trigger bus and EXTI pendclear, while REQ_GEN<X> outputs
+          # only feed the request input bus.
+          REQ_GEN0:
+            description: Request generator 0 synthesized DMA-request output (feeds DMAMUX request input slot 0)
+          REQ_GEN1:
+            description: Request generator 1 synthesized DMA-request output (feeds DMAMUX request input slot 1)
+          REQ_GEN2:
+            description: Request generator 2 synthesized DMA-request output (feeds DMAMUX request input slot 2)
+          REQ_GEN3:
+            description: Request generator 3 synthesized DMA-request output (feeds DMAMUX request input slot 3)
+          REQ_GEN4:
+            description: Request generator 4 synthesized DMA-request output (feeds DMAMUX request input slot 4)
+          REQ_GEN5:
+            description: Request generator 5 synthesized DMA-request output (feeds DMAMUX request input slot 5)
+          REQ_GEN6:
+            description: Request generator 6 synthesized DMA-request output (feeds DMAMUX request input slot 6)
+          REQ_GEN7:
+            description: Request generator 7 synthesized DMA-request output (feeds DMAMUX request input slot 7)
           INTR:
             description: Global interrupt (used by DMA2D instances; the DMA block is shared across DMA streams, DMAMUX, and DMA2D — the latter has a single combined interrupt rather than per-stream)
             pattern: '^DMA2D$'
@@ -14270,8 +14295,20 @@ families:
           # DMAMUX request generators: EVT<N> events feed back to the
           # DMAMUX's own trg/gen input <N> (request-generator self-loop;
           # Tables 106/107). DMAMUX2.EVT6 also reaches EXTI pendclear.
-          DMAMUX1: {EVT0: [DMAMUX1.gen.0], EVT1: [DMAMUX1.gen.1], EVT2: [DMAMUX1.gen.2]}
-          DMAMUX2: {OVR: [NVIC.144, EXTI.74], EVT0: [DMAMUX2.gen.0], EVT1: [DMAMUX2.gen.1], EVT2: [DMAMUX2.gen.2], EVT3: [DMAMUX2.gen.3], EVT4: [DMAMUX2.gen.4], EVT5: [DMAMUX2.gen.5], EVT6: [EXTI.d3_pendclear_in.0, DMAMUX2.gen.6], EVT7: [EXTI.d3_pendclear_in.1]}
+          # DMAMUX self-loops: each REQ_GEN<X> output feeds back to DMAMUX
+          # request input slot X (architectural hard-wire — fills the first
+          # 8 entries of the c_DMAMUX<N>[] route table that would otherwise
+          # be NONE).  EVT<X> are separate per-channel SYNC events that
+          # reach the trigger bus and EXTI pendclear inputs.
+          DMAMUX1: {EVT0: [DMAMUX1.gen.0], EVT1: [DMAMUX1.gen.1], EVT2: [DMAMUX1.gen.2],
+                    REQ_GEN0: [DMAMUX1.0], REQ_GEN1: [DMAMUX1.1], REQ_GEN2: [DMAMUX1.2], REQ_GEN3: [DMAMUX1.3],
+                    REQ_GEN4: [DMAMUX1.4], REQ_GEN5: [DMAMUX1.5], REQ_GEN6: [DMAMUX1.6], REQ_GEN7: [DMAMUX1.7]}
+          DMAMUX2: {OVR: [NVIC.144, EXTI.74],
+                    EVT0: [DMAMUX2.gen.0], EVT1: [DMAMUX2.gen.1], EVT2: [DMAMUX2.gen.2], EVT3: [DMAMUX2.gen.3],
+                    EVT4: [DMAMUX2.gen.4], EVT5: [DMAMUX2.gen.5],
+                    EVT6: [EXTI.d3_pendclear_in.0, DMAMUX2.gen.6], EVT7: [EXTI.d3_pendclear_in.1],
+                    REQ_GEN0: [DMAMUX2.0], REQ_GEN1: [DMAMUX2.1], REQ_GEN2: [DMAMUX2.2], REQ_GEN3: [DMAMUX2.3],
+                    REQ_GEN4: [DMAMUX2.4], REQ_GEN5: [DMAMUX2.5], REQ_GEN6: [DMAMUX2.6], REQ_GEN7: [DMAMUX2.7]}
           # MDMA trigger sources per RM0399 Table 105. DMA1/DMA2 stream
           # transfer-complete signals double as MDMA stream-trigger inputs
           # 0-15. Various display/codec/storage peripherals feed inputs 16-31.
