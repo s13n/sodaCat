@@ -176,10 +176,12 @@ def parse_column_spec(column_spec, max_columns=None):
     
     return columns
 
-def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_header_rows=None, drop_columns_spec=None):
+def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv,
+                           skip_header_rows=None, drop_columns_spec=None,
+                           forward_fill_spec=None):
     """
     Extract table from PDF using lines for cell recognition
-    
+
     Args:
         pdf_path: Path to PDF file
         start_page: Start page (1-based)
@@ -187,25 +189,34 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
         output_csv: Output CSV file
         skip_header_rows: Number of header rows that are repeated (None for automatic)
         drop_columns_spec: String specification of columns to remove
+        forward_fill_spec: String specification of columns whose merged-from-above
+            cells should be filled with the value from the merge head. Cells with
+            their own visible boundary (pdfplumber row.cells[c] is not None) are
+            left untouched, even when blank.
     """
     print(f"\nOpening PDF: {pdf_path}")
-    
+
+    # Parallel arrays: text rows and per-cell merge status.
+    # merge_status[r][c] is True when the cell at (r, c) is merged with the cell
+    # immediately above (pdfplumber's row.cells[c] is None), False when the row
+    # owns its own cell at column c (a fresh cell, even if its text is empty).
     all_rows = []
-    
+    all_merged = []
+
     with pdfplumber.open(pdf_path) as pdf:
         total_pages = len(pdf.pages)
         print(f"PDF has {total_pages} pages")
-        
+
         # Validate page numbers
         if start_page < 1 or end_page > total_pages or start_page > end_page:
             print(f"Error: Invalid page numbers (1-{total_pages})")
             return False
-        
+
         # Iterate over specified pages
         for page_num in range(start_page - 1, end_page):
             page = pdf.pages[page_num]
             print(f"\nProcessing page {page_num + 1}...")
-            
+
             # Strategy 1: Try with table_settings for better recognition
             table_settings = {
                 "vertical_strategy": "lines",
@@ -219,38 +230,44 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
                 "min_words_horizontal": 1,
                 "intersection_tolerance": 3,
             }
-            
-            # Try to find tables on the page
-            tables = page.extract_tables(table_settings)
-            
+
+            # find_tables() exposes per-row cell-ownership info that we need for
+            # boundary-aware forward-fill; extract_tables() collapses it away.
+            tables = page.find_tables(table_settings)
+
             if tables:
                 print(f"  Found: {len(tables)} table(s)")
                 for idx, table in enumerate(tables):
-                    print(f"  Table {idx + 1}: {len(table)} rows, {len(table[0]) if table else 0} columns")
-                    all_rows.extend(table)
+                    text = table.extract()
+                    print(f"  Table {idx + 1}: {len(text)} rows, {len(text[0]) if text else 0} columns")
+                    for r, row in enumerate(table.rows):
+                        all_rows.append(text[r])
+                        all_merged.append([cell is None for cell in row.cells])
             else:
-                # Fallback: Try without lines (text-based)
+                # Fallback: text-based (no line geometry; every cell is "fresh").
                 print("  No tables found with lines, trying text-based extraction...")
                 table_settings["vertical_strategy"] = "text"
                 table_settings["horizontal_strategy"] = "text"
-                tables = page.extract_tables(table_settings)
-                
-                if tables:
-                    print(f"  Found (text-based): {len(tables)} table(s)")
-                    for table in tables:
-                        all_rows.extend(table)
+                fallback = page.extract_tables(table_settings)
+
+                if fallback:
+                    print(f"  Found (text-based): {len(fallback)} table(s)")
+                    for table in fallback:
+                        for row in table:
+                            all_rows.append(row)
+                            all_merged.append([False] * len(row))
                 else:
                     print("  No tables found")
-    
+
     if not all_rows:
         print("\nError: No table data extracted!")
         return False
-    
-    # Clean the data
+
+    # Clean the data, keeping merge_status in lockstep with cleaned_rows.
     cleaned_rows = []
-    for row in all_rows:
+    cleaned_merged = []
+    for row, merged in zip(all_rows, all_merged):
         if row and any(cell for cell in row if cell):  # Skip completely empty rows
-            # Clean each cell
             cleaned_row = []
             for cell in row:
                 if cell is None:
@@ -260,6 +277,7 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
                     cleaned_cell = " ".join(str(cell).split())
                     cleaned_row.append(cleaned_cell)
             cleaned_rows.append(cleaned_row)
+            cleaned_merged.append(list(merged))
     
     # Remove repeated header rows
     print("\nRemoving repeated header rows...")
@@ -302,41 +320,69 @@ def extract_table_from_pdf(pdf_path, start_page, end_page, output_csv, skip_head
         # Remove duplicates if headers found
         if num_header_rows > 0 and num_header_rows < len(cleaned_rows):
             header_rows = cleaned_rows[:num_header_rows]
-            deduplicated_rows = [header_rows]
-            
+            kept_rows = list(header_rows)
+            kept_merged = cleaned_merged[:num_header_rows]
+
             i = num_header_rows
             while i < len(cleaned_rows):
                 # Check if next N rows are the headers
-                if (i + num_header_rows <= len(cleaned_rows) and 
+                if (i + num_header_rows <= len(cleaned_rows) and
                     cleaned_rows[i:i+num_header_rows] == header_rows):
-                    # Skip this header repetition
+                    # Skip this header repetition. A merged cell in the body that
+                    # straddles a page break is described by pdfplumber as merged
+                    # on each page's first row (because the cell on page N+1 has
+                    # no top boundary of its own); preserving that flag would
+                    # forward-fill across the dropped header. Treat the first
+                    # body row after a skipped header as fresh.
                     print(f"  Skipping header repetition at row {i+1}")
                     i += num_header_rows
+                    if i < len(cleaned_rows):
+                        cleaned_merged[i] = [False] * len(cleaned_merged[i])
                 else:
-                    # Normal data row
-                    deduplicated_rows.append([cleaned_rows[i]])
+                    kept_rows.append(cleaned_rows[i])
+                    kept_merged.append(cleaned_merged[i])
                     i += 1
-            
-            # Create flat list
-            cleaned_rows = [row for sublist in deduplicated_rows for row in sublist]
-            print(f"  After deduplication: {cleaned_rows} rows")
+
+            cleaned_rows = kept_rows
+            cleaned_merged = kept_merged
+            print(f"  After deduplication: {len(cleaned_rows)} rows")
         else:
             print("  No repeated headers found")
-    
+
+    original_cols = len(cleaned_rows[0]) if cleaned_rows else 0
+
+    # Forward-fill merged cells in selected columns. Operates on pre-drop column
+    # indices so spec stays stable when --drop-columns changes.
+    if forward_fill_spec:
+        fill_columns = parse_column_spec(forward_fill_spec, original_cols)
+        print(f"\nForward-filling merged cells in columns: {sorted(fill_columns)}")
+        last_value = {c: "" for c in fill_columns}
+        filled = 0
+        for r, row in enumerate(cleaned_rows):
+            for c in fill_columns:
+                if c >= len(row):
+                    continue
+                # row owns the cell here → adopt its value (even if empty);
+                # otherwise the cell is merged from above → reuse last value.
+                if not cleaned_merged[r][c]:
+                    last_value[c] = row[c]
+                elif last_value[c] and not row[c]:
+                    row[c] = last_value[c]
+                    filled += 1
+        print(f"  Forward-filled {filled} cells")
+
     # Remove columns if specified
     if drop_columns_spec:
-        original_cols = len(cleaned_rows[0]) if cleaned_rows else 0
-        
         # Parse with knowledge of total column count for open ranges
         drop_columns = parse_column_spec(drop_columns_spec, original_cols)
-        
+
         print(f"\nRemoving columns: {sorted(drop_columns)}")
-        
+
         cleaned_rows = [
             [cell for idx, cell in enumerate(row) if idx not in drop_columns]
             for row in cleaned_rows
         ]
-        
+
         new_cols = len(cleaned_rows[0]) if cleaned_rows else 0
         print(f"  Columns: {original_cols} → {new_cols}")
     
@@ -391,6 +437,9 @@ Examples:
     parser.add_argument('--drop-columns', '-d',
                        metavar='COLS',
                        help='Columns to remove (e.g. "0,2,5", "0-2,5", "0..2", "..5", "10..")')
+    parser.add_argument('--forward-fill', '-f',
+                       metavar='COLS',
+                       help='Columns whose merged-from-above cells inherit the merge-head value. Same syntax as --drop-columns; indices refer to columns BEFORE --drop-columns is applied. Cells that own their own visible boundary (have a horizontal line above them) are left untouched even when blank.')
     
     args = parser.parse_args()
     
@@ -449,7 +498,8 @@ Examples:
             end_page=end_page,
             output_csv=args.csv_path,
             skip_header_rows=args.skip_header,
-            drop_columns_spec=args.drop_columns
+            drop_columns_spec=args.drop_columns,
+            forward_fill_spec=args.forward_fill,
         )
         
         if success:
