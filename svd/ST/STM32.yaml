@@ -504,6 +504,12 @@ shared_blocks:
         pattern: '^SAI\d+_A$'
       B:
         pattern: '^SAI\d+_B$'
+      A_DMA:
+        description: DMA request from sub-block A (TX or RX depending on per-sub-block configuration)
+        pattern: '^A_DMA$'
+      B_DMA:
+        description: DMA request from sub-block B (TX or RX depending on per-sub-block configuration)
+        pattern: '^B_DMA$'
     params:
       - {name: has_gcr, type: bool, default: true, description: GCR register (inter-SAI synchronization)}
       - {name: has_pdm, type: bool, default: false, description: PDM support (PDMCR/PDMDLY registers + OSR in xCR1)}
@@ -13612,6 +13618,15 @@ families:
           I2C2:    {TX_DMA: [DMAMUX1.36], RX_DMA: [DMAMUX1.35], WKUP: [EXTI.23]}
           I2C3:    {TX_DMA: [DMAMUX1.74], RX_DMA: [DMAMUX1.73], WKUP: [EXTI.24]}
           I2C4:    {EV: [NVIC.111, EXTI.62], ER: [NVIC.112, EXTI.63], TX_DMA: [DMAMUX2.14], RX_DMA: [DMAMUX2.13], WKUP: [EXTI.25]}
+          # SAI: per-sub-block DMA requests (Table 106 SAI1-3 → DMAMUX1,
+          # Table 107 SAI4 → DMAMUX2). SAI4's INTR additionally routes to
+          # EXTI.76 (Table 103 sai4_gbl_it). Frame-sync routes from Table 102
+          # (FS_A/FS_B → TIM ETR / LPTIM trigger inputs) are deferred to the
+          # peripheral-interconnect sub-step.
+          SAI1:    {A_DMA: [DMAMUX1.87], B_DMA: [DMAMUX1.88]}
+          SAI2:    {A_DMA: [DMAMUX1.89], B_DMA: [DMAMUX1.90]}
+          SAI3:    {A_DMA: [DMAMUX1.113], B_DMA: [DMAMUX1.114]}
+          SAI4:    {INTR: [NVIC.162, EXTI.76], A_DMA: [DMAMUX2.15], B_DMA: [DMAMUX2.16]}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
