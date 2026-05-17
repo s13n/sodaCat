@@ -13739,6 +13739,21 @@ families:
             pattern: '^RTC_WKUP$'
           ALARM:
             pattern: '^RTC_ALARM$'
+          ALARM_A_EVT:
+            description: Alarm A event (routable to LPTIM trigger inputs per RM0399 Table 102; distinct from the combined ALARM interrupt)
+            pattern: '^ALARM_A_EVT$'
+          ALARM_B_EVT:
+            description: Alarm B event
+            pattern: '^ALARM_B_EVT$'
+          TAMP1_EVT:
+            description: Tamper input 1 event
+            pattern: '^TAMP1_EVT$'
+          TAMP2_EVT:
+            description: Tamper input 2 event
+            pattern: '^TAMP2_EVT$'
+          TAMP3_EVT:
+            description: Tamper input 3 event
+            pattern: '^TAMP3_EVT$'
         variants:
           H7A3_B:
             from: STM32H7A3.RTC
@@ -13846,13 +13861,15 @@ families:
           # EXTI.76 (Table 103 sai4_gbl_it). Frame-sync routes from Table 102
           # (FS_A/FS_B → TIM ETR / LPTIM trigger inputs) are deferred to the
           # peripheral-interconnect sub-step.
-          # SAI FS_A/FS_B (frame-sync signals) route to TIM ETR per Table 102:
-          # SAI1 → TIM2.ETR4-5, SAI2 → TIM5.ETR1-2. SAI4 has analogous
-          # routes to LPTIM (deferred to the LPTIM batch).
-          SAI1:    {A_DMA: [DMAMUX1.87], B_DMA: [DMAMUX1.88], FS_A: [TIM2.ETR.4], FS_B: [TIM2.ETR.5]}
-          SAI2:    {A_DMA: [DMAMUX1.89], B_DMA: [DMAMUX1.90], FS_A: [TIM5.ETR.1], FS_B: [TIM5.ETR.2]}
+          # SAI FS_A/FS_B (frame-sync signals) route to TIM ETR and LPTIM
+          # trigger / mux inputs per Table 102. SAI1 → TIM2.ETR; SAI2 →
+          # TIM5.ETR + LPTIM4 ext_trg; SAI4 → LPTIM3/LPTIM5 (no TIM destination).
+          SAI1:    {A_DMA: [DMAMUX1.87], B_DMA: [DMAMUX1.88], FS_A: [TIM2.ETR.4, LPTIM3.ext_trg.4], FS_B: [TIM2.ETR.5, LPTIM3.ext_trg.5]}
+          SAI2:    {A_DMA: [DMAMUX1.89], B_DMA: [DMAMUX1.90], FS_A: [TIM5.ETR.1, LPTIM4.ext_trg.4], FS_B: [TIM5.ETR.2, LPTIM4.ext_trg.5]}
           SAI3:    {A_DMA: [DMAMUX1.113], B_DMA: [DMAMUX1.114]}
-          SAI4:    {INTR: [NVIC.162, EXTI.76], A_DMA: [DMAMUX2.15], B_DMA: [DMAMUX2.16]}
+          # SAI4.FS_A/FS_B route to LPTIM3 (in1_mux) and LPTIM5 (ext_trg) per
+          # Table 102. SAI4 has no TIM ETR routes (only the LPTIM ones).
+          SAI4:    {INTR: [NVIC.162, EXTI.76], A_DMA: [DMAMUX2.15], B_DMA: [DMAMUX2.16], FS_A: [LPTIM3.in1_mux.1, LPTIM5.ext_trg.3], FS_B: [LPTIM3.in1_mux.2, LPTIM5.ext_trg.4]}
           # Simple-DMA peripherals: ADC, DAC, DCMI, HASH, CRYP, SPDIFRX,
           # DFSDM, SWPMI per RM0399 Table 106. ADC3 also has DMAMUX2 routing
           # (Table 107) and an INTR-to-EXTI line (Table 103 adc3_it → WKUP75).
@@ -13929,17 +13946,27 @@ families:
           # (the comparator output can clock or trigger timers; COMP2 is not
           # on H745_H757 so its analogous TIM ETR2 entries are absent).
           # COMP1.OUT additionally feeds TIM brake inputs (BRK / BRK2 ports
-          # on TIM1/TIM8/TIM15/TIM16/TIM17) and TIM TI input muxes per
-          # Table 102.
-          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3]}
+          # on TIM1/TIM8/TIM15/TIM16/TIM17), TIM TI input muxes, and LPTIM1/2
+          # ext_trg and IN1_mux selectors per Table 102.
+          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.5, LPTIM2.ext_trg.5, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3]}
+          # LPTIM.OUT additionally feeds LPTIM ext_trg inputs of other
+          # LPTIM instances per Table 102 (LPTIM2/3/4/5 form a small
+          # routing fabric where each instance's output can clock another).
           LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18]}
-          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19]}
-          LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20]}
-          LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52]}
-          LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53]}
+          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0]}
+          LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20, LPTIM4.ext_trg.1, LPTIM5.ext_trg.1]}
+          LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52], OUT: [LPTIM3.ext_trg.2, LPTIM5.ext_trg.2]}
+          LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53], OUT: [LPTIM3.ext_trg.3, LPTIM4.ext_trg.3]}
           # RTC.WKUP additionally routes to TIM16.TI1 (Table 102 'WKUP_IT'
-          # source name — same wakeup-timer interrupt output).
-          RTC:     {TAMP_STAMP_CSS_LSE: [NVIC.18, EXTI.18], WKUP: [NVIC.19, EXTI.19, TIM16.TI1.3], ALARM: [NVIC.57, EXTI.17]}
+          # source name — same wakeup-timer interrupt output). Alarm A/B and
+          # tamper events feed all 5 LPTIM ext_trg inputs uniformly per
+          # Table 102.
+          RTC:     {TAMP_STAMP_CSS_LSE: [NVIC.18, EXTI.18], WKUP: [NVIC.19, EXTI.19, TIM16.TI1.3], ALARM: [NVIC.57, EXTI.17],
+                    ALARM_A_EVT: [LPTIM1.ext_trg.0, LPTIM2.ext_trg.0],
+                    ALARM_B_EVT: [LPTIM1.ext_trg.1, LPTIM2.ext_trg.1],
+                    TAMP1_EVT:   [LPTIM1.ext_trg.2, LPTIM2.ext_trg.2],
+                    TAMP2_EVT:   [LPTIM1.ext_trg.3, LPTIM2.ext_trg.3],
+                    TAMP3_EVT:   [LPTIM1.ext_trg.4, LPTIM2.ext_trg.4]}
           PWR:     {PVD_AVD: [EXTI.16], WKUP1: [EXTI.55], WKUP2: [EXTI.56], WKUP3: [EXTI.57], WKUP4: [EXTI.58], WKUP5: [EXTI.59], WKUP6: [EXTI.60]}
           # D3-domain INTR→EXTI extensions:
           #   DMAMUX2 INTR (SVD: DMAMUX2_OVR at NVIC.144) gains EXTI.74.
