@@ -573,6 +573,12 @@ shared_blocks:
       B_DMA:
         description: DMA request from sub-block B (TX or RX depending on per-sub-block configuration)
         pattern: '^B_DMA$'
+      FS_A:
+        description: Frame-sync signal from sub-block A (drives external pin; routed to TIM ETR / LPTIM trigger inputs per RM0399 Table 102)
+        pattern: '^FS_A$'
+      FS_B:
+        description: Frame-sync signal from sub-block B (drives external pin; routed to TIM ETR / LPTIM trigger inputs per RM0399 Table 102)
+        pattern: '^FS_B$'
     params:
       - {name: has_gcr, type: bool, default: true, description: GCR register (inter-SAI synchronization)}
       - {name: has_pdm, type: bool, default: false, description: PDM support (PDMCR/PDMDLY registers + OSR in xCR1)}
@@ -13211,6 +13217,15 @@ families:
           DMA:
             description: DMA request for converted data
             pattern: '^DMA$'
+          AWD1:
+            description: Analog watchdog 1 event (routes to TIM ETR per RM0399 Table 102)
+            pattern: '^AWD1$'
+          AWD2:
+            description: Analog watchdog 2 event (routes to TIM ETR per RM0399 Table 102)
+            pattern: '^AWD2$'
+          AWD3:
+            description: Analog watchdog 3 event (routes to TIM ETR per RM0399 Table 102)
+            pattern: '^AWD3$'
         transforms:
           - type: patchAddressBlock
             size: 256
@@ -13624,6 +13639,9 @@ families:
           HSE_CSS_WKUP:
             description: HSE Clock Security System wakeup event (HSE clock failure). Routes to EXTI.87 for low-power wake; the NVIC side is the chip's NMI exception, not a regular vector.
             pattern: '^HSE_CSS_WKUP$'
+          LSE_CK:
+            description: LSE clock as a routable signal (TIM2 ETR3 trigger source per RM0399 Table 102)
+            pattern: '^LSE_CK$'
         variants:
           H73x:
             from: STM32H723.RCC
@@ -13768,16 +13786,22 @@ families:
           # EXTI.76 (Table 103 sai4_gbl_it). Frame-sync routes from Table 102
           # (FS_A/FS_B → TIM ETR / LPTIM trigger inputs) are deferred to the
           # peripheral-interconnect sub-step.
-          SAI1:    {A_DMA: [DMAMUX1.87], B_DMA: [DMAMUX1.88]}
-          SAI2:    {A_DMA: [DMAMUX1.89], B_DMA: [DMAMUX1.90]}
+          # SAI FS_A/FS_B (frame-sync signals) route to TIM ETR per Table 102:
+          # SAI1 → TIM2.ETR4-5, SAI2 → TIM5.ETR1-2. SAI4 has analogous
+          # routes to LPTIM (deferred to the LPTIM batch).
+          SAI1:    {A_DMA: [DMAMUX1.87], B_DMA: [DMAMUX1.88], FS_A: [TIM2.ETR.4], FS_B: [TIM2.ETR.5]}
+          SAI2:    {A_DMA: [DMAMUX1.89], B_DMA: [DMAMUX1.90], FS_A: [TIM5.ETR.1], FS_B: [TIM5.ETR.2]}
           SAI3:    {A_DMA: [DMAMUX1.113], B_DMA: [DMAMUX1.114]}
           SAI4:    {INTR: [NVIC.162, EXTI.76], A_DMA: [DMAMUX2.15], B_DMA: [DMAMUX2.16]}
           # Simple-DMA peripherals: ADC, DAC, DCMI, HASH, CRYP, SPDIFRX,
           # DFSDM, SWPMI per RM0399 Table 106. ADC3 also has DMAMUX2 routing
           # (Table 107) and an INTR-to-EXTI line (Table 103 adc3_it → WKUP75).
-          ADC1:    {DMA: [DMAMUX1.9]}
-          ADC2:    {DMA: [DMAMUX1.10]}
-          ADC3:    {INTR: [NVIC.143, EXTI.75], DMA: [DMAMUX1.115, DMAMUX2.17]}
+          # ADC: AWD<N> (analog watchdog events) route to TIM1/TIM8 ETR
+          # inputs per Table 102 — ADC1's watchdogs feed TIM1.ETR3-5,
+          # ADC2's feed TIM8.ETR3-5, ADC3's feed both TIMs at ETR6-8.
+          ADC1:    {DMA: [DMAMUX1.9], AWD1: [TIM1.ETR.3], AWD2: [TIM1.ETR.4], AWD3: [TIM1.ETR.5]}
+          ADC2:    {DMA: [DMAMUX1.10], AWD1: [TIM8.ETR.3], AWD2: [TIM8.ETR.4], AWD3: [TIM8.ETR.5]}
+          ADC3:    {INTR: [NVIC.143, EXTI.75], DMA: [DMAMUX1.115, DMAMUX2.17], AWD1: [TIM1.ETR.6, TIM8.ETR.6], AWD2: [TIM1.ETR.7, TIM8.ETR.7], AWD3: [TIM1.ETR.8, TIM8.ETR.8]}
           DAC:     {CH1_DMA: [DMAMUX1.67], CH2_DMA: [DMAMUX1.68]}
           DCMI:    {DMA: [DMAMUX1.75]}
           CRYP:    {IN_DMA: [DMAMUX1.76], OUT_DMA: [DMAMUX1.77]}
@@ -13794,7 +13818,9 @@ families:
           # RCC: per Table 152, LSECSS shares NVIC.18 and EXTI.18 with RTC
           # tamper/timestamp; HSECSS goes to NMI + EXTI.87 (not a regular NVIC
           # vector, so the NMI side isn't expressed in our routing model).
-          RCC:     {INTR: [NVIC.21, EXTI.61], LSE_CSS: [NVIC.18, EXTI.18], HSE_CSS_WKUP: [EXTI.87]}
+          # LSE_CK is the 32.768 kHz oscillator signal routed to TIM2.ETR3
+          # for low-frequency external clocking (Table 102).
+          RCC:     {INTR: [NVIC.21, EXTI.61], LSE_CSS: [NVIC.18, EXTI.18], HSE_CSS_WKUP: [EXTI.87], LSE_CK: [TIM2.ETR.3]}
           CEC:     {INTR: [NVIC.110], WKUP: [EXTI.85]}
           BDMA:    {CH0: [NVIC.145, EXTI.66], CH1: [NVIC.146, EXTI.67], CH2: [NVIC.147, EXTI.68], CH3: [NVIC.148, EXTI.69], CH4: [NVIC.149, EXTI.70], CH5: [NVIC.150, EXTI.71], CH6: [NVIC.151, EXTI.72], CH7: [NVIC.152, EXTI.73]}
           # TIM family DMA requests per RM0399 Table 106. Channel set varies
@@ -13830,7 +13856,10 @@ families:
           # LPTIM wakeup and (for LPTIM2/3) compare output to EXTI; RTC three
           # event classes append EXTI destinations to their existing NVIC
           # vectors; PWR PVD/AVD detector and 6 wakeup-pin events to EXTI.
-          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20]}
+          # COMP1.OUT also feeds TIM1/TIM2/TIM3/TIM8 ETR1 per Table 102
+          # (the comparator output can clock or trigger timers; COMP2 is not
+          # on H745_H757 so its analogous TIM ETR2 entries are absent).
+          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1]}
           LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47]}
           LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49]}
           LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50], OUT: [EXTI.51]}
