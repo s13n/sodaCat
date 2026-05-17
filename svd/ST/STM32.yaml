@@ -13637,6 +13637,8 @@ families:
             description: TT trigger inputs from chip-level trigger crossbar (4 wires fanning out to both channels TT crossbars per RM0399 Table 102)
           EVT:
             description: TT event inputs (4 wires, same routing as SWT)
+          TMP:
+            description: TTCAN timestamp output (Table 102 lists the source as 'CAN' / 'TMP' → ETH PTP3; physically originates from channel 1, the only TT-capable channel)
         transforms:
           - {type: patchAddressBlock, size: 3072}
           - {type: wrapInClusterArray, name: chan, dim: 2, dimIncrement: 0x400, description: 'FDCAN channel (FDCAN1 supports TTCAN; FDCAN2 lacks TT registers - they are present but unused on slot 1)'}
@@ -14095,8 +14097,9 @@ families:
           # FDCAN subsystem: SVD attaches channel-2 interrupts to a separate
           # FDCAN2 peripheral, which our umbrella restructure folds away — so
           # the IT0_CH2/IT1_CH2 vectors are injected here on the umbrella
-          # instance (NVIC.36/38 on H742_H753, H745_H757, H73x).
-          FDCAN:   {IT0_CH2: [NVIC.36], IT1_CH2: [NVIC.38]}
+          # instance (NVIC.36/38 on H742_H753, H745_H757, H73x).  TMP is the
+          # TTCAN timestamp output (Table 102 'CAN'/'TMP' row → ETH PTP3).
+          FDCAN:   {IT0_CH2: [NVIC.36], IT1_CH2: [NVIC.38], TMP: [ETH.PTP.3]}
           # Additional EXTI destinations on existing interrupt/wakeup outputs
           # per RM0399 Table 103. The D3-domain peripherals' interrupt signals
           # ('_it' suffix in Table 103) feed EXTI for cross-domain wakeup;
