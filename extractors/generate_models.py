@@ -21,7 +21,7 @@ from ruamel.yaml import YAML
 sys.path.insert(0, str(Path(__file__).parent.parent / 'tools'))
 import svd
 import outputs_schema
-from transform import renameEntries, createClusterArray, createArray, create2DArray, clusterArrays, createCluster2DArray, createIndexedRegisterArray
+from transform import renameEntries, createClusterArray, createArray, create2DArray, clusterArrays, createCluster2DArray, createIndexedRegisterArray, wrapInClusterArray
 from enum_namer import simplify_block_enums
 
 
@@ -344,6 +344,8 @@ def _describe_transform(t):
         return f"mergeArrays: /{t['pattern']}/ -> '{t['name']}'"
     elif typ == 'clusterArrays':
         return f"clusterArrays: /{t['pattern']}/ -> '{t['name']}'"
+    elif typ == 'wrapInClusterArray':
+        return f"wrapInClusterArray: '{t['name']}' dim={t['dim']} dimIncrement={t['dimIncrement']}"
     else:
         return f"{typ}: {t}"
 
@@ -726,6 +728,14 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                     stripped = desc[m.end():]
                     if stripped:
                         reg['description'] = stripped[0].upper() + stripped[1:]
+        elif typ == 'wrapInClusterArray':
+            block_data['registers'] = wrapInClusterArray(
+                block_data.get('registers', []),
+                t['name'],
+                t['dim'],
+                t['dimIncrement'],
+                description=t.get('description'),
+                addressOffset=t.get('addressOffset'))
         elif typ == 'createArray':
             block_data['registers'] = createArray(
                 block_data.get('registers', []), t['pattern'], t['name'],

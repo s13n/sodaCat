@@ -210,6 +210,54 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimI
 
     return reglist
 
+def wrapInClusterArray(reglist:list, name:str, dim:int, dimIncrement:int,
+                       description=None, addressOffset=None):
+    """Wrap the entire register list into a single dim=N cluster array.
+
+    Use when an SVD describes a single channel of an N-channel subsystem and
+    the channels are identical, adjacent windows at a fixed stride
+    (`derivedFrom` peripherals, e.g. STM32 FDCAN2 = FDCAN1 + 0x400).  The
+    wrap produces one cluster `<name>[%s]` containing every register at its
+    original offset relative to the cluster origin; the channel index is
+    expressed via `dim` / `dimIncrement` rather than separate top-level
+    peripheral entries.
+
+    All registers in `reglist` are folded into the cluster.  Cluster origin
+    defaults to the minimum existing register offset; pass `addressOffset`
+    to override.  The resulting list has exactly one entry: the cluster.
+
+    `dim`, `dimIncrement` are mandatory.  `description` is optional.
+    """
+    if not reglist:
+        print(f'wrapInClusterArray({name}): register list is empty')
+        return reglist
+
+    def offs(r):
+        v = r['addressOffset']
+        return v if isinstance(v, int) else int(v, 0)
+
+    base = addressOffset if addressOffset is not None else min(offs(r) for r in reglist)
+
+    cluster = {
+        'name': name + '[%s]',
+        'addressOffset': base,
+        'dim': dim,
+        'dimIncrement': dimIncrement,
+        'registers': [],
+    }
+    if description:
+        cluster['description'] = description
+
+    for r in reglist:
+        # Shift each register's offset to be relative to the cluster origin.
+        r['addressOffset'] = offs(r) - base
+        cluster['registers'].append(r)
+
+    print(f"All {len(reglist)} registers wrapped into cluster {cluster['name']}: "
+          f"Address offset = {base}  Increment = {dimIncrement}  Count = {dim}")
+    return [cluster]
+
+
 def createArray(reglist:list, pattern:str, name:str, template:int=0):
     """Convert numbered registers into a single register array with dim/dimIncrement.
 
