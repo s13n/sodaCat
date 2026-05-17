@@ -13607,14 +13607,15 @@ families:
         # RM0399 §56 models FDCAN as a subsystem: two M_CAN channels (FDCAN1
         # supports TTCAN, FDCAN2 doesn't), the CAN_CCU clock-calibration unit,
         # and a shared message RAM block.  The H745 SVD splits this into two
-        # `derivedFrom` peripherals (FDCAN1 + FDCAN2), and H7A3 splits it into
-        # TT_FDCAN + FDCAN — neither matches the silicon block topology.  We
+        # `derivedFrom` peripherals (FDCAN1 + FDCAN2), plus a separate
+        # CAN_CCU peripheral; H7A3 splits the channels as TT_FDCAN + FDCAN
+        # plus CAN_CCU.  Neither matches the silicon block topology.  We
         # model the subsystem here as one umbrella block: FDCAN1's register
         # set (superset including TTCAN) wrapped into a dim=2 cluster array
-        # `chan[%s]` at offset 0 (stride 0x400) covering both channels.  CCU
-        # stays as a sibling instance for now; deeper embedding is a
-        # follow-up.  H7A3_B keeps its legacy single-channel layout via a
-        # variant.
+        # `chan[%s]` at offset 0 (stride 0x400) covering both channels, and
+        # CAN_CCU's register set embedded as cluster `CCU` at offset 0x800.
+        # Message RAM is still a follow-up.  H7A3_B keeps its legacy
+        # single-channel layout via a variant.
         from: STM32H745_CM7.FDCAN1
         instances: [FDCAN1]
         rename_instances: {FDCAN1: FDCAN}
@@ -13637,9 +13638,10 @@ families:
           EVT:
             description: TT event inputs (4 wires, same routing as SWT)
         transforms:
-          - {type: patchAddressBlock, size: 2048}
+          - {type: patchAddressBlock, size: 3072}
           - {type: wrapInClusterArray, name: chan, dim: 2, dimIncrement: 0x400, description: 'FDCAN channel (FDCAN1 supports TTCAN; FDCAN2 lacks TT registers - they are present but unused on slot 1)'}
-        description: Controller area network with flexible data-rate (FDCAN subsystem - 2 channels, Bosch M_CAN with TT support)
+          - {type: embedRegistersAsCluster, source: CAN_CCU, name: CCU, addressOffset: 0x800, description: 'CAN_CCU clock-calibration unit shared by both channels (one per FDCAN subsystem)'}
+        description: Controller area network with flexible data-rate (FDCAN subsystem - 2 channels + CCU, Bosch M_CAN with TT support)
         variants:
           H7A3_B:
             # H7A3 SVD names channel 1 = TT_FDCAN and channel 2 = FDCAN.  The
@@ -14293,6 +14295,15 @@ families:
           DFSDM2: {filters: 1, channels: 2, has_dlyr: false}
           RAMECC: {monitors: 3}
           HSEM: {semaphores: 16}
+    chip_instances:
+      # CAN_CCU's registers are now embedded as a cluster inside the FDCAN
+      # umbrella block — drop its sibling instance on subfamilies whose
+      # FDCAN block uses the new umbrella layout.  H7A3_B keeps CAN_CCU as
+      # a sibling because its variant still uses legacy single-channel
+      # modeling and doesn't embed.
+      H73x:      {_all: {exclude: [CAN_CCU]}}
+      H742_H753: {_all: {exclude: [CAN_CCU]}}
+      H745_H757: {_all: {exclude: [CAN_CCU]}}
   H7RS:
     svd:
       zip: stm32h7rs-svd.zip

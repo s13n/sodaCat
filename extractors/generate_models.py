@@ -223,21 +223,25 @@ def _resolve_chip_connections(chip_connections, subfamily, chip, instance, block
 def _resolve_excluded_instances(chip_instances, subfamily, chip):
     """Resolve the set of instance names excluded for a given chip.
 
-    Two-level cascade: chip_instances[<subfamily>|_all][<chip>] = {exclude: [...]}.
-    Both levels' exclude lists are unioned.  Family-wide or subfamily-wide
-    exclusions belong in the family config's per-block `instances:` list rather
-    than here — chip_instances is for chip-specific deviations only.
+    Two-level cascade: chip_instances[<subfamily>|_all][<chip>|_all] =
+    {exclude: [...]}.  Both levels accept `_all` to apply across every entry
+    at that level.  Exclude lists from all matched cells are unioned.  Used
+    for both chip-specific deviations (e.g. LPC4310 has no USB) and
+    subfamily-wide exclusions tied to a model-level restructure (e.g. STM32
+    H7 H742_H753/H745_H757/H73x drop CAN_CCU as a sibling because the FDCAN
+    umbrella embeds its registers).
     """
     excluded = set()
     for sf_key in (subfamily, '_all'):
         sf = chip_instances.get(sf_key)
         if not sf:
             continue
-        section = sf.get(chip)
-        if not section:
-            continue
-        for name in section.get('exclude', []) or []:
-            excluded.add(name)
+        for chip_key in (chip, '_all'):
+            section = sf.get(chip_key)
+            if not section:
+                continue
+            for name in section.get('exclude', []) or []:
+                excluded.add(name)
     return excluded
 
 
@@ -314,6 +318,27 @@ def _select_subfamily_entry(entries, block_cfg):
     return entries[0]
 
 
+def _collect_sibling_blocks(all_blocks, source_chip):
+    """Return {block_name: block_data} for every block extracted from `source_chip`.
+
+    Used to thread cross-block context into the transform engine — currently
+    consumed by `embedRegistersAsCluster` to import another peripheral's
+    registers as a sub-cluster.  The lookup is per-chip rather than per-
+    family because blocks have to share a physical chip to be co-located in
+    the address map.
+    """
+    siblings = {}
+    for block_name, fam_entries in all_blocks.items():
+        for entries in fam_entries.values():
+            for entry in entries:
+                if entry['chip'] == source_chip:
+                    siblings[block_name] = entry['data']
+                    break
+            if block_name in siblings:
+                break
+    return siblings
+
+
 # ============================================================================
 # Transform engine
 # ============================================================================
@@ -346,6 +371,8 @@ def _describe_transform(t):
         return f"clusterArrays: /{t['pattern']}/ -> '{t['name']}'"
     elif typ == 'wrapInClusterArray':
         return f"wrapInClusterArray: '{t['name']}' dim={t['dim']} dimIncrement={t['dimIncrement']}"
+    elif typ == 'embedRegistersAsCluster':
+        return f"embedRegistersAsCluster: from '{t['source']}' as '{t['name']}' at offset 0x{t['addressOffset']:x}"
     else:
         return f"{typ}: {t}"
 
@@ -607,11 +634,16 @@ def _patch_registers(registers, reg_patches):
                 print(f"  WARNING: patchRegisters: register '{name}' not found")
 
 
-def _apply_transforms(block_data, transforms, audit=False, block_name=''):
+def _apply_transforms(block_data, transforms, audit=False, block_name='',
+                      sibling_blocks=None):
     """Apply a list of transforms to extracted block data (in-place).
 
     When audit=True, returns a list of findings: (block_name, category, description, details).
     Categories: 'noop' (safe to remove), 'partial' (some properties fixed), 'active'.
+
+    `sibling_blocks` is an optional `{block_name: block_data}` map of other
+    blocks extracted from the same chip — used by `embedRegistersAsCluster`
+    to import another block's register set as a sub-cluster.
     """
     findings = []
     for t in transforms:
@@ -736,6 +768,27 @@ def _apply_transforms(block_data, transforms, audit=False, block_name=''):
                 t['dimIncrement'],
                 description=t.get('description'),
                 addressOffset=t.get('addressOffset'))
+        elif typ == 'embedRegistersAsCluster':
+            # Import another block's register set as a singleton cluster at
+            # `addressOffset`.  Source block must have been extracted from the
+            # same chip in Pass 1; we look it up via the sibling_blocks map.
+            source = t['source']
+            if not sibling_blocks or source not in sibling_blocks:
+                raise ValueError(
+                    f"embedRegistersAsCluster: source block '{source}' not "
+                    f"found among extracted blocks for this chip (available: "
+                    f"{sorted((sibling_blocks or {}).keys())})")
+            src_regs = sibling_blocks[source].get('registers', [])
+            cluster = {
+                'name': t['name'],
+                'addressOffset': t['addressOffset'],
+                'registers': copy.deepcopy(src_regs),
+            }
+            if 'description' in t:
+                cluster['description'] = t['description']
+            block_data.setdefault('registers', []).append(cluster)
+            print(f"  Embedded {source}'s {len(src_regs)} registers as cluster "
+                  f"'{t['name']}' at offset 0x{t['addressOffset']:x}")
         elif typ == 'createArray':
             block_data['registers'] = createArray(
                 block_data.get('registers', []), t['pattern'], t['name'],
@@ -1985,7 +2038,8 @@ def main():
                 block_data = copy.deepcopy(block_data)
                 all_findings.extend(_apply_transforms(
                     block_data, transforms, audit=args.audit,
-                    block_name=f"{shared_name} (shared)"))
+                    block_name=f"{shared_name} (shared)",
+                    sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
             block_data = _inject_outputs(block_data, shared_cfg.get('outputs'))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
@@ -2048,7 +2102,8 @@ def main():
                     v_block_data = copy.deepcopy(v_block_data)
                     all_findings.extend(_apply_transforms(
                         v_block_data, transforms, audit=args.audit,
-                        block_name=f"{block_name} ({fam_name})"))
+                        block_name=f"{block_name} ({fam_name})",
+                        sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
                 v_block_data = _inject_params(
                     v_block_data, family_block_cfg.get('params'))
                 v_block_data = _inject_source(
@@ -2088,7 +2143,8 @@ def main():
                     block_data = copy.deepcopy(block_data)
                     all_findings.extend(_apply_transforms(
                         block_data, transforms, audit=args.audit,
-                        block_name=f"{block_name} ({fam_name})"))
+                        block_name=f"{block_name} ({fam_name})",
+                        sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
                 block_data = _inject_params(block_data, block_cfg.get('params'))
                 block_data = _inject_source(block_data, _format_block_source(entry))
                 _strip_instance_prefix_from_descriptions(
@@ -2113,7 +2169,8 @@ def main():
                 block_data = copy.deepcopy(block_data)
                 all_findings.extend(_apply_transforms(
                     block_data, transforms, audit=args.audit,
-                    block_name=block_name))
+                    block_name=block_name,
+                    sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
             block_data = _inject_params(block_data, block_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
             _strip_instance_prefix_from_descriptions(
