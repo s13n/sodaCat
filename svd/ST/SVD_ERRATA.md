@@ -731,6 +731,50 @@ The WWDG2 peripheral exists (at 0x40002C00) and has its own interrupt, but the
 SVD omits its clock enable bits. RM0399 Section 47.3.1 confirms WWDG2 requires
 explicit clock enable via RCC_APB1LENR bit 11. Worked around via `patchFields`.
 
+### LPUART wakeup signals (RM doc inconsistency, not SVD bug)
+
+**RM0399 Rev.4 (H745 / H747 / H755 / H757):**
+
+The reference manual is internally inconsistent about how many wakeup output
+signals LPUART has:
+
+| Source                | Says                                                       |
+|-----------------------|------------------------------------------------------------|
+| §52.4.14 (LPUART chapter) | One combined wakeup interrupt `lpuart_wkup`. Multiple trigger sources may be enabled simultaneously (RXNE, RXFNE, RXFF, RXFT, **TXFE, TXFT**, plus the WUS-selected event). |
+| Chapter 14, Table 103 | Two distinct wakeup outputs: `lpuart_rx_wkup` → WKUP34 and `lpuart_tx_wkup` → WKUP35. |
+| §51.5.21 (USART chapter) | Same combined wakeup mechanism as LPUART, with identical trigger source list. |
+| Chapter 14, Table 103 | One combined wakeup output `usart<N>_wkup` for each USART/UART instance. |
+
+The standalone USART/LPUART block chapters describe identical wakeup state
+machines and identical trigger-source lists (RXNE, RXFNE, RXFF, RXFT, TXFE,
+TXFT, plus the WUS-selected RX-side events). Neither chapter mentions
+separate RX-side and TX-side output signals — they describe a single
+`<inst>_wkup` interrupt per instance.
+
+Chapter 14 (block interconnect) routes the standard USART/UART output to a
+single EXTI WKUP line per instance (WKUP26-33), consistent with the
+single-output picture. But for LPUART it lists two distinct outputs landing
+on two distinct EXTI lines. The chapter offers no explanation of how the
+single internal wakeup state machine produces two externally observable
+signals, and §52.4.14 does not acknowledge the split.
+
+AN4991 ("How to wake up an STM32 MCU from low-power mode with the USART or
+the LPUART") treats USART and LPUART symmetrically as having one wakeup
+signal each — consistent with §51.5.21 / §52.4.14, inconsistent with
+chapter 14.
+
+**Modelled per chapter 14** — the silicon routing is the load-bearing
+detail for chip wiring purposes. The shared `USART` block declares three
+outputs: `WKUP` (combined; standard USART/UART wires this), `WKUP_RX` and
+`WKUP_TX` (LPUART wires these in lieu of WKUP). Standard USART/UART
+instances declare `WKUP` only. LPUART1 on H745_H757 declares `WKUP_RX` and
+`WKUP_TX` per Table 103.
+
+Whether LPUART's two outputs are (a) the same internal signal fanned out to
+two EXTI lines, (b) split inside the LPUART silicon based on which trigger
+fired, or (c) something else, is left unresolved by the available
+documentation.
+
 
 ## ST STM32F3
 
