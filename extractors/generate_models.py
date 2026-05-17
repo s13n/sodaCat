@@ -60,6 +60,8 @@ def _parse_block_cfg(block_cfg):
         entry['params'] = [dict(p) for p in block_cfg['params']]
     if block_cfg.get('variants') is not None:
         entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
+    if block_cfg.get('rename_instances') is not None:
+        entry['rename_instances'] = dict(block_cfg['rename_instances'])
     if block_cfg.get('description'):
         entry['description'] = block_cfg['description']
     if block_cfg.get('designer'):
@@ -1730,6 +1732,23 @@ def _get_param_decls(block_type, blocks_config, shared_blocks, subfamily_name):
     return []
 
 
+def _get_rename_instances(block_type, blocks_config, shared_blocks, subfamily_name):
+    """Return the SVD-name -> canonical-name remap dict for this block (empty if none).
+
+    Family-level wins over shared; variant-level wins over family default.
+    """
+    bc = blocks_config.get(block_type, {})
+    resolved = _resolve_block_config(bc, subfamily_name)
+    rename = resolved.get('rename_instances')
+    if rename:
+        return rename
+    uses = resolved.get('uses') or bc.get('uses')
+    if uses:
+        shared = shared_blocks.get(uses, {})
+        return shared.get('rename_instances') or {}
+    return {}
+
+
 # ============================================================================
 # Main pipeline
 # ============================================================================
@@ -2227,11 +2246,20 @@ def main():
                 chip_instances, subfamily_name, chip_name)
 
             for inst_name, periph in summary['peripherals'].items():
-                if inst_name in excluded_instances:
-                    continue  # Instance not present on this chip
                 block_type = instance_to_block.get(inst_name)
                 if not block_type:
                     continue  # Unmodeled peripheral
+
+                # Resolve canonical instance name (block may rename SVD-named
+                # instances — e.g. H7 ETH block renames Ethernet_MAC -> ETH so
+                # the chip yaml and user-facing config use the RM-canonical
+                # name regardless of which H7 chip's SVD spelled it which way).
+                rename_map = _get_rename_instances(
+                    block_type, blocks_config, shared_blocks, subfamily_name)
+                canonical_inst_name = rename_map.get(inst_name, inst_name)
+
+                if canonical_inst_name in excluded_instances:
+                    continue  # Instance not present on this chip
 
                 canonical_names = canonical_outputs.get(block_type, set())
                 decl_list = outputs_decl.get(block_type, [])
@@ -2283,7 +2311,7 @@ def main():
                 # DMAMUX request lines.
                 conn_overrides = _resolve_chip_connections(
                     chip_connections, subfamily_name, chip_name,
-                    inst_name, block_type)
+                    canonical_inst_name, block_type)
                 if conn_overrides:
                     for canonical_name, destinations in conn_overrides.items():
                         connections_map[canonical_name] = list(destinations)
@@ -2318,7 +2346,7 @@ def main():
                     default = param.get('default')
                     value = _resolve_chip_param(
                         chip_params, subfamily_name, chip_name,
-                        inst_name, block_type, param['name'],
+                        canonical_inst_name, block_type, param['name'],
                         default=default)
                     if value is None or value == default:
                         continue
@@ -2336,7 +2364,7 @@ def main():
                     inst_entry['connections'] = connections_map
                 if params_list:
                     inst_entry['parameters'] = params_list
-                instances[inst_name] = inst_entry
+                instances[canonical_inst_name] = inst_entry
 
             # Build models index: unique model names -> relative paths
             models_index = {}
