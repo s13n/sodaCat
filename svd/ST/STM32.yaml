@@ -13992,6 +13992,29 @@ families:
         outputs:
           INTR:
             pattern: '^LPUART$'
+          # EXTICR-selected external-pin signals.  EXTI<N> is the mux output
+          # for EXTI line N (SYSCFG.EXTICR<i>.EXTI<N> selects the GPIO port,
+          # pin number is implicit N).  The signal always reaches EXTI line
+          # input port N; lines 9/11/15 additionally fan out to DAC / ADC /
+          # DFSDM trigger inputs per RM0399 Table 102.  Modelling the
+          # GPIO-side upstream (pin -> mux input) is deferred — the mux
+          # output is what fans out to non-EXTI destinations.
+          EXTI0:  {description: EXTI line 0 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI0)}
+          EXTI1:  {description: EXTI line 1 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI1)}
+          EXTI2:  {description: EXTI line 2 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI2)}
+          EXTI3:  {description: EXTI line 3 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI3)}
+          EXTI4:  {description: EXTI line 4 mux output (GPIO port selected via SYSCFG.EXTICR2.EXTI4)}
+          EXTI5:  {description: EXTI line 5 mux output (GPIO port selected via SYSCFG.EXTICR2.EXTI5)}
+          EXTI6:  {description: EXTI line 6 mux output (GPIO port selected via SYSCFG.EXTICR2.EXTI6)}
+          EXTI7:  {description: EXTI line 7 mux output (GPIO port selected via SYSCFG.EXTICR2.EXTI7)}
+          EXTI8:  {description: EXTI line 8 mux output (GPIO port selected via SYSCFG.EXTICR3.EXTI8)}
+          EXTI9:  {description: EXTI line 9 mux output (GPIO port selected via SYSCFG.EXTICR3.EXTI9). Also drives DAC channel 1/2 trigger 12 per RM0399 Table 102.}
+          EXTI10: {description: EXTI line 10 mux output (GPIO port selected via SYSCFG.EXTICR3.EXTI10)}
+          EXTI11: {description: EXTI line 11 mux output (GPIO port selected via SYSCFG.EXTICR3.EXTI11). Also drives DFSDM TRG24 and ADC1/2/3 regular trigger 6 per RM0399 Table 102.}
+          EXTI12: {description: EXTI line 12 mux output (GPIO port selected via SYSCFG.EXTICR4.EXTI12)}
+          EXTI13: {description: EXTI line 13 mux output (GPIO port selected via SYSCFG.EXTICR4.EXTI13)}
+          EXTI14: {description: EXTI line 14 mux output (GPIO port selected via SYSCFG.EXTICR4.EXTI14)}
+          EXTI15: {description: EXTI line 15 mux output (GPIO port selected via SYSCFG.EXTICR4.EXTI15). Also drives DFSDM TRG25 and ADC1/2/3 injected trigger 6 per RM0399 Table 102.}
         variants:
           H742_H753:
             from: STM32H743.SYSCFG
@@ -14121,6 +14144,27 @@ families:
           # instance (NVIC.36/38 on H742_H753, H745_H757, H73x).  TMP is the
           # TTCAN timestamp output (Table 102 'CAN'/'TMP' row → ETH PTP3).
           FDCAN:   {IT0_CH2: [NVIC.36], IT1_CH2: [NVIC.38], TMP: [ETH.PTP.3]}
+          # SYSCFG EXTI line mux outputs (RM0399 §10.3 EXTICR + Table 102).
+          # Each EXTI<N> signal is the GPIO-selected pin signal that drives
+          # EXTI input line N; lines 9/11/15 additionally fan out to DAC,
+          # DFSDM, and ADC trigger inputs.  The upstream GPIO-pin source
+          # side is intentionally left implicit.
+          SYSCFG:  {EXTI0:  [EXTI.0],
+                    EXTI1:  [EXTI.1],
+                    EXTI2:  [EXTI.2],
+                    EXTI3:  [EXTI.3],
+                    EXTI4:  [EXTI.4],
+                    EXTI5:  [EXTI.5],
+                    EXTI6:  [EXTI.6],
+                    EXTI7:  [EXTI.7],
+                    EXTI8:  [EXTI.8],
+                    EXTI9:  [EXTI.9,  DAC.ch1_trg.12, DAC.ch2_trg.12],
+                    EXTI10: [EXTI.10],
+                    EXTI11: [EXTI.11, DFSDM.TRG.24, ADC1.ext_trg.6,  ADC2.ext_trg.6,  ADC3.ext_trg.6],
+                    EXTI12: [EXTI.12],
+                    EXTI13: [EXTI.13],
+                    EXTI14: [EXTI.14],
+                    EXTI15: [EXTI.15, DFSDM.TRG.25, ADC1.jext_trg.6, ADC2.jext_trg.6, ADC3.jext_trg.6]}
           # Additional EXTI destinations on existing interrupt/wakeup outputs
           # per RM0399 Table 103. The D3-domain peripherals' interrupt signals
           # ('_it' suffix in Table 103) feed EXTI for cross-domain wakeup;
