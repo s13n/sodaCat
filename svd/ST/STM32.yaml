@@ -58,6 +58,12 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^CRYP$'
+      IN_DMA:
+        description: DMA request for input data (plaintext for encrypt, ciphertext for decrypt)
+        pattern: '^IN_DMA$'
+      OUT_DMA:
+        description: DMA request for output data (ciphertext for encrypt, plaintext for decrypt)
+        pattern: '^OUT_DMA$'
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'CRYP generation: 0=basic, 1=+NPBLB, 2=+KMOD/IPRST/KERF/KEYVALID'}
   AES_V1:
@@ -94,6 +100,9 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^HASH$'
+      IN_DMA:
+        description: DMA request for input data (hash result is read from registers, no OUT DMA)
+        pattern: '^IN_DMA$'
     params:
       - {name: gen, type: int, default: 0, max: 2, description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-512 (4-bit ALGO)'}
   PKA:
@@ -567,6 +576,12 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^(SPDIFRX|SPDIF_Rx|SPDIF|SPDIF_RX)$'
+      DT_DMA:
+        description: DMA request for received audio data
+        pattern: '^DT_DMA$'
+      CS_DMA:
+        description: DMA request for received channel-status / user-data bits
+        pattern: '^CS_DMA$'
     params:
       - {name: has_symbol_clock, type: bool, default: true, description: 'CR symbol clock fields (CKSEN, CKSBKPEN)'}
   TSC:
@@ -587,6 +602,15 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^SWPMI1$'
+      TX_DMA:
+        description: DMA request for transmit
+        pattern: '^TX_DMA$'
+      RX_DMA:
+        description: DMA request for receive
+        pattern: '^RX_DMA$'
+      WKUP:
+        description: Wakeup from Stop mode
+        pattern: '^WKUP$'
   CORDIC:
     # CORDIC co-processor: G4, H5, H7, H7RS, U5
     from: STM32H562.CORDIC
@@ -877,6 +901,9 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^(DCMI|DCMI_PSSI)$'
+      DMA:
+        description: DMA request for pixel data
+        pattern: '^DMA$'
     params:
       - {name: has_pixel_select, type: bool, default: true, description: BSM/OEBS/LSM/OELS fields in CR for byte/line selection}
   bxCAN:
@@ -13124,6 +13151,9 @@ families:
         outputs:
           INTR:
             pattern: '^(ADC1_2|ADC3|ADC4|ADC1|ADC5|ADC2)$'
+          DMA:
+            description: DMA request for converted data
+            pattern: '^DMA$'
         transforms:
           - type: patchAddressBlock
             size: 256
@@ -13200,6 +13230,12 @@ families:
         outputs:
           INTR:
             pattern: '^DAC2$'
+          CH1_DMA:
+            description: DMA request for channel 1 conversions
+            pattern: '^CH1_DMA$'
+          CH2_DMA:
+            description: DMA request for channel 2 conversions
+            pattern: '^CH2_DMA$'
       DBGMCU:
         instances: [DBGMCU]
         variants:
@@ -13226,6 +13262,18 @@ families:
             pattern: '^DFSDM1_FLT2$'
           FLT3:
             pattern: '^DFSDM1_FLT3$'
+          FLT0_DMA:
+            description: DMA request for filter 0 output
+            pattern: '^FLT0_DMA$'
+          FLT1_DMA:
+            description: DMA request for filter 1 output
+            pattern: '^FLT1_DMA$'
+          FLT2_DMA:
+            description: DMA request for filter 2 output
+            pattern: '^FLT2_DMA$'
+          FLT3_DMA:
+            description: DMA request for filter 3 output
+            pattern: '^FLT3_DMA$'
       DLYB:
         uses: DLYB
         instances: [DELAY_Block_SDMMC1, DELAY_Block_SDMMC2, DELAY_Block_QUADSPI, Delay_Block_OCTOSPI1, Delay_Block_OCTOSPI2]
@@ -13627,6 +13675,20 @@ families:
           SAI2:    {A_DMA: [DMAMUX1.89], B_DMA: [DMAMUX1.90]}
           SAI3:    {A_DMA: [DMAMUX1.113], B_DMA: [DMAMUX1.114]}
           SAI4:    {INTR: [NVIC.162, EXTI.76], A_DMA: [DMAMUX2.15], B_DMA: [DMAMUX2.16]}
+          # Simple-DMA peripherals: ADC, DAC, DCMI, HASH, CRYP, SPDIFRX,
+          # DFSDM, SWPMI per RM0399 Table 106. ADC3 also has DMAMUX2 routing
+          # (Table 107) and an INTR-to-EXTI line (Table 103 adc3_it → WKUP75).
+          ADC1:    {DMA: [DMAMUX1.9]}
+          ADC2:    {DMA: [DMAMUX1.10]}
+          ADC3:    {INTR: [NVIC.143, EXTI.75], DMA: [DMAMUX1.115, DMAMUX2.17]}
+          DAC:     {CH1_DMA: [DMAMUX1.67], CH2_DMA: [DMAMUX1.68]}
+          DCMI:    {DMA: [DMAMUX1.75]}
+          CRYP:    {IN_DMA: [DMAMUX1.76], OUT_DMA: [DMAMUX1.77]}
+          HASH:    {IN_DMA: [DMAMUX1.78]}
+          SPDIFRX: {DT_DMA: [DMAMUX1.93], CS_DMA: [DMAMUX1.94]}
+          # Chapter 14 calls this 'DFSDM1' but the chip instance is named 'DFSDM'.
+          DFSDM:   {FLT0_DMA: [DMAMUX1.101], FLT1_DMA: [DMAMUX1.102], FLT2_DMA: [DMAMUX1.103], FLT3_DMA: [DMAMUX1.104]}
+          SWPMI:   {TX_DMA: [DMAMUX1.92], RX_DMA: [DMAMUX1.91], WKUP: [EXTI.54]}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
