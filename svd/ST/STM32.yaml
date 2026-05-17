@@ -362,6 +362,12 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^(LPTIM\d+|LP_Timer\d+)$'
+      WKUP:
+        description: Wakeup from Stop mode
+        pattern: '^WKUP$'
+      OUT:
+        description: Timer compare/PWM output signal (routes to EXTI wakeup on some instances and to TIM trigger crossbars per RM0399 ch.14)
+        pattern: '^OUT$'
     params:
       - {name: max_channel, type: int, default: 0, max: 3, description: 'Highest CC channel index (0=CCR1 only, 1=CCR1+CCR2, 3=CCR1-CCR4)'}
       - {name: has_counter_reset, type: bool, default: true, description: COUNTRST/RSTARE in CR}
@@ -13257,6 +13263,9 @@ families:
         outputs:
           INTR:
             pattern: '^COMP$'
+          OUT:
+            description: Analog comparator output (level/edge signal; routes to EXTI wakeup and to TIM/LPTIM trigger crossbars per RM0399 ch.14)
+            pattern: '^OUT$'
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
@@ -13529,6 +13538,28 @@ families:
       PWR:
         from: STM32H723.PWR
         instances: [PWR]
+        outputs:
+          PVD_AVD:
+            description: Programmable / analog voltage detector event (PVD on VDD, AVD on VDDA)
+            pattern: '^PVD_AVD$'
+          WKUP1:
+            description: Wakeup pin 1 event
+            pattern: '^WKUP1$'
+          WKUP2:
+            description: Wakeup pin 2 event
+            pattern: '^WKUP2$'
+          WKUP3:
+            description: Wakeup pin 3 event
+            pattern: '^WKUP3$'
+          WKUP4:
+            description: Wakeup pin 4 event
+            pattern: '^WKUP4$'
+          WKUP5:
+            description: Wakeup pin 5 event
+            pattern: '^WKUP5$'
+          WKUP6:
+            description: Wakeup pin 6 event
+            pattern: '^WKUP6$'
         params:
           - {name: has_smps, type: bool, default: true, description: Has SMPS step-down converter (false for H742/H753 which use SCUEN instead of SDEN)}
         transforms:
@@ -13766,6 +13797,18 @@ families:
           # Chapter 14 calls the instance HRTIM1 but the chip yaml names it
           # HRTIM_Master (matches the SVD interrupt block prefix).
           HRTIM_Master: {MST: [NVIC.119], TIMA: [NVIC.120], TIMB: [NVIC.121], TIMC: [NVIC.122], TIMD: [NVIC.123], TIME: [NVIC.124], FLT: [NVIC.125], MST_DMA: [DMAMUX1.95], TIMA_DMA: [DMAMUX1.96], TIMB_DMA: [DMAMUX1.97], TIMC_DMA: [DMAMUX1.98], TIMD_DMA: [DMAMUX1.99], TIME_DMA: [DMAMUX1.100]}
+          # Wakeup-source blocks per RM0399 Table 103: COMP1 output to EXTI;
+          # LPTIM wakeup and (for LPTIM2/3) compare output to EXTI; RTC three
+          # event classes append EXTI destinations to their existing NVIC
+          # vectors; PWR PVD/AVD detector and 6 wakeup-pin events to EXTI.
+          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20]}
+          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47]}
+          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49]}
+          LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50], OUT: [EXTI.51]}
+          LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52]}
+          LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53]}
+          RTC:     {TAMP_STAMP_CSS_LSE: [NVIC.18, EXTI.18], WKUP: [NVIC.19, EXTI.19], ALARM: [NVIC.57, EXTI.17]}
+          PWR:     {PVD_AVD: [EXTI.16], WKUP1: [EXTI.55], WKUP2: [EXTI.56], WKUP3: [EXTI.57], WKUP4: [EXTI.58], WKUP5: [EXTI.59], WKUP6: [EXTI.60]}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
