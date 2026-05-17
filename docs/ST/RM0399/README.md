@@ -20,15 +20,34 @@ models and the `outputs:` declarations on the block-level YAML models.
 | `table-105.csv`  | MDMA (p. 639-640)                                    | 32  |
 | `table-106.csv`  | DMAMUX1, DMA1 and DMA2 connections (p. 641-645)      | 138 |
 | `table-107.csv`  | DMAMUX2 and BDMA connections (p. 646-648)            | 63  |
+| `table-152.csv`  | EXTI Event input mapping (§21.4, p. 806-808)         | 74  |
 
 RM0399's Tables 100 and 101 (D2/D3-domain overview matrices on pp. 615-616)
 are intentionally skipped — their headers are typeset vertically, so
 pdfplumber returns garbled text, and their content is fully redundant with
 the row-based Table 102.
 
+Table 152 is from chapter 21 (EXTI), not chapter 14, but it's the canonical
+EXTI-side view of the same routing — it lists each EXTI event input line
+(0-88) with the source signal feeding it, the line type
+(direct/configurable), the dual-CPU wakeup target, and whether the line is
+also routed to NVIC. It crosschecks Tables 103/104 from chapter 14 and was
+useful for catching a Table 103 SPI6/WKUP64-vs-WKUP65 typo (see
+[svd/ST/SVD_ERRATA.md](../SVD_ERRATA.md) for the diagnosis).
+
+Re-extract with:
+```
+python3 tools/pdf_table_extractor.py \
+    'docs/ST/RM0399 - … (Rev. 4).pdf' /tmp/t152-raw.csv \
+    --table 152 --pages 806..808 --forward-fill 0 --skip-header 1
+```
+then post-process to keep only rows whose first column is a line number /
+range (`<N>` or `<N>(<footnote>)` or `<N>-<M>`) and stop at line 88 — see
+the inline Python that produced the committed CSV.
+
 ## Schema
 
-Every CSV has the same four columns:
+Tables 102-107 share the same four columns:
 
 | Column          | Meaning                                                |
 |-----------------|--------------------------------------------------------|
