@@ -5,6 +5,9 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^(WWDG|WWDG1|WWDG2)$'
+      OUT_RST:
+        description: Reset request asserted when the window watchdog times out. Also routed to EXTI on H7 to wake a peer CPU before its own watchdog resets the chip.
+        pattern: '^OUT_RST$'
     params:
       - {name: cfr_version, type: int, default: 1, max: 2, description: 'CFR register layout: 1 = v1 (2-bit WDGTB at [8:7]), 2 = v2 (3-bit WDGTB at [13:11])'}
     transforms:
@@ -13335,6 +13338,9 @@ families:
         from: STM32H723.DMA1
         instances: [DMA1, DMA2, DMA2D, DMAMUX1, DMAMUX2]
         outputs:
+          OVR:
+            description: Request-line overrun event. Asserted by DMAMUX when more than one synchronized request fires before the previous was serviced. (Block shared between DMA and DMAMUX; for DMA instances this output is unwired — the per-stream STR<N> outputs carry interrupts.)
+            pattern: '^DMAMUX\d+_OV(R)?$'
           STR0:
             pattern: '^DMA_STR0$'
           STR1:
@@ -13356,6 +13362,10 @@ families:
       DSIHOST:
         from: STM32H745_CM4.DSIHOST
         instances: [DSIHOST]
+        outputs:
+          INTR:
+            description: Global interrupt (chapter-14 calls this 'dsi_it'). On H7 the chip-level NVIC vector is NMI-only; the signal also reaches EXTI.46 for low-power wake — the only chip-level destination we model today.
+            pattern: '^DSI$'
         transforms:
           - {type: renameRegisters, pattern: ^DSI_, replacement: ''}
         description: MIPI DSI host controller (Synopsys DesignWare)
@@ -13605,6 +13615,12 @@ families:
         outputs:
           INTR:
             pattern: '^RCC$'
+          LSE_CSS:
+            description: LSE Clock Security System event (LSE clock failure). Routes to both NVIC.18 (shared TAMP_STAMP_CSS_LSE vector) and EXTI.18 (shared with RTC tamper/timestamp).
+            pattern: '^LSE_CSS$'
+          HSE_CSS_WKUP:
+            description: HSE Clock Security System wakeup event (HSE clock failure). Routes to EXTI.87 for low-power wake; the NVIC side is the chip's NMI exception, not a regular vector.
+            pattern: '^HSE_CSS_WKUP$'
         variants:
           H73x:
             from: STM32H723.RCC
@@ -13772,7 +13788,10 @@ families:
           # ('_it' suffix in Table 103) feed EXTI for cross-domain wakeup;
           # MDIOS and CEC wakeups feed EXTI for low-power wake.
           MDIOS:   {WKUP: [NVIC.135, EXTI.42]}
-          RCC:     {INTR: [NVIC.21, EXTI.61]}
+          # RCC: per Table 152, LSECSS shares NVIC.18 and EXTI.18 with RTC
+          # tamper/timestamp; HSECSS goes to NMI + EXTI.87 (not a regular NVIC
+          # vector, so the NMI side isn't expressed in our routing model).
+          RCC:     {INTR: [NVIC.21, EXTI.61], LSE_CSS: [NVIC.18, EXTI.18], HSE_CSS_WKUP: [EXTI.87]}
           CEC:     {INTR: [NVIC.110], WKUP: [EXTI.85]}
           BDMA:    {CH0: [NVIC.145, EXTI.66], CH1: [NVIC.146, EXTI.67], CH2: [NVIC.147, EXTI.68], CH3: [NVIC.148, EXTI.69], CH4: [NVIC.149, EXTI.70], CH5: [NVIC.150, EXTI.71], CH6: [NVIC.151, EXTI.72], CH7: [NVIC.152, EXTI.73]}
           # TIM family DMA requests per RM0399 Table 106. Channel set varies
@@ -13811,6 +13830,29 @@ families:
           LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53]}
           RTC:     {TAMP_STAMP_CSS_LSE: [NVIC.18, EXTI.18], WKUP: [NVIC.19, EXTI.19], ALARM: [NVIC.57, EXTI.17]}
           PWR:     {PVD_AVD: [EXTI.16], WKUP1: [EXTI.55], WKUP2: [EXTI.56], WKUP3: [EXTI.57], WKUP4: [EXTI.58], WKUP5: [EXTI.59], WKUP6: [EXTI.60]}
+          # D3-domain INTR→EXTI extensions:
+          #   DMAMUX2 INTR (SVD: DMAMUX2_OVR at NVIC.144) gains EXTI.74.
+          #   DSIHOST INTR has no NVIC vector on H7 (SVD lists no DSI
+          #     interrupt entry; the H7 chapter routes the DSI event to
+          #     NMI + EXTI.46; only EXTI is modelled).
+          #   WWDG1 (CM7 watchdog) and WWDG2 (CM4 watchdog) gain OUT_RST
+          #     destinations on EXTI.82 / EXTI.84 — these wake the peer
+          #     CPU before the window-watchdog reset fires.
+          DMAMUX2: {OVR: [NVIC.144, EXTI.74]}
+          DSIHOST: {INTR: [EXTI.46]}
+          WWDG1:   {INTR: [NVIC.16], OUT_RST: [EXTI.82]}
+          WWDG2:   {INTR: [NVIC.16], OUT_RST: [EXTI.84]}
+        # HSEM per-chip override: NVIC vector differs per CPU (CM7=141, CM4=142)
+        # and so does the EXTI destination (HSEM int0 → CPU1 EXTI.77, int1 → CPU2 EXTI.78).
+        # Eight chip-specific entries — STM32H745/747/755/757, each in CM7 and CM4 form.
+        STM32H745_CM7: {HSEM: {INTR: [NVIC.141, EXTI.77]}}
+        STM32H747_CM7: {HSEM: {INTR: [NVIC.141, EXTI.77]}}
+        STM32H755_CM7: {HSEM: {INTR: [NVIC.141, EXTI.77]}}
+        STM32H757_CM7: {HSEM: {INTR: [NVIC.141, EXTI.77]}}
+        STM32H745_CM4: {HSEM: {INTR: [NVIC.142, EXTI.78]}}
+        STM32H747_CM4: {HSEM: {INTR: [NVIC.142, EXTI.78]}}
+        STM32H755_CM4: {HSEM: {INTR: [NVIC.142, EXTI.78]}}
+        STM32H757_CM4: {HSEM: {INTR: [NVIC.142, EXTI.78]}}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
