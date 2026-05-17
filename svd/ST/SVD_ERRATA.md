@@ -804,6 +804,44 @@ mis-numbered entry. Table 152's distinct WKUP64/65/66 assignment is
 internally consistent. Neither table is inherently authoritative — both
 can have typos — but the plausibility evidence points at Table 103.
 
+### LPTIM1/LPTIM2 ext_trg numbering: Table 102 off-by-one (RM doc inconsistency)
+
+**RM0399 Rev.4 (H745 / H747 / H755 / H757):**
+
+Chapter 14 Table 102 lists the LPTIM external-trigger sources but omits
+the GPIO-pin entries (LPTIMx_ETR alternate function), causing the
+remaining port indices to be off by one relative to the TRIGSEL register
+field that controls the mux. The mismatch affects LPTIM1 and LPTIM2;
+LPTIM3-5 are unaffected because their slot-0 source isn't a pin (it's
+LPTIM2_OUT per Tables 377-379).
+
+For LPTIM1 (TRIGSEL[2:0] → trigger source per RM ch.45 Table 375):
+
+| TRIGSEL | Table 375 source | Table 102 says (lptim1_ext_trgN) |
+|---------|------------------|------------------------------------|
+| 0       | LPTIM1_ETR pin   | not listed                         |
+| 1       | RTC_ALARMA       | trg0                               |
+| 2       | RTC_ALARMB       | trg1                               |
+| 3       | RTC_TAMP1_OUT    | trg2                               |
+| ...     | ...              | (all shifted by -1)                |
+| 6       | COMP1_OUT        | trg5                               |
+| 7       | COMP2_OUT        | trg6                               |
+
+Same off-by-one for LPTIM2 / Table 376.
+
+The TRIGSEL field is the load-bearing definition (it's what software
+writes to select a trigger; Table 375 is its register-level
+documentation). Table 102 silently re-numbered when omitting the pin
+entry — easy mistake for the chip-level routing summary, hard to
+detect without cross-checking the block chapter.
+
+**Modelled per Table 375/376.** chip_connections wires RTC ALARM/TAMP
+events and COMP1.OUT to LPTIM1/2.ext_trg.<TRIGSEL> using the
+register-field values, with TRIGSEL=0 occupied by the LPTIMx_ETR pin
+signal (block-level LPTIM.ETR output). Spotted by a port-0 collision
+in the generated c_LPTIM1_ext_trg table after wiring the native pin
+self-reference.
+
 **Modelled per Table 152.** SPI6's INTR → EXTI.65 in the chip wiring; the
 shared destination (one EXTI line fed by two unrelated peripherals)
 implied by Table 103 was a documentation artifact, not silicon reality.

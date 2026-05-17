@@ -429,6 +429,15 @@ shared_blocks:
       OUT:
         description: Timer compare/PWM output signal (routes to EXTI wakeup on some instances and to TIM trigger crossbars per RM0399 ch.14)
         pattern: '^OUT$'
+      IN1:
+        description: Input 1 pin signal (LPTIMx_IN1 alternate function). Per RM0399 §45.4.3 Tables 380/382, IN1SEL=0 selects this pin as the LPTIM's input 1. Not all LPTIM instances have this pin — LPTIM3 specifically has slot 0 'not connected' (Table 384).
+        pattern: '^IN1$'
+      IN2:
+        description: Input 2 pin signal (LPTIMx_IN2 alternate function). IN2SEL=0 selects this pin. Only LPTIM1/LPTIM2 expose IN2 on H7 (LPTIM3-5 lack IN2 entirely).
+        pattern: '^IN2$'
+      ETR:
+        description: External trigger pin (LPTIMx_ETR alternate function). TRIGSEL=0 default for LPTIM1/LPTIM2 on H7; LPTIM3-5 have other internal sources at slot 0 (per RM Tables 377-379).
+        pattern: '^ETR$'
     params:
       - {name: max_channel, type: int, default: 0, max: 3, description: 'Highest CC channel index (0=CCR1 only, 1=CCR1+CCR2, 3=CCR1-CCR4)'}
       - {name: has_counter_reset, type: bool, default: true, description: COUNTRST/RSTARE in CR}
@@ -14097,28 +14106,31 @@ families:
           # on H745_H757 so its analogous TIM ETR2 entries are absent).
           # COMP1.OUT additionally feeds HRTIM events 1, 6 and the HRTIM
           # fault input filter 1 per Table 102.
-          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.5, LPTIM2.ext_trg.5, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3, HRTIM_Master.evt1.1, HRTIM_Master.evt6.1, HRTIM_Master.in_flt.1, DMAMUX2.gen.17]}
+          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.6, LPTIM2.ext_trg.6, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3, HRTIM_Master.evt1.1, HRTIM_Master.evt6.1, HRTIM_Master.in_flt.1, DMAMUX2.gen.17]}
           # LPTIM.OUT additionally feeds LPTIM ext_trg inputs of other
           # LPTIM instances per Table 102 (LPTIM2/3/4/5 form a small
           # routing fabric where each instance's output can clock another).
           # LPTIM additionally feeds DMAMUX trg/gen inputs per Table 106/107:
           # LPTIM1/2/3.OUT → DMAMUX1.trg.3/4/5 (sync triggers for DMAMUX1);
           # LPTIM2/3.{WKUP,OUT}, LPTIM4/5.WKUP → DMAMUX2.gen (D3-domain).
-          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18, HRTIM_Master.evt5.2, DAC.ch1_trg.10, DAC.ch2_trg.10, DFSDM.TRG.26, DMAMUX1.trg.3]}
-          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48, DMAMUX2.gen.9], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0, HRTIM_Master.evt10.2, DAC.ch1_trg.11, DAC.ch2_trg.11, DFSDM.TRG.27, DMAMUX1.trg.4, DMAMUX2.gen.10]}
+          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18, HRTIM_Master.evt5.2, DAC.ch1_trg.10, DAC.ch2_trg.10, DFSDM.TRG.26, DMAMUX1.trg.3], IN1: [LPTIM1.in1_mux.0], IN2: [LPTIM1.in2_mux.0], ETR: [LPTIM1.ext_trg.0]}
+          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48, DMAMUX2.gen.9], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0, HRTIM_Master.evt10.2, DAC.ch1_trg.11, DAC.ch2_trg.11, DFSDM.TRG.27, DMAMUX1.trg.4, DMAMUX2.gen.10], IN1: [LPTIM2.in1_mux.0], IN2: [LPTIM2.in2_mux.0], ETR: [LPTIM2.ext_trg.0]}
           LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50, DMAMUX2.gen.11], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20, LPTIM4.ext_trg.1, LPTIM5.ext_trg.1, DFSDM.TRG.28, DMAMUX1.trg.5, DMAMUX2.gen.12]}
           LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52, DMAMUX2.gen.13], OUT: [LPTIM3.ext_trg.2, LPTIM5.ext_trg.2, EXTI.d3_pendclear_in.2]}
           LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53, DMAMUX2.gen.14], OUT: [LPTIM3.ext_trg.3, LPTIM4.ext_trg.3, EXTI.d3_pendclear_in.3]}
           # RTC.WKUP additionally routes to TIM16.TI1 (Table 102 'WKUP_IT'
           # source name — same wakeup-timer interrupt output). Alarm A/B and
-          # tamper events feed all 5 LPTIM ext_trg inputs uniformly per
-          # Table 102.
+          # tamper events feed LPTIM1/LPTIM2 ext_trg inputs per RM Table 375
+          # (LPTIM1) and Table 376 (LPTIM2) — using TRIGSEL register-field
+          # values (slot 0 = pin, slot 1 = ALARMA, ...). Chapter 14 Table 102
+          # uses different (off-by-one) port numbering for these two LPTIMs;
+          # see svd/ST/SVD_ERRATA.md.
           RTC:     {TAMP_STAMP_CSS_LSE: [NVIC.18, EXTI.18], WKUP: [NVIC.19, EXTI.19, TIM16.TI1.3, DMAMUX2.gen.19], ALARM: [NVIC.57, EXTI.17],
-                    ALARM_A_EVT: [LPTIM1.ext_trg.0, LPTIM2.ext_trg.0],
-                    ALARM_B_EVT: [LPTIM1.ext_trg.1, LPTIM2.ext_trg.1],
-                    TAMP1_EVT:   [LPTIM1.ext_trg.2, LPTIM2.ext_trg.2],
-                    TAMP2_EVT:   [LPTIM1.ext_trg.3, LPTIM2.ext_trg.3],
-                    TAMP3_EVT:   [LPTIM1.ext_trg.4, LPTIM2.ext_trg.4]}
+                    ALARM_A_EVT: [LPTIM1.ext_trg.1, LPTIM2.ext_trg.1],
+                    ALARM_B_EVT: [LPTIM1.ext_trg.2, LPTIM2.ext_trg.2],
+                    TAMP1_EVT:   [LPTIM1.ext_trg.3, LPTIM2.ext_trg.3],
+                    TAMP2_EVT:   [LPTIM1.ext_trg.4, LPTIM2.ext_trg.4],
+                    TAMP3_EVT:   [LPTIM1.ext_trg.5, LPTIM2.ext_trg.5]}
           PWR:     {PVD_AVD: [EXTI.16], WKUP1: [EXTI.55], WKUP2: [EXTI.56], WKUP3: [EXTI.57], WKUP4: [EXTI.58], WKUP5: [EXTI.59], WKUP6: [EXTI.60]}
           # D3-domain INTR→EXTI extensions:
           #   DMAMUX2 INTR (SVD: DMAMUX2_OVR at NVIC.144) gains EXTI.74.
