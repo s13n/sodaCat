@@ -246,9 +246,12 @@ shared_blocks:
       RX_DMA:
         description: DMA request for receive (RXFIFO threshold / RXNE)
         pattern: '^RX_DMA$'
-      WKUP:
-        description: Wakeup from Stop mode (asserted on the configured wakeup event, with bus clock gated)
-        pattern: '^WKUP$'
+      WKUP_RX:
+        description: Wakeup from Stop mode on RX-event (Start bit / RXNE / address match; bus clock gated). LPUART exposes a distinct WKUP_TX as well; standard USART/UART have only this one.
+        pattern: '^WKUP_RX$'
+      WKUP_TX:
+        description: Wakeup from Stop mode on TX-event (LPUART only; standard USART/UART do not implement this output)
+        pattern: '^WKUP_TX$'
     params:
       - {name: lpbaud, type: bool, default: false, description: Low-power baud rate generation (BRR_LP variant; no OVER8/ONEBIT/GTPR/RTOR; no RTOIE/RTOEN/RTOF/RTOCF; no TECLREN in AUTOCR)}
       - {name: synchronous, type: int, default: 3, max: 3, description: 'Synchronous/smartcard capability: 0=none, 1=synchronous+SPI slave (CLKEN/CPHA/CPOL/LBCL/SLVEN/DIS_NSS/UDR/UDRCF/TXFECF), 2=sync+smartcard (NACK/SCEN/SCARCNT/EOBIE/EOBF/EOBCF), 3=sync+smartcard+TCBGT'}
@@ -13559,16 +13562,17 @@ families:
           SDMMC1: {INTR: [NVIC.65]}
           SDMMC2: {INTR: [NVIC.140]}
           # USART/UART DMAMUX1 request lines per RM0399 Table 106; EXTI wakeup
-          # lines per Table 103. LPUART1 is treated separately (Table 107 DMA,
-          # split RX/TX wakeups in Table 103).
-          USART1: {TX_DMA: [DMAMUX1.42], RX_DMA: [DMAMUX1.41], WKUP: [EXTI.26]}
-          USART2: {TX_DMA: [DMAMUX1.44], RX_DMA: [DMAMUX1.43], WKUP: [EXTI.27]}
-          USART3: {TX_DMA: [DMAMUX1.46], RX_DMA: [DMAMUX1.45], WKUP: [EXTI.28]}
-          UART4:  {TX_DMA: [DMAMUX1.64], RX_DMA: [DMAMUX1.63], WKUP: [EXTI.30]}
-          UART5:  {TX_DMA: [DMAMUX1.66], RX_DMA: [DMAMUX1.65], WKUP: [EXTI.31]}
-          USART6: {TX_DMA: [DMAMUX1.72], RX_DMA: [DMAMUX1.71], WKUP: [EXTI.29]}
-          UART7:  {TX_DMA: [DMAMUX1.80], RX_DMA: [DMAMUX1.79], WKUP: [EXTI.32]}
-          UART8:  {TX_DMA: [DMAMUX1.82], RX_DMA: [DMAMUX1.81], WKUP: [EXTI.33]}
+          # lines per Table 103. LPUART1 sits on DMAMUX2 (Table 107) and has
+          # distinct RX/TX wakeup outputs plus an interrupt-routed-to-EXTI line.
+          USART1:  {TX_DMA: [DMAMUX1.42], RX_DMA: [DMAMUX1.41], WKUP_RX: [EXTI.26]}
+          USART2:  {TX_DMA: [DMAMUX1.44], RX_DMA: [DMAMUX1.43], WKUP_RX: [EXTI.27]}
+          USART3:  {TX_DMA: [DMAMUX1.46], RX_DMA: [DMAMUX1.45], WKUP_RX: [EXTI.28]}
+          UART4:   {TX_DMA: [DMAMUX1.64], RX_DMA: [DMAMUX1.63], WKUP_RX: [EXTI.30]}
+          UART5:   {TX_DMA: [DMAMUX1.66], RX_DMA: [DMAMUX1.65], WKUP_RX: [EXTI.31]}
+          USART6:  {TX_DMA: [DMAMUX1.72], RX_DMA: [DMAMUX1.71], WKUP_RX: [EXTI.29]}
+          UART7:   {TX_DMA: [DMAMUX1.80], RX_DMA: [DMAMUX1.79], WKUP_RX: [EXTI.32]}
+          UART8:   {TX_DMA: [DMAMUX1.82], RX_DMA: [DMAMUX1.81], WKUP_RX: [EXTI.33]}
+          LPUART1: {INTR: [NVIC.158, EXTI.64], TX_DMA: [DMAMUX2.10], RX_DMA: [DMAMUX2.9], WKUP_RX: [EXTI.34], WKUP_TX: [EXTI.35]}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
