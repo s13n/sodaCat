@@ -232,6 +232,9 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^(TIM6|TIM6_DAC|TIM6_DAC1|TIM6_DACUNDER|TIM6_DAC_LPTIM1|TIM7|TIM18|TIM3|TIM9)$'
+      UP_DMA:
+        description: DMA request on update event (counter wraparound)
+        pattern: '^UP_DMA$'
   I2C:
     from: STM32U535.I2C1
     outputs:
@@ -394,6 +397,27 @@ shared_blocks:
         pattern: '^(TIM1_CC|TIM_CC)$'
       BRK_UP_TRG_COM:
         pattern: '^TIM1_BRK_UP_TRG_COM$'
+      CH1_DMA:
+        description: DMA request on capture/compare channel 1 event
+        pattern: '^CH1_DMA$'
+      CH2_DMA:
+        description: DMA request on capture/compare channel 2 event
+        pattern: '^CH2_DMA$'
+      CH3_DMA:
+        description: DMA request on capture/compare channel 3 event
+        pattern: '^CH3_DMA$'
+      CH4_DMA:
+        description: DMA request on capture/compare channel 4 event
+        pattern: '^CH4_DMA$'
+      UP_DMA:
+        description: DMA request on update event (counter wraparound)
+        pattern: '^UP_DMA$'
+      TRIG_DMA:
+        description: DMA request on trigger event
+        pattern: '^TRIG_DMA$'
+      COM_DMA:
+        description: DMA request on commutation event (advanced-control timers only)
+        pattern: '^COM_DMA$'
     params:
       - {name: width32, type: bool, default: false, description: 32-bit counter width}
       - {name: max_channel, type: int, default: 3, max: 5, description: Highest capture/compare channel index (0-5)}
@@ -13700,6 +13724,26 @@ families:
           RCC:     {INTR: [NVIC.21, EXTI.61]}
           CEC:     {INTR: [NVIC.110], WKUP: [EXTI.85]}
           BDMA:    {CH0: [NVIC.145, EXTI.66], CH1: [NVIC.146, EXTI.67], CH2: [NVIC.147, EXTI.68], CH3: [NVIC.148, EXTI.69], CH4: [NVIC.149, EXTI.70], CH5: [NVIC.150, EXTI.71], CH6: [NVIC.151, EXTI.72], CH7: [NVIC.152, EXTI.73]}
+          # TIM family DMA requests per RM0399 Table 106. Channel set varies
+          # by timer variant: advanced-control timers (TIM1, TIM8) have full
+          # CH1-4/UP/TRIG/COM set; general-purpose timers vary by capability;
+          # basic timers (TIM6, TIM7) have only UP_DMA.
+          # NB: Table 106 mislabels TIM5's rows under "TIM3" in the source
+          # column (forward-fill misattribution in the PDF); signals are
+          # tim5_*, so they wire on TIM5.
+          # TIM12's tim12_trgo → dmamux1_gen7 / dmamux1_trg7 is a DMAMUX
+          # trigger-generator input, deferred to the dmamux_gen sub-step.
+          TIM1:    {CH1_DMA: [DMAMUX1.11], CH2_DMA: [DMAMUX1.12], CH3_DMA: [DMAMUX1.13], CH4_DMA: [DMAMUX1.14], UP_DMA: [DMAMUX1.15], TRIG_DMA: [DMAMUX1.16], COM_DMA: [DMAMUX1.17]}
+          TIM2:    {CH1_DMA: [DMAMUX1.18], CH2_DMA: [DMAMUX1.19], CH3_DMA: [DMAMUX1.20], CH4_DMA: [DMAMUX1.21], UP_DMA: [DMAMUX1.22]}
+          TIM3:    {CH1_DMA: [DMAMUX1.23], CH2_DMA: [DMAMUX1.24], CH3_DMA: [DMAMUX1.25], CH4_DMA: [DMAMUX1.26], UP_DMA: [DMAMUX1.27], TRIG_DMA: [DMAMUX1.28]}
+          TIM4:    {CH1_DMA: [DMAMUX1.29], CH2_DMA: [DMAMUX1.30], CH3_DMA: [DMAMUX1.31], UP_DMA: [DMAMUX1.32]}
+          TIM5:    {CH1_DMA: [DMAMUX1.55], CH2_DMA: [DMAMUX1.56], CH3_DMA: [DMAMUX1.57], CH4_DMA: [DMAMUX1.58], UP_DMA: [DMAMUX1.59], TRIG_DMA: [DMAMUX1.60]}
+          TIM6:    {UP_DMA: [DMAMUX1.69]}
+          TIM7:    {UP_DMA: [DMAMUX1.70]}
+          TIM8:    {CH1_DMA: [DMAMUX1.47], CH2_DMA: [DMAMUX1.48], CH3_DMA: [DMAMUX1.49], CH4_DMA: [DMAMUX1.50], UP_DMA: [DMAMUX1.51], TRIG_DMA: [DMAMUX1.52], COM_DMA: [DMAMUX1.53]}
+          TIM15:   {CH1_DMA: [DMAMUX1.105], UP_DMA: [DMAMUX1.106], TRIG_DMA: [DMAMUX1.107], COM_DMA: [DMAMUX1.108]}
+          TIM16:   {CH1_DMA: [DMAMUX1.109], UP_DMA: [DMAMUX1.110]}
+          TIM17:   {CH1_DMA: [DMAMUX1.111], UP_DMA: [DMAMUX1.112]}
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
