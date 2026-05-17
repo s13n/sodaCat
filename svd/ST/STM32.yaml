@@ -130,6 +130,15 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^DMA2D$'
+      CLUT_TRG:
+        description: CLUT transfer trigger (MDMA trigger source per RM0399 Table 105)
+        pattern: '^CLUT_TRG$'
+      TC_TRG:
+        description: Transfer-complete trigger
+        pattern: '^TC_TRG$'
+      TW_TRG:
+        description: Transfer watermark trigger
+        pattern: '^TW_TRG$'
     params:
       - {name: gen, type: int, default: 0, max: 3, description: 'DMA2D generation: 0=basic, 1=+AI/RBS, 2=+LOM/wideMode/wideLO/SB/OCOLR variants, 3=+CSS'}
     transforms:
@@ -142,6 +151,21 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^JPEG$'
+      IFT_TRG:
+        description: Input FIFO threshold trigger (MDMA trigger source per RM0399 Table 105)
+        pattern: '^IFT_TRG$'
+      IFNT_TRG:
+        description: Input FIFO not-threshold trigger
+        pattern: '^IFNT_TRG$'
+      OFT_TRG:
+        description: Output FIFO threshold trigger
+        pattern: '^OFT_TRG$'
+      OFNE_TRG:
+        description: Output FIFO not-empty trigger
+        pattern: '^OFNE_TRG$'
+      OEC_TRG:
+        description: Output end-of-conversion trigger
+        pattern: '^OEC_TRG$'
     transforms:
       - {type: createArray, pattern: DHTMEM(\d+), name: DHTMEM, description: DHT memory}
       - {type: createArray, pattern: HUFFBASE(\d+), name: HUFFBASE, description: Huffman base}
@@ -665,6 +689,12 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^QUADSPI$'
+      FT_TRG:
+        description: FIFO threshold trigger (MDMA trigger source per RM0399 Table 105)
+        pattern: '^FT_TRG$'
+      TC_TRG:
+        description: Transfer-complete trigger
+        pattern: '^TC_TRG$'
   XSPI:
     # Extended-SPI flash memory interface (unified OCTOSPI/XSPI)
     # Families: H5, H7, H7RS, L5, N6, U3, U5 (L4P has different IP variants, stays family-specific)
@@ -1097,6 +1127,15 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^(SDMMC1|SDMMC2|SDMMC)$'
+      BUFFEND_TRG:
+        description: Buffer-end trigger (MDMA trigger source per RM0399 Table 105)
+        pattern: '^BUFFEND_TRG$'
+      CMDEND_TRG:
+        description: Command-end trigger
+        pattern: '^CMDEND_TRG$'
+      DATAEND_TRG:
+        description: Data-end trigger
+        pattern: '^DATAEND_TRG$'
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
     transforms:
       - type: patchFields
@@ -1443,6 +1482,9 @@ shared_blocks:
         pattern: '^(LCD_TFT|LTDC)$'
       ER:
         pattern: '^(LCD_TFT_1|LCD_TFT_ER|LCD_TFT_ERR|LTDC_ER)$'
+      LI_IT:
+        description: Line-interrupt event (line-compare match; routes to MDMA trigger per RM0399 Table 105 — distinct from the OR'd INTR going to NVIC)
+        pattern: '^LI_IT$'
     description: LCD-TFT Display Controller (standard 2-layer)
   ADF:
     # Audio Digital Filter: H7RS, N6, U3, U5
@@ -13435,6 +13477,24 @@ families:
           OVR:
             description: Request-line overrun event. Asserted by DMAMUX when more than one synchronized request fires before the previous was serviced. (Block shared between DMA and DMAMUX; for DMA instances this output is unwired — the per-stream STR<N> outputs carry interrupts.)
             pattern: '^DMAMUX\d+_OV(R)?$'
+          EVT6:
+            description: DMAMUX request-generator event 6 (routes to EXTI D3 pendclear input per RM0399 Table 104)
+            pattern: '^EVT6$'
+          EVT7:
+            description: DMAMUX request-generator event 7 (routes to EXTI D3 pendclear input per RM0399 Table 104)
+            pattern: '^EVT7$'
+          INTR:
+            description: Global interrupt (used by DMA2D instances; the DMA block is shared across DMA streams, DMAMUX, and DMA2D — the latter has a single combined interrupt rather than per-stream)
+            pattern: '^DMA2D$'
+          CLUT_TRG:
+            description: DMA2D CLUT load complete trigger (MDMA trigger source per RM0399 Table 105)
+            pattern: '^CLUT_TRG$'
+          TC_TRG:
+            description: DMA2D transfer-complete trigger
+            pattern: '^TC_TRG$'
+          TW_TRG:
+            description: DMA2D transfer-watermark trigger
+            pattern: '^TW_TRG$'
           STR0:
             pattern: '^DMA_STR0$'
           STR1:
@@ -13460,6 +13520,12 @@ families:
           INTR:
             description: Global interrupt (chapter-14 calls this 'dsi_it'). On H7 the chip-level NVIC vector is NMI-only; the signal also reaches EXTI.46 for low-power wake — the only chip-level destination we model today.
             pattern: '^DSI$'
+          TE_TRG:
+            description: Tearing-effect signal trigger (routes to MDMA per RM0399 Table 105)
+            pattern: '^TE_TRG$'
+          EOR_TRG:
+            description: End-of-refresh signal trigger
+            pattern: '^EOR_TRG$'
         transforms:
           - {type: renameRegisters, pattern: ^DSI_, replacement: ''}
         description: MIPI DSI host controller (Synopsys DesignWare)
@@ -13854,7 +13920,6 @@ families:
           # SOF (Start-of-Frame) routes to TIM ITR and CRS sync per Table 102.
           OTG1_HS_GLOBAL: {EP1_OUT: [NVIC.90], EP1_IN: [NVIC.91], WKUP: [NVIC.92, EXTI.43], INTR: [NVIC.93], SOF: [TIM2.ITR.5, TIM5.ITR.7, CRS.sync.2]}
           OTG2_HS_GLOBAL: {EP1_OUT: [NVIC.114], EP1_IN: [NVIC.115], WKUP: [NVIC.116, EXTI.44], INTR: [NVIC.117], SOF: [TIM2.ITR.6, TIM5.ITR.8, CRS.sync.3]}
-          SDMMC1: {INTR: [NVIC.65]}
           SDMMC2: {INTR: [NVIC.140]}
           # USART/UART DMAMUX1 request lines per RM0399 Table 106; EXTI wakeup
           # lines per Table 103. Standard USART/UART expose a single combined
@@ -13990,8 +14055,8 @@ families:
           LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18, HRTIM_Master.evt5.2, DAC.ch1_trg.10, DAC.ch2_trg.10, DFSDM.TRG.26]}
           LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0, HRTIM_Master.evt10.2, DAC.ch1_trg.11, DAC.ch2_trg.11, DFSDM.TRG.27]}
           LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20, LPTIM4.ext_trg.1, LPTIM5.ext_trg.1, DFSDM.TRG.28]}
-          LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52], OUT: [LPTIM3.ext_trg.2, LPTIM5.ext_trg.2]}
-          LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53], OUT: [LPTIM3.ext_trg.3, LPTIM4.ext_trg.3]}
+          LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52], OUT: [LPTIM3.ext_trg.2, LPTIM5.ext_trg.2, EXTI.d3_pendclear_in.2]}
+          LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53], OUT: [LPTIM3.ext_trg.3, LPTIM4.ext_trg.3, EXTI.d3_pendclear_in.3]}
           # RTC.WKUP additionally routes to TIM16.TI1 (Table 102 'WKUP_IT'
           # source name — same wakeup-timer interrupt output). Alarm A/B and
           # tamper events feed all 5 LPTIM ext_trg inputs uniformly per
@@ -14011,8 +14076,20 @@ families:
           #   WWDG1 (CM7 watchdog) and WWDG2 (CM4 watchdog) gain OUT_RST
           #     destinations on EXTI.82 / EXTI.84 — these wake the peer
           #     CPU before the window-watchdog reset fires.
-          DMAMUX2: {OVR: [NVIC.144, EXTI.74]}
-          DSIHOST: {INTR: [EXTI.46]}
+          # DMAMUX2: OVR interrupt + the two request-generator events that
+          # feed EXTI D3-pendclear inputs per RM0399 Table 104.
+          DMAMUX2: {OVR: [NVIC.144, EXTI.74], EVT6: [EXTI.d3_pendclear_in.0], EVT7: [EXTI.d3_pendclear_in.1]}
+          # MDMA trigger sources per RM0399 Table 105. DMA1/DMA2 stream
+          # transfer-complete signals double as MDMA stream-trigger inputs
+          # 0-15. Various display/codec/storage peripherals feed inputs 16-31.
+          DMA1:  {STR0: [NVIC.27, MDMA.str.0], STR1: [NVIC.28, MDMA.str.1], STR2: [NVIC.29, MDMA.str.2], STR3: [NVIC.30, MDMA.str.3], STR4: [NVIC.31, MDMA.str.4], STR5: [NVIC.32, MDMA.str.5], STR6: [NVIC.33, MDMA.str.6], STR7: [NVIC.63, MDMA.str.7]}
+          DMA2:  {STR0: [NVIC.72, MDMA.str.8], STR1: [NVIC.73, MDMA.str.9], STR2: [NVIC.74, MDMA.str.10], STR3: [NVIC.75, MDMA.str.11], STR4: [NVIC.76, MDMA.str.12], STR5: [NVIC.84, MDMA.str.13], STR6: [NVIC.85, MDMA.str.14], STR7: [NVIC.86, MDMA.str.15]}
+          LTDC:  {INTR: [NVIC.88], ER: [NVIC.89], LI_IT: [MDMA.str.16]}
+          JPEG:  {INTR: [NVIC.139], IFT_TRG: [MDMA.str.17], IFNT_TRG: [MDMA.str.18], OFT_TRG: [MDMA.str.19], OFNE_TRG: [MDMA.str.20], OEC_TRG: [MDMA.str.21]}
+          QUADSPI: {INTR: [NVIC.92], FT_TRG: [MDMA.str.22], TC_TRG: [MDMA.str.23]}
+          DMA2D: {INTR: [NVIC.106], CLUT_TRG: [MDMA.str.24], TC_TRG: [MDMA.str.25], TW_TRG: [MDMA.str.26]}
+          DSIHOST: {INTR: [EXTI.46], TE_TRG: [MDMA.str.27], EOR_TRG: [MDMA.str.28]}
+          SDMMC1: {INTR: [NVIC.65], DATAEND_TRG: [MDMA.str.29], BUFFEND_TRG: [MDMA.str.30], CMDEND_TRG: [MDMA.str.31]}
           WWDG1:   {INTR: [NVIC.16], OUT_RST: [EXTI.82]}
           WWDG2:   {INTR: [NVIC.16], OUT_RST: [EXTI.84]}
         # HSEM per-chip override: NVIC vector differs per CPU (CM7=141, CM4=142)
