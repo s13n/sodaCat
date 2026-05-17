@@ -13999,9 +13999,9 @@ families:
           # DFSDM trigger inputs per RM0399 Table 102.  Modelling the
           # GPIO-side upstream (pin -> mux input) is deferred — the mux
           # output is what fans out to non-EXTI destinations.
-          EXTI0:  {description: EXTI line 0 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI0)}
+          EXTI0:  {description: EXTI line 0 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI0). Also drives DMAMUX1 REQ_GEN trigger 6 and DMAMUX2 REQ_GEN trigger 20 per RM0399 Tables 106/107.}
           EXTI1:  {description: EXTI line 1 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI1)}
-          EXTI2:  {description: EXTI line 2 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI2)}
+          EXTI2:  {description: EXTI line 2 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI2). Also drives DMAMUX2 REQ_GEN trigger 21 per RM0399 Table 107.}
           EXTI3:  {description: EXTI line 3 mux output (GPIO port selected via SYSCFG.EXTICR1.EXTI3)}
           EXTI4:  {description: EXTI line 4 mux output (GPIO port selected via SYSCFG.EXTICR2.EXTI4)}
           EXTI5:  {description: EXTI line 5 mux output (GPIO port selected via SYSCFG.EXTICR2.EXTI5)}
@@ -14149,9 +14149,9 @@ families:
           # EXTI input line N; lines 9/11/15 additionally fan out to DAC,
           # DFSDM, and ADC trigger inputs.  The upstream GPIO-pin source
           # side is intentionally left implicit.
-          SYSCFG:  {EXTI0:  [EXTI.0],
+          SYSCFG:  {EXTI0:  [EXTI.0,  DMAMUX1.gen.6, DMAMUX2.gen.20],
                     EXTI1:  [EXTI.1],
-                    EXTI2:  [EXTI.2],
+                    EXTI2:  [EXTI.2,  DMAMUX2.gen.21],
                     EXTI3:  [EXTI.3],
                     EXTI4:  [EXTI.4],
                     EXTI5:  [EXTI.5],
@@ -14216,7 +14216,7 @@ families:
           # TIM12.TRGO feeds DMAMUX1's trigger generator slot 7 (Table 106).
           # TIM12-14 are GP timers; their CH<N> entries seed slot 0 of the
           # corresponding TI mux just like TIM1-8/15-17.
-          TIM12:   {TRGO: [DMAMUX1.trg.7], CH1: [TIM12.TI1.0], CH2: [TIM12.TI2.0]}
+          TIM12:   {TRGO: [DMAMUX1.gen.7], CH1: [TIM12.TI1.0], CH2: [TIM12.TI2.0]}
           TIM13:   {CH1: [TIM13.TI1.0]}
           TIM14:   {CH1: [TIM14.TI1.0]}
           # HRTIM1: 6 DMA requests (one per master+sub-timer) per Table 106.
@@ -14236,12 +14236,13 @@ families:
           # LPTIM.OUT additionally feeds LPTIM ext_trg inputs of other
           # LPTIM instances per Table 102 (LPTIM2/3/4/5 form a small
           # routing fabric where each instance's output can clock another).
-          # LPTIM additionally feeds DMAMUX trg/gen inputs per Table 106/107:
-          # LPTIM1/2/3.OUT → DMAMUX1.trg.3/4/5 (sync triggers for DMAMUX1);
+          # LPTIM additionally feeds DMAMUX request-generator trigger inputs
+          # per RM0399 Tables 106/107:
+          # LPTIM1/2/3.OUT → DMAMUX1.gen.3/4/5 (REQ_GEN trigger sources);
           # LPTIM2/3.{WKUP,OUT}, LPTIM4/5.WKUP → DMAMUX2.gen (D3-domain).
-          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18, HRTIM_Master.evt5.2, DAC.ch1_trg.10, DAC.ch2_trg.10, DFSDM.TRG.26, DMAMUX1.trg.3], IN1: [LPTIM1.in1_mux.0], IN2: [LPTIM1.in2_mux.0], ETR: [LPTIM1.ext_trg.0]}
-          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48, DMAMUX2.gen.9], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0, HRTIM_Master.evt10.2, DAC.ch1_trg.11, DAC.ch2_trg.11, DFSDM.TRG.27, DMAMUX1.trg.4, DMAMUX2.gen.10], IN1: [LPTIM2.in1_mux.0], IN2: [LPTIM2.in2_mux.0], ETR: [LPTIM2.ext_trg.0]}
-          LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50, DMAMUX2.gen.11], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20, LPTIM4.ext_trg.1, LPTIM5.ext_trg.1, DFSDM.TRG.28, DMAMUX1.trg.5, DMAMUX2.gen.12]}
+          LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47], OUT: [ADC1.ext_trg.18, ADC2.ext_trg.18, ADC1.jext_trg.18, ADC2.jext_trg.18, ADC3.ext_trg.18, ADC3.jext_trg.18, HRTIM_Master.evt5.2, DAC.ch1_trg.10, DAC.ch2_trg.10, DFSDM.TRG.26, DMAMUX1.gen.3], IN1: [LPTIM1.in1_mux.0], IN2: [LPTIM1.in2_mux.0], ETR: [LPTIM1.ext_trg.0]}
+          LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48, DMAMUX2.gen.9], OUT: [EXTI.49, ADC1.ext_trg.19, ADC2.ext_trg.19, ADC1.jext_trg.19, ADC2.jext_trg.19, ADC3.ext_trg.19, ADC3.jext_trg.19, LPTIM3.ext_trg.0, LPTIM4.ext_trg.0, LPTIM5.ext_trg.0, HRTIM_Master.evt10.2, DAC.ch1_trg.11, DAC.ch2_trg.11, DFSDM.TRG.27, DMAMUX1.gen.4, DMAMUX2.gen.10], IN1: [LPTIM2.in1_mux.0], IN2: [LPTIM2.in2_mux.0], ETR: [LPTIM2.ext_trg.0]}
+          LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50, DMAMUX2.gen.11], OUT: [EXTI.51, ADC1.ext_trg.20, ADC2.ext_trg.20, ADC1.jext_trg.20, ADC2.jext_trg.20, ADC3.ext_trg.20, ADC3.jext_trg.20, LPTIM4.ext_trg.1, LPTIM5.ext_trg.1, DFSDM.TRG.28, DMAMUX1.gen.5, DMAMUX2.gen.12]}
           LPTIM4:  {INTR: [NVIC.156], WKUP: [EXTI.52, DMAMUX2.gen.13], OUT: [LPTIM3.ext_trg.2, LPTIM5.ext_trg.2, EXTI.d3_pendclear_in.2]}
           LPTIM5:  {INTR: [NVIC.157], WKUP: [EXTI.53, DMAMUX2.gen.14], OUT: [LPTIM3.ext_trg.3, LPTIM4.ext_trg.3, EXTI.d3_pendclear_in.3]}
           # RTC.WKUP additionally routes to TIM16.TI1 (Table 102 'WKUP_IT'
@@ -14269,7 +14270,7 @@ families:
           # DMAMUX request generators: EVT<N> events feed back to the
           # DMAMUX's own trg/gen input <N> (request-generator self-loop;
           # Tables 106/107). DMAMUX2.EVT6 also reaches EXTI pendclear.
-          DMAMUX1: {EVT0: [DMAMUX1.trg.0], EVT1: [DMAMUX1.trg.1], EVT2: [DMAMUX1.trg.2]}
+          DMAMUX1: {EVT0: [DMAMUX1.gen.0], EVT1: [DMAMUX1.gen.1], EVT2: [DMAMUX1.gen.2]}
           DMAMUX2: {OVR: [NVIC.144, EXTI.74], EVT0: [DMAMUX2.gen.0], EVT1: [DMAMUX2.gen.1], EVT2: [DMAMUX2.gen.2], EVT3: [DMAMUX2.gen.3], EVT4: [DMAMUX2.gen.4], EVT5: [DMAMUX2.gen.5], EVT6: [EXTI.d3_pendclear_in.0, DMAMUX2.gen.6], EVT7: [EXTI.d3_pendclear_in.1]}
           # MDMA trigger sources per RM0399 Table 105. DMA1/DMA2 stream
           # transfer-complete signals double as MDMA stream-trigger inputs
