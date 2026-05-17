@@ -13612,10 +13612,12 @@ families:
         # plus CAN_CCU.  Neither matches the silicon block topology.  We
         # model the subsystem here as one umbrella block: FDCAN1's register
         # set (superset including TTCAN) wrapped into a dim=2 cluster array
-        # `chan[%s]` at offset 0 (stride 0x400) covering both channels, and
-        # CAN_CCU's register set embedded as cluster `CCU` at offset 0x800.
-        # Message RAM is still a follow-up.  H7A3_B keeps its legacy
-        # single-channel layout via a variant.
+        # `chan[%s]` at offset 0 (stride 0x400) covering both channels,
+        # CAN_CCU's register set embedded as cluster `CCU` at offset 0x800,
+        # and the 10 KB shared message RAM as a uint32 array `MSGRAM[%s]`
+        # at offset 0xC00 (one buffer for the whole subsystem; drivers carve
+        # per-channel sections via the FDCAN allocation registers).  H7A3_B
+        # keeps its legacy single-channel layout via a variant.
         from: STM32H745_CM7.FDCAN1
         instances: [FDCAN1]
         rename_instances: {FDCAN1: FDCAN}
@@ -13640,10 +13642,29 @@ families:
           TMP:
             description: TTCAN timestamp output (Table 102 lists the source as 'CAN' / 'TMP' → ETH PTP3; physically originates from channel 1, the only TT-capable channel)
         transforms:
-          - {type: patchAddressBlock, size: 3072}
+          - {type: patchAddressBlock, size: 13312}
           - {type: wrapInClusterArray, name: chan, dim: 2, dimIncrement: 0x400, description: 'FDCAN channel (FDCAN1 supports TTCAN; FDCAN2 lacks TT registers - they are present but unused on slot 1)'}
           - {type: embedRegistersAsCluster, source: CAN_CCU, name: CCU, addressOffset: 0x800, description: 'CAN_CCU clock-calibration unit shared by both channels (one per FDCAN subsystem)'}
-        description: Controller area network with flexible data-rate (FDCAN subsystem - 2 channels + CCU, Bosch M_CAN with TT support)
+          # Shared 10 KB FDCAN message RAM (RM0399 §56.4.2).  Modeled as a
+          # raw uint32 array because the structure is software-defined: the
+          # driver carves per-channel sections (Std/Ext filter lists, Rx
+          # FIFO 0/1, Rx Buffers, Tx event FIFO, Tx Buffers) via the FDCAN
+          # allocation registers (SIDFC, XIDFC, RXF0C, RXF1C, RXBC, TXEFC,
+          # TXBC).  Volatility propagates from the surrounding
+          # `HwPtr<struct FDCAN volatile>`, so the bare `uint32_t[]`
+          # elements still get volatile-qualified access when reached
+          # through the registers pointer.
+          - type: patchRegisters
+            registers:
+              - name: MSGRAM[%s]
+                description: Shared FDCAN message RAM (10 KB, 2560 32-bit words). Drivers carve per-channel sections via FDCAN.chan[i] allocation registers.
+                addressOffset: 0xC00
+                size: 32
+                access: read-write
+                resetValue: 0
+                dim: 2560
+                dimIncrement: 4
+        description: Controller area network with flexible data-rate (FDCAN subsystem - 2 channels + CCU + 10KB message RAM, Bosch M_CAN with TT support)
         variants:
           H7A3_B:
             # H7A3 SVD names channel 1 = TT_FDCAN and channel 2 = FDCAN.  The
