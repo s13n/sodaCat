@@ -13349,6 +13349,18 @@ families:
           FLT3_DMA:
             description: DMA request for filter 3 output
             pattern: '^FLT3_DMA$'
+          BREAK0:
+            description: Filter 0 break event (signal-out-of-window). Routes to TIM brake inputs per RM0399 Table 102.
+            pattern: '^BREAK0$'
+          BREAK1:
+            description: Filter 1 break event. Routes to TIM brake inputs per RM0399 Table 102.
+            pattern: '^BREAK1$'
+          BREAK2:
+            description: Filter 2 break event. Routes to TIM brake inputs per RM0399 Table 102.
+            pattern: '^BREAK2$'
+          BREAK3:
+            description: Filter 3 break event. Routes to TIM brake inputs per RM0399 Table 102.
+            pattern: '^BREAK3$'
       DLYB:
         uses: DLYB
         instances: [DELAY_Block_SDMMC1, DELAY_Block_SDMMC2, DELAY_Block_QUADSPI, Delay_Block_OCTOSPI1, Delay_Block_OCTOSPI2]
@@ -13808,7 +13820,15 @@ families:
           HASH:    {IN_DMA: [DMAMUX1.78]}
           SPDIFRX: {DT_DMA: [DMAMUX1.93], CS_DMA: [DMAMUX1.94]}
           # Chapter 14 calls this 'DFSDM1' but the chip instance is named 'DFSDM'.
-          DFSDM:   {FLT0_DMA: [DMAMUX1.101], FLT1_DMA: [DMAMUX1.102], FLT2_DMA: [DMAMUX1.103], FLT3_DMA: [DMAMUX1.104]}
+          # The break outputs feed TIM brake inputs per Table 102. ST writes
+          # the source signal inconsistently — 'dfsdm1_break<N>' on some rows
+          # and 'dfsdm_break<N>' on others, but they refer to the same per-
+          # filter signals. Each break has two TIM-brake destinations:
+          # BREAK0 → TIM1.BRK.3 + TIM15.BRK.3 (filter 0)
+          # BREAK1 → TIM1.BRK2.3 + TIM16.BRK.3 (filter 1)
+          # BREAK2 → TIM8.BRK.3 + TIM17.BRK.3 (filter 2)
+          # BREAK3 → TIM8.BRK2.3 (filter 3; only one destination)
+          DFSDM:   {FLT0_DMA: [DMAMUX1.101], FLT1_DMA: [DMAMUX1.102], FLT2_DMA: [DMAMUX1.103], FLT3_DMA: [DMAMUX1.104], BREAK0: [TIM1.BRK.3, TIM15.BRK.3], BREAK1: [TIM1.BRK2.3, TIM16.BRK.3], BREAK2: [TIM8.BRK.3, TIM17.BRK.3], BREAK3: [TIM8.BRK2.3]}
           SWPMI:   {TX_DMA: [DMAMUX1.92], RX_DMA: [DMAMUX1.91], WKUP: [EXTI.54]}
           # Additional EXTI destinations on existing interrupt/wakeup outputs
           # per RM0399 Table 103. The D3-domain peripherals' interrupt signals
@@ -13859,7 +13879,9 @@ families:
           # COMP1.OUT also feeds TIM1/TIM2/TIM3/TIM8 ETR1 per Table 102
           # (the comparator output can clock or trigger timers; COMP2 is not
           # on H745_H757 so its analogous TIM ETR2 entries are absent).
-          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1]}
+          # COMP1.OUT additionally feeds TIM brake inputs (BRK / BRK2 ports
+          # on TIM1/TIM8/TIM15/TIM16/TIM17) per Table 102.
+          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1]}
           LPTIM1:  {INTR: [NVIC.109], WKUP: [EXTI.47]}
           LPTIM2:  {INTR: [NVIC.154], WKUP: [EXTI.48], OUT: [EXTI.49]}
           LPTIM3:  {INTR: [NVIC.155], WKUP: [EXTI.50], OUT: [EXTI.51]}
