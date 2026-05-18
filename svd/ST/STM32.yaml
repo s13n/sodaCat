@@ -3810,6 +3810,18 @@ families:
             pattern: '^EXTI15_10$'
           FPU:
             pattern: '^FPU$'
+          # COMP-shared interrupt vectors.  Per RM0440 Table 101 the COMP
+          # outputs reach NVIC via EXTI lines 21/22/29/30/31/32/33; the
+          # NVIC line sharing happens AFTER EXTI (lines 21/22/29 → COMP1_2_3
+          # vector; 30/31/32 → COMP4_5_6; 33 → COMP7).  The SVD attaches
+          # these vectors to the COMP peripheral but that's not where they
+          # logically belong — chip_connections injects them on EXTI here.
+          INTR_COMP1_2_3:
+            description: COMP1/2/3 fan-in NVIC vector (from EXTI lines 21, 22, 29)
+          INTR_COMP4_5_6:
+            description: COMP4/5/6 fan-in NVIC vector (from EXTI lines 30, 31, 32)
+          INTR_COMP7:
+            description: COMP7 NVIC vector (from EXTI line 33)
       FDCAN:
         uses: FDCAN
         instances: [FDCAN, FDCAN1, FDCAN2, FDCAN3]
@@ -3980,6 +3992,25 @@ families:
       G4xx:
         _all:
           HRTIM: {MST: [NVIC.83], TIMA: [NVIC.84], TIMB: [NVIC.85], TIMC: [NVIC.86], TIMD: [NVIC.87], TIME: [NVIC.88], FLT: [NVIC.89], TIMF: [NVIC.90]}
+          # EXTI block: re-attach the COMP-shared NVIC vectors that SVD
+          # erroneously hangs on the COMP peripheral.  Per RM0440 the comp
+          # outputs reach NVIC via EXTI lines 21/22/29/30/31/32/33; line
+          # sharing happens after EXTI.  Vec 80 = COMP1_2_3; 81 = COMP4_5_6;
+          # 82 = COMP7 (SVD values 64/65/66 + Cortex-M interruptOffset 16).
+          EXTI: {INTR_COMP1_2_3: [NVIC.80], INTR_COMP4_5_6: [NVIC.81], INTR_COMP7: [NVIC.82]}
+          # COMP destinations per RM0440 ch.11 (Tables 69, 75, 76, 81, 82),
+          # Table 101 (EXTI line assignment), and Table 223 (HRTIM event
+          # router source slots — HRTIM destinations only resolve on chips
+          # that have HRTIM: G473 / G474 / G483 / G484; they're silently
+          # dropped on chips without HRTIM).  COMP5/6/7 entries similarly
+          # only resolve on chips that have those comparators (G47x/G48x).
+          COMP1: {OUT: [TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM4.ETR.1, TIM5.ETR.1, TIM8.ETR.1, TIM20.ETR.1, TIM1.ocref_clr.0, TIM2.ocref_clr.0, TIM3.ocref_clr.0, TIM8.ocref_clr.0, TIM15.ocref_clr.0, TIM16.ocref_clr.0, TIM17.ocref_clr.0, TIM20.ocref_clr.0, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM20.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM20.BRK2.1, LPTIM1.ext_trg.6, EXTI.21, HRTIM.evt4_2, HRTIM.evt6_4]}
+          COMP2: {OUT: [TIM1.ETR.2, TIM2.ETR.2, TIM3.ETR.2, TIM4.ETR.2, TIM5.ETR.2, TIM8.ETR.2, TIM20.ETR.2, TIM1.ocref_clr.1, TIM2.ocref_clr.1, TIM3.ocref_clr.1, TIM8.ocref_clr.1, TIM15.ocref_clr.1, TIM16.ocref_clr.1, TIM17.ocref_clr.1, TIM20.ocref_clr.1, TIM1.BRK.2, TIM8.BRK.2, TIM15.BRK.2, TIM16.BRK.2, TIM17.BRK.2, TIM20.BRK.2, TIM1.BRK2.2, TIM8.BRK2.2, TIM20.BRK2.2, LPTIM1.ext_trg.7, EXTI.22, HRTIM.evt1_2, HRTIM.evt6_2]}
+          COMP3: {OUT: [TIM1.ETR.3, TIM2.ETR.3, TIM3.ETR.3, TIM4.ETR.3, TIM5.ETR.3, TIM8.ETR.3, TIM20.ETR.3, TIM1.ocref_clr.2, TIM2.ocref_clr.2, TIM3.ocref_clr.2, TIM8.ocref_clr.2, TIM15.ocref_clr.2, TIM16.ocref_clr.2, TIM17.ocref_clr.2, TIM20.ocref_clr.2, TIM1.BRK.3, TIM8.BRK.3, TIM15.BRK.3, TIM16.BRK.3, TIM17.BRK.3, TIM20.BRK.3, TIM1.BRK2.3, TIM8.BRK2.3, TIM20.BRK2.3, LPTIM1.ext_trg.8, EXTI.29, HRTIM.evt5_2, HRTIM.evt8_4]}
+          COMP4: {OUT: [TIM1.ETR.4, TIM2.ETR.4, TIM3.ETR.4, TIM4.ETR.4, TIM5.ETR.4, TIM8.ETR.4, TIM20.ETR.4, TIM1.ocref_clr.3, TIM2.ocref_clr.3, TIM3.ocref_clr.3, TIM8.ocref_clr.3, TIM15.ocref_clr.3, TIM16.ocref_clr.3, TIM17.ocref_clr.3, TIM20.ocref_clr.3, TIM1.BRK.4, TIM8.BRK.4, TIM15.BRK.4, TIM16.BRK.4, TIM17.BRK.4, TIM20.BRK.4, TIM1.BRK2.4, TIM8.BRK2.4, TIM20.BRK2.4, LPTIM1.ext_trg.9, EXTI.30, HRTIM.evt2_2, HRTIM.evt7_2, HRTIM.evt9_4]}
+          COMP5: {OUT: [TIM1.ETR.5, TIM2.ETR.5, TIM3.ETR.5, TIM4.ETR.5, TIM5.ETR.5, TIM8.ETR.5, TIM20.ETR.5, TIM1.ocref_clr.4, TIM2.ocref_clr.4, TIM3.ocref_clr.4, TIM8.ocref_clr.4, TIM15.ocref_clr.4, TIM16.ocref_clr.4, TIM17.ocref_clr.4, TIM20.ocref_clr.4, TIM1.BRK.5, TIM8.BRK.5, TIM15.BRK.5, TIM16.BRK.5, TIM17.BRK.5, TIM20.BRK.5, TIM1.BRK2.5, TIM8.BRK2.5, TIM20.BRK2.5, LPTIM1.ext_trg.10, EXTI.31, HRTIM.evt4_4, HRTIM.evt9_2]}
+          COMP6: {OUT: [TIM1.ETR.6, TIM2.ETR.6, TIM3.ETR.6, TIM4.ETR.6, TIM5.ETR.6, TIM8.ETR.6, TIM20.ETR.6, TIM1.ocref_clr.5, TIM2.ocref_clr.5, TIM3.ocref_clr.5, TIM8.ocref_clr.5, TIM15.ocref_clr.5, TIM16.ocref_clr.5, TIM17.ocref_clr.5, TIM20.ocref_clr.5, TIM1.BRK.6, TIM8.BRK.6, TIM15.BRK.6, TIM16.BRK.6, TIM17.BRK.6, TIM20.BRK.6, TIM1.BRK2.6, TIM8.BRK2.6, TIM20.BRK2.6, LPTIM1.ext_trg.11, EXTI.32, HRTIM.evt3_2, HRTIM.evt8_2]}
+          COMP7: {OUT: [TIM1.ETR.7, TIM2.ETR.7, TIM3.ETR.7, TIM4.ETR.7, TIM5.ETR.7, TIM8.ETR.7, TIM20.ETR.7, TIM1.ocref_clr.6, TIM2.ocref_clr.6, TIM3.ocref_clr.6, TIM8.ocref_clr.6, TIM15.ocref_clr.6, TIM16.ocref_clr.6, TIM17.ocref_clr.6, TIM20.ocref_clr.6, TIM1.BRK.7, TIM8.BRK.7, TIM15.BRK.7, TIM16.BRK.7, TIM17.BRK.7, TIM20.BRK.7, TIM1.BRK2.7, TIM8.BRK2.7, TIM20.BRK2.7, LPTIM1.ext_trg.12, EXTI.33, HRTIM.evt5_4, HRTIM.evt10_2]}
   H5:
     svd:
       zip: stm32h5-svd.zip

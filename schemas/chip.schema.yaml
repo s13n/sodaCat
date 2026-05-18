@@ -108,9 +108,16 @@ definitions:
         description: |
           Wiring map from each block-declared output signal name to the
           list of destinations the chip routes it to.  A destination is
-          a dotted "instance.input" string identifying the consumer
-          instance (NVIC, DMAMUX, EXTI, ...) and its input port.  The
-          same signal may have multiple destinations (e.g. a dual-CPU
+          one of three shapes:
+            <target>.<int>            integer port (NVIC vector, DMAMUX
+                                      request slot, EXTI line, ...)
+            <target>.<port>.<int>     sub-port + integer slot (TIM2.ITR.0,
+                                      ADC1.ext_trg.9, COMP1.comp_blk.4, ...)
+            <target>.<input_name>     named input slot (HRTIM_Master.bm_ck1)
+                                      — checked against the destination
+                                      block's `inputs:` list by
+                                      validate_chip_connections.py.
+          The same signal may have multiple destinations (e.g. a dual-CPU
           chip wires one wakeup signal to both cores' NVICs).  Signal
           names must appear in the referenced block model's `outputs:`
           declaration; unconnected outputs are omitted from the map (not
@@ -119,7 +126,7 @@ definitions:
           type: array
           items:
             type: string
-            pattern: ^[A-Za-z0-9_]+\.[A-Za-z0-9_]+$
+            pattern: ^[A-Za-z0-9_]+\.[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)?$
       parameters:
         type: array
         items:
