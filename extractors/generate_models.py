@@ -62,6 +62,8 @@ def _parse_block_cfg(block_cfg):
         entry['variants'] = {k: dict(v) for k, v in block_cfg['variants'].items()}
     if block_cfg.get('rename_instances') is not None:
         entry['rename_instances'] = dict(block_cfg['rename_instances'])
+    if block_cfg.get('split_into_instances') is not None:
+        entry['split_into_instances'] = dict(block_cfg['split_into_instances'])
     if block_cfg.get('description'):
         entry['description'] = block_cfg['description']
     if block_cfg.get('designer'):
@@ -632,6 +634,71 @@ def _patch_registers(registers, reg_patches):
                 registers.remove(existing)
             else:
                 print(f"  WARNING: patchRegisters: register '{name}' not found")
+
+
+def _apply_split_collapse(block_data, split_cfg):
+    """Collapse a block's per-channel registers into one canonical register.
+
+    When a block carries `split_into_instances`, the SVD's single peripheral
+    is going to be emitted as N chip instances (one per channel, each at its
+    own strided base address — see Pass 3).  At the block-model level this
+    means the block itself is the *single-channel* shape: one canonical
+    register (e.g. CSR) at offset 0, with the per-channel C1CSR / C2CSR /
+    ... originals all collapsed into it.  Each chip instance then accesses
+    its channel via its own base address rather than its own register.
+
+    Matching registers are sorted by their parsed channel index (regex
+    group 1), and the lowest-index match becomes the template: renamed to
+    `canonical_register`, its addressOffset reset to 0.  Higher-index
+    matches drop out — they're assumed to be identical-shape duplicates,
+    which they are for the G4 COMP case this feature targets.  Non-matching
+    registers (block-level shared registers, if any) are preserved at
+    their original offsets; they'll appear in every instance.
+
+    Also shrinks the addressBlocks size of `usage: registers` blocks to
+    span only the surviving registers — otherwise the block would over-
+    declare its memory footprint and consumers would see N×stride bytes
+    where only one register worth exists per instance.
+    """
+    if not split_cfg:
+        return
+    pat = re.compile(split_cfg['pattern'])
+    canonical = split_cfg.get('canonical_register') or 'CSR'
+    regs = block_data.get('registers', []) or []
+    matches = []
+    others = []
+    for r in regs:
+        m = pat.match(r.get('name', ''))
+        if m:
+            try:
+                idx = int(m.group(1))
+            except (ValueError, IndexError):
+                others.append(r)
+                continue
+            matches.append((idx, r))
+        else:
+            others.append(r)
+    if not matches:
+        return
+    matches.sort(key=lambda t: t[0])
+    template = matches[0][1]
+    template['name'] = canonical
+    if 'displayName' in template:
+        template['displayName'] = canonical
+    template['addressOffset'] = 0
+    block_data['registers'] = others + [template]
+
+    # Recompute addressBlock size to span only surviving registers.
+    def _reg_extent(r):
+        off = r.get('addressOffset', 0)
+        if isinstance(off, str):
+            off = int(off, 0)
+        size_bits = r.get('size', 32)
+        return off + (size_bits >> 3)
+    extent = max((_reg_extent(r) for r in block_data['registers']), default=4)
+    for ab in (block_data.get('addressBlocks') or []):
+        if ab.get('usage') == 'registers':
+            ab['size'] = extent
 
 
 def _apply_transforms(block_data, transforms, audit=False, block_name='',
@@ -1969,14 +2036,44 @@ def main():
                 # Save lightweight chip summary for Pass 3 (chip model generation)
                 if chip_device:
                     periph_summary = {}
+                    # Build instance-to-block map once for split-detection below;
+                    # the same map is rebuilt in Pass 3 but this Pass-1 copy lets
+                    # us capture per-chip channel counts for splittable blocks
+                    # while we have the SVD register list in scope.
+                    inst_to_block_p1 = _build_instance_to_block(blocks_config, family_name)
                     for periph in chip_device.get('peripherals', []):
-                        periph_summary[periph['name']] = {
+                        entry = {
                             'baseAddress': periph.get('baseAddress'),
                             'interrupts': [
                                 {'name': i['name'], 'value': i['value']}
                                 for i in periph.get('interrupts', [])
                             ]
                         }
+                        # If this peripheral's block is configured to split into
+                        # N chip instances (one per per-channel register), record
+                        # the per-channel (index, addressOffset) tuples so Pass 3
+                        # can synthesize the right number of instances at the
+                        # right base addresses.  Per-chip because the channel
+                        # count varies (e.g. G431 COMP has 4, G474 COMP has 7).
+                        bt = inst_to_block_p1.get(periph['name'])
+                        split_cfg = (blocks_config.get(bt) or {}).get('split_into_instances') if bt else None
+                        if split_cfg:
+                            pat = re.compile(split_cfg['pattern'])
+                            channels = []
+                            for reg in periph.get('registers', []):
+                                m = pat.match(reg['name'])
+                                if m:
+                                    try:
+                                        idx = int(m.group(1))
+                                    except (ValueError, IndexError):
+                                        continue
+                                    off = reg.get('addressOffset', 0)
+                                    if isinstance(off, str):
+                                        off = int(off, 0)
+                                    channels.append((idx, off))
+                            channels.sort()
+                            entry['_split_channels'] = channels
+                        periph_summary[periph['name']] = entry
                     summary = {
                         'device_meta': {
                             'name': chip_device.get('name'),
@@ -2145,6 +2242,11 @@ def main():
                         block_data, transforms, audit=args.audit,
                         block_name=f"{block_name} ({fam_name})",
                         sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
+                split_cfg = resolved.get('split_into_instances')
+                if split_cfg:
+                    if transforms is None:
+                        block_data = copy.deepcopy(block_data)
+                    _apply_split_collapse(block_data, split_cfg)
                 block_data = _inject_params(block_data, block_cfg.get('params'))
                 block_data = _inject_source(block_data, _format_block_source(entry))
                 _strip_instance_prefix_from_descriptions(
@@ -2171,6 +2273,11 @@ def main():
                     block_data, transforms, audit=args.audit,
                     block_name=block_name,
                     sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
+            split_cfg = block_cfg.get('split_into_instances')
+            if split_cfg:
+                if transforms is None:
+                    block_data = copy.deepcopy(block_data)
+                _apply_split_collapse(block_data, split_cfg)
             block_data = _inject_params(block_data, block_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
             _strip_instance_prefix_from_descriptions(
@@ -2316,6 +2423,70 @@ def main():
                 block_type = instance_to_block.get(inst_name)
                 if not block_type:
                     continue  # Unmodeled peripheral
+
+                # split_into_instances: one SVD peripheral fans out into N
+                # chip instances, each at its own strided base address.
+                # Used when the SVD packs N independent single-channel
+                # blocks into one peripheral (e.g. G4 COMP, where C1CSR /
+                # C2CSR / ... are independent comparator registers at
+                # adjacent offsets that the silicon treats as separate
+                # comparators, not bitfields of a multi-channel block).
+                # Per-channel registers were already collapsed in Pass 2
+                # (the block model is the single-channel shape); here we
+                # just synthesise the N chip-side instance entries.
+                split_cfg = (blocks_config.get(block_type) or {}).get('split_into_instances')
+                if split_cfg:
+                    channels = periph.get('_split_channels') or []
+                    if not channels:
+                        continue  # No matching registers found this chip — skip silently
+                    template = split_cfg.get('instance_name') or f"{inst_name}{{n}}"
+                    base = periph['baseAddress']
+                    model_name = block_model_names.get(block_type, block_type)
+                    param_decls = _get_param_decls(
+                        block_type, blocks_config, shared_blocks, subfamily_name)
+                    intr_order = (
+                        model_interrupt_order.get((block_type, subfamily_name))
+                        or model_interrupt_order.get(model_name)
+                        or model_interrupt_order.get(block_type, []))
+                    for idx, off in channels:
+                        split_name = template.replace('{n}', str(idx))
+                        if split_name in excluded_instances:
+                            continue
+                        # Per-instance chip_connections lookup keyed by the
+                        # synthesized instance name.  SVD-attached interrupts
+                        # on the original peripheral are NOT carried over —
+                        # for split blocks the NVIC routing (where it shares
+                        # vectors across channels) is the chip-level concern
+                        # of the EXTI block that the comparators drive.
+                        conn_overrides = _resolve_chip_connections(
+                            chip_connections, subfamily_name, chip_name,
+                            split_name, block_type) or {}
+                        connections_map = {n: list(d) for n, d in conn_overrides.items()}
+                        if intr_order and connections_map:
+                            order_map = {n: i for i, n in enumerate(intr_order)}
+                            connections_map = dict(sorted(
+                                connections_map.items(),
+                                key=lambda kv: order_map.get(kv[0], len(order_map))))
+                        params_list = []
+                        for param in param_decls:
+                            default = param.get('default')
+                            value = _resolve_chip_param(
+                                chip_params, subfamily_name, chip_name,
+                                split_name, block_type, param['name'],
+                                default=default)
+                            if value is None or value == default:
+                                continue
+                            params_list.append({'name': param['name'], 'value': value})
+                        inst_entry = {
+                            'baseAddress': base + off,
+                            'model': model_name,
+                        }
+                        if connections_map:
+                            inst_entry['connections'] = connections_map
+                        if params_list:
+                            inst_entry['parameters'] = params_list
+                        instances[split_name] = inst_entry
+                    continue  # Done with this peripheral
 
                 # Resolve canonical instance name (block may rename SVD-named
                 # instances — e.g. H7 ETH block renames Ethernet_MAC -> ETH so

@@ -3730,28 +3730,27 @@ families:
           INTR:
             pattern: '^(TIM6_DACUNDER|TIM3|TIM9)$'
       COMP:
+        # G4 silicon packages each comparator as an independent single-channel
+        # block (each has its own register C<N>CSR, its own input mux, its
+        # own output).  The SVD groups all of them in one 'COMP' peripheral
+        # at a single base address with adjacent C<N>CSR registers, but
+        # that's a packaging convenience, not the silicon shape.  We model
+        # them properly: the COMP block is single-channel (one CSR), and
+        # split_into_instances synthesises N chip-side instances COMP1..N
+        # at strided base addresses.  Per-chip channel count varies
+        # (G431-class: 4; G47x/G48x: 7).  The shared NVIC vectors
+        # COMP1_2_3 / COMP4_5_6 / COMP7 don't belong here — interrupts go
+        # via EXTI lines per chip and the EXTI block's outputs handle the
+        # NVIC routing.
         from: STM32G431.COMP
         instances: [COMP]
-        # G4 COMP hosts multiple comparator channels per block (C1CSR..C4CSR in
-        # G431 block model; G473/G474/G483/G484 silicon has 7 channels — the
-        # block model is sourced from G431 and so under-models those chips,
-        # a separate gap from this dual-output split).  Three NVIC vectors
-        # are shared across the channels.
+        split_into_instances:
+          pattern: '^C(\d+)CSR$'
+          instance_name: 'COMP{n}'
+          canonical_register: CSR
         outputs:
-          INTR1_2_3:
-            pattern: '^COMP1_2_3$'
-          INTR4_5_6:
-            pattern: '^COMP4_5_6$'
-          INTR7:
-            pattern: '^COMP7$'
-          OUT1:
-            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and HRTIM/EXTI per RM0440 ch.11)
-          OUT2:
-            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and HRTIM/EXTI per RM0440 ch.11)
-          OUT3:
-            description: Comparator channel 3 output (routes to TIM/LPTIM trigger crossbars and HRTIM/EXTI per RM0440 ch.11)
-          OUT4:
-            description: Comparator channel 4 output (routes to TIM/LPTIM trigger crossbars and HRTIM/EXTI per RM0440 ch.11)
+          OUT:
+            description: Comparator output (routes to TIM/LPTIM trigger crossbars, HRTIM event router, and an EXTI line per RM0440 ch.11)
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
