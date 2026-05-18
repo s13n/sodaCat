@@ -181,7 +181,8 @@ shared_blocks:
     # + Common (36 regs). G4 superset (6 timers, FLTINR3/4, ADC post-scaler).
     # Families: F3, G4, H7. Model is hand-maintained (no from:).
     params:
-      - {name: timers, type: int, default: 5, description: 'Number of timer units (5=A-E, 6=A-F)'}
+      - {name: dll, type: bool, default: true, description: 'DLL (delay-locked loop) present (V1.0/V2.0); absent in V1.1'}
+      - {name: v2,  type: bool, default: false, description: 'Version 2.0 block (adds sixth timer F, extended fault/ADC registers)'}
     outputs:
       MST:
         pattern: '^(HRTIM1_MST|HRTIM_Master_IRQn)$'
@@ -3899,7 +3900,7 @@ families:
           TIM4: {encoder: 1, sms_preload: 2}
           LPTIM: {has_repetition: false, has_cfgr2: false, or_type: 2}
           SAI: {has_gcr: false, has_pdm: true, has_mcken: true}
-          HRTIM_Master: {timers: 6}
+          HRTIM_Master: {v2: true}
           FMC: {pcscntr: true}
       G4xx:
         STM32G431:
@@ -14374,6 +14375,7 @@ families:
           SDMMC1: {has_ckin: true, has_dir: true}
           OTG_HS: {gccfg: 1, max_in_endpoint: 7, max_out_endpoint: 7}
           FMC: {sdram: true}
+          HRTIM_Master: {dll: false}  # H7 HRTIM is V1.1 per AN4539 — DLL removed
       H742_H753:
         _all:
           DFSDM: {has_dlyr: false}
