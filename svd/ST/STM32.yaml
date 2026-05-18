@@ -3513,7 +3513,7 @@ families:
         from: STM32G051.COMP
         instances: [COMP]
         transforms:
-          - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
       CRC:
         uses: CRC
         instances: [CRC]
@@ -3827,7 +3827,7 @@ families:
         from: STM32G431.OPAMP
         instances: [OPAMP]
         transforms:
-          - {type: renameRegisters, pattern: ^OPAMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^OPAMP(\d+)_(.+)$', replacement: '\2\1'}
       PWR:
         from: STM32G431.PWR
         instances: [PWR]
@@ -13702,6 +13702,21 @@ families:
             # umbrella restructure isn't applied here yet — keep legacy
             # single-channel modeling until a future session restructures it
             # symmetrically.
+            #
+            # SVD bug: the H7A3 SVD attaches ALL 5 FDCAN interrupts (both
+            # channels' IT0/IT1 plus FDCAN_CAL) to the channel-2 peripheral
+            # (FDCAN); the channel-1 peripheral (TT_FDCAN) carries none.  The
+            # umbrella IT0_CH1/IT1_CH1 patterns at the family level resolve
+            # the SVD raws FDCAN1_IT0/FDCAN1_IT1 to those canonicals first
+            # (family entries beat variant entries in `_build_outputs_decl`),
+            # so they land on FDCAN2's canonical map rather than on FDCAN1
+            # where they belong.  The wires are wrong (FDCAN2 ends up with
+            # FDCAN1's interrupts as IT0_CH1/IT1_CH1) but the destinations
+            # do point at the correct NVIC vectors.  Declaring IT0_CH1 /
+            # IT1_CH1 as pattern-less variant outputs accepts the wiring at
+            # validation time without inviting them to capture new SVD raws.
+            # TODO: redo H7A3_B FDCAN as the umbrella block; redistribute
+            # interrupts to the correct instances via chip_connections.
             from: STM32H7A3.TT_FDCAN
             instances: [TT_FDCAN, FDCAN]
             rename_instances: {TT_FDCAN: FDCAN1, FDCAN: FDCAN2}
@@ -13712,6 +13727,10 @@ families:
                 pattern: '^(FDCAN2_IT1|FDCAN1_IT1)$'
               IT0:
                 pattern: '^(FDCAN2_IT0|FDCAN1_IT0)$'
+              IT0_CH1:
+                description: Misattributed FDCAN1 IT0 — see TODO above
+              IT1_CH1:
+                description: Misattributed FDCAN1 IT1 — see TODO above
             transforms: []
             description: Controller area network with flexible data-rate (Bosch M_CAN)
       FDCAN3:
@@ -15198,7 +15217,7 @@ families:
         from: STM32L412.COMP
         instances: [COMP]
         transforms:
-          - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
@@ -15496,7 +15515,7 @@ families:
         from: STM32L4P5.COMP
         instances: [COMP]
         transforms:
-          - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
@@ -15770,7 +15789,7 @@ families:
         from: STM32L552.COMP
         instances: [COMP]
         transforms:
-          - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
@@ -15900,11 +15919,6 @@ families:
       LPTIM:
         uses: LPTIM
         instances: [LPTIM1, LPTIM2, LPTIM3]
-        outputs:
-          INTR:
-            pattern: '^LPTIM1$'
-          INTR2:
-            pattern: '^LPTIM2$'
       LPUART:
         uses: USART
         instances: [LPUART1]
@@ -15982,6 +15996,16 @@ families:
       WWDG:
         uses: WWDG
         instances: [WWDG]
+    chip_connections:
+      _all:
+        _all:
+          # SVD bug (L552 / L562 v1.0): the LPTIM1 peripheral lists both the
+          # LPTIM1 interrupt (vec 67 → NVIC.83) AND the LPTIM2 interrupt
+          # (vec 68 → NVIC.84), while the LPTIM2 peripheral has no
+          # interrupts at all.  Per RM0438 LPTIM1's IRQ is at vector 83 and
+          # LPTIM2's at 84; move LPTIM2's IRQ to its correct instance.
+          LPTIM1: {INTR: [NVIC.83]}
+          LPTIM2: {INTR: [NVIC.84]}
     chip_params:
       _all:
         _all:
@@ -16434,7 +16458,7 @@ families:
         from: STM32U083.COMP
         instances: [COMP, COMP1]
         transforms:
-          - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
       CRC:
         uses: CRC
         instances: [CRC]
@@ -16618,7 +16642,7 @@ families:
         from: STM32U375.COMP
         instances: [COMP]
         transforms:
-          - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
@@ -16876,7 +16900,7 @@ families:
         from: STM32U535.COMP
         instances: [COMP]
         transforms:
-          - {type: renameRegisters, pattern: ^COMP\d+_, replacement: ''}
+          - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
