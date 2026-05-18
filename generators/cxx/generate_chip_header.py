@@ -176,12 +176,14 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
           the destination block's `inputs:` list into its declaration
           index, which then plays the same role as a literal integer
           port for downstream emission.
-        - `target_input_counts` — {target_prefix: int} only for prefixes
-          whose destination block declares an `inputs:` list.  The chip
-          generator uses this to size the per-target array to match the
-          block's full Input enum length rather than max(port)+1, so the
-          C++ table is safely indexable by any Input enumerator the
-          block declares (slots the chip doesn't wire become NONE).
+        - `target_input_names` — {target_prefix: [name, ...]} only for
+          prefixes whose destination block declares an `inputs:` list.
+          The chip generator uses this to size the per-target array to
+          match the block's full Input enum length rather than max(port)+1
+          (so the C++ table is safely indexable by any Input enumerator
+          the block declares — slots the chip doesn't wire become NONE),
+          and to annotate each slot's initializer with the matching
+          Input enum value name as a line-end comment.
 
         Malformed destinations (no dot, unresolved name) are silently
         skipped; the validator in tools/validate_chip_connections.py is the
@@ -192,7 +194,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         enumerators = []
         seen = set()
         target_routes = {}
-        target_input_counts = {}
+        target_input_names = {}
         for inst_name, inst in instances.items():
             for sig_name, dests in (inst.get('connections') or {}).items():
                 if not dests:
@@ -235,8 +237,8 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                         continue
                     target_routes.setdefault(prefix, []).append(
                         (enum_name, port))
-                    target_input_counts[prefix] = len(input_names)
-        return enumerators, target_routes, target_input_counts
+                    target_input_names[prefix] = input_names
+        return enumerators, target_routes, target_input_names
 
     @staticmethod
     def _tableName(prefix):
@@ -284,7 +286,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             '} // extern "C++"\n'
         )
 
-    def emitTargetTables(self, enumerators, target_routes, target_input_counts):
+    def emitTargetTables(self, enumerators, target_routes, target_input_names):
         """Emit per-target route tables in shapes inferred from the data.
 
         Pair-list (`RouteEntry[]`, sorted by Connection) when any port has
@@ -292,11 +294,14 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         (`Connection[]`, slots default to Connection::NONE) otherwise.
 
         Array sizing rule:
-          * When the target block declares `inputs:` (target_input_counts
+          * When the target block declares `inputs:` (target_input_names
             has an entry), size the table to the full Input enum length
-            so any `Input::xxx` indexing is well-defined.
+            so any `Input::xxx` indexing is well-defined.  Each slot
+            initializer gets a line-end comment with the Input enum
+            value name for that slot.
           * Otherwise (integer-port target — NVIC, DMAMUX, EXTI, TIM
-            sub-ports), size to max(port)+1 as before.
+            sub-ports), size to max(port)+1 as before; slot comments
+            are omitted (the integer position carries no extra info).
 
         Tables are emitted at chip namespace scope.  Pair-list rows are
         sorted by the enumerator's declaration index (= its enum value),
@@ -326,14 +331,20 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             else:
                 # Direct array: size to declared input count if the
                 # target block has an Input enum, else to max(port)+1.
-                declared = target_input_counts.get(prefix)
-                size = declared if declared is not None else max(ports) + 1
+                input_names = target_input_names.get(prefix)
+                size = len(input_names) if input_names is not None else max(ports) + 1
                 slots = [None] * size
                 for name, port in routes:
                     slots[port] = name
-                body = ''.join(
-                    f'\n\tConnection::{n if n else "NONE"},'
-                    for n in slots)
+                body_lines = []
+                for i, n in enumerate(slots):
+                    conn = n if n else 'NONE'
+                    if input_names is not None and i < len(input_names):
+                        body_lines.append(
+                            f'\tConnection::{conn},\t// {input_names[i]}')
+                    else:
+                        body_lines.append(f'\tConnection::{conn},')
+                body = '\n' + '\n'.join(body_lines)
                 chunks.append(
                     f'\nEXPORT constexpr Connection {table_id}[{size}] = {{{body}\n}};\n'
                 )
@@ -383,9 +394,9 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         # common entries while each chip carries only its per-chip deltas.
         interrupts = self._collectInterrupts(chip, chip_path)
         interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
-        enumerators, target_routes, target_input_counts = self._collectConnections(chip, chip_path)
+        enumerators, target_routes, target_input_names = self._collectConnections(chip, chip_path)
         conn_enum = self.emitConnectionEnum(enumerators)
-        target_tables = self.emitTargetTables(enumerators, target_routes, target_input_counts)
+        target_tables = self.emitTargetTables(enumerators, target_routes, target_input_names)
         header = (prefix.substitute(chip, ns=namespace, incl=incl,
                                     interruptCount=interruptCount,
                                     conn_enum=conn_enum)
