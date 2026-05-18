@@ -27,6 +27,18 @@ are intentionally skipped — their headers are typeset vertically, so
 pdfplumber returns garbled text, and their content is fully redundant with
 the row-based Table 102.
 
+**Caveat on Table 102's HRTIM event-source rows.**  The `hrtim_evt<N><M>`
+labels Table 102 uses for the HRTIM external-event router are off by one
+relative to Table 329 (chapter 39, the canonical block-level mapping).
+Table 329 numbers Src1..Src4 with Src1 = HRTIM_EEVx pin and Src2..Src4 =
+on-chip sources, aligned with the EE<N>SRC[1:0] binary encoding 00/01/10/11.
+Table 102 silently shifts the on-chip slots by one when it omits the pin
+entry, so what Table 102 calls `hrtim_evt11` is actually Src2 / EE1SRC=01.
+Trust Table 329 for slot numbering; cross-reference with the EE<N>SRC field
+encodings in §39.5.51-53.  See [svd/ST/SVD_ERRATA.md](../../../svd/ST/SVD_ERRATA.md)
+for the full diagnosis (and a cross-check against RM0440 Rev.9 Table 223,
+which gets the analogous G4 mapping right).
+
 Table 152 is from chapter 21 (EXTI), not chapter 14, but it's the canonical
 EXTI-side view of the same routing — it lists each EXTI event input line
 (0-88) with the source signal feeding it, the line type

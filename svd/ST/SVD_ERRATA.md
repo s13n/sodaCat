@@ -847,6 +847,81 @@ shared destination (one EXTI line fed by two unrelated peripherals)
 implied by Table 103 was a documentation artifact, not silicon reality.
 
 
+### HRTIM external-event sources: Table 102 1-off vs Table 329 (RM doc inconsistency)
+
+**RM0399 Rev.4 (H745 / H747 / H755 / H757):**
+
+The HRTIM external-event router has 10 channels (EE1..EE10), each with a
+2-bit source selector (EE<N>SRC[1:0]) choosing among 4 sources per channel.
+Two RM tables describe these sources, and they disagree on the slot
+numbering by one position.
+
+Chapter 39 (HRTIM) Table 329 presents the mapping as a structured matrix
+with explicit `Src1..Src4` column headers. The Src1 column is uniformly the
+HRTIM_EEVx alternate-function pin for every channel; Src2..Src4 are on-chip
+sources (comparator, TIM TRGO, ADC analog watchdog, etc.). EE<N>SRC=00
+selects Src1 (pin), EE<N>SRC=01/10/11 select Src2/3/4 (on-chip).
+
+Chapter 14 Table 102 lists the same routes using flat signal-name strings
+`hrtim_evt<N><M>`. Because Table 102 omits the pin sources (pin
+connectivity isn't internal interconnect), the slot numbers it uses for
+the on-chip sources are off by one:
+
+| Channel 1, on-chip | Table 329 says | Table 102 writes |
+|--------------------|----------------|------------------|
+| COMP1.OUT          | Src2 / `eev1_2` (EE1SRC=01) | `hrtim_evt11` |
+| TIM1.TRGO          | Src3 / `eev1_3` (EE1SRC=10) | `hrtim_evt12` |
+| ADC1.AWD1          | Src4 / `eev1_4` (EE1SRC=11) | `hrtim_evt13` |
+
+Same systematic shift on every channel. Easy 0-based-vs-1-based mistake
+when assembling the chip-side projection; aggravated by H7's digit-run-on
+signal-name convention (`hrtim_evt<N><M>`) that conflates channel and slot
+numbers into adjacent characters without an underscore separator.
+
+**Plausibility analysis:** Table 329 has internal structural self-consistency
+(explicit column headers, uniform pin position across all 10 rows, column
+ordering aligned with the 2-bit binary encoding) and matches the EE1SRC
+field's encoding description in §39.5.51 (`00: hrtim_evt11`, `01: hrtim_evt12`,
+…). Table 102 has no independent definition of what `<M>` means and silently
+re-numbers when omitting the pin entry. Per the project rule "judge by
+plausibility, not authority": Table 329 wins.
+
+**Cross-family check:** G4 RM0440 Rev.9 Table 223 makes the analogous mapping
+verbatim explicit — column headers read `Src1 (00) Src2 (01) Src3 (10)
+Src4 (11)` with the binary encoding inline, and the canonical signal name
+uses an underscore separator (`hrtim_eev<N>_<X>`). The H7-flavoured bug
+does not appear in RM0440.
+
+**Modelled per Table 329.** HRTIM block `inputs:` declares on-chip event
+slots as `evt<N>_2`, `evt<N>_3`, `evt<N>_4` (slot `_1` excluded as the
+HRTIM_EEVx pin). Chip-side wirings reference these names; the destination
+labels are decoupled from Table 102's mis-numbered strings.
+
+
+### HRTIM sync outputs: block diagram vs Table 323 disagree (RM doc inconsistency)
+
+**RM0399 Rev.4 (H745 / H747 / H755 / H757) and RM0440 Rev.9 (G4 series):**
+
+The block diagram immediately preceding the HRTIM "pins and internal
+signals" section shows **3** synchronization output wires leaving the
+block, but Table 323 (RM0399, p.1506) and the corresponding Table 222
+(RM0440, p.885) both list only **2** outputs (`hrtim_out_sync[2:1]`,
+with sync1 reserved and sync2 routed to the HRTIM_SCOUT pin).
+
+The same content appears in both manuals, so the discrepancy was
+carried across when RM0440 was assembled — neither pass caught it.
+
+**No functional impact for sodaCat.** Both candidate outputs are
+pin-routed only (no on-chip destinations appear in either RM's
+chapter-14 / chapter-11 interconnect tables), so the HRTIM block model
+omits sync outputs entirely under the pin-only-output exclusion
+convention. The diagram's third wire — whether real silicon or an
+artifact of an old drawing — has no destination we could wire even if
+we modelled it.
+
+Recorded for future readers cross-referencing the block diagram.
+
+
 ## ST STM32F3
 
 References:

@@ -4632,13 +4632,21 @@ addressBlocks:
     usage: registers
 outputs:
   - name: MST
+    description: Master timer interrupt
   - name: TIMA
+    description: Timer A interrupt
   - name: TIMB
+    description: Timer B interrupt
   - name: TIMC
+    description: Timer C interrupt
   - name: TIMD
+    description: Timer D interrupt
   - name: TIME
+    description: Timer E interrupt
   - name: TIMF
+    description: Timer F interrupt (V2.0 only — RM0440 Table 222 hrtim_it[8:1])
   - name: FLT
+    description: Fault interrupt
   - name: ADC_TRG1
     description: ADC trigger output 1 from HRTIM
   - name: ADC_TRG2
@@ -4647,10 +4655,48 @@ outputs:
     description: ADC trigger output 3 from HRTIM
   - name: ADC_TRG4
     description: ADC trigger output 4 from HRTIM
+  - name: ADC_TRG5
+    description: ADC trigger output 5 from HRTIM (V2.0 only — RM0440 Table 222)
+  - name: ADC_TRG6
+    description: ADC trigger output 6 from HRTIM (V2.0 only — RM0440 Table 222)
+  - name: ADC_TRG7
+    description: ADC trigger output 7 from HRTIM (V2.0 only — RM0440 Table 222)
+  - name: ADC_TRG8
+    description: ADC trigger output 8 from HRTIM (V2.0 only — RM0440 Table 222)
+  - name: ADC_TRG9
+    description: ADC trigger output 9 from HRTIM (V2.0 only — RM0440 Table 222)
+  - name: ADC_TRG10
+    description: ADC trigger output 10 from HRTIM (V2.0 only — RM0440 Table 222)
   - name: DAC_TRG1
     description: DAC trigger output 1 from HRTIM
   - name: DAC_TRG2
     description: DAC trigger output 2 from HRTIM
+  - name: DAC_TRG3
+    description: DAC trigger output 3 from HRTIM (V2.0 only — RM0440 Table 222)
+  - name: DAC_RESET_TRG1
+    description: Dual-channel DAC reset trigger 1 (V2.0 only — RM0440 Table 229)
+  - name: DAC_RESET_TRG2
+    description: Dual-channel DAC reset trigger 2 (V2.0 only — RM0440 Table 229)
+  - name: DAC_RESET_TRG3
+    description: Dual-channel DAC reset trigger 3 (V2.0 only — RM0440 Table 229)
+  - name: DAC_RESET_TRG4
+    description: Dual-channel DAC reset trigger 4 (V2.0 only — RM0440 Table 229)
+  - name: DAC_RESET_TRG5
+    description: Dual-channel DAC reset trigger 5 (V2.0 only — RM0440 Table 229)
+  - name: DAC_RESET_TRG6
+    description: Dual-channel DAC reset trigger 6 (V2.0 only — RM0440 Table 229)
+  - name: DAC_STEP_TRG1
+    description: Dual-channel DAC step trigger 1 (V2.0 only — paired with DAC_RESET_TRG1, RM0440 Table 229)
+  - name: DAC_STEP_TRG2
+    description: Dual-channel DAC step trigger 2 (V2.0 only — paired with DAC_RESET_TRG2, RM0440 Table 229)
+  - name: DAC_STEP_TRG3
+    description: Dual-channel DAC step trigger 3 (V2.0 only — paired with DAC_RESET_TRG3, RM0440 Table 229)
+  - name: DAC_STEP_TRG4
+    description: Dual-channel DAC step trigger 4 (V2.0 only — paired with DAC_RESET_TRG4, RM0440 Table 229)
+  - name: DAC_STEP_TRG5
+    description: Dual-channel DAC step trigger 5 (V2.0 only — paired with DAC_RESET_TRG5, RM0440 Table 229)
+  - name: DAC_STEP_TRG6
+    description: Dual-channel DAC step trigger 6 (V2.0 only — paired with DAC_RESET_TRG6, RM0440 Table 229)
   - name: MST_DMA
     description: DMA request from the master timer
   - name: TIMA_DMA
@@ -4663,3 +4709,121 @@ outputs:
     description: DMA request from timer D
   - name: TIME_DMA
     description: DMA request from timer E
+  - name: TIMF_DMA
+    description: DMA request from timer F (V2.0 only — RM0440 Table 222 hrtim_dma[7:1])
+inputs:
+  # All on-chip external inputs to HRTIM per RM0399 §39.3.2 (Table 323) and the
+  # mux register field encodings in §39.4.5 (BMCLK / Table 341, BMTRGR),
+  # §39.5.12 (UPDGAT), §39.5.51-53 (EExSRC), §39.5.55-56 (FLTxSRC).
+  # Off-chip pin alternatives (HRTIM_EEVx, HRTIM_FLTx, HRTIM_SCIN) are NOT listed
+  # — they are alternate-function pin connections, not internal interconnect.
+  # Reserved mux encodings (bm_ck4, in_sync1) are not listed.
+
+  # ---- Burst mode (BMCR.BMCLK[3:0] = 0110/0111/1000 select bm_ck1/2/3; 1001 reserved for bm_ck4; BMTRGR bit selects hrtim_bm_trg) ----
+  - name: bm_ck1
+    description: Burst-mode clock source 1 (BMCLK=0110)
+  - name: bm_ck2
+    description: Burst-mode clock source 2 (BMCLK=0111)
+  - name: bm_ck3
+    description: Burst-mode clock source 3 (BMCLK=1000)
+  - name: bm_ck4
+    description: Burst-mode clock source 4 — currently reserved (BMCLK=1001 per RM0399 Table 341 / RM0440 Table 225); declared for forward-compat with potential future chips
+  - name: bm_trg
+    description: Burst-mode trigger from on-chip timer (one of 32 BMTRGR sources)
+
+  # ---- Event router (EExSRC[1:0]=01/10/11 selects on-chip Src2/3/4 per RM0399 Table 329; ----
+  # ---- EExSRC=00 selects Src1 = HRTIM_EEVx pin, excluded. ----
+  # ---- NOTE: RM0399 Table 102 (chapter 14) labels these signals with a 1-off numbering bug ----
+  # ---- (writes hrtim_evt<N>1 for what Table 329 calls Src2, etc.). The Table 329 numbering ----
+  # ---- is canonical because Src1..Src4 are explicit column headers aligned with the 2-bit ----
+  # ---- EExSRC encoding 00/01/10/11. ----
+  - name: evt1_2
+    description: External event 1 source 2 (EE1SRC=01)
+  - name: evt1_3
+    description: External event 1 source 3 (EE1SRC=10)
+  - name: evt1_4
+    description: External event 1 source 4 (EE1SRC=11)
+  - name: evt2_2
+    description: External event 2 source 2 (EE2SRC=01)
+  - name: evt2_3
+    description: External event 2 source 3 (EE2SRC=10)
+  - name: evt2_4
+    description: External event 2 source 4 (EE2SRC=11)
+  - name: evt3_2
+    description: External event 3 source 2 (EE3SRC=01)
+  - name: evt3_3
+    description: External event 3 source 3 (EE3SRC=10)
+  - name: evt3_4
+    description: External event 3 source 4 (EE3SRC=11)
+  - name: evt4_2
+    description: External event 4 source 2 (EE4SRC=01)
+  - name: evt4_3
+    description: External event 4 source 3 (EE4SRC=10)
+  - name: evt4_4
+    description: External event 4 source 4 (EE4SRC=11)
+  - name: evt5_2
+    description: External event 5 source 2 (EE5SRC=01)
+  - name: evt5_3
+    description: External event 5 source 3 (EE5SRC=10)
+  - name: evt5_4
+    description: External event 5 source 4 (EE5SRC=11)
+  - name: evt6_2
+    description: External event 6 source 2 (EE6SRC=01)
+  - name: evt6_3
+    description: External event 6 source 3 (EE6SRC=10)
+  - name: evt6_4
+    description: External event 6 source 4 (EE6SRC=11)
+  - name: evt7_2
+    description: External event 7 source 2 (EE7SRC=01)
+  - name: evt7_3
+    description: External event 7 source 3 (EE7SRC=10)
+  - name: evt7_4
+    description: External event 7 source 4 (EE7SRC=11)
+  - name: evt8_2
+    description: External event 8 source 2 (EE8SRC=01)
+  - name: evt8_3
+    description: External event 8 source 3 (EE8SRC=10)
+  - name: evt8_4
+    description: External event 8 source 4 (EE8SRC=11)
+  - name: evt9_2
+    description: External event 9 source 2 (EE9SRC=01)
+  - name: evt9_3
+    description: External event 9 source 3 (EE9SRC=10)
+  - name: evt9_4
+    description: External event 9 source 4 (EE9SRC=11)
+  - name: evt10_2
+    description: External event 10 source 2 (EE10SRC=01)
+  - name: evt10_3
+    description: External event 10 source 3 (EE10SRC=10)
+  - name: evt10_4
+    description: External event 10 source 4 (EE10SRC=11)
+
+  # ---- Update gating (TIMxCR.UPDGAT[3:0] = 0011/0100/0101 direct, or 0110/0111/1000 with event coincidence) ----
+  - name: upd_en1
+    description: Update enable input 1 (UPDGAT=0011 or 0110)
+  - name: upd_en2
+    description: Update enable input 2 (UPDGAT=0100 or 0111)
+  - name: upd_en3
+    description: Update enable input 3 (UPDGAT=0101 or 1000)
+
+  # ---- Fault inputs (FLTINRx.FLTxSRC=1 selects on-chip hrtim_in_fltx; FLTxSRC=0 selects HRTIM_FLTx pin) ----
+  - name: in_flt1
+    description: Fault input 1, on-chip source (FLT1SRC=1)
+  - name: in_flt2
+    description: Fault input 2, on-chip source (FLT2SRC=1)
+  - name: in_flt3
+    description: Fault input 3, on-chip source (FLT3SRC=1)
+  - name: in_flt4
+    description: Fault input 4, on-chip source (FLT4SRC=1)
+  - name: in_flt5
+    description: Fault input 5, on-chip source (FLT5SRC=1)
+  - name: in_flt6
+    description: Fault input 6, on-chip source (V2.0 only — RM0440 Table 228, FLT6SRC=01)
+  - name: sys_flt
+    description: System-fault input — OR of CSS, RAMECC, Cortex-M7 lockup, and PVD outputs
+
+  # ---- Sync inputs (hrtim_in_sync3 = HRTIM_SCIN pin, excluded as alternate-function) ----
+  - name: in_sync1
+    description: Synchronization input 1 — currently reserved (RM0399 Table 323, RM0440 Table 222); declared for forward-compat with potential future chips
+  - name: in_sync2
+    description: Synchronization input 2 from on-chip TIMx (TIM1_TRGO per RM0440 Table 227)
