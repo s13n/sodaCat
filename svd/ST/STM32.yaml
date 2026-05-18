@@ -393,7 +393,15 @@ shared_blocks:
   LPOPAMP:
     # LPOTR-type OPAMP: L4, L4+, L5, U0, U5 share this model
     # HSOTR-type families use HSOPAMP; G4/L1 are distinct IPs; U3 has different VM_SEL width
+    # Two opamp channels per block (CSR + CSR2 / OTR + OTR2 / LPOTR + LPOTR2
+    # after the digit-suffix renames below); each emits an independent
+    # output per the consuming families' RMs.
     from: STM32U535.OPAMP
+    outputs:
+      OUT1:
+        description: Op-amp channel 1 output (routes to ADC analog inputs and DAC trigger per consuming family's RM)
+      OUT2:
+        description: Op-amp channel 2 output (routes to ADC analog inputs and DAC trigger per consuming family's RM)
     params:
       - {name: single, type: bool, default: false, description: Single operational amplifier (no second amplifier registers)}
     transforms:
@@ -3512,6 +3520,17 @@ families:
       COMP:
         from: STM32G051.COMP
         instances: [COMP]
+        # Three comparator channels in one block (CSR1/CSR2/CSR3); each emits an
+        # independent output to TIM/LPTIM/EXTI per RM0444 ch.14.  COMP shares
+        # vectors with ADC under one NVIC entry (no per-channel interrupts),
+        # so the block has no INTR canonical here.
+        outputs:
+          OUT1:
+            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0444 ch.14)
+          OUT2:
+            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0444 ch.14)
+          OUT3:
+            description: Comparator channel 3 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0444 ch.14)
         transforms:
           - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
       CRC:
@@ -3713,6 +3732,11 @@ families:
       COMP:
         from: STM32G431.COMP
         instances: [COMP]
+        # G4 COMP hosts multiple comparator channels per block (C1CSR..C4CSR in
+        # G431 block model; G473/G474/G483/G484 silicon has 7 channels — the
+        # block model is sourced from G431 and so under-models those chips,
+        # a separate gap from this dual-output split).  Three NVIC vectors
+        # are shared across the channels.
         outputs:
           INTR1_2_3:
             pattern: '^COMP1_2_3$'
@@ -3720,6 +3744,14 @@ families:
             pattern: '^COMP4_5_6$'
           INTR7:
             pattern: '^COMP7$'
+          OUT1:
+            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and HRTIM/EXTI per RM0440 ch.11)
+          OUT2:
+            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and HRTIM/EXTI per RM0440 ch.11)
+          OUT3:
+            description: Comparator channel 3 output (routes to TIM/LPTIM trigger crossbars and HRTIM/EXTI per RM0440 ch.11)
+          OUT4:
+            description: Comparator channel 4 output (routes to TIM/LPTIM trigger crossbars and HRTIM/EXTI per RM0440 ch.11)
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
@@ -3826,6 +3858,23 @@ families:
       OPAMP:
         from: STM32G431.OPAMP
         instances: [OPAMP]
+        # G4 OPAMP hosts 6 opamp channels (CSR1..CSR6 + TCMR1..TCMR6 after the
+        # digit-suffix rename below); each emits an independent output to
+        # ADC/HRTIM/DAC per RM0440 ch.11.  Sub-set of chips populates 3 or 6
+        # opamps depending on package.
+        outputs:
+          OUT1:
+            description: Op-amp channel 1 output (routes to ADC analog inputs, HRTIM event router, DAC trigger per RM0440 ch.11)
+          OUT2:
+            description: Op-amp channel 2 output (routes to ADC analog inputs, HRTIM event router, DAC trigger per RM0440 ch.11)
+          OUT3:
+            description: Op-amp channel 3 output (routes to ADC analog inputs, HRTIM event router, DAC trigger per RM0440 ch.11)
+          OUT4:
+            description: Op-amp channel 4 output (routes to ADC analog inputs, HRTIM event router, DAC trigger per RM0440 ch.11)
+          OUT5:
+            description: Op-amp channel 5 output (routes to ADC analog inputs, HRTIM event router, DAC trigger per RM0440 ch.11)
+          OUT6:
+            description: Op-amp channel 6 output (routes to ADC analog inputs, HRTIM event router, DAC trigger per RM0440 ch.11)
         transforms:
           - {type: renameRegisters, pattern: '^OPAMP(\d+)_(.+)$', replacement: '\2\1'}
       PWR:
@@ -5279,9 +5328,13 @@ families:
       COMP:
         from: STM32H503.COMP
         instances: [COMP]
+        # H5 COMP is single-channel (one CFGR1 + one CFGR2, only C1* fields in
+        # SR/ICFR).  One INTR and one OUT — no per-channel split needed.
         outputs:
           INTR:
             pattern: '^COMP$'
+          OUT:
+            description: Comparator output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0492 ch.11)
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
@@ -15031,9 +15084,14 @@ families:
       COMP:
         from: STM32L100.COMP
         instances: [COMP]
+        # L1 COMP is single-channel — only one CSR (COMP1 only on L1; the
+        # second comparator on this silicon is part of the TSC/COMP_ACQ
+        # block, not modeled here).
         outputs:
           INTR:
             pattern: '^COMP_ACQ$'
+          OUT:
+            description: Comparator output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0038)
       CRC:
         from: STM32L100.CRC
         instances: [CRC]
@@ -15119,6 +15177,10 @@ families:
       OPAMP:
         from: STM32L100.OPAMP
         instances: [OPAMP]
+        # L1 OPAMP is single-channel.
+        outputs:
+          OUT:
+            description: Op-amp output (routes to ADC analog inputs per RM0038)
       PWR:
         from: STM32L100.PWR
         instances: [PWR]
@@ -15239,11 +15301,18 @@ families:
       COMP:
         from: STM32L412.COMP
         instances: [COMP]
+        # L4 COMP hosts two channels in one block (CSR1/CSR2 after the digit-
+        # suffix rename below); each emits an independent output per RM0394
+        # ch.10 / Table 39.  Shared interrupt vector.
         transforms:
           - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
+          OUT1:
+            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0394 ch.10)
+          OUT2:
+            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0394 ch.10)
       CRC:
         uses: CRC
         instances: [CRC]
@@ -15537,11 +15606,17 @@ families:
       COMP:
         from: STM32L4P5.COMP
         instances: [COMP]
+        # L4+ COMP hosts two channels in one block (CSR1/CSR2 after the digit-
+        # suffix rename below); each emits an independent output per RM0432.
         transforms:
           - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
+          OUT1:
+            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0432)
+          OUT2:
+            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0432)
       CRC:
         uses: CRC
         instances: [CRC]
@@ -15811,11 +15886,17 @@ families:
       COMP:
         from: STM32L552.COMP
         instances: [COMP]
+        # L5 COMP hosts two channels in one block (CSR1/CSR2 after the digit-
+        # suffix rename below); each emits an independent output per RM0438.
         transforms:
           - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
+          OUT1:
+            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0438)
+          OUT2:
+            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0438)
       CRC:
         uses: CRC
         instances: [CRC]
@@ -16480,8 +16561,15 @@ families:
       COMP:
         from: STM32U083.COMP
         instances: [COMP, COMP1]
+        # U0 COMP hosts two channels in one block (CSR1/CSR2 after the digit-
+        # suffix rename below); each emits an independent output per RM0503.
         transforms:
           - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
+        outputs:
+          OUT1:
+            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0503)
+          OUT2:
+            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0503)
       CRC:
         uses: CRC
         instances: [CRC]
@@ -16664,11 +16752,17 @@ families:
       COMP:
         from: STM32U375.COMP
         instances: [COMP]
+        # U3 COMP hosts two channels in one block (CSR1/CSR2 after the digit-
+        # suffix rename below); each emits an independent output per RM0487.
         transforms:
           - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
+          OUT1:
+            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0487)
+          OUT2:
+            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0487)
       CRC:
         uses: CRC
         instances: [CRC]
@@ -16770,6 +16864,13 @@ families:
       OPAMP:
         from: STM32U375.OPAMP
         instances: [OPAMP]
+        # U3 OPAMP hosts two channels (CSR + CSR2 / OTR + OTR2 / LPOTR + LPOTR2
+        # after the renames below); each emits an independent output per RM0487.
+        outputs:
+          OUT1:
+            description: Op-amp channel 1 output (routes to ADC analog inputs per RM0487)
+          OUT2:
+            description: Op-amp channel 2 output (routes to ADC analog inputs per RM0487)
         transforms:
           - {type: renameRegisters, pattern: ^OPAMP1_, replacement: ''}
           - {type: renameRegisters, pattern: ^OPAMP2_(.+), replacement: \g<1>2}
@@ -16922,11 +17023,17 @@ families:
       COMP:
         from: STM32U535.COMP
         instances: [COMP]
+        # U5 COMP hosts two channels in one block (CSR1/CSR2 after the digit-
+        # suffix rename below); each emits an independent output per RM0456.
         transforms:
           - {type: renameRegisters, pattern: '^COMP(\d+)_(.+)$', replacement: '\2\1'}
         outputs:
           INTR:
             pattern: '^COMP$'
+          OUT1:
+            description: Comparator channel 1 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0456)
+          OUT2:
+            description: Comparator channel 2 output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0456)
       CORDIC:
         uses: CORDIC
         instances: [CORDIC]
