@@ -146,13 +146,13 @@ def _format_index_enum(enum_obj, axis_dim):
     """Emit a scoped enum-class declaration for one axis."""
     name = enum_obj['name']
     underlying = _index_enum_underlying(axis_dim)
-    desc = enum_obj.get('description', '')
+    desc = enum_obj.get('description') or ''
     lines = ['']
     if desc:
         lines.append(f'/** {desc} */')
     lines.append(f'EXPORT enum class {name} : {underlying} {{')
     for v in enum_obj['values']:
-        vdesc = v.get('description', '')
+        vdesc = v.get('description') or ''
         if vdesc:
             lines.append(f'\t/** {vdesc} */')
         lines.append(f'\t{v["name"]} = {v["value"]},')
@@ -194,7 +194,7 @@ $postfix"""))
         list = []
         for enum in enums:
             value = enum.get('value', 1)
-            description = enum.get('description', '')
+            description = enum.get('description') or ''
             txt = self.enumTemplate.substitute(enum, name=_safe_name(enum.get('name', '')), type=type, value=value, description=description)
             list.append(txt)
         return ''.join(list)
@@ -218,7 +218,7 @@ $postfix"""))
                 if txt:
                     enum = self.enumsTemplate.substitute(field, sname=sname, name=_safe_name(field.get('name', '')), enums=txt, type=type)
             width = field.get('bitWidth', 1)
-            description = field.get('description', '')
+            description = field.get('description') or ''
             txt = self.bitfieldTemplate.substitute(field, name=_safe_name(field.get('name', '')), type=type, width=width, description=description)
             list.append([txt, field['bitOffset'], width, enum])
             
@@ -261,7 +261,7 @@ $postfix"""))
         list = []
         for reg in reglist:
             addressOffset = reg['addressOffset']
-            description = reg.get('description', '')
+            description = reg.get('description') or ''
             dim = reg.get('dim', 1)
             # Support list-valued dim for multidimensional arrays (sodaCat extension)
             if isinstance(dim, int):
@@ -401,7 +401,7 @@ $postfix"""))
                  'EXPORT enum class Input : std::uint8_t {']
         for inp in inputs:
             name = _safe_name(inp['name'])
-            desc = inp.get('description', '')
+            desc = inp.get('description') or ''
             if desc:
                 lines.append(f'\t/** {desc} */')
             lines.append(f'\t{name},')
@@ -417,11 +417,11 @@ $postfix"""))
             blocks += self.addressTemplate.substitute(block, type=type)
         ints = ''
         for int in per.get('outputs', []):
-            desc = int.get('description', '')
+            desc = int.get('description') or ''
             ints += self.interruptTemplate.substitute(int, description=desc)
         params = ''
         for par in per.get('params', []):
-            desc = par.get('description', '')
+            desc = par.get('description') or ''
             ptype = par.get('type', 'int')   # `type:` is optional; defaults to int
             if 'bits' in par:
                 # Explicit bit-width wins over any derivation; some authors
@@ -443,7 +443,7 @@ $postfix"""))
         types, regs, size, enums = self.formatRegisterList(per['registers'], 'uint32_t', 0, defaultSize, blockName=per.get('name', ''))
         blocks, ints, params = self.formatIntegrationList(per)
         inputs = self.formatInputs(per.get('inputs', []))
-        description = per.get('description', '')
+        description = per.get('description') or ''
         return self.headerTemplate.substitute(per, blocks=blocks, ints=ints, params=params, inputs=inputs, regs=regs, enums=enums, types=types, description=description, size=size, prefix=prefix, postfix=postfix)
     
          
