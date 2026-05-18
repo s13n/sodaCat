@@ -13417,11 +13417,28 @@ families:
       COMP:
         from: STM32H723.COMP1
         instances: [COMP1]
+        # Per RM0399 chapter 29 the COMP block hosts two comparator channels
+        # (COMP1 + COMP2 in ST's naming, accessed via CFGR1/CFGR2 and the C1*/C2*
+        # bitfields in SR/ICFR) and emits four channel-specific output signals
+        # plus one shared interrupt — Table 239:
+        #   comp1_out, comp1_wkup   →  channel 1 output (two flavours)
+        #   comp2_out, comp2_wkup   →  channel 2 output (two flavours)
+        #   comp_it                 →  shared interrupt
+        # The _out and _wkup pair carry the same logic level but differ in
+        # clock/power domain (the _wkup variant is async and stays alive in
+        # low-power modes so it can drive EXTI wakeup; the _out variant
+        # passes through synchronisation before reaching the timer/HRTIM
+        # crossbars).  We collapse each pair into one signal in the
+        # connection graph since current sodaCat doesn't model clock-domain
+        # semantics — if that distinction ever becomes load-bearing, the
+        # split is a forward-compatible refactor.
         outputs:
           INTR:
             pattern: '^COMP$'
-          OUT:
-            description: Analog comparator output (level/edge signal; routes to EXTI wakeup and to TIM/LPTIM trigger crossbars per RM0399 ch.14)
+          OUT1:
+            description: Comparator channel 1 output (Table 239 comp1_out / comp1_wkup; routes to EXTI wakeup and TIM/LPTIM/HRTIM trigger crossbars per RM0399 ch.14)
+          OUT2:
+            description: Comparator channel 2 output (Table 239 comp2_out / comp2_wkup; routes to EXTI wakeup and TIM/LPTIM/HRTIM trigger crossbars per RM0399 ch.14)
             pattern: '^OUT$'
       CORDIC:
         uses: CORDIC
@@ -14282,7 +14299,13 @@ families:
           # on H745_H757 so its analogous TIM ETR2 entries are absent).
           # COMP1.OUT additionally feeds HRTIM events 1, 6 and the HRTIM
           # fault input filter 1 per Table 102.
-          COMP1:   {INTR: [NVIC.153], OUT: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.6, LPTIM2.ext_trg.6, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3, HRTIM.evt1_2, HRTIM.evt6_2, HRTIM.in_flt1, DMAMUX2.gen.17]}
+          # COMP1 / COMP2 destinations per RM0399 Table 102 (chapter 14)
+          # cross-checked against Table 103 (EXTI wakeup), Table 107
+          # (DMAMUX2 generators), Table 342 (HRTIM fault inputs), and
+          # Table 329 (HRTIM event-router slot numbering — on-chip Src2/3/4).
+          # LPTIMx.ext_trg slot is the corrected Table-375 value
+          # (Table 102 is off-by-one; see svd/ST/SVD_ERRATA.md).
+          COMP1:   {INTR: [NVIC.153], OUT1: [EXTI.20, TIM1.ETR.1, TIM2.ETR.1, TIM3.ETR.1, TIM8.ETR.1, TIM1.BRK.1, TIM8.BRK.1, TIM15.BRK.1, TIM16.BRK.1, TIM17.BRK.1, TIM1.BRK2.1, TIM8.BRK2.1, TIM1.TI1.1, TIM2.TI4.1, TIM2.TI4.3, TIM3.TI1.1, TIM3.TI1.3, LPTIM1.ext_trg.6, LPTIM2.ext_trg.6, LPTIM1.in1_mux.1, LPTIM2.in1_mux.1, LPTIM2.in1_mux.3, HRTIM.evt1_2, HRTIM.evt6_2, HRTIM.in_flt1, DMAMUX2.gen.17], OUT2: [EXTI.21, TIM1.ETR.2, TIM2.ETR.2, TIM8.ETR.2, TIM1.BRK.2, TIM8.BRK.2, TIM15.BRK.2, TIM16.BRK.2, TIM17.BRK.2, TIM1.BRK2.2, TIM8.BRK2.2, TIM8.TI1.1, TIM3.TI1.2, TIM3.TI1.3, TIM2.TI4.2, TIM2.TI4.3, LPTIM1.ext_trg.7, LPTIM1.in2_mux.2, LPTIM2.ext_trg.7, LPTIM2.in1_mux.2, LPTIM2.in1_mux.3, LPTIM2.in2_mux.1, HRTIM.evt2_2, HRTIM.evt7_2, HRTIM.in_flt2, DMAMUX2.gen.18]}
           # LPTIM.OUT additionally feeds LPTIM ext_trg inputs of other
           # LPTIM instances per Table 102 (LPTIM2/3/4/5 form a small
           # routing fabric where each instance's output can clock another).
