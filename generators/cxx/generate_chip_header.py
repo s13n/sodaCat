@@ -43,33 +43,42 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             p = p.parent
 
     def _loadBlockOrder(self, chip_dir, models_map, model_name):
-        """Return (param_names, output_names, param_defaults) declared
-        by the block model.
+        """Return (param_names, output_names, param_defaults, input_names)
+        declared by the block model.
 
         param_defaults is a {name: value} map for params that declare a
         default; chip instances that don't override such a param fall
         back to the default at integration-emission time.
 
-        Returns (None, None, {}) when the block YAML can't be located,
-        in which case callers preserve chip-side order with no default
-        fallback — that's the ad-hoc-runs case outside the standard
-        models tree.  Under CMake the file is always present (ensure_model()
-        downloads it ahead of header generation).
+        input_names is the ordered list of declared input slot names when
+        the block has an `inputs:` section, or None when the block omits
+        the key entirely.  Used by the destination resolver to map a
+        named-input destination (e.g. `HRTIM_Master.bm_ck1`) to its
+        position in the per-block Input enum.
+
+        Returns (None, None, {}, None) when the block YAML can't be
+        located, in which case callers preserve chip-side order with no
+        default fallback — that's the ad-hoc-runs case outside the
+        standard models tree.  Under CMake the file is always present
+        (ensure_model() downloads it ahead of header generation).
         """
         if model_name in self._block_orders:
             return self._block_orders[model_name]
         relpath = models_map.get(model_name, model_name)
         block_path = self._resolve_block_path(chip_dir, relpath)
         if block_path is None:
-            result = (None, None, {})
+            result = (None, None, {}, None)
         else:
             block = YAML(typ='safe').load(block_path)
             params_decl = block.get('params', [])
+            inputs_decl = block.get('inputs')
             result = (
                 [p['name'] for p in params_decl],
                 [i['name'] for i in block.get('outputs', [])],
                 {p['name']: p['default']
                  for p in params_decl if 'default' in p},
+                ([i['name'] for i in inputs_decl]
+                 if inputs_decl is not None else None),
             )
         self._block_orders[model_name] = result
         return result
@@ -160,18 +169,30 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
           declared output order.
         - `target_routes` — {target_prefix: [(enum_name, port_int), ...]}.
           target_prefix is the part of the destination string up to its
-          final dot (today always a single instance name like `NVIC`; the
-          two-level form `TIM2.ITR` is forward-compatible).  port_int is
-          the integer that followed.
+          final dot (a single instance name like `NVIC` or a two-level
+          form like `TIM2.ITR`).  port_int is the integer slot index.
+          For destinations of the named-input form `<inst>.<input_name>`
+          (e.g. `HRTIM_Master.bm_ck1`), the named input is resolved via
+          the destination block's `inputs:` list into its declaration
+          index, which then plays the same role as a literal integer
+          port for downstream emission.
+        - `target_input_counts` — {target_prefix: int} only for prefixes
+          whose destination block declares an `inputs:` list.  The chip
+          generator uses this to size the per-target array to match the
+          block's full Input enum length rather than max(port)+1, so the
+          C++ table is safely indexable by any Input enumerator the
+          block declares (slots the chip doesn't wire become NONE).
 
-        Malformed destinations (no dot, non-integer port) are silently
-        skipped; the validator in tools/validate_chip_interrupts.py is the
+        Malformed destinations (no dot, unresolved name) are silently
+        skipped; the validator in tools/validate_chip_connections.py is the
         place that flags those.
         """
-        instances, _ = self._collectInstances(chip, chip_path)
+        instances, models_map = self._collectInstances(chip, chip_path)
+        chip_dir = Path(chip_path).parent
         enumerators = []
         seen = set()
         target_routes = {}
+        target_input_counts = {}
         for inst_name, inst in instances.items():
             for sig_name, dests in (inst.get('connections') or {}).items():
                 if not dests:
@@ -186,11 +207,36 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                         continue
                     try:
                         port = int(port_str)
+                        target_routes.setdefault(prefix, []).append(
+                            (enum_name, port))
+                        continue
+                    except ValueError:
+                        pass
+                    # Non-integer tail: must be a named input on a block
+                    # that declares `inputs:`.  Only the 2-part form
+                    # (instance.input_name) qualifies — 3-part forms
+                    # (instance.subport.<tail>) require integer tails.
+                    if '.' in prefix:
+                        continue
+                    target_inst = prefix
+                    inst_entry = instances.get(target_inst)
+                    if inst_entry is None:
+                        continue
+                    target_model = inst_entry.get('model')
+                    if not target_model:
+                        continue
+                    _, _, _, input_names = self._loadBlockOrder(
+                        chip_dir, models_map, target_model)
+                    if input_names is None:
+                        continue
+                    try:
+                        port = input_names.index(port_str)
                     except ValueError:
                         continue
                     target_routes.setdefault(prefix, []).append(
                         (enum_name, port))
-        return enumerators, target_routes
+                    target_input_counts[prefix] = len(input_names)
+        return enumerators, target_routes, target_input_counts
 
     @staticmethod
     def _tableName(prefix):
@@ -238,13 +284,19 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             '} // extern "C++"\n'
         )
 
-    def emitTargetTables(self, enumerators, target_routes):
+    def emitTargetTables(self, enumerators, target_routes, target_input_counts):
         """Emit per-target route tables in shapes inferred from the data.
 
         Pair-list (`RouteEntry[]`, sorted by Connection) when any port has
         more than one source within the target; direct array
-        (`Connection[]` sized to max(port)+1, slots default to
-        Connection::NONE) otherwise.
+        (`Connection[]`, slots default to Connection::NONE) otherwise.
+
+        Array sizing rule:
+          * When the target block declares `inputs:` (target_input_counts
+            has an entry), size the table to the full Input enum length
+            so any `Input::xxx` indexing is well-defined.
+          * Otherwise (integer-port target — NVIC, DMAMUX, EXTI, TIM
+            sub-ports), size to max(port)+1 as before.
 
         Tables are emitted at chip namespace scope.  Pair-list rows are
         sorted by the enumerator's declaration index (= its enum value),
@@ -272,9 +324,10 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                     f'\nEXPORT constexpr RouteEntry {table_id}[] = {{{body}\n}};\n'
                 )
             else:
-                # Direct array: size to max(port)+1, fill with the
-                # Connection wired at each slot (NONE for unwired).
-                size = max(ports) + 1
+                # Direct array: size to declared input count if the
+                # target block has an Input enum, else to max(port)+1.
+                declared = target_input_counts.get(prefix)
+                size = declared if declared is not None else max(ports) + 1
                 slots = [None] * size
                 for name, port in routes:
                     slots[port] = name
@@ -310,7 +363,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                     chip_dir, models_map.get(m, m))
                 model_to_ns[m] = _resolve_ns(block_path) if block_path else namespace
             ns = model_to_ns[m]
-            param_order, int_order, param_defaults = self._loadBlockOrder(
+            param_order, int_order, param_defaults, _ = self._loadBlockOrder(
                 chip_dir, models_map, m)
             params = self.createParameters(k, i, param_order, param_defaults)
             ints = self.createInterrupts(k, i, int_order)
@@ -330,9 +383,9 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         # common entries while each chip carries only its per-chip deltas.
         interrupts = self._collectInterrupts(chip, chip_path)
         interruptCount = max(interrupts.keys(), default=chip.get('interruptOffset', 0) - 1) + 1
-        enumerators, target_routes = self._collectConnections(chip, chip_path)
+        enumerators, target_routes, target_input_counts = self._collectConnections(chip, chip_path)
         conn_enum = self.emitConnectionEnum(enumerators)
-        target_tables = self.emitTargetTables(enumerators, target_routes)
+        target_tables = self.emitTargetTables(enumerators, target_routes, target_input_counts)
         header = (prefix.substitute(chip, ns=namespace, incl=incl,
                                     interruptCount=interruptCount,
                                     conn_enum=conn_enum)

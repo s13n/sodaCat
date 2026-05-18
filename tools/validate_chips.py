@@ -13,7 +13,7 @@ Phase 2: Semantic checks not expressible in standard JSON Schema:
 
 Per-instance `connections:` is a YAML mapping, so signal-name uniqueness is
 enforced by the parser.  Cross-instance destination validity (e.g. that
-'NVIC.53' refers to a known input) belongs to validate_chip_interrupts.py.
+'NVIC.53' refers to a known input) belongs to validate_chip_connections.py.
 
 Files that don't look like chip models (no top-level `instances` map) are
 skipped silently — this lets the same glob also feed `validate_peripherals.py`.

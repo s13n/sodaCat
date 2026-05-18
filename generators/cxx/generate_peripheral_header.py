@@ -182,7 +182,7 @@ $types
 /** $description */
 EXPORT struct $name {$regs
 }; // size = $size
-
+$inputs
 /** Integration of peripheral in the SoC. */
 EXPORT struct Intgr {
 $params$ints$blocks};
@@ -384,6 +384,31 @@ $postfix"""))
             pos = padToSize
         return structs, txt, pos, enums
 
+    def formatInputs(self, inputs:list):
+        """Emit `enum class Input` from the block's `inputs:` declaration.
+
+        Returns '' when the block declares no inputs.  Otherwise emits a
+        scoped enum-class with one enumerator per input slot in declaration
+        order; the chip-side per-block Connection table is indexed by
+        size_t(Input::<slot_name>).  Underlying type is uint8_t (more than
+        256 input slots per block is implausible — the assert in the chip
+        generator catches the overflow case if it ever happens).
+        """
+        if not inputs:
+            return ''
+        lines = ['',
+                 '/** External input slots this block accepts at its on-chip-interconnect boundary. */',
+                 'EXPORT enum class Input : std::uint8_t {']
+        for inp in inputs:
+            name = _safe_name(inp['name'])
+            desc = inp.get('description', '')
+            if desc:
+                lines.append(f'\t/** {desc} */')
+            lines.append(f'\t{name},')
+        lines.append('};')
+        lines.append('')
+        return '\n'.join(lines)
+
     def formatIntegrationList(self, per:dict):
         """ Generate definitions for the parameterization of a peripheral """
         blocks = ''
@@ -417,8 +442,9 @@ $postfix"""))
         defaultSize = per.get('size', 32) >> 3
         types, regs, size, enums = self.formatRegisterList(per['registers'], 'uint32_t', 0, defaultSize, blockName=per.get('name', ''))
         blocks, ints, params = self.formatIntegrationList(per)
+        inputs = self.formatInputs(per.get('inputs', []))
         description = per.get('description', '')
-        return self.headerTemplate.substitute(per, blocks=blocks, ints=ints, params=params, regs=regs, enums=enums, types=types, description=description, size=size, prefix=prefix, postfix=postfix)
+        return self.headerTemplate.substitute(per, blocks=blocks, ints=ints, params=params, inputs=inputs, regs=regs, enums=enums, types=types, description=description, size=size, prefix=prefix, postfix=postfix)
     
          
 prefixTemplate = Template("""// File was generated, do not edit!

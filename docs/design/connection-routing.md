@@ -503,7 +503,7 @@ of each per-target table inferred from the data as described above.
 Port-grammar validation (NVIC ports are absolute exception indices,
 DMAMUX ports are mux input numbers, TIM ports may need an `ITR.<n>` /
 `BRK.<n>` / ... structure) is a separate concern handled by the
-Phase-2 extension of `validate_chip_interrupts.py` from
+Phase-2 extension of `validate_chip_connections.py` from
 [output-wiring.md](output-wiring.md).  Table-shape inference and
 port-grammar validation are orthogonal — inference uses only the
 collision structure of `(prefix, port)` tuples, not the meaning of

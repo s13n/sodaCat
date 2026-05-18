@@ -65,11 +65,13 @@ numbering, which on Cortex-M is `svd_value + interruptOffset` (typically
 template emits `.ex<NAME> = <vec>u` without the `+ interruptOffset` it
 previously applied at emit time.
 
-`validate_chip_interrupts.py` enforces the dotted `instance.port` shape
-on every destination and additionally requires the port to be an integer
-when the instance is `NVIC` — the only target whose port grammar is
-fixed today.  Other targets' port-format rules land alongside their
-schema definitions in Phase 2.
+`validate_chip_connections.py` enforces the destination grammar on every
+wire: `<target>.<int>` for integer-port targets (NVIC, DMAMUX, EXTI),
+`<target>.<port>.<int>` for sub-port + integer-slot targets (TIM.ITR,
+ADC.ext_trg), and `<target>.<input_name>` for blocks that declare an
+`inputs:` list — in the last case the name is checked against that
+list.  NVIC's port must be an integer; other targets' deeper checks
+land alongside their schema definitions in Phase 2.
 
 ## Phase 2 (planned, deferred)
 
@@ -111,7 +113,8 @@ mixing fabrics in one change tends to entangle the schema discussion.
 - [docs/design/subfamily-model.md](subfamily-model.md) — how per-instance
   connections lift through the subfamily inheritance chain.
 - `schemas/chip.schema.yaml` — schema for the chip-level wiring shape.
-- `tools/validate_chip_interrupts.py` — destination-format check
-  (dotted shape, NVIC-port integer rule).
+- `tools/validate_chip_connections.py` — destination-format check
+  across all three shapes (integer port, sub-port + integer, named
+  input).
 - `generators/cxx/generate_chip_header.py:_collectInterrupts` — derives
   the vector-table view from per-instance connections on the C++ side.

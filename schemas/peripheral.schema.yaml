@@ -56,6 +56,35 @@ properties:
           type: string
         description:
           type: string
+  inputs:
+    description: |
+      Named input signals this block accepts at its on-chip-interconnect
+      boundary.  Each input is a slot the chip can wire from another
+      block's output via chip-level `connections:` entries of the form
+      `<this-instance>.<input-name>`.  Mirrors `outputs:` in shape.
+
+      Declaring `inputs:` opts the block into the per-block flat table
+      shape in C++: the chip header emits one `c_<INSTANCE>[]` indexed
+      by a scoped `Input` enum carrying the slot names.  Blocks without
+      `inputs:` keep the integer-port-indexed table shape (instance.<int>
+      or instance.port.<int>) — appropriate for NVIC vectors, DMAMUX
+      request slots, EXTI lines, and TIM-style integer-natural sub-ports.
+
+      Pin alternatives (alternate-function inputs) and reserved
+      register-field encodings are excluded from this list; reserved
+      boundary slots (signals named in an [N:1] bus declaration but
+      not yet wired) are included to keep the block's boundary stable
+      against future chip revisions.
+    type: array
+    items:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
   addressBlocks:
     type: array
     items:
