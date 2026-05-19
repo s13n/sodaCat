@@ -13470,10 +13470,14 @@ families:
       BDMA:
         from: STM32H723.BDMA
         instances: [BDMA, BDMA1, BDMA2]
+        # No global INTR canonical: BDMA's chip-level signal boundary is the
+        # 8 per-channel bdma_it[x] outputs per RM0399 Table 121 / RM0455
+        # Table 96. The "global OR'd" interrupt on H7A3_B BDMA1 mentioned at
+        # the RM0455 chapter intro is chip-level wiring — all 8 channel
+        # interrupt lines route to the same NVIC vector. That's modelled
+        # with 8 CH<N> destinations sharing NVIC.170 in chip_connections
+        # (H7A3_B._all.BDMA1).  See svd/ST/SVD_ERRATA.md for details.
         outputs:
-          INTR:
-            pattern: '^BDMA\d*$'
-            description: Global interrupt (bare instance name, e.g. BDMA, BDMA1)
           CH0:
             pattern: '^BDMA_CH0$'
           CH1:
@@ -14521,6 +14525,21 @@ families:
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
+          # BDMA1 (CD/SRD domain, dedicated to DFSDM1): all 8 channel
+          # interrupts route to the same NVIC vector — RM0455 §17 says
+          # "BDMA1 ... generates a single ORed interrupt".  Table 96 lists
+          # only per-channel bdma_it[x] at the block boundary, so the OR is
+          # chip-level wiring rather than a block feature.  This override
+          # also corrects the H7A3/H7B3 SVD bug that misattributes BDMA2_CH6
+          # (named BDMA_CH6) and BDMA2_CH7 (named BDMA1_CH7) to the BDMA1
+          # peripheral — see SVD_ERRATA.md.
+          BDMA1: {CH0: [NVIC.170], CH1: [NVIC.170], CH2: [NVIC.170], CH3: [NVIC.170], CH4: [NVIC.170], CH5: [NVIC.170], CH6: [NVIC.170], CH7: [NVIC.170]}
+          # BDMA2 (SRD domain): per-channel NVIC vectors per RM0455 §17, EXTI
+          # WKUP66..73 per Table 78, DMAMUX2.gen.28/29 for CH0/CH1 per Table
+          # 82.  Override also repairs the H7A3/H7B3 SVD (only declares CH0..
+          # CH5) and the H7B0 SVD (off-by-one BDMA_CH1..CH8 naming with bogus
+          # CH8 — see SVD_ERRATA.md).
+          BDMA2: {CH0: [NVIC.145, EXTI.66, DMAMUX2.gen.28], CH1: [NVIC.146, EXTI.67, DMAMUX2.gen.29], CH2: [NVIC.147, EXTI.68], CH3: [NVIC.148, EXTI.69], CH4: [NVIC.149, EXTI.70], CH5: [NVIC.150, EXTI.71], CH6: [NVIC.151, EXTI.72], CH7: [NVIC.152, EXTI.73]}
           # MDMA trigger sources per RM0455 Table 80.  Numbering matches the
           # RM0399/RM0433 layout for the shared peripherals.  No DSIHOST
           # (str27/28 unused).  QUADSPI absent — OCTOSPI1 takes str22/23

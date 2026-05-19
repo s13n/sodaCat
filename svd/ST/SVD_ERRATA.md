@@ -685,18 +685,58 @@ difference:
 We wire all three SDMMC1 triggers on H742_H753 per the RM0399 convention
 (`DATAEND_TRG: str29`, `BUFFEND_TRG: str30`, `CMDEND_TRG: str31`).
 
-### Bogus BDMA_CH8 interrupt entry in H7 SVDs
+### BDMA1 OR'd interrupt: chip-level wiring, not a block feature (H7A3_B)
 
-**STM32H7 SVD V2.8 — STM32H745/H747/H755/H757 (all CM4 and CM7), STM32H7B0:**
+**RM0455 Rev.11 §17.1 (page 626) and Table 96 (page 630):**
 
-These nine SVDs declare a `BDMA_CH8` interrupt entry, but the BDMA peripheral
-only has 8 channels (CH0..CH7) per RM0399 §17.5 and RM0455 §17.5. On
-H745/747/755/757 the `BDMA_CH8` vector value is the same as `BDMA_CH7`'s
-(136 — both resolve to NVIC.152), a clear copy-paste artifact. The BDMA
-block model declares only CH0..CH7 outputs; the bogus SVD entries surface
-as `BDMA: BDMA_CH8` in the unmatched-interrupts report, which is the
-intended behaviour — silencing the warning by adding a fake CH8 canonical
-would hide the SVD bug.
+The chapter intro states "the BDMA2 controller generates an interrupt per
+channel to the interrupt controller and the BDMA1 dedicated to DFSDM
+generates a single ORed interrupt". Table 96 on the next page lists only
+`bdma_it[x]` per channel at the block boundary — no OR'd output appears.
+Both pieces of evidence point the same way: the OR is performed in the
+chip integration (8 channel interrupt wires routed to the same NVIC input
+on BDMA1), not inside the BDMA's silicon boundary.
+
+Modelled as 8 CH<N> connections to NVIC.170 on H7A3_B's BDMA1 instance,
+no separate INTR canonical on the block. Matches our DMA1/2 pattern: the
+block consistently exposes per-channel signals; how the chip wires them
+together is a chip-level concern.
+
+The H7A3/H7B0/H7B3 SVDs declare a bare `BDMA1` interrupt entry (value
+154) on the BDMA1 peripheral, naming the OR'd combined vector. With the
+INTR canonical dropped from the block, this raw surfaces in the
+unmatched-interrupts report (`BDMA: BDMA1`) — that's intentional, since
+the block no longer has a canonical for it. The chip-level override
+provides the correct routing.
+
+### BDMA channel interrupts: SVD bugs across H7A3_B subfamily
+
+**STM32H7 SVD V2.8 — STM32H7A3, STM32H7B3 (BDMA2 channels 6/7
+misattributed):**
+
+| Peripheral | SVD entry      | Value | NVIC | Should be    |
+|------------|----------------|-------|------|--------------|
+| BDMA1      | `BDMA_CH6`     | 135   | 151  | BDMA2 CH6    |
+| BDMA1      | `BDMA1_CH7`    | 136   | 152  | BDMA2 CH7    |
+| BDMA2      | `BDMA2_CH0..5` | 129–134 | 145–150 | (correct as far as it goes) |
+
+BDMA2 channels 6 and 7 are declared on the BDMA1 peripheral with wrong
+prefixes. Worked around by the explicit `chip_connections` override at
+`H7A3_B._all` that re-wires all 8 channels on both instances.
+
+**STM32H7 SVD V2.8 — STM32H7B0 (BDMA channels off by one):**
+
+The H7B0 SVD declares BDMA2's per-channel interrupts as `BDMA_CH1..CH8`
+at values 129..136 (NVIC.145..152), shifting the channel numbering up by
+one and adding a bogus 9th entry. Per RM0455 §17.5 BDMA has 8 channels
+(CH0..CH7) and per RM0455 chip-level interrupt map vectors 145..152
+correspond to BDMA2 channels 0..7. Worked around by the same explicit
+chip_connections override. The bogus `BDMA_CH8` raw surfaces in the
+unmatched-interrupts report.
+
+**Earlier H7 SVDs** (STM32H745/H747/H755/H757, all CM4 and CM7) declare a
+similar bogus `BDMA_CH8` — copy of CH7's vector — that also surfaces as
+unmatched.
 
 ### BDMA chip-level signals: Figure 89 vs Table 121 in RM0399
 
