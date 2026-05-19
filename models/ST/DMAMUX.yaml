@@ -3,6 +3,16 @@ description: DMA request line multiplexer
 groupName: DMAMUX
 source: STM32H723 SVD v2.1
 params:
+  - name: has_secure_ovr
+    type: int
+    default: 0
+    max: 1
+    description: 'TrustZone-aware silicon: the request-line overrun event reaches two distinct NVIC vectors (non-secure OVR and secure OVR_S). True on L5 only today; false elsewhere (single OVR vector). When true, the OVR_S output is wired by the chip; when false, OVR_S is declared-but-unwired.'
+  - name: has_sync_overrun
+    type: int
+    default: 1
+    max: 1
+    description: Silicon supports per-channel synchronization-overrun status reporting via the CSR (status) and CFR (clear-flag) registers and the SOIE bit on each CCR. False on G0 (the G0 SVD declares no CSR/CFR — silicon lacks the feature). When false, drivers must skip CSR/CFR accesses and ignore the per-channel SOIE/SOF mechanism; the request-generator-overrun path (RGSR/RGCFR) is unaffected.
   - name: highest_channel
     type: int
     default: 15
@@ -28,14 +38,6 @@ params:
     default: 5
     max: 8
     description: Width of the SIG_ID bitfield on RG<N>CR (= log2 of addressable request-generator trigger inputs). The RGCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits.
-  - name: has_secure_ovr
-    type: bool
-    default: false
-    description: 'TrustZone-aware silicon: the request-line overrun event reaches two distinct NVIC vectors (non-secure OVR and secure OVR_S). True on L5 only today; false elsewhere (single OVR vector). When true, the OVR_S output is wired by the chip; when false, OVR_S is declared-but-unwired.'
-  - name: has_sync_overrun
-    type: bool
-    default: true
-    description: Silicon supports per-channel synchronization-overrun status reporting via the CSR (status) and CFR (clear-flag) registers and the SOIE bit on each CCR. False on G0 (the G0 SVD declares no CSR/CFR — silicon lacks the feature). When false, drivers must skip CSR/CFR accesses and ignore the per-channel SOIE/SOF mechanism; the request-generator-overrun path (RGSR/RGCFR) is unaffected.
 registers:
   - name: CSR
     displayName: CSR
