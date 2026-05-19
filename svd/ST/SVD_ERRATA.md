@@ -1153,6 +1153,28 @@ no temperature sensor.
 SVD versions: STM32L0x0 v1.3, STM32L0x1 v1.6, STM32L0x2 v1.7, STM32L0x3 v1.7.
 
 
+## ST STM32L5
+
+References:
+- RM0438 Rev.8 — STM32L552 / STM32L562
+
+### DMAMUX clear-flag register: SVD names CCFR, every other ST family calls it CFR
+
+**STM32L5 SVD V1.0 — STM32L552, STM32L562:**
+
+The L5 SVD names the DMAMUX channel clear-flag register `DMAMUX_CCFR` at
+offset 0x84, while every other ST DMAMUX SVD (C0, G0, G4, L4+, U0, H7) names
+the same-offset register `DMAMUX_CFR`. The register's content is identical:
+write-only, one CSOFx bit per channel for clearing the corresponding SOFx
+flag in CSR.
+
+After unifying DMAMUX as a shared block sourced from H7's SVD
+(`models/ST/DMAMUX.yaml`), the canonical name is `CFR`; L5 chip yamls
+automatically use it. Pre-existing L5-specific driver code referring to
+`CCFR` would need to switch to `CFR`. Possibly an extra C standing for
+"Channel" in the L5 SVD's spelling; semantically the same register.
+
+
 ## ST STM32F4
 
 References:

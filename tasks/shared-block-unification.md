@@ -299,12 +299,81 @@ These patterns emerged during the GpTimer work and apply to future blocks:
     `outputs:` mapping has no effect. Only `uses:` and `instances:` are
     needed. Remove `outputs:` to avoid dead config.
 
+## Lessons learned from DMAMUX unification
+
+The DMAMUX block in 7 STM32 families (C0/G0/G4/L4P/L5/U0/H7) unified into one
+shared model with 7 params.  Patterns specific to this kind of "all-same-
+silicon, all-different-extents" block:
+
+1. **Verify register offsets across families before declaring "same silicon".**
+   The strongest signal that two families share a silicon block is identical
+   register offsets, not just identical register *names*.  All 7 ST DMAMUX
+   variants had byte-identical layouts (`CCR[0]` at 0x00, `CSR` at 0x80, etc.)
+   despite very different channel counts and field widths — a clean go-ahead
+   to unify.
+
+2. **The block-wide-max + extent-param idiom** is a generalisation of the
+   feature-flag pattern to ordinal variation.  The block declares arrays at
+   their address-space-capacity dim (`CCR[%s]` dim=32, `RGCR[%s]` dim=16) and
+   selector fields at their byte-slot-capacity width (DMAREQ_ID/SYNC_ID/SIG_ID
+   all 8-bit); per-instance int params (`highest_channel`,
+   `highest_request_generator`, `request_inputs`, `sync_inputs`,
+   `request_triggers`) tell drivers where the silicon-valid extent ends.  See
+   [docs/design/feature-flag-params.md](../docs/design/feature-flag-params.md).
+
+3. **`createArray` + `patchRegisters` extends array dims past the SVD's.**
+   The source SVD declared 16 C<N>CR registers; `createArray` folds them into
+   `CCR[%s]` with dim=16, then `patchRegisters: [{name: 'CCR[%s]', dim: 32}]`
+   bumps it to the block-wide maximum.  Same trick for RGCR (8 → 16).  The
+   patched registers in the upper half occupy reserved address-space until a
+   future variant uses them.
+
+4. **`patchFields` with a `bitWidth` value widens selector fields.**  Source
+   SVD had DMAREQ_ID at 7 bits; transform bumps it to 8 (the byte-slot
+   capacity).  Selector-field width params (`request_inputs` etc.) record the
+   per-instance silicon-valid width.
+
+5. **Status-flag registers extend in lockstep with the array dims.** When
+   CCR[%s] grew to dim=32, the CSR/CFR registers gained SOF16..SOF31 and
+   CSOF16..CSOF31 (one bit per channel) via `patchFields`.  Same for RGSR/RGCFR
+   when RGCR[%s] grew to dim=16.  The flag bits beyond `highest_channel` are
+   reserved on every current chip, but the symmetric shape keeps the
+   array-vs-flag correspondence clean.
+
+6. **Exclusive-layering on `outputs:` overrides.**  Once a family's `uses:`
+   block declares any `outputs:`, only the listed canonicals are in the
+   prefix-strip auto-resolver's set — the shared block's other canonicals
+   become invisible for raw-name fallback resolution.  When overriding a
+   pattern for one canonical, re-list any others you still want
+   auto-resolution for. Caught during L5 work: declaring `OVR_S` pattern
+   silently broke OVR resolution; both had to be listed.
+
+7. **Differently-named-same-register SVD quirks are a transform.** L5's SVD
+   named the clear-flag register `CCFR` while every other family calls it
+   `CFR`; same offset (0x84), same purpose.  By picking H7 as the `from:`
+   source, the shared block uses `CFR`; L5 chip yamls automatically use the
+   canonical name.  Any pre-existing L5 driver code referencing `CCFR` would
+   need to update — small price for one canonical name across 7 families.
+
+8. **Bool flags as `int, max: 1` is a useful encoding.** When a presence
+   flag conceptually fits with int-typed extent params (e.g. DMAMUX's two
+   1-bit flags sit visually alongside its three multi-bit selector-width
+   params), declaring them all as `int` makes the param block read
+   homogeneously and signals storage intent (1-bit packed field).
+
+9. **SVD content equality isn't lost by deduplication.** U0's pre-unification
+   DMAMUX.yaml was 1366 lines vs the shared block's 764 — but the bulk of the
+   "extra" content was the same boilerplate enum listings (SOIE
+   enabled/disabled, SPOL rising/falling/both, etc.) repeated 16× across each
+   family's 16 separate C<N>CR registers.  `createArray` collapses 16 copies
+   into one template; nothing semantic is lost.
+
 ---
 
 ## Reference
 
-- Existing shared blocks: `WWDG`, `GpTimer` (in `shared_blocks` section of
-  `svd/ST/STM32.yaml`)
+- Existing shared blocks: `WWDG`, `GpTimer`, `DMAMUX` (in `shared_blocks`
+  section of `svd/ST/STM32.yaml`)
 - Comparison document format: `GpTimer_comparison.md`
 - SVD errata log: `svd/ST/SVD_ERRATA.md`
 - Generator: `extractors/generate_stm32_models.py`
