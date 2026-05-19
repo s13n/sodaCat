@@ -13611,72 +13611,8 @@ families:
         instances: [DELAY_Block_SDMMC1, DELAY_Block_SDMMC2, DELAY_Block_QUADSPI, Delay_Block_OCTOSPI1, Delay_Block_OCTOSPI2]
       DMA:
         from: STM32H723.DMA1
-        instances: [DMA1, DMA2, DMA2D, DMAMUX1, DMAMUX2]
+        instances: [DMA1, DMA2]
         outputs:
-          OVR:
-            description: Request-line overrun event. Asserted by DMAMUX when more than one synchronized request fires before the previous was serviced. (Block shared between DMA and DMAMUX; for DMA instances this output is unwired — the per-stream STR<N> outputs carry interrupts.)
-            pattern: '^DMAMUX\d+_OV(R)?$'
-          EVT0:
-            description: DMAMUX request-generator event 0 (feeds back to DMAMUX trigger input 0 per RM0399 Tables 106/107)
-            pattern: '^EVT0$'
-          EVT1:
-            description: DMAMUX request-generator event 1
-            pattern: '^EVT1$'
-          EVT2:
-            description: DMAMUX request-generator event 2
-            pattern: '^EVT2$'
-          EVT3:
-            description: DMAMUX request-generator event 3
-            pattern: '^EVT3$'
-          EVT4:
-            description: DMAMUX request-generator event 4
-            pattern: '^EVT4$'
-          EVT5:
-            description: DMAMUX request-generator event 5
-            pattern: '^EVT5$'
-          EVT6:
-            description: DMAMUX request-generator event 6 (also routes to EXTI D3 pendclear input per Table 104)
-            pattern: '^EVT6$'
-          EVT7:
-            description: DMAMUX request-generator event 7 (also routes to EXTI D3 pendclear input per Table 104)
-            pattern: '^EVT7$'
-          # REQ_GEN<X> are the per-request-generator DMA-request outputs.
-          # Each REQ_GEN<X> output feeds back into the DMAMUX request input
-          # bus at slot X (so a DMA channel can pick it via
-          # DMAMUX_CxCR.DMAREQ_ID = X).  Architecturally hard-wired; the loop
-          # is invisible in Tables 134/135 but is the canonical content of
-          # DMAMUX request-input slots 0..7.  Distinct from EVT<X>: EVT
-          # signals are per-channel SYNC-overrun events that can route to
-          # the trigger bus and EXTI pendclear, while REQ_GEN<X> outputs
-          # only feed the request input bus.
-          REQ_GEN0:
-            description: Request generator 0 synthesized DMA-request output (feeds DMAMUX request input slot 0)
-          REQ_GEN1:
-            description: Request generator 1 synthesized DMA-request output (feeds DMAMUX request input slot 1)
-          REQ_GEN2:
-            description: Request generator 2 synthesized DMA-request output (feeds DMAMUX request input slot 2)
-          REQ_GEN3:
-            description: Request generator 3 synthesized DMA-request output (feeds DMAMUX request input slot 3)
-          REQ_GEN4:
-            description: Request generator 4 synthesized DMA-request output (feeds DMAMUX request input slot 4)
-          REQ_GEN5:
-            description: Request generator 5 synthesized DMA-request output (feeds DMAMUX request input slot 5)
-          REQ_GEN6:
-            description: Request generator 6 synthesized DMA-request output (feeds DMAMUX request input slot 6)
-          REQ_GEN7:
-            description: Request generator 7 synthesized DMA-request output (feeds DMAMUX request input slot 7)
-          INTR:
-            description: Global interrupt (used by DMA2D instances; the DMA block is shared across DMA streams, DMAMUX, and DMA2D — the latter has a single combined interrupt rather than per-stream)
-            pattern: '^DMA2D$'
-          CLUT_TRG:
-            description: DMA2D CLUT load complete trigger (MDMA trigger source per RM0399 Table 105)
-            pattern: '^CLUT_TRG$'
-          TC_TRG:
-            description: DMA2D transfer-complete trigger
-            pattern: '^TC_TRG$'
-          TW_TRG:
-            description: DMA2D transfer-watermark trigger
-            pattern: '^TW_TRG$'
           STR0:
             description: Stream0 global interrupt (OR of TCIF/HTIF/TEIF/DMEIF/FEIF enabled by SxCR.{TCIE,HTIE,TEIE,DMEIE} and SxFCR.FEIE)
             pattern: '^DMA_STR0$'
@@ -13725,6 +13661,70 @@ families:
             description: Stream7 transfer-complete signal (HISR.TCIF7)
         transforms:
           - {type: createClusterArray, pattern: S(\d+)(\w+), name: S, description: DMA stream}
+      DMA2D:
+        # Chrom-Art 2D graphics accelerator — re-use the cross-family shared
+        # DMA2D block.  Outputs (INTR + per-trigger MDMA feeds) come from the
+        # shared block declaration (see shared_blocks.DMA2D above).
+        uses: DMA2D
+        instances: [DMA2D]
+      DMAMUX:
+        # DMAMUX1 (D2 domain, 16 channels feeding DMA1/DMA2) and DMAMUX2
+        # (D3 domain, 8 channels feeding BDMA).  Distinct silicon block from
+        # DMA — its own register set (16× DMAMUX_C<N>CR, 8× DMAMUX_RG<N>CR,
+        # DMAMUX_CSR, DMAMUX_CFR, DMAMUX_RGSR, DMAMUX_RGCFR).
+        from: STM32H723.DMAMUX1
+        instances: [DMAMUX1, DMAMUX2]
+        outputs:
+          OVR:
+            description: Request-line overrun event. Asserted when more than one synchronized request fires before the previous was serviced.
+            pattern: '^DMAMUX\d+_OV(R)?$'
+          EVT0:
+            description: Request-generator event 0 (per-channel SYNC-overrun event that can route to the trigger bus and EXTI pendclear per RM0399 Tables 106/107)
+            pattern: '^EVT0$'
+          EVT1:
+            description: Request-generator event 1
+            pattern: '^EVT1$'
+          EVT2:
+            description: Request-generator event 2
+            pattern: '^EVT2$'
+          EVT3:
+            description: Request-generator event 3
+            pattern: '^EVT3$'
+          EVT4:
+            description: Request-generator event 4
+            pattern: '^EVT4$'
+          EVT5:
+            description: Request-generator event 5
+            pattern: '^EVT5$'
+          EVT6:
+            description: Request-generator event 6 (also routes to EXTI D3 pendclear input per Table 104)
+            pattern: '^EVT6$'
+          EVT7:
+            description: Request-generator event 7 (also routes to EXTI D3 pendclear input per Table 104)
+            pattern: '^EVT7$'
+          # REQ_GEN<X> are the per-request-generator DMA-request outputs.
+          # Each REQ_GEN<X> output feeds back into the DMAMUX's own request
+          # input bus at slot X (so a DMAMUX channel can pick it via
+          # DMAMUX_CxCR.DMAREQ_ID = X). Architecturally hard-wired loop.
+          # Distinct from EVT<X>: EVT signals are per-channel SYNC-overrun
+          # events that can route to the trigger bus and EXTI pendclear,
+          # while REQ_GEN<X> only feed the request input bus.
+          REQ_GEN0:
+            description: Request generator 0 synthesized DMA-request output (feeds DMAMUX request input slot 0)
+          REQ_GEN1:
+            description: Request generator 1 synthesized DMA-request output (feeds DMAMUX request input slot 1)
+          REQ_GEN2:
+            description: Request generator 2 synthesized DMA-request output (feeds DMAMUX request input slot 2)
+          REQ_GEN3:
+            description: Request generator 3 synthesized DMA-request output (feeds DMAMUX request input slot 3)
+          REQ_GEN4:
+            description: Request generator 4 synthesized DMA-request output (feeds DMAMUX request input slot 4)
+          REQ_GEN5:
+            description: Request generator 5 synthesized DMA-request output (feeds DMAMUX request input slot 5)
+          REQ_GEN6:
+            description: Request generator 6 synthesized DMA-request output (feeds DMAMUX request input slot 6)
+          REQ_GEN7:
+            description: Request generator 7 synthesized DMA-request output (feeds DMAMUX request input slot 7)
       DSIHOST:
         from: STM32H745_CM4.DSIHOST
         instances: [DSIHOST]
