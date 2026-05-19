@@ -740,6 +740,13 @@ shared_blocks:
     outputs:
       INTR:
         pattern: '^(OCTOSPI1|XSPI1|OSPI1|HSPI1|XSPI2|XSPI3|OCTOSPI2)$'
+      # MDMA trigger outputs (H7 family wires these to MDMA stream-trigger
+      # inputs per RM0468/RM0455 Table 97/80; other families have no MDMA so
+      # the outputs sit declared-but-unwired).
+      FT_TRG:
+        description: FIFO-threshold trigger (FT flag in SR, routes to MDMA on H7)
+      TC_TRG:
+        description: Transfer-complete trigger (TC flag in SR, routes to MDMA on H7).  RM0468/RM0455 spell this `octospi_tc_trg` for OCTOSPI1 but `octospi2_fc_trg` for OCTOSPI2 — both name the same semantic signal; the "fc" form is a documentation typo (the SR.TC bit is the source either way).  See svd/ST/SVD_ERRATA.md → 'OCTOSPI2 fc_trg vs tc_trg'.
     description: Extended-SPI flash memory interface
     params:
       - {name: variant, type: int, default: 0, description: "IP variant: 0 = OCTOSPI, 1 = HSPI, 2 = XSPI"}
@@ -14231,8 +14238,21 @@ families:
           HRTIM: {MST: [NVIC.119], TIMA: [NVIC.120], TIMB: [NVIC.121], TIMC: [NVIC.122], TIMD: [NVIC.123], TIME: [NVIC.124], FLT: [NVIC.125]}
       H742_H753:
         _all:
-          SDMMC1: {INTR: [NVIC.65]}
           SDMMC2: {INTR: [NVIC.140]}
+          # MDMA trigger sources per RM0433 Table 101. Same numbering as
+          # RM0399/H745_H757 for the peripherals this subfamily has — no
+          # DSIHOST (str27/28 unused).  Table 101 only enumerates SDMMC1.dataend
+          # (str29) but Table 470 confirms the three SDMMC1 trigger signals
+          # exist; cross-RM (RM0399/RM0468/RM0455 all wire str30=buffend,
+          # str31=cmdend on the same SDMMC IP) settles the omission as a
+          # documentation gap, not a silicon difference.
+          DMA1:  {TCIF0: [MDMA.str.0], TCIF1: [MDMA.str.1], TCIF2: [MDMA.str.2], TCIF3: [MDMA.str.3], TCIF4: [MDMA.str.4], TCIF5: [MDMA.str.5], TCIF6: [MDMA.str.6], TCIF7: [MDMA.str.7]}
+          DMA2:  {TCIF0: [MDMA.str.8], TCIF1: [MDMA.str.9], TCIF2: [MDMA.str.10], TCIF3: [MDMA.str.11], TCIF4: [MDMA.str.12], TCIF5: [MDMA.str.13], TCIF6: [MDMA.str.14], TCIF7: [MDMA.str.15]}
+          LTDC:    {LI_IT: [MDMA.str.16]}
+          JPEG:    {IFT_TRG: [MDMA.str.17], IFNT_TRG: [MDMA.str.18], OFT_TRG: [MDMA.str.19], OFNE_TRG: [MDMA.str.20], OEC_TRG: [MDMA.str.21]}
+          QUADSPI: {FT_TRG: [MDMA.str.22], TC_TRG: [MDMA.str.23]}
+          DMA2D:   {CLUT_TRG: [MDMA.str.24], TC_TRG: [MDMA.str.25], TW_TRG: [MDMA.str.26]}
+          SDMMC1:  {INTR: [NVIC.65], DATAEND_TRG: [MDMA.str.29], BUFFEND_TRG: [MDMA.str.30], CMDEND_TRG: [MDMA.str.31]}
       H745_H757:
         _all:
           # OTG WKUP gains EXTI destination per RM0399 Table 103 (usb<N>_wkup → WKUP43/44).
@@ -14503,6 +14523,34 @@ families:
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
+          # MDMA trigger sources per RM0455 Table 80.  Numbering matches the
+          # RM0399/RM0433 layout for the shared peripherals.  No DSIHOST
+          # (str27/28 unused).  QUADSPI absent — OCTOSPI1 takes str22/23
+          # (RM0455 names it just "OCTOSPI" but the chip-yaml instance is
+          # OCTOSPI1).  H7A3_B extends MDMA's trigger fabric beyond the
+          # nominal 32: OCTOSPI2 sits on str32/33 (TSEL is 6-bit so the field
+          # has room).
+          DMA1:  {TCIF0: [MDMA.str.0], TCIF1: [MDMA.str.1], TCIF2: [MDMA.str.2], TCIF3: [MDMA.str.3], TCIF4: [MDMA.str.4], TCIF5: [MDMA.str.5], TCIF6: [MDMA.str.6], TCIF7: [MDMA.str.7]}
+          DMA2:  {TCIF0: [MDMA.str.8], TCIF1: [MDMA.str.9], TCIF2: [MDMA.str.10], TCIF3: [MDMA.str.11], TCIF4: [MDMA.str.12], TCIF5: [MDMA.str.13], TCIF6: [MDMA.str.14], TCIF7: [MDMA.str.15]}
+          LTDC:     {LI_IT: [MDMA.str.16]}
+          JPEG:     {IFT_TRG: [MDMA.str.17], IFNT_TRG: [MDMA.str.18], OFT_TRG: [MDMA.str.19], OFNE_TRG: [MDMA.str.20], OEC_TRG: [MDMA.str.21]}
+          OCTOSPI1: {FT_TRG: [MDMA.str.22], TC_TRG: [MDMA.str.23]}
+          DMA2D:    {CLUT_TRG: [MDMA.str.24], TC_TRG: [MDMA.str.25], TW_TRG: [MDMA.str.26]}
+          SDMMC1:   {DATAEND_TRG: [MDMA.str.29], BUFFEND_TRG: [MDMA.str.30], CMDEND_TRG: [MDMA.str.31]}
+          OCTOSPI2: {FT_TRG: [MDMA.str.32], TC_TRG: [MDMA.str.33]}
+      H73x:
+        _all:
+          # MDMA trigger sources per RM0468 Table 97.  H73x has no JPEG
+          # (str17-21 unused) and no DSIHOST (str27/28 unused); OCTOSPI1
+          # replaces QUADSPI at str22/23 and OCTOSPI2 extends the trigger
+          # fabric to str32/33 (TSEL is 6-bit so MDMA inputs ≥32 are valid).
+          DMA1:  {TCIF0: [MDMA.str.0], TCIF1: [MDMA.str.1], TCIF2: [MDMA.str.2], TCIF3: [MDMA.str.3], TCIF4: [MDMA.str.4], TCIF5: [MDMA.str.5], TCIF6: [MDMA.str.6], TCIF7: [MDMA.str.7]}
+          DMA2:  {TCIF0: [MDMA.str.8], TCIF1: [MDMA.str.9], TCIF2: [MDMA.str.10], TCIF3: [MDMA.str.11], TCIF4: [MDMA.str.12], TCIF5: [MDMA.str.13], TCIF6: [MDMA.str.14], TCIF7: [MDMA.str.15]}
+          LTDC:     {LI_IT: [MDMA.str.16]}
+          OCTOSPI1: {FT_TRG: [MDMA.str.22], TC_TRG: [MDMA.str.23]}
+          DMA2D:    {CLUT_TRG: [MDMA.str.24], TC_TRG: [MDMA.str.25], TW_TRG: [MDMA.str.26]}
+          SDMMC1:   {DATAEND_TRG: [MDMA.str.29], BUFFEND_TRG: [MDMA.str.30], CMDEND_TRG: [MDMA.str.31]}
+          OCTOSPI2: {FT_TRG: [MDMA.str.32], TC_TRG: [MDMA.str.33]}
     chip_params:
       _all:
         _all:

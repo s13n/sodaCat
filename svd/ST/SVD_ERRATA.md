@@ -665,6 +665,39 @@ have no HRTIM instance even though the hardware is present.  Not yet
 worked around — would require reconstructing the HRTIM register layout
 for inclusion as an H73x-specific peripheral entry.
 
+### MDMA trigger map (H742_H753): incomplete SDMMC1 wiring in RM0433
+
+**RM0433 Rev.8 Table 101 "MDMA" (page 600-601):**
+
+The MDMA hardware-trigger source table lists `sdmmc1_dataend_trg → mdma_str29`
+but stops there, omitting the entries for `mdma_str30` and `mdma_str31`.
+Cross-referencing settles the omission as a documentation gap, not a silicon
+difference:
+
+- **RM0433 Table 470 (page 2410)** "SDMMC connections to MDMA" explicitly
+  lists three trigger signals — `dataend_trg`, `cmdend_trg`, `buffend_trg`
+  — emitted from the SDMMC IP.
+- **RM0399 Table 105, RM0468 Table 97, RM0455 Table 80** all wire the same
+  SDMMC1 IP's three triggers to `mdma_str29`/`30`/`31` on their respective
+  H7 subfamilies. The IP is identical; an isolated silicon-side drop on
+  H742_H753 would be implausible.
+
+We wire all three SDMMC1 triggers on H742_H753 per the RM0399 convention
+(`DATAEND_TRG: str29`, `BUFFEND_TRG: str30`, `CMDEND_TRG: str31`).
+
+### OCTOSPI2 fc_trg vs tc_trg in RM0468 / RM0455
+
+**RM0468 Rev.3 Table 97 (page 578) and RM0455 Rev.11 Table 80 (page 558):**
+
+Both RMs spell the OCTOSPI1 transfer-complete trigger consistently as
+`octospi_tc_trg`, but the OCTOSPI2 transfer-complete trigger is spelled
+`octospi_fc_trg` — same row description ("OCTOSPI transfer complete"), same
+source bit (SR.TC), different name. The "fc" form is a documentation typo,
+likely a leftover from an early-draft acronym before the OCTOSPI signal
+naming was unified. The XSPI block model declares one canonical output
+`TC_TRG` and the chip-level wiring uses it for both OCTOSPI1 and OCTOSPI2
+on H73x and H7A3_B.
+
 ### SYSCFG (H7 subfamily differences)
 
 The H7 SYSCFG register set varies significantly across subfamilies. The SVD files
