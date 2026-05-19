@@ -1,5 +1,5 @@
 name: DMAMUX
-description: DMAMUX
+description: DMA request line multiplexer
 groupName: DMAMUX
 source: STM32H723 SVD v2.1
 params:
@@ -7,27 +7,27 @@ params:
     type: int
     default: 15
     max: 31
-    description: Highest valid CCR[] index on this instance (= channel count − 1). DMAMUX1=15, DMAMUX2=7. The max=31 ceiling reflects the 5-bit field width that addresses all 32 CCR[] slots — block address-space capacity (CSR sits at offset 0x80, leaving 32 four-byte slots before it).
+    description: Highest valid CCR[] index on this instance (= channel count − 1). The CCR[] array is dim=32 (block address-space capacity — CSR sits at offset 0x80, leaving 32 four-byte slots); the max=31 ceiling matches that capacity.
   - name: highest_request_generator
     type: int
-    default: 7
+    default: 3
     max: 15
-    description: Highest valid RGCR[] index on this instance (= request generator count − 1). Both DMAMUX1 and DMAMUX2 have 8 generators (highest=7) on H7 today. The max=15 ceiling reflects the 4-bit field width that addresses all 16 RGCR[] slots — block address-space capacity (RGSR sits at offset 0x140, leaving 16 four-byte slots after RG-area start at 0x100).
+    description: Highest valid RGCR[] index on this instance (= request generator count − 1). The RGCR[] array is dim=16 (block address-space capacity — RGSR sits at offset 0x140, leaving 16 four-byte slots after RG-area start at 0x100); the max=15 ceiling matches that capacity.
   - name: request_inputs
     type: int
     default: 7
     max: 8
-    description: Width of the DMAREQ_ID bitfield on C<N>CR (= log2 of addressable request inputs). DMAMUX1=7, DMAMUX2=5.
+    description: Width of the DMAREQ_ID bitfield on C<N>CR (= log2 of addressable request inputs). The CCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits.
   - name: sync_inputs
     type: int
-    default: 3
+    default: 5
     max: 8
-    description: Width of the SYNC_ID bitfield on C<N>CR (= log2 of addressable synchronization inputs). DMAMUX1=3, DMAMUX2=5.
+    description: Width of the SYNC_ID bitfield on C<N>CR (= log2 of addressable synchronization inputs). The CCR layout reserves bits 24:31 for the ID, so the silicon max is 8 bits.
   - name: request_triggers
     type: int
-    default: 3
+    default: 5
     max: 8
-    description: Width of the SIG_ID bitfield on RG<N>CR (= log2 of addressable request-generator trigger inputs). DMAMUX1=3, DMAMUX2=5.
+    description: Width of the SIG_ID bitfield on RG<N>CR (= log2 of addressable request-generator trigger inputs). The RGCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits.
 registers:
   - name: CSR
     displayName: CSR
@@ -684,9 +684,13 @@ addressBlocks:
     usage: registers
 outputs:
   - name: OVR
-    description: Request-line overrun event. Asserted when more than one synchronized request fires before the previous was serviced.
+    description: Overrun interrupt
+  - name: EVT6
+    description: Request-generator event 6 (also routes to EXTI D3 pendclear input per Table 104)
+  - name: EVT7
+    description: Request-generator event 7 (also routes to EXTI D3 pendclear input per Table 104)
   - name: EVT0
-    description: Request-generator event 0 (per-channel SYNC-overrun event that can route to the trigger bus and EXTI pendclear per RM0399 Tables 106/107)
+    description: Request-generator event 0 (per-channel SYNC-overrun event that can route to the trigger bus and EXTI pendclear, RM0399 Tables 106/107)
   - name: EVT1
     description: Request-generator event 1
   - name: EVT2
@@ -697,28 +701,24 @@ outputs:
     description: Request-generator event 4
   - name: EVT5
     description: Request-generator event 5
-  - name: EVT6
-    description: Request-generator event 6 (also routes to EXTI D3 pendclear input per Table 104)
-  - name: EVT7
-    description: Request-generator event 7 (also routes to EXTI D3 pendclear input per Table 104)
   - name: REQ_GEN0
     description: Request generator 0 synthesized DMA-request output (feeds DMAMUX request input slot 0)
   - name: REQ_GEN1
-    description: Request generator 1 synthesized DMA-request output (feeds DMAMUX request input slot 1)
+    description: Request generator 1 synthesized DMA-request output
   - name: REQ_GEN2
-    description: Request generator 2 synthesized DMA-request output (feeds DMAMUX request input slot 2)
+    description: Request generator 2 synthesized DMA-request output
   - name: REQ_GEN3
-    description: Request generator 3 synthesized DMA-request output (feeds DMAMUX request input slot 3)
+    description: Request generator 3 synthesized DMA-request output
   - name: REQ_GEN4
-    description: Request generator 4 synthesized DMA-request output (feeds DMAMUX request input slot 4)
+    description: Request generator 4 synthesized DMA-request output
   - name: REQ_GEN5
-    description: Request generator 5 synthesized DMA-request output (feeds DMAMUX request input slot 5)
+    description: Request generator 5 synthesized DMA-request output
   - name: REQ_GEN6
-    description: Request generator 6 synthesized DMA-request output (feeds DMAMUX request input slot 6)
+    description: Request generator 6 synthesized DMA-request output
   - name: REQ_GEN7
-    description: Request generator 7 synthesized DMA-request output (feeds DMAMUX request input slot 7)
+    description: Request generator 7 synthesized DMA-request output
   - name: REQ_OUT0
-    description: Channel 0 request output (→ DMA1.req.0 on DMAMUX1, → BDMA.req.0 on DMAMUX2)
+    description: Channel 0 request output to downstream DMA engine
   - name: REQ_OUT1
     description: Channel 1 request output
   - name: REQ_OUT2
@@ -734,19 +734,19 @@ outputs:
   - name: REQ_OUT7
     description: Channel 7 request output
   - name: REQ_OUT8
-    description: Channel 8 request output (DMAMUX1 only → DMA2.req.0)
+    description: Channel 8 request output (only DMAMUXes with highest_channel >= 8)
   - name: REQ_OUT9
-    description: Channel 9 request output (DMAMUX1 only)
+    description: Channel 9 request output
   - name: REQ_OUT10
-    description: Channel 10 request output (DMAMUX1 only)
+    description: Channel 10 request output
   - name: REQ_OUT11
-    description: Channel 11 request output (DMAMUX1 only)
+    description: Channel 11 request output
   - name: REQ_OUT12
-    description: Channel 12 request output (DMAMUX1 only)
+    description: Channel 12 request output
   - name: REQ_OUT13
-    description: Channel 13 request output (DMAMUX1 only)
+    description: Channel 13 request output
   - name: REQ_OUT14
-    description: Channel 14 request output (DMAMUX1 only)
+    description: Channel 14 request output
   - name: REQ_OUT15
-    description: Channel 15 request output (DMAMUX1 only)
-namespace: stm32h7
+    description: Channel 15 request output
+namespace: st

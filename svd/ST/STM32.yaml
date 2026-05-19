@@ -145,6 +145,157 @@ shared_blocks:
       - {type: patchAddressBlock, size: 3072}
       - {type: createArray, pattern: FGCLUT(\d+), name: FGCLUT, description: Foreground CLUT}
       - {type: createArray, pattern: BGCLUT(\d+), name: BGCLUT, description: Background CLUT}
+  DMAMUX:
+    # DMA request multiplexer — same silicon block across C0/G0/G4/L4P/L5/
+    # U0/H7. Per-family variation is captured by 5 int params encoding the
+    # silicon-valid extents of the four indexed register arrays/fields:
+    #
+    #   highest_channel           — CCR[] index max  (array dim=32)
+    #   highest_request_generator — RGCR[] index max (array dim=16)
+    #   request_inputs            — DMAREQ_ID width  (bits, 1..8)
+    #   sync_inputs               — SYNC_ID width    (bits, 1..8)
+    #   request_triggers          — SIG_ID width     (bits, 1..8)
+    #
+    # Defaults reflect the mode across all consumers (G4/L5-DMAMUX1 match
+    # them without override). C0/G0/L4P/U0/H7 set per-instance overrides
+    # via chip_params at the family level.
+    from: STM32H723.DMAMUX1
+    description: DMA request line multiplexer
+    params:
+      - {name: highest_channel, type: int, default: 15, max: 31, description: "Highest valid CCR[] index on this instance (= channel count − 1). The CCR[] array is dim=32 (block address-space capacity — CSR sits at offset 0x80, leaving 32 four-byte slots); the max=31 ceiling matches that capacity."}
+      - {name: highest_request_generator, type: int, default: 3, max: 15, description: "Highest valid RGCR[] index on this instance (= request generator count − 1). The RGCR[] array is dim=16 (block address-space capacity — RGSR sits at offset 0x140, leaving 16 four-byte slots after RG-area start at 0x100); the max=15 ceiling matches that capacity."}
+      - {name: request_inputs, type: int, default: 7, max: 8, description: "Width of the DMAREQ_ID bitfield on C<N>CR (= log2 of addressable request inputs). The CCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits."}
+      - {name: sync_inputs, type: int, default: 5, max: 8, description: "Width of the SYNC_ID bitfield on C<N>CR (= log2 of addressable synchronization inputs). The CCR layout reserves bits 24:31 for the ID, so the silicon max is 8 bits."}
+      - {name: request_triggers, type: int, default: 5, max: 8, description: "Width of the SIG_ID bitfield on RG<N>CR (= log2 of addressable request-generator trigger inputs). The RGCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits."}
+    outputs:
+      # OVR is the request-line overrun event signal. Auto-resolver handles
+      # the common SVD spellings (DMAMUX_OVR on single-instance families,
+      # DMAMUX1_OVR on L4P/L5/H7 DMAMUX1) via instance-prefix stripping.
+      # Families with non-conforming SVD names (C0/G0 use a shared NVIC
+      # vector named after the DMA channels it merges with; H7's DMAMUX2
+      # SVD truncates to DMAMUX2_OV) override the pattern in their
+      # `uses: DMAMUX` block.
+      OVR:
+        description: Request-line overrun event. Asserted when a synchronization or trigger event fires on a channel before the previous request was serviced.
+      EVT0:
+        description: Request-generator event 0 (per-channel SYNC-overrun event that can route to the trigger bus and EXTI pendclear, RM0399 Tables 106/107)
+        pattern: '^EVT0$'
+      EVT1: {description: "Request-generator event 1", pattern: '^EVT1$'}
+      EVT2: {description: "Request-generator event 2", pattern: '^EVT2$'}
+      EVT3: {description: "Request-generator event 3", pattern: '^EVT3$'}
+      EVT4: {description: "Request-generator event 4", pattern: '^EVT4$'}
+      EVT5: {description: "Request-generator event 5", pattern: '^EVT5$'}
+      EVT6: {description: "Request-generator event 6", pattern: '^EVT6$'}
+      EVT7: {description: "Request-generator event 7", pattern: '^EVT7$'}
+      # REQ_GEN<N>: per-request-generator synthesized DMA-request output
+      # feeding back into the DMAMUX's own request input bus. Non-SVD.
+      REQ_GEN0: {description: "Request generator 0 synthesized DMA-request output (feeds DMAMUX request input slot 0)"}
+      REQ_GEN1: {description: "Request generator 1 synthesized DMA-request output"}
+      REQ_GEN2: {description: "Request generator 2 synthesized DMA-request output"}
+      REQ_GEN3: {description: "Request generator 3 synthesized DMA-request output"}
+      REQ_GEN4: {description: "Request generator 4 synthesized DMA-request output"}
+      REQ_GEN5: {description: "Request generator 5 synthesized DMA-request output"}
+      REQ_GEN6: {description: "Request generator 6 synthesized DMA-request output"}
+      REQ_GEN7: {description: "Request generator 7 synthesized DMA-request output"}
+      # REQ_OUT<N>: per-channel hardware request output to the downstream
+      # DMA controller. Hardwired silicon — channel-to-stream mapping is
+      # fixed; only the channel's DMAREQ_ID register selects which input
+      # gets routed. Non-SVD.
+      REQ_OUT0: {description: "Channel 0 request output to downstream DMA engine"}
+      REQ_OUT1: {description: "Channel 1 request output"}
+      REQ_OUT2: {description: "Channel 2 request output"}
+      REQ_OUT3: {description: "Channel 3 request output"}
+      REQ_OUT4: {description: "Channel 4 request output"}
+      REQ_OUT5: {description: "Channel 5 request output"}
+      REQ_OUT6: {description: "Channel 6 request output"}
+      REQ_OUT7: {description: "Channel 7 request output"}
+      REQ_OUT8: {description: "Channel 8 request output (only DMAMUXes with highest_channel >= 8)"}
+      REQ_OUT9: {description: "Channel 9 request output"}
+      REQ_OUT10: {description: "Channel 10 request output"}
+      REQ_OUT11: {description: "Channel 11 request output"}
+      REQ_OUT12: {description: "Channel 12 request output"}
+      REQ_OUT13: {description: "Channel 13 request output"}
+      REQ_OUT14: {description: "Channel 14 request output"}
+      REQ_OUT15: {description: "Channel 15 request output"}
+    transforms:
+      # Collapse C<N>CR into CCR[] array, extend dim from 16 (DMAMUX1 SVD)
+      # to 32 (block address-space capacity: CSR at offset 0x80).
+      - {type: createArray, pattern: 'C(\d+)CR', name: CCR, description: DMAMUX request line multiplexer channel x control register}
+      - {type: patchRegisters, registers: [{name: 'CCR[%s]', dim: 32}]}
+      # Collapse RG<N>CR into RGCR[] array, extend dim from 8 (DMAMUX1 SVD)
+      # to 16 (block address-space capacity: RGSR at offset 0x140).
+      - {type: createArray, pattern: 'RG(\d+)CR', name: RGCR, description: DMAMUX request generator channel x control register}
+      - {type: patchRegisters, registers: [{name: 'RGCR[%s]', dim: 16}]}
+      # Widen the three selector fields to their 8-bit block-wide maximum.
+      # H7's DMAMUX1 SVD has 7/3/3, DMAMUX2 has 5/5/5; the shared block
+      # carries the full 8-bit form and per-instance silicon-valid widths
+      # come from the request_inputs / sync_inputs / request_triggers
+      # params.
+      - {type: patchFields, register: 'CCR[%s]', fields: [{name: DMAREQ_ID, bitWidth: 8}, {name: SYNC_ID, bitWidth: 8}]}
+      - {type: patchFields, register: 'RGCR[%s]', fields: [{name: SIG_ID, bitWidth: 8}]}
+      # Status-flag registers: extend per-channel SOF/CSOF bits to all 32
+      # CCR[] slots, and OF/COF bits to all 16 RGCR[] slots, mirroring the
+      # array dims.
+      - type: patchFields
+        register: CSR
+        fields:
+          - {name: SOF16, description: "Synchronization overrun event flag (channel 16)", bitOffset: 16, bitWidth: 1, access: read-only}
+          - {name: SOF17, description: "Synchronization overrun event flag (channel 17)", bitOffset: 17, bitWidth: 1, access: read-only}
+          - {name: SOF18, description: "Synchronization overrun event flag (channel 18)", bitOffset: 18, bitWidth: 1, access: read-only}
+          - {name: SOF19, description: "Synchronization overrun event flag (channel 19)", bitOffset: 19, bitWidth: 1, access: read-only}
+          - {name: SOF20, description: "Synchronization overrun event flag (channel 20)", bitOffset: 20, bitWidth: 1, access: read-only}
+          - {name: SOF21, description: "Synchronization overrun event flag (channel 21)", bitOffset: 21, bitWidth: 1, access: read-only}
+          - {name: SOF22, description: "Synchronization overrun event flag (channel 22)", bitOffset: 22, bitWidth: 1, access: read-only}
+          - {name: SOF23, description: "Synchronization overrun event flag (channel 23)", bitOffset: 23, bitWidth: 1, access: read-only}
+          - {name: SOF24, description: "Synchronization overrun event flag (channel 24)", bitOffset: 24, bitWidth: 1, access: read-only}
+          - {name: SOF25, description: "Synchronization overrun event flag (channel 25)", bitOffset: 25, bitWidth: 1, access: read-only}
+          - {name: SOF26, description: "Synchronization overrun event flag (channel 26)", bitOffset: 26, bitWidth: 1, access: read-only}
+          - {name: SOF27, description: "Synchronization overrun event flag (channel 27)", bitOffset: 27, bitWidth: 1, access: read-only}
+          - {name: SOF28, description: "Synchronization overrun event flag (channel 28)", bitOffset: 28, bitWidth: 1, access: read-only}
+          - {name: SOF29, description: "Synchronization overrun event flag (channel 29)", bitOffset: 29, bitWidth: 1, access: read-only}
+          - {name: SOF30, description: "Synchronization overrun event flag (channel 30)", bitOffset: 30, bitWidth: 1, access: read-only}
+          - {name: SOF31, description: "Synchronization overrun event flag (channel 31)", bitOffset: 31, bitWidth: 1, access: read-only}
+      - type: patchFields
+        register: CFR
+        fields:
+          - {name: CSOF16, description: "Clear synchronization overrun event flag (channel 16)", bitOffset: 16, bitWidth: 1, access: write-only}
+          - {name: CSOF17, description: "Clear synchronization overrun event flag (channel 17)", bitOffset: 17, bitWidth: 1, access: write-only}
+          - {name: CSOF18, description: "Clear synchronization overrun event flag (channel 18)", bitOffset: 18, bitWidth: 1, access: write-only}
+          - {name: CSOF19, description: "Clear synchronization overrun event flag (channel 19)", bitOffset: 19, bitWidth: 1, access: write-only}
+          - {name: CSOF20, description: "Clear synchronization overrun event flag (channel 20)", bitOffset: 20, bitWidth: 1, access: write-only}
+          - {name: CSOF21, description: "Clear synchronization overrun event flag (channel 21)", bitOffset: 21, bitWidth: 1, access: write-only}
+          - {name: CSOF22, description: "Clear synchronization overrun event flag (channel 22)", bitOffset: 22, bitWidth: 1, access: write-only}
+          - {name: CSOF23, description: "Clear synchronization overrun event flag (channel 23)", bitOffset: 23, bitWidth: 1, access: write-only}
+          - {name: CSOF24, description: "Clear synchronization overrun event flag (channel 24)", bitOffset: 24, bitWidth: 1, access: write-only}
+          - {name: CSOF25, description: "Clear synchronization overrun event flag (channel 25)", bitOffset: 25, bitWidth: 1, access: write-only}
+          - {name: CSOF26, description: "Clear synchronization overrun event flag (channel 26)", bitOffset: 26, bitWidth: 1, access: write-only}
+          - {name: CSOF27, description: "Clear synchronization overrun event flag (channel 27)", bitOffset: 27, bitWidth: 1, access: write-only}
+          - {name: CSOF28, description: "Clear synchronization overrun event flag (channel 28)", bitOffset: 28, bitWidth: 1, access: write-only}
+          - {name: CSOF29, description: "Clear synchronization overrun event flag (channel 29)", bitOffset: 29, bitWidth: 1, access: write-only}
+          - {name: CSOF30, description: "Clear synchronization overrun event flag (channel 30)", bitOffset: 30, bitWidth: 1, access: write-only}
+          - {name: CSOF31, description: "Clear synchronization overrun event flag (channel 31)", bitOffset: 31, bitWidth: 1, access: write-only}
+      - type: patchFields
+        register: RGSR
+        fields:
+          - {name: OF8, description: "Trigger overrun event flag (channel 8)", bitOffset: 8, bitWidth: 1, access: read-only}
+          - {name: OF9, description: "Trigger overrun event flag (channel 9)", bitOffset: 9, bitWidth: 1, access: read-only}
+          - {name: OF10, description: "Trigger overrun event flag (channel 10)", bitOffset: 10, bitWidth: 1, access: read-only}
+          - {name: OF11, description: "Trigger overrun event flag (channel 11)", bitOffset: 11, bitWidth: 1, access: read-only}
+          - {name: OF12, description: "Trigger overrun event flag (channel 12)", bitOffset: 12, bitWidth: 1, access: read-only}
+          - {name: OF13, description: "Trigger overrun event flag (channel 13)", bitOffset: 13, bitWidth: 1, access: read-only}
+          - {name: OF14, description: "Trigger overrun event flag (channel 14)", bitOffset: 14, bitWidth: 1, access: read-only}
+          - {name: OF15, description: "Trigger overrun event flag (channel 15)", bitOffset: 15, bitWidth: 1, access: read-only}
+      - type: patchFields
+        register: RGCFR
+        fields:
+          - {name: COF8, description: "Clear trigger overrun event flag (channel 8)", bitOffset: 8, bitWidth: 1, access: write-only}
+          - {name: COF9, description: "Clear trigger overrun event flag (channel 9)", bitOffset: 9, bitWidth: 1, access: write-only}
+          - {name: COF10, description: "Clear trigger overrun event flag (channel 10)", bitOffset: 10, bitWidth: 1, access: write-only}
+          - {name: COF11, description: "Clear trigger overrun event flag (channel 11)", bitOffset: 11, bitWidth: 1, access: write-only}
+          - {name: COF12, description: "Clear trigger overrun event flag (channel 12)", bitOffset: 12, bitWidth: 1, access: write-only}
+          - {name: COF13, description: "Clear trigger overrun event flag (channel 13)", bitOffset: 13, bitWidth: 1, access: write-only}
+          - {name: COF14, description: "Clear trigger overrun event flag (channel 14)", bitOffset: 14, bitWidth: 1, access: write-only}
+          - {name: COF15, description: "Clear trigger overrun event flag (channel 15)", bitOffset: 15, bitWidth: 1, access: write-only}
   JPEG:
     # JPEG codec: F7, H7, H7RS, N6, U5
     from: STM32N645.JPEG
@@ -1821,13 +1972,12 @@ families:
         params:
           - {name: channels, type: int, default: 5, max: 5, description: Number of DMA channels}
       DMAMUX:
-        from: STM32C071.DMAMUX
+        # Single instance; C0's NVIC vector is shared with DMA channels 4-5.
+        uses: DMAMUX
         instances: [DMAMUX]
         outputs:
-          INTR:
+          OVR:
             pattern: '^DMAMUX_DMA1_Channel4_5$'
-        params:
-          - {name: channels, type: int, default: 5, max: 5, description: Number of DMA request multiplexer channels}
       EXTI:
         from: STM32C071.EXTI
         instances: [EXTI]
@@ -1910,6 +2060,8 @@ families:
           SPI: {has_astrten: true}
           CRS: {trim_width: 7}
           SPI1: {has_i2s: true}
+          # C0's DMAMUX: 5 channels (h_ch=4), DMAREQ_ID is 6-bit (request_inputs=6). Other widths match shared defaults.
+          DMAMUX: {highest_channel: 4, request_inputs: 6}
           USART2: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
@@ -3790,11 +3942,11 @@ families:
           CH6:
             pattern: '^DMA1_CH6$'
       DMAMUX:
-        from: STM32G431.DMAMUX
+        # G4 silicon matches the shared-block defaults exactly (highest_channel=15,
+        # highest_request_generator=3, request_inputs=7, sync_inputs=5, request_triggers=5).
+        # OVR canonical resolves from the SVD's DMAMUX_OVR via the auto-resolver.
+        uses: DMAMUX
         instances: [DMAMUX]
-        outputs:
-          INTR:
-            pattern: '^DMAMUX_OVR$'
       EXTI:
         from: STM32G431.EXTI
         instances: [EXTI]
@@ -13669,211 +13821,21 @@ families:
         instances: [DMA2D]
       DMAMUX:
         # DMAMUX1 (D2 domain, 16 channels feeding DMA1/DMA2) and DMAMUX2
-        # (D3 domain, 8 channels feeding BDMA).  Distinct silicon block from
-        # DMA — its own register set (16× DMAMUX_C<N>CR, 8× DMAMUX_RG<N>CR,
-        # DMAMUX_CSR, DMAMUX_CFR, DMAMUX_RGSR, DMAMUX_RGCFR).  Defaults match
-        # DMAMUX1 (the `from:` source); DMAMUX2's smaller silicon is set
-        # via chip_params at the H7 _all._all level below.
-        from: STM32H723.DMAMUX1
+        # (D3 domain, 8 channels feeding BDMA). Two instances of the
+        # shared DMAMUX silicon block, with different selector widths.
+        # OVR pattern handles both SVD spellings (the truncated `DMAMUX2_OV`
+        # would not auto-resolve via prefix-strip).
+        uses: DMAMUX
         instances: [DMAMUX1, DMAMUX2]
-        params:
-          # Channel / generator counts: highest_channel = CCR[] index max,
-          # highest_request_generator = RGCR[] index max.
-          - {name: highest_channel, type: int, default: 15, max: 31, description: "Highest valid CCR[] index on this instance (= channel count − 1). DMAMUX1=15, DMAMUX2=7. The max=31 ceiling reflects the 5-bit field width that addresses all 32 CCR[] slots — block address-space capacity (CSR sits at offset 0x80, leaving 32 four-byte slots before it)."}
-          - {name: highest_request_generator, type: int, default: 7, max: 15, description: "Highest valid RGCR[] index on this instance (= request generator count − 1). Both DMAMUX1 and DMAMUX2 have 8 generators (highest=7) on H7 today. The max=15 ceiling reflects the 4-bit field width that addresses all 16 RGCR[] slots — block address-space capacity (RGSR sits at offset 0x140, leaving 16 four-byte slots after RG-area start at 0x100)."}
-          # Selector-field widths: encoded as the field's bit count rather
-          # than the addressable-input count (count = 2^width).  All three
-          # fields can be up to 8 bits wide per the CCR/RGCR layout — bits
-          # 0:7 reserved for the request/sync/sig ID, then a control gap,
-          # then bits 16:23 for control bits. Drivers reading the param
-          # see the field width directly (1..8) which is what they need
-          # for range validation: a request ID is valid iff its high bit
-          # ≤ (1 << request_inputs) − 1.
-          - {name: request_inputs, type: int, default: 7, max: 8, description: "Width of the DMAREQ_ID bitfield on C<N>CR (= log2 of addressable request inputs). DMAMUX1=7, DMAMUX2=5."}
-          - {name: sync_inputs, type: int, default: 3, max: 8, description: "Width of the SYNC_ID bitfield on C<N>CR (= log2 of addressable synchronization inputs). DMAMUX1=3, DMAMUX2=5."}
-          - {name: request_triggers, type: int, default: 3, max: 8, description: "Width of the SIG_ID bitfield on RG<N>CR (= log2 of addressable request-generator trigger inputs). DMAMUX1=3, DMAMUX2=5."}
-        transforms:
-          # Collapse the 16 C<N>CR registers in the SVD into a CCR[] array,
-          # then extend its dim to 32 — the block's address-space capacity
-          # (CSR sits at offset 0x80, leaving 0x80/4 = 32 four-byte slots
-          # for channel CRs).  Instance-side validity is enforced by the
-          # `highest_channel` param: DMAMUX1=15, DMAMUX2=7. Accesses with
-          # index > highest_channel are silicon-invalid even though the
-          # struct slot exists.
-          - {type: createArray, pattern: 'C(\d+)CR', name: CCR, description: DMAMUX request line multiplexer channel x control register}
-          - {type: patchRegisters, registers: [{name: 'CCR[%s]', dim: 32}]}
-          # Same treatment for RG<N>CR: collapse the SVD's 8 separate
-          # registers into RGCR[], then bump dim to 16 (RGSR at offset
-          # 0x140 - RG0CR at 0x100 = 0x40 bytes = 16 four-byte slots).
-          # H7's DMAMUX1/DMAMUX2 both use the lower 8 today, so
-          # highest_request_generator defaults to 7 with no instance
-          # override.
-          - {type: createArray, pattern: 'RG(\d+)CR', name: RGCR, description: DMAMUX request generator channel x control register}
-          - {type: patchRegisters, registers: [{name: 'RGCR[%s]', dim: 16}]}
-          # Widen the three selector fields (DMAREQ_ID, SYNC_ID, SIG_ID)
-          # to their block-wide-maximum 8-bit form. The DMAMUX1 SVD
-          # declares 7/3/3 (DMAMUX2: 5/5/5); the block-level model is the
-          # superset, and the per-instance silicon-valid width comes from
-          # the request_inputs / sync_inputs / request_triggers params.
-          - {type: patchFields, register: 'CCR[%s]', fields: [{name: DMAREQ_ID, bitWidth: 8}, {name: SYNC_ID, bitWidth: 8}]}
-          - {type: patchFields, register: 'RGCR[%s]', fields: [{name: SIG_ID, bitWidth: 8}]}
-          # Status-flag registers: extend the per-channel SOF/CSOF bits to
-          # all 32 CCR[] slots, and OF/COF bits to all 16 RGCR[] slots,
-          # mirroring the array dims. Bits beyond highest_channel /
-          # highest_request_generator are silicon-reserved on H7
-          # instances; the named bits exist for symmetry with the array
-          # capacity.
-          - type: patchFields
-            register: CSR
-            fields:
-              - {name: SOF16, description: "Synchronization overrun event flag (channel 16)", bitOffset: 16, bitWidth: 1, access: read-only}
-              - {name: SOF17, description: "Synchronization overrun event flag (channel 17)", bitOffset: 17, bitWidth: 1, access: read-only}
-              - {name: SOF18, description: "Synchronization overrun event flag (channel 18)", bitOffset: 18, bitWidth: 1, access: read-only}
-              - {name: SOF19, description: "Synchronization overrun event flag (channel 19)", bitOffset: 19, bitWidth: 1, access: read-only}
-              - {name: SOF20, description: "Synchronization overrun event flag (channel 20)", bitOffset: 20, bitWidth: 1, access: read-only}
-              - {name: SOF21, description: "Synchronization overrun event flag (channel 21)", bitOffset: 21, bitWidth: 1, access: read-only}
-              - {name: SOF22, description: "Synchronization overrun event flag (channel 22)", bitOffset: 22, bitWidth: 1, access: read-only}
-              - {name: SOF23, description: "Synchronization overrun event flag (channel 23)", bitOffset: 23, bitWidth: 1, access: read-only}
-              - {name: SOF24, description: "Synchronization overrun event flag (channel 24)", bitOffset: 24, bitWidth: 1, access: read-only}
-              - {name: SOF25, description: "Synchronization overrun event flag (channel 25)", bitOffset: 25, bitWidth: 1, access: read-only}
-              - {name: SOF26, description: "Synchronization overrun event flag (channel 26)", bitOffset: 26, bitWidth: 1, access: read-only}
-              - {name: SOF27, description: "Synchronization overrun event flag (channel 27)", bitOffset: 27, bitWidth: 1, access: read-only}
-              - {name: SOF28, description: "Synchronization overrun event flag (channel 28)", bitOffset: 28, bitWidth: 1, access: read-only}
-              - {name: SOF29, description: "Synchronization overrun event flag (channel 29)", bitOffset: 29, bitWidth: 1, access: read-only}
-              - {name: SOF30, description: "Synchronization overrun event flag (channel 30)", bitOffset: 30, bitWidth: 1, access: read-only}
-              - {name: SOF31, description: "Synchronization overrun event flag (channel 31)", bitOffset: 31, bitWidth: 1, access: read-only}
-          - type: patchFields
-            register: CFR
-            fields:
-              - {name: CSOF16, description: "Clear synchronization overrun event flag (channel 16)", bitOffset: 16, bitWidth: 1, access: write-only}
-              - {name: CSOF17, description: "Clear synchronization overrun event flag (channel 17)", bitOffset: 17, bitWidth: 1, access: write-only}
-              - {name: CSOF18, description: "Clear synchronization overrun event flag (channel 18)", bitOffset: 18, bitWidth: 1, access: write-only}
-              - {name: CSOF19, description: "Clear synchronization overrun event flag (channel 19)", bitOffset: 19, bitWidth: 1, access: write-only}
-              - {name: CSOF20, description: "Clear synchronization overrun event flag (channel 20)", bitOffset: 20, bitWidth: 1, access: write-only}
-              - {name: CSOF21, description: "Clear synchronization overrun event flag (channel 21)", bitOffset: 21, bitWidth: 1, access: write-only}
-              - {name: CSOF22, description: "Clear synchronization overrun event flag (channel 22)", bitOffset: 22, bitWidth: 1, access: write-only}
-              - {name: CSOF23, description: "Clear synchronization overrun event flag (channel 23)", bitOffset: 23, bitWidth: 1, access: write-only}
-              - {name: CSOF24, description: "Clear synchronization overrun event flag (channel 24)", bitOffset: 24, bitWidth: 1, access: write-only}
-              - {name: CSOF25, description: "Clear synchronization overrun event flag (channel 25)", bitOffset: 25, bitWidth: 1, access: write-only}
-              - {name: CSOF26, description: "Clear synchronization overrun event flag (channel 26)", bitOffset: 26, bitWidth: 1, access: write-only}
-              - {name: CSOF27, description: "Clear synchronization overrun event flag (channel 27)", bitOffset: 27, bitWidth: 1, access: write-only}
-              - {name: CSOF28, description: "Clear synchronization overrun event flag (channel 28)", bitOffset: 28, bitWidth: 1, access: write-only}
-              - {name: CSOF29, description: "Clear synchronization overrun event flag (channel 29)", bitOffset: 29, bitWidth: 1, access: write-only}
-              - {name: CSOF30, description: "Clear synchronization overrun event flag (channel 30)", bitOffset: 30, bitWidth: 1, access: write-only}
-              - {name: CSOF31, description: "Clear synchronization overrun event flag (channel 31)", bitOffset: 31, bitWidth: 1, access: write-only}
-          - type: patchFields
-            register: RGSR
-            fields:
-              - {name: OF8, description: "Trigger overrun event flag (channel 8)", bitOffset: 8, bitWidth: 1, access: read-only}
-              - {name: OF9, description: "Trigger overrun event flag (channel 9)", bitOffset: 9, bitWidth: 1, access: read-only}
-              - {name: OF10, description: "Trigger overrun event flag (channel 10)", bitOffset: 10, bitWidth: 1, access: read-only}
-              - {name: OF11, description: "Trigger overrun event flag (channel 11)", bitOffset: 11, bitWidth: 1, access: read-only}
-              - {name: OF12, description: "Trigger overrun event flag (channel 12)", bitOffset: 12, bitWidth: 1, access: read-only}
-              - {name: OF13, description: "Trigger overrun event flag (channel 13)", bitOffset: 13, bitWidth: 1, access: read-only}
-              - {name: OF14, description: "Trigger overrun event flag (channel 14)", bitOffset: 14, bitWidth: 1, access: read-only}
-              - {name: OF15, description: "Trigger overrun event flag (channel 15)", bitOffset: 15, bitWidth: 1, access: read-only}
-          - type: patchFields
-            register: RGCFR
-            fields:
-              - {name: COF8, description: "Clear trigger overrun event flag (channel 8)", bitOffset: 8, bitWidth: 1, access: write-only}
-              - {name: COF9, description: "Clear trigger overrun event flag (channel 9)", bitOffset: 9, bitWidth: 1, access: write-only}
-              - {name: COF10, description: "Clear trigger overrun event flag (channel 10)", bitOffset: 10, bitWidth: 1, access: write-only}
-              - {name: COF11, description: "Clear trigger overrun event flag (channel 11)", bitOffset: 11, bitWidth: 1, access: write-only}
-              - {name: COF12, description: "Clear trigger overrun event flag (channel 12)", bitOffset: 12, bitWidth: 1, access: write-only}
-              - {name: COF13, description: "Clear trigger overrun event flag (channel 13)", bitOffset: 13, bitWidth: 1, access: write-only}
-              - {name: COF14, description: "Clear trigger overrun event flag (channel 14)", bitOffset: 14, bitWidth: 1, access: write-only}
-              - {name: COF15, description: "Clear trigger overrun event flag (channel 15)", bitOffset: 15, bitWidth: 1, access: write-only}
         outputs:
           OVR:
-            description: Request-line overrun event. Asserted when more than one synchronized request fires before the previous was serviced.
             pattern: '^DMAMUX\d+_OV(R)?$'
-          EVT0:
-            description: Request-generator event 0 (per-channel SYNC-overrun event that can route to the trigger bus and EXTI pendclear per RM0399 Tables 106/107)
-            pattern: '^EVT0$'
-          EVT1:
-            description: Request-generator event 1
-            pattern: '^EVT1$'
-          EVT2:
-            description: Request-generator event 2
-            pattern: '^EVT2$'
-          EVT3:
-            description: Request-generator event 3
-            pattern: '^EVT3$'
-          EVT4:
-            description: Request-generator event 4
-            pattern: '^EVT4$'
-          EVT5:
-            description: Request-generator event 5
-            pattern: '^EVT5$'
           EVT6:
             description: Request-generator event 6 (also routes to EXTI D3 pendclear input per Table 104)
             pattern: '^EVT6$'
           EVT7:
             description: Request-generator event 7 (also routes to EXTI D3 pendclear input per Table 104)
             pattern: '^EVT7$'
-          # REQ_GEN<X> are the per-request-generator DMA-request outputs.
-          # Each REQ_GEN<X> output feeds back into the DMAMUX's own request
-          # input bus at slot X (so a DMAMUX channel can pick it via
-          # DMAMUX_CxCR.DMAREQ_ID = X). Architecturally hard-wired loop.
-          # Distinct from EVT<X>: EVT signals are per-channel SYNC-overrun
-          # events that can route to the trigger bus and EXTI pendclear,
-          # while REQ_GEN<X> only feed the request input bus.
-          REQ_GEN0:
-            description: Request generator 0 synthesized DMA-request output (feeds DMAMUX request input slot 0)
-          REQ_GEN1:
-            description: Request generator 1 synthesized DMA-request output (feeds DMAMUX request input slot 1)
-          REQ_GEN2:
-            description: Request generator 2 synthesized DMA-request output (feeds DMAMUX request input slot 2)
-          REQ_GEN3:
-            description: Request generator 3 synthesized DMA-request output (feeds DMAMUX request input slot 3)
-          REQ_GEN4:
-            description: Request generator 4 synthesized DMA-request output (feeds DMAMUX request input slot 4)
-          REQ_GEN5:
-            description: Request generator 5 synthesized DMA-request output (feeds DMAMUX request input slot 5)
-          REQ_GEN6:
-            description: Request generator 6 synthesized DMA-request output (feeds DMAMUX request input slot 6)
-          REQ_GEN7:
-            description: Request generator 7 synthesized DMA-request output (feeds DMAMUX request input slot 7)
-          # REQ_OUT<N> are the DMAMUX's per-channel hardware request outputs
-          # to the downstream DMA controller. DMAMUX1 has 16 channels feeding
-          # DMA1 (0-7) and DMA2 (0-7); DMAMUX2 has 8 channels feeding BDMA
-          # (0-7). Hardwired silicon — the channel-to-stream mapping is
-          # fixed; only the DMAMUX_C<N>CR.DMAREQ_ID configuration register
-          # changes which request input gets routed to that channel.
-          # Non-SVD: SVD only lists the channel register set, not the
-          # downstream wiring. Per RM0399 Tables 106/107.
-          REQ_OUT0:
-            description: Channel 0 request output (→ DMA1.req.0 on DMAMUX1, → BDMA.req.0 on DMAMUX2)
-          REQ_OUT1:
-            description: Channel 1 request output
-          REQ_OUT2:
-            description: Channel 2 request output
-          REQ_OUT3:
-            description: Channel 3 request output
-          REQ_OUT4:
-            description: Channel 4 request output
-          REQ_OUT5:
-            description: Channel 5 request output
-          REQ_OUT6:
-            description: Channel 6 request output
-          REQ_OUT7:
-            description: Channel 7 request output
-          REQ_OUT8:
-            description: Channel 8 request output (DMAMUX1 only → DMA2.req.0)
-          REQ_OUT9:
-            description: Channel 9 request output (DMAMUX1 only)
-          REQ_OUT10:
-            description: Channel 10 request output (DMAMUX1 only)
-          REQ_OUT11:
-            description: Channel 11 request output (DMAMUX1 only)
-          REQ_OUT12:
-            description: Channel 12 request output (DMAMUX1 only)
-          REQ_OUT13:
-            description: Channel 13 request output (DMAMUX1 only)
-          REQ_OUT14:
-            description: Channel 14 request output (DMAMUX1 only)
-          REQ_OUT15:
-            description: Channel 15 request output (DMAMUX1 only)
       DSIHOST:
         from: STM32H745_CM4.DSIHOST
         instances: [DSIHOST]
@@ -14750,13 +14712,14 @@ families:
           TAMP: {or_reg: 3}
           RTC: {has_itsf: true}
           OCTOSPI: {has_maxtran: true}
-          # DMAMUX2 differs from DMAMUX1 per the STM32H723.DMAMUX2 SVD:
-          # highest_channel=7 (8 channels vs 16); DMAREQ_ID is 5-bit (vs
-          # 7-bit), SYNC_ID and SIG_ID are 5-bit (vs 3-bit).  Param values
-          # are the bit widths directly — addressable counts are 2^width.
-          # DMAMUX2's wider SYNC_ID/SIG_ID covers a larger pool because it
-          # also accepts EXTI lines (RM0399 Table 107 dmamux2_trg6..15).
-          DMAMUX2: {highest_channel: 7, request_inputs: 5, sync_inputs: 5, request_triggers: 5}
+          # H7 DMAMUX overrides on the shared block defaults (15/3/7/5/5).
+          # DMAMUX1: 8 request generators (h_rg=7 vs default 3), narrower
+          # SYNC_ID/SIG_ID (3 bits vs default 5).
+          # DMAMUX2: 8 channels (h_ch=7), 8 generators (h_rg=7), narrower
+          # DMAREQ_ID (5 bits vs default 7); SYNC_ID/SIG_ID match the
+          # shared default 5.
+          DMAMUX1: {highest_request_generator: 7, sync_inputs: 3, request_triggers: 3}
+          DMAMUX2: {highest_channel: 7, highest_request_generator: 7, request_inputs: 5}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -15978,11 +15941,10 @@ families:
         uses: DMA2D
         instances: [DMA2D]
       DMAMUX:
-        from: STM32L4P5.DMAMUX1
+        # L4P silicon: highest_channel=13 (override). Other widths match
+        # shared defaults. OVR resolves from DMAMUX1_OVR via auto-resolver.
+        uses: DMAMUX
         instances: [DMAMUX1]
-        outputs:
-          INTR:
-            pattern: '^DMAMUX1_OVR$'
       DSI:
         uses: DSI
         instances: [DSI]
@@ -16142,6 +16104,8 @@ families:
         _all:
           CRC: {idr32: false}
           DMA2D: {gen: 1}
+          # L4P's DMAMUX1: 14 channels (h_ch=13). Other widths match shared defaults.
+          DMAMUX1: {highest_channel: 13}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}
@@ -16905,7 +16869,11 @@ families:
           Channel4_5_6_7:
             pattern: '^DMA1_Channel4_5_6_7$'
       DMAMUX:
-        from: STM32U031.DMAMUX
+        # U0 silicon: highest_channel=11 (override). Other widths match
+        # shared defaults. U0's DMAMUX doesn't expose a chip-level
+        # interrupt signal of its own — overrun reports through the DMA
+        # channels' shared NVIC vector.
+        uses: DMAMUX
         instances: [DMAMUX]
       EXTI:
         from: STM32U031.EXTI
@@ -17010,6 +16978,8 @@ families:
           TSC: {groups: 7}
           TAMP: {pom: true}
           OPAMP: {single: true}
+          # U0's DMAMUX: 12 channels (h_ch=11). Other widths match shared defaults.
+          DMAMUX: {highest_channel: 11}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           USART3: {synchronous: 1, has_fifo: false, has_wakeup: false}
           USART4: {synchronous: 1, has_fifo: false, has_wakeup: false}
