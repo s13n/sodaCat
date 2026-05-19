@@ -685,6 +685,38 @@ difference:
 We wire all three SDMMC1 triggers on H742_H753 per the RM0399 convention
 (`DATAEND_TRG: str29`, `BUFFEND_TRG: str30`, `CMDEND_TRG: str31`).
 
+### Bogus BDMA_CH8 interrupt entry in H7 SVDs
+
+**STM32H7 SVD V2.8 — STM32H745/H747/H755/H757 (all CM4 and CM7), STM32H7B0:**
+
+These nine SVDs declare a `BDMA_CH8` interrupt entry, but the BDMA peripheral
+only has 8 channels (CH0..CH7) per RM0399 §17.5 and RM0455 §17.5. On
+H745/747/755/757 the `BDMA_CH8` vector value is the same as `BDMA_CH7`'s
+(136 — both resolve to NVIC.152), a clear copy-paste artifact. The BDMA
+block model declares only CH0..CH7 outputs; the bogus SVD entries surface
+as `BDMA: BDMA_CH8` in the unmatched-interrupts report, which is the
+intended behaviour — silencing the warning by adding a fake CH8 canonical
+would hide the SVD bug.
+
+### BDMA chip-level signals: Figure 89 vs Table 121 in RM0399
+
+**RM0399 Rev.4 chapter 17 "Basic direct memory access controller (BDMA)":**
+
+The chapter's block diagram (Figure 89, page 709) shows a `bdma_tcif[x]`
+output bus leaving the BDMA, suggesting that per-channel transfer-complete
+flags are exposed at the chip boundary. Table 121 on the next page
+("BDMA internal input/output signals", page 710) lists `bdma_ack[x]`
+in that slot instead, with no `bdma_tcif[x]` anywhere — the only output
+besides `bdma_ack[x]` is `bdma_it[x]` (channel x interrupt, OR'd from
+HTIFx/TCIFx/TEIFx per §17.5).
+
+Table 121 is the plausible side: chip-level Table 107 actually wires
+BDMA's DMAMUX2 handshake as request-out/ack-in/it-out, which needs
+`bdma_ack[x]` — the figure's `bdma_tcif[x]` doesn't appear anywhere as
+a destination signal. The BDMA block model therefore declares only
+`CH<N>` (= `bdma_it[N]`) outputs and no separate `TCIF<N>`, matching
+Table 121.
+
 ### OCTOSPI2 fc_trg vs tc_trg in RM0468 / RM0455
 
 **RM0468 Rev.3 Table 97 (page 578) and RM0455 Rev.11 Table 80 (page 558):**
