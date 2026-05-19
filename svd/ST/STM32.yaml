@@ -13669,21 +13669,51 @@ families:
             description: DMA2D transfer-watermark trigger
             pattern: '^TW_TRG$'
           STR0:
+            description: Stream0 global interrupt (OR of TCIF/HTIF/TEIF/DMEIF/FEIF enabled by SxCR.{TCIE,HTIE,TEIE,DMEIE} and SxFCR.FEIE)
             pattern: '^DMA_STR0$'
           STR1:
+            description: Stream1 global interrupt
             pattern: '^DMA_STR1$'
           STR2:
+            description: Stream2 global interrupt
             pattern: '^DMA_STR2$'
           STR3:
+            description: Stream3 global interrupt
             pattern: '^DMA_STR3$'
           STR4:
+            description: Stream4 global interrupt
             pattern: '^DMA_STR4$'
           STR5:
+            description: Stream5 global interrupt
             pattern: '^DMA_STR5$'
           STR6:
+            description: Stream6 global interrupt
             pattern: '^DMA_STR6$'
           STR7:
+            description: Stream7 global interrupt
             pattern: '^DMA1_STR7$'
+          # Per-stream transfer-complete signals exposed to the chip-level
+          # trigger fabric (the LISR/HISR TCIFx flag, independent of the
+          # stream's global-interrupt OR).  On H7 these are the canonical
+          # MDMA request sources for DMA1/DMA2 streams 0-7 per RM0399
+          # Table 105.  Non-SVD: SVD only lists the per-stream global
+          # interrupt — the TCIF tap is silicon-level and wired by chip.
+          TCIF0:
+            description: Stream0 transfer-complete signal (LISR.TCIF0)
+          TCIF1:
+            description: Stream1 transfer-complete signal (LISR.TCIF1)
+          TCIF2:
+            description: Stream2 transfer-complete signal (LISR.TCIF2)
+          TCIF3:
+            description: Stream3 transfer-complete signal (LISR.TCIF3)
+          TCIF4:
+            description: Stream4 transfer-complete signal (HISR.TCIF4)
+          TCIF5:
+            description: Stream5 transfer-complete signal (HISR.TCIF5)
+          TCIF6:
+            description: Stream6 transfer-complete signal (HISR.TCIF6)
+          TCIF7:
+            description: Stream7 transfer-complete signal (HISR.TCIF7)
         transforms:
           - {type: createClusterArray, pattern: S(\d+)(\w+), name: S, description: DMA stream}
       DSIHOST:
@@ -14443,10 +14473,14 @@ families:
                     REQ_GEN0: [DMAMUX2.1], REQ_GEN1: [DMAMUX2.2], REQ_GEN2: [DMAMUX2.3], REQ_GEN3: [DMAMUX2.4],
                     REQ_GEN4: [DMAMUX2.5], REQ_GEN5: [DMAMUX2.6], REQ_GEN6: [DMAMUX2.7], REQ_GEN7: [DMAMUX2.8]}
           # MDMA trigger sources per RM0399 Table 105. DMA1/DMA2 stream
-          # transfer-complete signals double as MDMA stream-trigger inputs
-          # 0-15. Various display/codec/storage peripherals feed inputs 16-31.
-          DMA1:  {STR0: [NVIC.27, MDMA.str.0], STR1: [NVIC.28, MDMA.str.1], STR2: [NVIC.29, MDMA.str.2], STR3: [NVIC.30, MDMA.str.3], STR4: [NVIC.31, MDMA.str.4], STR5: [NVIC.32, MDMA.str.5], STR6: [NVIC.33, MDMA.str.6], STR7: [NVIC.63, MDMA.str.7]}
-          DMA2:  {STR0: [NVIC.72, MDMA.str.8], STR1: [NVIC.73, MDMA.str.9], STR2: [NVIC.74, MDMA.str.10], STR3: [NVIC.75, MDMA.str.11], STR4: [NVIC.76, MDMA.str.12], STR5: [NVIC.84, MDMA.str.13], STR6: [NVIC.85, MDMA.str.14], STR7: [NVIC.86, MDMA.str.15]}
+          # transfer-complete signals (TCIF, not the stream global interrupt)
+          # feed MDMA inputs 0-15; the global STR<N> output stays an NVIC-
+          # only destination. Various display/codec/storage peripherals feed
+          # the remaining MDMA inputs 16-31.
+          DMA1:  {STR0: [NVIC.27], STR1: [NVIC.28], STR2: [NVIC.29], STR3: [NVIC.30], STR4: [NVIC.31], STR5: [NVIC.32], STR6: [NVIC.33], STR7: [NVIC.63],
+                  TCIF0: [MDMA.str.0], TCIF1: [MDMA.str.1], TCIF2: [MDMA.str.2], TCIF3: [MDMA.str.3], TCIF4: [MDMA.str.4], TCIF5: [MDMA.str.5], TCIF6: [MDMA.str.6], TCIF7: [MDMA.str.7]}
+          DMA2:  {STR0: [NVIC.72], STR1: [NVIC.73], STR2: [NVIC.74], STR3: [NVIC.75], STR4: [NVIC.76], STR5: [NVIC.84], STR6: [NVIC.85], STR7: [NVIC.86],
+                  TCIF0: [MDMA.str.8], TCIF1: [MDMA.str.9], TCIF2: [MDMA.str.10], TCIF3: [MDMA.str.11], TCIF4: [MDMA.str.12], TCIF5: [MDMA.str.13], TCIF6: [MDMA.str.14], TCIF7: [MDMA.str.15]}
           LTDC:  {INTR: [NVIC.88], ER: [NVIC.89], LI_IT: [MDMA.str.16]}
           JPEG:  {INTR: [NVIC.139], IFT_TRG: [MDMA.str.17], IFNT_TRG: [MDMA.str.18], OFT_TRG: [MDMA.str.19], OFNE_TRG: [MDMA.str.20], OEC_TRG: [MDMA.str.21]}
           QUADSPI: {INTR: [NVIC.92], FT_TRG: [MDMA.str.22], TC_TRG: [MDMA.str.23]}
