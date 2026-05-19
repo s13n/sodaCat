@@ -13677,7 +13677,8 @@ families:
         from: STM32H723.DMAMUX1
         instances: [DMAMUX1, DMAMUX2]
         params:
-          - {name: highest_channel, type: int, default: 15, max: 31, description: "Highest valid CCR[] index on this instance (= channel count − 1). DMAMUX1=15, DMAMUX2=7. The max=31 ceiling reflects the 5-bit field width and the block's address-space capacity (up to 32 channels could fit before CSR at offset 0x80); the CCR[] array is dim=16 in the model today and can be extended via patchRegisters if a future variant uses more."}
+          - {name: highest_channel, type: int, default: 15, max: 31, description: "Highest valid CCR[] index on this instance (= channel count − 1). DMAMUX1=15, DMAMUX2=7. The max=31 ceiling reflects the 5-bit field width that addresses all 32 CCR[] slots — block address-space capacity (CSR sits at offset 0x80, leaving 32 four-byte slots before it)."}
+          - {name: highest_request_generator, type: int, default: 7, max: 15, description: "Highest valid RGCR[] index on this instance (= request generator count − 1). Both DMAMUX1 and DMAMUX2 have 8 generators (highest=7) on H7 today. The max=15 ceiling reflects the 4-bit field width that addresses all 16 RGCR[] slots — block address-space capacity (RGSR sits at offset 0x140, leaving 16 four-byte slots after RG-area start at 0x100)."}
           - {name: request_inputs, type: int, default: 128, description: "Addressable DMA request input range (DMAREQ_ID bitfield), equal to 2^DMAREQ_ID_width. Drivers should validate that the configured request ID falls within this range; the silicon-valid subset is typically smaller and listed in the RM."}
           - {name: sync_inputs, type: int, default: 8, description: "Addressable synchronization/trigger input range (SYNC_ID on C<N>CR and SIG_ID on RG<N>CR — both bitfields have the same width on a given instance), equal to 2^SYNC_ID_width."}
         transforms:
@@ -13690,6 +13691,14 @@ families:
           # struct slot exists.
           - {type: createArray, pattern: 'C(\d+)CR', name: CCR, description: DMAMUX request line multiplexer channel x control register}
           - {type: patchRegisters, registers: [{name: 'CCR[%s]', dim: 32}]}
+          # Same treatment for RG<N>CR: collapse the SVD's 8 separate
+          # registers into RGCR[], then bump dim to 16 (RGSR at offset
+          # 0x140 - RG0CR at 0x100 = 0x40 bytes = 16 four-byte slots).
+          # H7's DMAMUX1/DMAMUX2 both use the lower 8 today, so
+          # highest_request_generator defaults to 7 with no instance
+          # override.
+          - {type: createArray, pattern: 'RG(\d+)CR', name: RGCR, description: DMAMUX request generator channel x control register}
+          - {type: patchRegisters, registers: [{name: 'RGCR[%s]', dim: 16}]}
         outputs:
           OVR:
             description: Request-line overrun event. Asserted when more than one synchronized request fires before the previous was serviced.

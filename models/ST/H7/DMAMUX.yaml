@@ -7,7 +7,12 @@ params:
     type: int
     default: 15
     max: 31
-    description: Highest valid CCR[] index on this instance (= channel count − 1). DMAMUX1=15, DMAMUX2=7. The max=31 ceiling reflects the 5-bit field width and the block's address-space capacity (up to 32 channels could fit before CSR at offset 0x80); the CCR[] array is dim=16 in the model today and can be extended via patchRegisters if a future variant uses more.
+    description: Highest valid CCR[] index on this instance (= channel count − 1). DMAMUX1=15, DMAMUX2=7. The max=31 ceiling reflects the 5-bit field width that addresses all 32 CCR[] slots — block address-space capacity (CSR sits at offset 0x80, leaving 32 four-byte slots before it).
+  - name: highest_request_generator
+    type: int
+    default: 7
+    max: 15
+    description: Highest valid RGCR[] index on this instance (= request generator count − 1). Both DMAMUX1 and DMAMUX2 have 8 generators (highest=7) on H7 today. The max=15 ceiling reflects the 4-bit field width that addresses all 16 RGCR[] slots — block address-space capacity (RGSR sits at offset 0x140, leaving 16 four-byte slots after RG-area start at 0x100).
   - name: request_inputs
     type: int
     default: 128
@@ -191,478 +196,6 @@ registers:
         bitOffset: 15
         bitWidth: 1
         access: write-only
-  - name: RG0CR
-    displayName: RG0CR
-    addressOffset: 256
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: SIG_ID
-        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
-        bitOffset: 0
-        bitWidth: 3
-        access: read-write
-      - name: OIE
-        description: Trigger overrun interrupt enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt on a trigger overrun event occurrence is disabled
-            value: 0
-          - name: B_0x1
-            description: Interrupt on a trigger overrun event occurrence is enabled
-            value: 1
-      - name: GE
-        description: DMA request generator channel x enable
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA request generator channel x disabled
-            value: 0
-          - name: B_0x1
-            description: DMA request generator channel x enabled
-            value: 1
-      - name: GPOL
-        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
-        bitOffset: 17
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No event, i.e. no trigger detection nor generation.
-            value: 0
-          - name: B_0x1
-            description: Rising edge
-            value: 1
-          - name: B_0x2
-            description: Falling edge
-            value: 2
-          - name: B_0x3
-            description: Rising and falling edges
-            value: 3
-      - name: GNBREQ
-        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
-        bitOffset: 19
-        bitWidth: 5
-        access: read-write
-  - name: RG1CR
-    displayName: RG1CR
-    addressOffset: 260
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: SIG_ID
-        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
-        bitOffset: 0
-        bitWidth: 3
-        access: read-write
-      - name: OIE
-        description: Trigger overrun interrupt enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt on a trigger overrun event occurrence is disabled
-            value: 0
-          - name: B_0x1
-            description: Interrupt on a trigger overrun event occurrence is enabled
-            value: 1
-      - name: GE
-        description: DMA request generator channel x enable
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA request generator channel x disabled
-            value: 0
-          - name: B_0x1
-            description: DMA request generator channel x enabled
-            value: 1
-      - name: GPOL
-        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
-        bitOffset: 17
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No event, i.e. no trigger detection nor generation.
-            value: 0
-          - name: B_0x1
-            description: Rising edge
-            value: 1
-          - name: B_0x2
-            description: Falling edge
-            value: 2
-          - name: B_0x3
-            description: Rising and falling edges
-            value: 3
-      - name: GNBREQ
-        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
-        bitOffset: 19
-        bitWidth: 5
-        access: read-write
-  - name: RG2CR
-    displayName: RG2CR
-    addressOffset: 264
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: SIG_ID
-        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
-        bitOffset: 0
-        bitWidth: 3
-        access: read-write
-      - name: OIE
-        description: Trigger overrun interrupt enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt on a trigger overrun event occurrence is disabled
-            value: 0
-          - name: B_0x1
-            description: Interrupt on a trigger overrun event occurrence is enabled
-            value: 1
-      - name: GE
-        description: DMA request generator channel x enable
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA request generator channel x disabled
-            value: 0
-          - name: B_0x1
-            description: DMA request generator channel x enabled
-            value: 1
-      - name: GPOL
-        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
-        bitOffset: 17
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No event, i.e. no trigger detection nor generation.
-            value: 0
-          - name: B_0x1
-            description: Rising edge
-            value: 1
-          - name: B_0x2
-            description: Falling edge
-            value: 2
-          - name: B_0x3
-            description: Rising and falling edges
-            value: 3
-      - name: GNBREQ
-        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
-        bitOffset: 19
-        bitWidth: 5
-        access: read-write
-  - name: RG3CR
-    displayName: RG3CR
-    addressOffset: 268
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: SIG_ID
-        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
-        bitOffset: 0
-        bitWidth: 3
-        access: read-write
-      - name: OIE
-        description: Trigger overrun interrupt enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt on a trigger overrun event occurrence is disabled
-            value: 0
-          - name: B_0x1
-            description: Interrupt on a trigger overrun event occurrence is enabled
-            value: 1
-      - name: GE
-        description: DMA request generator channel x enable
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA request generator channel x disabled
-            value: 0
-          - name: B_0x1
-            description: DMA request generator channel x enabled
-            value: 1
-      - name: GPOL
-        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
-        bitOffset: 17
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No event, i.e. no trigger detection nor generation.
-            value: 0
-          - name: B_0x1
-            description: Rising edge
-            value: 1
-          - name: B_0x2
-            description: Falling edge
-            value: 2
-          - name: B_0x3
-            description: Rising and falling edges
-            value: 3
-      - name: GNBREQ
-        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
-        bitOffset: 19
-        bitWidth: 5
-        access: read-write
-  - name: RG4CR
-    displayName: RG4CR
-    addressOffset: 272
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: SIG_ID
-        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
-        bitOffset: 0
-        bitWidth: 3
-        access: read-write
-      - name: OIE
-        description: Trigger overrun interrupt enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt on a trigger overrun event occurrence is disabled
-            value: 0
-          - name: B_0x1
-            description: Interrupt on a trigger overrun event occurrence is enabled
-            value: 1
-      - name: GE
-        description: DMA request generator channel x enable
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA request generator channel x disabled
-            value: 0
-          - name: B_0x1
-            description: DMA request generator channel x enabled
-            value: 1
-      - name: GPOL
-        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
-        bitOffset: 17
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No event, i.e. no trigger detection nor generation.
-            value: 0
-          - name: B_0x1
-            description: Rising edge
-            value: 1
-          - name: B_0x2
-            description: Falling edge
-            value: 2
-          - name: B_0x3
-            description: Rising and falling edges
-            value: 3
-      - name: GNBREQ
-        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
-        bitOffset: 19
-        bitWidth: 5
-        access: read-write
-  - name: RG5CR
-    displayName: RG5CR
-    addressOffset: 276
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: SIG_ID
-        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
-        bitOffset: 0
-        bitWidth: 3
-        access: read-write
-      - name: OIE
-        description: Trigger overrun interrupt enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt on a trigger overrun event occurrence is disabled
-            value: 0
-          - name: B_0x1
-            description: Interrupt on a trigger overrun event occurrence is enabled
-            value: 1
-      - name: GE
-        description: DMA request generator channel x enable
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA request generator channel x disabled
-            value: 0
-          - name: B_0x1
-            description: DMA request generator channel x enabled
-            value: 1
-      - name: GPOL
-        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
-        bitOffset: 17
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No event, i.e. no trigger detection nor generation.
-            value: 0
-          - name: B_0x1
-            description: Rising edge
-            value: 1
-          - name: B_0x2
-            description: Falling edge
-            value: 2
-          - name: B_0x3
-            description: Rising and falling edges
-            value: 3
-      - name: GNBREQ
-        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
-        bitOffset: 19
-        bitWidth: 5
-        access: read-write
-  - name: RG6CR
-    displayName: RG6CR
-    addressOffset: 280
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: SIG_ID
-        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
-        bitOffset: 0
-        bitWidth: 3
-        access: read-write
-      - name: OIE
-        description: Trigger overrun interrupt enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt on a trigger overrun event occurrence is disabled
-            value: 0
-          - name: B_0x1
-            description: Interrupt on a trigger overrun event occurrence is enabled
-            value: 1
-      - name: GE
-        description: DMA request generator channel x enable
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA request generator channel x disabled
-            value: 0
-          - name: B_0x1
-            description: DMA request generator channel x enabled
-            value: 1
-      - name: GPOL
-        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
-        bitOffset: 17
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No event, i.e. no trigger detection nor generation.
-            value: 0
-          - name: B_0x1
-            description: Rising edge
-            value: 1
-          - name: B_0x2
-            description: Falling edge
-            value: 2
-          - name: B_0x3
-            description: Rising and falling edges
-            value: 3
-      - name: GNBREQ
-        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
-        bitOffset: 19
-        bitWidth: 5
-        access: read-write
-  - name: RG7CR
-    displayName: RG7CR
-    addressOffset: 284
-    size: 32
-    resetValue: 0
-    resetMask: 4294967295
-    fields:
-      - name: SIG_ID
-        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
-        bitOffset: 0
-        bitWidth: 3
-        access: read-write
-      - name: OIE
-        description: Trigger overrun interrupt enable
-        bitOffset: 8
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: Interrupt on a trigger overrun event occurrence is disabled
-            value: 0
-          - name: B_0x1
-            description: Interrupt on a trigger overrun event occurrence is enabled
-            value: 1
-      - name: GE
-        description: DMA request generator channel x enable
-        bitOffset: 16
-        bitWidth: 1
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: DMA request generator channel x disabled
-            value: 0
-          - name: B_0x1
-            description: DMA request generator channel x enabled
-            value: 1
-      - name: GPOL
-        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
-        bitOffset: 17
-        bitWidth: 2
-        access: read-write
-        enumeratedValues:
-          - name: B_0x0
-            description: No event, i.e. no trigger detection nor generation.
-            value: 0
-          - name: B_0x1
-            description: Rising edge
-            value: 1
-          - name: B_0x2
-            description: Falling edge
-            value: 2
-          - name: B_0x3
-            description: Rising and falling edges
-            value: 3
-      - name: GNBREQ
-        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
-        bitOffset: 19
-        bitWidth: 5
-        access: read-write
   - name: RGSR
     displayName: RGSR
     addressOffset: 320
@@ -836,6 +369,68 @@ registers:
     dim: 32
     dimIncrement: 4
     description: DMAMUX request line multiplexer channel x control register
+  - name: RGCR[%s]
+    displayName: RGCR[%s]
+    addressOffset: 256
+    size: 32
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: SIG_ID
+        description: "Signal identification\nSelects the DMA request trigger input used for the channel x of the DMA request generator"
+        bitOffset: 0
+        bitWidth: 3
+        access: read-write
+      - name: OIE
+        description: Trigger overrun interrupt enable
+        bitOffset: 8
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: Interrupt on a trigger overrun event occurrence is disabled
+            value: 0
+          - name: B_0x1
+            description: Interrupt on a trigger overrun event occurrence is enabled
+            value: 1
+      - name: GE
+        description: DMA request generator channel x enable
+        bitOffset: 16
+        bitWidth: 1
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: DMA request generator channel x disabled
+            value: 0
+          - name: B_0x1
+            description: DMA request generator channel x enabled
+            value: 1
+      - name: GPOL
+        description: "DMA request generator trigger polarity\nDefines the edge polarity of the selected trigger input"
+        bitOffset: 17
+        bitWidth: 2
+        access: read-write
+        enumeratedValues:
+          - name: B_0x0
+            description: No event, i.e. no trigger detection nor generation.
+            value: 0
+          - name: B_0x1
+            description: Rising edge
+            value: 1
+          - name: B_0x2
+            description: Falling edge
+            value: 2
+          - name: B_0x3
+            description: Rising and falling edges
+            value: 3
+      - name: GNBREQ
+        description: "Number of DMA requests to be generated (minus 1)\nDefines the number of DMA requests to be generated after a trigger event. The actual number of generated DMA requests is GNBREQ +1.\nNote: This field must be written only when GE bit is disabled."
+        bitOffset: 19
+        bitWidth: 5
+        access: read-write
+    dim: 16
+    dimIncrement: 4
+    description: DMAMUX request generator channel x control register
 addressBlocks:
   - offset: 0
     size: 1024
