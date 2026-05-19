@@ -738,6 +738,36 @@ unmatched-interrupts report.
 similar bogus `BDMA_CH8` — copy of CH7's vector — that also surfaces as
 unmatched.
 
+### DMAMUX request generator count: register map shows 4, silicon has 8
+
+**RM0399 Rev.4 Table 135 (page 753), RM0433 Rev.8 Table 134 (page 714),
+RM0468 Rev.3 Table 134 (page 692):**
+
+The DMAMUX register map in chapter 17/18 lists only four request
+generator control registers — DMAMUX_RG0CR, RG1CR, RG2CR, RG3CR — at
+offsets 0x100, 0x104, 0x108, 0x10C, then jumps straight to RGSR at
+0x140. This contradicts the same chapter's instantiation table on the
+preceding page, which says "Number of DMAMUX request generator
+channels: 8 / 8" for both DMAMUX1 and DMAMUX2.
+
+The 8-generator reading is correct. Supporting evidence:
+
+- The chapter-intro instantiation tables (RM0399 Table 125, RM0433
+  Table 121, RM0468 Table 117, RM0455 Table 100) all agree on 8.
+- The interconnect chapters' DMAMUX1 mapping tables (RM0399 Table 126
+  etc.) list inputs 1-8 as `dmamux1_req_gen0` through
+  `dmamux1_req_gen7` — all 8 generators consumed.
+- The SVDs declare 8 separate RG<N>CR registers at 0x100..0x11C.
+- **RM0455 Rev.11 Table 99 (page 672)** has the same register map but
+  with all 8 RG registers shown — the fixed version, applied only to
+  the H7A3_B RM revision.
+
+Almost certainly the same copy-paste truncation was carried across
+RM0399/RM0433/RM0468; RM0455 caught it. The block model declares
+RGCR[] dim=16 (block address-space capacity); `highest_request_generator`
+defaults to 7 and applies to both DMAMUX1 and DMAMUX2 on every H7
+subfamily.
+
 ### BDMA chip-level signals: Figure 89 vs Table 121 in RM0399
 
 **RM0399 Rev.4 chapter 17 "Basic direct memory access controller (BDMA)":**
