@@ -167,6 +167,7 @@ shared_blocks:
       - {name: request_inputs, type: int, default: 7, max: 8, description: "Width of the DMAREQ_ID bitfield on C<N>CR (= log2 of addressable request inputs). The CCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits."}
       - {name: sync_inputs, type: int, default: 5, max: 8, description: "Width of the SYNC_ID bitfield on C<N>CR (= log2 of addressable synchronization inputs). The CCR layout reserves bits 24:31 for the ID, so the silicon max is 8 bits."}
       - {name: request_triggers, type: int, default: 5, max: 8, description: "Width of the SIG_ID bitfield on RG<N>CR (= log2 of addressable request-generator trigger inputs). The RGCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits."}
+      - {name: has_secure_ovr, type: bool, default: false, description: "TrustZone-aware silicon: the request-line overrun event reaches two distinct NVIC vectors (non-secure OVR and secure OVR_S). True on L5 only today; false elsewhere (single OVR vector). When true, the OVR_S output is wired by the chip; when false, OVR_S is declared-but-unwired."}
     outputs:
       # OVR is the request-line overrun event signal. Auto-resolver handles
       # the common SVD spellings (DMAMUX_OVR on single-instance families,
@@ -177,6 +178,8 @@ shared_blocks:
       # `uses: DMAMUX` block.
       OVR:
         description: Request-line overrun event. Asserted when a synchronization or trigger event fires on a channel before the previous request was serviced.
+      OVR_S:
+        description: Secure-world counterpart of OVR on TrustZone-capable silicon (gated by has_secure_ovr param). Reaches a separate NVIC vector reserved for secure-world handlers.
       EVT0:
         description: Request-generator event 0 (per-channel SYNC-overrun event that can route to the trigger bus and EXTI pendclear, RM0399 Tables 106/107)
         pattern: '^EVT0$'
@@ -16221,7 +16224,16 @@ families:
           Channel8:
             pattern: '^DMA1_Channel8$'
       DMAMUX:
-        from: STM32L552.DMAMUX1
+        # L5 silicon matches the shared-block defaults (15/3/7/5/5) except
+        # for the TrustZone-aware secure-variant interrupt — has_secure_ovr
+        # set via chip_params, OVR_S pattern declared here.  Note that the
+        # L552 SVD names the clear-flag register CCFR instead of CFR; the
+        # shared block carries the canonical CFR name, so any L5 code that
+        # previously referred to CCFR needs to switch to CFR.
+        # OVR is listed explicitly even though the auto-resolver would
+        # otherwise strip the DMAMUX1_ prefix — once a family declares
+        # `outputs:`, only listed canonicals count for fallback resolution.
+        uses: DMAMUX
         instances: [DMAMUX1]
         outputs:
           OVR:
@@ -16392,6 +16404,8 @@ families:
           RNG: {gen: 2}
           CRS: {trim_width: 7}
           TAMP: {sec: 3, or_reg: 3}
+          # L5's DMAMUX is TrustZone-aware: secure-world OVR_S vector exists.
+          DMAMUX1: {has_secure_ovr: true}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           UART4: {synchronous: 0}
           UART5: {synchronous: 0}

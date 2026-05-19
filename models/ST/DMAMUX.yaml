@@ -28,6 +28,10 @@ params:
     default: 5
     max: 8
     description: Width of the SIG_ID bitfield on RG<N>CR (= log2 of addressable request-generator trigger inputs). The RGCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits.
+  - name: has_secure_ovr
+    type: bool
+    default: false
+    description: 'TrustZone-aware silicon: the request-line overrun event reaches two distinct NVIC vectors (non-secure OVR and secure OVR_S). True on L5 only today; false elsewhere (single OVR vector). When true, the OVR_S output is wired by the chip; when false, OVR_S is declared-but-unwired.'
 registers:
   - name: CSR
     displayName: CSR
@@ -689,6 +693,8 @@ outputs:
     description: Request-generator event 6 (also routes to EXTI D3 pendclear input per Table 104)
   - name: EVT7
     description: Request-generator event 7 (also routes to EXTI D3 pendclear input per Table 104)
+  - name: OVR_S
+    description: Secure-world counterpart of OVR on TrustZone-capable silicon (gated by has_secure_ovr param). Reaches a separate NVIC vector reserved for secure-world handlers.
   - name: EVT0
     description: Request-generator event 0 (per-channel SYNC-overrun event that can route to the trigger bus and EXTI pendclear, RM0399 Tables 106/107)
   - name: EVT1
