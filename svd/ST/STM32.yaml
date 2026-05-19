@@ -13725,6 +13725,46 @@ families:
             description: Request generator 6 synthesized DMA-request output (feeds DMAMUX request input slot 6)
           REQ_GEN7:
             description: Request generator 7 synthesized DMA-request output (feeds DMAMUX request input slot 7)
+          # REQ_OUT<N> are the DMAMUX's per-channel hardware request outputs
+          # to the downstream DMA controller. DMAMUX1 has 16 channels feeding
+          # DMA1 (0-7) and DMA2 (0-7); DMAMUX2 has 8 channels feeding BDMA
+          # (0-7). Hardwired silicon — the channel-to-stream mapping is
+          # fixed; only the DMAMUX_C<N>CR.DMAREQ_ID configuration register
+          # changes which request input gets routed to that channel.
+          # Non-SVD: SVD only lists the channel register set, not the
+          # downstream wiring. Per RM0399 Tables 106/107.
+          REQ_OUT0:
+            description: Channel 0 request output (→ DMA1.req.0 on DMAMUX1, → BDMA.req.0 on DMAMUX2)
+          REQ_OUT1:
+            description: Channel 1 request output
+          REQ_OUT2:
+            description: Channel 2 request output
+          REQ_OUT3:
+            description: Channel 3 request output
+          REQ_OUT4:
+            description: Channel 4 request output
+          REQ_OUT5:
+            description: Channel 5 request output
+          REQ_OUT6:
+            description: Channel 6 request output
+          REQ_OUT7:
+            description: Channel 7 request output
+          REQ_OUT8:
+            description: Channel 8 request output (DMAMUX1 only → DMA2.req.0)
+          REQ_OUT9:
+            description: Channel 9 request output (DMAMUX1 only)
+          REQ_OUT10:
+            description: Channel 10 request output (DMAMUX1 only)
+          REQ_OUT11:
+            description: Channel 11 request output (DMAMUX1 only)
+          REQ_OUT12:
+            description: Channel 12 request output (DMAMUX1 only)
+          REQ_OUT13:
+            description: Channel 13 request output (DMAMUX1 only)
+          REQ_OUT14:
+            description: Channel 14 request output (DMAMUX1 only)
+          REQ_OUT15:
+            description: Channel 15 request output (DMAMUX1 only)
       DSIHOST:
         from: STM32H745_CM4.DSIHOST
         instances: [DSIHOST]
@@ -14238,6 +14278,42 @@ families:
         _all:
           SPDIFRX: {INTR: [NVIC.113]}
           HRTIM: {MST: [NVIC.119], TIMA: [NVIC.120], TIMB: [NVIC.121], TIMC: [NVIC.122], TIMD: [NVIC.123], TIME: [NVIC.124], FLT: [NVIC.125]}
+          # DMAMUX wiring: silicon is identical across all H7 subfamilies, so
+          # all DMAMUX1/DMAMUX2 destinations live at _all._all (the only
+          # per-subfamily quirk is the BDMA→BDMA2 rename on H7A3_B, handled
+          # in the H7A3_B override that replaces DMAMUX2's REQ_OUT block).
+          #
+          # OVR (DMAMUX overrun event) leaves SVD-derived NVIC entries
+          # alone — DMAMUX2's OVR is the only one with an extra EXTI wakeup
+          # destination, set explicitly.
+          # EVT<N> are per-channel SYNC overrun events that feed back into
+          # the DMAMUX's own trigger generator bus (slots 0..7) and, for
+          # EVT6/EVT7, also reach the D3 EXTI pendclear-input bus per
+          # RM0399 Table 104. EVT3..7 are not declared on DMAMUX1 because
+          # DMAMUX1 has fewer trigger generators.
+          # REQ_GEN<N> are the synthesized request outputs from the 8
+          # internal request generators feeding back into the DMAMUX's own
+          # request input bus (1-indexed slots 1..8 per RM0399 Tables
+          # 126/130; slot 0 is the "no request" sentinel).
+          # REQ_OUT<N> are the hardwired downstream-channel request outputs
+          # to the DMA/BDMA engines. DMAMUX1 channels 0-7 → DMA1 streams,
+          # channels 8-15 → DMA2 streams (RM0399 Table 106). DMAMUX2
+          # channels 0-7 → BDMA channels (Table 107).
+          DMAMUX1: {EVT0: [DMAMUX1.gen.0], EVT1: [DMAMUX1.gen.1], EVT2: [DMAMUX1.gen.2],
+                    REQ_GEN0: [DMAMUX1.1], REQ_GEN1: [DMAMUX1.2], REQ_GEN2: [DMAMUX1.3], REQ_GEN3: [DMAMUX1.4],
+                    REQ_GEN4: [DMAMUX1.5], REQ_GEN5: [DMAMUX1.6], REQ_GEN6: [DMAMUX1.7], REQ_GEN7: [DMAMUX1.8],
+                    REQ_OUT0: [DMA1.req.0], REQ_OUT1: [DMA1.req.1], REQ_OUT2: [DMA1.req.2], REQ_OUT3: [DMA1.req.3],
+                    REQ_OUT4: [DMA1.req.4], REQ_OUT5: [DMA1.req.5], REQ_OUT6: [DMA1.req.6], REQ_OUT7: [DMA1.req.7],
+                    REQ_OUT8: [DMA2.req.0], REQ_OUT9: [DMA2.req.1], REQ_OUT10: [DMA2.req.2], REQ_OUT11: [DMA2.req.3],
+                    REQ_OUT12: [DMA2.req.4], REQ_OUT13: [DMA2.req.5], REQ_OUT14: [DMA2.req.6], REQ_OUT15: [DMA2.req.7]}
+          DMAMUX2: {OVR: [NVIC.144, EXTI.74],
+                    EVT0: [DMAMUX2.gen.0], EVT1: [DMAMUX2.gen.1], EVT2: [DMAMUX2.gen.2], EVT3: [DMAMUX2.gen.3],
+                    EVT4: [DMAMUX2.gen.4], EVT5: [DMAMUX2.gen.5],
+                    EVT6: [EXTI.d3_pendclear_in.0, DMAMUX2.gen.6], EVT7: [EXTI.d3_pendclear_in.1],
+                    REQ_GEN0: [DMAMUX2.1], REQ_GEN1: [DMAMUX2.2], REQ_GEN2: [DMAMUX2.3], REQ_GEN3: [DMAMUX2.4],
+                    REQ_GEN4: [DMAMUX2.5], REQ_GEN5: [DMAMUX2.6], REQ_GEN6: [DMAMUX2.7], REQ_GEN7: [DMAMUX2.8],
+                    REQ_OUT0: [BDMA.req.0], REQ_OUT1: [BDMA.req.1], REQ_OUT2: [BDMA.req.2], REQ_OUT3: [BDMA.req.3],
+                    REQ_OUT4: [BDMA.req.4], REQ_OUT5: [BDMA.req.5], REQ_OUT6: [BDMA.req.6], REQ_OUT7: [BDMA.req.7]}
       H742_H753:
         _all:
           SDMMC2: {INTR: [NVIC.140]}
@@ -14479,21 +14555,6 @@ families:
           # DMAMUX's own trg/gen input <N> (request-generator self-loop;
           # Tables 106/107). DMAMUX2.EVT6 also reaches EXTI pendclear.
           # DMAMUX self-loops: each REQ_GEN<X> output feeds back to a DMAMUX
-          # request input slot (architectural hard-wire — fills the first 8
-          # entries of the c_DMAMUX<N>[] route table that would otherwise be
-          # NONE).  Per RM0399 Tables 126/130 the DMAMUX request inputs are
-          # 1-indexed: input 1 = req_gen0 ... input 8 = req_gen7 (slot 0
-          # means "no request").  EVT<X> are separate per-channel SYNC events
-          # that reach the trigger bus and EXTI pendclear inputs.
-          DMAMUX1: {EVT0: [DMAMUX1.gen.0], EVT1: [DMAMUX1.gen.1], EVT2: [DMAMUX1.gen.2],
-                    REQ_GEN0: [DMAMUX1.1], REQ_GEN1: [DMAMUX1.2], REQ_GEN2: [DMAMUX1.3], REQ_GEN3: [DMAMUX1.4],
-                    REQ_GEN4: [DMAMUX1.5], REQ_GEN5: [DMAMUX1.6], REQ_GEN6: [DMAMUX1.7], REQ_GEN7: [DMAMUX1.8]}
-          DMAMUX2: {OVR: [NVIC.144, EXTI.74],
-                    EVT0: [DMAMUX2.gen.0], EVT1: [DMAMUX2.gen.1], EVT2: [DMAMUX2.gen.2], EVT3: [DMAMUX2.gen.3],
-                    EVT4: [DMAMUX2.gen.4], EVT5: [DMAMUX2.gen.5],
-                    EVT6: [EXTI.d3_pendclear_in.0, DMAMUX2.gen.6], EVT7: [EXTI.d3_pendclear_in.1],
-                    REQ_GEN0: [DMAMUX2.1], REQ_GEN1: [DMAMUX2.2], REQ_GEN2: [DMAMUX2.3], REQ_GEN3: [DMAMUX2.4],
-                    REQ_GEN4: [DMAMUX2.5], REQ_GEN5: [DMAMUX2.6], REQ_GEN6: [DMAMUX2.7], REQ_GEN7: [DMAMUX2.8]}
           # MDMA trigger sources per RM0399 Table 105. DMA1/DMA2 stream
           # transfer-complete signals (TCIF, not the stream global interrupt)
           # feed MDMA inputs 0-15; the global STR<N> output stays an NVIC-
@@ -14525,6 +14586,10 @@ families:
       H7A3_B:
         _all:
           DFSDM2: {FLT0: [NVIC.58]}
+          # DMAMUX2 feeds BDMA2 on H7A3_B (the SRD-domain instance), not the
+          # bare 'BDMA' name used on other subfamilies. BDMA1 is fed by
+          # DFSDM1 directly (no DMAMUX). Per RM0455 Table 82.
+          DMAMUX2: {REQ_OUT0: [BDMA2.req.0], REQ_OUT1: [BDMA2.req.1], REQ_OUT2: [BDMA2.req.2], REQ_OUT3: [BDMA2.req.3], REQ_OUT4: [BDMA2.req.4], REQ_OUT5: [BDMA2.req.5], REQ_OUT6: [BDMA2.req.6], REQ_OUT7: [BDMA2.req.7]}
           # BDMA1 (CD/SRD domain, dedicated to DFSDM1): all 8 channel
           # interrupts route to the same NVIC vector — RM0455 §17 says
           # "BDMA1 ... generates a single ORed interrupt".  Table 96 lists
