@@ -168,6 +168,7 @@ shared_blocks:
       - {name: sync_inputs, type: int, default: 5, max: 8, description: "Width of the SYNC_ID bitfield on C<N>CR (= log2 of addressable synchronization inputs). The CCR layout reserves bits 24:31 for the ID, so the silicon max is 8 bits."}
       - {name: request_triggers, type: int, default: 5, max: 8, description: "Width of the SIG_ID bitfield on RG<N>CR (= log2 of addressable request-generator trigger inputs). The RGCR layout reserves bits 0:7 for the ID, so the silicon max is 8 bits."}
       - {name: has_secure_ovr, type: bool, default: false, description: "TrustZone-aware silicon: the request-line overrun event reaches two distinct NVIC vectors (non-secure OVR and secure OVR_S). True on L5 only today; false elsewhere (single OVR vector). When true, the OVR_S output is wired by the chip; when false, OVR_S is declared-but-unwired."}
+      - {name: has_sync_overrun, type: bool, default: true, description: "Silicon supports per-channel synchronization-overrun status reporting via the CSR (status) and CFR (clear-flag) registers and the SOIE bit on each CCR. False on G0 (the G0 SVD declares no CSR/CFR — silicon lacks the feature). When false, drivers must skip CSR/CFR accesses and ignore the per-channel SOIE/SOF mechanism; the request-generator-overrun path (RGSR/RGCFR) is unaffected."}
     outputs:
       # OVR is the request-line overrun event signal. Auto-resolver handles
       # the common SVD spellings (DMAMUX_OVR on single-instance families,
@@ -3718,10 +3719,15 @@ families:
           Channel4_5_6_7:
             pattern: '^DMA1_Channel4_5_6_7_DMAMUX_DMA2_Channel1_2_3_4_5$'
       DMAMUX:
-        from: STM32G030.DMAMUX
+        # G0 silicon: 7 channels (h_ch=6), DMAREQ_ID is 8-bit (request_inputs=8),
+        # no per-channel sync-overrun mechanism (has_sync_overrun=false — the
+        # G0 SVD declares no CSR/CFR). Other widths match shared defaults.
+        # OVR is named after the shared NVIC vector with the DMA channels —
+        # one combined IRQ on the chip side.
+        uses: DMAMUX
         instances: [DMAMUX]
         outputs:
-          INTR:
+          OVR:
             pattern: '^DMA1_Channel4_5_6_7_DMAMUX_DMA2_Channel1_2_3_4_5$'
       EXTI:
         from: STM32G030.EXTI
@@ -3833,6 +3839,10 @@ families:
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           SPI1: {has_i2s: true}
           CRS: {trim_width: 7}
+          # G0's DMAMUX: 7 channels (h_ch=6), 8-bit DMAREQ_ID (request_inputs=8),
+          # and no per-channel sync-overrun (has_sync_overrun=false — G0 SVD
+          # declares no CSR/CFR).
+          DMAMUX: {highest_channel: 6, request_inputs: 8, has_sync_overrun: false}
           TIM2: {width32: true, encoder: 1}
           TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true}
