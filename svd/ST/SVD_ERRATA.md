@@ -479,6 +479,63 @@ supporting 8 prescaler values (div 1 through div 128). The H7 SVDs incorrectly
 declare it as 2-bit, matching the older WWDG IP (F3/F4/F7/L0-L5) which has a
 genuinely different 2-bit WDGTB at bits [8:7].
 
+### EXTI
+
+**Per-CPU mask register banks: SVD misnames the C1 bank and omits the C2 bank.**
+
+RM0399 Rev. 4 Table 154 (§21.6.28) documents two separate per-CPU mask banks at
+distinct offsets in the H7 EXTI block:
+
+| Offset | RM0399 name   | Purpose                                    |
+|--------|---------------|--------------------------------------------|
+| 0x80   | EXTI_C1IMR1   | CPU1 (Cortex-M7) interrupt mask, lines 0..31  |
+| 0x84   | EXTI_C1EMR1   | CPU1 event mask, lines 0..31               |
+| 0x88   | EXTI_C1PR1    | CPU1 pending, lines 0..31                  |
+| 0x90   | EXTI_C1IMR2   | CPU1 interrupt mask, lines 32..63          |
+| 0x94   | EXTI_C1EMR2   | CPU1 event mask, lines 32..63              |
+| 0x98   | EXTI_C1PR2    | CPU1 pending, lines 32..63                 |
+| 0xA0   | EXTI_C1IMR3   | CPU1 interrupt mask, lines 64..87          |
+| 0xA4   | EXTI_C1EMR3   | CPU1 event mask, lines 64..87              |
+| 0xA8   | EXTI_C1PR3    | CPU1 pending, lines 64..87                 |
+| 0xC0   | EXTI_C2IMR1   | CPU2 (Cortex-M4) interrupt mask, lines 0..31  |
+| 0xC4   | EXTI_C2EMR1   | CPU2 event mask, lines 0..31               |
+| 0xC8   | EXTI_C2PR1    | CPU2 pending, lines 0..31                  |
+| 0xD0   | EXTI_C2IMR2   | CPU2 interrupt mask, lines 32..63          |
+| 0xD4   | EXTI_C2EMR2   | CPU2 event mask, lines 32..63              |
+| 0xD8   | EXTI_C2PR2    | CPU2 pending, lines 32..63                 |
+| 0xE0   | EXTI_C2IMR3   | CPU2 interrupt mask, lines 64..87          |
+| 0xE4   | EXTI_C2EMR3   | CPU2 event mask, lines 64..87              |
+| 0xE8   | EXTI_C2PR3    | CPU2 pending, lines 64..87                 |
+
+The CPU2 bank exists only on dual-core H7s (H745/H747/H755/H757); single-core H7s
+(H723/H725/H730/H733/H735, H742/H743/H750/H753, H7A3/H7B0/H7B3) have CPU1 only.
+
+**All H7 SVDs (STM32H723 v2.1, STM32H743 v2.4, STM32H745_CM4 v1.7, STM32H745_CM7 v1.7,
+STM32H7A3 v3.4, ... — confirmed in V2.8):**
+
+| SVD bug                          | What the SVD has                          | What RM0399 says            |
+|----------------------------------|-------------------------------------------|------------------------------|
+| C1 bank misnamed                 | `CPUIMR1/CPUEMR1/CPUPR1` at 0x80/0x84/0x88, similar for 2/3 | `C1IMR1/C1EMR1/C1PR1` |
+| C2 bank omitted (dual-core only) | (no registers at 0xC0..0xE8)              | Full C2 bank at 0xC0..0xE8  |
+
+The generic `CPU*` naming in the SVDs is inaccurate: the registers at 0x80-0xA8 are
+specifically the C1 (CPU1 / CM7) bank per the RM. Both the H745_CM4 and H745_CM7
+SVDs use the same `CPU*` names at the same offsets, suggesting the SVD authors
+intended a "self-relative" naming where each CPU sees "its own" mask — but the RM
+makes no claim of silicon-level address remapping, and explicitly names the bank
+at 0x80 as C1.
+
+The omission of the C2 bank means software running on either core cannot configure
+the *other* core's EXTI mask through registers visible in the current SVDs. This
+matters specifically when the boot CPU sets up wake-up routing for a slave CPU
+before releasing it from hold.
+
+**Implication for unification:** if/when the H7 EXTI block is enriched with the
+missing C2 bank registers (hand-authored from RM0399 Table 154), a `has_cpu2_mask`
+presence flag (default `false`, set `true` on H745/H747/H755/H757 dual-core
+chips) is the natural gate. The C1 bank rename (`CPU*` → `C1*`) can be done
+unconditionally via `renameRegisters` transforms in the H7 EXTI block config.
+
 ### WWDG / EXTI
 
 The WWDG reset output signal (`wwdg_out_rst`) is routed through EXTI to the NVIC,
