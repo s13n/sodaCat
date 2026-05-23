@@ -1,49 +1,60 @@
-# Connection routing: from "exception number" to first-class wiring
+# Connection routing: separating system-level wiring from peripheral drivers
 
-The C++ chip header used to expose each peripheral instance's interrupt
-output as an `Exception` field — a `uint16_t` holding the Cortex-M
-exception/vector number on the (single) NVIC.  This was load-bearing
-for driver code: a UART driver could read `intgr.exINTR` and pass it
-straight to peLua's `insert(vec, isr)` to chain its handler under that
-vector.
+The chip header used to expose each peripheral instance's interrupt
+output as an `Exception` field on its `Intgr` struct — a `uint16_t`
+holding the Cortex-M exception/vector number on the (single) NVIC.
+A UART driver could read `intgr.exINTR` and pass it to peLua's
+`insert(vec, isr)` to chain its handler under that vector.
 
-The model has outgrown this view.  Three new realities make the
-exception-number-as-field encoding insufficient:
+The model has outgrown that view in two directions:
 
-1. **Multi-destination.**  The same output can land on several
-   targets — on dual-core H745/H757, every peripheral interrupt
-   reaches *both* the CM7 and the CM4 NVIC.  A single integer can't
-   represent two destinations.
-2. **Intermediate routing.**  Many destinations are configurable
-   routers (DMAMUX request-mux, EXTI line selector, trigger
-   crossbar).  The "destination" the chip wires is the router's
-   input number, not the final consumer's channel — that's set up
-   dynamically by software.
-3. **Non-interrupt purposes.**  DMA requests, wakeup signals,
-   timer triggers, ADC trigger sources, comparator outputs feeding
-   timer break inputs — none of these are interrupt vectors and
-   none of them belong on NVIC.  Encoding them as `Exception` was
-   already a stretch.
+**1. Interrupt wiring isn't just "peripheral → NVIC input."**
 
-This document describes the scheme that replaces the exception-number
-field: a chip-scope **`Connection` identity** plus generated
-**per-target routing tables** plus per-target constexpr **resolvers**.
-The basic driver-side pattern survives — peLua's `insert(...)` still
-takes one argument and the rest is internal — but the argument is now
-a Connection rather than a vector number, and the resolution from
-Connection to vector happens inside `insert` instead of at the call
-site.
+Three new realities make the exception-number-as-field encoding
+insufficient:
+
+- *Multi-destination.*  The same output can land on several targets —
+  on dual-core H745/H757, every peripheral interrupt reaches *both*
+  the CM7 and the CM4 NVIC.  A single integer can't represent two
+  destinations.
+- *Intermediate routing.*  Many destinations are configurable routers
+  (DMAMUX request-mux, EXTI line selector, trigger crossbar).  The
+  "destination" the chip wires is the router's input number, not the
+  final consumer's channel — that's set up dynamically by software.
+- *Non-interrupt purposes.*  DMA requests, wakeup signals, timer
+  triggers, ADC trigger sources, comparator outputs feeding timer
+  break inputs — none of these are interrupt vectors and none of them
+  belong on NVIC.  Encoding them as `Exception` was already a stretch.
+
+**2. Drivers don't own routing knowledge.**
+
+Even on a simple chip with a single NVIC, knowing *that* a peripheral
+output reaches the NVIC, *which* vector it lands on, and *what
+intermediate fabric* (mux, gate, crossbar) sits between source and
+destination is a system-level concern.  Drivers describe what a
+peripheral does; the system level decides how its signals are wired
+into the rest of the SoC.  Mixing the two on the driver-facing `Intgr`
+struct couples drivers to routing decisions that don't belong to them
+— a UART driver should compile against any STM32 family without
+acquiring a dependency on that chip's NVIC layout or its DMA fabric.
+
+This document describes the scheme that replaces the
+exception-number-as-field encoding: a chip-scope **`Connection`
+identity** plus generated **per-target routing tables** plus
+**resolvers** that turn a Connection into a port number on a named
+target.  The Connection layer is emitted by the chip header and
+consumed by the system level — peripheral drivers see only register
+pointers and integration parameters.
 
 ## The shape
 
 `Connection` is a strong opaque type whose declaration lives in
-`hwreg.hpp` — chip-independent, alongside `Exception` — and whose
-enumerators are populated by the chip header that gets included.  The
-forward declaration with an explicit underlying type is complete
-enough to be a struct member (size and alignment are fixed), but the
+`hwreg.hpp` — chip-independent — and whose enumerators are populated
+by the chip header that gets included.  The forward declaration with
+an explicit underlying type is complete enough to be a type the
+infrastructure can name (size and alignment are fixed), but the
 enumerator names only exist after the chip header reopens
-`namespace hwreg` to define the enum.  Peripheral headers (and
-drivers) reference the type, never the values.
+`namespace hwreg` to define the enum.
 
 ```cpp
 // In hwreg.hpp — chip-independent.  Three pieces:
@@ -89,15 +100,12 @@ constexpr port_t resolve(const auto& table, Connection c) {
 
 }
 
-// In USART.hpp — chip-independent peripheral header.  References the
-// Connection type by name; the chip-specific enumerators are not in
-// scope here and don't need to be.
+// In USART.hpp — chip-independent peripheral header.  Intgr carries
+// register pointers and integration parameters.  No Connection fields
+// — the routing layer is invisible to peripheral code.
 struct USART_Intgr {
     HwPtr<USART_Type> registers;
-    Connection        connINTR;
-    Connection        connTX_DMA;
-    Connection        connRX_DMA;
-    // ... params ...
+    // ... params (has_fifo, has_wakeup, ...) ...
 };
 
 // In the chip header (e.g. stm32h7.hpp) — chip-specific.  Reopens
@@ -120,11 +128,8 @@ namespace hwreg {
 
 namespace stm32h7 {
 
-constexpr USART_Intgr usart1 = {
+constexpr USART_Intgr i_USART1 = {
     .registers  = HwPtr<...>{0x40011000},
-    .connINTR   = Connection::USART1_INTR,
-    .connTX_DMA = Connection::USART1_TX_DMA,
-    .connRX_DMA = Connection::USART1_RX_DMA,
     // ... params ...
 };
 
@@ -142,17 +147,20 @@ constexpr RouteEntry c_NVIC[] = {
     {Connection::USART2_INTR, 54},
     // ...
 };
-constexpr RouteEntry c_DMAMUX1[] = {
-    {Connection::USART1_RX_DMA, 41},
-    {Connection::USART1_TX_DMA, 42},
+
+// 2. Direct array of `Connection` — for exclusive targets (each input
+//    port is fed by at most one source).  Mux-style: DMAMUX request
+//    mux inputs, EXTI line selector, TIM ITR selectors, trigger
+//    crossbar inputs.  Indexed by port; entries default to
+//    Connection::NONE for unwired slots.
+constexpr Connection c_DMAMUX1[116] = {
+    Connection::NONE,        // slot 0 unwired
+    // ...
+    Connection::USART1_RX_DMA,   // slot 41
+    Connection::USART1_TX_DMA,   // slot 42
     // ...
 };
 
-// 2. Direct array of `Connection` — for exclusive targets (each input
-//    port is fed by at most one source).  Mux-style: TIM trigger
-//    inputs, EXTI line selector, DMAMUX request mux inputs, trigger
-//    crossbar inputs.  Indexed by port; entries default to
-//    Connection::NONE for unwired slots.
 constexpr Connection c_TIM2[8] = {
     Connection::TIM1_TRGO,   // ITR0
     Connection::TIM8_TRGO,   // ITR1
@@ -163,10 +171,10 @@ constexpr Connection c_TIM2[8] = {
 
 }  // namespace stm32h7
 
-// Driver / kernel-side use — call resolve() directly on the chip's
-// tables.  ADL finds hwreg::resolve via the Connection / RouteEntry
-// argument types; no qualification needed at the call site beyond
-// naming the table.
+// System-level glue — peLua's ISR system owns the call to resolve().
+// Drivers never touch Connection or the route tables; system code
+// names the (instance, signal) pair via the chip-scope Connection
+// enumerator and the system layer does the lookup.
 namespace peLua {
     using Chip = stm32h7;
     namespace isr {
@@ -179,33 +187,39 @@ namespace peLua {
 
 ## Why this shape
 
+**Peripheral drivers don't see the routing layer.**  The `Intgr`
+struct carries register pointers and integration parameters — the
+things a driver needs to operate the peripheral.  Connection
+identifiers and route tables are emitted alongside but consumed one
+layer up, by the system code that wires drivers to interrupts, DMA
+channels, EXTI lines, and trigger sources.  Keeping the wiring layer
+out of `Intgr` makes each driver chip-portable: the same USART driver
+compiles against any STM32 family without acquiring a dependency on
+that chip's NVIC layout, its DMA fabric, or any other routing
+decision the system layer makes on its behalf.
+
 **Type chip-independent, values chip-specific.**  The `Connection`
-*type* is forward-declared in `hwreg.hpp` so that peripheral headers
-(`USART.hpp`, `SPI.hpp`, ...) and driver code can name it without
-acquiring a dependency on any chip namespace.  Peripheral headers are
-deliberately portable across chip families — embedding `stm32h7::` or
-any other chip prefix in an Intgr field type would defeat that.  The
-chip header is the sole producer of enumerator constants and the sole
-owner of the route tables and resolvers; everything below the chip
-layer sees only an opaque `Connection` it can pass around but not
-construct.  The forward-declaration form (no enumerator body in
-`hwreg.hpp`) lets the chip header *define* the enum in a re-opened
-`namespace hwreg`, which means the values still belong to the same
-type the peripheral header references — there is no second
-`Connection` floating around to confuse name lookup.
+*type* is forward-declared in `hwreg.hpp` so system-level code can
+name the type without acquiring a dependency on any chip namespace.
+The chip header is the sole producer of enumerator constants and the
+sole owner of the route tables and resolvers; everything below the
+chip layer sees only the opaque type.  The forward-declaration form
+(no enumerator body in `hwreg.hpp`) lets the chip header *define* the
+enum in a re-opened `namespace hwreg`, which means the values still
+belong to the same type the system layer references — there is no
+second `Connection` floating around to confuse name lookup.
 
 **Connection identifies a source, not a destination.**  Each
 enumerator names one signal on one block instance.  The same
 identifier appears in *every* table where that signal lands — once in
-`c_NVIC` if it goes to NVIC, once in `c_DMAMUX1` if it
-generates a DMA request, etc.  The Connection value itself doesn't
-carry destination information; that lives in the route tables.
+`c_NVIC` if it goes to NVIC, once in `c_DMAMUX1` if it generates a DMA
+request, etc.  The Connection value itself doesn't carry destination
+information; that lives in the route tables.
 
 **`uint16_t` is the right size.**  RM0399 chapter 14 + chapter 15
 together describe ~1200 distinct routes on H7 H745.  Even with
 significant headroom for chip variants, we don't approach 65535
-enumerators on any plausible chip.  A wider type would waste space on
-every Intgr field for no payoff.
+enumerators on any plausible chip.
 
 **No kind classification on the Connection itself.**  An interrupt is
 not different from a wakeup is not different from a DMA request *from
@@ -218,7 +232,7 @@ matches the design rule already in force on the YAML side (see
 on a fully-modelled H7 has ~58 destination peripherals (RM0399 ch. 14
 Table 102 alone enumerates them).  Most applications use a small
 subset.  Per-target symbols let the linker eliminate the wiring for
-target instances no driver in the binary actually queries — an unused
+target instances no code in the binary actually queries — an unused
 target's table is a stand-alone constexpr symbol with no references,
 so the linker drops it wholesale.  The single `resolve()` template is
 instantiated only for the table types actually used in the binary
@@ -292,11 +306,11 @@ implying any change to the primary `Connection → port` API.
 
 **Sorted + binary search** *(for the pair-list shape).*  When
 `resolve()` is called with a constexpr `Connection` (the universal
-case from an Intgr struct field), the compiler folds the search to a
-constant and the resolver evaporates.  The table only lands in
-`.rodata` if some code path passes a runtime Connection through —
-which most drivers never do.  Sorted ordering is the generator's
-responsibility, not the author's.
+case when system code names the enumerator at the call site), the
+compiler folds the search to a constant and the resolver evaporates.
+The table only lands in `.rodata` if some code path passes a runtime
+Connection through — which most system-level glue never does.  Sorted
+ordering is the generator's responsibility, not the author's.
 
 **Linear scan** *(for the direct-array shape).*  Same constexpr-fold
 property: with a constexpr Connection argument the compiler unrolls
@@ -305,40 +319,63 @@ fine because typical port counts are small (TIM ITR slots: 8; DMAMUX
 inputs: 64–128; EXTI lines: 16–88) and the scan never reaches
 `.rodata` on the constexpr path.
 
-**No per-target wrapper functions.**  Drivers and kernel-side glue
-call `resolve(Chip::c_NVIC, c)` directly rather than going
-through a per-target `nvic_vector(c)` helper.  ADL on the
+**No per-target wrapper functions.**  System glue calls
+`resolve(Chip::c_NVIC, c)` directly rather than going through a
+per-target `nvic_vector(c)` helper.  ADL on the
 `RouteEntry`/`Connection` argument types finds `hwreg::resolve`
 without qualification.  This drops one emission per target from the
 chip header and keeps the resolver in exactly one place; the cost is
 that the call site names the table explicitly, which is fine — the
-table is the entity drivers reference for any purpose (lookup,
-iteration, diagnostics).
+table is the entity system-level code references for any purpose
+(lookup, iteration, diagnostics).
 
-## How drivers consume it
+## How the layers consume it
 
-The driver-facing API mirrors what existed before, just with
-`Connection` replacing the raw exception number:
+The Connection layer has two audiences: peripheral drivers (which see
+*nothing*) and system-level glue (which owns the wiring).
+
+**Peripheral drivers.**  A driver constructed against an instance
+receives the chip's `Intgr` for that instance — register base address
+plus integration parameters.  It operates the peripheral: sets up
+registers, handles its protocol, exposes its behaviour.  It never
+names a Connection enumerator and never indexes a route table.
+Wiring its output to anything in the SoC is somebody else's problem.
 
 ```cpp
-// Before:
-peLua::isr::insert(intgr.exINTR, &my_isr);
+// Driver constructor — chip-portable, no routing knowledge.
+UartDriver::UartDriver(USART_Intgr const& i)
+    : hw_{i.registers}, fifo_depth_{i.has_fifo ? 16 : 1}
+{}
+```
 
-// After:
-peLua::isr::insert(intgr.connINTR, &my_isr);
+**System-level glue.**  The system layer (peLua's ISR table, a DMA
+manager, an EXTI configurator, ...) knows which Connection it cares
+about for a given instance because the (instance, signal) pair is
+common knowledge between block model and integration code.  The pair
+is spelled out at the call site as a compile-time `Connection::INST_SIG`
+constant:
+
+```cpp
+// In system code that hooks USART1's interrupt:
+peLua::isr::insert(Connection::USART1_INTR, &my_isr);
+
+// In system code that configures USART1's DMA channels:
+dma_request_setup(resolve(Chip::c_DMAMUX1, Connection::USART1_RX_DMA), ...);
+
+// In system code that configures an EXTI wakeup:
+exti_line_setup(resolve(Chip::c_EXTI, Connection::OTG_FS_WKUP), ...);
 ```
 
 `peLua::isr::insert(Connection, isr_t)` is inline, calls
 `resolve(Chip::c_NVIC, c)` to look up the vector, then runs the
 existing per-vector ISR list insertion.  When the call site's
-`Connection` is constexpr (always true for Intgr-field reads), the
-whole resolution path folds at compile time and the driver pays
-exactly what it paid before.
+`Connection` is constexpr (always true for enumerator-named
+arguments), the whole resolution path folds at compile time.
 
-The same pattern extends to other targets — a TIM2 driver
-configuring its trigger source consults `resolve(Chip::c_TIM2,
-source)`; a DMA driver subscribing to a peripheral's request consults
-`resolve(Chip::c_DMAMUX1, source)`.  Each driver names the table
+The same pattern extends to other targets — TIM2 setup configuring
+its trigger source consults `resolve(Chip::c_TIM2, source)`; DMA
+setup subscribing to a peripheral's request consults
+`resolve(Chip::c_DMAMUX1, source)`.  Each call site names the table
 its local target uses; the same `resolve()` template handles both
 shapes via the table's element type.
 
@@ -346,34 +383,33 @@ shapes via the table's element type.
 `Connection` and `RouteEntry` are declared in `hwreg::`, ADL on a
 `resolve(table, c)` call finds `hwreg::resolve` regardless of which
 chip namespace the table lives in.  The table itself must be named
-explicitly (`Chip::c_NVIC`, where `using Chip = stm32h7;` is set
-up once per binary by peLua), but that's appropriate — drivers
-reference tables for other purposes too (iteration, diagnostics), so
-the table-as-named-data shape is load-bearing.
+explicitly (`Chip::c_NVIC`, where `using Chip = stm32h7;` is set up
+once per binary by the system layer), but that's appropriate —
+system code references tables for other purposes too (iteration,
+diagnostics), so the table-as-named-data shape is load-bearing.
 
 ## Sharing and multi-destination
 
 **Interrupt sharing** (multiple Connections land on the same NVIC
 vector) is the normal case — peripherals frequently share vectors on
 ST chips.  In the pair list, this is just multiple rows with the same
-`vec`.  Both `nvic_vector(c1)` and `nvic_vector(c2)` return 53, both
-calls into `peLua::isr::insert` route into `isr_table[53]`, and the
-existing dispatcher walks the list.  Nothing in the routing layer
-needs to model "which Connections share this vector" — the dispatch
-already handles it at the vector level.
+`port`.  Both `resolve(c_NVIC, c1)` and `resolve(c_NVIC, c2)` return
+53, both calls into `peLua::isr::insert` route into `isr_table[53]`,
+and the existing dispatcher walks the list.  Nothing in the routing
+layer needs to model "which Connections share this vector" — the
+dispatch already handles it at the vector level.
 
 **Multi-destination** (one Connection routed to two targets, e.g.
 NVIC + EXTI for a wakeup) falls out naturally: the same Connection
-identifier appears in **both** target tables.  `nvic_vector(c)` and
-`exti_line(c)` each return the relevant port.  Driver code calls
+identifier appears in **both** target tables.  System code calls
 whichever resolver matches its intent.
 
 **Dual-NVIC** on H745/H757 is a special case of multi-destination
 that's handled per-binary.  Each CPU's binary is built against its
 own chip header, which carries the wiring for *that* CPU's NVIC.  The
-cm7 binary's `c_NVIC` and the cm4 binary's `c_NVIC` are
-separate symbols, populated from the same YAML chip_connections data
-but filtered per-CPU at generation time.
+cm7 binary's `c_NVIC` and the cm4 binary's `c_NVIC` are separate
+symbols, populated from the same YAML chip_connections data but
+filtered per-CPU at generation time.
 
 **One Connection landing on two vectors of the same target** (rare:
 a signal split-fed to two NVIC inputs on the same NVIC) is *not*
@@ -408,7 +444,7 @@ much smaller (10-50 B).
 
 In a real binary:
 
-- **Constexpr-only resolution** (the typical driver path): zero
+- **Constexpr-only resolution** (the typical system path): zero
   bytes — every resolver call folds and the tables never reach
   `.rodata`.
 - **Linker GC with an application using ~10 drivers**: ~10 target
@@ -422,12 +458,12 @@ All three regimes are comfortable on any chip we target.
 
 - **The "Type" classification** in RM0399 Table 102 (A=async, S=sync,
   I=immediate, B=break/fault).  This is a real property of each route
-  that drivers may need to know for correct edge/level configuration
-  on the destination side.  We defer including it because the
-  vocabulary doesn't obviously generalise: ST's A/S/I/B taxonomy may
-  not map cleanly onto NXP or Microchip silicon.  A field worth
-  adding once we've looked at more diverse examples; until then,
-  drivers that need this info hard-code it from the RM.
+  that system code may need to know for correct edge/level
+  configuration on the destination side.  We defer including it
+  because the vocabulary doesn't obviously generalise: ST's A/S/I/B
+  taxonomy may not map cleanly onto NXP or Microchip silicon.  A field
+  worth adding once we've looked at more diverse examples; until then,
+  system code that needs this info hard-codes it from the RM.
 - **Multi-result resolvers** (one Connection → multiple destinations
   on the same target).  Single-result API covers every case we've
   seen.  When a real instance forces the issue, add a `resolve_all()`
@@ -441,7 +477,7 @@ All three regimes are comfortable on any chip we target.
   cost of ~60 type declarations per chip and either a per-table
   wrapping struct or a parallel `using <target>_port_t = ...;` alias
   that `resolve()` learns to deduce from.  The bug class it catches is
-  narrow (driver author confused about which target they're writing
+  narrow (system author confused about which target they're writing
   to) and the constexpr-fold path erases the runtime difference, so
   the complexity isn't currently paying for itself.  The `port_t`
   alias in `hwreg.hpp` is the upgrade hook — when we want typed ports,
@@ -450,8 +486,8 @@ All three regimes are comfortable on any chip we target.
 - **Header sharding.**  One monolithic chip header is fine until the
   table count makes compile times painful for the configuration TUs
   that include it.  C++20 modules will sidestep the issue entirely
-  once peLua's chip-header import is moduralised; until then,
-  monolithic.
+  once the system layer's chip-header import is moduralised; until
+  then, monolithic.
 - **Cross-binary lookups** (CM7 code reasoning about CM4's NVIC
   wiring).  Out of scope for the per-binary table model.  If it ever
   matters, both binaries' tables can be exposed under distinct
@@ -460,13 +496,13 @@ All three regimes are comfortable on any chip we target.
 
 ## Generator implications
 
-The chip-header generator gains responsibility for emitting:
+The chip-header generator emits:
 
 1. The chip-scope `Connection` enum definition (one enumerator per
    (instance, canonical) appearing in the chip's wiring graph, with
    stable ordering — instance-major is the easiest-to-read default).
    The definition reopens `namespace hwreg` so the enumerators belong
-   to the type the peripheral headers already reference.
+   to the type the system layer already references.
 2. Per-target route tables as plain constexpr arrays, in the shape
    inferred from the data: `RouteEntry[]` sorted by Connection when
    any port has more than one source, `Connection[]` indexed by port
@@ -476,34 +512,40 @@ The chip-header generator gains responsibility for emitting:
 
 No per-target resolver function is emitted — the single
 `hwreg::resolve()` template handles both shapes via the table's
-element type, dispatched with `constexpr if`.  Drivers call
+element type, dispatched with `constexpr if`.  System code calls
 `resolve(Chip::c_NVIC, c)` directly.
 
-The Intgr struct emit changes too:
+The peripheral header is unaffected by the wiring layer:
 
-- The per-peripheral `Intgr` template (from `generate_peripheral_header.py`)
-  emits `Connection conn$name` fields (was `Exception ex$name`),
-  referencing the forward-declared `hwreg::Connection` from
-  `hwreg.hpp`.  No chip-namespace dependency is introduced into the
-  peripheral header.
-- The chip-level integration init (from `generate_chip_header.py`)
-  references the Connection enumerators directly (they're in `hwreg::`,
-  which is `inline`, so unqualified names resolve from the chip
-  namespace).  The `NVIC.<n>`-only filter at the chip-header level
-  goes away — every destination, regardless of target, becomes a
-  Connection reference resolved through the appropriate target table.
+- The per-peripheral `Intgr` struct (from
+  `generate_peripheral_header.py`) carries register pointers and
+  integration parameters.  It does **not** carry per-output Connection
+  fields.  An earlier revision of this design did — `Intgr` held one
+  `Connection conn<NAME>` field per declared output, on the theory
+  that drivers would read `intgr.connINTR` to look up their NVIC
+  vector.  That coupled drivers to chip-level routing decisions and
+  collapsed under the same pressure that retired `Exception ex<NAME>`:
+  interrupt wiring is too varied for a per-output field to be the
+  right abstraction, and drivers shouldn't know about routing in the
+  first place.  The `Intgr` struct is now strictly about driving the
+  peripheral; the chip-side instance initialiser correspondingly
+  emits only register-pointer and parameter initialisers.
+- The chip-level enum definition and route tables are emitted at
+  chip-namespace scope, available to the system layer that imports
+  the chip module.  Drivers that import only their peripheral module
+  never see them.
 
-The YAML `chip_connections` schema doesn't need to change for the
-table-shape work.  The destination strings (`NVIC.53`, `DMAMUX1.42`,
-`TIM2.ITR0`) already carry exactly what the generator needs.  The
-generator's job is to invert them — keyed-by-source today,
+The YAML `chip_connections` schema doesn't need to change for any of
+this.  The destination strings (`NVIC.53`, `DMAMUX1.42`, `TIM2.ITR0`)
+already carry exactly what the generator needs.  The generator's job
+is to invert them — keyed-by-source on the YAML side,
 indexed-by-(target, source) in the per-target tables, with the shape
 of each per-target table inferred from the data as described above.
 
 Port-grammar validation (NVIC ports are absolute exception indices,
 DMAMUX ports are mux input numbers, TIM ports may need an `ITR.<n>` /
-`BRK.<n>` / ... structure) is a separate concern handled by the
-Phase-2 extension of `validate_chip_connections.py` from
+`BRK.<n>` / ... structure) is a separate concern handled by
+`validate_chip_connections.py` from
 [output-wiring.md](output-wiring.md).  Table-shape inference and
 port-grammar validation are orthogonal — inference uses only the
 collision structure of `(prefix, port)` tuples, not the meaning of

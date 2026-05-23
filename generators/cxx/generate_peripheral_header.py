@@ -173,7 +173,6 @@ class PerFormatter:
         self.fieldsTemplate    = Template(keywords.get('fields'   , '\n/** $description */\nEXPORT struct $name {$fields\n};\n'))
         self.registersTemplate = Template(keywords.get('registers', '\n$types\n/** $description */\nEXPORT struct $name {$regs\n}; // size = $size\n'))
         self.addressTemplate   = Template(keywords.get('address'  , '\t$type$usage;\t// offset = $offset, size = $size\n'))
-        self.interruptTemplate = Template(keywords.get('interrupt', '\tConnection conn$name;\t//!< $description\n'))
         self.parameterTemplate = Template(keywords.get('parameter', '\tuint16_t $name:$bits;\t//!< $description\n'))
         self.headerTemplate    = Template(keywords.get('header', """
 $prefix
@@ -185,7 +184,7 @@ EXPORT struct $name {$regs
 $inputs
 /** Integration of peripheral in the SoC. */
 EXPORT struct Intgr {
-$params$ints$blocks};
+$params$blocks};
 } // namespace ${name}
 $postfix"""))
                                                        
@@ -415,10 +414,6 @@ $postfix"""))
         for block in per.get('addressBlocks', []):
             type = (f'HwPtr<struct {per['name']} volatile> ') if block['usage'] == 'registers' else 'std::span<std::byte> '
             blocks += self.addressTemplate.substitute(block, type=type)
-        ints = ''
-        for int in per.get('outputs', []):
-            desc = int.get('description') or ''
-            ints += self.interruptTemplate.substitute(int, description=desc)
         params = ''
         for par in per.get('params', []):
             desc = par.get('description') or ''
@@ -435,16 +430,16 @@ $postfix"""))
             else:
                 ctype = {'string': 'const char*'}.get(ptype, 'uint32_t')
                 params += f'\t{ctype} {par["name"]};\t//!< {desc}\n'
-        return blocks, ints, params
+        return blocks, params
 
     def formatPeripheral(self, per:dict, prefix:str, postfix:str):
         """ Generate definitions for a peripheral """
         defaultSize = per.get('size', 32) >> 3
         types, regs, size, enums = self.formatRegisterList(per['registers'], 'uint32_t', 0, defaultSize, blockName=per.get('name', ''))
-        blocks, ints, params = self.formatIntegrationList(per)
+        blocks, params = self.formatIntegrationList(per)
         inputs = self.formatInputs(per.get('inputs', []))
         description = per.get('description') or ''
-        return self.headerTemplate.substitute(per, blocks=blocks, ints=ints, params=params, inputs=inputs, regs=regs, enums=enums, types=types, description=description, size=size, prefix=prefix, postfix=postfix)
+        return self.headerTemplate.substitute(per, blocks=blocks, params=params, inputs=inputs, regs=regs, enums=enums, types=types, description=description, size=size, prefix=prefix, postfix=postfix)
     
          
 prefixTemplate = Template("""// File was generated, do not edit!

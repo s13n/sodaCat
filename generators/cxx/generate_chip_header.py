@@ -14,15 +14,10 @@ import re
 class ChipFormatter:
     def __init__(self, **keywords):
         self.instanceParamTemplate= Template(keywords.get('instanceParam',  '\n\t.$name = ${value}u,'))
-        # Per-instance Intgr-field initialiser.  The field type is hwreg::Connection
-        # (a chip-independent opaque enum); the value is a chip-specific enumerator
-        # of the form `Connection::<INSTANCE>_<SIGNAL>`.  Destination semantics live
-        # in the per-target route tables emitted alongside, not here.
-        self.instanceIntTemplate  = Template(keywords.get('instanceInt',  '\n\t.conn$name = Connection::${enumerator},'))
         self.instanceInclTemplate = Template(keywords.get('instanceIncl', '\n#   include "$ns/$model$incl_suffix"'))
         self.instanceDeclTemplate = Template(keywords.get('instanceDecl', """
 /** Integration parameters for $name */
-EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
+EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$init};
 """))
         # Block-name → (param_names, interrupt_names) cache, populated lazily.
         # The block model is the authoritative source for designated-initializer
@@ -43,8 +38,8 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
             p = p.parent
 
     def _loadBlockOrder(self, chip_dir, models_map, model_name):
-        """Return (param_names, output_names, param_defaults, input_names)
-        declared by the block model.
+        """Return (param_names, param_defaults, input_names) declared by
+        the block model.
 
         param_defaults is a {name: value} map for params that declare a
         default; chip instances that don't override such a param fall
@@ -56,10 +51,10 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         named-input destination (e.g. `HRTIM_Master.bm_ck1`) to its
         position in the per-block Input enum.
 
-        Returns (None, None, {}, None) when the block YAML can't be
-        located, in which case callers preserve chip-side order with no
-        default fallback — that's the ad-hoc-runs case outside the
-        standard models tree.  Under CMake the file is always present
+        Returns (None, {}, None) when the block YAML can't be located, in
+        which case callers preserve chip-side order with no default
+        fallback — that's the ad-hoc-runs case outside the standard
+        models tree.  Under CMake the file is always present
         (ensure_model() downloads it ahead of header generation).
         """
         if model_name in self._block_orders:
@@ -67,14 +62,13 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
         relpath = models_map.get(model_name, model_name)
         block_path = self._resolve_block_path(chip_dir, relpath)
         if block_path is None:
-            result = (None, None, {}, None)
+            result = (None, {}, None)
         else:
             block = YAML(typ='safe').load(block_path)
             params_decl = block.get('params', [])
             inputs_decl = block.get('inputs')
             result = (
                 [p['name'] for p in params_decl],
-                [i['name'] for i in block.get('outputs', [])],
                 {p['name']: p['default']
                  for p in params_decl if 'default' in p},
                 ([i['name'] for i in inputs_decl]
@@ -123,41 +117,6 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                 params += self.instanceParamTemplate.substitute(
                     name=name, value=v)
         return params
-
-    def createInterrupts(self, instance_name, instance, int_order):
-        """Emit conn<NAME> designated initialisers for this instance's wired
-        outputs.
-
-        Reads `instance['connections']` — a {signal_name: [destination_string]}
-        map.  Emits one initialiser per wired signal (regardless of how many
-        destinations it has), with the value being the chip-scope Connection
-        enumerator for this (instance, signal) pair.  The destination wiring
-        itself lives in the per-target route tables emitted separately.
-
-        Outputs the block declares but the chip doesn't wire are skipped —
-        the corresponding Intgr field then default-initialises to
-        Connection::NONE (the value-zero sentinel), so drivers see the
-        absence cleanly.
-        """
-        connections = instance.get('connections') or {}
-        if int_order is None:
-            names = list(connections.keys())
-        else:
-            unknown = set(connections.keys()) - set(int_order)
-            if unknown:
-                raise ValueError(
-                    f"chip instance '{instance_name}' (model '{instance['model']}'): "
-                    f"output(s) {sorted(unknown)!r} not declared by block model"
-                )
-            names = [n for n in int_order if n in connections]
-        out = ''
-        for name in names:
-            if not connections[name]:
-                continue
-            enumerator = f"{instance_name}_{name}"
-            out += self.instanceIntTemplate.substitute(
-                name=name, enumerator=enumerator)
-        return out
 
     def _collectConnections(self, chip, chip_path):
         """Walk the merged instance set (chip + inherits chain) and collect:
@@ -227,7 +186,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                     target_model = inst_entry.get('model')
                     if not target_model:
                         continue
-                    _, _, _, input_names = self._loadBlockOrder(
+                    _, _, input_names = self._loadBlockOrder(
                         chip_dir, models_map, target_model)
                     if input_names is None:
                         continue
@@ -374,12 +333,11 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$ints$init};
                     chip_dir, models_map.get(m, m))
                 model_to_ns[m] = _resolve_ns(block_path) if block_path else namespace
             ns = model_to_ns[m]
-            param_order, int_order, param_defaults, _ = self._loadBlockOrder(
+            param_order, param_defaults, _ = self._loadBlockOrder(
                 chip_dir, models_map, m)
             params = self.createParameters(k, i, param_order, param_defaults)
-            ints = self.createInterrupts(k, i, int_order)
             init = '\n\t.registers = %#Xu\n' % i['baseAddress']
-            decl += self.instanceDeclTemplate.substitute(i, name=k, ns=ns, params=params, ints=ints, init=init)
+            decl += self.instanceDeclTemplate.substitute(i, name=k, ns=ns, params=params, init=init)
         includes = [
             self.instanceInclTemplate.substitute(model=m, ns=ns, incl_suffix=incl_suffix)
             for m, ns in model_to_ns.items()

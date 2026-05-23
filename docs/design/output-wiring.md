@@ -88,10 +88,15 @@ Each new destination kind lands end-to-end:
    `interruptOffset:` migrating onto its instance entry (or becoming
    derivable from `cpu.name`).
 
-The C++ side gains field-type dispatch by destination kind (today every
-connection emits as `Exception ex<NAME>`).  The schema already accepts
-multi-kind destinations — Phase 1 deliberately defers the dispatch until
-there's actual heterogeneity to dispatch on.
+The C++ side has already moved past the `Exception ex<NAME>` per-output
+field encoding: the chip header now emits a chip-scope `Connection`
+enum plus per-target route tables consumed by system-level glue, while
+peripheral `Intgr` structs carry only registers + integration
+parameters.  See [connection-routing.md](connection-routing.md) for
+the full scheme.  The schema already accepts multi-kind destinations;
+adding new destination kinds (DMAMUX, EXTI, trigger crossbar) is a
+matter of emitting their tables alongside `c_NVIC`, not a change to
+how Connections are represented.
 
 A subtlety to address in Phase 2: routing fabrics have **configurable**
 edges (DMAMUX's request → channel selector is a register field, not fixed
