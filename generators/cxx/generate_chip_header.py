@@ -243,6 +243,7 @@ EXPORT constexpr struct $ns::${model}::Intgr i_$name = {$params$init};
             '};\n'
             '} // namespace hwreg\n'
             '} // extern "C++"\n'
+            'EXPORT using hwreg::Connection;\n'
         )
 
     def emitTargetTables(self, enumerators, target_routes, target_input_names):
