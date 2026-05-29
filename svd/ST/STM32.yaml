@@ -14054,25 +14054,28 @@ families:
           H7A3_B:
             instances: []
       HSEM:
-        from: STM32H743.HSEM
+        # Source from the dual-core H745_CM4 SVD: it is the register superset
+        # (per-CPU C1*/C2* interrupt sets) and already uses the RM0399 names —
+        # COREID at the correct 4-bit [11:8], CR write-only — so the field/access
+        # patches the single-core H743 SVD needed are unnecessary here.
+        from: STM32H745_CM4.HSEM
         instances: [HSEM]
         outputs:
           INTR:
             pattern: '^(HSEM0|HSEM1)$'
         params:
           - {name: semaphores, type: int, default: 32, max: 32, description: Number of hardware semaphores (16 or 32)}
+          - {name: cores, type: int, default: 1, max: 2, description: 'Number of CPUs that can access the unit; each owns an interrupt-control set C[n] (C[0]=CPU1, C[1]=CPU2)'}
         transforms:
-          # MASTERID (RM0433): 4-bit at [11:8]; H743 SVD has 8-bit — narrow to 4
-          # H745 SVD uses COREID (RM0399 name) at correct 4-bit width — no fix needed
-          - {type: patchFields, register_pattern: ^R\d+$, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
-          - {type: patchFields, register_pattern: ^RLR\d+$, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
-          - {type: patchFields, register: CR, fields: [{name: MASTERID, bitOffset: 8, bitWidth: 4}]}
-          # H743 SVD: CR is read-write, RM says write-only
-          - {type: patchRegisters, registers: [{name: CR, access: write-only}]}
-        variants:
-          H745_H757:
-            from: STM32H745_CM4.HSEM
-            transforms: []
+          # Fold the per-semaphore registers into arrays.
+          - {type: createArray, pattern: '^R(\d+)$', name: R, description: Semaphore register}
+          - {type: createArray, pattern: '^RLR(\d+)$', name: RLR, description: Read-lock register}
+          # The dual-core SVD exposes one interrupt-control set per CPU (C1*/C2*).
+          # Renumber to 0-based, then fold into a C[%s] cluster (one slot per CPU,
+          # 0x10 stride).  Single-core chips set cores=1 — only C[0] is valid.
+          - {type: renameRegisters, pattern: '^C1(IER|ICR|ISR|MISR)$', replacement: 'C0\1'}
+          - {type: renameRegisters, pattern: '^C2(IER|ICR|ISR|MISR)$', replacement: 'C1\1'}
+          - {type: createClusterArray, pattern: '^C(\d+)(IER|ICR|ISR|MISR)$', name: C, description: Per-CPU interrupt control}
       I2C:
         uses: I2C
         instances: [I2C1, I2C2, I2C3, I2C4, I2C5]
@@ -14774,6 +14777,7 @@ families:
           CRYP: {gen: 1}
           DFSDM: {has_dlyr: false}
           RAMECC3: {monitors: 2}
+          HSEM: {cores: 2}
       H73x:
         _all:
           CRYP: {gen: 1}
