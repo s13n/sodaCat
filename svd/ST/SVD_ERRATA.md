@@ -1349,6 +1349,43 @@ has the correct name. All RMs consistently use MCKDIV.
 **addressBlock.size:** All F4 SAI SVDs report 1024; correct is 68
 (BDR@0x40 + 4 = 68 bytes).
 
+**STM32H7 — SAI_xCR1 field discrepancies (all H7 SVD v2.8):** Every H7 SVD
+(H723/H725/H730/H733/H735/H73x, H742/H743/H750/H753, H745/H747/H755/H757
+_CM4+_CM7, H7A3/H7B0/H7B3 — 21 files, all byte-identical, SAI1/2/3/4
+`derivedFrom` one definition) describes `SAI_ACR1`/`SAI_BCR1` with three field
+deviations from the reference manuals. Each appears in both the A and B
+sub-blocks. RMs cross-checked: RM0433 Rev 8 (H742_H753), RM0468 Rev 3 (H73x),
+RM0455 Rev 11 (H7A3_B), RM0399 Rev 4 (H745_H757, user-confirmed).
+
+| Field (ACR1/BCR1) | H7 SVD v2.8 | RM value | Verdict |
+|-------------------|-------------|----------|---------|
+| `MCKDIV`          | bits [23:20] (width 4) | bits [25:20] (width 6) — **all four RMs agree, incl. RM0433** | **SVD wrong everywhere**; model correct |
+| `MCKEN`           | absent | bit 27 in RM0468/RM0455/RM0399; **bits 31:27 Reserved in RM0433** | SVD wrong for H73x/H7A3_B/H745_H757; RM0433 sides with the SVD |
+| bit 19            | `NOMCK` | `NODIV` in RM0468/RM0455/RM0399; **`NOMCK` in RM0433** | same as MCKEN: RM0433 sides with the SVD |
+
+So `MCKDIV` is a clean, universal SVD bug (4 bits → 6). The other two are
+**subfamily-split in the documentation**: H73x, H7A3_B and H745_H757 use the
+newer naming (`NODIV` + a documented `MCKEN`), while H742_H753 (RM0433 Rev 8)
+still uses `NOMCK` and reserves bit 27.
+
+Judgment (per "judge by plausibility, not authority"): almost certainly the
+**same SAI silicon** across all H7, with RM0433 Rev 8 carrying the older
+description. Evidence: (1) RM0433 already documents the *new-generation*
+6-bit `MCKDIV` + `OSR`(bit 26) — it is not the genuinely old 4-bit SAI, so the
+NOMCK/no-MCKEN combo is a partial-update artifact, not a different IP block;
+(2) RM0433's `NOMCK` is described identically to `NODIV` ("Master clock
+generator enabled/disabled") — same bit 19, same function, renamed in later
+RMs; (3) H742/H743 and H745/H747 are the same die family, and RM0399 (the
+dual-core sibling) documents `MCKEN` at bit 27. On H742_H753, bit 27 is at
+worst a reserved no-op, so exposing `MCKEN` there is harmless.
+
+The shared model [models/ST/SAI.yaml](../../models/ST/SAI.yaml) carries the
+newer unified layout (`NODIV` + `MCKEN` + 6-bit `MCKDIV`, sourced from a U5
+SVD) and is treated as canonical for all H7. No model change needed. (Driver
+impact: code enabling SAI master-clock output looks for `MCKEN`/`NODIV`, which
+the raw SVD wouldn't expose — but since we use the shared model, generated H7
+headers have the correct fields.)
+
 ### FMPI2C
 
 **STM32F413 (SVD v1.1):** Poor field names throughout (ADDRE instead of ADDRIE,
