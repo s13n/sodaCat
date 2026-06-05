@@ -14483,7 +14483,11 @@ families:
           DCMI:    {DMA: [DMAMUX1.75]}
           CRYP:    {IN_DMA: [DMAMUX1.76], OUT_DMA: [DMAMUX1.77]}
           HASH:    {IN_DMA: [DMAMUX1.78]}
-          SPDIFRX: {DT_DMA: [DMAMUX1.93], CS_DMA: [DMAMUX1.94], FRAME_SYNC: [TIM17.TI1.1]}
+          # spdifrx_frame_sync feeds TIM12's TI1 mux at TI1SEL=0001, NOT TIM17.
+          # Table 102 (ch.14) mis-attributes the row to TIM17, but TIM12_TISEL
+          # lists '0001: spdifrx_frame_sync' while TIM17_TISEL has 0001 reserved
+          # (only TIM17_CH1 / HSE_1MHz / MCO1). Confirmed on real hardware. See errata.
+          SPDIFRX: {DT_DMA: [DMAMUX1.93], CS_DMA: [DMAMUX1.94], FRAME_SYNC: [TIM12.TI1.1]}
           # Chapter 14 calls this 'DFSDM1' but the chip instance is named 'DFSDM'.
           # The break outputs feed TIM brake inputs per Table 102. ST writes
           # the source signal inconsistently — 'dfsdm1_break<N>' on some rows

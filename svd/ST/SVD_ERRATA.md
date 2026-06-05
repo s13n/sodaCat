@@ -1114,6 +1114,39 @@ we modelled it.
 Recorded for future readers cross-referencing the block diagram.
 
 
+### spdifrx_frame_sync routed to wrong timer: Table 102 says TIM17, register says TIM12 (RM doc inconsistency)
+
+**RM0399 Rev.4 (H745 / H747 / H755 / H757):**
+
+Chapter 14 Table 102 (p.620) lists the SPDIFRX output `spdifrx_frame_sync`
+as a `TI1_1` source for destination **TIM17**. The register-level timer
+input-selection fields say otherwise:
+
+| Register | TI1SEL field | spdifrx_frame_sync? |
+|----------|--------------|---------------------|
+| TIM12_TISEL (§42.4.15, p.1895) | `0000: TIM12_CH1`, `0001: spdifrx_frame_sync` | **yes, at 0001** |
+| TIM17_TISEL (§43.x, p.1993)    | `0000: TIM17_CH1`, `0010: HSE_1MHz`, `0011: MCO1`; 0001 reserved | **no** |
+
+TIM17's TI1 mux has no slot for spdifrx_frame_sync at all — its only
+on-chip TI1 sources are HSE_1MHz and MCO1 (both correctly wired from RCC
+in chip_connections). The TIM12 mux is where spdifrx_frame_sync actually
+lands. So Table 102 mis-attributed a single row from TIM12 to TIM17.
+
+**Plausibility analysis:** the TISEL register fields are the load-bearing
+definition (what software writes to select the input), and they are
+internally consistent — TIM17_TISEL has no encoding that would reach
+spdifrx_frame_sync, and TIM12_TISEL names it explicitly. Table 102 is a
+hand-assembled chip-level routing summary prone to row-attribution slips
+(cf. the LPTIM and HRTIM off-by-one entries above). Per the project rule
+"judge by plausibility, not authority": the register wins.
+
+**Confirmed on real hardware** by the maintainer (the signal toggles on
+TIM12's TI1 capture, not TIM17's).
+
+**Modelled per TIM12_TISEL.** chip_connections wires SPDIFRX `FRAME_SYNC`
+to `TIM12.TI1.1`.
+
+
 ## ST STM32F3
 
 References:
