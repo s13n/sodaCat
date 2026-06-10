@@ -1116,16 +1116,17 @@ Recorded for future readers cross-referencing the block diagram.
 
 ### spdifrx_frame_sync routed to wrong timer: Table 102 says TIM17, register says TIM12 (RM doc inconsistency)
 
-**RM0399 Rev.4 (H745 / H747 / H755 / H757):**
+**RM0399 Rev.4 (H745 / H747 / H755 / H757) and RM0433 Rev.8 (H742 / H743 / H750 / H753):**
 
-Chapter 14 Table 102 (p.620) lists the SPDIFRX output `spdifrx_frame_sync`
-as a `TI1_1` source for destination **TIM17**. The register-level timer
-input-selection fields say otherwise:
+The chapter-14 interconnect matrix (Table 102 in both manuals — RM0399 p.620,
+RM0433 p.581) lists the SPDIFRX output `spdifrx_frame_sync` as a `TI1_1`
+source for destination **TIM17**. The register-level timer input-selection
+fields say otherwise:
 
 | Register | TI1SEL field | spdifrx_frame_sync? |
 |----------|--------------|---------------------|
-| TIM12_TISEL (§42.4.15, p.1895) | `0000: TIM12_CH1`, `0001: spdifrx_frame_sync` | **yes, at 0001** |
-| TIM17_TISEL (§43.x, p.1993)    | `0000: TIM17_CH1`, `0010: HSE_1MHz`, `0011: MCO1`; 0001 reserved | **no** |
+| TIM12_TISEL (RM0399 §42.4.15, p.1895 / RM0433 p.1745) | `0000: TIM12_CH1`, `0001: spdifrx_frame_sync` | **yes, at 0001** |
+| TIM17_TISEL (RM0399 p.1993)    | `0000: TIM17_CH1`, `0010: HSE_1MHz`, `0011: MCO1`; 0001 reserved | **no** |
 
 TIM17's TI1 mux has no slot for spdifrx_frame_sync at all — its only
 on-chip TI1 sources are HSE_1MHz and MCO1 (both correctly wired from RCC
@@ -1140,11 +1141,22 @@ hand-assembled chip-level routing summary prone to row-attribution slips
 (cf. the LPTIM and HRTIM off-by-one entries above). Per the project rule
 "judge by plausibility, not authority": the register wins.
 
+**Cross-RM corroboration:** the newer H7 manuals ST published for the same
+peripheral fix the interconnect table. RM0468 Rev.3 (H72x/H73x, p.555) and
+RM0455 Rev.11 (H7A3/B3/B0, p.540) both place the SPDIFRX frame-sync row
+(relabelled `SPDIFRX FS`) under destination **TIM12**, matching the
+register. Only the older H743-generation manuals (RM0399, RM0433) carry the
+TIM17 mis-attribution — strong evidence it was a documentation bug ST later
+caught, not a silicon difference. TIM12_TISEL is identical across all four.
+
 **Confirmed on real hardware** by the maintainer (the signal toggles on
 TIM12's TI1 capture, not TIM17's).
 
 **Modelled per TIM12_TISEL.** chip_connections wires SPDIFRX `FRAME_SYNC`
-to `TIM12.TI1.1`.
+to `TIM12.TI1.1` for H745_H757. The other SPDIFRX-bearing H7 subfamilies
+(H742_H753, H73x, H7A3_B) don't wire frame-sync yet — when they are, it
+must target TIM12; H742_H753 in particular shares the RM0433 table bug, so
+don't be misled by Table 102 there.
 
 
 ## ST STM32F3
