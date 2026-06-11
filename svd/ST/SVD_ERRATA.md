@@ -1431,6 +1431,21 @@ impact: code enabling SAI master-clock output looks for `MCKEN`/`NODIV`, which
 the raw SVD wouldn't expose — but since we use the shared model, generated H7
 headers have the correct fields.)
 
+**`has_mcken` feature flag (per-subfamily, RM-driven):** the SAI block's
+`has_mcken` param gates driver use of `MCKEN`/6-bit `MCKDIV`. It is set per the
+*reference manual* for each subfamily, not per the shared model (which always
+exposes the field). `has_mcken: true` for H73x (RM0468), H745_H757 (RM0399,
+user-confirmed) and H7A3_B (RM0455) — all three RMs document `MCKEN` at
+`SAI_xCR1` bit 27. **H742_H753 (RM0433 Rev 8) keeps `has_mcken: false`**: that
+RM reserves bit 27 and retains `NOMCK` at bit 19. Although the same-silicon
+argument above suggests MCKEN likely exists there too, the flag follows what the
+RM literally documents, so a driver built against RM0433 is not steered toward an
+undocumented bit. The `MCKEN` *field* remains present in the H742_H753 header
+(it comes from the shared model); only the feature flag says don't-use-it. This
+is the same RM-driven rule applied family-wide: `has_mcken: true` for every
+non-H7 family whose RM documents the bit (G4/H5/H7RS/L5/N6/U3/U5), false for the
+original-generation SAI that lacks it entirely (F4/F7/L4/L4P).
+
 ### FMPI2C
 
 **STM32F413 (SVD v1.1):** Poor field names throughout (ADDRE instead of ADDRIE,
