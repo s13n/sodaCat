@@ -2546,13 +2546,21 @@ def main():
                 # merge with SVD-derived NVIC destinations).  This is the
                 # mechanism for NVIC IRQ corrections (override existing
                 # NVIC.<n> entry) and for adding non-SVD destinations like
-                # DMAMUX request lines.
+                # DMAMUX request lines.  An empty destination list ([]) is a
+                # SUPPRESS directive: it drops the signal from the instance
+                # entirely.  Used to remove a phantom canonical the resolver
+                # mis-derived from a shared/combined SVD interrupt name (e.g.
+                # a GP timer that shares TIM1/TIM8's BRK vector and would
+                # otherwise emit a spurious BRK output instead of INTR).
                 conn_overrides = _resolve_chip_connections(
                     chip_connections, subfamily_name, chip_name,
                     canonical_inst_name, block_type)
                 if conn_overrides:
                     for canonical_name, destinations in conn_overrides.items():
-                        connections_map[canonical_name] = list(destinations)
+                        if not destinations:
+                            connections_map.pop(canonical_name, None)
+                        else:
+                            connections_map[canonical_name] = list(destinations)
 
                 # Sort connections_map to match the block model's `outputs:`
                 # declaration order.  Done after override application so

@@ -2771,6 +2771,28 @@ families:
           SPI2: {has_i2s: false}
           SPI3: {has_i2s: false}
     chip_connections:
+      _all:
+        _all:
+          # GP timers TIM12-19 share/relabel their global-interrupt vector.
+          # F3 SVDs spell it three ways for the SAME silicon vector: combined
+          # under TIM1 (TIM1_BRK_TIM15 on F302/F303/F3x4), an _IRQ-suffixed
+          # standalone (TIM15_IRQ on F301/F3x8), or plain (TIM15 on F373).
+          # The resolver only catches the plain form, so wire INTR explicitly
+          # to the vector (uniform across every F3 chip: TIM15/16/17 =
+          # NVIC.40/41/42 share TIM1's BRK/UP/TRG_COM; TIM12/13/14 =
+          # NVIC.59/60/61; TIM18 = NVIC.43 shares DAC; TIM19 = NVIC.94).
+          # The empty lists suppress the phantom BRK/UP/TRG_COM the resolver
+          # mis-derives on F302 (which double-lists the combined raw under the
+          # secondary timer); no-op on the other chips.  Entries apply only to
+          # chips that instantiate the timer.
+          TIM12: {INTR: [NVIC.59], BRK: []}
+          TIM13: {INTR: [NVIC.60], UP: []}
+          TIM14: {INTR: [NVIC.61], TRG_COM: []}
+          TIM15: {INTR: [NVIC.40], BRK: []}
+          TIM16: {INTR: [NVIC.41], UP: []}
+          TIM17: {INTR: [NVIC.42], TRG_COM: []}
+          TIM18: {INTR: [NVIC.43]}
+          TIM19: {INTR: [NVIC.94]}
       F334:
         _all:
           HRTIM: {MST: [NVIC.119], TIMA: [NVIC.120], TIMB: [NVIC.121], TIMC: [NVIC.122], TIMD: [NVIC.123], TIME: [NVIC.124], FLT: [NVIC.125]}
@@ -3209,6 +3231,27 @@ families:
       _all:
         _all:
           SPDIF_RX: {INTR: [NVIC.110]}
+          # TIM9-14 share their global-interrupt vectors with TIM1/TIM8's
+          # break/update/trigger-COM vectors (RM0090 etc. vector table:
+          # 24=TIM1_BRK_TIM9, 25=TIM1_UP_TIM10, 26=TIM1_TRG_COM_TIM11,
+          # 43=TIM8_BRK_TIM12, 44=TIM8_UP_TIM13, 45=TIM8_TRG_COM_TIM14;
+          # +16 = NVIC.40/41/42/59/60/61).  Wire each secondary timer's INTR
+          # to the shared vector.  On the ~half of F4 chips whose SVD also
+          # lists the combined raw under the secondary timer, the resolver
+          # mis-derives a phantom BRK/UP/TRG_COM output — suppress it with an
+          # empty list (a no-op on the chips that lack the phantom).  Vectors
+          # are uniform across all F4 subfamilies; entries apply only to chips
+          # that actually instantiate the timer.
+          TIM9:  {INTR: [NVIC.40], BRK: []}
+          TIM10: {INTR: [NVIC.41], UP: []}
+          # F413/F423 SVD mislabels TIM11's interrupt as TIM1_UP_TIM10 (an UP
+          # phantom at the wrong vector) rather than TIM1_TRG_COM_TIM11, so
+          # suppress UP as well as TRG_COM here; INTR is forced to the correct
+          # NVIC.42 above.
+          TIM11: {INTR: [NVIC.42], UP: [], TRG_COM: []}
+          TIM12: {INTR: [NVIC.59], BRK: []}
+          TIM13: {INTR: [NVIC.60], UP: []}
+          TIM14: {INTR: [NVIC.61], TRG_COM: []}
   F7:
     svd:
       zip: stm32f7-svd.zip
@@ -3641,6 +3684,21 @@ families:
       _all:
         _all:
           SPDIF_RX: {INTR: [NVIC.113]}
+          # TIM9-14 share their global-interrupt vectors with TIM1/TIM8's
+          # break/update/trigger-COM vectors (RM0385/RM0410/RM0431 vector
+          # table: 24/25/26 = TIM1_BRK_TIM9 / TIM1_UP_TIM10 / TIM1_TRG_COM_TIM11,
+          # 43/44/45 = TIM8_BRK_TIM12 / TIM8_UP_TIM13 / TIM8_TRG_COM_TIM14;
+          # +16 = NVIC.40/41/42/59/60/61).  Wire each secondary timer's INTR.
+          # TIM12/13/14 have a phantom BRK/UP/TRG_COM on the F72x SVDs that
+          # double-list the combined raw (suppressed via []).  TIM10's SVD
+          # carries a bogus 'TIM5' raw on F767/F777 that the resolver would
+          # otherwise map to the wrong vector — the INTR override corrects it.
+          TIM9:  {INTR: [NVIC.40], BRK: []}
+          TIM10: {INTR: [NVIC.41], UP: []}
+          TIM11: {INTR: [NVIC.42], TRG_COM: []}
+          TIM12: {INTR: [NVIC.59], BRK: []}
+          TIM13: {INTR: [NVIC.60], UP: []}
+          TIM14: {INTR: [NVIC.61], TRG_COM: []}
   G0:
     svd:
       zip: stm32g0-svd.zip
@@ -4168,6 +4226,16 @@ families:
       G4xx:
         _all:
           HRTIM: {MST: [NVIC.83], TIMA: [NVIC.84], TIMB: [NVIC.85], TIMC: [NVIC.86], TIMD: [NVIC.87], TIME: [NVIC.88], FLT: [NVIC.89], TIMF: [NVIC.90]}
+          # TIM15/16/17 share their global-interrupt vector with TIM1's
+          # break/update/trigger-COM vectors (RM0440 vector table: 24/25/26 =
+          # TIM1_BRK_TIM15 / TIM1_UP_TIM16 / TIM1_TRG_COM_TIM17; +16 =
+          # NVIC.40/41/42).  The G4 SVD names vector 26 just 'TIM1_TRG_COM'
+          # (the _TIM17 suffix is dropped) and lists none of the three under
+          # the secondary timers, so their INTR must be wired here.  No
+          # phantom to suppress (the resolver derived nothing for them).
+          TIM15: {INTR: [NVIC.40]}
+          TIM16: {INTR: [NVIC.41]}
+          TIM17: {INTR: [NVIC.42]}
           # EXTI block: re-attach the COMP-shared NVIC vectors that SVD
           # erroneously hangs on the COMP peripheral.  Per RM0440 the comp
           # outputs reach NVIC via EXTI lines 21/22/29/30/31/32/33; line
@@ -14369,6 +14437,19 @@ families:
         _all:
           SPDIFRX: {INTR: [NVIC.113]}
           HRTIM: {MST: [NVIC.119], TIMA: [NVIC.120], TIMB: [NVIC.121], TIMC: [NVIC.122], TIMD: [NVIC.123], TIME: [NVIC.124], FLT: [NVIC.125]}
+          # TIM12/13/14 share their global-interrupt vector with TIM8's
+          # break/update/trigger-COM vectors: RM0433/RM0399/RM0468/RM0455
+          # vector-table positions 43/44/45 are TIM8_BRK_TIM12 /
+          # TIM8_UP_TIM13 / TIM8_TRG_COM_TIM14 (+16 exception offset =
+          # NVIC.59/60/61).  The SVD lists each combined vector only under
+          # TIM8, so the secondary timers' INTR is wired here; the same vector
+          # also remains on TIM8's BRK/UP/TRG_COM.  Numbers are identical
+          # across every H7 subfamily and both cores.  (H745_H757 has its own
+          # TIM12/13/14 entries below — first-match-wins means INTR is added
+          # there too, not inherited from here.)
+          TIM12:   {INTR: [NVIC.59]}
+          TIM13:   {INTR: [NVIC.60]}
+          TIM14:   {INTR: [NVIC.61]}
           # DMAMUX wiring: silicon is identical across all H7 subfamilies, so
           # all DMAMUX1/DMAMUX2 destinations live at _all._all (the only
           # per-subfamily quirk is the BDMA→BDMA2 rename on H7A3_B, handled
@@ -14589,9 +14670,13 @@ families:
           # TIM12.TRGO feeds DMAMUX1's trigger generator slot 7 (Table 106).
           # TIM12-14 are GP timers; their CH<N> entries seed slot 0 of the
           # corresponding TI mux just like TIM1-8/15-17.
-          TIM12:   {TRGO: [DMAMUX1.gen.7], CH1: [TIM12.TI1.0], CH2: [TIM12.TI2.0]}
-          TIM13:   {CH1: [TIM13.TI1.0]}
-          TIM14:   {CH1: [TIM14.TI1.0]}
+          # INTR shares TIM8's BRK/UP/TRG_COM vectors (NVIC.59/60/61); see the
+          # _all._all note above.  Repeated here because first-match-wins on
+          # the chip_connections cascade means the _all._all entry is skipped
+          # for this subfamily.
+          TIM12:   {INTR: [NVIC.59], TRGO: [DMAMUX1.gen.7], CH1: [TIM12.TI1.0], CH2: [TIM12.TI2.0]}
+          TIM13:   {INTR: [NVIC.60], CH1: [TIM13.TI1.0]}
+          TIM14:   {INTR: [NVIC.61], CH1: [TIM14.TI1.0]}
           # HRTIM1: 6 DMA requests (one per master+sub-timer) per Table 106.
           # Chapter 14 calls the instance HRTIM1; the chip yaml names it HRTIM
           # (canonicalised from the SVD's HRTIM_Master via rename_instances).
@@ -15850,6 +15935,20 @@ families:
           QUADSPI: {dual: false}
         STM32L486:
           QUADSPI: {dual: false}
+    chip_connections:
+      _all:
+        _all:
+          # TIM15/16/17 share their global-interrupt vector with TIM1's
+          # break/update/trigger-COM vectors (RM0351 vector table: 24/25/26 =
+          # TIM1_BRK_TIM15 / TIM1_UP_TIM16 / TIM1_TRG_COM_TIM17; +16 =
+          # NVIC.40/41/42).  L4 SVDs spell it as the combined raw under TIM1
+          # on most chips, plain TIMx on a few — wire INTR explicitly to the
+          # shared vector (uniform across all L4 chips).  Empty lists suppress
+          # the phantom BRK/UP/TRG_COM the resolver mis-derives on the chips
+          # that double-list the combined raw under the secondary timer.
+          TIM15: {INTR: [NVIC.40], BRK: []}
+          TIM16: {INTR: [NVIC.41], UP: []}
+          TIM17: {INTR: [NVIC.42], TRG_COM: []}
   L4P:
     svd:
       zip: stm32l4plus-svd.zip
@@ -16160,6 +16259,19 @@ families:
       L4Px_L4Qx:
         _all:
           RNG: {gen: 2}
+    chip_connections:
+      _all:
+        _all:
+          # TIM15/16/17 share their global-interrupt vector with TIM1's
+          # break/update/trigger-COM vectors (RM0432 vector table: 24/25/26 =
+          # TIM1_BRK_TIM15 / TIM1_UP_TIM16 / TIM1_TRG_COM_TIM17; +16 =
+          # NVIC.40/41/42).  The L4+ SVDs name them only as the combined raw
+          # under TIM1, so the secondary timers' INTR must be wired here (no
+          # phantom on L4+, but the empty-list suppressors are kept for
+          # consistency with L4 and as a guard).
+          TIM15: {INTR: [NVIC.40], BRK: []}
+          TIM16: {INTR: [NVIC.41], UP: []}
+          TIM17: {INTR: [NVIC.42], TRG_COM: []}
   L5:
     svd:
       zip: stm32l5-svd.zip
@@ -17034,6 +17146,14 @@ families:
           LPTIM: {max_channel: 3}
           VREFBUF: {vrs_wide: false}
           RTC: {has_binary: true}
+    chip_connections:
+      _all:
+        _all:
+          # TIM15 shares its global-interrupt vector with LPTIM3 (RM0503
+          # vector table position 19 = TIM15_LPTIM3; +16 = NVIC.35).  The SVD
+          # names the combined raw 'TIM15_LPTIM3', which the resolver doesn't
+          # map to INTR, so wire it here.  Uniform across U031/U073/U083.
+          TIM15: {INTR: [NVIC.35]}
   U3:
     svd:
       zip: stm32u3-svd.zip
