@@ -162,12 +162,23 @@ def _format_index_enum(enum_obj, axis_dim):
 
 class PerFormatter:
     def __init__(self, **keywords):
+        # Storage endianness of the register block, threaded into the
+        # HwReg<R, E> template's second argument.  This is an integration
+        # fact, not a model property: a 16-bit register reaches host memory
+        # in host byte order over a native-word SPI transfer, but MSB-first
+        # (big-endian) over an I2C byte stream — the same device, different
+        # bus.  `native` (the default) emits no endian argument so generated
+        # output is byte-identical to the pre-endianness generator.
+        endian = keywords.get('endian', 'native')
+        if endian not in ('native', 'big', 'little'):
+            raise ValueError(f"endian must be native/big/little, got {endian!r}")
+        self.endian_suffix = '' if endian == 'native' else f', std::endian::{endian}'
         self.enumTemplate      = Template(keywords.get('enum'     , '\n\t/** $description */\n\t$name = $value,'))
         self.enumsTemplate     = Template(keywords.get('enums'    , '\ninline namespace ${name}_ {\nEXPORT enum ${sname}_${name} : $type {$enums\n};\n} // namespace ${name}_\n'))
         self.regEnumsTemplate  = Template(keywords.get('regEnums' , '\ninline namespace ${name}_ {$enums} // namespace ${name}_\n'))
         self.bitfieldTemplate  = Template(keywords.get('bitfield' , '\n\t/** $description */\n\t$type $name:$width;'))
         self.resBitsTemplate   = Template(keywords.get('resBits'  , '\n\t$type _$res:$width;\t// reserved'))
-        self.typeTemplate      = Template(keywords.get('type'     , 'HwReg<struct $name>'))
+        self.typeTemplate      = Template(keywords.get('type'     , 'HwReg<struct $name$endian>'))
         self.resBytesTemplate  = Template(keywords.get('resBytes' , '\n\tuint8_t _$res[$bytes];\t// reserved'))
         self.fieldTemplate     = Template(keywords.get('field'    , '\n\t/** $description */\n\t$type $name;'))
         self.fieldsTemplate    = Template(keywords.get('fields'   , '\n/** $description */\nEXPORT struct $name {$fields\n};\n'))
@@ -300,7 +311,14 @@ $postfix"""))
                 # stride is consumed by the inner-array repetition.
                 padSize = dimInc if isinstance(dimInc, int) else dimInc[-1]
                 innerPrefix = structPrefix + name + '_'
-                types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, 4, innerPrefix)
+                # Inner registers inherit the enclosing block's default word
+                # size (`defaultSize`, in bytes) rather than a hardcoded 4.
+                # Top-level registers already inherit the model's `size:`, so a
+                # cluster member must too — otherwise a sub-32-bit device (e.g.
+                # a 16-bit-register codec) gets oversized cluster elements whose
+                # footprint exceeds the array stride.  For 32-bit blocks this is
+                # identical to the previous behaviour.
+                types, regs, size, enum = self.formatRegisterList(reg['registers'], 'uint32_t', padSize, defaultSize, innerPrefix)
                 enums += enum
                 structs += self.registersTemplate.substitute(name=name, regs=regs, types=types, description=description, size=size)
                 dims = _parse_array_dims(reg)
@@ -344,9 +362,17 @@ $postfix"""))
                     fields, enum = self.formatFieldList(reg['fields'], type, sname=typeName)
                     enums += self.regEnumsTemplate.substitute(reg, name=typeName, enums=enum) if enum else ''
                     structs += self.fieldsTemplate.substitute(reg, name=typeName, fields=fields, description=description)
-                    regType = self.typeTemplate.substitute(reg, name=typeName)
+                    regType = self.typeTemplate.substitute(reg, name=typeName, endian=self.endian_suffix)
                 else:
                     regType = type
+                    # A fieldless integer register is normally emitted as a bare
+                    # uintN_t, which has no byte-order slot.  When a non-native
+                    # endianness was requested it must still be byte-swapped on
+                    # access, so wrap it in HwReg<uintN_t, E>.  Author-specified
+                    # dataTypes are left untouched — they opted into a concrete
+                    # representation the generator shouldn't second-guess.
+                    if self.endian_suffix and 'dataType' not in reg:
+                        regType = f'HwReg<{type}{self.endian_suffix}>'
                 if dims is not None:
                     regType = _wrap_array_type(regType, dims, idx_types)
                 line = self.fieldTemplate.substitute(reg, name=names, type=regType, description=description)
@@ -472,13 +498,25 @@ def generate_module(mod, header):
     """Generate a .cppm module wrapper for a peripheral header."""
     return moduleTemplate.substitute(mod=mod, header=header)
 
+def _pop_endian_arg(argv):
+    """Strip an optional `--endian <value>` pair from argv in place and
+    return the value (default 'native').  Done by hand rather than argparse
+    so the surrounding positional-argument convention is left intact."""
+    endian = 'native'
+    if '--endian' in argv:
+        i = argv.index('--endian')
+        endian = argv[i + 1]
+        del argv[i:i + 2]
+    return endian
+
 if __name__ == "__main__":
     from _namespace import resolve as _resolve_ns
+    endian = _pop_endian_arg(sys.argv)
     yaml= YAML(typ='safe')
     per = yaml.load(Path(sys.argv[1]))
     if per:
         ns = _resolve_ns(sys.argv[1])
-        fmt = PerFormatter()
+        fmt = PerFormatter(endian=endian)
         prefix = prefixTemplate.substitute(ns=ns)
         postfix = postfixTemplate.substitute(ns=ns)
         txt = fmt.formatPeripheral(per, prefix, postfix)

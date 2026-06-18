@@ -31,6 +31,19 @@ import sys
 
 from _namespace import resolve as _resolve_ns
 
+# Optional `--endian <native|big|little>` flag (default native).  Strip it
+# from argv up front so the downstream positional-argument indexing — and the
+# argv handed to the chip/clocktree generators — is unaffected.  Only the
+# peripheral path consumes it; chip MMIO and clock trees are always native.
+endian = 'native'
+if '--endian' in sys.argv:
+    _i = sys.argv.index('--endian')
+    endian = sys.argv[_i + 1]
+    if endian not in ('native', 'big', 'little'):
+        print(f"--endian must be native/big/little, got {endian!r}", file=sys.stderr)
+        sys.exit(1)
+    del sys.argv[_i:_i + 2]
+
 yaml = YAML(typ='safe')
 model = yaml.load(Path(sys.argv[1]))
 
@@ -49,7 +62,7 @@ modid = f'{ns}.{_stem}' if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', ns) else _stem
 
 if 'registers' in model:
     from generate_peripheral_header import PerFormatter, prefixTemplate, postfixTemplate, generate_module
-    fmt = PerFormatter()
+    fmt = PerFormatter(endian=endian)
     prefix = prefixTemplate.substitute(ns=ns)
     postfix = postfixTemplate.substitute(ns=ns)
     txt = fmt.formatPeripheral(model, prefix, postfix)

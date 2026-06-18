@@ -6,8 +6,10 @@
 
 void test_stm32h7();
 void test_microchip();
+void test_cirrus();
 
 int main() {
     test_stm32h7();
     test_microchip();
+    test_cirrus();
 }

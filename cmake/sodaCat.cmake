@@ -140,7 +140,20 @@ endfunction()
 #   language    - Generator language (e.g. "cxx"); must be fetched first via sodacat_fetch_generator()
 #   model_path  - Path to model file relative to SODACAT_LOCAL_DIR (e.g., ST/H7/H757/STM32H757_CM7)
 #   suffix      - File name suffix of generated header file
+#
+# Optional keyword arguments:
+#   ENDIAN <native|big|little>
+#               - Storage byte order of a peripheral block's registers, passed
+#                 through to the generator's HwReg<R, E> emission.  This is an
+#                 integration fact (e.g. a big-endian device read over an I2C
+#                 byte stream onto a little-endian host), not a model property,
+#                 so it is set per generate_header() call.  Defaults to native
+#                 and applies only to the directly-named peripheral model — it
+#                 is intentionally NOT propagated to recursively-generated
+#                 model dependencies (a chip's own MMIO is always native).
 function(generate_header target language model_path suffix)
+    cmake_parse_arguments(GH "" "ENDIAN" "" ${ARGN})
+
     # Extract model name from path (last component)
     get_filename_component(model "${model_path}" NAME)
 
@@ -230,10 +243,14 @@ function(generate_header target language model_path suffix)
     # Namespace comes from the model YAML at generation time (Python side
     # uses the same resolver as cmake here), so no namespace argument is
     # forwarded.
+    set(_endian_arg "")
+    if(GH_ENDIAN)
+        set(_endian_arg --endian ${GH_ENDIAN})
+    endif()
     get_filename_component(model_stem "${model}${suffix}" NAME_WE)
     add_custom_command(OUTPUT "${_out_dir}/${model}${suffix}"
                               "${_out_dir}/${model_stem}.cppm"
-        COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${model} ${suffix}
+        COMMAND ${Python3_EXECUTABLE} "${generator_script}" "${model_file}" ${model} ${suffix} ${_endian_arg}
         WORKING_DIRECTORY "${_out_dir}"
         MAIN_DEPENDENCY "${model_file}"
         DEPENDS ${generator_scripts}

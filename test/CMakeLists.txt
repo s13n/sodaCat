@@ -94,6 +94,11 @@ generate_header(soc-data-modules cxx ST/VREFBUF .hpp)
 
 generate_header(soc-data-modules cxx ARM/NVIC .hpp)
 
+# Cirrus WM8994 — exercises the build-time endianness flag.  The CODEC
+# transmits MSB-first; over an I2C byte stream onto a little-endian host the
+# register words land big-endian in memory, so generate with ENDIAN big.
+generate_header(soc-data-modules cxx Cirrus/WM8994 .hpp ENDIAN big)
+
 # Microchip SAME70 — exercises the clock-tree code path
 # (the chip's `clocktree:` key pulls in SAM_Gen1_clocks alongside the chip).
 generate_header(soc-data-modules cxx Microchip/SAME70/SAME70/ATSAME70Q21B .hpp)
@@ -175,7 +180,7 @@ generate_header(soc-data-modules cxx ESP/P4/UHCI .hpp)
 generate_header(soc-data-modules cxx ESP/P4/USB_DEVICE .hpp)
 generate_header(soc-data-modules cxx ESP/P4/USB_WRAP .hpp)
 
-add_executable(soc-data-test main.cpp test_stm32h7.cpp test_microchip.cpp)
+add_executable(soc-data-test main.cpp test_stm32h7.cpp test_microchip.cpp test_cirrus.cpp)
 target_link_libraries(soc-data-test PRIVATE soc-data-modules)
 target_compile_definitions(soc-data-test PRIVATE $<$<BOOL:${FOR_MODULES}>:REGISTERS_MODULE>)
 target_compile_options(soc-data-test PUBLIC $<$<BOOL:${FOR_MODULES}>:-fmodules-ts>)

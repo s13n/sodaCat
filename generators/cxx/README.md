@@ -73,6 +73,32 @@ generate_header(soc-data cxx stm32h7 ST/GPIO .hpp)
 generate_header(soc-data cxx stm32h7 ST/USART .hpp)
 ```
 
+#### Endianness
+
+`generate_header()` accepts an optional `ENDIAN <native|big|little>` keyword
+that sets the storage byte order of a peripheral block's registers, threaded
+into the `HwReg<R, E>` template's second argument:
+
+```cmake
+# A WM8994 audio CODEC read over an I2C byte stream onto a little-endian host
+generate_header(my-target cxx Cirrus/WM8994 .hpp ENDIAN big)
+```
+
+This is an **integration fact, not a model property**, so it lives at the
+call site rather than in the YAML. The same 16-bit register reaches host
+memory in host byte order over a native-word SPI transfer, but MSB-first
+(big-endian) over an I2C byte stream — same device, different bus — so only
+the board integrator knows the right value. `HwReg` compares `E` against
+`std::endian::native` and byte-swaps only when they differ, so a block
+generated `ENDIAN big` is correct on both little- and big-endian hosts.
+
+`native` (the default) emits no endianness argument, leaving generated output
+byte-identical to a build without the keyword. Fieldless integer registers,
+normally emitted as a bare `uintN_t`, are wrapped in `HwReg<uintN_t, E>` when
+a non-native endianness is requested so they are byte-swapped too. The flag
+applies only to the directly-named peripheral; it is not propagated into
+recursively-generated model dependencies (a chip's own MMIO is always native).
+
 The function handles deduplication — calling `generate_header` for the same
 model path and namespace more than once is safe and only generates the
 header once. Using the same model path under different namespaces does emit

@@ -187,11 +187,22 @@ definitions:
       description:
         type: [string, "null"]
       addressOffset:
+        description: >-
+          Byte offset of the register from the block base, NOT a register/word
+          index. For a block of 16-bit registers consecutive registers are 2
+          bytes apart (0, 2, 4, ...), not 1 apart. Vendor docs that number
+          registers (R0, R1, ...) must be multiplied by the register width in
+          bytes when authoring this field.
         oneOf:
         - type: integer
         - type: string
           pattern: ^0x[0-9a-fA-F]+$
       size:
+        description: >-
+          Register width in bits. Optional; defaults to the block's top-level
+          `size:` (which itself defaults to 32). Cluster members inherit the
+          block default too, so a uniform-width block only needs `size:` once
+          at the top level.
         type: integer
       access:
         type: string
@@ -202,6 +213,9 @@ definitions:
       dim:
         $ref: '#/definitions/dimValue'
       dimIncrement:
+        description: >-
+          Byte stride between consecutive array elements (same units as
+          addressOffset), NOT a register-index stride.
         $ref: '#/definitions/dimValue'
       dimIndex:
         $ref: '#/definitions/dimIndexValue'
@@ -252,6 +266,9 @@ definitions:
       description:
         type: [string, "null"]
       addressOffset:
+        description: >-
+          Byte offset of the cluster from the block base (see the register
+          definition's addressOffset note — always bytes, never a word index).
         oneOf:
         - type: integer
         - type: string
@@ -259,6 +276,11 @@ definitions:
       dim:
         $ref: '#/definitions/dimValue'
       dimIncrement:
+        description: >-
+          Byte stride between consecutive cluster elements. Must be >= the
+          cluster's own byte footprint; for a cluster of N w-bit registers
+          that footprint is N * w/8, so member sizes (which inherit the
+          block's `size:`) and the stride must agree.
         $ref: '#/definitions/dimValue'
       dimIndex:
         $ref: '#/definitions/dimIndexValue'
