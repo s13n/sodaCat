@@ -932,7 +932,9 @@ class ChipFormatter:
 
         Tables are emitted at chip namespace scope.  Pair-list rows are
         sorted by the enumerator's declaration index (= its enum value),
-        which is what `resolve()`'s binary search expects.  Table
+        then by port so the order is total and reproducible; a Connection
+        listed on several ports of one target therefore resolves to its
+        lowest port (the most specific mux setting).  Table
         identifiers preserve the manufacturer's case (`c_NVIC`,
         `c_TIM2_ITR`); dots in dotted prefixes collapse to underscores.
         """
@@ -945,9 +947,16 @@ class ChipFormatter:
             table_id = 'c_' + prefix.replace('.', '_')
             if len(ports) != len(set(ports)):
                 # Deduplicate identical (conn, port) rows, then sort.
+                # The port is part of the key so that a Connection reaching
+                # this target on more than one port (e.g. a comparator output
+                # available both alone and OR'd with its sibling) gets a
+                # total, reproducible order.  Without it the tie would keep
+                # set-iteration order, which varies with PYTHONHASHSEED and
+                # silently changes which port resolve() returns.
                 body = ''.join(
                     f'\n\t{{Connection::{n}, {p}}},'
-                    for n, p in sorted(set(routes), key=lambda r: enum_index[r[0]]))
+                    for n, p in sorted(set(routes),
+                                       key=lambda r: (enum_index[r[0]], r[1])))
                 chunks.append(
                     f'\nEXPORT constexpr RouteEntry {table_id}[] = {{{body}\n}};\n')
             else:
