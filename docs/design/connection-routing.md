@@ -518,7 +518,7 @@ element type, dispatched with `constexpr if`.  System code calls
 The peripheral header is unaffected by the wiring layer:
 
 - The per-peripheral `Intgr` struct (from
-  `generate_peripheral_header.py`) carries register pointers and
+  `generate_header.py`'s `PerFormatter`) carries register pointers and
   integration parameters.  It does **not** carry per-output Connection
   fields.  An earlier revision of this design did — `Intgr` held one
   `Connection conn<NAME>` field per declared output, on the theory

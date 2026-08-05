@@ -139,7 +139,7 @@ for subfamily in family:
     write all accumulated chip YAMLs
 ```
 
-The C++ side (`generators/cxx/generate_chip_header.py`) walks `inherits:`
+The C++ side (`generators/cxx/generate_header.py`, `ChipFormatter`) walks `inherits:`
 when computing the merged instance view; the vector-table view is derived on
 the fly from each instance's `outputs:` map by parsing `NVIC.<n>` destinations,
 so consumers see the full IVT regardless of where each instance lives in the
@@ -322,6 +322,7 @@ quiet on the current trees so the value is limited.
   - `extractors/generate_models.py` — the extractor implementation:
     `_dict_intersection`, `_dict_delta`, `_emit_subfamily_yaml`,
     `_update_subfamily_yaml`.
-  - `generators/cxx/generate_chip_header.py:_collectInterrupts` — derives
-    the merged NVIC vector table on the fly by walking each instance's
-    `outputs:` map across the inheritance chain.
+  - `generators/cxx/generate_header.py` — `merge_inherited()` assembles the
+    merged instance view across the inheritance chain, and
+    `ChipFormatter.interruptCount` derives the NVIC vector-table extent on
+    the fly by walking each instance's `connections:` map.

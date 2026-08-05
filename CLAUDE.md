@@ -45,7 +45,7 @@ cmake --build . --target rebuild-stm32h7-models
 
 3. **Model output** (`svd.dumpModel`, `svd.dumpDevice`): Writes YAML using `ruamel.yaml` with `indent(mapping=2, sequence=4, offset=2)`.
 
-4. **C++ generation** (`generators/cxx/`): `generate_peripheral_header.py` produces per-block headers with `HwReg<T>` smart register wrappers; `generate_chip_header.py` produces chip-level integration headers with base addresses and instance parameters.
+4. **C++ generation** (`generators/cxx/generate_header.py`): a single script that routes by model shape — `PerFormatter` produces per-block headers with `HwReg<T>` smart register wrappers, `ChipFormatter` produces chip-level integration headers with base addresses and instance parameters, `ClockFormatter` produces clock-tree headers.
 
 ### Directory roles
 
@@ -87,16 +87,17 @@ The `generate_header()` macro in `sodaCat.cmake` wires YAML → C++ generation a
 
 ### C++ generation
 
-`generators/cxx/generate_peripheral_header.py` and `generate_chip_header.py` are invoked as:
+`generators/cxx/generate_header.py` is the single entry point for every model type:
 ```
-python3 generate_peripheral_header.py <model.yaml> <namespace> <model_name> <suffix>
-python3 generate_chip_header.py <chip_model.yaml> <namespace> <model_name> <suffix>
+python3 generate_header.py <model.yaml> <model_name> <suffix> [--endian native|big|little]
 ```
-They use `string.Template` for code emission and produce `HwReg<T>`-based register wrappers with type-safe bitfield access. The `hwreg.hpp` template provides `.val()` (read as int), `.get()` (read as bitfield struct), and assignment for writes. The `HwArray<T, N, Base = 0, Idx = std::size_t>` template wraps register/cluster arrays; `Base` shifts the starting index and `Idx` substitutes a scoped-enum subscript when the model declares `enumeratedIndices` (see "Index enums" below).
+It dispatches on the model's shape — `registers:` → peripheral block, `cpu:` → chip, `signals:`/`clocks:` → clock tree, and an `inherits:`/`instances:`/`models:`-only file → subfamily passthrough (placeholder `.hpp`/`.cppm` satisfying the CMake output contract). Each invocation writes both a `.hpp` and a `.cppm` module wrapper. The C++ namespace comes from the model's own `namespace:` key, falling back to the lowercased innermost directory name (`namespace_of()`; cmake resolves it the same way for the output subdirectory). Shared helpers at the top of the file (cached YAML loading, `find_model()` walk-up lookup, `axes_of()`/`index_enums_of()` array normalisation, `merge_inherited()` for `inherits:` chains, `module_id()`, `emit()`) are used by all three formatters.
+
+The formatters use `string.Template` for code emission and produce `HwReg<T>`-based register wrappers with type-safe bitfield access. The `hwreg.hpp` template provides `.val()` (read as int), `.get()` (read as bitfield struct), and assignment for writes. The `HwArray<T, N, Base = 0, Idx = std::size_t>` template wraps register/cluster arrays; `Base` shifts the starting index and `Idx` substitutes a scoped-enum subscript when the model declares `enumeratedIndices` (see "Index enums" below).
 
 `HwReg<R, E>`'s second template argument is the register's storage byte order; it defaults to `std::endian::native` and byte-swaps on access only when `E != native`. The peripheral generator accepts an optional `--endian native|big|little` flag (default `native` → output byte-identical to before) that fills this argument, plumbed from the cmake macro as `generate_header(... ENDIAN big)`. This is an **integration fact, not a model property** — the same 16-bit register lands host-order over a native-word SPI transfer but MSB-first over an I2C byte stream, so it can't live in the (bus-agnostic) YAML. Fieldless integer registers, normally emitted as bare `uintN_t`, are wrapped in `HwReg<uintN_t, E>` under a non-native endianness so they swap too. The flag is not propagated into recursively-generated model dependencies (a chip's own MMIO is always native). See [generators/cxx/README.md](generators/cxx/README.md#endianness). Canonical example: `Cirrus/WM8994` over I2C.
 
-The chip-header generator enforces **block-YAML order** for designated initializers: per-instance `parameters:` and `connections:` are reordered to match the block model's declaration order before emission, regardless of the order in the chip YAML. C++20 requires designators to appear in struct-declaration order, so any divergence would be a compile error. Names that the chip declares but the block doesn't raise `ValueError`. The block YAML is located by walking up from the chip-YAML directory until `<parent>/<ns>/<model>.yaml` exists, using the chip's `models:` map.
+The chip formatter enforces **block-YAML order** for designated initializers: per-instance `parameters:` and `connections:` are reordered to match the block model's declaration order before emission, regardless of the order in the chip YAML. C++20 requires designators to appear in struct-declaration order, so any divergence would be a compile error. Names that the chip declares but the block doesn't raise `ValueError`. The block YAML is located by walking up from the chip-YAML directory until `<parent>/<ns>/<model>.yaml` exists, using the chip's `models:` map.
 
 ### Output wiring (interrupts, DMA, wakeups, ...)
 

@@ -32,7 +32,7 @@ shaped by data, not guesswork.
 - `schemas/chip.schema.yaml`
 - `extractors/generate_models.py` (Pass 3)
 - `tools/validate_chips.py`
-- `generators/cxx/generate_chip_header.py`
+- `generators/cxx/generate_header.py` (`ChipFormatter`)
 - The sodaCat-explorer static site builder
 
 **Multi-core chips currently in the database:**

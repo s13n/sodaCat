@@ -165,7 +165,7 @@ function(generate_header target language model_path suffix)
 
     # Resolve namespace from the model YAML (or fall back to lowercased
     # innermost directory name).  Same rule used by the Python generators
-    # via generators/<lang>/_namespace.py.
+    # via generators/<lang>/generate_header.py (namespace_of()).
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c
             "from ruamel.yaml import YAML; import re; from pathlib import Path; p=Path('${model_file}'); d=YAML(typ='safe').load(p) or {}; print(d.get('namespace') or re.sub(r'[^a-z0-9_]', '_', p.parent.name.lower()))"

@@ -10,7 +10,9 @@ directory, so peripherals with the same name from different chips or vendors
 `#include "<namespace>/<name>.hpp"` and import them as `import <namespace>.<name>;`
 — the dotted module name is likewise globally unique.
 
-Note that the Python generator scripts require `ruamel.yaml` to be installed.
+All model types are handled by a single script, `generate_header.py`, which
+dispatches on the shape of the model YAML (peripheral block, chip, clock
+tree, or subfamily passthrough). It requires `ruamel.yaml` to be installed.
 
 ## CMake integration
 

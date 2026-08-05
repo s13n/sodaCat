@@ -121,5 +121,6 @@ mixing fabrics in one change tends to entangle the schema discussion.
 - `tools/validate_chip_connections.py` — destination-format check
   across all three shapes (integer port, sub-port + integer, named
   input).
-- `generators/cxx/generate_chip_header.py:_collectInterrupts` — derives
-  the vector-table view from per-instance connections on the C++ side.
+- `generators/cxx/generate_header.py:ChipFormatter.interruptCount` —
+  derives the vector-table extent from per-instance connections on the
+  C++ side.
