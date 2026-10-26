@@ -34,7 +34,7 @@ def renameEntries(array:list, key, pattern:str, replacement):
             e[key] = pat.sub(replacement, e[key])
 
     
-def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimIndex:list=None):
+def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimIndex:list=None, base:int=0):
     """Convert a register list into a cluster array.
 
     This can be used to convert a linear list of registers of several identical
@@ -56,6 +56,13 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimI
     (default 0); with named `dimIndex` it may be an int (position into the
     list) or a str (instance name looked up in the list).
 
+    The base parameter is the numeric index of the first instance, for arrays
+    whose slot 0 does not exist (e.g. RP2040 USB endpoint control, where EP0's
+    slot holds the SETUP packet).  Instances below base are not part of the
+    array, the template counts from base, and the cluster gets a sequential
+    `dimIndex` starting at base, which the C++ generator turns into
+    `HwArray<T, N, base>`.  Not combinable with a named `dimIndex`.
+
     When `dimIndex` is given, the cluster is emitted with `name` as
     `<cluster_name>_%s` (bare %s) and a comma-list `dimIndex` attribute so the
     generator produces one flat struct member per instance (CLK_GPOUT0,
@@ -67,6 +74,8 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimI
     """
     pat = re.compile(pattern)
     named = dimIndex is not None
+    if named and base:
+        raise ValueError("createClusterArray: base and a named dimIndex are mutually exclusive")
     if named:
         name_to_pos = {n: i for i, n in enumerate(dimIndex)}
         if isinstance(template, str):
@@ -84,10 +93,12 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimI
                 return None, None
             return pos, match.group(2)
         try:
-            index = int(match.group(1))
-            return index, match.group(2)
+            index, regname = int(match.group(1)), match.group(2)
         except ValueError:
-            return int(match.group(2)), match.group(1)
+            index, regname = int(match.group(2)), match.group(1)
+        if index < base:
+            return None, None       # below the array, leave the register alone
+        return index - base, regname
     
     def findDimIncrement(a:list, b:list):
         """ figure out what the address increment is """
@@ -113,6 +124,10 @@ def createClusterArray(reglist:list, pattern:str, cluster:dict, template=0, dimI
         if named:
             cluster['name'] += "_%s"
             cluster['dimIndex'] = ','.join(dimIndex)
+        elif base:
+            # a dimIndex requires the bare '%s' form, see validate_peripherals
+            cluster['name'] += "%s"
+            cluster['dimIndex'] = ','.join(str(base + i) for i in range(len(instances)))
         else:
             cluster['name'] += "[%s]"
         cluster['dim'] = len(instances)
