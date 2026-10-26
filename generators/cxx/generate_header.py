@@ -592,9 +592,11 @@ class PerFormatter:
         res = 0
         pos = 0
         union = False
+        union_size = 0
         for this, following in pairwise(entries):
             if not union and this[1] == following[1]:
                 union = True
+                union_size = 0
                 txt += '\n\tunion {'
             if this[1] > pos:
                 txt += PER_RES_BYTES.substitute(res=res, bytes=this[1] - pos)
@@ -603,13 +605,15 @@ class PerFormatter:
             txt += this[0]
             # Advance `pos` once per union (on close) or once per non-union
             # register.  A union of N overlapping registers occupies the
-            # space of one member at offset `this[1]`; advancing per-member
-            # would over-count by (N-1)*size bytes and shrink the next gap.
+            # space of its largest member at offset `this[1]`; advancing
+            # per-member would over-count by the sum of the sizes, advancing
+            # by the last member under-counts when that isn't the largest.
             if union:
+                union_size = max(union_size, this[2])
                 if this[1] != following[1]:
                     union = False
                     txt += '\n\t};'
-                    pos += this[2]
+                    pos += union_size
             else:
                 pos += this[2]
         if padToSize > pos:
