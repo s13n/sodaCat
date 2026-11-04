@@ -318,7 +318,7 @@ def _extract_pdf_revision(pdf_data):
     Requires PyMuPDF (fitz).
     """
     try:
-        import fitz
+        import pymupdf as fitz
     except ImportError:
         print("Warning: PyMuPDF (fitz) not installed,"
               " cannot extract PDF revision", file=sys.stderr)

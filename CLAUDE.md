@@ -31,7 +31,7 @@ cmake --build . --target rebuild-stm32h7-models
 ./test/soc-data-test
 ```
 
-**Python dependencies:** `pip install -r requirements-dev.txt` (`ruamel.yaml`, plus `jsonschema` for the validators). `ruamel.yaml` is the only YAML library: use `YAML(typ='safe')` for read-only loading and `YAML()` (roundtrip) for writing. Don't introduce PyYAML — it implements YAML 1.1 rather than 1.2 and can't parse some of the configs (e.g. unquoted `(?:` regexes in flow mappings in `svd/Raspberry/Raspberry.yaml`).
+**Python dependencies:** Python 3.14; `pip install -r requirements-dev.txt` into the project `.venv` (core: `ruamel.yaml`, `jsonschema`, `xmltodict`, `requests`; the file also lists the optional PDF/SVD-validation tool deps and how to install `svdtools`). `ruamel.yaml` is the only YAML library: use `YAML(typ='safe')` for read-only loading and `YAML()` (roundtrip) for writing. Don't introduce PyYAML — it implements YAML 1.1 rather than 1.2 and can't parse some of the configs (e.g. unquoted `(?:` regexes in flow mappings in `svd/Raspberry/Raspberry.yaml`).
 
 **CMake requirement:** 3.28+, C++20 compiler, Python 3
 

@@ -12,7 +12,7 @@ from pathlib import Path
 from io import BytesIO
 
 try:
-    import fitz  # PyMuPDF
+    import pymupdf as fitz  # PyMuPDF
 except ImportError:
     print("Error: PyMuPDF not installed. Install with: pip install PyMuPDF")
     sys.exit(1)

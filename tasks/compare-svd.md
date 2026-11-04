@@ -13,11 +13,14 @@ against the original vendor SVD to review what the extraction pipeline changed.
 
 ## Prerequisites
 
-The following Python packages are needed (both are already in
-`requirements-dev.txt`):
+The following Python packages are needed: `ruamel.yaml` (from
+`requirements-dev.txt`) and `svdtools`.  svdtools 0.1.27 pins `lxml~=4.6`,
+which has no Python 3.14 wheels; its `mmap` module works fine with current
+lxml, so install it without the pin:
 
 ```bash
-pip install svdtools ruamel.yaml
+pip install -r requirements-dev.txt
+pip install --no-deps svdtools==0.1.27 braceexpand click
 ```
 
 ## Step 1 — Generate SVD from models
