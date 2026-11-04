@@ -14,8 +14,15 @@
 #   STM32<CODE>_SVD_ZIP      - Path to the SVD zip archive (per family)
 #   STM32_GENERATOR          - Path to the unified Python generator script
 #   STM32_MODELS_DIR         - Shared output directory (default: models/ST)
+#
+# SVD supplements: a family whose `svd:` entry in STM32.yaml has a
+# `supplement: {repo, tag, path, chips}` block gets that git repository
+# shallow-fetched at configure time (pinned to `tag`), and the extractor is
+# pointed at `<checkout>/<path>` for the listed chips.  Used when ST's SVD
+# archive lags behind new parts (e.g. H543/H553 from the Open-CMSIS-Pack DFP).
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+include(FetchContent)
 
 set(STM32_MODELS_DIR "${CMAKE_SOURCE_DIR}/models/ST" CACHE PATH
     "Output directory for generated STM32 models")
@@ -51,6 +58,30 @@ function(stm32_add_family)
     # Family config file (consolidated YAML with all family definitions)
     set(_family_config "${CMAKE_SOURCE_DIR}/svd/ST/STM32.yaml")
 
+    # Optional SVD supplement (see header comment).
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c
+            "import sys; from ruamel.yaml import YAML; c=YAML().load(open(sys.argv[1])); s=(c['families'][sys.argv[2]].get('svd') or {}).get('supplement'); print(';'.join([s['repo'], s['tag'], s['path']]) if s else '')"
+            "${_family_config}" "${FAM_CODE}"
+        OUTPUT_VARIABLE _supp
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    set(_supp_args "")
+    if(_supp)
+        list(GET _supp 0 _supp_repo)
+        list(GET _supp 1 _supp_tag)
+        list(GET _supp 2 _supp_path)
+        FetchContent_Declare(stm32${FAM_ID}_svd_supplement
+            GIT_REPOSITORY ${_supp_repo}
+            GIT_TAG        ${_supp_tag}
+            GIT_SHALLOW    TRUE
+        )
+        FetchContent_MakeAvailable(stm32${FAM_ID}_svd_supplement)
+        set(_supp_args --svd-supplement
+            "${stm32${FAM_ID}_svd_supplement_SOURCE_DIR}/${_supp_path}")
+    endif()
+
     # Create extraction target
     set(_target "stm32${FAM_ID}-models")
     set(_marker "${CMAKE_BINARY_DIR}/${_target}.stamp")
@@ -59,6 +90,7 @@ function(stm32_add_family)
         OUTPUT ${_marker}
         COMMAND ${Python3_EXECUTABLE} ${STM32_GENERATOR}
                 stm32 ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
+                ${_supp_args}
         COMMAND ${CMAKE_COMMAND} -E touch ${_marker}
         MAIN_DEPENDENCY ${STM32${FAM_CODE}_SVD_ZIP}
         DEPENDS ${STM32_GENERATOR} ${_family_config}
@@ -80,7 +112,7 @@ function(stm32_add_family)
     add_custom_target(audit-${_target}
         COMMAND ${Python3_EXECUTABLE} ${STM32_GENERATOR}
                 stm32 ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
-                --audit
+                ${_supp_args} --audit
         COMMENT "Auditing ${FAM_DISPLAY} transforms for no-ops..."
         VERBATIM
     )

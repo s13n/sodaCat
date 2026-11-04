@@ -2,12 +2,21 @@
 
 Provides SVD access via zip archives and STM32-style source attribution.
 Requires tools/ on sys.path (set up by generate_models.py).
+
+SVD supplements: when ST's archive lags behind new parts, a family's `svd:`
+entry in STM32.yaml can list them under `supplement:`
+({repo, tag, path, chips: {<chip>: <sha256>}}).  CMake fetches the repo and
+passes `--svd-supplement <dir>`; the listed chips are then read from there
+(checksum-verified) instead of the zip.
 """
 
+import hashlib
 import os
 import sys
 import tempfile
 from pathlib import Path
+
+from ruamel.yaml import YAML
 
 import svd
 
@@ -30,6 +39,9 @@ def add_cli_args(parser):
     """Add STM32-specific CLI arguments."""
     parser.add_argument('svd_source', type=Path,
                         help='Path to SVD zip archive')
+    parser.add_argument('--svd-supplement', type=Path, metavar='DIR',
+                        help='Directory with the SVDs listed under the '
+                             "family's svd.supplement in STM32.yaml")
 
 
 def validate_args(args):
@@ -37,6 +49,21 @@ def validate_args(args):
     if not args.svd_source.exists():
         print(f"Error: {args.svd_source} not found")
         sys.exit(1)
+    family = YAML(typ='safe', pure=True).load(config_path(args).read_text())[
+        'families'].get(args.family_code) or {}
+    supp = (family.get('svd') or {}).get('supplement')
+    args.supplement = supp
+    if supp is None:
+        return
+    if args.svd_supplement is None or not args.svd_supplement.is_dir():
+        print(f"Error: STM32.yaml lists an SVD supplement for "
+              f"{args.family_code} ({supp['repo']} {supp['tag']}); pass its "
+              f"{supp['path']} directory with --svd-supplement")
+        sys.exit(1)
+    for chip in supp['chips']:
+        if svd.extractFromZip(args.svd_source, chip) is not None:
+            print(f"Note: {args.svd_source.name} now contains {chip}; it can "
+                  f"be dropped from the {args.family_code} svd.supplement")
 
 
 def config_path(args):
@@ -49,6 +76,9 @@ def open_svd(args, chip_name):
 
     Returns (xml_root, extra_metadata_dict) or None if not found.
     """
+    supp = args.supplement
+    if supp and chip_name in supp['chips']:
+        return _open_supplement(args, supp, chip_name)
     svd_content = svd.extractFromZip(args.svd_source, chip_name)
     if svd_content is None:
         return None
@@ -60,6 +90,21 @@ def open_svd(args, chip_name):
     finally:
         os.unlink(temp_path)
     return root, {}
+
+
+def _open_supplement(args, supp, chip_name):
+    """Parse a supplement SVD after checking it against the pinned sha256."""
+    path = args.svd_supplement / f'{chip_name}.svd'
+    if not path.is_file():
+        print(f"Error: {path} not found (svd.supplement {supp['tag']})")
+        sys.exit(1)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != supp['chips'][chip_name]:
+        print(f"Error: {path} sha256 {digest} does not match STM32.yaml "
+              f"({supp['chips'][chip_name]})")
+        sys.exit(1)
+    repo = supp['repo'].removesuffix('.git').rsplit('/', 1)[-1]
+    return svd.parse(str(path)), {'svd_path': f"{repo} {supp['tag']}/{chip_name}"}
 
 
 def format_source(name, version, svd_tag=''):
