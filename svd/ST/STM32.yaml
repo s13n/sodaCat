@@ -5591,30 +5591,35 @@ families:
     blocks:
       ADC:
         from: STM32H503.ADC
-        instances: [ADC, ADC1, ADC2, ADC2_S, ADC_S]
+        instances: [ADC, ADC1, ADC2, ADC2_S, ADC_S, SEC_ADC1, SEC_ADC2]
+        variants:
+          H52x_H57x:
+            from: STM32H573.ADC1
+          H5Ex_H5Fx:
+            from: STM32H5F5.ADC
         outputs:
           INTR:
             pattern: '^(ADC1|ADC3|ADC4|ADC5|ADC2)$'
       ADC_Common:
         from: STM32H523.ADCC
-        instances: [ADCC]
+        instances: [ADCC, SEC_ADCC]
         transforms:
           - {type: renameRegisters, pattern: ^ADC_, replacement: ''}
       AES:
         uses: AES_V3
-        instances: [AES]
-      AES_S:
-        from: STM32H533.AES_S
-        instances: [AES_S]
+        instances: [AES, AES_S, SEC_AES]
       BasicTimer:
         uses: BasicTimer
-        instances: [TIM6, TIM6_S, TIM7, TIM7_S]
+        instances: [SEC_TIM6, SEC_TIM7, TIM6, TIM6_S, TIM7, TIM7_S]
         outputs:
           INTR:
             pattern: '^(TIM6|TIM3|TIM9)$'
       COMP:
         from: STM32H503.COMP
         instances: [COMP]
+        variants:
+          H5Ex_H5Fx:
+            from: STM32H5F5.COMP
         # H5 COMP is single-channel (one CFGR1 + one CFGR2, only C1* fields in
         # SR/ICFR).  One INTR and one OUT — no per-channel split needed.
         outputs:
@@ -5624,64 +5629,56 @@ families:
             description: Comparator output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0492 ch.11)
       CORDIC:
         uses: CORDIC
-        instances: [CORDIC]
+        instances: [CORDIC, SEC_CORDIC]
       CRC:
         uses: CRC
-        instances: [CRC]
-      CRC_S:
-        from: STM32H523.CRC_S
-        instances: [CRC_S]
+        instances: [CRC, CRC_S, SEC_CRC]
       CRS:
         uses: CRS
-        instances: [CRS]
-      CRS_S:
-        from: STM32H523.CRS_S
-        instances: [CRS_S]
+        instances: [CRS, CRS_S, SEC_CRS]
       DAC:
         from: STM32H503.DAC
-        instances: [DAC]
+        instances: [DAC, DAC_S, SEC_DAC]
+        variants:
+          H5Ex_H5Fx:
+            from: STM32H5F5.DAC
         outputs:
           INTR:
             pattern: '^DAC1$'
-      DAC_S:
-        from: STM32H523.DAC_S
-        instances: [DAC_S]
       DBGMCU:
         from: STM32H503.DBGMCU
-        instances: [DBGMCU]
-      DBGMCU_S:
-        from: STM32H523.DBGMCU_S
-        instances: [DBGMCU_S]
+        instances: [DBGMCU, DBGMCU_S]
+        variants:
+          H52x_H57x:
+            from: STM32H573.DBGMCU
+          H5Ex_H5Fx:
+            from: STM32H5F5.DBGMCU
       DCACHE:
         uses: DCACHE
-        instances: [DCACHE]
-      DCACHE_S:
-        from: STM32H523.DCACHE_S
-        instances: [DCACHE_S]
+        instances: [DCACHE, DCACHE_S, SEC_DCACHE]
       DCMI:
         uses: DCMI
-        instances: [DCMI]
-      DCMI_S:
-        from: STM32H523.DCMI_S
-        instances: [DCMI_S]
+        instances: [DCMI, DCMI_S, SEC_DCMI]
       DLYB:
         uses: DLYB
-        instances: [DLYBOS1, DLYBSD1, DLYBSD2]
+        instances: [DLYBOS1, DLYBSD1, DLYBSD2, SEC_DLYBOS1, SEC_DLYBSD1, SEC_DLYBSD2]
       DTS:
         from: STM32H503.DTS
-        instances: [DTS]
+        instances: [DTS, DTS_S, SEC_DTS]
         outputs:
           INTR:
             pattern: '^DTS_WKUP$'
-      DTS_S:
-        from: STM32H523.DTS_S
-        instances: [DTS_S]
       ETH:
         uses: ETH
-        instances: [ETH]
+        instances: [ETH, SEC_ETH]
       EXTI:
         from: STM32H503.EXTI
-        instances: [EXTI]
+        instances: [EXTI, EXTI_S, SEC_EXTI]
+        variants:
+          H52x_H57x:
+            from: STM32H573.EXTI
+          H5Ex_H5Fx:
+            from: STM32H5F5.EXTI
         outputs:
           INTR0:
             pattern: '^EXTI0$'
@@ -5715,203 +5712,168 @@ families:
             pattern: '^EXTI14$'
           INTR15:
             pattern: '^EXTI15$'
-      EXTI_S:
-        from: STM32H523.EXTI_S
-        instances: [EXTI_S]
       FDCAN:
         uses: FDCAN
-        instances: [FDCAN, FDCAN1, FDCAN2, FDCAN2_S, FDCAN_S]
+        instances: [FDCAN, FDCAN1, FDCAN2, FDCAN2_S, FDCAN_S, SEC_FDCAN1, SEC_FDCAN2]
         description: Controller area network with flexible data-rate (Bosch M_CAN)
-      FLASH_S:
-        from: STM32H523.FLASH_S
-        instances: [FLASH_S]
-        outputs:
-          INTR:
-            pattern: '^FLASH_S$'
       FMAC:
         uses: FMAC
-        instances: [FMAC]
+        instances: [FMAC, SEC_FMAC]
       FMC:
         uses: FMC
-        instances: [FMC]
-      FMC_S:
-        from: STM32H523.FMC_S
-        instances: [FMC_S]
+        instances: [FMC, FMC_S, SEC_FMC]
       Flash:
         from: STM32H503.FLASH
-        instances: [FLASH]
+        instances: [FLASH, FLASH_S, SEC_FLASH]
+        variants:
+          H52x_H57x:
+            from: STM32H573.FLASH
+          H5Ex_H5Fx:
+            from: STM32H5F5.FLASH
         outputs:
           INTR:
             pattern: '^FLASH$'
+          INTR_S:
+            description: Secure flash interrupt (TrustZone secure world)
+            pattern: '^FLASH_S$'
       GPDMA:
         uses: GPDMA
-        instances: [GPDMA, GPDMA1, GPDMA2, GPDMA2_S, GPDMA_S]
+        instances: [GPDMA, GPDMA1, GPDMA2, GPDMA2_S, GPDMA_S, SEC_GPDMA1, SEC_GPDMA2]
       GPIO:
         uses: GPIO
-        instances: [GPIOA, GPIOA_S, GPIOB, GPIOB_S, GPIOC, GPIOC_S, GPIOD, GPIOD_S, GPIOE, GPIOE_S, GPIOF, GPIOF_S, GPIOG, GPIOG_S, GPIOH, GPIOH_S, GPIOI]
+        instances: [GPIOA, GPIOA_S, GPIOB, GPIOB_S, GPIOC, GPIOC_S, GPIOD, GPIOD_S, GPIOE, GPIOE_S, GPIOF, GPIOF_S, GPIOG, GPIOG_S, GPIOH, GPIOH_S, GPIOI, SEC_GPIOA, SEC_GPIOB, SEC_GPIOC, SEC_GPIOD, SEC_GPIOE, SEC_GPIOF, SEC_GPIOG, SEC_GPIOH, SEC_GPIOI]
       Timer:
         uses: TimerV2
-        instances: [TIM1, TIM12, TIM13, TIM14, TIM15, TIM15_S, TIM16, TIM17, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8, TIM8_S]
+        instances: [SEC_TIM1, SEC_TIM12, SEC_TIM13, SEC_TIM14, SEC_TIM15, SEC_TIM16, SEC_TIM17, SEC_TIM2, SEC_TIM3, SEC_TIM4, SEC_TIM5, SEC_TIM8, TIM1, TIM12, TIM13, TIM14, TIM15, TIM15_S, TIM16, TIM17, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8, TIM8_S]
       HASH:
         uses: HASH
-        instances: [HASH]
-      HASH_S:
-        from: STM32H523.HASH_S
-        instances: [HASH_S]
+        instances: [HASH, HASH_S, SEC_HASH]
       I2C:
         uses: I2C
-        instances: [I2C, I2C1, I2C2, I2C2_S, I2C3, I2C3_S, I2C4, I2C_S]
+        instances: [I2C, I2C1, I2C2, I2C2_S, I2C3, I2C3_S, I2C4, I2C_S, SEC_I2C1, SEC_I2C2, SEC_I2C3, SEC_I2C4]
       I3C:
         uses: I3C
-        instances: [I3C, I3C1, I3C2, I3C2_S, I3C_S]
+        instances: [I3C, I3C1, I3C2, I3C2_S, I3C_S, SEC_I3C]
         outputs:
           ERR:
             pattern: '^I3C1_ERR$'
       ICACHE:
         uses: ICACHE
-        instances: [ICACHE]
-      ICACHE_S:
-        from: STM32H523.ICACHE_S
-        instances: [ICACHE_S]
+        instances: [ICACHE, ICACHE_S, SEC_ICACHE]
       IWDG:
         uses: IWDG
-        instances: [IWDG]
-      IWDG_S:
-        from: STM32H523.IWDG_S
-        instances: [IWDG_S]
+        instances: [IWDG, IWDG_S, SEC_IWDG]
       LPTIM:
         uses: LPTIM
-        instances: [LPTIM1, LPTIM1_S, LPTIM2, LPTIM2_S, LPTIM3, LPTIM4, LPTIM5, LPTIM6]
+        instances: [LPTIM1, LPTIM1_S, LPTIM2, LPTIM2_S, LPTIM3, LPTIM4, LPTIM5, LPTIM6, SEC_LPTIM1, SEC_LPTIM2, SEC_LPTIM3, SEC_LPTIM4, SEC_LPTIM5, SEC_LPTIM6]
       LPUART:
         uses: USART
         instances: [LPUART, LPUART_S]
       OCTOSPI:
         uses: XSPI
-        instances: [OCTOSPI]
-      OCTOSPI_S:
-        from: STM32H523.OCTOSPI_S
-        instances: [OCTOSPI_S]
+        instances: [OCTOSPI, OCTOSPI_S, SEC_OCTOSPI]
       OPAMP:
         uses: HSOPAMP
         instances: [OPAMP1]
       OTFDEC:
         from: STM32H533.OTFDEC
-        instances: [OTFDEC, OTFDEC1, OTFDEC_S]
+        instances: [OTFDEC, OTFDEC1, OTFDEC_S, SEC_OTFDEC1]
         outputs:
           INTR:
             pattern: '^(OTFDEC1|OTFDEC2)$'
       PKA:
         uses: PKA
-        instances: [PKA]
-      PKA_S:
-        from: STM32H533.PKA_S
-        instances: [PKA_S]
+        instances: [PKA, PKA_S, SEC_PKA]
       PSSI:
         uses: PSSI
-        instances: [PSSI]
-      PSSI_S:
-        from: STM32H523.PSSI_S
-        instances: [PSSI_S]
+        instances: [PSSI, PSSI_S, SEC_PSSI]
       PWR:
         from: STM32H503.PWR
-        instances: [PWR]
-      PWR_S:
-        from: STM32H523.PWR_S
-        instances: [PWR_S]
+        instances: [PWR, PWR_S, SEC_PWR]
+        variants:
+          H52x_H57x:
+            from: STM32H573.PWR
+          H5Ex_H5Fx:
+            from: STM32H5F5.PWR
       RAMCFG:
         from: STM32H503.RAMCFG
-        instances: [RAMCFG]
+        instances: [RAMCFG, RAMCFG_S, SEC_RAMCFG]
+        variants:
+          H52x_H57x:
+            from: STM32H573.RAMCFG
+          H5Ex_H5Fx:
+            from: STM32H5F5.RAMCFG
         outputs:
           INTR:
             pattern: '^RAMCFG$'
-      RAMCFG_S:
-        from: STM32H523.RAMCFG_S
-        instances: [RAMCFG_S]
       RCC:
         from: STM32H503.RCC
-        instances: [RCC]
+        instances: [RCC, RCC_S, SEC_RCC]
+        variants:
+          H52x_H57x:
+            from: STM32H573.RCC
+          H5Ex_H5Fx:
+            from: STM32H5F5.RCC
         outputs:
           INTR:
             pattern: '^RCC$'
-      RCC_S:
-        from: STM32H523.RCC_S
-        instances: [RCC_S]
+          INTR_S:
+            description: Secure RCC interrupt (TrustZone secure world)
+            pattern: '^RCC_S$'
       RNG:
         uses: RNG
-        instances: [RNG]
-      RNG_S:
-        from: STM32H523.RNG_S
-        instances: [RNG_S]
+        instances: [RNG, RNG_S, SEC_RNG]
       RTC:
         uses: RTC_V2
-        instances: [RTC]
+        instances: [RTC, RTC_S, SEC_RTC]
         outputs:
           INTR:
             pattern: '^RTC$'
-      RTC_S:
-        from: STM32H523.RTC_S
-        instances: [RTC_S]
       SAES:
         uses: SAES
-        instances: [SAES]
-      SAES_S:
-        from: STM32H533.SAES_S
-        instances: [SAES_S]
+        instances: [SAES, SAES_S, SEC_SAES]
       SAI:
         uses: SAI
-        instances: [SAI1, SAI2]
+        instances: [SAI1, SAI2, SEC_SAI1, SEC_SAI2]
       SBS:
         from: STM32H503.SBS
-        instances: [SBS]
-      SBS_S:
-        from: STM32H523.SBS_S
-        instances: [SBS_S]
+        instances: [SBS, SBS_S, SEC_SBS]
+        variants:
+          H52x_H57x:
+            from: STM32H573.SBS
+          H5Ex_H5Fx:
+            from: STM32H5F5.SBS
       SDMMC:
         uses: SDMMC
-        instances: [SDMMC, SDMMC1, SDMMC2, SDMMC_S]
+        instances: [SDMMC, SDMMC1, SDMMC2, SDMMC_S, SEC_SDMMC1, SEC_SDMMC2]
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: ModernSPI
-        instances: [SPI, SPI1, SPI2, SPI2_S, SPI3, SPI3_S, SPI4, SPI4_S, SPI5, SPI6, SPI_S]
+        instances: [SEC_SPI1, SEC_SPI2, SEC_SPI3, SEC_SPI4, SEC_SPI5, SEC_SPI6, SPI, SPI1, SPI2, SPI2_S, SPI3, SPI3_S, SPI4, SPI4_S, SPI5, SPI6, SPI_S]
       TAMP:
         uses: TAMP
-        instances: [TAMP]
-      TAMP_S:
-        from: STM32H523.TAMP_S
-        instances: [TAMP_S]
+        instances: [SEC_TAMP, TAMP, TAMP_S]
       UCPD:
         uses: UCPD
-        instances: [UCPD, UCPD1, UCPD_S]
+        instances: [SEC_UCPD1, UCPD, UCPD1, UCPD_S]
       USART:
         uses: USART
-        instances: [UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART8, UART9, USART, USART1, USART10, USART11, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
+        instances: [SEC_UART12, SEC_UART4, SEC_UART5, SEC_UART7, SEC_UART8, SEC_UART9, SEC_USART1, SEC_USART10, SEC_USART11, SEC_USART2, SEC_USART3, SEC_USART6, UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART8, UART9, USART, USART1, USART10, USART11, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
         outputs:
           INTR:
             pattern: '^(USART1|USART2|USART3|USART6|USART10|USART11|UART4|UART5|UART7|UART8|UART9|UART12|USART7|USART5|USART4)$'
       USB:
         uses: USB_DRD
-        instances: [USB]
+        instances: [SEC_USB, USB, USB_S]
       USBSRAM:
         from: STM32H523.USBSRAM
-        instances: [USBSRAM]
-      USBSRAM_S:
-        from: STM32H523.USBSRAM_S
-        instances: [USBSRAM_S]
-      USB_S:
-        from: STM32H523.USB_S
-        instances: [USB_S]
+        instances: [USBSRAM, USBSRAM_S]
       VREFBUF:
         uses: VREFBUF
-        instances: [VREFBUF]
-      VREFBUF_S:
-        from: STM32H523.VREFBUF_S
-        instances: [VREFBUF_S]
+        instances: [SEC_VREFBUF, VREFBUF, VREFBUF_S]
       WWDG:
         uses: WWDG
-        instances: [WWDG]
-      WWDG_S:
-        from: STM32H523.WWDG_S
-        instances: [WWDG_S]
+        instances: [SEC_WWDG, WWDG, WWDG_S]
     chip_params:
       _all:
         _all:
@@ -5928,39 +5890,63 @@ families:
           SPI: {has_i2s: true}
           SPI_S: {has_i2s: true}
           SPI1: {has_i2s: true}
+          SEC_SPI1: {has_i2s: true}
           SPI2: {has_i2s: true}
           SPI2_S: {has_i2s: true}
+          SEC_SPI2: {has_i2s: true}
           SPI3: {has_i2s: true}
           SPI3_S: {has_i2s: true}
+          SEC_SPI3: {has_i2s: true}
           UART12: {synchronous: 0}
+          SEC_UART12: {synchronous: 0}
           UART4: {synchronous: 0}
           UART4_S: {synchronous: 0}
+          SEC_UART4: {synchronous: 0}
           UART5: {synchronous: 0}
           UART5_S: {synchronous: 0}
+          SEC_UART5: {synchronous: 0}
           UART7: {synchronous: 0}
+          SEC_UART7: {synchronous: 0}
           UART8: {synchronous: 0}
+          SEC_UART8: {synchronous: 0}
           UART9: {synchronous: 0}
+          SEC_UART9: {synchronous: 0}
           TIM2: {width32: true, encoder: 3, sms_preload: 2}
-          TIM2_S: {width32: true}
+          TIM2_S: {width32: true, encoder: 3, sms_preload: 2}
+          SEC_TIM2: {width32: true, encoder: 3, sms_preload: 2}
           TIM5: {width32: true, encoder: 3, sms_preload: 2}
-          TIM5_S: {width32: true}
+          TIM5_S: {width32: true, encoder: 3, sms_preload: 2}
+          SEC_TIM5: {width32: true, encoder: 3, sms_preload: 2}
           TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false, encoder: 3}
+          SEC_TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false, encoder: 3}
           TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          SEC_TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
+          SEC_TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
-          TIM15_S: {max_channel: 1}
+          TIM15_S: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
+          SEC_TIM15: {max_channel: 1, has_centerPWM: false, has_etr: false, has_complementary: true, sms_preload: 1}
           TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          SEC_TIM16: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
+          SEC_TIM17: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_complementary: true}
           TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM1_S: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          SEC_TIM1: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM8_S: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
+          SEC_TIM8: {max_channel: 5, has_complementary: true, has_mms2: true, encoder: 3, sms_preload: 2}
           TIM3: {encoder: 3, sms_preload: 2}
+          TIM3_S: {encoder: 3, sms_preload: 2}
+          SEC_TIM3: {encoder: 3, sms_preload: 2}
           TIM4: {encoder: 3, sms_preload: 2}
+          TIM4_S: {encoder: 3, sms_preload: 2}
+          SEC_TIM4: {encoder: 3, sms_preload: 2}
           LPTIM: {max_channel: 1}
           GPDMA: {max_channel: 7, enhanced_channels: 2}
           SDMMC: {idma_list: true, dat8: true, has_ckin: true, has_dir: true}
           SDMMC2: {has_ckin: true, has_dir: false}
+          SEC_SDMMC2: {has_ckin: true, has_dir: false}
           RTC: {has_binary: true, has_privcfgr: true}
           FMC: {sdram: true, pcscntr: true}
       H52x_H57x:
