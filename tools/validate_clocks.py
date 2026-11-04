@@ -17,8 +17,10 @@ Phase 2: Semantic / graph checks:
 import sys, pathlib, argparse, glob
 from collections import defaultdict
 
-import yaml  # PyYAML
+from ruamel.yaml import YAML
 from jsonschema import Draft202012Validator
+
+_yaml = YAML(typ='safe')
 
 
 # ---------------------------------------------------------------------------
@@ -230,13 +232,13 @@ def main():
     ap.add_argument("-d", "--docs", nargs="+", required=True, help="YAML spec files or globs")
     args = ap.parse_args()
 
-    schema = yaml.safe_load(pathlib.Path(args.schema).read_text(encoding="utf-8"))
+    schema = _yaml.load(pathlib.Path(args.schema).read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
     clock_validator = Draft202012Validator(schema)
 
     subfamily_validator = None
     if args.subfamily_schema:
-        sf_schema = yaml.safe_load(
+        sf_schema = _yaml.load(
             pathlib.Path(args.subfamily_schema).read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(sf_schema)
         subfamily_validator = Draft202012Validator(sf_schema)
@@ -252,7 +254,7 @@ def main():
     for f in sorted(set(files)):
         if not (f.endswith(".yaml") or f.endswith(".yml")):
             continue
-        data = yaml.safe_load(pathlib.Path(f).read_text(encoding="utf-8"))
+        data = _yaml.load(pathlib.Path(f).read_text(encoding="utf-8"))
         if not isinstance(data, dict):
             continue
 

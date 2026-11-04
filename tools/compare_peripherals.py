@@ -10,11 +10,12 @@ import math
 import argparse
 from pathlib import Path
 
-try:
-    import yaml
-except Exception:
-    print("PyYAML not installed. Please run: pip install pyyaml")
-    raise
+from ruamel.yaml import YAML
+
+_yaml = YAML(typ='safe')
+_yaml_out = YAML()
+_yaml_out.width = 4096
+_yaml_out.indent(mapping=2, sequence=4, offset=2)
 
 ROOT = Path('.')
 # Write reports to the current working directory by default
@@ -47,7 +48,7 @@ def field_signature(field):
 
 
 def peripheral_fingerprint(path):
-    data = yaml.safe_load(path.read_text())
+    data = _yaml.load(path.read_text())
     meta = {}
     meta['path'] = str(path)
     meta['name'] = data.get('name')
@@ -640,8 +641,8 @@ def fuse_pair(fp_a, fp_b, out_dir='models/NXP', fused_name=None):
     params_a_path = out_dir / f"{name_a}_{folder_a}_params.json"
     params_b_path = out_dir / f"{name_b}_{folder_b}_params.json"
 
-    import yaml as _yaml
-    fused_path.write_text(_yaml.safe_dump(fused, sort_keys=False))
+    with fused_path.open('w') as fh:
+        _yaml_out.dump(fused, fh)
     params_a = fused['variants'][folder_a]
     params_b = fused['variants'][folder_b]
     params_a_path.write_text(json.dumps(params_a, indent=2))

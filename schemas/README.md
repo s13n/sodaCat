@@ -4,7 +4,7 @@ This folder contains schemas for checking models in YAML files.
 
 ## Validate clock trees
 ```bash
-python -m pip install PyYAML jsonschema
+python -m pip install ruamel.yaml jsonschema
 python tools/validate_clocks.py \
   --schema schemas/clock-tree.schema.yaml \
   --docs "models/**/*clocks.y*ml"

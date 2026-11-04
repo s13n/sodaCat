@@ -6,7 +6,7 @@ YAML → SVD, producing "fixed" SVD files that incorporate all transformations
 applied during model creation.
 
 Dependencies:
-    Required: ruamel.yaml (pip install ruamel.yaml) or PyYAML (pip install PyYAML)
+    Required: ruamel.yaml (pip install ruamel.yaml)
     Optional: lxml (pip install lxml) — only needed for --validate
 
 Usage:
@@ -24,21 +24,13 @@ import re
 import sys
 from xml.etree.ElementTree import Element, SubElement, ElementTree, indent
 
-try:
-    from ruamel.yaml import YAML
-    _yaml = YAML(typ='safe')
-    def _load_yaml(stream):
-        return _yaml.load(stream)
-except ImportError:
-    try:
-        import yaml
-        def _load_yaml(stream):
-            return yaml.safe_load(stream)
-    except ImportError:
-        print('Error: ruamel.yaml or PyYAML is required.\n'
-              'Install one with:  pip install ruamel.yaml\n'
-              '               or: pip install PyYAML', file=sys.stderr)
-        sys.exit(1)
+from ruamel.yaml import YAML
+
+_yaml = YAML(typ='safe')
+
+
+def _load_yaml(stream):
+    return _yaml.load(stream)
 
 
 # SVD CPU name mapping: sodaCat short names → CMSIS-SVD canonical names

@@ -50,7 +50,8 @@ def _merged_models(chip_path, chip):
     """
     if not chip_path:
         return chip.get('models') or {}
-    import yaml as _yaml
+    from ruamel.yaml import YAML
+    _yaml = YAML(typ='safe')
     from pathlib import Path
     merged = {}
     node = chip
@@ -74,7 +75,7 @@ def _merged_models(chip_path, chip):
             if not parent_path.exists():
                 break
             with open(parent_path) as f:
-                parent = _yaml.safe_load(f) or {}
+                parent = _yaml.load(f) or {}
             # Root contributes first; chip-level wins at the end.
             for name, p in (parent.get('models') or {}).items():
                 merged.setdefault(name, p)

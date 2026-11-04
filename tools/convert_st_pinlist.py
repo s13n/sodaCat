@@ -1,6 +1,11 @@
 import xml.etree.ElementTree as ET
-import yaml
 import sys
+
+from ruamel.yaml import YAML
+
+_yaml_out = YAML()
+_yaml_out.width = 4096
+_yaml_out.indent(mapping=2, sequence=4, offset=2)
 
 def parse_stm32_xml(xml_path, yaml_path):
     tree = ET.parse(xml_path)
@@ -57,7 +62,7 @@ def parse_stm32_xml(xml_path, yaml_path):
 
     # Write to YAML file
     with open(yaml_path, "w") as f:
-        yaml.dump(yaml_data, f, sort_keys=False)
+        _yaml_out.dump(yaml_data, f)
 
     print(f"YAML file written to: {yaml_path}")
 

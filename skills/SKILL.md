@@ -65,7 +65,7 @@ The YAML models in `models/` are the primary artifact. Common tasks:
 ## Important notes
 
 - Always `cd` into the sodaCat directory before running scripts.
-- Python dependencies: `ruamel.yaml` and `PyYAML`
+- Python dependencies: `ruamel.yaml` and `jsonschema`
   (`pip install -r requirements-dev.txt --break-system-packages`).
 - Cross-family shared blocks (e.g. `WWDG.yaml`) live directly in `models/ST/`.
 - Some blocks exist only in specific subfamilies; check subfamily directories

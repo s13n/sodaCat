@@ -20,12 +20,14 @@ import pathlib
 import sys
 from collections import defaultdict
 
-import yaml
+from ruamel.yaml import YAML
+
+_yaml = YAML(typ='safe')
 
 
 def load_schema(path, draft_class):
     """Load a YAML/JSON schema file and return a configured validator."""
-    schema = yaml.safe_load(pathlib.Path(path).read_text(encoding='utf-8'))
+    schema = _yaml.load(pathlib.Path(path).read_text(encoding='utf-8'))
     draft_class.check_schema(schema)
     return draft_class(schema)
 
@@ -98,7 +100,7 @@ def run(parser_desc, default_schema, draft_class, phase2_func,
     for f in sorted(set(files)):
         if not (f.endswith('.yaml') or f.endswith('.yml')):
             continue
-        data = yaml.safe_load(pathlib.Path(f).read_text(encoding='utf-8'))
+        data = _yaml.load(pathlib.Path(f).read_text(encoding='utf-8'))
         if not accept_doc(data):
             n_skipped += 1
             continue

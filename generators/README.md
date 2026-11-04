@@ -121,8 +121,8 @@ consume SVD, such as debuggers, code generators, or documentation tools.
 
 The subfolder is self-contained: a client project can download `generate_svd.py`
 and `CMSIS-SVD.xsd` into its own build tree, just like the C++ generator. The
-only external dependency is ruamel.yaml (`pip install ruamel.yaml`) or PyYAML
-(`pip install PyYAML`); lxml is optional and only needed for `--validate`.
+only external dependency is ruamel.yaml (`pip install ruamel.yaml`); lxml is
+optional and only needed for `--validate`.
 Missing dependencies produce a clear error message.
 
 Usage:

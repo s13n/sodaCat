@@ -43,7 +43,7 @@ Parameter inference notes
 
 Dependencies
 - Python 3.x
-- PyYAML: `pip install pyyaml`
+- ruamel.yaml: `pip install ruamel.yaml`
 
 Examples
 - Print top matches (default root):

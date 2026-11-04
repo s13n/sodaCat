@@ -35,7 +35,9 @@ import re
 import sys
 from pathlib import Path
 
-import yaml
+from ruamel.yaml import YAML, YAMLError
+
+_yaml = YAML(typ='safe')
 
 
 # ============================================================================
@@ -44,8 +46,8 @@ import yaml
 
 def _safe_load(path):
     try:
-        return yaml.safe_load(Path(path).read_text(encoding='utf-8'))
-    except yaml.YAMLError:
+        return _yaml.load(Path(path).read_text(encoding='utf-8'))
+    except YAMLError:
         return None
 
 

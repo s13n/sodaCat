@@ -24,10 +24,13 @@ except ImportError:
     sys.exit(1)
 
 try:
-    import yaml
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.width = 4096
+    yaml.indent(mapping=2, sequence=4, offset=2)
 except ImportError:
     yaml = None
-    print("Warning: PyYAML not installed. YAML output disabled. Install with: pip install PyYAML")
+    print("Warning: ruamel.yaml not installed. YAML output disabled. Install with: pip install ruamel.yaml")
 
 
 def extract_page_as_image(pdf_path, page_number):
@@ -196,7 +199,7 @@ def save_output(data, output_path, format='json'):
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             if format == 'yaml' and yaml:
-                yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+                yaml.dump(data, f)
             else:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         
