@@ -1257,38 +1257,96 @@ class ClockFormatter:
         # Search self.dir and its ancestors...
         d = self.dir
         while d != d.parent:
-            for f in d.glob("*.yaml"):
+            for f in sorted(d.glob("*.yaml")):
                 data = candidate(f)
                 if data:
                     return data, str(f)
             d = d.parent
         # ...then fall back to a subtree scan, since the chip model may live
-        # in a subdirectory (e.g. LPC43xx/LPC4330.yaml).
-        for f in self.dir.rglob("*.yaml"):
-            data = candidate(f)
-            if data:
-                return data, str(f)
-        return None, None
+        # in a subdirectory (e.g. LPC43xx/LPC4330.yaml).  Sorted, so the
+        # choice doesn't depend on filesystem order.
+        found = [(data, str(f)) for f in sorted(self.dir.rglob("*.yaml"))
+                 if (data := candidate(f))]
+        # A cross-family shared spec (e.g. Microchip SAM_Gen1) sits above the
+        # chips of several families, not all of which consume it, and its
+        # consumers' block models differ in which fields they have (SAME70's
+        # PMC lacks the MLB gate's PID53).  Restrict to chips whose
+        # `inherits:` chain reaches this spec and take the first one whose
+        # block models resolve every register citation — the header then
+        # covers the superset of the consumers' gates.
+        me = Path(self.path).resolve()
+        heirs = [(c, p) for c, p in found
+                 if any(Path(q).resolve() == me
+                        for _, q in inherits_chain(c, p)[1:])]
+        if not heirs:
+            return found[0] if found else (None, None)
+        gaps = {}
+        for c, p in heirs:
+            missing = self.unresolvedCitations(c, p)
+            if not missing:
+                return c, p
+            gaps[p] = missing
+        raise KeyError(
+            f"No chip inheriting {self.path} resolves every register citation:"
+            + ''.join(f"\n  {p}: missing {', '.join(m[:5])}"
+                      + (f" (+{len(m) - 5} more)" if len(m) > 5 else '')
+                      for p, m in gaps.items()))
 
-    def peripheral(self, instance):
-        """Register/field layout of one peripheral instance, cached by name.
+    def citations(self):
+        """Every {instance, reg, field} citation in the clock-tree content."""
+        stack = [self.content]
+        while stack:
+            node = stack.pop()
+            if isinstance(node, dict):
+                if 'reg' in node and 'field' in node:
+                    yield node
+                stack.extend(node.values())
+            elif isinstance(node, list):
+                stack.extend(node)
 
-        Resolves the model file via the chip's instance→model→relpath map
-        (instances[<instance>].model → models[<model>] → relpath), so an
-        instance like PLL_SYS resolves to the PLL block model rather than
-        looking for a non-existent PLL_SYS.yaml.  Falls back to a bare
+    def unresolvedCitations(self, chip, chip_path):
+        """Sorted `instance.reg.field` citations that `chip`'s block models
+        don't provide."""
+        regs = {}
+        missing = set()
+        for cite in self.citations():
+            inst = cite.get('instance', self.instance)
+            if inst not in regs:
+                path = self.modelPath(inst, chip, chip_path)
+                regs[inst] = {}
+                if path is not None:
+                    collect_registers(load(path).get('registers', []), 0,
+                                      regs[inst])
+            reg = regs[inst].get(cite['reg'])
+            if reg is None or cite['field'] not in reg['fields']:
+                missing.add(f"{inst}.{cite['reg']}.{cite['field']}")
+        return sorted(missing)
+
+    def modelPath(self, instance, chip, chip_path):
+        """Block-model file for `instance` in `chip`'s context.
+
+        Resolves via the chip's instance→model→relpath map, merged across
+        its `inherits:` chain (instances lifted to the subfamily tier are
+        still found), so an instance like PLL_SYS resolves to the PLL block
+        model rather than a non-existent PLL_SYS.yaml.  Falls back to a bare
         <instance>.yaml lookup for ad-hoc invocation outside a chip context.
         """
+        path = None
+        if chip:
+            instances, models = merge_inherited(chip, chip_path,
+                                                'instances', 'models')
+            info = instances.get(instance)
+            if isinstance(info, dict) and info.get('model'):
+                model = info['model']
+                path = find_model(self.dir, models.get(model, model))
+        if path is None:
+            path = find_model(self.dir, instance)
+        return path
+
+    def peripheral(self, instance):
+        """Register/field layout of one peripheral instance, cached by name."""
         if instance not in self.periph:
-            path = None
-            if self.chip:
-                info = self.chip.get('instances', {}).get(instance)
-                if isinstance(info, dict) and info.get('model'):
-                    model = info['model']
-                    path = find_model(
-                        self.dir, self.chip.get('models', {}).get(model, model))
-            if path is None:
-                path = find_model(self.dir, instance)
+            path = self.modelPath(instance, self.chip, self.chip_path)
             if path is None:
                 raise FileNotFoundError(
                     f"Cannot find model file {instance}.yaml starting from {self.dir}")
