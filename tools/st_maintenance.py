@@ -95,21 +95,127 @@ def _fetch_st_index(url):
 
 
 def _load_config(config_path):
-    """Load STM32.yaml with ruamel.yaml (roundtrip-safe)."""
+    """Load STM32.yaml with ruamel.yaml (roundtrip mode, for line info)."""
     yaml = YAML()
-    yaml.width = 4096
     with open(config_path) as f:
         return yaml.load(f)
 
 
-def _save_config(config_path, config):
-    """Write back STM32.yaml preserving formatting."""
-    yaml = YAML()
-    yaml.width = 4096
-    yaml.preserve_quotes = True
-    yaml.indent(mapping=2, sequence=4, offset=2)
-    with open(config_path, 'w') as f:
-        yaml.dump(config, f)
+def _yaml_scalar(value, quote=None):
+    """Render a string as a YAML scalar that loads back as the same string.
+
+    `quote` is the quote character the value had before (keeps the file's
+    style); otherwise plain when that round-trips, else single-quoted
+    ('1.0' would load as a float, '2026-03-31' as a date).
+    """
+    value = str(value)
+    if quote is None:
+        try:
+            if YAML(typ='safe', pure=True).load(f'k: {value}\n') == {'k': value}:
+                return value
+        except Exception:
+            pass
+        quote = "'"
+    if quote == '"':
+        return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _patch_config(config_path, config, edits):
+    """Apply scalar edits to STM32.yaml in place, as text.
+
+    config: the root returned by _load_config(config_path); its values may
+    already have been modified, the recorded positions are what's used.
+    edits: [(mapping, key, value), ...] with `mapping` a node of `config`.
+
+    Re-dumping the whole file would lose hand formatting ruamel can't
+    reproduce (aligned flow mappings, multi-line flow collections), so each
+    value is replaced at the line/column ruamel recorded for it.  A missing
+    key is appended to the mapping: as a new line after its last entry for
+    block style, as `, key: value` after its last value for a one-line flow
+    mapping.  The result is reloaded and checked: the edited keys hold the
+    new values and nothing else changed.
+    """
+    text = Path(config_path).read_text()
+    lines = text.splitlines(keepends=True)
+    splices = []            # (row, start, end, replacement); end=None → new line
+    for mapping, key, value in edits:
+        flow = mapping.fa.flow_style()
+        if key in mapping:
+            row, col = mapping.lc.value(key)
+            end, quote = _scalar_end(lines[row], col, flow)
+            splices.append((row, col, end, _yaml_scalar(value, quote)))
+            continue
+        last = list(mapping)[-1]
+        krow, kcol = mapping.lc.key(last)
+        vrow, vcol = mapping.lc.value(last)
+        if vrow != krow or isinstance(mapping[last], (dict, list)):
+            raise ValueError(f"cannot insert {key!r}: last key {last!r} "
+                             "is not a one-line scalar entry")
+        if flow:
+            end, _ = _scalar_end(lines[vrow], vcol, flow)
+            splices.append((vrow, end, end, f', {key}: {_yaml_scalar(value)}'))
+        else:
+            splices.append((krow + 1, 0, None,
+                            ' ' * kcol + f'{key}: {_yaml_scalar(value)}\n'))
+    # Right to left, so earlier splices on a line keep their columns valid.
+    for row, start, end, new in sorted(splices, key=lambda s: s[:2], reverse=True):
+        if end is None:
+            lines.insert(row, new)
+        else:
+            lines[row] = lines[row][:start] + new + lines[row][end:]
+    patched = ''.join(lines)
+
+    # Verify against the same edits applied to a fresh load.  pure=True:
+    # the libyaml-based C parser rejects some plain scalars the pure
+    # parser (and the roundtrip loader) accept, e.g. unquoted URLs inside
+    # flow mappings (`ref_manual: {url: https://...}`).
+    yaml = YAML(typ='safe', pure=True)
+    want = yaml.load(text)
+    paths = {id(m): p for p, m in _walk_maps(config)}
+    for mapping, key, value in edits:
+        node = want
+        for k in paths[id(mapping)]:
+            node = node[k]
+        node[key] = str(value)
+    if yaml.load(patched) != want:
+        raise RuntimeError(f"in-place edit of {config_path} changed more than "
+                           "the intended values; file left unchanged")
+    Path(config_path).write_text(patched)
+
+
+def _scalar_end(line, col, flow):
+    """End column of the scalar starting at `col`, and its quote char (or None).
+
+    Plain scalars end before a comment or end of line; inside a flow
+    collection also before `,` `}` `]` (which plain scalars can't contain
+    there).
+    """
+    q = line[col]
+    if q in '\'"':
+        end = col + 1
+        while True:
+            end = line.index(q, end)
+            if q == "'" and line[end + 1:end + 2] == "'":
+                end += 2            # '' is an escaped quote
+            elif q == '"' and line[end - 1] == '\\':
+                end += 1
+            else:
+                return end + 1, q
+    stop = r'\s*[,}\]]|\s+#|\s*$' if flow else r'\s+#|\s*$'
+    m = re.match(r'.*?(?=' + stop + ')', line[col:].rstrip('\n'))
+    return col + m.end(), None
+
+
+def _walk_maps(node, path=()):
+    """Yield (key path, mapping) for every mapping in a loaded config."""
+    if isinstance(node, dict):
+        yield path, node
+        for k, v in node.items():
+            yield from _walk_maps(v, path + (k,))
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from _walk_maps(v, path + (i,))
 
 
 # ============================================================================
@@ -134,6 +240,7 @@ def cmd_svd(args):
         return 1
 
     config = _load_config(config_path)
+    edits = []
 
     # Build zip_filename -> family_code lookup
     zip_to_code = {}
@@ -220,16 +327,16 @@ def cmd_svd(args):
                 continue
             shutil.move(tmp_path, str(local_path))
             tmp_path = None
-            svd_cfg['version'] = remote_ver
-            svd_cfg['date'] = entry["date"]
+            edits += [(svd_cfg, 'version', remote_ver),
+                      (svd_cfg, 'date', entry["date"])]
             updated += 1
             print(f"    downloaded")
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
-    if args.download and updated:
-        _save_config(config_path, config)
+    if edits:
+        _patch_config(config_path, config, edits)
 
     print(f"\nSummary: {updated} updated, {unchanged} unchanged,"
           f" {failed} failed, {unregistered} not registered"
@@ -400,6 +507,7 @@ def _update_rm_config(config_path, updates):
     updates: dict of {rm_name: {'rev': str, 'date': str}}
     """
     config = _load_config(config_path)
+    edits = []
 
     changed = 0
     for family_code, family_cfg in (config.get('families') or {}).items():
@@ -412,13 +520,13 @@ def _update_rm_config(config_path, updates):
                 continue
             upd = updates[name]
             if upd.get('rev'):
-                rm['rev'] = upd['rev']
+                edits.append((rm, 'rev', upd['rev']))
                 changed += 1
             if upd.get('date'):
-                rm['date'] = upd['date']
+                edits.append((rm, 'date', upd['date']))
 
     if changed:
-        _save_config(config_path, config)
+        _patch_config(config_path, config, edits)
         print(f"\nUpdated {changed} ref_manual entries in {config_path}")
 
 
