@@ -89,7 +89,8 @@ generate_header(soc-data-modules cxx ST/RTC_V2 .hpp)
 generate_header(soc-data-modules cxx ST/SDIO .hpp)
 generate_header(soc-data-modules cxx ST/SDMMC .hpp)
 generate_header(soc-data-modules cxx ST/SWPMI .hpp)
-generate_header(soc-data-modules cxx ST/H7/SYSCFG .hpp)
+# ST/H7/SYSCFG (the family base model) lives in h7_base/: its header path
+# stm32h7/SYSCFG.hpp collides with the H745_H757 variant the chip uses.
 generate_header(soc-data-modules cxx ST/VREFBUF .hpp)
 
 generate_header(soc-data-modules cxx ARM/NVIC .hpp)
@@ -180,7 +181,10 @@ generate_header(soc-data-modules cxx ESP/P4/UHCI .hpp)
 generate_header(soc-data-modules cxx ESP/P4/USB_DEVICE .hpp)
 generate_header(soc-data-modules cxx ESP/P4/USB_WRAP .hpp)
 
+add_subdirectory(h7_base)
+
 add_executable(soc-data-test main.cpp test_stm32h7.cpp test_microchip.cpp test_cirrus.cpp)
+add_dependencies(soc-data-test soc-data-h7-base)
 target_link_libraries(soc-data-test PRIVATE soc-data-modules)
 target_compile_definitions(soc-data-test PRIVATE $<$<BOOL:${FOR_MODULES}>:REGISTERS_MODULE>)
 target_compile_options(soc-data-test PUBLIC $<$<BOOL:${FOR_MODULES}>:-fmodules-ts>)

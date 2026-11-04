@@ -239,6 +239,22 @@ function(generate_header target language model_path suffix)
     set(_out_dir "${CMAKE_CURRENT_BINARY_DIR}/${_ns}")
     file(MAKE_DIRECTORY "${_out_dir}")
 
+    # Two different models landing on the same output header (e.g. a family
+    # base block and a subfamily variant of it, both in the family namespace)
+    # would give CMake two rules for one file; it silently keeps one, so the
+    # other model goes ungenerated and includers get whichever won.  Fail
+    # instead — generate the second one from a different binary directory.
+    set(_out_hdr "${_out_dir}/${model}${suffix}")
+    get_property(_prev_model GLOBAL PROPERTY "_SODACAT_OUT_${_out_hdr}")
+    if(_prev_model AND NOT _prev_model STREQUAL model_file)
+        message(FATAL_ERROR
+            "generate_header: ${_out_hdr} would be generated from two models:\n"
+            "  ${_prev_model}\n  ${model_file}\n"
+            "Both resolve to namespace '${_ns}'.  Generate one of them from a "
+            "different binary directory (e.g. a test subdirectory).")
+    endif()
+    set_property(GLOBAL PROPERTY "_SODACAT_OUT_${_out_hdr}" "${model_file}")
+
     # The generator produces both a .hpp header and a .cppm module wrapper.
     # Namespace comes from the model YAML at generation time (Python side
     # uses the same resolver as cmake here), so no namespace argument is

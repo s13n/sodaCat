@@ -13,8 +13,10 @@ sodaCat is a hardware description database for microcontrollers and SoCs. It ext
 ## Build Commands
 
 ```bash
-# Configure (from project root)
-mkdir build && cd build && cmake -GNinja ..
+# Configure (from project root).  clang++-22 and g++-16 both work.
+cmake -S . -B build -GNinja -DCMAKE_CXX_COMPILER=clang++-22 \
+      -DPython3_EXECUTABLE=$PWD/.venv/bin/python
+cd build
 
 # Extract YAML models for a specific MCU family
 cmake --build . --target stm32h7-models
@@ -26,10 +28,11 @@ cmake --build . --target soc-data-test
 
 # Force rebuild of models (deletes stamp file and re-extracts)
 cmake --build . --target rebuild-stm32h7-models
-
-# Run the test (no output = success; it validates that generated headers compile)
-./test/soc-data-test
 ```
+
+The test is **compile-only: a successful build is the pass criterion.  Don't run `./test/soc-data-test`** — it performs real MMIO accesses at the target chips' peripheral addresses (e.g. STM32H7 MDMA at `0x52000000`) and segfaults on a host.
+
+Pin `Python3_EXECUTABLE` at configure time: CMake's FindPython prefers an activated virtualenv, so a stale or mismatched one silently changes which interpreter (and which packages) the build uses.
 
 **Python dependencies:** Python 3.14; `pip install -r requirements-dev.txt` into the project `.venv` (core: `ruamel.yaml`, `jsonschema`, `xmltodict`, `requests`; the file also lists the optional PDF/SVD-validation tool deps and how to install `svdtools`). `ruamel.yaml` is the only YAML library: use `YAML(typ='safe')` for read-only loading and `YAML()` (roundtrip) for writing. Don't introduce PyYAML — it implements YAML 1.1 rather than 1.2 and can't parse some of the configs (e.g. unquoted `(?:` regexes in flow mappings in `svd/Raspberry/Raspberry.yaml`).
 
@@ -251,7 +254,8 @@ The extractor drops fields named `RESERVED` (case-insensitive) from every regist
 - `addressOffset` and `dimIncrement` are **byte** units, never register/word indices — even for sub-32-bit blocks. A block of 16-bit registers numbered R0, R1, R2 in the datasheet has `addressOffset: 0, 2, 4`, not `0, 1, 2`. (Cirrus WM8994 was originally authored with word offsets and had to be corrected.) Register `size:` is in bits and defaults to the block's top-level `size:` (default 32); cluster members inherit that block default, so a uniform-width block declares `size:` once at the top. A cluster's `dimIncrement` must be ≥ its byte footprint (`members × width/8`), or array elements overlap.
 - The `headerStructName` field in a model determines the C++ struct name; it maps instance names to generic block types
 - `svd.dumpModel()` writes block models; `svd.dumpDevice()` writes chip-level models
-- Tests are compile-only — if `soc-data-test` builds successfully, the generated headers are valid
+- Tests are compile-only — if `soc-data-test` builds successfully, the generated headers are valid. Every header generated for the test is compiled through its `.cppm` wrapper, because CMake compiles `FILE_SET CXX_MODULES` sources even with `FOR_MODULES=OFF`; a header doesn't need to be `#include`d by a test `.cpp` to be covered
+- `generate_header()` fails with `FATAL_ERROR` when two different models would produce the same output header (same namespace and name, e.g. a family-base block and its subfamily variant). Generate the second one from a different binary directory, as `test/h7_base/` does for the base `ST/H7/SYSCFG`
 - The `test/CMakeLists.txt` references models via paths relative to `SODACAT_LOCAL_DIR` (defaults to `${CMAKE_SOURCE_DIR}/models`)
 - CMake extraction targets use stamp files (`<target>.stamp`) to avoid redundant re-extraction
 - Cache variables like `STM32_GENERATOR` and `LPC_GENERATOR` persist in CMakeCache.txt — after moving files, a stale cache may need explicit reconfiguration (e.g., `cmake .. -DSTM32_GENERATOR=<new_path>`) or a clean reconfigure
