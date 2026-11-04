@@ -34,7 +34,7 @@ The test is **compile-only: a successful build is the pass criterion.  Don't run
 
 Pin `Python3_EXECUTABLE` at configure time: CMake's FindPython prefers an activated virtualenv, so a stale or mismatched one silently changes which interpreter (and which packages) the build uses.
 
-**Python dependencies:** Python 3.14; `pip install -r requirements-dev.txt` into the project `.venv` (core: `ruamel.yaml`, `jsonschema`, `xmltodict`, `requests`; the file also lists the optional PDF/SVD-validation tool deps and how to install `svdtools`). `ruamel.yaml` is the only YAML library: use `YAML(typ='safe')` for read-only loading and `YAML()` (roundtrip) for writing. Don't introduce PyYAML — it implements YAML 1.1 rather than 1.2 and can't parse some of the configs (e.g. unquoted `(?:` regexes in flow mappings in `svd/Raspberry/Raspberry.yaml`).
+**Python dependencies:** Python 3.14; `pip install -r requirements-dev.txt` into the project `.venv` (core: `ruamel.yaml`, `jsonschema`, `xmltodict`, `requests`; the file also lists the optional PDF/SVD-validation tool deps and how to install `svdtools`). `ruamel.yaml` is the only YAML library: use `YAML(typ='safe')` for read-only loading and `YAML()` (roundtrip) for writing. Don't introduce PyYAML — it implements YAML 1.1 rather than 1.2. In hand-written YAML, quote any plain value containing `:` inside a flow collection (`{url: 'https://...'}`, `{pattern: '(?:A|B)'}`): ruamel's pure-Python parser accepts it unquoted, but libyaml-based parsers (PyYAML, and `YAML(typ='safe')` when the `ruamel.yaml.clib` C extension is installed, as with the apt package) reject it — so a file can load or fail depending on the interpreter.
 
 **CMake requirement:** 3.28+, C++20 compiler, Python 3
 
