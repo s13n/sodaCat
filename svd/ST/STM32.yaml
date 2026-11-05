@@ -516,6 +516,18 @@ shared_blocks:
       - {type: patchFields, register: CCR4, fields: [{name: CCR4, bitWidth: 32}]}
       # Add OCCS to SMCR (GP-only, bit 3, reserved on AdvCtrl hardware)
       - {type: patchFields, register: SMCR, fields: [{name: OCCS, description: OCREF clear selection, bitOffset: 3, bitWidth: 1}]}
+      # OR1 at 0x68: TIM16/TIM17 on G4 only (RM0440, HSE/32 to tim_ti1_in3)
+      - type: patchRegisters
+        registers:
+          - name: OR1
+            displayName: OR1
+            description: Option register 1 (STM32G4 TIM16/TIM17 only)
+            addressOffset: 104
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: HSE32EN, description: 'HSE divided by 32 enable (tim_ti1_in3)', bitOffset: 0, bitWidth: 1, access: read-write}
       # Ensure addressBlock covers DCR/DMAR at 0x3E0+4
       - {type: patchAddressBlock, size: 996}
   BasicTimer:
@@ -2161,6 +2173,14 @@ shared_blocks:
     # USB packet buffer memory: G5, H5
     from: STM32H523.USBSRAM
     description: USB packet buffer SRAM
+  MPCBB:
+    # GTZC block-based memory protection controller (SRAM security/privilege
+    # per 512-byte block).  Identical on G5 and H5 (H573/H5F5).
+    from: STM32G564.GTZC1_MPCBB1
+    description: GTZC block-based memory protection controller (MPCBB)
+    transforms:
+      - {type: createArray, pattern: 'SECCFGR(\d+)', name: SECCFGR, description: Security configuration for super-block x}
+      - {type: createArray, pattern: 'PRIVCFGR(\d+)', name: PRIVCFGR, description: Privileged configuration for super-block x}
 families:
   C0:
     svd:
@@ -4680,6 +4700,21 @@ families:
       I3C:
         uses: I3C
         instances: [I3C1, I3C1_S]
+      GTZC_TZIC:
+        # GTZC TrustZone illegal access controller; one bit per G5 peripheral
+        from: STM32G564.GTZC1_TZIC
+        instances: [GTZC1_TZIC, GTZC1_TZIC_S]
+        transforms:
+          - {type: renameRegisters, pattern: '^TZIC_', replacement: ''}
+        outputs:
+          INTR:
+            description: Illegal access interrupt (GTZC1 global interrupt)
+      GTZC_TZSC:
+        # GTZC TrustZone security controller; one bit per G5 peripheral
+        from: STM32G564.GTZC1_TZSC
+        instances: [GTZC1_TZSC, GTZC1_TZSC_S]
+        transforms:
+          - {type: renameRegisters, pattern: '^TZSC_', replacement: ''}
       ICACHE:
         uses: ICACHE
         instances: [ICACHE, ICACHE_S]
@@ -4694,6 +4729,9 @@ families:
         instances: [LPUART, LPUART_S]
         # RM0514 calls the instance LPUART1; the SVD says LPUART.
         rename_instances: {LPUART: LPUART1, LPUART_S: LPUART1_S}
+      MPCBB:
+        uses: MPCBB
+        instances: [GTZC1_MPCBB1, GTZC1_MPCBB1_S, GTZC1_MPCBB2, GTZC1_MPCBB2_S, GTZC1_MPCBB3, GTZC1_MPCBB3_S]
       OPAMP:
         uses: TCOPAMP
         instances: [OPAMP1, OPAMP1_S, OPAMP2, OPAMP2_S, OPAMP3, OPAMP3_S]
@@ -4877,6 +4915,9 @@ families:
           RTC_S: {S: []}
           PLAY1: {INTR: [NVIC.163], INTR_S: [NVIC.162]}
           PLAY1_S: {INTR_S: []}
+          # GTZC1 global interrupt (vector 6): the SVDs attach it to an MPCBB
+          # instance, but it is TZIC's illegal-access interrupt (RM0514).
+          GTZC1_TZIC: {INTR: [NVIC.22]}
   H5:
     svd:
       zip: stm32h5-svd.zip

@@ -338,6 +338,13 @@ other families have EWIF at bit 14 and EWIC in EWCR.  The shared IWDG
 model has `gen` 4 for this, with an SR_ALT1 view and an ICR register.  N6 has
 the same layout and now uses the shared model too.
 
+### GTZC1 interrupt attached to an MPCBB
+
+The SVDs attach the GTZC1 global interrupt (vector 6) to GTZC1_MPCBB1 (G55x/G56x)
+or GTZC1_MPCBB2 (G53x/G54x).  It is the TZIC illegal-access interrupt (RM0514).
+It is wired to GTZC1_TZIC via chip_connections; the extraction report lists the
+MPCBB's `GTZC1` as unmatched, which is intended.
+
 ### BasicTimer SR width
 
 UIOVRF is at SR bit 24 (G5, C5).  The N645 SVD, the shared model's source,

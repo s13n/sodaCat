@@ -220,6 +220,11 @@ Open:
       1888/1912; every remaining gap is deliberate: RCC SW/SWS (follows the
       RM), AES/SAES SR.CCF and TIM17 RTCPREEN (SVD-only), and the ICACHE ID
       registers (undocumented).
+- [ ] GTZC is not modelled for H5.  The shared MPCBB (from G5) matches
+      H573/H5F5 exactly.  TZSC/TZIC bits name each die's peripherals: H573
+      vs H533 and H5F5 swap SDMMC1/SDMMC2 at bits 21/22 (check RM0481, as
+      for the RCC SRAM2EN/SRAM3EN swap).  H503 has one combined GTZC1
+      peripheral.  The other GTZC users (L5, U5, U3) aren't modelled either.
 - [ ] Cosmetic: the H52x_H57x RCC lists output INTR_S before INTR,
       because outputs follow the source SVD's interrupt order.
 

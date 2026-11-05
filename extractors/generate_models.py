@@ -600,7 +600,9 @@ def _merge_registers(dst_regs, src_regs, regmap, where, log):
 
 
 def _presence_note(chips):
-    return 'Only on ' + ', '.join(chips) + '.'
+    # Sorted: the scope's chip order depends on Pass-1 bookkeeping, and the
+    # note must not change between runs.
+    return 'Only on ' + ', '.join(sorted(chips)) + '.'
 
 
 def _bits_by_offset(regs, base=0, out=None):

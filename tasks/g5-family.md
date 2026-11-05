@@ -42,5 +42,8 @@ AES on G544/G563/G564, SAES/CCB/OTFDEC on G563/G564.
       TimerV1, TimerV2 and the F3 AdvCtrlTimer (user decision).  G5's timer
       params are derived by tools/g5_family/timer_params.py.  Other families'
       chips are unchanged apart from the order of the timer connections.
-      Pre-existing gap noted: G4 TIM16/17 OR1.HSE32EN is not in TimerV2.
-- [ ] GTZC is not modelled (same as H5).
+- [x] TimerV2 OR1.HSE32EN (G4 TIM16/TIM17, RM0440) added at 0x68.
+- [x] GTZC modelled for G5 (2026-11-05): shared MPCBB (SECCFGR[32] and
+      PRIVCFGR[32]; identical to H573/H5F5, so H5 can use it), and G5-local
+      GTZC_TZSC/GTZC_TZIC, whose bits name G5's own peripherals.  The GTZC1
+      interrupt is wired to TZIC.  G5 coverage is now 1204/1224.
