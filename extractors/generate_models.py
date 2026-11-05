@@ -247,6 +247,27 @@ def _resolve_excluded_instances(chip_instances, subfamily, chip):
     return excluded
 
 
+def _resolve_added_instances(chip_instances, subfamily, chip):
+    """Resolve instances to add to a chip although its SVD lacks them.
+
+    Same cascade as _resolve_excluded_instances, with `add: {<instance>:
+    {baseAddress: <int>}}` cells; the most specific cell wins per instance.
+    Used when an SVD omits a peripheral the part has (e.g. STM32H523/H533/
+    H562/H563/H573 HDMI-CEC).  Interrupts are not known for such an
+    instance; wire them through `chip_connections`.
+    """
+    added = {}
+    for sf_key in ('_all', subfamily):
+        sf = chip_instances.get(sf_key)
+        if not sf:
+            continue
+        for chip_key in ('_all', chip):
+            section = sf.get(chip_key)
+            if section:
+                added.update(section.get('add') or {})
+    return added
+
+
 def _resolve_block_config(block_cfg, subfamily_name):
     """Resolve a block config for a specific subfamily by merging variant overrides."""
     variants = block_cfg.get('variants')
@@ -339,6 +360,37 @@ def _collect_sibling_blocks(all_blocks, source_chip):
             if block_name in siblings:
                 break
     return siblings
+
+
+def _peer_instances(entries, chip_summaries, chip_instances,
+                    blocks_config, shared_blocks):
+    """`{chip: set(instance names)}` as the chip models will have them.
+
+    SVD peripherals plus `chip_instances` adds, renamed per
+    `rename_instances`, minus excludes.  mergeFrom's instance-based
+    `presence:` entries use it.
+    """
+    chips = {e['chip'] for e in entries}
+    out = {}
+    for sf, per_chip in chip_summaries.items():
+        inst_to_block = _build_instance_to_block(blocks_config, sf)
+        for chip, summary in per_chip.items():
+            if chip not in chips:
+                continue
+            names = set()
+            for n in set(summary['peripherals']) | set(
+                    _resolve_added_instances(chip_instances, sf, chip)):
+                bt = inst_to_block.get(n)
+                if bt:
+                    n = _get_rename_instances(bt, blocks_config, shared_blocks, sf).get(n, n)
+                names.add(n)
+            out[chip] = names - _resolve_excluded_instances(chip_instances, sf, chip)
+    return out
+
+
+def _peer_blocks(entries):
+    """`{chip: block_data}` for the Pass-1 entries of one block (mergeFrom scope)."""
+    return {e['chip']: e['data'] for e in entries}
 
 
 # ============================================================================
@@ -450,6 +502,243 @@ def _patch_fields(registers, reg_name, field_patches):
                 fields.remove(existing)
             else:
                 print(f"  WARNING: patchFields: field '{name}' not found in '{reg_name}'")
+
+
+def _field_bits(f):
+    return set(range(f['bitOffset'], f['bitOffset'] + f['bitWidth']))
+
+
+def _merge_fields(dst_reg, src_reg, where):
+    """Union `src_reg`'s fields into `dst_reg` (see _merge_from for rules).
+
+    Returns (added_field_names, naming_diffs, widened_fields)."""
+    dst_fields = dst_reg.setdefault('fields', [])
+    added, naming, widened = [], [], []
+    for pf in src_reg.get('fields') or []:
+        pb = _field_bits(pf)
+        same_name = next((f for f in dst_fields if f['name'] == pf['name']), None)
+        over = [f for f in dst_fields if _field_bits(f) & pb]
+        if not over:
+            if same_name is not None:
+                raise ValueError(
+                    f"mergeFrom: {where}.{pf['name']} is at bit "
+                    f"{pf['bitOffset']}:{pf['bitWidth']} on the merged chip but at "
+                    f"{same_name['bitOffset']}:{same_name['bitWidth']} in the model; "
+                    f"resolve this explicitly before merging")
+            dst_fields.append(copy.deepcopy(pf))
+            added.append(pf['name'])
+            continue
+        if len(over) == 1 and _field_bits(over[0]) == pb:
+            if over[0]['name'] != pf['name']:
+                naming.append(f"{where}.{over[0]['name']}|{pf['name']}")
+            continue
+        if len(over) == 1 and pb <= _field_bits(over[0]):
+            continue                                   # narrower on the merged chip
+        if all(_field_bits(f) <= pb for f in over):
+            # Model fields lie inside the peer field: a split (bits fully
+            # covered) or a widening of a same-named field into free bits.
+            others = set().union(*(_field_bits(f) for f in dst_fields if f not in over))
+            if (len(over) == 1 and over[0]['name'] == pf['name']
+                    and over[0]['bitOffset'] == pf['bitOffset'] and not (pb & others)):
+                widened.append(f"{pf['name']} {over[0]['bitWidth']}->{pf['bitWidth']}")
+                over[0]['bitWidth'] = pf['bitWidth']
+                continue
+            if set().union(*(_field_bits(f) for f in over)) == pb:
+                continue                               # split in the model
+        raise ValueError(
+            f"mergeFrom: {where}: field {pf['name']}[{pf['bitOffset']}:{pf['bitWidth']}] "
+            f"partially overlaps " + ', '.join(
+                f"{f['name']}[{f['bitOffset']}:{f['bitWidth']}]" for f in over)
+            + "; resolve this explicitly before merging")
+    if added:
+        dst_fields.sort(key=lambda f: f['bitOffset'])
+    return added, naming, widened
+
+
+def _match_register(dst_regs, preg, regmap, where):
+    """Find the model register that `preg` (from a merged chip) corresponds to."""
+    name = regmap.get(preg['name'], preg['name'])
+    off = preg.get('addressOffset', 0)
+    by_name = [r for r in dst_regs if r['name'] == name]
+    if by_name:
+        if by_name[0].get('addressOffset', 0) != off:
+            raise ValueError(
+                f"mergeFrom: {where}: register {name} is at offset {off:#x} on the "
+                f"merged chip but at {by_name[0].get('addressOffset', 0):#x} in the "
+                f"model; resolve this explicitly before merging")
+        return by_name[0]
+    if preg['name'] in regmap:
+        raise ValueError(f"mergeFrom: {where}: mapped register {name} not in model")
+    at_off = [r for r in dst_regs if r.get('addressOffset', 0) == off]
+    if len(at_off) > 1:
+        raise ValueError(
+            f"mergeFrom: {where}: register {preg['name']} at {off:#x} matches several "
+            f"model registers ({', '.join(r['name'] for r in at_off)}); map it with "
+            f"`registers:`")
+    return at_off[0] if at_off else None
+
+
+def _merge_registers(dst_regs, src_regs, regmap, where, log):
+    for preg in src_regs:
+        dreg = _match_register(dst_regs, preg, regmap, where)
+        if dreg is None:
+            dst_regs.append(copy.deepcopy(preg))
+            log['registers'].append(preg['name'])
+            continue
+        if 'registers' in preg or 'registers' in dreg:
+            if 'registers' not in preg or 'registers' not in dreg:
+                raise ValueError(
+                    f"mergeFrom: {where}: {preg['name']} is a cluster on one side only")
+            _merge_registers(dreg['registers'], preg['registers'], {},
+                             f"{where} {dreg['name']}", log)
+            continue
+        added, naming, widened = _merge_fields(dreg, preg, dreg['name'])
+        log['fields'].extend(f"{dreg['name']}.{n}" for n in added)
+        log['naming'].extend(naming)
+        log['widened'].extend(f"{dreg['name']}.{w}" for w in widened)
+    dst_regs.sort(key=lambda r: r.get('addressOffset', 0))
+
+
+def _presence_note(chips):
+    return 'Only on ' + ', '.join(chips) + '.'
+
+
+def _bits_by_offset(regs, base=0, out=None):
+    """{absolute offset: [field bit sets]} over all registers (clusters flattened)."""
+    out = {} if out is None else out
+    for r in regs:
+        off = base + r.get('addressOffset', 0)
+        if 'registers' in r:
+            _bits_by_offset(r['registers'], off, out)
+        else:
+            out.setdefault(off, []).extend(_field_bits(f) for f in r.get('fields') or [])
+    return out
+
+
+def _annotate_presence(dst_regs, scope, overrides=(), instances=None):
+    """Append "Only on <chips>." to registers/fields not present on every chip.
+
+    `scope` maps chip name -> that chip's extracted registers.  Presence is
+    positional, so register names and alternate views don't matter: a
+    register is present on a chip that has any register at its offset, a
+    field on a chip that has a field overlapping its bits there.  Presence
+    comes from the SVDs, so a register an SVD omits looks absent; override
+    the description afterwards in that case.  Already annotated entries are
+    left alone, so several mergeFrom steps don't stack notes.
+
+    `overrides` is a list of `{pattern, chips}` or `{pattern, instance}`: a
+    register whose name, or a field whose `REG.FIELD`, fully matches
+    `pattern` takes its chip list from `chips`, or from the chips whose chip
+    model has an instance fully matching `instance` (a template expanded
+    with the pattern's groups, e.g. '\\2'; `instances` maps chip -> instance
+    names).  For SVDs that describe a die rather than the part, or omit
+    registers.  A register override also covers that register's fields
+    unless a field has its own.  First match wins.
+    """
+    maps = {c: _bits_by_offset(regs) for c, regs in scope.items()}
+    instances = instances or {}
+    for o in overrides:
+        unknown = set(o.get('chips') or ()) - set(maps)
+        if unknown:
+            raise ValueError(f"mergeFrom presence: chips not in scope: {sorted(unknown)}")
+    used = set()
+
+    def explicit(name):
+        for i, o in enumerate(overrides):
+            m = re.fullmatch(o['pattern'], name)
+            if not m:
+                continue
+            used.add(i)
+            if 'instance' not in o:
+                return [c for c in maps if c in o['chips']]
+            inst = m.expand(o['instance'])
+            chips = [c for c in maps if any(re.fullmatch(inst, n)
+                                            for n in instances.get(c, ()))]
+            if not chips:
+                raise ValueError(
+                    f"mergeFrom presence: {name}: no chip in scope has an "
+                    f"instance matching '{inst}'")
+            return chips
+        return None
+
+    def note(item, chips):
+        desc = item.get('description', '').rstrip()
+        if len(chips) < len(maps) and 'Only on ' not in desc:
+            item['description'] = (desc + ' ' + _presence_note(chips)).strip()
+
+    def walk(regs, base):
+        for reg in regs:
+            off = base + reg.get('addressOffset', 0)
+            if 'registers' in reg:
+                walk(reg['registers'], off)
+                continue
+            reg_explicit = have = explicit(reg['name'])
+            if have is None:
+                have = [c for c, m in maps.items() if off in m]
+            if len(have) < len(maps):
+                note(reg, have)
+                continue
+            for f in reg.get('fields') or []:
+                fchips = explicit(f"{reg['name']}.{f['name']}")
+                if fchips is None:
+                    fchips = reg_explicit       # a register override covers its fields
+                if fchips is None:
+                    fb = _field_bits(f)
+                    fchips = [c for c, m in maps.items()
+                              if any(fb & x for x in m.get(off, []))]
+                note(f, fchips)
+    walk(dst_regs, 0)
+    for i, o in enumerate(overrides):
+        if i not in used:
+            print(f"  WARNING: mergeFrom presence: pattern '{o['pattern']}' matched nothing")
+
+
+def _merge_from(block_data, t, peer_blocks, block_name, peer_instances=None):
+    """`mergeFrom` transform: build a superset over several chips' SVDs.
+
+    `t = {chips: [...], registers?: {peerName: modelName}, annotate?: bool}`.
+    For each listed chip, the same block as extracted from that chip in
+    Pass 1 is unioned into the model:
+
+    - registers match by `registers:` mapping (merged-chip name -> model
+      name), else by name (must be at the same offset), else by offset;
+      unmatched ones are added;
+    - a field whose bits are free in the model is added;
+    - a field with the same bit range as a model field is the same bit under
+      another name: the model name stays (logged);
+    - a field narrower than, or split relative to, a model field is skipped;
+      a same-named field that is wider into free bits widens the model field;
+    - anything else (same name elsewhere, partial overlap, register at another
+      offset) raises: the dies genuinely differ there and the config has to
+      resolve it explicitly (rename, alternate register, ...) first.
+
+    Then, unless `annotate: false`, every register/field that is not present
+    on all chips in scope (every chip the block was extracted from for this
+    model) gets "Only on <chips>." appended to its description.  Presence
+    comes from the SVDs unless `presence: [{pattern, chips}]` says otherwise
+    (see _annotate_presence).
+    """
+    peer_blocks = peer_blocks or {}
+    regmap = t.get('registers') or {}
+    for chip in t['chips']:
+        if chip not in peer_blocks:
+            raise ValueError(
+                f"mergeFrom: {block_name}: chip {chip} has no extracted block in "
+                f"scope (have: {sorted(peer_blocks)})")
+        log = {'registers': [], 'fields': [], 'widened': [], 'naming': []}
+        _merge_registers(block_data.setdefault('registers', []),
+                         peer_blocks[chip].get('registers', []), regmap,
+                         block_name, log)
+        print(f"  mergeFrom {chip}: +{len(log['registers'])} registers, "
+              f"+{len(log['fields'])} fields, {len(log['widened'])} widened, "
+              f"{len(log['naming'])} naming differences")
+        for kind in ('registers', 'fields', 'widened', 'naming'):
+            if log[kind]:
+                print(f"    {kind}: {' '.join(log[kind])}")
+    if t.get('annotate', True):
+        _annotate_presence(block_data['registers'],
+                           {c: d.get('registers', []) for c, d in peer_blocks.items()},
+                           t.get('presence') or (), peer_instances or {})
 
 
 def _merge_arrays(registers, pattern, new_name, description=None):
@@ -702,7 +991,7 @@ def _apply_split_collapse(block_data, split_cfg):
 
 
 def _apply_transforms(block_data, transforms, audit=False, block_name='',
-                      sibling_blocks=None):
+                      sibling_blocks=None, peer_blocks=None, peer_instances=None):
     """Apply a list of transforms to extracted block data (in-place).
 
     When audit=True, returns a list of findings: (block_name, category, description, details).
@@ -711,6 +1000,10 @@ def _apply_transforms(block_data, transforms, audit=False, block_name='',
     `sibling_blocks` is an optional `{block_name: block_data}` map of other
     blocks extracted from the same chip — used by `embedRegistersAsCluster`
     to import another block's register set as a sub-cluster.
+
+    `peer_blocks` is an optional `{chip_name: block_data}` map of this same
+    block as extracted from every chip in scope, and `peer_instances` the
+    `{chip_name: set(instance names)}` of those chips — used by `mergeFrom`.
     """
     findings = []
     for t in transforms:
@@ -836,6 +1129,8 @@ def _apply_transforms(block_data, transforms, audit=False, block_name='',
                 t['dimIncrement'],
                 description=t.get('description'),
                 addressOffset=t.get('addressOffset'))
+        elif typ == 'mergeFrom':
+            _merge_from(block_data, t, peer_blocks, block_name, peer_instances)
         elif typ == 'embedRegistersAsCluster':
             # Import another block's register set as a singleton cluster at
             # `addressOffset`.  Source block must have been extracted from the
@@ -2137,7 +2432,10 @@ def main():
                 all_findings.extend(_apply_transforms(
                     block_data, transforms, audit=args.audit,
                     block_name=f"{shared_name} (shared)",
-                    sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
+                    sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip']),
+                    peer_blocks=_peer_blocks([e for f in families_present for e in block_families[f]]),
+                    peer_instances=_peer_instances([e for f in families_present for e in block_families[f]], chip_summaries, chip_instances,
+                        blocks_config, shared_blocks)))
             block_data = _inject_outputs(block_data, shared_cfg.get('outputs'))
             block_data = _inject_params(block_data, shared_cfg.get('params'))
             block_data = _inject_source(block_data, _format_block_source(entry))
@@ -2201,7 +2499,10 @@ def main():
                     all_findings.extend(_apply_transforms(
                         v_block_data, transforms, audit=args.audit,
                         block_name=f"{block_name} ({fam_name})",
-                        sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
+                        sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip']),
+                        peer_blocks=_peer_blocks(block_families[fam_name]),
+                        peer_instances=_peer_instances(block_families[fam_name], chip_summaries, chip_instances,
+                        blocks_config, shared_blocks)))
                 v_block_data = _inject_params(
                     v_block_data, family_block_cfg.get('params'))
                 v_block_data = _inject_source(
@@ -2242,7 +2543,10 @@ def main():
                     all_findings.extend(_apply_transforms(
                         block_data, transforms, audit=args.audit,
                         block_name=f"{block_name} ({fam_name})",
-                        sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
+                        sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip']),
+                        peer_blocks=_peer_blocks(block_families[fam_name]),
+                        peer_instances=_peer_instances(block_families[fam_name], chip_summaries, chip_instances,
+                        blocks_config, shared_blocks)))
                 split_cfg = resolved.get('split_into_instances')
                 if split_cfg:
                     if transforms is None:
@@ -2273,7 +2577,10 @@ def main():
                 all_findings.extend(_apply_transforms(
                     block_data, transforms, audit=args.audit,
                     block_name=block_name,
-                    sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip'])))
+                    sibling_blocks=_collect_sibling_blocks(all_blocks, entry['chip']),
+                    peer_blocks=_peer_blocks([e for f in default_present for e in block_families[f]]),
+                    peer_instances=_peer_instances([e for f in default_present for e in block_families[f]], chip_summaries, chip_instances,
+                        blocks_config, shared_blocks)))
             split_cfg = block_cfg.get('split_into_instances')
             if split_cfg:
                 if transforms is None:
@@ -2419,6 +2726,14 @@ def main():
 
             excluded_instances = _resolve_excluded_instances(
                 chip_instances, subfamily_name, chip_name)
+            for inst_name, spec in _resolve_added_instances(
+                    chip_instances, subfamily_name, chip_name).items():
+                if inst_name in summary['peripherals']:
+                    raise ValueError(
+                        f"chip_instances add: {chip_name} already has {inst_name} "
+                        f"in its SVD; drop the add entry")
+                summary['peripherals'][inst_name] = {
+                    'baseAddress': int(spec['baseAddress']), 'interrupts': []}
 
             for inst_name, periph in summary['peripherals'].items():
                 block_type = instance_to_block.get(inst_name)
