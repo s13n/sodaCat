@@ -1,24 +1,25 @@
 name: Flash
-description: Address block description
+description: Mustang_FLASH register block
 groupName: FLASH
-source: STM32H573 SVD v1.8
+source: STM32H533 SVD v1.3
 registers:
   - name: ACR
     displayName: ACR
     description: Access control register
     addressOffset: 0
     size: 32
+    access: read-write
     resetValue: 19
     resetMask: 4294967295
     fields:
       - name: LATENCY
-        description: "Read latency\nThese bits are used to control the number of wait states used during read operations on both nonvolatile memory banks. The application software has to program them to the correct value depending on the embedded flash memory interface frequency and voltage conditions.\n...\nNote: No check is performed by hardware to verify that the configuration is correct."
+        description: Read latency
         bitOffset: 0
         bitWidth: 4
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: zero wait states used to read a word from nonvolatile memory
+            description: no wait states used to read a word from nonvolatile memory
             value: 0
           - name: B_0x1
             description: one wait state used to read a word from nonvolatile memory
@@ -33,12 +34,12 @@ registers:
             description: 15 wait states used to read a word from nonvolatile memory
             value: 15
       - name: WRHIGHFREQ
-        description: "Flash signal delay \nThese bits are used to control the delay between nonvolatile memory signals during programming operations. Application software has to program them to the correct value depending on the embedded flash memory interface frequency. Please refer to Table44 for details.\nNote: No check is performed to verify that the configuration is correct. \nNote: Two WRHIGHFREQ values can be selected for some frequencies."
+        description: Flash signal delay
         bitOffset: 4
         bitWidth: 2
         access: read-write
       - name: PRFTEN
-        description: "Prefetch enable. When bit value is modified, user must read back ACR register to be sure PRFTEN has been taken into account.\nBits used to control the prefetch."
+        description: Prefetch enable.
         bitOffset: 8
         bitWidth: 1
         access: read-write
@@ -54,6 +55,7 @@ registers:
     description: Non-secure key register
     addressOffset: 4
     size: 32
+    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -67,6 +69,7 @@ registers:
     description: Secure key register
     addressOffset: 8
     size: 32
+    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -80,6 +83,7 @@ registers:
     description: Option key register
     addressOffset: 12
     size: 32
+    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -93,6 +97,7 @@ registers:
     description: Non-secure OBK key register
     addressOffset: 16
     size: 32
+    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -106,6 +111,7 @@ registers:
     description: Secure OBK key register
     addressOffset: 20
     size: 32
+    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -119,6 +125,7 @@ registers:
     description: Operation status register
     addressOffset: 24
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
@@ -128,22 +135,22 @@ registers:
         bitWidth: 20
         access: read-only
       - name: DATA_OP
-        description: "Flash high-cycle data area operation interrupted\nIt indicates if flash high-cycle data area is concerned by operation."
+        description: Flash high-cycle data area operation interrupted
         bitOffset: 21
         bitWidth: 1
         access: read-only
       - name: BK_OP
-        description: "Interrupted operation bank\nIt indicates which bank was concerned by operation."
+        description: Interrupted operation bank
         bitOffset: 22
         bitWidth: 1
         access: read-only
       - name: SYSF_OP
-        description: "Operation in system flash memory interrupted \nIndicates that reset interrupted an ongoing operation in system flash."
+        description: Operation in system flash memory interrupted
         bitOffset: 23
         bitWidth: 1
         access: read-only
       - name: OTP_OP
-        description: "OTP operation interrupted\nIndicates that reset interrupted an ongoing operation in OTP area (or OBKeys area)."
+        description: OTP operation interrupted
         bitOffset: 24
         bitWidth: 1
         access: read-only
@@ -182,11 +189,12 @@ registers:
     description: Option control register
     addressOffset: 28
     size: 32
+    access: read-write
     resetValue: 1
     resetMask: 268435455
     fields:
       - name: OPTLOCK
-        description: "FLASH_OPTCR lock option configuration bit\nThe OPTLOCK bit locks the FLASH_OPTCR register as well as all _PRG registers. The correct write sequence to FLASH_OPTKEYR register unlocks this bit. If a wrong sequence is executed, or the unlock sequence to FLASH_OPTKEYR is performed twice, this bit remains locked until next system reset. \nIt is possible to set OPTLOCK by programming it to 1. When set to 1, a new unlock sequence is mandatory to unlock it. When OPTLOCK changes from 0 to 1, the others bits of FLASH_OPTCR register do not change."
+        description: FLASH_OPTCR lock option configuration bit
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -198,12 +206,12 @@ registers:
             description: FLASH_OPTCR register locked.
             value: 1
       - name: OPTSTRT
-        description: "Option byte start change option configuration bit\nOPTSTRT triggers an option byte change operation. The user can set OPTSTRT only when the OPTLOCK bit is cleared to 0. It is set only by Software and cleared when the option byte change is completed or an error occurs (PGSERR or OPTCHANGEERR). It is reseted at the same time as BSY bit.\nThe user application cannot modify any FLASH_XXX_PRG flash interface register until the option change operation has been completed.\nBefore setting this bit, the user has to write the required values in the FLASH_XXX_PRG registers. The FLASH_XXX_PRG registers are locked until the option byte change operation has been executed in nonvolatile memory."
+        description: Option byte start change option configuration bit
         bitOffset: 1
         bitWidth: 1
         access: read-write
       - name: SWAP_BANK
-        description: "Bank swapping option configuration bit\nSWAP_BANK controls whether Bank1 and Bank2 are swapped or not. This bit is loaded with the SWAP_BANK bit of FLASH_OPTSR_CUR register only after reset or POR."
+        description: Bank swapping option configuration bit
         bitOffset: 31
         bitWidth: 1
         access: read-only
@@ -219,11 +227,12 @@ registers:
     description: Non-secure status register
     addressOffset: 32
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967280
     fields:
       - name: BSY
-        description: "busy flag\nBSY flag indicates that a flash memory is busy by an operation (write, erase, option byte change, OBK operation). It is set at the beginning of a flash memory operation and cleared when the operation finishes, or an error occurs."
+        description: busy flag
         bitOffset: 0
         bitWidth: 1
         access: read-only
@@ -235,7 +244,7 @@ registers:
             description: programming, erase or option byte change operation being executed
             value: 1
       - name: WBNE
-        description: "write buffer not empty flag \nWBNE flag is set when the flash interface is waiting for new data to complete the write buffer. In this state, the write buffer is not empty. WBNE is reset by hardware each time the write buffer is complete or the write buffer is emptied following one of the event below:\nthe application software forces the write operation using FW bit in FLASH_NSCR\nthe embedded flash memory detects an error that involves data loss\nThis bit cannot be reset by software writing 0 directly. To reset it, clear the write buffer by performing any of the above listed actions, or send the missing data."
+        description: write buffer not empty flag
         bitOffset: 1
         bitWidth: 1
         access: read-only
@@ -247,7 +256,7 @@ registers:
             description: write buffer waiting data to complete
             value: 1
       - name: DBNE
-        description: "data buffer not empty flag \nDBNE flag is set when the flash interface is processing 6-bits ECC data in dedicated buffer. This bit cannot be set to 0 by software. The hardware resets it once the buffer is free."
+        description: data buffer not empty flag
         bitOffset: 3
         bitWidth: 1
         access: read-only
@@ -259,7 +268,7 @@ registers:
             description: data buffer used, wait
             value: 1
       - name: EOP
-        description: "end of operation flag\nEOP flag is set when a operation (program/erase) completes. An interrupt is generated if the EOPIE is set to 1. It is not necessary to reset EOP before starting a new operation. EOP bit is cleared by writing 1 to CLR_EOP bit in FLASH_NSCCR register."
+        description: end of operation flag
         bitOffset: 16
         bitWidth: 1
         access: read-only
@@ -271,7 +280,7 @@ registers:
             description: a operation completed
             value: 1
       - name: WRPERR
-        description: "write protection error flag\nWRPERR flag is raised when a protection error occurs during a program operation. An interrupt is also generated if the WRPERRIE is set to 1. Writing 1 to CLR_WRPERR bit in FLASH_NSCCR register clears WRPERR."
+        description: write protection error flag
         bitOffset: 17
         bitWidth: 1
         access: read-only
@@ -283,7 +292,7 @@ registers:
             description: a write protection error occurred
             value: 1
       - name: PGSERR
-        description: "programming sequence error flag\nPGSERR flag is raised when a sequence error occurs. An interrupt is generated if the PGSERRIE bit is set to 1. Writing 1 to CLR_PGSERR bit in FLASH_NSCCR register clears PGSERR."
+        description: programming sequence error flag
         bitOffset: 18
         bitWidth: 1
         access: read-only
@@ -295,7 +304,7 @@ registers:
             description: a sequence error occurred
             value: 1
       - name: STRBERR
-        description: "strobe error flag \nSTRBERR flag is raised when a strobe error occurs (when the master attempts to write several times the same byte in the write buffer). An interrupt is generated if the STRBERRIE bit is set to 1. Writing 1 to CLR_STRBERR bit in FLASH_NSCCR register clears STRBERR."
+        description: strobe error flag
         bitOffset: 19
         bitWidth: 1
         access: read-only
@@ -307,7 +316,7 @@ registers:
             description: a strobe error occurred
             value: 1
       - name: INCERR
-        description: "inconsistency error flag\nNSINCERR flag is raised when a inconsistency error occurs. An interrupt is generated if INCERRIE is set to 1. Writing 1 to CLR_INCERR bit in the FLASH_NSCCR register clears NSINCERR."
+        description: inconsistency error flag
         bitOffset: 20
         bitWidth: 1
         access: read-only
@@ -319,7 +328,7 @@ registers:
             description: a inconsistency error occurs
             value: 1
       - name: OBKERR
-        description: "OBK general error flag\nOBKERR flag is raised when the OBK-HDPL signal from the SBS does not match the HDPL value associated with the key slot during access to the key location. Alternatively also when the ALT_SECT is unexpectedly changed while the write buffer is being filled."
+        description: OBK general error flag
         bitOffset: 21
         bitWidth: 1
         access: read-only
@@ -331,7 +340,7 @@ registers:
             description: an OBK general error occurred
             value: 1
       - name: OBKWERR
-        description: "OBK write error flag\nOBKWERR flag is raised when the address is not virgin on a write access to the OBK storage. Alternatively also when the OBK selector in the alternate sector is not virgin during a swap operation."
+        description: OBK write error flag
         bitOffset: 22
         bitWidth: 1
         access: read-only
@@ -343,7 +352,7 @@ registers:
             description: an OBK write error occurred
             value: 1
       - name: OPTCHANGEERR
-        description: "Option byte change error flag \nOPTCHANGEERR flag indicates that an error occurred during an option byte change operation. When OPTCHANGEERR is set to 1, the option byte change operation did not successfully complete. An interrupt is generated when this flag is raised if the OPTCHANGEERRIE bit of FLASH_NSCR register is set to 1. \nWriting 1 to CLR_OPTCHANGEERR of register FLASH_NSCCR clears OPTCHANGEERR.\nNote: The OPTSTRT bit in FLASH_OPTCR cannot be set while OPTCHANGEERR is set."
+        description: Option byte change error flag
         bitOffset: 23
         bitWidth: 1
         access: read-only
@@ -359,11 +368,12 @@ registers:
     description: Secure status register
     addressOffset: 36
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967280
     fields:
       - name: BSY
-        description: "busy flag\nBSY flag indicates that a FLASH memory is busy (write, erase, option byte change, OBK operations). It is set at the beginning of a flash memory operation and cleared when the operation finishes or an error occurs."
+        description: busy flag
         bitOffset: 0
         bitWidth: 1
         access: read-only
@@ -375,7 +385,7 @@ registers:
             description: programming, erase or option byte change operation being executed
             value: 1
       - name: WBNE
-        description: "write buffer not empty flag \nWBNE flag is set when the flash interface is waiting for new data to complete the write buffer. In this state, the write buffer is not empty. WBNE is reset by hardware each time the write buffer is complete or the write buffer is emptied following one of the event below:\nthe application software forces the write operation using FW bit in FLASH_SECCR\nthe flash interface detects an error that involves data loss\nThis bit cannot be reset by writing 0 directly by software. To reset it, clear the write buffer by performing any of the above listed actions, or send the missing data."
+        description: write buffer not empty flag
         bitOffset: 1
         bitWidth: 1
         access: read-only
@@ -387,7 +397,7 @@ registers:
             description: write buffer waiting data to complete
             value: 1
       - name: DBNE
-        description: "data buffer not empty flag \nDBNE flag is set when the embedded flash memory interface is processing 6-bits ECC data in dedicated buffer. This bit cannot be set to 0 by software. The hardware resets it once the buffer is free."
+        description: data buffer not empty flag
         bitOffset: 3
         bitWidth: 1
         access: read-only
@@ -399,7 +409,7 @@ registers:
             description: data buffer used, wait
             value: 1
       - name: EOP
-        description: "end of operation flag\nEOP flag is set when a operation (program/erase) completes. An interrupt is generated if the EOPIE is set to. It is not necessary to reset EOP before starting a new operation. EOP bit is cleared by writing 1 to CLR_EOP bit in FLASH_SECCCR register."
+        description: end of operation flag
         bitOffset: 16
         bitWidth: 1
         access: read-only
@@ -411,7 +421,7 @@ registers:
             description: a operation completed
             value: 1
       - name: WRPERR
-        description: "write protection error flag\nWRPERR flag is raised when a protection error occurs during a program operation. An interrupt is also generated if the WRPERRIE is set to 1. Writing 1 to CLR_WRPERR bit in FLASH_SECCCR register clears WRPERR."
+        description: write protection error flag
         bitOffset: 17
         bitWidth: 1
         access: read-only
@@ -423,7 +433,7 @@ registers:
             description: a write protection error occurred
             value: 1
       - name: PGSERR
-        description: "programming sequence error flag\nPGSERR flag is raised when a sequence error occurs. An interrupt is generated if the PGSERRIE bit is set to 1. Writing 1 to CLR_PGSERR bit in FLASH_SECCCR register clears PGSERR."
+        description: programming sequence error flag
         bitOffset: 18
         bitWidth: 1
         access: read-only
@@ -435,7 +445,7 @@ registers:
             description: a sequence error occurred
             value: 1
       - name: STRBERR
-        description: "strobe error flag \nSTRBERR flag is raised when a strobe error occurs (when the master attempts to write several times the same byte in the write buffer). An interrupt is generated if the STRBERRIE bit is set to 1. Writing 1 to CLR_STRBERR bit in FLASH_SECCCR register clears STRBERR."
+        description: strobe error flag
         bitOffset: 19
         bitWidth: 1
         access: read-only
@@ -447,7 +457,7 @@ registers:
             description: a strobe error occurred
             value: 1
       - name: INCERR
-        description: "inconsistency error flag\nINCERR flag is raised when a inconsistency error occurs. An interrupt is generated if INCERRIE is set to 1. Writing 1 to CLR_INCERR bit in the FLASH_SECCCR register clears INCERR."
+        description: inconsistency error flag
         bitOffset: 20
         bitWidth: 1
         access: read-only
@@ -459,7 +469,7 @@ registers:
             description: a inconsistency error occurred
             value: 1
       - name: OBKERR
-        description: "OBK general error flag\nOBKERR flag is raised when the OBK-HDPL signal from the SBS does not match the HDPL value associated with the key slot during access to the key location. Alternatively also when the ALT_SECT is unexpectedly changed while the write buffer is being filled."
+        description: OBK general error flag
         bitOffset: 21
         bitWidth: 1
         access: read-only
@@ -471,7 +481,7 @@ registers:
             description: an OBK general error occurred
             value: 1
       - name: OBKWERR
-        description: "OBK write error flag\nOBKWERR flag is raised when the address is not virgin on a write access to the OBK storage. Alternatively also when the OBK selector in the alternate sector is not virgin during a swap operation."
+        description: OBK write error flag
         bitOffset: 22
         bitWidth: 1
         access: read-only
@@ -487,11 +497,12 @@ registers:
     description: Non-secure control register
     addressOffset: 40
     size: 32
+    access: read-write
     resetValue: 1
     resetMask: 4294967295
     fields:
       - name: LOCK
-        description: "configuration lock bit\nThis bit locks the FLASH_NSCR register. The correct write sequence to FLASH_NSKEYR register unlocks this bit. If a wrong sequence is executed, or if the unlock sequence to FLASH_NSKEYR is performed twice, this bit remains locked until the next system reset. \nLOCK can be set by programming it to 1. When set to 1, a new unlock sequence is mandatory to unlock it. When LOCK changes from 0 to 1, the other bits of FLASH_NSCR register do not change."
+        description: configuration lock bit
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -503,7 +514,7 @@ registers:
             description: FLASH_NSCR register locked
             value: 1
       - name: PG
-        description: "programming control bit\nPG can be programmed only when LOCK is cleared to 0. \nPG allows programming in Bank1 and Bank2."
+        description: programming control bit
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -515,7 +526,7 @@ registers:
             description: programming enabled
             value: 1
       - name: SER
-        description: "sector erase request\nSetting SER bit to 1 requests a sector erase. SER can be programmed only when LOCK is cleared to 0. \nIf MER and SER are also set, a PGSERR is raised."
+        description: sector erase request
         bitOffset: 2
         bitWidth: 1
         access: read-write
@@ -527,7 +538,7 @@ registers:
             description: sector erase requested
             value: 1
       - name: BER
-        description: "erase request\nSetting BER bit to 1 requests a bank erase operation (user flash memory only). BER can be programmed only when LOCK is cleared to 0. \nIf MER and SER are also set, a PGSERR is raised.\nNote: Write protection error is triggered when a bank erase is required and some sectors are protected."
+        description: erase request
         bitOffset: 3
         bitWidth: 1
         access: read-write
@@ -539,17 +550,17 @@ registers:
             description: bank erase requested
             value: 1
       - name: FW
-        description: "write forcing control bit\nFW forces a write operation even if the write buffer is not full. In this case all bits not written are set to 1 by hardware. FW can be programmed only when LOCK is cleared to 0. \nThe embedded flash memory resets FW when the corresponding operation has been acknowledged. \nNote: Using a force-write operation prevents the application from updating later the missing bits with something else than 1, because it is likely that it leads to permanent ECC error.\nWrite forcing is effective only if the write buffer is not empty and was filled by non-secure access (in particular, FW does not start several write operations when the force-write operations are performed consecutively). \nSince there is just one write buffer, FW can force a write in bank1 or bank2."
+        description: write forcing control bit
         bitOffset: 4
         bitWidth: 1
         access: read-write
       - name: STRT
-        description: "erase start control bit\nSTRT bit is used to start a sector erase or a bank erase operation. STRT can be programmed only when LOCK is cleared to 0. \nSTRT is reset at the end of the operation or when an error occurs. It cannot be reseted by software."
+        description: erase start control bit
         bitOffset: 5
         bitWidth: 1
         access: read-write
       - name: SNB
-        description: "sector erase selection number\nThese bits are used to select the target sector for an erase operation (they are unused otherwise). SNB can be programmed only when LOCK is cleared to 0.\n.."
+        description: sector erase selection number
         bitOffset: 6
         bitWidth: 7
         access: read-write
@@ -564,7 +575,7 @@ registers:
             description: Sector 127 selected
             value: 127
       - name: MER
-        description: "Mass erase request\nSetting MER bit to 1 requests a mass erase operation (user flash memory only). MER can be programmed only when LOCK is cleared to 0. \nIf BER or SER are both set, a PGSERR is raised.\nError is triggered when a mass erase is required and some sectors are protected."
+        description: mass erase request
         bitOffset: 15
         bitWidth: 1
         access: read-write
@@ -576,7 +587,7 @@ registers:
             description: mass erase requested
             value: 1
       - name: EOPIE
-        description: "end of operation interrupt control bit\nSetting EOPIE bit to 1 enables the generation of an interrupt at the end of a program or erase operation. EOPIE can be programmed only when LOCK is cleared to 0."
+        description: end of operation interrupt control bit
         bitOffset: 16
         bitWidth: 1
         access: read-write
@@ -588,7 +599,7 @@ registers:
             description: interrupt enabled when at the end of operation
             value: 1
       - name: WRPERRIE
-        description: "write protection error interrupt enable bit\nWhen this bit is set to 1, an interrupt is generated when a protection error occurs during a program operation. WRPERRIE can be programmed only when LOCK is cleared to 0."
+        description: write protection error interrupt enable bit
         bitOffset: 17
         bitWidth: 1
         access: read-write
@@ -600,7 +611,7 @@ registers:
             description: interrupt generated when a protection error occurs
             value: 1
       - name: PGSERRIE
-        description: "programming sequence error interrupt enable bit\nWhen this bit is set to 1, an interrupt is generated when a sequence error occurs during a program operation. PGSERRIE can be programmed only when LOCK is cleared to 0."
+        description: programming sequence error interrupt enable bit
         bitOffset: 18
         bitWidth: 1
         access: read-write
@@ -612,7 +623,7 @@ registers:
             description: interrupt generated when sequence error occurs
             value: 1
       - name: STRBERRIE
-        description: "strobe error interrupt enable bit\nWhen STRBERRIE bit is set to 1, an interrupt is generated when a strobe error occurs (the master programs several times the same byte in the write buffer) during a write operation. STRBERRIE can be programmed only when LOCK is cleared to 0."
+        description: strobe error interrupt enable bit
         bitOffset: 19
         bitWidth: 1
         access: read-write
@@ -624,7 +635,7 @@ registers:
             description: interrupt generated when strobe error occurs.
             value: 1
       - name: INCERRIE
-        description: "inconsistency error interrupt enable bit\nWhen INCERRIE bit is set to 1, an interrupt is generated when an inconsistency error occurs during a write operation. INCERRIE can be programmed only when LOCK is cleared to 0."
+        description: inconsistency error interrupt enable bit
         bitOffset: 20
         bitWidth: 1
         access: read-write
@@ -636,7 +647,7 @@ registers:
             description: interrupt generated when a inconsistency error occurs.
             value: 1
       - name: OBKERRIE
-        description: "OBK general error interrupt enable bit\nOBKERRIE enables generating an interrupt in case of OBK specific access error. This bit can be programmed only when LOCK bit is cleared to 0."
+        description: OBK general error interrupt enable bit
         bitOffset: 21
         bitWidth: 1
         access: read-write
@@ -648,7 +659,7 @@ registers:
             description: an interrupt is generated on OBK general access error
             value: 1
       - name: OBKWERRIE
-        description: "OBK write error interrupt enable bit\nOBKWERRIE enables generation of interrupt in case of OBK specific write error. This bit can be programmed only when LOCK bit is cleared to 0."
+        description: OBK write error interrupt enable bit
         bitOffset: 22
         bitWidth: 1
         access: read-write
@@ -660,7 +671,7 @@ registers:
             description: an interrupt is generated on OBK write error
             value: 1
       - name: OPTCHANGEERRIE
-        description: "Option byte change error interrupt enable bit\nThis bit controls if an interrupt must be generated when an error occurs during an option byte change. It can be programmed only when LOCK bit is cleared to 0."
+        description: Option byte change error interrupt enable bit
         bitOffset: 23
         bitWidth: 1
         access: read-write
@@ -672,7 +683,7 @@ registers:
             description: an interrupt is generated when and error occurs during an option byte change.
             value: 1
       - name: BKSEL
-        description: "Bank selector bit\nBKSEL can only be programmed when LOCK is cleared to 0. The bit selects physical bank, SWAP_BANK setting is ignored."
+        description: Bank selector bit
         bitOffset: 31
         bitWidth: 1
         access: read-write
@@ -688,11 +699,12 @@ registers:
     description: Secure control register
     addressOffset: 44
     size: 32
+    access: read-write
     resetValue: 1
     resetMask: 4294967295
     fields:
       - name: LOCK
-        description: "configuration lock bit \nThis bit locks the FLASH_SECCR register. The correct write sequence to FLASH_SECKEYR register unlocks this bit. If a wrong sequence is executed, or if the unlock sequence to FLASH_NSKEYR is performed twice, this bit remains locked until the next system reset. \nLOCK can be set by programming it to 1. When set to 1, a new unlock sequence is mandatory to unlock it. When LOCK changes from 0 to 1, the other bits of FLASH_SECCR register do not change."
+        description: configuration lock bit
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -704,7 +716,7 @@ registers:
             description: FLASH_SECCR register locked
             value: 1
       - name: PG
-        description: "programming control bit\nPG can be programmed only when LOCK is cleared to 0. \nPG allows programming in Bank1 and Bank2."
+        description: programming control bit
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -716,7 +728,7 @@ registers:
             description: programming enabled
             value: 1
       - name: SER
-        description: "sector erase request\nSetting SER bit to 1 requests a sector erase. SER can be programmed only when LOCK is cleared to 0. \nIf BER and MER are also set, a PGSERR is raised."
+        description: sector erase request
         bitOffset: 2
         bitWidth: 1
         access: read-write
@@ -728,7 +740,7 @@ registers:
             description: sector erase requested
             value: 1
       - name: BER
-        description: "erase request \nSetting BER bit to 1 requests a bank erase operation (user flash memory only). BER can be programmed only when LOCK is cleared to 0. \nIf MER and SER are also set, a PGSERR is raised.\nNote: Write protection error is triggered when a bank erase is required and some sectors are protected."
+        description: erase request
         bitOffset: 3
         bitWidth: 1
         access: read-write
@@ -740,17 +752,17 @@ registers:
             description: bank erase requested
             value: 1
       - name: FW
-        description: "write forcing control bit\nFW forces a write operation even if the write buffer is not full. In this case all bits not written are set to 1 by hardware. FW can be programmed only when LOCK is cleared to 0. \nThe embedded flash memory resets FW when the corresponding operation has been acknowledged. \nNote: Using a force-write operation prevents the application from updating later the missing bits with something else than 1, because it is likely that it leads to permanent ECC error.\nWrite forcing is effective only if the write buffer is not empty and was filled by secure access (in particular, FW does not start several write operations when the force-write operations are performed consecutively). \nSince there is just one write buffer, FW can force a write in bank1 or bank2."
+        description: write forcing control bit
         bitOffset: 4
         bitWidth: 1
         access: read-write
       - name: STRT
-        description: "erase start control bit\nSTRT bit is used to start a sector erase or a bank erase operation. STRT can be programmed only when LOCK is cleared to 0. \nSTRT is reseted at the end of the operation or when an error occurs. It cannot be reset by software."
+        description: erase start control bit
         bitOffset: 5
         bitWidth: 1
         access: read-write
       - name: SNB
-        description: "sector erase selection number\nThese bits are used to select the target sector for an erase operation (they are unused otherwise). SNB can be programmed only when LOCK is cleared to 0.\n.."
+        description: sector erase selection number
         bitOffset: 6
         bitWidth: 7
         access: read-write
@@ -765,7 +777,7 @@ registers:
             description: Sector 127 selected
             value: 127
       - name: MER
-        description: "mass erase request\nSetting MER bit to 1 requests a mass erase operation (user flash memory only). MER can be programmed only when LOCK is cleared to 0. \nIf BER or SER are also set, a PGSERR is raised.\nError is triggered when a mass erase is required and some sectors are protected."
+        description: mass erase request
         bitOffset: 15
         bitWidth: 1
         access: read-write
@@ -777,7 +789,7 @@ registers:
             description: mass erase requested
             value: 1
       - name: EOPIE
-        description: "end of operation interrupt control bit\nSetting EOPIE bit to 1 enables the generation of an interrupt at the end of a program/erase operation. EOPIE can be programmed only when LOCK is cleared to 0."
+        description: end of operation interrupt control bit
         bitOffset: 16
         bitWidth: 1
         access: read-write
@@ -789,7 +801,7 @@ registers:
             description: interrupt enabled when at the end of operation
             value: 1
       - name: WRPERRIE
-        description: "write protection error interrupt enable bit\nWhen WRPERRIE bit is set to 1, an interrupt is generated when a protection error occurs during a program operation. WRPERRIE can be programmed only when LOCK is cleared to 0."
+        description: write protection error interrupt enable bit
         bitOffset: 17
         bitWidth: 1
         access: read-write
@@ -801,7 +813,7 @@ registers:
             description: interrupt generated when a protection error occurs
             value: 1
       - name: PGSERRIE
-        description: "programming sequence error interrupt enable bit\nWhen PGSERRIE bit is set to 1, an interrupt is generated when a sequence error occurs during a program operation. PGSERRIE can be programmed only when LOCK is cleared to 0."
+        description: programming sequence error interrupt enable bit
         bitOffset: 18
         bitWidth: 1
         access: read-write
@@ -813,7 +825,7 @@ registers:
             description: interrupt generated when sequence error occurs
             value: 1
       - name: STRBERRIE
-        description: "strobe error interrupt enable bit\nWhen STRBERRIE bit is set to 1, an interrupt is generated when a strobe error occurs (the master programs several times the same byte in the write buffer) during a write operation. STRBERRIE can be programmed only when LOCK is cleared to 0."
+        description: strobe error interrupt enable bit
         bitOffset: 19
         bitWidth: 1
         access: read-write
@@ -825,7 +837,7 @@ registers:
             description: interrupt generated when strobe error occurs.
             value: 1
       - name: INCERRIE
-        description: "inconsistency error interrupt enable bit\nWhen INCERRIE bit is set to 1, an interrupt is generated when an inconsistency error occurs during a write operation. INCERRIE can be programmed only when LOCK is cleared to 0."
+        description: inconsistency error interrupt enable bit
         bitOffset: 20
         bitWidth: 1
         access: read-write
@@ -837,7 +849,7 @@ registers:
             description: interrupt generated when a inconsistency error occurs.
             value: 1
       - name: OBKERRIE
-        description: "OBK general error interrupt enable bit\nOBKERRIE enables generating an interrupt in case of OBK specific access error. OBKERRIE can be programmed only when LOCK is cleared to 0."
+        description: OBK general error interrupt enable bit
         bitOffset: 21
         bitWidth: 1
         access: read-write
@@ -849,7 +861,7 @@ registers:
             description: an interrupt is generated on OBK general access error
             value: 1
       - name: OBKWERRIE
-        description: "OBK write error interrupt enable bit\nOBKWERRIE enables generation of interrupt in case of OBK specific write error. OBKWERRIE can be programmed only when LOCK is cleared to 0."
+        description: OBK write error interrupt enable bit
         bitOffset: 22
         bitWidth: 1
         access: read-write
@@ -861,12 +873,12 @@ registers:
             description: an interrupt is generated on OBK write error
             value: 1
       - name: INV
-        description: "Flash memory security state invert.\nThis bit inverts the flash memory security state."
+        description: Flash memory security state invert.
         bitOffset: 29
         bitWidth: 1
         access: read-write
       - name: BKSEL
-        description: "bank selector bit\nBKSEL can only be programmed when LOCK is cleared to 0. The bit selects physical bank, SWAP_BANK setting is ignored."
+        description: Bank selector bit
         bitOffset: 31
         bitWidth: 1
         access: read-write
@@ -882,41 +894,42 @@ registers:
     description: Non-secure clear control register
     addressOffset: 48
     size: 32
+    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: CLR_EOP
-        description: "EOP flag clear bit\nSetting this bit to 1 resets to 0 EOP flag in FLASH_NSSR register."
+        description: EOP flag clear bit
         bitOffset: 16
         bitWidth: 1
         access: write-only
       - name: CLR_WRPERR
-        description: "WRPERR flag clear bit\nSetting this bit to 1 resets to 0 WRPERR flag in FLASH_NSSR register."
+        description: WRPERR flag clear bit
         bitOffset: 17
         bitWidth: 1
         access: write-only
       - name: CLR_PGSERR
-        description: "PGSERR flag clear bit\nSetting this bit to 1 resets to 0 PGSERR flag in FLASH_NSSR register."
+        description: PGSERR flag clear bit
         bitOffset: 18
         bitWidth: 1
         access: write-only
       - name: CLR_STRBERR
-        description: "STRBERR flag clear bit\nSetting this bit to 1 resets to 0 STRBERR flag in FLASH_NSSR register."
+        description: STRBERR flag clear bit
         bitOffset: 19
         bitWidth: 1
         access: write-only
       - name: CLR_INCERR
-        description: "INCERR flag clear bit\nSetting this bit to 1 resets to 0 INCERR flag in FLASH_NSSR register."
+        description: INCERR flag clear bit
         bitOffset: 20
         bitWidth: 1
         access: write-only
       - name: CLR_OBKERR
-        description: "OBKERR flag clear bit.\nSetting this bit to 1 resets to 0 OBKERR flag in FLASH_NSSR register."
+        description: OBKERR flag clear bit.
         bitOffset: 21
         bitWidth: 1
         access: write-only
       - name: CLR_OBKWERR
-        description: "OBKWERR flag clear bit.\nSetting this bit to 1 resets to 0 OBKWERR flag in FLASH_NSSR register."
+        description: OBKWERR flag clear bit.
         bitOffset: 22
         bitWidth: 1
         access: write-only
@@ -930,41 +943,42 @@ registers:
     description: Secure clear control register
     addressOffset: 52
     size: 32
+    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: CLR_EOP
-        description: "EOP flag clear bit\nSetting this bit to 1 resets to 0 EOP flag in FLASH_SECSR register."
+        description: EOP flag clear bit
         bitOffset: 16
         bitWidth: 1
         access: write-only
       - name: CLR_WRPERR
-        description: "WRPERR flag clear bit\nSetting this bit to 1 resets to 0 WRPERR flag in FLASH_SECSR register."
+        description: WRPERR flag clear bit
         bitOffset: 17
         bitWidth: 1
         access: write-only
       - name: CLR_PGSERR
-        description: "PGSERR flag clear bit\nSetting this bit to 1 resets to 0 PGSERR flag in FLASH_SECSR register."
+        description: PGSERR flag clear bit
         bitOffset: 18
         bitWidth: 1
         access: write-only
       - name: CLR_STRBERR
-        description: "STRBERR flag clear bit\nSetting this bit to 1 resets to 0 STRBERR flag in FLASH_SECSR register."
+        description: STRBERR flag clear bit
         bitOffset: 19
         bitWidth: 1
         access: write-only
       - name: CLR_INCERR
-        description: "INCERR flag clear bit\nSetting this bit to 1 resets to 0 INCERR flag in FLASH_SECSR register."
+        description: INCERR flag clear bit
         bitOffset: 20
         bitWidth: 1
         access: write-only
       - name: CLR_OBKERR
-        description: "OBKWERR flag clear bit\nSetting this bit to 1 resets to 0 OBKWERR flag in FLASH_SECSR register."
+        description: OBKWERR flag clear bit
         bitOffset: 21
         bitWidth: 1
         access: write-only
       - name: CLR_OBKWERR
-        description: "OBKWERR flag clear bit\nSetting this bit to 1 resets to 0 OBKWERR flag in FLASH_SECSR register."
+        description: OBKWERR flag clear bit
         bitOffset: 22
         bitWidth: 1
         access: write-only
@@ -973,6 +987,7 @@ registers:
     description: Privilege configuration register
     addressOffset: 60
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1005,11 +1020,12 @@ registers:
     description: Non-secure OBK configuration register
     addressOffset: 64
     size: 32
+    access: read-write
     resetValue: 33488896
     resetMask: 4294967295
     fields:
       - name: LOCK
-        description: "OBKCFGR lock option configuration bit\nThis bit locks the FLASH_NSOBKCFGR register. The correct write sequence to FLASH_NSOBKKEYR register unlocks this bit. If a wrong sequence is executed, or if the unlock sequence to FLASH_NSOBKKEYR is performed twice, this bit remains locked until the next system reset. LOCK can be set by programming it to 1. When set to 1, a new unlock sequence is mandatory to unlock it. When LOCK changes from 0 to 1, the other bits of FLASH_NSCR register do not change."
+        description: OBKCFGR lock option configuration bit
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -1021,7 +1037,7 @@ registers:
             description: FLASH_NSOBKCFGR register locked
             value: 1
       - name: SWAP_SECT_REQ
-        description: "OBK swap sector request bit\nWhen set, all the OBKs which have not been updated in the alternate sector is copied from current sector to alternate one.\nThe SWAP_OFFSET value must be a certain minimum value in order for the swap to be launched in OBK-HDPLdifferent 0. Minimum value is 16 for OBK-HDPL=1, 144 for OBK-HDPL=2 and192 for OBK-HDPL=3."
+        description: OBK swap sector request bit
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -1033,7 +1049,7 @@ registers:
             description: launch the sector swap
             value: 1
       - name: ALT_SECT
-        description: "alternate sector bit\nThis bit must not change while filling the write buffer, otherwise an error (OBKERR) is generated"
+        description: alternate sector bit
         bitOffset: 2
         bitWidth: 1
         access: read-write
@@ -1045,7 +1061,7 @@ registers:
             description: alternate OBK sector is mapped to OBK address range for access
             value: 1
       - name: ALT_SECT_ERASE
-        description: "alternate sector erase bit\nWhen ALT_SECT bit is set, use this bit to generate an erase command for the OBK alternate sector. It is set only by Software and cleared when the OBK swap operation is completed or an error occurs (PGSERR). It is reseted at the same time as BUSY bit."
+        description: alternate sector erase bit
         bitOffset: 3
         bitWidth: 1
         access: read-write
@@ -1057,7 +1073,7 @@ registers:
             description: erase the alternate OBK sector
             value: 1
       - name: SWAP_OFFSET
-        description: "Key index (offset /16 bits) pointing for next swap.\n0x01 means that only the first OBK data (128 bits) is copied from current to alternate OBK sector\n0x02 means that the two first OBK data is copied"
+        description: Key index (offset /16 bits) pointing for next swap.
         bitOffset: 16
         bitWidth: 9
         access: read-write
@@ -1066,18 +1082,19 @@ registers:
             description: means that no OBK is copied from current to alternate OBK sector during SWAP operation.
             value: 0
           - name: B_0x1FF
-            description: means that all OBK data (511) is copied
+            description: means that all OBK data (511) are copied
             value: 511
   - name: SECOBKCFGR
     displayName: SECOBKCFGR
     description: Secure OBK configuration register
     addressOffset: 68
     size: 32
+    access: read-write
     resetValue: 33488896
     resetMask: 4294967295
     fields:
       - name: LOCK
-        description: "OBKCFGR lock option configuration bit\nThis bit locks the FLASH_OBKCFGR register. The correct write sequence to FLASH_SECOBKKEYR register unlocks this bit. If a wrong sequence is executed, or if the unlock sequence to FLASH_SECOBKKEYR is performed twice, this bit remains locked until the next system reset. LOCK can be set by programming it to 1. When set to 1, a new unlock sequence is mandatory to unlock it. When LOCK changes from 0 to 1, the other bits of FLASH_NSCR register do not change."
+        description: OBKCFGR lock option configuration bit
         bitOffset: 0
         bitWidth: 1
         access: read-write
@@ -1089,7 +1106,7 @@ registers:
             description: FLASH_OBKCFGR register locked
             value: 1
       - name: SWAP_SECT_REQ
-        description: "OBK swap sector request bit\nWhen set, all the OBKs which have not been updated in the alternate sector is copied from current sector to alternate one.\nThe SWAP_OFFSET value must be a certain minimum value in order for the swap to be launched in OBK-HDPLdifferent 0. Minimum value is 16 for OBK-HDPL=1, 144 for OBK-HDPL=2 and 192 for OBK-HDPL=3."
+        description: OBK swap sector request bit
         bitOffset: 1
         bitWidth: 1
         access: read-write
@@ -1101,7 +1118,7 @@ registers:
             description: launch the sector swap
             value: 1
       - name: ALT_SECT
-        description: "alternate sector bit\nThis bit must not change while filling the write buffer, otherwise an error is generated"
+        description: alternate sector bit
         bitOffset: 2
         bitWidth: 1
         access: read-write
@@ -1113,7 +1130,7 @@ registers:
             description: alternate OBK sector is mapped to OBK address range for access
             value: 1
       - name: ALT_SECT_ERASE
-        description: "alternate sector erase bit\nWhen ALT_SECT bit is set, use this bit to generate an erase command for the OBK alternate sector. It is set only by Software and cleared when the OBK swap operation is completed or an error occurs (PGSERR). It is reseted at the same time as the BUSY bit."
+        description: alternate sector erase bit
         bitOffset: 3
         bitWidth: 1
         access: read-write
@@ -1134,29 +1151,30 @@ registers:
             description: no OBK is copied from current to alternate OBK sector during SWAP operation.
             value: 0
           - name: B_0x1
-            description: only the first OBK data (128 bits) is copied from current to alternate OBK sector
+            description: only the first OBK data (128 bits) are copied from current to alternate OBK sector
             value: 1
           - name: B_0x2
             description: the two first OBK data are copied
             value: 2
           - name: B_0x1FF
-            description: that the 511 first OBK data are copied
+            description: the 511 first OBK data are copied
             value: 511
   - name: HDPEXTR
     displayName: HDPEXTR
     description: HDP extension register
     addressOffset: 72
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: HDP1_EXT
-        description: HDP area extension in 8Kbytes sectors in Bank1. Extension is added after the HDP1_END sector (included).
+        description: HDP area extension in 8 Kbytes sectors in Bank1.
         bitOffset: 0
         bitWidth: 7
         access: read-write
       - name: HDP2_EXT
-        description: HDP area extension in 8Kbytes sectors in bank 2. Extension is added after the HDP2_END sector (included).
+        description: HDP area extension in 8 Kbytes sectors in Bank2.
         bitOffset: 16
         bitWidth: 7
         access: read-write
@@ -1165,20 +1183,21 @@ registers:
     description: Option status register
     addressOffset: 80
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
       - name: BOR_LEV
-        description: "Brownout level option status bit\nThese bits reflects the power level that generates a system reset.\n00 or 11: BOR Level 1, the threshold level is low (around 2.1V)"
+        description: Brownout level option status bit
         bitOffset: 0
         bitWidth: 2
         access: read-only
         enumeratedValues:
           - name: B_0x1
-            description: BOR Level 2, the threshold level is medium (around 2.4V)
+            description: BOR Level 2, the threshold level is medium (around 2.
             value: 1
           - name: B_0x2
-            description: BOR Level 3, the threshold level is high (around 2.7V)
+            description: BOR Level 3, the threshold level is high (around 2.
             value: 2
       - name: BORH_EN
         description: Brownout high enable
@@ -1241,36 +1260,36 @@ registers:
             description: no reset generated when entering Standby mode on core domain.
             value: 1
       - name: PRODUCT_STATE
-        description: 'Life state code (based on Hamming 8,4). More information in Section7.6.11: Product state transitions.'
+        description: Life state code (based on Hamming 8,4).
         bitOffset: 8
         bitWidth: 8
         access: read-only
       - name: IO_VDD_HSLV
-        description: "High-speed IO at low V sub DD /sub  voltage configuration bit.\nThis bit can be set only with V sub DD /sub  below 2.7V."
+        description: High-speed IO at low Vless thansub>DDless than/sub> voltage configuration bit.
         bitOffset: 16
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: High-speed IO at low V sub DD /sub  voltage feature disabled (V sub DD /sub  can exceed 2.7V)
+            description: High-speed IO at low Vless thansub>DDless than/sub> voltage feature disabled (Vless thansub>DDless than/sub> can exceed 2.
             value: 0
           - name: B_0x1
-            description: High-speed IO at low V sub DD /sub  voltage feature enabled (V sub DD /sub  remains below 2.7V)
+            description: High-speed IO at low Vless thansub>DDless than/sub> voltage feature enabled (Vless thansub>DDless than/sub> remains below 2.
             value: 1
       - name: IO_VDDIO2_HSLV
-        description: "High-speed IO at low V sub DDIO2 /sub  voltage configuration bit.\nThis bit can be set only with V sub DDIO2 /sub  below 2.7V."
+        description: High-speed IO at low Vless thansub>DDIO2less than/sub> voltage configuration bit.
         bitOffset: 17
         bitWidth: 1
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: High-speed IO at low V sub DDIO2 /sub  voltage feature disabled (V sub DDIO2 /sub  can exceed 2.7V)
+            description: High-speed IO at low Vless thansub>DDIO2less than/sub> voltage feature disabled (Vless thansub>DDIO2less than/sub> can exceed 2.
             value: 0
           - name: B_0x1
-            description: High-speed IO at low V sub DDIO2 /sub  voltage feature enabled (V sub DDIO2 /sub  remains below 2.7V)
+            description: High-speed IO at low Vless thansub>DDIO2less than/sub> voltage feature enabled (Vless thansub>DDIO2less than/sub> remains below 2.
             value: 1
       - name: IWDG_STOP
-        description: "IWDG Stop mode freeze option status bit\nWhen set the independent watchdog IWDG is in system Stop mode."
+        description: IWDG Stop mode freeze option status bit
         bitOffset: 20
         bitWidth: 1
         access: read-only
@@ -1282,7 +1301,7 @@ registers:
             description: Independent watchdog keep running in system Stop mode.
             value: 1
       - name: IWDG_STDBY
-        description: "IWDG Standby mode freeze option status bit\nWhen set the independent watchdog IWDG is frozen in system Standby mode."
+        description: IWDG Standby mode freeze option status bit
         bitOffset: 21
         bitWidth: 1
         access: read-only
@@ -1294,7 +1313,7 @@ registers:
             description: Independent watchdog keep running in Standby mode.
             value: 1
       - name: BOOT_UBE
-        description: "Available only on cryptography enabled devices.\nUnique boot entry control, selects either ST or OEM iRoT for secure boot."
+        description: Available only on cryptography enabled devices.
         bitOffset: 22
         bitWidth: 8
         access: read-only
@@ -1303,10 +1322,10 @@ registers:
             description: ST-iRoT (system flash) selected
             value: 195
           - name: B_0xB4
-            description: OEM-iRoT (user flash) selected. In Open PRODUCT_STATE this value selects bootloader. Defaut value.
+            description: OEM-iRoT (user flash) selected.
             value: 180
       - name: SWAP_BANK
-        description: "Bank swapping option status bit\nSWAP_BANK reflects whether Bank1 and Bank2 are swapped or not.  \nSWAP_BANK is loaded to SWAP_BANK of FLASH_OPTCR after a reset."
+        description: Bank swapping option status bit
         bitOffset: 31
         bitWidth: 1
         access: read-only
@@ -1322,20 +1341,21 @@ registers:
     description: Option status register
     addressOffset: 84
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: BOR_LEV
-        description: "Brownout level option configuration bit\nThese bits reflects the power level that generates a system reset.\n00 or 11: BOR Level 1, the threshold level is low (around 2.1 V)"
+        description: Brownout level option configuration bit
         bitOffset: 0
         bitWidth: 2
         access: read-write
         enumeratedValues:
           - name: B_0x1
-            description: BOR Level 2, the threshold level is medium (around 2.4 V)
+            description: BOR Level 2, the threshold level is medium (around 2.
             value: 1
           - name: B_0x2
-            description: BOR Level 3, the threshold level is high (around 2.7 V)
+            description: BOR Level 3, the threshold level is high (around 2.
             value: 2
       - name: BORH_EN
         description: Brownout high enable configuration bit
@@ -1344,10 +1364,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: disable
+            description: disabled
             value: 0
           - name: B_0x1
-            description: enable
+            description: enabled
             value: 1
       - name: IWDG_SW
         description: IWDG control mode option configuration bit
@@ -1398,36 +1418,36 @@ registers:
             description: no reset generated when entering Standby mode on core domain.
             value: 1
       - name: PRODUCT_STATE
-        description: 'Life state code (based on Hamming 8,4). More information in Section7.6.11: Product state transitions.'
+        description: Life state code (based on Hamming 8,4).
         bitOffset: 8
         bitWidth: 8
         access: read-write
       - name: IO_VDD_HSLV
-        description: "High-speed IO at low VDD voltage configuration bit.\nThis bit can be set only with VDD below 2.7V."
+        description: High-speed IO at low VDD voltage configuration bit.
         bitOffset: 16
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: High-speed IO at low VDD voltage feature disabled (VDD can exceed 2.7V)
+            description: High-speed IO at low Vless thansub>DDless than/sub> voltage feature disabled (Vless thansub>DDless than/sub> can exceed 2.
             value: 0
           - name: B_0x1
-            description: High-speed IO at low VDD voltage feature enabled (VDD remains below 2.7V)
+            description: High-speed IO at low Vless thansub>DDless than/sub> voltage feature enabled (Vless thansub>DDless than/sub> remains below 2.
             value: 1
       - name: IO_VDDIO2_HSLV
-        description: "High-speed IO at low VDDIO2 voltage configuration bit.\nThis bit can be set only with VDDIO2 below 2.7V."
+        description: High-speed IO at low Vless thansub>DDIO2less than/sub> voltage configuration bit.
         bitOffset: 17
         bitWidth: 1
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: High-speed IO at low VDDIO2 voltage feature disabled (VDDIO2 can exceed 2.7V)
+            description: High-speed IO at low Vless thansub>DDIO2less than/sub> voltage feature disabled (Vless thansub>DDIO2less than/sub> can exceed 2.
             value: 0
           - name: B_0x1
-            description: High-speed IO at low VDDIO2 voltage feature enabled (VDDIO2 remains below 2.7V)
+            description: High-speed IO at low Vless thansub>DDIO2less than/sub> voltage feature enabled (Vless thansub>DDIO2less than/sub> remains below 2.
             value: 1
       - name: IWDG_STOP
-        description: "IWDG Stop mode freeze option status bit\nWhen set the independent watchdog IWDG is in system Stop mode."
+        description: IWDG Stop mode freeze option status bit
         bitOffset: 20
         bitWidth: 1
         access: read-write
@@ -1439,7 +1459,7 @@ registers:
             description: Independent watchdog keep running in system Stop mode.
             value: 1
       - name: IWDG_STDBY
-        description: "IWDG Standby mode freeze option status bit\nWhen set the independent watchdog IWDG is frozen in system Standby mode."
+        description: IWDG Standby mode freeze option status bit
         bitOffset: 21
         bitWidth: 1
         access: read-write
@@ -1451,7 +1471,7 @@ registers:
             description: Independent watchdog keep running in Standby mode.
             value: 1
       - name: BOOT_UBE
-        description: "Available only on cryptography enabled devices.\nUnique boot entry control, selects either ST or OEM iRoT for secure boot. \nIn Open PRODUCT_STATE this value selects bootloader. Defaut value."
+        description: Available only on cryptography enabled devices.
         bitOffset: 22
         bitWidth: 8
         access: read-write
@@ -1463,7 +1483,7 @@ registers:
             description: OEM-iRoT (user flash) selected.
             value: 180
       - name: SWAP_BANK
-        description: "Bank swapping option configuration bit\nSWAP_BANK option bit is used to configure whether the Bank1 and Bank2 are swapped or not. This bit is loaded with the SWAP_BANK bit of FLASH_OPTSR_CUR register after a reset."
+        description: Bank swapping option configuration bit
         bitOffset: 31
         bitWidth: 1
         access: read-write
@@ -1479,6 +1499,7 @@ registers:
     description: Non-secure EPOCH register
     addressOffset: 96
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
@@ -1492,6 +1513,7 @@ registers:
     description: Secure EPOCH register
     addressOffset: 104
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
@@ -1505,6 +1527,7 @@ registers:
     description: Option status register 2
     addressOffset: 112
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
@@ -1581,7 +1604,7 @@ registers:
             description: Disabled
             value: 1
       - name: TZEN
-        description: "TrustZone enable configuration bits\nThis bit enables the device is in TrustZone mode during an option byte change."
+        description: TrustZone enable configuration bits
         bitOffset: 24
         bitWidth: 8
         access: read-only
@@ -1597,11 +1620,12 @@ registers:
     description: Option status register 2
     addressOffset: 116
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: SRAM1_3_RST
-        description: "SRAM1 and SRAM3 erase upon system reset\nNote: SRAM erase is triggered by option byte change operation, when enabling this feature."
+        description: SRAM1 and SRAM3 erase upon system reset
         bitOffset: 2
         bitWidth: 1
         access: read-write
@@ -1613,7 +1637,7 @@ registers:
             description: SRAM1 and SRAM3 not erased when a system reset occurs
             value: 1
       - name: SRAM2_RST
-        description: "SRAM2 erase when system reset\nNote: SRAM erase is triggered by option byte change operation, when enabling this feature."
+        description: SRAM2 erase when system reset
         bitOffset: 3
         bitWidth: 1
         access: read-write
@@ -1673,7 +1697,7 @@ registers:
             description: Disabled
             value: 1
       - name: TZEN
-        description: "TrustZone enable configuration bits\nThis bit enables the device is in TrustZone mode during an option byte change."
+        description: TrustZone enable configuration bits
         bitOffset: 24
         bitWidth: 8
         access: read-write
@@ -1689,23 +1713,24 @@ registers:
     description: Non-secure boot register
     addressOffset: 128
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
       - name: NSBOOT_LOCK
-        description: A field locking the values of SWAP_BANK, and NSBOOTADD settings.
+        description: Field locking the values of SWAP_BANK, and NSBOOTADD settings.
         bitOffset: 0
         bitWidth: 8
         access: read-only
         enumeratedValues:
           - name: B_0xC3
-            description: The SWAP_BANK and NSBOOTADD can still be modified following their individual rules.
+            description: SWAP_BANK and NSBOOTADD can still be modified following their individual rules.
             value: 195
           - name: B_0xB4
-            description: The NSBOOTADD is frozen. SWAP_ BANK can only be modified with TZEN set to 0xB4 (enabled).
+            description: NSBOOTADD is frozen.
             value: 180
       - name: NSBOOTADD
-        description: "Non secure unique boot entry address\nThese bits reflect the Non secure UBE address"
+        description: Non secure unique boot entry address
         bitOffset: 8
         bitWidth: 24
         access: read-only
@@ -1714,23 +1739,24 @@ registers:
     description: Non-secure boot register
     addressOffset: 132
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: NSBOOT_LOCK
-        description: A field locking the values of SWAP_ BANK, and NSBOOTADD settings.
+        description: Field locking the values of SWAP_ BANK, and NSBOOTADD settings.
         bitOffset: 0
         bitWidth: 8
         access: read-write
         enumeratedValues:
           - name: B_0xC3
-            description: The SWAP_ BANK and NSBOOTADD can still be modified following their individual rules.
+            description: SWAP_ BANK and NSBOOTADD can still be modified following their individual rules.
             value: 195
           - name: B_0xB4
-            description: The NSBOOTADD is frozen. SWAP_ BANK can only be modified with TZEN set to 0xB4 (enabled).
+            description: NSBOOTADD is frozen.
             value: 180
       - name: NSBOOTADD
-        description: "Non secure unique boot entry address \nThese bits allow configuring the Non secure BOOT address"
+        description: Non secure unique boot entry address
         bitOffset: 8
         bitWidth: 24
         access: read-write
@@ -1739,23 +1765,24 @@ registers:
     description: Secure boot register
     addressOffset: 136
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
       - name: SECBOOT_LOCK
-        description: A field locking the values of UBE, SWAP_BANK, and SECBOOTADD settings.
+        description: Field locking the values of UBE, SWAP_BANK, and SECBOOTADD settings.
         bitOffset: 0
         bitWidth: 8
         access: read-only
         enumeratedValues:
           - name: B_0xC3
-            description: The BOOT_UBE, SWAP_BANK and SECBOOTADD can still be modified following their individual rules.
+            description: BOOT_UBE, SWAP_BANK and SECBOOTADD can still be modified following their individual rules.
             value: 195
           - name: B_0xB4
-            description: The BOOT_UBE and SECBOOTADD are frozen. SWAP_ BANK can only be modified with TZEN set to 0xC3 (disabled).
+            description: BOOT_UBE and SECBOOTADD are frozen.
             value: 180
       - name: SECBOOTADD
-        description: "Unique boot entry secure address \nThese bits reflect the Secure UBE address"
+        description: Unique boot entry secure address
         bitOffset: 8
         bitWidth: 24
         access: read-only
@@ -1764,23 +1791,24 @@ registers:
     description: Secure boot register
     addressOffset: 140
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: SECBOOT_LOCK
-        description: A field locking the values of UBE, SWAP_ BANK, and SECBOOTADD setting.
+        description: Field locking the values of UBE, SWAP_ BANK, and SECBOOTADD setting.
         bitOffset: 0
         bitWidth: 8
         access: read-write
         enumeratedValues:
           - name: B_0xC3
-            description: The BOOT_UBE, SWAP_ BANK and SECBOOTADD can still be modified following their individual rules.
+            description: BOOT_UBE, SWAP_ BANK and SECBOOTADD can still be modified following their individual rules.
             value: 195
           - name: B_0xB4
-            description: The BOOT_UBE and SECBOOTADD are frozen. SWAP_BANK can only be modified with TZEN set to 0xC3 (disabled).
+            description: BOOT_UBE and SECBOOTADD are frozen.
             value: 180
       - name: SECBOOTADD
-        description: "Secure unique boot entry address.\nThese bits allow configuring the secure UBE address."
+        description: Secure unique boot entry address.
         bitOffset: 8
         bitWidth: 24
         access: read-write
@@ -1789,11 +1817,12 @@ registers:
     description: Non-secure OTP block lock
     addressOffset: 144
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
       - name: LOCKBL
-        description: "OTP block lock \nBlock n corresponds to OTP 16-bit word 32 x n to 32 x n + 31.\nLOCKBL[n] = 1 indicates that all OTP 16-bit words in OTP Block n are locked and attempt to program them results in WRPERR.\nLOCKBL[n] = 0 indicates that all OTP 16-bit words in OTP Block n are not locked.\nWhen one block is locked, it's not possible to remove the write protection.\nAlso if not locked, it is not possible to erase OTP words."
+        description: OTP block lock
         bitOffset: 0
         bitWidth: 32
         access: read-only
@@ -1802,179 +1831,189 @@ registers:
     description: Non-secure OTP block lock
     addressOffset: 148
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: LOCKBL
-        description: "OTP block lock \nBlock n corresponds to OTP 16-bit word 32 x n to 32 x n + 31.\nLOCKBL[n] = 1 indicates that all OTP 16-bit words in OTP Block n are locked and attempt to program them results in WRPERR.\nLOCKBL[n] = 0 indicates that all OTP 16-bit words in OTP Block n are not locked.\nWhen one block is locked, it is not possible to remove the write protection.\nLOCKBL bits can be set if the corresponding bit in FLASH_OTPBLR_CUR is cleared."
+        description: OTP block lock
         bitOffset: 0
         bitWidth: 32
         access: read-write
   - name: SECBB1R1
     displayName: SECBB1R1
-    description: Secure block based register for Bank 1
+    description: Secure block based register for Bank1
     addressOffset: 160
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SECBB1
-        description: Secure/non-secure 8Kbytes flash Bank 1 sector attributes
+        description: Secure/non-secure 8 Kbytes flash Bank1 sector attributes
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sector (32 * (x-1) + y) in bank 1 is non secure.
+            description: sector (32 * (x-1) + y) in Bank1 is non secure.
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 1 is secure.
+            description: sector (32 * (x-1) + y) in Bank1 is secure.
             value: 1
   - name: SECBB1R2
     displayName: SECBB1R2
-    description: Secure block based register for Bank 1
+    description: Secure block based register for Bank1
     addressOffset: 164
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SECBB1
-        description: Secure/non-secure 8Kbytes flash Bank 1 sector attributes
+        description: Secure/non-secure 8 Kbytes flash Bank1 sector attributes
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sector (32 * (x-1) + y) in bank 1 is non secure.
+            description: sector (32 * (x-1) + y) in Bank1 is non secure.
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 1 is secure.
+            description: sector (32 * (x-1) + y) in Bank1 is secure.
             value: 1
   - name: SECBB1R3
     displayName: SECBB1R3
-    description: Secure block based register for Bank 1
+    description: Secure block based register for Bank1
     addressOffset: 168
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SECBB1
-        description: Secure/non-secure 8Kbytes flash Bank 1 sector attributes
+        description: Secure/non-secure 8 Kbytes flash Bank1 sector attributes
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sector (32 * (x-1) + y) in bank 1 is non secure.
+            description: sector (32 * (x-1) + y) in Bank1 is non secure.
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 1 is secure.
+            description: sector (32 * (x-1) + y) in Bank1 is secure.
             value: 1
   - name: SECBB1R4
     displayName: SECBB1R4
-    description: Secure block based register for Bank 1
+    description: Secure block based register for Bank1
     addressOffset: 172
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SECBB1
-        description: Secure/non-secure 8Kbytes flash Bank 1 sector attributes
+        description: Secure/non-secure 8 Kbytes flash Bank1 sector attributes
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sector (32 * (x-1) + y) in bank 1 is non secure.
+            description: sector (32 * (x-1) + y) in Bank1 is non secure.
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 1 is secure.
+            description: sector (32 * (x-1) + y) in Bank1 is secure.
             value: 1
   - name: PRIVBB1R1
     displayName: PRIVBB1R1
-    description: Privilege block based register for Bank 1
+    description: Privilege block based register for Bank1
     addressOffset: 192
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PRIVBB1
-        description: Privileged/unprivileged 8-Kbyte flash Bank 1 sector attribute
+        description: Privileged/unprivileged 8-Kbyte flash Bank1 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 1 is unprivileged.
+            description: sectors (32 * (x-1) + y) in Bank1 is unprivileged.
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 1 is privileged.
+            description: sector (32 * (x-1) + y) in Bank1 is privileged.
             value: 1
   - name: PRIVBB1R2
     displayName: PRIVBB1R2
-    description: Privilege block based register for Bank 1
+    description: Privilege block based register for Bank1
     addressOffset: 196
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PRIVBB1
-        description: Privileged/unprivileged 8-Kbyte flash Bank 1 sector attribute
+        description: Privileged/unprivileged 8-Kbyte flash Bank1 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 1 is unprivileged.
+            description: sectors (32 * (x-1) + y) in Bank1 is unprivileged.
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 1 is privileged.
+            description: sector (32 * (x-1) + y) in Bank1 is privileged.
             value: 1
   - name: PRIVBB1R3
     displayName: PRIVBB1R3
-    description: Privilege block based register for Bank 1
+    description: Privilege block based register for Bank1
     addressOffset: 200
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PRIVBB1
-        description: Privileged/unprivileged 8-Kbyte flash Bank 1 sector attribute
+        description: Privileged/unprivileged 8-Kbyte flash Bank1 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 1 is unprivileged.
+            description: sectors (32 * (x-1) + y) in Bank1 is unprivileged.
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 1 is privileged.
+            description: sector (32 * (x-1) + y) in Bank1 is privileged.
             value: 1
   - name: PRIVBB1R4
     displayName: PRIVBB1R4
-    description: Privilege block based register for Bank 1
+    description: Privilege block based register for Bank1
     addressOffset: 204
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PRIVBB1
-        description: Privileged/unprivileged 8-Kbyte flash Bank 1 sector attribute
+        description: Privileged/unprivileged 8-Kbyte flash Bank1 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 1 is unprivileged.
+            description: sectors (32 * (x-1) + y) in Bank1 is unprivileged.
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 1 is privileged.
+            description: sector (32 * (x-1) + y) in Bank1 is privileged.
             value: 1
   - name: SECWM1R_CUR
     displayName: SECWM1R_CUR
-    description: Security watermark for Bank 1
+    description: Security watermark for Bank1
     addressOffset: 224
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4278255360
     fields:
@@ -1990,9 +2029,10 @@ registers:
         access: read-only
   - name: SECWM1R_PRG
     displayName: SECWM1R_PRG
-    description: Security watermark for Bank 1
+    description: Security watermark for Bank1
     addressOffset: 228
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4278255360
     fields:
@@ -2008,55 +2048,58 @@ registers:
         access: read-write
   - name: WRP1R_CUR
     displayName: WRP1R_CUR
-    description: Write sector group protection for Bank 1
+    description: Write sector group protection for Bank1
     addressOffset: 232
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
       - name: WRPSG1
-        description: "Bank 1 sector group protection option status byte\nEach FLASH_WRP1R_CUR bit reflects the write protection status of the corresponding group of four consecutive sectors in bank 1 (0: the group is write protected; 1: the group is not write protected)\nBit 0: Group embedding sectors 0 to 3\nBit 1: Group embedding sectors 4 to 7\nBit N: Group embedding sectors 4 x N to 4 x N + 3\nBit 31: Group embedding sectors 124 to 127"
+        description: Bank1 sector group protection option status byte
         bitOffset: 0
         bitWidth: 32
         access: read-only
   - name: WRP1R_PRG
     displayName: WRP1R_PRG
-    description: Write sector group protection for Bank 1
+    description: Write sector group protection for Bank1
     addressOffset: 236
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: WRPSG1
-        description: "Bank1 sector group protection option status byte\nSetting WRPSG1 bits to 0 write protects the corresponding group of four consecutive sectors in bank 1 (0: the group is write protected; 1: the group is not write protected)\nBit 0: Group embedding sectors 0 to 3\nBit 1: Group embedding sectors 4 to 7\nBit N: Group embedding sectors 4 x N to 4 x N + 3\nBit 31: Group embedding sectors 124 to 127"
+        description: Bank1 sector group protection option status byte
         bitOffset: 0
         bitWidth: 32
         access: read-write
   - name: EDATA1R_CUR
     displayName: EDATA1R_CUR
-    description: Data sector configuration Bank 1
+    description: Data sector configuration Bank1
     addressOffset: 240
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
       - name: EDATA1_STRT
-        description: "EDATA1_STRT contains the start sectors of the flash high-cycle data area in Bank1 There is no hardware effect to those bits. They shall be managed by ST tools in Flasher.\n..."
+        description: EDATA1_STRT contains the start sectors of the flash high-cycle data area in Bank1 There is no hardware effect to those bits.
         bitOffset: 0
         bitWidth: 3
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: The last sector of the Bank1 is reserved for flash high-cycle data
+            description: The last sector of Bank1 is reserved for flash high-cycle data
             value: 0
           - name: B_0x1
-            description: The two last sectors of the Bank 1 are reserved for flash high-cycle data
+            description: The two last sectors of Bank1 are reserved for flash high-cycle data
             value: 1
           - name: B_0x2
-            description: The three last sectors of the Bank 1 are reserved for flash high-cycle data
+            description: The three last sectors of Bank1 are reserved for flash high-cycle data
             value: 2
           - name: B_0x7
-            description: The eight last sectors of the Bank 1 are reserved for flash high-cycle data
+            description: The eight last sectors of Bank1 are reserved for flash high-cycle data
             value: 7
       - name: EDATA1_EN
         description: Bank1 flash high-cycle data enable
@@ -2072,29 +2115,30 @@ registers:
             value: 1
   - name: EDATA1R_PRG
     displayName: EDATA1R_PRG
-    description: Data sector configuration Bank 1
+    description: Data sector configuration Bank1
     addressOffset: 244
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: EDATA1_STRT
-        description: "EDATA1_STRT contains the start sectors of the flash high-cycle data area in Bank 1 There is no hardware effect to those bits. They shall be managed by ST tools in Flasher.\n...\nNote: 111: The eight last sectors of the Bank 1 are reserved for flash high-cycle data"
+        description: EDATA1_STRT contains the start sectors of the flash high-cycle data area in Bank1 There is no hardware effect to those bits.
         bitOffset: 0
         bitWidth: 3
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: The last sector of the Bank 1 is reserved for flash high-cycle data
+            description: The last sector of Bank1 is reserved for flash high-cycle data
             value: 0
           - name: B_0x1
-            description: The two last sectors of the Bank 1 are reserved for flash high-cycle data
+            description: The two last sectors of Bank1 are reserved for flash high-cycle data
             value: 1
           - name: B_0x2
-            description: The three last sectors of the Bank 1 are reserved for flash high-cycle data
+            description: The three last sectors of Bank1 are reserved for flash high-cycle data
             value: 2
       - name: EDATA1_EN
-        description: Bank 1 flash high-cycle data enable
+        description: Bank1 flash high-cycle data enable
         bitOffset: 15
         bitWidth: 1
         access: read-write
@@ -2107,9 +2151,10 @@ registers:
             value: 1
   - name: HDP1R_CUR
     displayName: HDP1R_CUR
-    description: HDP Bank 1 configuration
+    description: HDP Bank1 configuration
     addressOffset: 248
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
@@ -2125,9 +2170,10 @@ registers:
         access: read-only
   - name: HDP1R_PRG
     displayName: HDP1R_PRG
-    description: HDP Bank 1 configuration
+    description: HDP Bank1 configuration
     addressOffset: 252
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
@@ -2146,41 +2192,42 @@ registers:
     description: ECC correction register
     addressOffset: 256
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: ADDR_ECC
-        description: "ECC error address\nWhen an ECC error occurs (for single correction) during a read operation, the ADDR_ECC contains the address that generated the error. \nADDR_ECC is reset when the flag error is reset. \nThe flash interface programs the address in this register only when no ECC error flags are set. This means that only the first address that generated an ECC error is saved.\nThe address in ADDR_ECC is relative to the flash memory area where the error occurred (user flash memory, system flash memory, data area, read-only/OTP area)."
+        description: ECC error address
         bitOffset: 0
         bitWidth: 16
         access: read-only
       - name: OBK_ECC
-        description: Single ECC error corrected in flash OB Keys storage area. It indicates the OBK storage concerned by ECC error.
+        description: Single ECC error corrected in flash OB Keys storage area.
         bitOffset: 20
         bitWidth: 1
         access: read-only
       - name: EDATA_ECC
-        description: "ECC fail for corrected ECC error in flash high-cycle data area\nIt indicates if flash high-cycle data area is concerned by ECC error."
+        description: ECC fail for corrected ECC error in flash high-cycle data area
         bitOffset: 21
         bitWidth: 1
         access: read-only
       - name: BK_ECC
-        description: "ECC fail bank for corrected ECC error\nIt indicates which bank is concerned by ECC error"
+        description: ECC fail bank for corrected ECC error
         bitOffset: 22
         bitWidth: 1
         access: read-only
       - name: SYSF_ECC
-        description: "ECC fail for corrected ECC error in system flash memory\nIt indicates if system flash memory is concerned by ECC error."
+        description: ECC fail for corrected ECC error in system flash memory
         bitOffset: 23
         bitWidth: 1
         access: read-only
       - name: OTP_ECC
-        description: "OTP ECC error bit\nThis bit is set to 1 when one single ECC correction occurred during the last successful read operation from the read-only/ OTP area. The address of the ECC error is available in ADDR_ECC bitfield."
+        description: OTP ECC error bit
         bitOffset: 24
         bitWidth: 1
         access: read-only
       - name: ECCCIE
-        description: "ECC single correction error interrupt enable bit\nWhen ECCCIE bit is set to 1, an interrupt is generated when an ECC single correction error occurs during a read operation."
+        description: ECC single correction error interrupt enable bit
         bitOffset: 25
         bitWidth: 1
         access: read-write
@@ -2192,7 +2239,7 @@ registers:
             description: non-secure interrupt generated when an ECC single correction error occurs
             value: 1
       - name: ECCC
-        description: "ECC correction set by hardware when single ECC error has been detected and corrected.\nCleared by writing 1."
+        description: ECC correction set by hardware when single ECC error has been detected and corrected.
         bitOffset: 30
         bitWidth: 1
         access: read-write
@@ -2201,41 +2248,42 @@ registers:
     description: ECC detection register
     addressOffset: 260
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: ADDR_ECC
-        description: "ECC error address\nWhen an ECC error occurs (double detection) during a read operation, the ADDR_ECC contains the address that generated the error. \nADDR_ECC is reset when the flag error is reset. \nThe flash interface programs the address in this register only when no ECC error flags are set. This means that only the first address that generated an double ECC error is saved.\nThe address in ADDR_ECC is relative to the flash memory area where the error occurred (user flash memory, system flash memory, data area, read-only/OTP area)."
+        description: ECC error address
         bitOffset: 0
         bitWidth: 16
         access: read-only
       - name: OBK_ECC
-        description: ECC fail double ECC error in flash OB Keys storage area. It indicates the OBK storage concerned by ECC error.
+        description: ECC fail double ECC error in flash OB Keys storage area.
         bitOffset: 20
         bitWidth: 1
         access: read-only
       - name: EDATA_ECC
-        description: "ECC fail double ECC error in flash high-cycle data area\nIt indicates if flash high-cycle data area is concerned by ECC error."
+        description: ECC fail double ECC error in flash high-cycle data area
         bitOffset: 21
         bitWidth: 1
         access: read-only
       - name: BK_ECC
-        description: "ECC fail bank for double ECC error\nIt indicates which bank is concerned by ECC error"
+        description: ECC fail bank for double ECC error
         bitOffset: 22
         bitWidth: 1
         access: read-only
       - name: SYSF_ECC
-        description: "ECC fail for double ECC error in system flash memory\nIt indicates if system flash memory is concerned by ECC error."
+        description: ECC fail for double ECC error in system flash memory
         bitOffset: 23
         bitWidth: 1
         access: read-only
       - name: OTP_ECC
-        description: "OTP ECC error bit\nThis bit is set to 1 when double ECC detection occurred during the last read operation from the read-only/ OTP area. The address of the ECC error is available in ADDR_ECC bitfield."
+        description: OTP ECC error bit
         bitOffset: 24
         bitWidth: 1
         access: read-only
       - name: ECCD
-        description: "ECC detection\nSet by hardware when two ECC error has been detected.\nWhen this bit is set, a NMI is generated.\nCleared by writing 1. Needs to be cleared in order to detect subsequent double ECC errors."
+        description: ECC detection
         bitOffset: 31
         bitWidth: 1
         access: read-write
@@ -2244,258 +2292,272 @@ registers:
     description: ECC data
     addressOffset: 264
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: DATA_ECC
-        description: "ECC error data\nWhen an double detection ECC error occurs on special areas with 6-bit ECC on 16-bit data (data area, read-only/OTP area), the failing data is read to this register.\nBy checking if it is possible to determine whether the failure was on a real data, or due to access to uninitialized memory."
+        description: ECC error data
         bitOffset: 0
         bitWidth: 16
         access: read-only
   - name: SECBB2R1
     displayName: SECBB2R1
-    description: Secure block-based register for Bank 2
+    description: Secure block-based register for Bank2
     addressOffset: 416
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SECBB2
-        description: Secure/non-secure flash Bank 2 sector attribute
+        description: Secure/non-secure flash Bank2 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 2 is non secure
+            description: sectors (32 * (x-1) + y) in Bank2 is non secure
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 2 is secure
+            description: sector (32 * (x-1) + y) in Bank2 is secure
             value: 1
   - name: SECBB2R2
     displayName: SECBB2R2
-    description: Secure block-based register for Bank 2
+    description: Secure block-based register for Bank2
     addressOffset: 420
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SECBB2
-        description: Secure/non-secure flash Bank 2 sector attribute
+        description: Secure/non-secure flash Bank2 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 2 is non secure
+            description: sectors (32 * (x-1) + y) in Bank2 is non secure
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 2 is secure
+            description: sector (32 * (x-1) + y) in Bank2 is secure
             value: 1
   - name: SECBB2R3
     displayName: SECBB2R3
-    description: Secure block-based register for Bank 2
+    description: Secure block-based register for Bank2
     addressOffset: 424
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SECBB2
-        description: Secure/non-secure flash Bank 2 sector attribute
+        description: Secure/non-secure flash Bank2 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 2 is non secure
+            description: sectors (32 * (x-1) + y) in Bank2 is non secure
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 2 is secure
+            description: sector (32 * (x-1) + y) in Bank2 is secure
             value: 1
   - name: SECBB2R4
     displayName: SECBB2R4
-    description: Secure block-based register for Bank 2
+    description: Secure block-based register for Bank2
     addressOffset: 428
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: SECBB2
-        description: Secure/non-secure flash Bank 2 sector attribute
+        description: Secure/non-secure flash Bank2 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 2 is non secure
+            description: sectors (32 * (x-1) + y) in Bank2 is non secure
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 2 is secure
+            description: sector (32 * (x-1) + y) in Bank2 is secure
             value: 1
   - name: PRIVBB2R1
     displayName: PRIVBB2R1
-    description: Privilege block-based register for Bank 2
+    description: Privilege block-based register for Bank2
     addressOffset: 448
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PRIVBB2
-        description: Privileged / non-privileged 8-Kbyte flash Bank 2 sector attribute
+        description: Privileged / non-privileged 8-Kbyte flash Bank2 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 2 is unprivileged
+            description: sectors (32 * (x-1) + y) in Bank2 is unprivileged
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 2 is privileged
+            description: sector (32 * (x-1) + y) in Bank2 is privileged
             value: 1
   - name: PRIVBB2R2
     displayName: PRIVBB2R2
-    description: Privilege block-based register for Bank 2
+    description: Privilege block-based register for Bank2
     addressOffset: 452
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PRIVBB2
-        description: Privileged / non-privileged 8-Kbyte flash Bank 2 sector attribute
+        description: Privileged / non-privileged 8-Kbyte flash Bank2 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 2 is unprivileged
+            description: sectors (32 * (x-1) + y) in Bank2 is unprivileged
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 2 is privileged
+            description: sector (32 * (x-1) + y) in Bank2 is privileged
             value: 1
   - name: PRIVBB2R3
     displayName: PRIVBB2R3
-    description: Privilege block-based register for Bank 2
+    description: Privilege block-based register for Bank2
     addressOffset: 456
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PRIVBB2
-        description: Privileged / non-privileged 8-Kbyte flash Bank 2 sector attribute
+        description: Privileged / non-privileged 8-Kbyte flash Bank2 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 2 is unprivileged
+            description: sectors (32 * (x-1) + y) in Bank2 is unprivileged
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 2 is privileged
+            description: sector (32 * (x-1) + y) in Bank2 is privileged
             value: 1
   - name: PRIVBB2R4
     displayName: PRIVBB2R4
-    description: Privilege block-based register for Bank 2
+    description: Privilege block-based register for Bank2
     addressOffset: 460
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: PRIVBB2
-        description: Privileged / non-privileged 8-Kbyte flash Bank 2 sector attribute
+        description: Privileged / non-privileged 8-Kbyte flash Bank2 sector attribute
         bitOffset: 0
         bitWidth: 32
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: sectors (32 * (x-1) + y) in bank 2 is unprivileged
+            description: sectors (32 * (x-1) + y) in Bank2 is unprivileged
             value: 0
           - name: B_0x1
-            description: sector (32 * (x-1) + y) in bank 2 is privileged
+            description: sector (32 * (x-1) + y) in Bank2 is privileged
             value: 1
   - name: SECWM2R_CUR
     displayName: SECWM2R_CUR
-    description: Security watermark for Bank 2
+    description: Security watermark for Bank2
     addressOffset: 480
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4278255360
     fields:
-      - name: SECWM_STRT2
+      - name: SECWM2_STRT
         description: Bank2 security WM area start sector
         bitOffset: 0
         bitWidth: 7
         access: read-only
-      - name: SECWM_END2
+      - name: SECWM2_END
         description: Bank2 security WM end sector
         bitOffset: 16
         bitWidth: 7
         access: read-only
   - name: SECWM2R_PRG
     displayName: SECWM2R_PRG
-    description: Security watermark for Bank 2
+    description: Security watermark for Bank2
     addressOffset: 484
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4278255360
     fields:
-      - name: SECWM_STRT2
-        description: Bank 2 security WM area start sector
+      - name: SECWM2_STRT
+        description: Bank2 security WM area start sector
         bitOffset: 0
         bitWidth: 7
         access: read-write
-      - name: SECWM_END2
-        description: Bank 2 security WM area end sector
+      - name: SECWM2_END
+        description: Bank2 security WM area end sector
         bitOffset: 16
         bitWidth: 7
         access: read-write
   - name: WRP2R_CUR
     displayName: WRP2R_CUR
-    description: Write sector group protection for Bank 2
+    description: Write sector group protection for Bank2
     addressOffset: 488
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
       - name: WRPSG2
-        description: "Bank2 sector group protection option status byte\nEach FLASH_WRP2R_CUR bit reflects the write protection status of the corresponding group of 4 consecutive sectors in bank 2 (0: group is write protected; 1: group is not write protected)\nBit 0: Group embedding sectors 0 to 3\nBit 1: Group embedding sectors 4 to 7\nBit N: Group embedding sectors 4 x N to 4 x N + 3\nBit 31: Group embedding sectors 124 to 127"
+        description: Bank2 sector group protection option status byte
         bitOffset: 0
         bitWidth: 32
         access: read-only
   - name: WRP2R_PRG
     displayName: WRP2R_PRG
-    description: Write sector group protection for Bank 2
+    description: Write sector group protection for Bank2
     addressOffset: 492
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: WRPSG2
-        description: "Bank 2 sector group protection option status byte\nSetting WRPSGn2 bits to 0 write protects the corresponding group of four consecutive sectors in Bank 2 (0: group is write protected; 1: group is not write protected)\nBit 0: Group embedding sectors 0 to 3\nBit 1: Group embedding sectors 4 to 7\nBit N: Group embedding sectors 4 x N to 4 x N + 3\nBit 31: Group embedding sectors 124 to 127"
+        description: Bank2 sector group protection option status byte
         bitOffset: 0
         bitWidth: 32
         access: read-write
   - name: EDATA2R_CUR
     displayName: EDATA2R_CUR
-    description: Data sectors configuration Bank 2
+    description: Data sectors configuration Bank2
     addressOffset: 496
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
       - name: EDATA2_STRT
-        description: "EDATA2_STRT contains the start sectors of the flash high-cycle data area in Bank 2 There is no hardware effect to those bits. They shall be managed by ST tools in Flasher.\n...\nNote: 111: The eight last sectors of the Bank 2 are reserved for flash high-cycle data"
+        description: EDATA2_STRT contains the start sectors of the flash high-cycle data area in Bank2 There is no hardware effect to those bits.
         bitOffset: 0
         bitWidth: 3
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: The last sector of the bank 2is reserved for flash high-cycle data
+            description: The last sector of Bank2 is reserved for flash high-cycle data
             value: 0
           - name: B_0x1
-            description: The two last sectors of the Bank 2 are reserved for flash high-cycle data
+            description: The two last sectors of Bank2 are reserved for flash high-cycle data
             value: 1
           - name: B_0x2
-            description: The three last sectors of the Bank 2 are reserved for flash high-cycle data
+            description: The three last sectors of Bank2 are reserved for flash high-cycle data
             value: 2
       - name: EDATA2_EN
         description: Bank2 flash high-cycle data enable
@@ -2511,29 +2573,30 @@ registers:
             value: 1
   - name: EDATA2R_PRG
     displayName: EDATA2R_PRG
-    description: Data sector configuration Bank 2
+    description: Data sector configuration Bank2
     addressOffset: 500
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:
       - name: EDATA2_STRT
-        description: "EDATA2_STRT contains the start sectors of the flash high-cycle data area in Bank 2 There is no hardware effect to those bits. They shall be managed by ST tools in Flasher.\n...\nNote: 111: The eight last sectors of the Bank 2 are reserved for flash high-cycle data."
+        description: EDATA2_STRT contains the start sectors of the flash high-cycle data area in Bank2 There is no hardware effect to those bits.
         bitOffset: 0
         bitWidth: 3
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: The last sector of the Bank 2 is reserved for flash high-cycle data.
+            description: The last sector of Bank2 is reserved for flash high-cycle data.
             value: 0
           - name: B_0x1
-            description: The two last sectors of the Bank 2 are reserved for flash high-cycle data.
+            description: The two last sectors of Bank2 are reserved for flash high-cycle data.
             value: 1
           - name: B_0x2
-            description: The three last sectors of the Bank 2 are reserved for flash high-cycle data.
+            description: The three last sectors of Bank2 are reserved for flash high-cycle data.
             value: 2
       - name: EDATA2_EN
-        description: Bank 2 flash high-cycle data enable
+        description: Bank2 flash high-cycle data enable
         bitOffset: 15
         bitWidth: 1
         access: read-write
@@ -2546,9 +2609,10 @@ registers:
             value: 1
   - name: HDP2R_CUR
     displayName: HDP2R_CUR
-    description: HDP Bank 2 configuration
+    description: HDP Bank2 configuration
     addressOffset: 504
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 0
     fields:
@@ -2564,9 +2628,10 @@ registers:
         access: read-only
   - name: HDP2R_PRG
     displayName: HDP2R_PRG
-    description: HDP Bank 2 configuration
+    description: HDP Bank2 configuration
     addressOffset: 508
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 0
     fields:

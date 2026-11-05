@@ -1392,7 +1392,33 @@ shared_blocks:
     description: Ethernet MAC (Synopsys DWC EQOS)
     params:
       - {name: has_mdio_intr, type: bool, default: false, description: MDIO completion interrupt (MDIOIS/MDIOIE in MACISR/MACIER)}
+      - name: gen
+        type: int
+        default: 1
+        description: >-
+          ETH IP generation.  1: DMACMFCR_V1 at 0x116C (RM0481 ch. 63 - STM32H563/H573;
+          STM32H7; STM32H7RS).  2: DMACMFCR at 0x1164, plus MACWJBTR jabber timeout,
+          MACPRSTIMR/MACPRSTIMUR, MDIO interrupt and further HW-feature bits
+          (RM0481 ch. 64 - STM32H543/H553; STM32H5Ex/H5Fx; STM32C5).
     transforms:
+      # DMACMFCR moved between the IP generations (`gen`): 0x1164 in the
+      # source (gen 2), 0x116C in gen 1.  Both are kept under distinct names.
+      - type: patchRegisters
+        registers:
+          - {name: DMACMFCR, description: 'Channel missed frame count register (gen 2; gen 1 has DMACMFCR_V1)'}
+      - type: cloneRegister
+        source: DMACMFCR
+        name: DMACMFCR_V1
+        addressOffset: 4460            # 0x116C
+        description: Channel missed frame count register (gen 1; gen 2 has DMACMFCR)
+      - type: patchAddressBlock
+        size: 4464                     # 0x1170: up to the end of DMACMFCR_V1
+      # SVD bug (H5E5, H56x): ACTPHYSEL is 3 bits; RM0481 has ACTPHYSEL[3:0]
+      # (bits 31:28) in both Ethernet chapters, as does the H543/H553 SVD.
+      - type: patchFields
+        register: MACHWF0R
+        fields:
+          - {name: ACTPHYSEL, bitWidth: 4}
       # Split MAC address fields into individual bytes and add MBC/SA to MACA0HR
       - type: patchFields
         register: MACA0LR
@@ -2433,7 +2459,7 @@ families:
           HASH: {gen: 2}
           CRS: {trim_width: 7}
           RTC: {has_binary: true, has_privcfgr: true}
-          ETH: {has_mdio_intr: true}
+          ETH: {has_mdio_intr: true, gen: 2}
     chip_connections:
       _all:
         _all:
@@ -5578,6 +5604,8 @@ families:
         chips:
           - STM32H523
           - STM32H533
+          - STM32H543
+          - STM32H553
           - STM32H562
           - STM32H563
           - STM32H573
@@ -5591,10 +5619,15 @@ families:
     blocks:
       ADC:
         from: STM32H503.ADC
-        instances: [ADC, ADC1, ADC2, ADC2_S, ADC_S, SEC_ADC1, SEC_ADC2]
+        instances: [ADC, ADC1, ADC1_S, ADC2, ADC2_S, ADC3, ADC3_S, ADC_S, SEC_ADC1, SEC_ADC2]
         variants:
           H52x_H57x:
+            # RM0481 names; the H523/H533 SVDs drop the number.
+            rename_instances: {ADC: ADC1, ADC_S: ADC1_S}
             from: STM32H573.ADC1
+            transforms:
+              - type: mergeFrom
+                chips: [STM32H533, STM32H553]
           H5Ex_H5Fx:
             from: STM32H5F5.ADC
         outputs:
@@ -5602,7 +5635,8 @@ families:
             pattern: '^(ADC1|ADC3|ADC4|ADC5|ADC2)$'
       ADC_Common:
         from: STM32H523.ADCC
-        instances: [ADCC, SEC_ADCC]
+        # H543/H553 have two: ADCC12 (ADC1/ADC2) and ADCC3 (ADC3).
+        instances: [ADCC, ADCC12, ADCC12_S, ADCC3, ADCC3_S, SEC_ADCC]
         transforms:
           - {type: renameRegisters, pattern: ^ADC_, replacement: ''}
       AES:
@@ -5616,20 +5650,34 @@ families:
             pattern: '^(TIM6|TIM3|TIM9)$'
       COMP:
         from: STM32H503.COMP
-        instances: [COMP]
+        instances: [COMP, COMP_S]
         variants:
+          # H543/H553 and H5Ex/H5Fx have a dual comparator (C1*/C2* in SR/ICFR,
+          # CFGR2 is the second comparator's config); the two SVDs agree.
+          H52x_H57x:
+            from: STM32H553.COMP
           H5Ex_H5Fx:
             from: STM32H5F5.COMP
-        # H5 COMP is single-channel (one CFGR1 + one CFGR2, only C1* fields in
-        # SR/ICFR).  One INTR and one OUT — no per-channel split needed.
+        # H503 COMP is single-channel (CFGR2 holds only INPSEL0, only C1*
+        # fields in SR/ICFR).  One INTR and one OUT per block.
         outputs:
           INTR:
             pattern: '^COMP$'
           OUT:
             description: Comparator output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0492 ch.11)
+      CCB:
+        # Coupling and chaining bridge (RM0481 ch. "CCB"), STM32H553 only.
+        from: STM32H553.CCB
+        instances: [CCB, CCB_S]
+      CEC:
+        uses: CEC
+        instances: [CEC, CEC_S, SEC_CEC]
+        outputs:
+          INTR:
+            pattern: '^CEC$'
       CORDIC:
         uses: CORDIC
-        instances: [CORDIC, SEC_CORDIC]
+        instances: [CORDIC, CORDIC_S, SEC_CORDIC]
       CRC:
         uses: CRC
         instances: [CRC, CRC_S, SEC_CRC]
@@ -5651,6 +5699,12 @@ families:
         variants:
           H52x_H57x:
             from: STM32H573.DBGMCU
+            transforms:
+              - type: mergeFrom
+                chips: [STM32H533, STM32H553]
+                presence:              # see RCC
+                  - pattern: '\w+FZR\.DBG_(I2C4|I3C2|LPTIM[3-6]|TIM1[2-7])_STOP'
+                    instance: '\1'
           H5Ex_H5Fx:
             from: STM32H5F5.DBGMCU
       DCACHE:
@@ -5661,7 +5715,7 @@ families:
         instances: [DCMI, DCMI_S, SEC_DCMI]
       DLYB:
         uses: DLYB
-        instances: [DLYBOS1, DLYBSD1, DLYBSD2, SEC_DLYBOS1, SEC_DLYBSD1, SEC_DLYBSD2]
+        instances: [DLYBOS1, DLYBOS1_S, DLYBSD1, DLYBSD1_S, DLYBSD2, SEC_DLYBOS1, SEC_DLYBSD1, SEC_DLYBSD2]
       DTS:
         from: STM32H503.DTS
         instances: [DTS, DTS_S, SEC_DTS]
@@ -5670,13 +5724,22 @@ families:
             pattern: '^DTS_WKUP$'
       ETH:
         uses: ETH
-        instances: [ETH, SEC_ETH]
+        instances: [ETH, ETH_S, SEC_ETH]
       EXTI:
         from: STM32H503.EXTI
         instances: [EXTI, EXTI_S, SEC_EXTI]
         variants:
           H52x_H57x:
             from: STM32H573.EXTI
+            transforms:
+              # H533 is not merged: its SVD places EXTICR4 at 0x060 (SVD bug)
+              # and it has nothing H553 lacks.
+              - type: mergeFrom
+                chips: [STM32H553]
+                presence:
+                  # SVD bugs: H523/H533 misplace EXTICR4, H543/H553 omit
+                  # EXTICR1-4.  RM0481 documents them for every die.
+                  - {pattern: 'EXTICR[1-4]', chips: [STM32H523, STM32H533, STM32H543, STM32H553, STM32H562, STM32H563, STM32H573]}
           H5Ex_H5Fx:
             from: STM32H5F5.EXTI
         outputs:
@@ -5714,7 +5777,9 @@ families:
             pattern: '^EXTI15$'
       FDCAN:
         uses: FDCAN
-        instances: [FDCAN, FDCAN1, FDCAN2, FDCAN2_S, FDCAN_S, SEC_FDCAN1, SEC_FDCAN2]
+        instances: [FDCAN, FDCAN1, FDCAN1_S, FDCAN2, FDCAN2_S, FDCAN_S, SEC_FDCAN1, SEC_FDCAN2]
+        # RM0481 names; the H523/H533 SVDs drop the number.
+        rename_instances: {FDCAN: FDCAN1, FDCAN_S: FDCAN1_S}
         description: Controller area network with flexible data-rate (Bosch M_CAN)
       FMAC:
         uses: FMAC
@@ -5727,7 +5792,11 @@ families:
         instances: [FLASH, FLASH_S, SEC_FLASH]
         variants:
           H52x_H57x:
-            from: STM32H573.FLASH
+            # H533 source: its SVD uses RM0481's field names.
+            from: STM32H533.FLASH
+            transforms:
+              - type: mergeFrom
+                chips: [STM32H573, STM32H553]
           H5Ex_H5Fx:
             from: STM32H5F5.FLASH
         outputs:
@@ -5738,28 +5807,41 @@ families:
             pattern: '^FLASH_S$'
       GPDMA:
         uses: GPDMA
-        instances: [GPDMA, GPDMA1, GPDMA2, GPDMA2_S, GPDMA_S, SEC_GPDMA1, SEC_GPDMA2]
+        instances: [GPDMA, GPDMA1, GPDMA1_S, GPDMA2, GPDMA2_S, GPDMA_S, SEC_GPDMA1, SEC_GPDMA2]
+        variants:
+          H52x_H57x:
+            # RM0481 names; the H523/H533 SVDs drop the number.  H503 and
+            # H5Ex_H5Fx keep their SVD names for now.
+            rename_instances: {GPDMA: GPDMA1, GPDMA_S: GPDMA1_S}
       GPIO:
         uses: GPIO
         instances: [GPIOA, GPIOA_S, GPIOB, GPIOB_S, GPIOC, GPIOC_S, GPIOD, GPIOD_S, GPIOE, GPIOE_S, GPIOF, GPIOF_S, GPIOG, GPIOG_S, GPIOH, GPIOH_S, GPIOI, SEC_GPIOA, SEC_GPIOB, SEC_GPIOC, SEC_GPIOD, SEC_GPIOE, SEC_GPIOF, SEC_GPIOG, SEC_GPIOH, SEC_GPIOI]
       Timer:
         uses: TimerV2
-        instances: [SEC_TIM1, SEC_TIM12, SEC_TIM13, SEC_TIM14, SEC_TIM15, SEC_TIM16, SEC_TIM17, SEC_TIM2, SEC_TIM3, SEC_TIM4, SEC_TIM5, SEC_TIM8, TIM1, TIM12, TIM13, TIM14, TIM15, TIM15_S, TIM16, TIM17, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8, TIM8_S]
+        instances: [SEC_TIM1, SEC_TIM12, SEC_TIM13, SEC_TIM14, SEC_TIM15, SEC_TIM16, SEC_TIM17, SEC_TIM2, SEC_TIM3, SEC_TIM4, SEC_TIM5, SEC_TIM8, TIM1, TIM12, TIM12_S, TIM13, TIM14, TIM15, TIM15_S, TIM16, TIM17, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8, TIM8_S]
       HASH:
         uses: HASH
         instances: [HASH, HASH_S, SEC_HASH]
       I2C:
         uses: I2C
-        instances: [I2C, I2C1, I2C2, I2C2_S, I2C3, I2C3_S, I2C4, I2C_S, SEC_I2C1, SEC_I2C2, SEC_I2C3, SEC_I2C4]
+        instances: [I2C, I2C1, I2C1_S, I2C2, I2C2_S, I2C3, I2C3_S, I2C4, I2C_S, SEC_I2C1, SEC_I2C2, SEC_I2C3, SEC_I2C4]
+        # RM0481 names; the H523/H533 SVDs drop the number.
+        rename_instances: {I2C: I2C1, I2C_S: I2C1_S}
       I3C:
         uses: I3C
-        instances: [I3C, I3C1, I3C2, I3C2_S, I3C_S, SEC_I3C]
+        instances: [I3C, I3C1, I3C1_S, I3C2, I3C2_S, I3C_S, SEC_I3C, SEC_I3C1]
+        # RM0481 names; the H523/H533 SVDs drop the number (H56x: I3C).
+        rename_instances: {I3C: I3C1, I3C_S: I3C1_S, SEC_I3C: SEC_I3C1}
         outputs:
           ERR:
             pattern: '^I3C1_ERR$'
       ICACHE:
         uses: ICACHE
         instances: [ICACHE, ICACHE_S, SEC_ICACHE]
+        outputs:
+          INTR:
+            # H543/H553 SVDs name the vector ICACHE1.
+            pattern: '^ICACHE1?$'
       IWDG:
         uses: IWDG
         instances: [IWDG, IWDG_S, SEC_IWDG]
@@ -5777,22 +5859,57 @@ families:
         instances: [OPAMP1]
       OTFDEC:
         from: STM32H533.OTFDEC
-        instances: [OTFDEC, OTFDEC1, OTFDEC_S, SEC_OTFDEC1]
+        instances: [OTFDEC, OTFDEC1, OTFDEC1_S, OTFDEC_S, SEC_OTFDEC1]
+        # RM0481 names; the H523/H533 SVDs drop the number.
+        rename_instances: {OTFDEC: OTFDEC1, OTFDEC_S: OTFDEC1_S}
         outputs:
           INTR:
             pattern: '^(OTFDEC1|OTFDEC2)$'
       PKA:
         uses: PKA
         instances: [PKA, PKA_S, SEC_PKA]
+      PLAY:
+        # Programmable logic array (RM0481 ch. "PLAY"), STM32H543/H553.  RCC
+        # calls the instance PLAY1; the SVD peripheral is PLAY.
+        from: STM32H553.PLAY
+        instances: [PLAY, PLAY_S]
+        outputs:
+          INTR:
+            pattern: '^PLAY1_NS$'
+          INTR_S:
+            description: Secure PLAY interrupt (TrustZone secure world)
+            pattern: '^PLAY1_S$'
       PSSI:
         uses: PSSI
         instances: [PSSI, PSSI_S, SEC_PSSI]
       PWR:
         from: STM32H503.PWR
         instances: [PWR, PWR_S, SEC_PWR]
+        params:
+          - name: pmcr_alt1
+            type: bool
+            default: false
+            description: PMCR_ALT1 is the valid view of PMCR (SRAM2_16LSO/SRAM2_16HSO/SRAM2_48SO/SRAM1SO at bits 24-27, RM0481 "[alternate] PWR_PMCR"), not PMCR (SRAM2_16SO/SRAM2_48SO/SRAM1SO at 24-26).  Only meaningful where the model has both views.
         variants:
           H52x_H57x:
-            from: STM32H573.PWR
+            # PMCR bits 23-27 differ between dies (RM0481 PWR_PMCR and its two
+            # "[alternate]" sections): H56x has SRAM2_16SO/SRAM2_48SO/SRAM1SO at
+            # 24/25/26, H52x/H54x have SRAM2_16LSO/SRAM2_16HSO/SRAM2_48SO/SRAM1SO
+            # at 24-27.  The H533 SVD carries both views (PMCR and its
+            # alternate); the param pmcr_alt1 says which one applies.
+            from: STM32H533.PWR
+            transforms:
+              - type: renameRegisters
+                pattern: '^PMCR_ALTERNATE1$'
+                replacement: PMCR_ALT1
+              - type: mergeFrom
+                chips: [STM32H573]
+                annotate: false        # annotated by the next step
+              - type: mergeFrom
+                chips: [STM32H553]
+                registers: {PMCR: PMCR_ALT1}
+                presence:              # datasheets: Ethernet parts only
+                  - {pattern: 'PMCR(_ALT1)?\.ETHERNETSO', chips: [STM32H543, STM32H553, STM32H563, STM32H573]}
           H5Ex_H5Fx:
             from: STM32H5F5.PWR
       RAMCFG:
@@ -5801,6 +5918,9 @@ families:
         variants:
           H52x_H57x:
             from: STM32H573.RAMCFG
+            transforms:
+              - type: mergeFrom
+                chips: [STM32H533, STM32H553]
           H5Ex_H5Fx:
             from: STM32H5F5.RAMCFG
         outputs:
@@ -5811,7 +5931,31 @@ families:
         instances: [RCC, RCC_S, SEC_RCC]
         variants:
           H52x_H57x:
-            from: STM32H573.RCC
+            # Superset over the three RM0481 dies.  H533 is the source because
+            # its SVD uses RM0481's field names (PLLxM, ADCRST, FDCANRST,
+            # USBRST, VREFBUFEN, UART12SEL, ...) and has SRAM2EN/SRAM3EN at
+            # the RM positions (the H56x SVDs swap them).
+            from: STM32H533.RCC
+            transforms:
+              - type: mergeFrom
+                chips: [STM32H573, STM32H553]
+                # The SVDs describe the die, not the part: a bit for a
+                # peripheral is present on every part of the die.  Notes for
+                # peripheral bits therefore follow the chip models' instance
+                # lists (SVD peripherals corrected by chip_instances against
+                # the datasheets and ST's CMSIS headers).
+                presence:
+                  - pattern: '\w+\.(ADC3|AES|CCB|COMP|CORDIC|FMAC|GPIOI|I2C4|I3C2|LPTIM[3-6]|OTFDEC1|PKA|SAES|SAI[12]|SDMMC2|SPI[56]|TIM1[2-7]|UART(?:7|8|9|12)|USART1[01])(RST|EN|LPEN|SEL)'
+                    instance: '\1'
+                  - pattern: 'AHB1(RSTR|ENR|LPENR)\.ETH(RST|EN|TXEN|RXEN|LPEN|TXLPEN|RXLPEN)'
+                    instance: 'ETH'
+              # H56x SVD bug: SW/SWS are 3 bits wide there; RM0481 has
+              # SW[1:0] (bits 1:0) and SWS[1:0] (bits 4:3) on every die.
+              - type: patchFields
+                register: CFGR1
+                fields:
+                  - {name: SW, bitWidth: 2}
+                  - {name: SWS, bitWidth: 2}
           H5Ex_H5Fx:
             from: STM32H5F5.RCC
         outputs:
@@ -5842,25 +5986,45 @@ families:
         instances: [SBS, SBS_S, SEC_SBS]
         variants:
           H52x_H57x:
-            from: STM32H573.SBS
+            # H533 source: its SVD uses RM0481's field names.
+            from: STM32H533.SBS
+            transforms:
+              - type: mergeFrom
+                chips: [STM32H573, STM32H553]
+                presence:              # datasheets: Ethernet parts only
+                  - {pattern: 'PMCR\.ETH_SEL_PHY', chips: [STM32H543, STM32H553, STM32H563, STM32H573]}
           H5Ex_H5Fx:
             from: STM32H5F5.SBS
       SDMMC:
         uses: SDMMC
-        instances: [SDMMC, SDMMC1, SDMMC2, SDMMC_S, SEC_SDMMC1, SEC_SDMMC2]
+        instances: [SDMMC, SDMMC1, SDMMC1_S, SDMMC2, SDMMC_S, SEC_SDMMC1, SEC_SDMMC2]
+        # RM0481 names; the H523/H533 SVDs drop the number.
+        rename_instances: {SDMMC: SDMMC1, SDMMC_S: SDMMC1_S}
         description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
       SPI:
         uses: ModernSPI
-        instances: [SEC_SPI1, SEC_SPI2, SEC_SPI3, SEC_SPI4, SEC_SPI5, SEC_SPI6, SPI, SPI1, SPI2, SPI2_S, SPI3, SPI3_S, SPI4, SPI4_S, SPI5, SPI6, SPI_S]
+        instances: [SEC_SPI1, SEC_SPI2, SEC_SPI3, SEC_SPI4, SEC_SPI5, SEC_SPI6, SPI, SPI1, SPI1_S, SPI2, SPI2_S, SPI3, SPI3_S, SPI4, SPI4_S, SPI5, SPI6, SPI_S]
+        variants:
+          H52x_H57x:
+            # RM0481 names; the H523/H533 SVDs drop the number.  H503 and
+            # H5Ex_H5Fx keep their SVD names for now.
+            rename_instances: {SPI: SPI1, SPI_S: SPI1_S}
       TAMP:
         uses: TAMP
         instances: [SEC_TAMP, TAMP, TAMP_S]
       UCPD:
         uses: UCPD
         instances: [SEC_UCPD1, UCPD, UCPD1, UCPD_S]
+        variants:
+          H52x_H57x:
+            # RM0481 names; the H523/H533 SVDs drop the number.  H503 and
+            # H5Ex_H5Fx keep their SVD names for now.
+            rename_instances: {UCPD: UCPD1, UCPD_S: UCPD1_S}
       USART:
         uses: USART
-        instances: [SEC_UART12, SEC_UART4, SEC_UART5, SEC_UART7, SEC_UART8, SEC_UART9, SEC_USART1, SEC_USART10, SEC_USART11, SEC_USART2, SEC_USART3, SEC_USART6, UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART8, UART9, USART, USART1, USART10, USART11, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
+        instances: [SEC_UART12, SEC_UART4, SEC_UART5, SEC_UART7, SEC_UART8, SEC_UART9, SEC_USART1, SEC_USART10, SEC_USART11, SEC_USART2, SEC_USART3, SEC_USART6, UART12, UART4, UART4_S, UART5, UART5_S, UART7, UART7_S, UART8, UART8_S, UART9, USART, USART1, USART10, USART11, USART1_S, USART2, USART2_S, USART3, USART3_S, USART6, USART6_S, USART_S]
+        # RM0481 names; the H523/H533 SVDs drop the number.
+        rename_instances: {USART: USART1, USART_S: USART1_S}
         outputs:
           INTR:
             pattern: '^(USART1|USART2|USART3|USART6|USART10|USART11|UART4|UART5|UART7|UART8|UART9|UART12|USART7|USART5|USART4)$'
@@ -5876,6 +6040,35 @@ families:
       WWDG:
         uses: WWDG
         instances: [SEC_WWDG, WWDG, WWDG_S]
+    chip_instances:
+      H52x_H57x:
+        # SVD bug (H543/H553, DFP v2.3.1): TIM13/TIM14 are listed, but RM0481
+        # Rev. 5 (fig. 591 note 2) excludes them on STM32H523/533 and
+        # STM32H543/553, and the H543/H553 RCC has no TIM13EN/TIM14EN.
+        STM32H543: {exclude: [TIM13, TIM14]}
+        STM32H553: {exclude: [TIM13, TIM14]}
+        # SVD bug: the H523/H533/H562/H563/H573 SVDs omit HDMI-CEC, which every
+        # H52x_H57x datasheet lists ("One HDMI-CEC").  Base address from ST's
+        # CMSIS device headers (CEC_BASE_NS = APB1 + 0x7000, as in the H543/
+        # H553 SVDs); RM0481 Rev. 5's memory maps disagree (see SVD_ERRATA.md).
+        # PKA: RM0481 ("STM32H523/543/562/563xx devices use the PKA in limited
+        # mode") and the datasheets list it on every part, ST's CMSIS headers
+        # define PKA_BASE_NS = AHB2 + 0xA2000, but the H523/H562/H563 SVDs omit
+        # it.
+        # TIM12: the H523 datasheet lists it ("TIM2, TIM3, TIM4, TIM5, TIM12,
+        # TIM15"), as does the CMSIS header (APB1 + 0x1800); the SVD omits it.
+        STM32H523: {add: {CEC: {baseAddress: 0x40007000}, CEC_S: {baseAddress: 0x50007000},
+                          PKA: {baseAddress: 0x420C2000}, PKA_S: {baseAddress: 0x520C2000},
+                          TIM12: {baseAddress: 0x40001800}, TIM12_S: {baseAddress: 0x50001800}}}
+        STM32H533: {add: {CEC: {baseAddress: 0x40007000}, CEC_S: {baseAddress: 0x50007000}}}
+        # H562 has one FDCAN and one SDMMC (datasheet table 2; the CMSIS
+        # header has no FDCAN2/DLYB_SDMMC2); its SVD lists FDCAN2 and DLYBSD2.
+        STM32H562: {exclude: [FDCAN2, SEC_FDCAN2, DLYBSD2, SEC_DLYBSD2],
+                    add: {CEC: {baseAddress: 0x40007000}, SEC_CEC: {baseAddress: 0x50007000},
+                          PKA: {baseAddress: 0x420C2000}, SEC_PKA: {baseAddress: 0x520C2000}}}
+        STM32H563: {add: {CEC: {baseAddress: 0x40007000}, SEC_CEC: {baseAddress: 0x50007000},
+                          PKA: {baseAddress: 0x420C2000}, SEC_PKA: {baseAddress: 0x520C2000}}}
+        STM32H573: {add: {CEC: {baseAddress: 0x40007000}, SEC_CEC: {baseAddress: 0x50007000}}}
     chip_connections:
       H52x_H57x:
         _all:
@@ -5890,6 +6083,22 @@ families:
           RTC: {INTR: [NVIC.18], S: [NVIC.19]}
           RTC_S: {}
           SEC_RTC: {}
+          # H543/H553 SVDs attach PLAY1_S (vector 148) to the PLAY_S alias;
+          # keep both vectors on the base instance as for RTC/RCC/Flash.
+          PLAY: {INTR: [NVIC.163], INTR_S: [NVIC.164]}
+          PLAY_S: {INTR_S: []}
+          # HDMI-CEC: vector 119 in all three RM0481 vector tables (NVIC.135);
+          # needed where the SVD lacks the peripheral (see chip_instances).
+          CEC: {INTR: [NVIC.135]}
+          # PKA: vector 118 (RM0481 vector tables) -> NVIC.134; needed where
+          # the SVD lacks the peripheral (see chip_instances).
+          PKA: {INTR: [NVIC.134]}
+          # TIM12 on H523 (added via chip_instances): vector 120 -> NVIC.136.
+          TIM12: {INTR: [NVIC.136]}
+          PKA_S: {}
+          SEC_PKA: {}
+          CEC_S: {}
+          SEC_CEC: {}
     chip_params:
       _all:
         _all:
@@ -5903,10 +6112,22 @@ families:
           OPAMP: {single: true}
           GPIO: {has_hslvr: true}
           SAI: {has_pdm: true, has_mcken: true}
+          # `SPI` is the block name, so this is the block-level default and
+          # reaches every SPI without its own entry (it is also H5Ex's
+          # un-numbered SPI1).  I2S exists on SPI1-3 only (RM0481 memory map
+          # "SPIx/I2Sx"; datasheets: 4 SPI, 3 I2S), so SPI4-6 opt out.
           SPI: {has_i2s: true}
           SPI_S: {has_i2s: true}
+          SPI4: {has_i2s: false}
+          SPI4_S: {has_i2s: false}
+          SEC_SPI4: {has_i2s: false}
+          SPI5: {has_i2s: false}
+          SEC_SPI5: {has_i2s: false}
+          SPI6: {has_i2s: false}
+          SEC_SPI6: {has_i2s: false}
           SPI1: {has_i2s: true}
           SEC_SPI1: {has_i2s: true}
+          SPI1_S: {has_i2s: true}
           SPI2: {has_i2s: true}
           SPI2_S: {has_i2s: true}
           SEC_SPI2: {has_i2s: true}
@@ -5923,8 +6144,10 @@ families:
           SEC_UART5: {synchronous: 0}
           UART7: {synchronous: 0}
           SEC_UART7: {synchronous: 0}
+          UART7_S: {synchronous: 0}
           UART8: {synchronous: 0}
           SEC_UART8: {synchronous: 0}
+          UART8_S: {synchronous: 0}
           UART9: {synchronous: 0}
           SEC_UART9: {synchronous: 0}
           TIM2: {width32: true, encoder: 3, sms_preload: 2}
@@ -5935,6 +6158,7 @@ families:
           SEC_TIM5: {width32: true, encoder: 3, sms_preload: 2}
           TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false, encoder: 3}
           SEC_TIM12: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false, encoder: 3}
+          TIM12_S: {max_channel: 1, has_centerPWM: false, has_etr: false, has_dma_burst: false, encoder: 3}
           TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           SEC_TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
           TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false}
@@ -5968,9 +6192,21 @@ families:
       H52x_H57x:
         _all:
           SDMMC: {has_dlyb: true}
+        STM32H523:
+          PWR: {pmcr_alt1: true}
+        STM32H533:
+          PWR: {pmcr_alt1: true}
+        STM32H543:
+          PWR: {pmcr_alt1: true}
+          # RM0481 ch. 64 Ethernet (newer IP than H563/H573's ch. 63)
+          ETH: {has_mdio_intr: true, gen: 2}
+        STM32H553:
+          PWR: {pmcr_alt1: true}
+          # RM0481 ch. 64 Ethernet (newer IP than H563/H573's ch. 63)
+          ETH: {has_mdio_intr: true, gen: 2}
       H5Ex_H5Fx:
         _all:
-          ETH: {has_mdio_intr: true}
+          ETH: {has_mdio_intr: true, gen: 2}
           SDMMC: {has_dlyb: true}
   H7:
     svd:

@@ -1,6 +1,6 @@
 # Task: Restructure the STM32H5 block models (and add STM32H543/H553)
 
-Status: **Phase A done and verified (2026-11-05); Phase B not started.**
+Status: **Phase A done (2026-11-05).  Phase B: family blocks, H543/H553, per-part presence and ETH done; other shared blocks open.**
 Started 2026-11-04.
 
 ## Why
@@ -35,7 +35,7 @@ existing chips:
    Rev. 5) are in `docs/ST/` (local, gitignored); the datasheet is in the
    user's Databook folder.
 
-## Phase A (done, WIP)
+## Phase A (done)
 
 - 29 `X_S` blocks folded; `SEC_X` instances added to 47 blocks.
 - Variants for ADC, COMP, DAC, DBGMCU, EXTI, Flash, PWR, RAMCFG, RCC, SBS.
@@ -71,7 +71,7 @@ existing chips:
   and RNG (H5Ex_H5Fx), ModernSPI (−1, H5Ex_H5Fx), ETH (−2, H563/H573),
   AES_V3/SAES (−1, H573).
 
-## Phase B (todo): supersets inside H52x_H57x
+## Phase B (in progress): supersets inside H52x_H57x
 
 There are 31 blocks with more than one layout inside H52x_H57x, 19 of them
 cross-family shared blocks. A change to a shared block requires regenerating
@@ -108,7 +108,92 @@ H543/H553 carry newer IP than H523/H533:
 - PWR, SBS (ETH bits), EXTI (no EXTICR).
 - SAES: fewer key fields.
 
-## H543/H553 (after Phase B)
+### Phase B findings: bits that genuinely differ (2026-11-05)
+
+User guidance: bits present only on some chips need no union. They go
+into the superset, and their description names the chips that have them;
+drivers must not touch them elsewhere.  Only bits/registers whose meaning
+or position differs between chips need a union.  Field names follow RM0481.
+
+`h5_conflicts.py` compares all die groups (incl. H543/H553) bit by bit.
+Outcome:
+
+- **Genuine, needs a union:**
+  - PWR PMCR bits 23–27: H56x has SRAM2_16SO@24, SRAM2_48SO@25 and
+    SRAM1SO@26.  H52x/H54x have SRAM2_16LSO@24, SRAM2_16HSO@25,
+    SRAM2_48SO@26 and SRAM1SO@27.  RM0481 has PWR_PMCR plus two
+    "[alternate] PWR_PMCR" sections (pp. 460/462/464), and the H523 SVD
+    already encodes PMCR + PMCR_ALTERNATE1 (alternateRegister).
+  - ETH (shared) DMACMFCR: 0x116C on the RM0481 ch. 63 IP (H563/H573,
+    and H7), 0x1164 on the ch. 64 IP (H543/H553; also H5Ex, which is the
+    shared model's source).  The shared model is therefore wrong for
+    H7/H563/H573 today.  The offsets don't overlap, so this needs two
+    names, not overlaid views.
+- **SVD bugs (no union):**
+  - RCC AHB2ENR SRAM2EN/SRAM3EN are swapped in the H56x SVDs; RM0481 has
+    a single description (SRAM3EN=31, SRAM2EN=30).  The current
+    H52x_H57x RCC model has the bug.
+  - EXTI: the H523/H533 SVDs place EXTICR4 at 0x060; the H543/H553 SVDs
+    omit EXTICR1–4, which RM0481 documents for all dies.
+- **Widenings (superset = wider field):** RCC CFGR1.SW/SWS, CRC REV_OUT,
+  HASH NBWE/NBWP, I3C SDA_HD, SBS ETH_SEL_PHY, TAMP ATCKSEL, ETH
+  ACTPHYSEL.
+- **Naming only:** RCC (ADC12/ADC, FDCAN12/FDCAN, USBFS/USB, DIVMx/PLLxM,
+  VREF/VREFBUF, UCPD/UCPD1, USART12SEL/UART12SEL), Flash SECWM2,
+  DAC HFSEL, ADC EXTSEL split, SBS FMP/FMPLUS, OTFDEC REGx_, TAMP
+  POM/NOER and RPCFGR/ERCFGR (RM: POM, RPCFGR), I3C SMODE/RMODE (RM:
+  SMODE), OCTOSPI MSEL/FSEL (RM: MSEL), and the per-die SVD spellings
+  of the existing USART/LPUART/LPTIM/Timer/I3C alternate-register views.
+
+### Phase B progress (2026-11-05)
+
+Mechanism: new `mergeFrom` transform (see CLAUDE.md, Transformation
+framework).  Each H52x_H57x variant takes a source chip and merges the
+other dies.  Bits that differ only in presence stay in the model with an
+"Only on <chips>." note.
+
+Done:
+- [x] RCC (source H533, merge H573+H553; SW/SWS restored to 2 bits), PWR
+      (source H533 with PMCR + PMCR_ALT1, param `pmcr_alt1`), EXTI (H573 +
+      H553, EXTICR presence override), DBGMCU, SBS, Flash, RAMCFG, ADC,
+      COMP (new H52x_H57x variant from H553: dual comparator, identical to
+      H5F5).  Source chips were chosen so field names match RM0481.
+- [x] H543/H553 added to H52x_H57x and to test/h5.  New blocks: CCB
+      (H553), PLAY (both vectors on the base instance), CEC (shared ST/CEC,
+      which also gives H5Ex its CEC).  ADC3 joins ADC and ADCC12/ADCC3 join
+      ADC_Common.  The `_S` aliases of numbered instances (ADC1_S, SPI1_S,
+      ...) are added, with mirrored chip_params.  ICACHE vector `ICACHE1`
+      is mapped.  Phantom TIM13/TIM14 are excluded.
+- [x] SVD_ERRATA.md entries for all of the above.
+
+Open:
+- [x] Presence notes per part (2026-11-05): the datasheets are in
+      C:\Databook\ST\Processor (WSL: /mnt/c/Databook/ST/Processor), and
+      ST's CMSIS device headers are on GitHub (STMicroelectronics/
+      cmsis-device-h5).  The chip instance lists were checked against both.
+      CEC was added (5 parts), PKA added (H523/H562/H563), TIM12 added
+      (H523), and FDCAN2/DLYBSD2 excluded on H562.  RCC/DBGMCU notes for
+      peripheral bits follow the instance lists (`presence: {instance}`);
+      bits without an instance keep their SVD-derived notes.  Remaining
+      differences against the headers are naming only.
+- [x] Instance names numbered within H52x_H57x (`rename_instances`; user
+      decision: H52x_H57x only, H503/H5Ex keep their SVD names for now).
+- [x] Fixed: SPI4-6 had has_i2s=true through the block-level `SPI` key.
+- [x] ETH (shared, 2026-11-05): DMACMFCR_V1 @0x116C + int param `gen`
+      (1: RM0481 ch. 63 IP - H563/H573, H7, H7RS; 2: ch. 64 IP - H543/H553,
+      H5Ex, C5).  The address block is extended to 0x1170, ACTPHYSEL is
+      widened to 4 bits (SVD bug), and H543/H553 get the missing
+      has_mdio_intr.  H7/H7RS/C5/H5 regenerated.  ETH now covers every SVD
+      field on H563/H573/H553/H5F5/H7RS.
+- [x] ETH on C5: MAC10BT1SCR (10BASE-T1S PMD transceiver control, 0x220)
+      is deliberately not modelled until RM0522 documents it (user
+      decision 2026-11-05; see SVD_ERRATA.md, C5).
+- [ ] Shared-block presence gaps (ICACHE CRR, SDMMC, TAMP, HASH, RNG,
+      ...): mergeFrom with `annotate: false`, cross-family regen.
+- [ ] Cosmetic: the H52x_H57x RCC lists output INTR_S before INTR,
+      because outputs follow the source SVD's interrupt order.
+
+## H543/H553 (done 2026-11-05; original plan)
 
 - Add both chips to H52x_H57x `chips:` (the supplement is already configured).
 - Peripherals with no block yet: **ADC3**, **ADCC12/ADCC3** (H533/H563 call
@@ -140,6 +225,11 @@ supplement checkout in `build/_deps/stm32h5_svd_supplement-src`.
 - `h5_phaseA_plan.py` / `h5_phaseA_apply.py`: the Phase A config edit
   (fold, SEC_ instances, variants). They are kept for reference, already
   applied, and not idempotent.
+- `h5_diff.py <PERIPH> [ref chip]`: field-level diff of one block across
+  the H52x_H57x die groups.
+- `h5_conflicts.py`: classifies every per-die difference (regmove, moved,
+  clash, regname, widen, split, rename); only the first three can need a
+  union.
 - `model_vs_svd.py WORK|<git-rev> [--covers]`: whether chip instance models
   match their own SVD (exact field positions), or with `--covers` whether
   they cover every SVD field bit.  Takes ~3 min.

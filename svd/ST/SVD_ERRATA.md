@@ -29,6 +29,17 @@ ETH is present only on C59x/C5A3 chips. Worked around via `chip_interrupts`
 (INTR at 94, WKUP at 95).
 
 
+### ETH: MAC10BT1SCR deliberately not modelled
+
+The C59x/C5Ax SVDs (v1.0) have ETH_MAC10BT1SCR at 0x220 (10BASE-T1S control:
+transceiver register access, sleep/wake-up, reset command, transceiver
+state).  It belongs to the OPEN Alliance 10BASE-T1S PMD Transceiver
+Interface, which the datasheets list: PCS/PMA/PLCA on chip, with an external
+PMD-only transceiver.  RM0522 Rev. 1 doesn't document the register, or
+10BASE-T1S at all.  It is left out of the shared ST/ETH model until the
+reference manual documents it.  (A full 10BASE-T1S PHY on MII/RMII needs no
+MAC support, so other chips aren't affected.)
+
 ## ST STM32F7
 
 References:
@@ -295,6 +306,75 @@ address 0x0048 (position 2) and RTC_S (secure) at 0x004C (position 3) for
 all of its chips; the H523/H533 SVDs list both.  Wired via
 `chip_connections` (`RTC: {INTR: [NVIC.18], S: [NVIC.19]}`) for the whole
 H52x_H57x subfamily.
+
+### RCC: SRAM2EN/SRAM3EN swapped, SW/SWS too wide (H562/H563/H573)
+
+The H56x SVDs (v2.0) put AHB2ENR.SRAM2EN at bit 31 and SRAM3EN at bit 30,
+and make CFGR1.SW and SWS 3 bits wide.  RM0481 Rev. 5 has a single
+description for all dies: SRAM3EN = bit 31, SRAM2EN = bit 30, SW[1:0] at
+bits 1:0, SWS[1:0] at bits 4:3.  The H523/H533 SVDs agree with the RM.  The
+H52x_H57x RCC model is sourced from H533; the SW/SWS widening that the
+merge picks up from H573 is undone by a `patchFields`.
+
+### EXTI: EXTICR misplaced (H523/H533) or missing (H543/H553)
+
+The H523/H533 SVDs place EXTICR4 (EXTI12..15) at 0x060, over EXTICR1, and
+have nothing at 0x06C.  The H543/H553 SVDs (DFP v2.3.1) omit EXTICR1-4.
+RM0481 documents EXTICR1-4 at 0x060-0x06C for every die.  The H52x_H57x
+EXTI model is sourced from H573; a `presence:` override keeps the merge from
+annotating EXTICR as chip-specific.
+
+### TIM13/TIM14 listed on H543/H553
+
+The H543/H553 SVDs (DFP v2.3.1) list TIM13 and TIM14, but RM0481 (fig. 591,
+note 2) says they are not available on STM32H523/533 and STM32H543/553, and
+the H543/H553 RCC has no TIM13EN/TIM14EN.  Excluded via `chip_instances`.
+
+### Peripheral lists: omitted and phantom peripherals
+
+ST's H5 SVDs describe each die's register bits, but their peripheral lists
+are per part, and a few are wrong.  Checked against the datasheets (H523/
+H533/H543/H553 Rev. 2, H562/H563 and H573 Rev. 3) and ST's CMSIS device
+headers (STMicroelectronics/cmsis-device-h5); fixed with `chip_instances`:
+
+- HDMI-CEC is missing on H523/H533/H562/H563/H573, although every datasheet
+  lists "One HDMI-CEC".  The base address is 0x40007000 (CMSIS
+  `CEC_BASE_NS` = APB1 + 0x7000, also in the H543/H553 SVDs); RM0481 Rev. 5's
+  memory maps say 0x40006800 (H52x/H54x tables) or 0x40006C00 (H56x table),
+  and mark 0x40007000 reserved.  The CMSIS headers and SVDs agree with each
+  other, so we use 0x40007000.  The vector is 119 in all RM0481 vector
+  tables.
+- PKA is missing on H523/H562/H563.  RM0481: "STM32H523/543/562/563xx devices
+  use the PKA in limited mode".  It is in the datasheets and the CMSIS headers
+  (AHB2 + 0xA2000).
+- TIM12 is missing on H523 (datasheet: "TIM2, TIM3, TIM4, TIM5, TIM12, TIM15";
+  CMSIS APB1 + 0x1800).
+- FDCAN2 and DLYBSD2 are phantoms on H562 (datasheet table 2: one FDCAN and
+  one SDMMC on H562; no FDCAN2/DLYB_SDMMC2 in the CMSIS header).
+
+### Instance names without the number (H523/H533, H56x I3C)
+
+The H523/H533 SVDs name ADC, FDCAN, GPDMA, I2C, I3C, SDMMC, SPI, USART,
+UCPD and OTFDEC without the instance number; the other dies (same base
+addresses) and RM0481 use ADC1, FDCAN1, .... The H56x SVDs say I3C for
+I3C1.  Canonicalised for H52x_H57x via `rename_instances`.  H503 and
+H5Ex_H5Fx still use their SVD spellings (ADC, GPDMA, SPI, UCPD).
+
+### ETH: DMACMFCR offset per IP generation; ACTPHYSEL width
+
+Not an SVD bug, but two ETH IP generations with one shared model: RM0481
+ch. 63 (H563/H573, and likewise H7/H7RS) has DMACMFCR at 0x116C, while ch. 64
+(H543/H553, and H5Ex/C5, the model's source) has it at 0x1164.  The shared
+`ST/ETH` model keeps both (DMACMFCR, DMACMFCR_V1) and the `gen` param selects
+the valid one.  SVD bug: the H5E5 and H56x SVDs give MACHWF0R.ACTPHYSEL 3
+bits; RM0481 has ACTPHYSEL[3:0] in both chapters.
+
+### PWR PMCR: two layouts (not an SVD bug)
+
+PMCR bits 23-27 differ between the dies (RM0481 PWR_PMCR plus two
+"[alternate] PWR_PMCR" sections).  The H523/H533 SVDs carry both views
+(PMCR and PMCR_ALTERNATE1), and the model keeps them as PMCR/PMCR_ALT1, with the
+`pmcr_alt1` param selecting the valid one.
 
 ## ST STM32H7
 

@@ -5,6 +5,8 @@ set_target_properties(soc-data-h5-H52x_H57x PROPERTIES
 )
 generate_header(soc-data-h5-H52x_H57x cxx ST/H5/H52x_H57x/STM32H523 .hpp)
 generate_header(soc-data-h5-H52x_H57x cxx ST/H5/H52x_H57x/STM32H533 .hpp)
+generate_header(soc-data-h5-H52x_H57x cxx ST/H5/H52x_H57x/STM32H543 .hpp)
+generate_header(soc-data-h5-H52x_H57x cxx ST/H5/H52x_H57x/STM32H553 .hpp)
 generate_header(soc-data-h5-H52x_H57x cxx ST/H5/H52x_H57x/STM32H562 .hpp)
 generate_header(soc-data-h5-H52x_H57x cxx ST/H5/H52x_H57x/STM32H563 .hpp)
 generate_header(soc-data-h5-H52x_H57x cxx ST/H5/H52x_H57x/STM32H573 .hpp)

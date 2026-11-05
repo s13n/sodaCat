@@ -7,6 +7,14 @@ params:
     type: bool
     default: false
     description: MDIO completion interrupt (MDIOIS/MDIOIE in MACISR/MACIER)
+  - name: gen
+    type: int
+    default: 1
+    description: >-
+      ETH IP generation.  1: DMACMFCR_V1 at 0x116C (RM0481 ch. 63 - STM32H563/H573;
+      STM32H7; STM32H7RS).  2: DMACMFCR at 0x1164, plus MACWJBTR jabber timeout,
+      MACPRSTIMR/MACPRSTIMUR, MDIO interrupt and further HW-feature bits
+      (RM0481 ch. 64 - STM32H543/H553; STM32H5Ex/H5Fx; STM32C5).
 registers:
   - name: MACCR
     displayName: MACCR
@@ -1243,7 +1251,7 @@ registers:
       - name: ACTPHYSEL
         description: Active PHY Selected
         bitOffset: 28
-        bitWidth: 3
+        bitWidth: 4
         access: read-only
         enumeratedValues:
           - name: B_0x0
@@ -4797,8 +4805,27 @@ registers:
         access: read-only
   - name: DMACMFCR
     displayName: DMACMFCR
-    description: Channel missed frame count register
+    description: Channel missed frame count register (gen 2; gen 1 has DMACMFCR_V1)
     addressOffset: 4452
+    size: 32
+    access: read-write
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: MFC
+        description: Dropped Packet Counters
+        bitOffset: 0
+        bitWidth: 11
+        access: read-write
+      - name: MFCO
+        description: Overflow status of the MFC Counter
+        bitOffset: 15
+        bitWidth: 1
+        access: read-write
+  - name: DMACMFCR_V1
+    displayName: DMACMFCR_V1
+    description: Channel missed frame count register (gen 1; gen 2 has DMACMFCR)
+    addressOffset: 4460
     size: 32
     access: read-write
     resetValue: 0
@@ -4816,7 +4843,7 @@ registers:
         access: read-write
 addressBlocks:
   - offset: 0
-    size: 4456
+    size: 4464
     usage: registers
 outputs:
   - name: WKUP
