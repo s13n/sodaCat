@@ -2042,6 +2042,47 @@ shared_blocks:
         fields:
           - {name: ERCFG0, description: Configurable device secrets configuration, bitOffset: 0, bitWidth: 1, access: read-write}
 
+  CCB:
+    # Coupling and chaining bridge: C5 (C59x/C5Ax), G5 (G563/G564), H5 (H553), U3
+    from: STM32H553.CCB
+    description: Coupling and chaining bridge (CCB)
+  DTS:
+    # Digital temperature sensor: G5, H5, H7RS (N6 has a different PVT-based DTS)
+    from: STM32H503.DTS
+    outputs:
+      INTR:
+        pattern: '^(DTS|DTS_WKUP)$'
+    description: Digital temperature sensor (DTS)
+  OTFDEC:
+    # On-the-fly decryption: G5, H5, H7, L5, U5.  Copies differed only in field
+    # naming (REG_/REG1_/REGx_) and in CR/PRIVCFGR presence; H533 has both.
+    from: STM32H533.OTFDEC
+    outputs:
+      INTR:
+        pattern: '^(OTFDEC1|OTFDEC2)$'
+    description: On-the-fly decryption engine (OTFDEC)
+    params:
+      - {name: has_cr, type: bool, default: true, description: 'Control register CR present (not on STM32H7)'}
+      - {name: has_privcfgr, type: bool, default: true, description: 'Privileged access configuration register PRIVCFGR present (not on STM32H7/L5)'}
+  PLAY:
+    # Programmable logic array: G5 (G55x/G56x), H5 (H543/H553)
+    from: STM32H553.PLAY
+    outputs:
+      INTR:
+        pattern: '^PLAY1_NS$'
+      INTR_S:
+        description: Secure PLAY interrupt (TrustZone secure world)
+        pattern: '^PLAY1_S$'
+    description: Programmable logic array (PLAY)
+  TCOPAMP:
+    # Operational amplifier with timer-controlled mux (CSR + TCMR): C5
+    # (C53x/C54x only; C55x/C56x have the HSOPAMP type), G5
+    from: STM32C531.OPAMP1
+    description: Operational amplifier (OPAMP) with timer-controlled mux
+  USBSRAM:
+    # USB packet buffer memory: G5, H5
+    from: STM32H523.USBSRAM
+    description: USB packet buffer SRAM
 families:
   C0:
     svd:
@@ -2460,8 +2501,13 @@ families:
           CH7:
             pattern: '^(LPDMA1_CH7|LPDMA2_CH7)$'
       OPAMP:
-        from: ''  # TBD: G4-style OPAMP (CSR+TCMR, no OTR)
+        # Two op-amp IPs: C53x/C54x have CSR+TCMR (TCOPAMP), C55x/C56x have
+        # CSR+OTR+HSOTR (HSOPAMP).  C59x/C5Ax have no OPAMP.
+        uses: TCOPAMP
         instances: [OPAMP1]
+        variants:
+          C55x_C562:
+            uses: HSOPAMP
       PWR:
         from: ''  # TBD: pending SVD
         instances: [PWR]
@@ -2506,7 +2552,7 @@ families:
         instances: [DBGMCU]
       # --- C59x/C5A3 only ---
       CCB:
-        from: ''  # TBD: pending SVD, C59x/C5A3 only
+        uses: CCB
         instances: [CCB]
       DLYB:
         uses: DLYB
@@ -2546,6 +2592,9 @@ families:
           CRS: {trim_width: 7}
           RTC: {has_binary: true, has_privcfgr: true}
           ETH: {has_mdio_intr: true, gen: 2}
+      C55x_C562:
+        _all:
+          OPAMP: {single: true}
       C59x_C5A3:
         _all:
           HASH: {gen: 2}
@@ -5756,7 +5805,7 @@ families:
             description: Comparator output (routes to TIM/LPTIM trigger crossbars and EXTI per RM0492 ch.11)
       CCB:
         # Coupling and chaining bridge (RM0481 ch. "CCB"), STM32H553 only.
-        from: STM32H553.CCB
+        uses: CCB
         instances: [CCB, CCB_S]
       CEC:
         uses: CEC
@@ -5806,7 +5855,7 @@ families:
         uses: DLYB
         instances: [DLYBOS1, DLYBOS1_S, DLYBSD1, DLYBSD1_S, DLYBSD2, SEC_DLYBOS1, SEC_DLYBSD1, SEC_DLYBSD2]
       DTS:
-        from: STM32H503.DTS
+        uses: DTS
         instances: [DTS, DTS_S, SEC_DTS]
         outputs:
           INTR:
@@ -5947,7 +5996,7 @@ families:
         uses: HSOPAMP
         instances: [OPAMP1]
       OTFDEC:
-        from: STM32H533.OTFDEC
+        uses: OTFDEC
         instances: [OTFDEC, OTFDEC1, OTFDEC1_S, OTFDEC_S, SEC_OTFDEC1]
         # RM0481 names; the H523/H533 SVDs drop the number.
         rename_instances: {OTFDEC: OTFDEC1, OTFDEC_S: OTFDEC1_S}
@@ -5960,14 +6009,8 @@ families:
       PLAY:
         # Programmable logic array (RM0481 ch. "PLAY"), STM32H543/H553.  RCC
         # calls the instance PLAY1; the SVD peripheral is PLAY.
-        from: STM32H553.PLAY
+        uses: PLAY
         instances: [PLAY, PLAY_S]
-        outputs:
-          INTR:
-            pattern: '^PLAY1_NS$'
-          INTR_S:
-            description: Secure PLAY interrupt (TrustZone secure world)
-            pattern: '^PLAY1_S$'
       PSSI:
         uses: PSSI
         instances: [PSSI, PSSI_S, SEC_PSSI]
@@ -6121,7 +6164,7 @@ families:
         uses: USB_DRD
         instances: [SEC_USB, USB, USB_S]
       USBSRAM:
-        from: STM32H523.USBSRAM
+        uses: USBSRAM
         instances: [USBSRAM, USBSRAM_S]
       VREFBUF:
         uses: VREFBUF
@@ -14538,7 +14581,7 @@ families:
         uses: HSOPAMP
         instances: [OPAMP]
       OTFDEC:
-        from: STM32H725.OTFDEC1
+        uses: OTFDEC
         instances: [OTFDEC1, OTFDEC2]
         outputs:
           INTR:
@@ -15169,6 +15212,7 @@ families:
     chip_params:
       _all:
         _all:
+          OTFDEC: {has_cr: false, has_privcfgr: false}   # no CR/PRIVCFGR (RM0468)
           WWDG: {cfr_version: 2}
           GPIO: {has_brr: false}
           TAMP: {or_reg: 3}
@@ -15318,7 +15362,7 @@ families:
         uses: DMA2D
         instances: [DMA2D]
       DTS:
-        from: STM32H7S.DTS
+        uses: DTS
         instances: [DTS]
         outputs:
           INTR:
@@ -16812,7 +16856,7 @@ families:
         uses: LPOPAMP
         instances: [OPAMP]
       OTFDEC:
-        from: STM32L562.OTFDEC1
+        uses: OTFDEC
         instances: [OTFDEC1]
         outputs:
           INTR:
@@ -16892,6 +16936,7 @@ families:
     chip_params:
       _all:
         _all:
+          OTFDEC: {has_privcfgr: false}   # no PRIVCFGR (RM0438)
           RNG: {gen: 2}
           CRS: {trim_width: 7}
           TAMP: {sec: 3, or_reg: 3}
@@ -17542,7 +17587,7 @@ families:
           INTR:
             pattern: '^(TIM6|TIM3|TIM9)$'
       CCB:
-        from: STM32U375.CCB
+        uses: CCB
         instances: [CCB]
       COMP:
         from: STM32U375.COMP
@@ -18010,7 +18055,7 @@ families:
         uses: LPOPAMP
         instances: [OPAMP]
       OTFDEC:
-        from: STM32U5Gx.OTFDEC1
+        uses: OTFDEC
         instances: [OTFDEC1, OTFDEC2]
         outputs:
           INTR:
