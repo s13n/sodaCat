@@ -369,6 +369,14 @@ ch. 63 (H563/H573, and likewise H7/H7RS) has DMACMFCR at 0x116C, while ch. 64
 the valid one.  SVD bug: the H5E5 and H56x SVDs give MACHWF0R.ACTPHYSEL 3
 bits; RM0481 has ACTPHYSEL[3:0] in both chapters.
 
+### ICACHE: undocumented ID registers (H543/H553)
+
+The H543/H553 SVDs (DFP v2.3.1) have ICACHE HWCFGR, VERR, IPIDR and SIDR at
+0x3F0-0x3FC.  RM0481 Rev. 5's ICACHE register map ends at CRR3 (0x02C).  They
+are left out of the shared ST/ICACHE model until RM0481 documents them.  The
+model itself is sourced from H573 (with CRR0-3, param `has_remap`); H503 and
+H7R/H7S have no remap regions.
+
 ### PWR PMCR: two layouts (not an SVD bug)
 
 PMCR bits 23-27 differ between the dies (RM0481 PWR_PMCR plus two

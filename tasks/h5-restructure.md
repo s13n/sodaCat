@@ -188,6 +188,16 @@ Open:
 - [x] ETH on C5: MAC10BT1SCR (10BASE-T1S PMD transceiver control, 0x220)
       is deliberately not modelled until RM0522 documents it (user
       decision 2026-11-05; see SVD_ERRATA.md, C5).
+- [x] ICACHE (shared, 2026-11-05): source H503 -> H573, so CRR0-3 are in
+      the model, with param `has_remap` (false on H503 and H7R/H7S).  C5
+      gains the remap registers too.  The H543/H553 ID registers
+      (0x3F0-0x3FC) are left out because RM0481 doesn't document them.
+      Coverage is complete on H5, C591 and H7S.
+- [x] U5 now uses the shared ICACHE (all 10 U5 SVDs are register-identical
+      to H573, and RM0456 Rev. 6 has the same map).  The instance is
+      renamed ICache -> ICACHE (RM0456 name), and models/ST/U5/ICACHE.yaml
+      is removed.  STM32U535's chip header compiles (ad-hoc check; U5 has no
+      compile test).
 - [ ] Shared-block presence gaps (ICACHE CRR, SDMMC, TAMP, HASH, RNG,
       ...): mergeFrom with `annotate: false`, cross-family regen.
 - [ ] Cosmetic: the H52x_H57x RCC lists output INTR_S before INTR,
