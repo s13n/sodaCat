@@ -648,6 +648,8 @@ shared_blocks:
       - {name: has_cfgr2, type: bool, default: true, description: CFGR2 input selection register}
       - {name: or_type, type: int, default: 0, max: 2, description: 'OR register variant (0=none, 1=L4 2-bit option, 2=G4 6-bit input mux)'}
     transforms:
+      # WAVPOL (CFGR bit 21): in every LPTIM RM except RM0503 (U0, the source) and RM0522 (C5)
+      - {type: patchFields, register: CFGR, fields: [{name: WAVPOL, description: 'Waveform shape polarity (not on STM32U0/C5)', bitOffset: 21, bitWidth: 1, access: read-write}]}
       # Widen TRIGSEL from 3-bit to 4-bit (G4 has 16 trigger sources)
       - {type: patchFields, register: CFGR, fields: [{name: TRIGSEL, bitWidth: 4}]}
       # Add OR register variants at offset 0x20 (G4 input-mux layout, L4 generic option bits)
@@ -803,6 +805,8 @@ shared_blocks:
       - {name: has_autocr, type: bool, default: false, description: Autonomous mode (AUTOCR register at 0x1C)}
       - {name: has_i2s, type: bool, default: false, description: I2S audio capability (per-instance)}
     transforms:
+      # DRDS (CFG1 bit 24): RM0481/RM0517/RM0522 only
+      - {type: patchFields, register: CFG1, fields: [{name: DRDS, description: 'Data sampling delay on master input (STM32H5/C5 only)', bitOffset: 24, bitWidth: 1, access: read-write}]}
       # H7: TSER field in CR2 for transfer extension reload
       - type: patchFields
         register: CR2
@@ -1372,6 +1376,9 @@ shared_blocks:
         pattern: '^DATAEND_TRG$'
     description: SD/SDIO/MMC host interface (ARM PrimeCell PL18x)
     transforms:
+      # SDMMC_FIFORx: 16-word FIFO window at 0x80 + 4*x (every SDMMC RM)
+      - {type: renameRegisters, pattern: '^FIFOR$', replacement: 'FIFOR[%s]'}
+      - {type: patchRegisters, registers: [{name: 'FIFOR[%s]', dim: 16, dimIncrement: 4, description: 'Data FIFO register x (16-word window, any word reaches the FIFO)'}]}
       - type: patchFields
         register: IDMABSIZER
         fields:
@@ -1635,6 +1642,18 @@ shared_blocks:
       - {name: has_smisr, type: bool, default: false, description: Secure masked interrupt status register}
       - {name: has_tamptscr, type: bool, default: false, description: TAMPTSCR + TSIDR tamper timestamp registers}
     transforms:
+      # RTC_OR at 0x60 (RM0481/RM0517): no other RTC_V2 user has a register there
+      - type: patchRegisters
+        registers:
+          - name: OR
+            displayName: OR
+            description: Option register (STM32H5 only)
+            addressOffset: 96
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: OUT2_RMP, description: 'RTC_OUT2 mapping: 0 = PI8, 1 = PB2', bitOffset: 0, bitWidth: 1, access: read-write}
       - type: cloneRegister
         source: SECCFGR
         name: SMCR
@@ -1693,6 +1712,23 @@ shared_blocks:
         pattern: '^I3C1_ERR$'
     description: Improved Inter-Integrated Circuit (I3C)
     transforms:
+      # I2CCFGR at 0x098: documented in RM0481 (H52x-H57x) and RM0487 (U3; the
+      # U375 SVD omits it), not in RM0492/RM0517/RM0522/RM0486 (H503, H5Ex, C5, N6)
+      - type: patchRegisters
+        registers:
+          - name: I2CCFGR
+            displayName: I2CCFGR
+            description: I2C configuration register (static I2C address as target; RM0481/RM0487 parts only)
+            addressOffset: 152
+            size: 32
+            access: read-write
+            resetValue: 0
+            fields:
+              - {name: SAVAL, description: Static address valid, bitOffset: 0, bitWidth: 1, access: read-write}
+              - {name: SA, description: 7-bit static I2C address, bitOffset: 1, bitWidth: 7, access: read-write}
+              - {name: MAVAL, description: "Minimum I3C target address 7'h01 is valid (as target)", bitOffset: 8, bitWidth: 1, access: read-write}
+              - {name: ANFON, description: Analog 50 ns spike filter enable (as target on I2C Fm/Fm+), bitOffset: 28, bitWidth: 1, access: read-write}
+              - {name: FMP, description: 20 mA Fast-mode plus high drive enable (as target on I2C Fm+), bitOffset: 29, bitWidth: 1, access: read-write}
       # Fix mixed-case register names (U3 SVD bug)
       - {type: renameRegisters, pattern: ^MAxRLR$, replacement: MAXRLR}
       - {type: renameRegisters, pattern: ^MAxWLR$, replacement: MAXWLR}
@@ -1824,7 +1860,7 @@ shared_blocks:
     # privilege), SMISR (secure masked interrupt), COUNT1R (monotonic counter),
     # OR (option), RPCFGR (resource protection). Unions: CR2/CR2_NOER and
     # CR3/CR3_NOER (POM vs NOER tamper output control), SECCFGR/CFGR/SMCR
-    # (TrustZone/non-TZ/L5 naming at 0x020), OR/OR_Remap/MONCFGR (option
+    # (TrustZone/non-TZ/L5 naming at 0x020), OR/OR_Remap/MONCFGR/OR_Remap2 (option
     # register variants at 0x050), RPCFGR/ERCFGR (resource protection at 0x054).
     from: STM32N645.TAMP
     outputs:
@@ -1834,7 +1870,7 @@ shared_blocks:
     params:
       - {name: pom, type: bool, default: false, description: 'CR2/CR3 tamper output control: false=NOER (no-erase), true=POM (potential output masking)'}
       - {name: sec, type: int, default: 0, description: 'Security config register at 0x020: 0=none, 1=SECCFGR (TrustZone), 2=CFGR (zone boundaries), 3=SMCR (L5 DPROT naming)'}
-      - {name: or_reg, type: int, default: 0, description: 'Option register at 0x050: 0=none, 1=OR (VCOREMEN/BSEN), 2=OR_Remap (IN2/IN3_RMP), 3=MONCFGR (monitoring config)'}
+      - {name: or_reg, type: int, default: 0, description: 'Option register at 0x050: 0=none, 1=OR (VCOREMEN/BSEN), 2=OR_Remap (IN2/IN3_RMP), 3=MONCFGR (monitoring config), 4=OR_Remap2 (H5 OUT3/OUT5/IN2-4 remap)'}
       - {name: rpcfg, type: int, default: 0, description: 'Resource protection at 0x054: 0=none, 1=RPCFGR (multi-resource), 2=ERCFGR (single-resource)'}
     transforms:
       # --- Superset field additions (N6 has 7 ext tampers; add TAMP8/ITAMP12-15) ---
@@ -1890,6 +1926,7 @@ shared_blocks:
           - {name: TAMP8MF, bitOffset: 7, bitWidth: 1, access: read-only}
           - {name: ITAMP12MF, bitOffset: 27, bitWidth: 1, access: read-only}
           - {name: ITAMP13MF, bitOffset: 28, bitWidth: 1, access: read-only}
+          - {name: ITAMP15MF, bitOffset: 30, bitWidth: 1, access: read-only}
       - type: patchFields
         register: SCR
         fields:
@@ -1982,6 +2019,19 @@ shared_blocks:
           - {name: TMONEN, description: Tamper monitoring enable, bitOffset: 1, bitWidth: 1, access: read-write}
           - {name: VMONEN, description: Voltage monitoring enable, bitOffset: 2, bitWidth: 1, access: read-write}
           - {name: WUTMONEN, description: Wakeup timer monitoring enable, bitOffset: 3, bitWidth: 1, access: read-write}
+      # --- Union: OR_Remap2 (H5 variant of OR at 0x050, RM0481/RM0517) ---
+      - type: cloneRegister
+        source: OR
+        name: OR_Remap2
+        removeFields: [VCOREMEN, BSEN]
+      - type: patchFields
+        register: OR_Remap2
+        fields:
+          - {name: OUT3_RMP, description: TAMP_OUT3 mapping, bitOffset: 1, bitWidth: 2, access: read-write}
+          - {name: OUT5_RMP, description: TAMP_OUT5 mapping, bitOffset: 3, bitWidth: 1, access: read-write}
+          - {name: IN2_RMP, description: TAMP_IN2 mapping, bitOffset: 8, bitWidth: 1, access: read-write}
+          - {name: IN3_RMP, description: TAMP_IN3 mapping, bitOffset: 9, bitWidth: 1, access: read-write}
+          - {name: IN4_RMP, description: TAMP_IN4 mapping, bitOffset: 10, bitWidth: 1, access: read-write}
       # --- Union: ERCFGR (H5/U5 variant of RPCFGR) ---
       - type: cloneRegister
         source: RPCFGR
@@ -6146,7 +6196,7 @@ families:
           RNG: {gen: 3, has_nscr: true, nscr_osc: 3, ext_health: true}
           HASH: {gen: 2}             # H503 gen 1; H543/H553 and H5Ex gen 3
           CRS: {trim_width: 7}
-          TAMP: {sec: 2, rpcfg: 2}
+          TAMP: {sec: 2, rpcfg: 2, or_reg: 4}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           OPAMP: {single: true}
           GPIO: {has_hslvr: true}
@@ -6232,6 +6282,7 @@ families:
         _all:
           ICACHE: {has_remap: false}
           RNG: {has_nscr: false, ext_health: false}   # RM0492: no NSCR
+          TAMP: {or_reg: 0}                           # RM0492: no TAMP_OR
           HASH: {gen: 1}
       H52x_H57x:
         _all:

@@ -408,6 +408,22 @@ only SVD with the complete layout).  SVD/RM discrepancies found:
   says 8; the model has 8.
 - G0 SVDs: CR.BYP (bit 6), which RM0444 Rev. 5 marks reserved.  Left out.
 
+### Shared-block gaps closed against the RMs (H5 and others)
+
+Fields that H5 SVDs have and the shared models lacked.  Each was checked in
+the RMs; documented ones were added, with a note on where they exist:
+- LPTIM CFGR.WAVPOL (bit 21): every LPTIM RM except RM0503 (U0, the model's
+  source) and RM0522 (C5).
+- ModernSPI CFG1.DRDS (bit 24): RM0481/RM0517/RM0522 only.
+- TAMP SMISR.ITAMP15MF (bit 30).  TAMP 0x50 has four layouts (N6 OR, C5
+  OR_Remap, L5/H7 MONCFGR, and now H5 OR_Remap2 with OUT3/OUT5/IN2-4_RMP),
+  selected by `or_reg` (4 = H5; H503 has no TAMP_OR).
+- RTC_V2 OR at 0x60 (OUT2_RMP): H5 only.
+- SDMMC FIFOR is the 16-word window FIFOR[0..15] of every SDMMC RM.
+- I3C I2CCFGR (0x098): RM0481 and RM0487 (U3; the U375 SVD omits it).
+Not added, because they are SVD-only: TIM17 OR1.RTCPREEN (RM0481 has only
+OCRSEL), and AES/SAES SR.CCF (SR bit 0 is reserved in RM0481; CCF is in ISR).
+
 ### PWR PMCR: two layouts (not an SVD bug)
 
 PMCR bits 23-27 differ between the dies (RM0481 PWR_PMCR plus two

@@ -213,8 +213,13 @@ Open:
       (RM0481/0492/0456/0477/0486/0487/0503/0517/0522).  RNG is covered
       on 16 representatives across all branches; G0's undocumented CR.BYP is
       left out.
-- [ ] Shared-block presence gaps (ICACHE CRR, SDMMC, TAMP, HASH, RNG,
-      ...): mergeFrom with `annotate: false`, cross-family regen.
+- [x] Shared-block presence gaps (2026-11-05): LPTIM WAVPOL, ModernSPI
+      DRDS, TAMP ITAMP15MF and OR_Remap2 (or_reg 4, user decision: union +
+      selector), RTC_V2 OR, SDMMC FIFOR[16] (user decision), I3C I2CCFGR.
+      All checked against the RMs (see SVD_ERRATA.md).  H5 coverage is now
+      1888/1912; every remaining gap is deliberate: RCC SW/SWS (follows the
+      RM), AES/SAES SR.CCF and TIM17 RTCPREEN (SVD-only), and the ICACHE ID
+      registers (undocumented).
 - [ ] Cosmetic: the H52x_H57x RCC lists output INTR_S before INTR,
       because outputs follow the source SVD's interrupt order.
 
