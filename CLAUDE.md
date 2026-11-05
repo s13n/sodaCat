@@ -21,7 +21,7 @@ cd build
 # Extract YAML models for a specific MCU family
 cmake --build . --target stm32h7-models
 cmake --build . --target stm32f4-models
-# Available targets: stm32{c0,f3,f4,f7,g0,g4,h5,h7,l0,l1,l4,l4plus,l5,n6,u0,u3,u5}-models
+# Available targets: stm32{c0,c5,f3,f4,f7,g0,g4,g5,h5,h7,h7rs,l0,l1,l4,l4plus,l5,n6,u0,u3,u5}-models
 
 # Build test executable (compile-only validation of generated C++ headers)
 cmake --build . --target soc-data-test
@@ -147,7 +147,7 @@ A single unified `extractors/generate_models.py` script handles all families (ST
 
 Each family entry has up to five optional keys plus `svd`/`subfamilies`/`blocks`:
 
-- `svd`: SVD archive metadata — `{zip, version, date}`. The `zip` filename must match the `ZIP` arg in `svd/ST/CMakeLists.txt`. The `version` and `date` fields are updated automatically by `tools/st_maintenance.py svd --download` when new SVD archives are downloaded. Optional `supplement: {repo, tag, path, chips: {<chip>: <sha256>}}` covers chips ST's archive doesn't contain yet (e.g. H5 STM32H543/H553 from the Open-CMSIS-Pack DFP): `stm32_add_family()` shallow-fetches `repo` at `tag` at configure time and passes `--svd-supplement <checkout>/<path>`; the vendor extension reads the listed chips from there, verifies each SHA-256, records the origin in `source:`, and notes when the ST zip starts containing a supplement chip.
+- `svd`: SVD archive metadata — `{zip, version, date}`. The `zip` filename must match the `ZIP` arg in `svd/ST/CMakeLists.txt`. The `version` and `date` fields are updated automatically by `tools/st_maintenance.py svd --download` when new SVD archives are downloaded. Optional `supplement: {repo, tag, path, chips: {<chip>: <sha256>}}` covers chips ST's archive doesn't contain yet (e.g. H5 STM32H543/H553 from the Open-CMSIS-Pack DFP): `stm32_add_family()` shallow-fetches `repo` at `tag` at configure time and passes `--svd-supplement <checkout>/<path>`; the vendor extension reads the listed chips from there, verifies each SHA-256, records the origin in `source:`, and notes when the ST zip starts containing a supplement chip.  A family with no archive on st.com at all (STM32G5, published only as ST's GitHub DFP `STMicroelectronics/stm32g5xx-dfp`) has a `supplement:` but no `zip:`, and is registered in `svd/ST/CMakeLists.txt` without `ZIP`; every chip must then be listed in the supplement.
 - `subfamilies`: subfamily → chip list mapping, with optional `ref_manual: {name, url}` per subfamily
 - `blocks`: block_type → `{from, instances, outputs, transforms, params, variants, rename_instances}` — declares which SVD peripherals map to which block types, preferred source chip, **canonical-keyed** output declarations (see "Outputs schema" below), inline transforms to fix SVD bugs, optional parameter declarations, optional per-subfamily overrides, and an optional SVD-name → canonical-name remap. A block may use `uses: <shared_block_name>` instead of `from:` to reference a cross-family shared model; `from` triggers SVD extraction while `uses` references the shared model. Defaults from `shared_blocks` are inherited and can be overridden. `rename_instances:` is a map `{svd_name: canonical_name}` applied at Pass-3 emission time — the chip yaml's `instances:` key, the `chip_connections` / `chip_params` / `chip_instances` lookup key, and any user-written destination strings on this instance all use the canonical name, regardless of which chip's SVD spelled it which way. Used to paper over SVD naming inconsistencies for what is the same silicon (e.g. H7 ETH block: H723/H7A3 SVDs name it `ETH`, H745/H747/H755/H757 SVDs name it `Ethernet_MAC` — both canonicalise to `ETH`).
 - `chip_params` (optional): subfamily-keyed parameter value overrides for values declared in block `params`
@@ -193,7 +193,7 @@ Per-block `transforms` lists in the family YAML config fix SVD bugs and naming i
 
 - `renameRegisters` — regex rename on register `name` and `displayName`: `{type, pattern, replacement}`
 - `renameFields` — regex rename on field `name` within a specific register: `{type, register, pattern, replacement}`
-- `patchFields` — add/modify/remove fields in a register: `{type, register, fields: [{name, ...props}]}`. Name-only entries remove the field; name+props entries add or merge.
+- `patchFields` — add/modify/remove fields in a register: `{type, register, fields: [{name, ...props}]}`. Name-only entries remove the field; name+props entries add or merge. `register` may be a dotted path into clusters (`C[%s].SR`).
 - `patchRegisters` — add/modify/remove register-level properties: `{type, registers: [{name, ...props}]}`. Same add/merge/remove semantics.
 - `patchAddressBlock` — override addressBlock properties: `{type, size}` (and optionally other addressBlock fields).
 - `cloneRegister` — deep-copy a register with optional field removal/rename and relocation: `{type, source, name, removeFields?, renameFields?, addressOffset?, description?}`. Enables overlapping register pairs at the same offset for union-style alternatives.

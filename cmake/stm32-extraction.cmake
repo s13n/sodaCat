@@ -20,6 +20,9 @@
 # shallow-fetched at configure time (pinned to `tag`), and the extractor is
 # pointed at `<checkout>/<path>` for the listed chips.  Used when ST's SVD
 # archive lags behind new parts (e.g. H543/H553 from the Open-CMSIS-Pack DFP).
+# A family with no archive on st.com at all (e.g. G5, published only as ST's
+# GitHub DFP) omits ZIP: the svd/ST directory is passed instead, and every
+# chip must be listed in the supplement.
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 include(FetchContent)
@@ -36,12 +39,13 @@ set(_STM32_FAMILY_IDS "" CACHE INTERNAL "")
 #     ID <id>                    # Lowercase ID for target names (e.g. "c0", "l4plus")
 #     CODE <code>                # Directory name under models/ST/ (e.g. "C0", "L4P")
 #     DISPLAY <name>             # Display name for messages (e.g. "STM32C0", "STM32L4+")
-#     ZIP <filename>             # SVD zip filename in svd/ST/ directory
+#     [ZIP <filename>]           # SVD zip filename in svd/ST/ directory; omit
+#                                # for a supplement-only family
 # )
 function(stm32_add_family)
     cmake_parse_arguments(FAM "" "ID;CODE;DISPLAY;ZIP" "" ${ARGN})
 
-    foreach(_arg ID CODE DISPLAY ZIP)
+    foreach(_arg ID CODE DISPLAY)
         if(NOT DEFINED FAM_${_arg})
             message(FATAL_ERROR "stm32_add_family: ${_arg} is required")
         endif()
@@ -51,9 +55,16 @@ function(stm32_add_family)
     set(_STM32_${FAM_ID}_CODE "${FAM_CODE}" CACHE INTERNAL "")
     set(_STM32_${FAM_ID}_DISPLAY "${FAM_DISPLAY}" CACHE INTERNAL "")
 
-    # User-overridable SVD zip path
-    set(STM32${FAM_CODE}_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/ST/${FAM_ZIP}" CACHE PATH
-        "Path to ${FAM_DISPLAY} SVD archive")
+    # User-overridable SVD zip path.  Without ZIP the svd/ST directory stands
+    # in (supplement-only family); the extractor then needs no archive.
+    if(DEFINED FAM_ZIP)
+        set(STM32${FAM_CODE}_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/ST/${FAM_ZIP}" CACHE PATH
+            "Path to ${FAM_DISPLAY} SVD archive")
+        set(_main_dep MAIN_DEPENDENCY "${STM32${FAM_CODE}_SVD_ZIP}")
+    else()
+        set(STM32${FAM_CODE}_SVD_ZIP "${CMAKE_SOURCE_DIR}/svd/ST")
+        set(_main_dep "")
+    endif()
 
     # Family config file (consolidated YAML with all family definitions)
     set(_family_config "${CMAKE_SOURCE_DIR}/svd/ST/STM32.yaml")
@@ -80,6 +91,9 @@ function(stm32_add_family)
         FetchContent_MakeAvailable(stm32${FAM_ID}_svd_supplement)
         set(_supp_args --svd-supplement
             "${stm32${FAM_ID}_svd_supplement_SOURCE_DIR}/${_supp_path}")
+    elseif(NOT DEFINED FAM_ZIP)
+        message(FATAL_ERROR "stm32_add_family: ${FAM_DISPLAY} has no ZIP and no "
+                            "svd.supplement in STM32.yaml")
     endif()
 
     # Create extraction target
@@ -92,7 +106,7 @@ function(stm32_add_family)
                 stm32 ${FAM_CODE} ${STM32${FAM_CODE}_SVD_ZIP} ${STM32_MODELS_DIR}
                 ${_supp_args}
         COMMAND ${CMAKE_COMMAND} -E touch ${_marker}
-        MAIN_DEPENDENCY ${STM32${FAM_CODE}_SVD_ZIP}
+        ${_main_dep}
         DEPENDS ${STM32_GENERATOR} ${_family_config}
         COMMENT "Extracting ${FAM_DISPLAY} family models from SVD files..."
         JOB_POOL extract_models

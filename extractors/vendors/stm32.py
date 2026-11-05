@@ -8,6 +8,10 @@ entry in STM32.yaml can list them under `supplement:`
 ({repo, tag, path, chips: {<chip>: <sha256>}}).  CMake fetches the repo and
 passes `--svd-supplement <dir>`; the listed chips are then read from there
 (checksum-verified) instead of the zip.
+
+A family with no archive on st.com yet (e.g. G5, published only as ST's
+GitHub DFP) has no `svd.zip`: CMake then passes the svd/ST directory as
+`svd_source`, and every chip must come from the supplement.
 """
 
 import hashlib
@@ -38,7 +42,9 @@ def family_label(family_code, subfamily_name):
 def add_cli_args(parser):
     """Add STM32-specific CLI arguments."""
     parser.add_argument('svd_source', type=Path,
-                        help='Path to SVD zip archive')
+                        help='Path to SVD zip archive, or the svd/ST directory '
+                             'for a family whose SVDs all come from its '
+                             'svd.supplement')
     parser.add_argument('--svd-supplement', type=Path, metavar='DIR',
                         help='Directory with the SVDs listed under the '
                              "family's svd.supplement in STM32.yaml")
@@ -54,12 +60,18 @@ def validate_args(args):
     supp = (family.get('svd') or {}).get('supplement')
     args.supplement = supp
     if supp is None:
+        if args.svd_source.is_dir():
+            print(f"Error: {args.family_code} has neither an SVD archive nor "
+                  f"an svd.supplement in STM32.yaml")
+            sys.exit(1)
         return
     if args.svd_supplement is None or not args.svd_supplement.is_dir():
         print(f"Error: STM32.yaml lists an SVD supplement for "
               f"{args.family_code} ({supp['repo']} {supp['tag']}); pass its "
               f"{supp['path']} directory with --svd-supplement")
         sys.exit(1)
+    if args.svd_source.is_dir():
+        return                          # supplement-only family, no archive
     for chip in supp['chips']:
         if svd.extractFromZip(args.svd_source, chip) is not None:
             print(f"Note: {args.svd_source.name} now contains {chip}; it can "
@@ -68,7 +80,8 @@ def validate_args(args):
 
 def config_path(args):
     """Return path to the STM32 consolidated YAML config."""
-    return args.svd_source.parent / 'STM32.yaml'
+    base = args.svd_source if args.svd_source.is_dir() else args.svd_source.parent
+    return base / 'STM32.yaml'
 
 
 def open_svd(args, chip_name):
@@ -79,6 +92,8 @@ def open_svd(args, chip_name):
     supp = args.supplement
     if supp and chip_name in supp['chips']:
         return _open_supplement(args, supp, chip_name)
+    if args.svd_source.is_dir():
+        return None                     # supplement-only family
     svd_content = svd.extractFromZip(args.svd_source, chip_name)
     if svd_content is None:
         return None

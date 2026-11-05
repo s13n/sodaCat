@@ -1043,7 +1043,18 @@ def _apply_transforms(block_data, transforms, audit=False, block_name='',
                 if not matched:
                     print(f"  WARNING: patchFields: no registers match pattern '{t['register_pattern']}'")
             else:
-                _patch_fields(block_data.get('registers', []), t['register'], t['fields'])
+                # `register` may be a dotted path into clusters, e.g.
+                # 'C[%s].SR' for a member of the cluster array C[%s].
+                regs = block_data.get('registers', [])
+                *path, leaf = t['register'].split('.')
+                for part in path:
+                    cl = next((r for r in regs if r.get('name') == part and 'registers' in r), None)
+                    if cl is None:
+                        print(f"  WARNING: patchFields: cluster '{part}' not found")
+                        regs = []
+                        break
+                    regs = cl['registers']
+                _patch_fields(regs, leaf, t['fields'])
         elif typ == 'patchRegisters':
             _patch_registers(block_data.get('registers', []), t['registers'])
         elif typ == 'cloneRegister':
@@ -2610,8 +2621,15 @@ def main():
     # written in this run (uses: blocks referencing shared models from other
     # families/configs)
     yaml_loader = YAML(typ='safe')
+    # A variant may switch `uses:` to another shared block (e.g. C5 OPAMP:
+    # TCOPAMP, but HSOPAMP on C55x_C562), so its model needs a path too.
+    referenced = []
     for bt, bc in blocks_config.items():
-        model_name = bc.get('uses') or bt
+        referenced.append((bc.get('uses') or bt, bool(bc.get('uses'))))
+        for vcfg in (bc.get('variants') or {}).values():
+            if (vcfg or {}).get('uses'):
+                referenced.append((vcfg['uses'], True))
+    for model_name, is_uses in referenced:
         if model_name not in model_interrupt_order:
             # Designer-routed paths (e.g. models/ARM/NVIC.yaml) take precedence
             # for hand-maintained or sibling-vendor-owned shared blocks living
@@ -2620,7 +2638,7 @@ def main():
             if designer:
                 model_path = output_dir.parent / designer / f"{model_name}.yaml"
                 rel_path = f"{designer}/{model_name}"
-            elif bc.get('uses'):
+            elif is_uses:
                 # uses: a shared block — placement is always top-level.
                 model_path = output_dir / f"{model_name}.yaml"
                 rel_path = f"{vendor_prefix}/{model_name}"
@@ -2641,7 +2659,7 @@ def main():
                 if model:
                     model_interrupt_order[model_name] = [
                         irq['name'] for irq in model.get('outputs', [])]
-                    if bc.get('uses') and model.get('params'):
+                    if is_uses and model.get('params'):
                         existing = shared_blocks.get(model_name) or {}
                         if not existing.get('params'):
                             existing['params'] = model['params']
