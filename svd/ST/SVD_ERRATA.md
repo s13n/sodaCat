@@ -1899,13 +1899,16 @@ TS[4:3], OC1M[3], etc.). SVDs use different naming for these extension bits:
 
 | Convention | Families | SMS ext | TS ext | OCxM ext |
 |-----------|----------|---------|--------|----------|
-| `_3` (canonical) | F3*, F7, G0, H7 | SMS_3 | TS_4_3 | OC1M_3 |
-| `_1` | C0, H5, U0, U3, L4P, G4, N6 | SMS_1 | TS_1 | OC1M_1 |
+| `_3` | F3*, F7, G0, H7 | SMS_3 | TS_4_3 | OC1M_3 |
+| `_1` (canonical) | C0, G5, H5, U0, U3, L4P, G4, N6 | SMS_1 | TS_1 | OC1M_1 |
 | `_bit3` | L4, L5, U5 | SMS_bit3 | — | OC1M_bit3 |
 
 *F3 F37x subfamily has Gen1 timer IP with no extended fields.
 
-Transforms normalize all variants to the `_3` convention (e.g., SMS_3, TS_4_3, OC1M_3).
+Transforms normalize all variants to the `_1` convention (SMS_1, TS_1, OC1M_1, MMS_1): the
+suffix names the upper part of a split field, whatever its width.  G5 (RM0514) widens
+SMS and OCxM to 5 bits, so the upper part spans two bits and a bit-index name like `_3`
+no longer fits.  (Until 2026-11-05 the canonical form was `_3`.)
 
 Additionally, U5 has `TS_2_0` for the base TS field (should be just `TS`), renamed
 by transform.

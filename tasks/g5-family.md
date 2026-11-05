@@ -1,6 +1,6 @@
 # Task: STM32G5 family
 
-Status: **First version done (2026-11-05).  Open: timer unification with TimerV2.**
+Status: **Done (2026-11-05): family, shared-model extensions, timers in TimerV2.**
 
 ## Sources
 
@@ -34,12 +34,13 @@ AES on G544/G563/G564, SAES/CCB/OTFDEC on G563/G564.
 
 ## Open
 
-- [ ] Timers (user decision: G5-local first).  The G5 `Timer` block is TIM1
-      with 32-bit CNT/ARR/CCR1-4, covering TIM1-5, 8-17 and 20.  G5's timers
-      are a newer TimerV2 generation: they only add or widen fields, with no
-      conflicts (7th channel, MMS2/SMS/OCxM/ETRSEL/OCRSEL wider, CKD2,
-      TIxINV/TIxFS, UIOVRF, BKCMP9-14, MPR registers...).  Fold into
-      TimerV2: switch its source if G5 TIM1 is a superset of N645's,
-      otherwise patch; add params; regenerate ~14 families.  Analysis
-      scripts: tools/g5_family/ (tconf.py classifies the timer fields).
+- [x] Timers folded into TimerV2 (2026-11-05).  TimerV2 is now sourced
+      from G564 TIM1 (a superset of N645's), and the new param `gen` (1 = G5)
+      together with the existing flags describes the additions;
+      `max_channel` goes up to 6 for the 7th channel.  Split fields are named
+      `<field>_1` project-wide (SMS_1, OCxM_1, MMS_1, TS_1; was `_3`) in
+      TimerV1, TimerV2 and the F3 AdvCtrlTimer (user decision).  G5's timer
+      params are derived by tools/g5_family/timer_params.py.  Other families'
+      chips are unchanged apart from the order of the timer connections.
+      Pre-existing gap noted: G4 TIM16/17 OR1.HSE32EN is not in TimerV2.
 - [ ] GTZC is not modelled (same as H5).

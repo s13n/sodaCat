@@ -13,9 +13,9 @@ and DCR/DMAR placement.
 |---------|---------------|-------------|
 | **UIFREMAP** | CR1.UIFREMAP (bit 11) | UIF status bit remapping to CNT bit 31, enables atomic overflow detection |
 | **DITHEN** | CR1.DITHEN (bit 12) | Dithering enable — adds 4 fractional bits to ARR/CCRx for sub-LSB PWM resolution |
-| **SMS_ext** | SMCR.SMS_3 (bit 16) | 4th bit of slave mode selection (8→16 slave modes) |
-| **TS_ext** | SMCR.TS_4_3 (bits 20-21) | Extended trigger selection (3→5 bits, more trigger sources) |
-| **OCM_ext** | CCMRx.OCxM_3 (bit 16/24) | 4th bit of output compare mode (8→16 modes, adds asymmetric/combined PWM) |
+| **SMS_ext** | SMCR.SMS_1 (bit 16) | 4th bit of slave mode selection (8→16 slave modes) |
+| **TS_ext** | SMCR.TS_1 (bits 20-21) | Extended trigger selection (3→5 bits, more trigger sources) |
+| **OCM_ext** | CCMRx.OCxM_1 (bit 16/24) | 4th bit of output compare mode (8→16 modes, adds asymmetric/combined PWM) |
 | **MMS_ext** | CR2.MMS_1 (bit 25) | 4th bit of master mode selection (8→16 master modes) |
 | **OCCS** | SMCR.OCCS (bit 3) | OCREF clear source selection (ETRF vs comparator/other) |
 | **SMSPE** | SMCR.SMSPE (bit 24) | SMS preload enable — preload slave mode bits on update/index event |
@@ -390,8 +390,8 @@ asymmetric PWM, combined PWM mode, retriggerable OPM).
 
 | Condition | Register/field effect |
 |-----------|---------------------|
-| true | CCMR1_Output: OC1M_3 (bit 16), OC2M_3 (bit 24) present |
-| true | CCMR2_Output: OC3M_3 (bit 16), OC4M_3 (bit 24) present |
+| true | CCMR1_Output: OC1M_1 (bit 16), OC2M_1 (bit 24) present |
+| true | CCMR2_Output: OC3M_1 (bit 16), OC4M_1 (bit 24) present |
 
 **Note:** Same situation as `has_uifremap` — only parameterized on F7, constant
 on all other families.
@@ -631,18 +631,18 @@ Instances by level:
 
 ## Family-level observations (not per-instance parameters)
 
-### Extended slave mode selection (SMS_3, TS_4_3)
+### Extended slave mode selection (SMS_1, TS_1)
 
-SMS_3 (bit 16) extends SMS from 3 to 4 bits, enabling combined reset+trigger
-and other advanced slave modes. TS_4_3 (bits 21:20) extends TS from 3 to 5 bits,
+SMS_1 (bit 16) extends SMS from 3 to 4 bits, enabling combined reset+trigger
+and other advanced slave modes. TS_1 (bits 21:20) extends TS from 3 to 5 bits,
 enabling ITR4–ITR11 trigger sources. Both are family-level constants on 15 of 17
 families:
 
 Present: C0, F3 (F30x only), F7, G0, G4, H5, H7, L4, L4P, L5, N6, U0, U3, U5.
 Absent: F3 (F37x), F4, L0, L1.
 
-**F7 per-instance anomaly:** TIM2–TIM5 have SMS_3; TIM9/TIM12 do not (older
-timer IP in the same SVD). This is the only family where SMS_3 varies per-instance.
+**F7 per-instance anomaly:** TIM2–TIM5 have SMS_1; TIM9/TIM12 do not (older
+timer IP in the same SVD). This is the only family where SMS_1 varies per-instance.
 Not worth a dedicated parameter — the affected instances (TIM9/TIM12) are already
 heavily parameterized with reduced capabilities.
 

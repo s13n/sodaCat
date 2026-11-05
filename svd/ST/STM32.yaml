@@ -451,8 +451,12 @@ shared_blocks:
         pattern: '^TIME_DMA$'
   TimerV2:
     # Modern timer (V2 layout): CCR5@0x48, DCR@0x3DC, DTR2, ECR
-    # Unified GP + AdvCtrl. Families: G4, H5, H7RS, N6, U3, U5
-    from: STM32N645.TIM1
+    # Unified GP + AdvCtrl. Families: C5, G4, G5, H5, H7RS, N6, U3, U5
+    # Source G564 TIM1 (RM0514 generation, `gen` 1): a superset of the former
+    # source N645 TIM1, adding a 7th channel, wider SMS/OCxM/MMS2/ETRSEL/OCRSEL,
+    # CKD2, TIxINV/TIxFS, UIOVRF, BKCMP9-20, MPR1/MPR2/OOR, ...
+    # Split fields name the upper part <field>_1 (SMS_1, OCxM_1, MMS_1, TS_1).
+    from: STM32G564.TIM1
     outputs:
       INTR:
         description: Global interrupt
@@ -477,7 +481,7 @@ shared_blocks:
         pattern: '^TIM1_TRG_COM_DIR_IDX$'
     params:
       - {name: width32, type: bool, default: false, description: 32-bit counter width}
-      - {name: max_channel, type: int, default: 3, max: 5, description: Highest capture/compare channel index (0-5)}
+      - {name: max_channel, type: int, default: 3, max: 6, description: Highest capture/compare channel index (0-6; 6 = 7th channel CCR7/CCMR4, gen 1 only)}
       - {name: has_centerPWM, type: bool, default: true, description: Center-aligned PWM (CMS/DIR in CR1)}
       - {name: encoder, type: int, default: 0, max: 3, description: 'Encoder level: 0=none 1=basic 2=index 3=index+blanking'}
       - {name: has_xor_input, type: bool, default: true, description: TI1S XOR (Hall sensor)}
@@ -487,16 +491,22 @@ shared_blocks:
       - {name: has_dither, type: bool, default: true, description: Dithering (DITHEN in CR1)}
       - {name: sms_preload, type: int, default: 0, max: 2, description: 'SMS preload: 0=none 1=SMSPE 2=SMSPE+SMSPS'}
       - {name: has_uifremap, type: bool, default: false, description: UIF remap (UIFREMAP in CR1)}
-      - {name: has_extended_ocm, type: bool, default: false, description: Extended OC mode (OC1M_3 etc.)}
+      - {name: has_extended_ocm, type: bool, default: false, description: 'Extended OC mode: upper part OCxM_1 present (1 bit; 2 bits with gen 1)'}
       - {name: has_mms2, type: bool, default: false, description: Master mode selection 2 (MMS2 in CR2)}
+      - name: gen
+        type: int
+        default: 0
+        max: 1
+        description: >-
+          Timer generation.  0: TimerV2 as on C5/G4/H5/H7RS/N6/U3/U5.  1: RM0514 (G5):
+          SMS, OCxM, MMS2, ETRSEL 5 bits, OCRSEL 4 bits; CKD2, UIOVRF, TIxFS; with
+          has_xor_input XORPS/TIxINV; with has_etr SETPS; with has_complementary
+          BGF, BKCMP9-20E, MPR1, MPR2, OOR; with has_mms2 B2GF, ODS, BK2CMP9-20E,
+          TGO2PSC, GC5C1O-GC5C4.
     transforms:
-      # N6 SVD naming normalization
-      - {type: renameFields, register: SMCR, pattern: ^SMS_1$, replacement: SMS_3}
-      - {type: renameFields, register: SMCR, pattern: ^TS_1$, replacement: TS_4_3}
-      - {type: renameFields, register: CCMR1_Output, pattern: OC(\d)M_1$, replacement: OC\1M_3}
-      - {type: renameFields, register: CCMR2_Output, pattern: OC(\d)M_1$, replacement: OC\1M_3}
-      - {type: renameFields, register: CCMR3, pattern: OC(\d)M_1$, replacement: OC\1M_3}
-      - {type: renameFields, register: CR2, pattern: ^MMS_1$, replacement: MMS_3}
+      # Keep the descriptive names for the input/output views of CCMR1/CCMR2
+      - {type: renameRegisters, pattern: '^CCMR([12])_ALTERNATE1$', replacement: 'CCMR\1_Output'}
+      - {type: renameRegisters, pattern: '^CCMR([12])$', replacement: 'CCMR\1_Input'}
       # Widen counter/compare fields to 32-bit (TIM1 source has 16/20-bit)
       - {type: patchFields, register: CNT, fields: [{name: CNT, bitWidth: 31}]}
       - {type: patchFields, register: ARR, fields: [{name: ARR, bitWidth: 32}]}
@@ -794,11 +804,15 @@ shared_blocks:
       - {name: has_dma_burst, type: bool, default: true, description: DMA burst transfer (DCR/DMAR)}
       - {name: has_complementary, type: bool, default: false, description: Complementary output (BDTR/RCR/break/dead-time)}
       - {name: has_uifremap, type: bool, default: false, description: UIF remap (UIFREMAP in CR1)}
-      - {name: has_extended_ocm, type: bool, default: false, description: Extended OC mode (OC1M_3 etc.)}
+      - {name: has_extended_ocm, type: bool, default: false, description: 'Extended OC mode: upper part OCxM_1 present'}
       - {name: has_mms2, type: bool, default: false, description: Master mode selection 2 (MMS2 in CR2)}
     transforms:
-      # Fix H7 SVD naming inconsistency: OC4M_4 should be OC4M_3
-      - {type: renameFields, register: CCMR2_Output, pattern: ^OC4M_4$, replacement: OC4M_3}
+      # Split fields name the upper part <field>_1 (as TimerV2).  The H7 SVD
+      # calls it OC4M_4 in CCMR2_Output, OCxM_3 elsewhere.
+      - {type: renameFields, register: CCMR2_Output, pattern: ^OC4M_4$, replacement: OC4M_1}
+      - {type: renameFields, register: CCMR, pattern: '^OC(\d)M_3$', replacement: 'OC\1M_1'}
+      - {type: renameFields, register: SMCR, pattern: ^SMS_3$, replacement: SMS_1}
+      - {type: renameFields, register: SMCR, pattern: ^TS_4_3$, replacement: TS_1}
       # Widen counter/compare fields to 32-bit (TIM1 source has 16-bit)
       - {type: patchFields, register: CNT, fields: [{name: CNT, bitWidth: 31}]}
       - {type: patchFields, register: ARR, fields: [{name: ARR, bitWidth: 32}]}
@@ -2726,6 +2740,11 @@ families:
               - {type: renameRegisters, pattern: ^ADC1_, replacement: ''}
       AdvCtrlTimer:
         instances: [TIM1, TIM20, TIM8]
+        transforms:
+          # Split fields name the upper part <field>_1 (as TimerV1/TimerV2)
+          - {type: renameFields, register: CCMR, pattern: '^OC(\d)M_3$', replacement: 'OC\1M_1'}
+          - {type: renameFields, register: SMCR, pattern: ^SMS_3$, replacement: SMS_1}
+          - {type: renameFields, register: SMCR, pattern: ^TS_4_3$, replacement: TS_1}
         outputs:
           BRK:
             pattern: '^TIM1_BRK_TIM15$'
@@ -4751,23 +4770,14 @@ families:
         uses: TAMP
         instances: [TAMP, TAMP_S]
       Timer:
-        # G5-local for now; TIM1 covers every other G5 timer except the 32-bit
-        # counters of TIM2-5, widened here as in TimerV2 (CNT[30:0]+UIFCPY).
-        from: STM32G564.TIM1
+        uses: TimerV2
         instances: [TIM1, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8, TIM8_S, TIM9, TIM9_S, TIM10, TIM10_S, TIM11, TIM11_S, TIM12, TIM12_S, TIM13, TIM13_S, TIM14, TIM14_S, TIM15, TIM15_S, TIM16, TIM16_S, TIM17, TIM17_S, TIM20, TIM20_S]
-        transforms:
-          - {type: patchFields, register: CNT, fields: [{name: CNT, bitWidth: 31}]}
-          - {type: patchFields, register: ARR, fields: [{name: ARR, bitWidth: 32}]}
-          - {type: patchFields, register: CCR1, fields: [{name: CCR1, bitWidth: 32}]}
-          - {type: patchFields, register: CCR2, fields: [{name: CCR2, bitWidth: 32}]}
-          - {type: patchFields, register: CCR3, fields: [{name: CCR3, bitWidth: 32}]}
-          - {type: patchFields, register: CCR4, fields: [{name: CCR4, bitWidth: 32}]}
         outputs:
-          BRK: {description: Break / transition error / index error, pattern: '^TIM(1|8|20)_BRK_TERR_IERR$'}
-          UP: {description: Update, pattern: '^TIM(1|8|20)_UPD$'}
-          TRG_COM: {description: Trigger / commutation / direction / index, pattern: '^TIM(1|8|20)_TRGI_COM_DIR_IDX$'}
-          CC: {description: Capture compare, pattern: '^TIM(1|8|20)_CC$'}
-          INTR: {description: Global interrupt, pattern: '^TIM(2|3|4|5|9|1[0-7])$'}
+          BRK_TERR_IERR: {pattern: '^TIM(1|8|20)_BRK_TERR_IERR$'}
+          UP: {pattern: '^TIM(1|8|20)_UPD$'}
+          TRG_COM_DIR_IDX: {pattern: '^TIM(1|8|20)_TRGI_COM_DIR_IDX$'}
+          CC: {pattern: '^TIM(1|8|20)_CC$'}
+          INTR: {pattern: '^TIM(2|3|4|5|9|1[0-7])$'}
       UCPD:
         uses: UCPD
         instances: [UCPD1, UCPD1_S]
@@ -4815,6 +4825,40 @@ families:
           XSPI: {variant: 2}
           USB: {has_dcd: false}
           GPDMA: {max_channel: 7, enhanced_channels: 2}
+          # Timers (TimerV2 gen 1); values from the SVD fields each param gates
+          # (tools/g5_family/timer_params.py)
+          TIM1: {max_channel: 6, encoder: 3, has_complementary: true, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, has_mms2: true, gen: 1}
+          TIM1_S: {max_channel: 6, encoder: 3, has_complementary: true, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, has_mms2: true, gen: 1}
+          TIM8: {max_channel: 6, encoder: 3, has_complementary: true, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, has_mms2: true, gen: 1}
+          TIM8_S: {max_channel: 6, encoder: 3, has_complementary: true, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, has_mms2: true, gen: 1}
+          TIM20: {max_channel: 6, encoder: 3, has_complementary: true, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, has_mms2: true, gen: 1}
+          TIM20_S: {max_channel: 6, encoder: 3, has_complementary: true, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, has_mms2: true, gen: 1}
+          TIM2: {width32: true, encoder: 3, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM2_S: {width32: true, encoder: 3, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM3: {width32: true, encoder: 3, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM3_S: {width32: true, encoder: 3, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM4: {width32: true, encoder: 3, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM4_S: {width32: true, encoder: 3, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM5: {width32: true, encoder: 3, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM5_S: {width32: true, encoder: 3, sms_preload: 2, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM9: {max_channel: 1, has_centerPWM: false, encoder: 1, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM9_S: {max_channel: 1, has_centerPWM: false, encoder: 1, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM12: {max_channel: 1, has_centerPWM: false, encoder: 1, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM12_S: {max_channel: 1, has_centerPWM: false, encoder: 1, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM10: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM10_S: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM11: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM11_S: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM13: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM13_S: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM14: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM14_S: {max_channel: 0, has_centerPWM: false, has_xor_input: false, has_etr: false, has_dma_burst: false, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM15: {max_channel: 1, encoder: 1, has_etr: false, has_complementary: true, sms_preload: 1, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM15_S: {max_channel: 1, encoder: 1, has_etr: false, has_complementary: true, sms_preload: 1, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM16: {max_channel: 0, has_xor_input: false, has_etr: false, has_complementary: true, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM16_S: {max_channel: 0, has_xor_input: false, has_etr: false, has_complementary: true, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM17: {max_channel: 0, has_xor_input: false, has_etr: false, has_complementary: true, has_uifremap: true, has_extended_ocm: true, gen: 1}
+          TIM17_S: {max_channel: 0, has_xor_input: false, has_etr: false, has_complementary: true, has_uifremap: true, has_extended_ocm: true, gen: 1}
       G53x_G54x:
         _all:
           GPDMA: {max_channel: 5, enhanced_channels: 2}
