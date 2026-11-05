@@ -1,6 +1,6 @@
 # Task: Restructure the STM32H5 block models (and add STM32H543/H553)
 
-Status: **Phase A committed as WIP (393327a6); Phase B not started.**
+Status: **Phase A done and verified (2026-11-05); Phase B not started.**
 Started 2026-11-04.
 
 ## Why
@@ -47,16 +47,29 @@ existing chips:
   Block-level keys already cover aliases.
 - 57 stale/unreferenced H5 model files deleted.
 
-**Still to verify before dropping the WIP label:**
-- [ ] Compile-check H5 headers. `soc-data-test` contains no H5 chip. Either
-      add one chip per subfamily to `test/CMakeLists.txt`, or generate and
-      `clang++-22 -fsyntax-only` them by hand.
-- [ ] Run the coverage check: `tools/h5_restructure/model_vs_svd.py`. Exact
-      position match was HEAD 278/1259, WORK 525/1546. Exact match is too
-      strict for shared superset models; the check that matters is that
-      every SVD field is covered by the model ("covers"), split by
-      family/shared block. It was interrupted before finishing.
-- [ ] `RTC_S` interrupt (shared RTC_V2) still unresolved.
+**Verification (2026-11-05):**
+- [x] Compile check: `test/h5/` builds every H5 chip, one binary dir per
+      subfamily (target `soc-data-h5`, a dependency of `soc-data-test`).
+      This needed `generate_header()` dedup to be scoped per binary
+      directory: previously a dependency already generated in another
+      directory was skipped and its module was invisible to the target.
+- [x] Coverage, `model_vs_svd.py <rev> --covers` (bit-level: every SVD
+      field's bits must be covered by model fields at the same offset):
+      family blocks 55/285 before Phase A → 206/222; shared blocks
+      811/974 → 1096/1324, with the same failing set as before once alias
+      instances are folded (Phase A touched no shared model).
+- [x] `RTC_S`: the H5 RTC entry now declares `S` (shared RTC_V2 canonical,
+      as on L5/U5).  The H562/H563/H573 SVDs carry no RTC interrupts at
+      all; wired via `chip_connections` (see SVD_ERRATA.md).
+
+**Remaining coverage gaps** (input for Phase B, `--covers` output):
+- Family, H523/H533 only (interim H573 source): RCC I3C2RST/EN/LPEN and
+  CCIPR4.I3C2SEL; RAMCFG M2WPR3; EXTI line 58 (IMR2/EMR2); PWR
+  PMCR.SRAM1SO.
+- Shared, pre-existing: ICACHE CRR0–3 (all chips), SDMMC (−15, all),
+  TAMP (−4), LPTIM (−1), RTC_V2 (−1), TimerV2 TIM17 (−1), HASH HR16–31
+  and RNG (H5Ex_H5Fx), ModernSPI (−1, H5Ex_H5Fx), ETH (−2, H563/H573),
+  AES_V3/SAES (−1, H573).
 
 ## Phase B (todo): supersets inside H52x_H57x
 
@@ -127,5 +140,6 @@ supplement checkout in `build/_deps/stm32h5_svd_supplement-src`.
 - `h5_phaseA_plan.py` / `h5_phaseA_apply.py`: the Phase A config edit
   (fold, SEC_ instances, variants). They are kept for reference, already
   applied, and not idempotent.
-- `model_vs_svd.py HEAD|WORK`: whether chip instance models match their
-  own SVD (field positions).
+- `model_vs_svd.py WORK|<git-rev> [--covers]`: whether chip instance models
+  match their own SVD (exact field positions), or with `--covers` whether
+  they cover every SVD field bit.  Takes ~3 min.

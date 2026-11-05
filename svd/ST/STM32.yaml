@@ -5829,6 +5829,8 @@ families:
         outputs:
           INTR:
             pattern: '^RTC$'
+          S:
+            pattern: '^RTC_S$'
       SAES:
         uses: SAES
         instances: [SAES, SAES_S, SEC_SAES]
@@ -5874,6 +5876,20 @@ families:
       WWDG:
         uses: WWDG
         instances: [SEC_WWDG, WWDG, WWDG_S]
+    chip_connections:
+      H52x_H57x:
+        _all:
+          # SVD bug (H562/H563/H573 v2.0): the RTC peripheral carries no
+          # interrupts.  RM0481 Rev. 5 vector tables: RTC (non-secure) at
+          # 0x0048 = position 2 → NVIC.18, RTC_S at 0x004C = position 3 →
+          # NVIC.19, on every chip of the subfamily.  H523/H533 list both
+          # correctly; the override restates them so all chips agree.
+          # The key RTC is also the block name, so without the two empty
+          # entries below the block-type fallback would wire the secure
+          # aliases RTC_S/SEC_RTC too.  The vectors belong to RTC only.
+          RTC: {INTR: [NVIC.18], S: [NVIC.19]}
+          RTC_S: {}
+          SEC_RTC: {}
     chip_params:
       _all:
         _all:

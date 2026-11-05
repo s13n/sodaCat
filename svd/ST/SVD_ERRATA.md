@@ -285,6 +285,17 @@ The real CRYP crypto processor (a completely different, much larger peripheral)
 exists only on F74x and F76x devices.
 
 
+## ST STM32H5
+
+### RTC interrupts missing (H562/H563/H573)
+
+The H562, H563 and H573 SVDs (v2.0) list no `<interrupt>` on the RTC
+peripheral.  RM0481 Rev. 5 places RTC (non-secure) at vector-table
+address 0x0048 (position 2) and RTC_S (secure) at 0x004C (position 3) for
+all of its chips; the H523/H533 SVDs list both.  Wired via
+`chip_connections` (`RTC: {INTR: [NVIC.18], S: [NVIC.19]}`) for the whole
+H52x_H57x subfamily.
+
 ## ST STM32H7
 
 References:
