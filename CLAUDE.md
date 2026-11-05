@@ -116,7 +116,7 @@ Full architectural rationale (the "kind = property of destination, not source" r
 
 ### Clock-tree association
 
-A chip declares its clock tree via a top-level `clocktree:` string (path relative to the models root, e.g. `Microchip/SAM_Gen1_clocks` — same shape as `models:` map values). When the cmake macro `generate_header()` processes a chip, it auto-generates the chip's clock-tree header in the same C++ namespace, using the existing dedup mechanism so a clock tree shared by N chips is only emitted once per (namespace, target). The dispatcher (`generate_header.py`) routes clock-tree YAMLs by their `signals:` key. Standalone `generate_header(...)` calls for clock-tree models still work but are redundant once the chip references one.
+A chip declares its clock tree via a top-level `clocktree:` string (path relative to the models root, e.g. `Microchip/SAM_Gen1_clocks` — same shape as `models:` map values). When the cmake macro `generate_header()` processes a chip, it auto-generates the chip's clock-tree header in the same C++ namespace, using the existing dedup mechanism so a clock tree shared by N chips is only emitted once per (namespace, binary directory). The dispatcher (`generate_header.py`) routes clock-tree YAMLs by their `signals:` key. Standalone `generate_header(...)` calls for clock-tree models still work but are redundant once the chip references one.
 
 The legacy `clocktree:` form coexists with the newer subfamily-model layering — chips now usually reach the clock tree via an `inherits:` link to a subfamily YAML whose `clocks:` section holds the topology (see "Subfamily model & inheritance" below).  The two forms are interchangeable from the dispatcher's perspective.
 

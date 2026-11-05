@@ -174,11 +174,15 @@ function(generate_header target language model_path suffix)
     )
 
     # Deduplicate: skip if this model path already has a header being generated
-    # for this namespace.  The dedup key includes the namespace because the
-    # same peripheral may be re-emitted into a sibling namespace if its
-    # `namespace:` key changes between revisions.
+    # for this namespace in this binary directory.  The dedup key includes the
+    # namespace because the same peripheral may be re-emitted into a sibling
+    # namespace if its `namespace:` key changes between revisions.  It includes
+    # the binary directory because outputs land there: a dependency generated
+    # in another directory is invisible to targets here, so it must be
+    # generated again (e.g. a shared block used by chips in two directories).
     string(REPLACE "/" "_" _path_key "${model_path}")
-    set(dedup_key "${_ns}_${_path_key}")
+    string(MAKE_C_IDENTIFIER "${CMAKE_CURRENT_BINARY_DIR}" _dir_key)
+    set(dedup_key "${_dir_key}_${_ns}_${_path_key}")
     get_property(already_generated GLOBAL PROPERTY _SODACAT_HDR_${dedup_key})
     if(already_generated)
         return()
