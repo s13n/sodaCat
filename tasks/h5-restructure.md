@@ -198,6 +198,21 @@ Open:
       renamed ICache -> ICACHE (RM0456 name), and models/ST/U5/ICACHE.yaml
       is removed.  STM32U535's chip header compiles (ad-hoc check; U5 has no
       compile test).
+- [x] HASH (shared, 2026-11-05): source N645 -> H553, so the SHA-3
+      registers (HR16-41, 6-bit NBWP/NBWE) are in the model, as gen 3.
+      Wrong `gen` values fixed: H5 was 1 family-wide (now H503 1, H523/533/
+      56x 2, H543/553/H5Ex 3), and C5 was 2 (now 1, C59x_C5A3 2).  The
+      gen-0 ALGO0 (CR bit 7) was missing for F4/F7/H7/L4/L4+/L5 and is now
+      added.  HASH is covered on gen 0-3 representatives; U385's HR42-49 are
+      undocumented and left out.
+- [x] RNG (shared, 2026-11-05): source N645 -> C591 (the complete RM
+      layout).  `gen` 3 is now just +ARDIS, and new flags has_nscr,
+      nscr_osc (2/3/6) and ext_health describe the two post-gen-2 branches
+      (user decision: gen + feature flags).  C5 and U3 use the shared model
+      (their own models are removed).  `chip_params` are set from the RMs
+      (RM0481/0492/0456/0477/0486/0487/0503/0517/0522).  RNG is covered
+      on 16 representatives across all branches; G0's undocumented CR.BYP is
+      left out.
 - [ ] Shared-block presence gaps (ICACHE CRR, SDMMC, TAMP, HASH, RNG,
       ...): mergeFrom with `annotate: false`, cross-family regen.
 - [ ] Cosmetic: the H52x_H57x RCC lists output INTR_S before INTR,

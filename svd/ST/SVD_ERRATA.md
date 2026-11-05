@@ -40,6 +40,13 @@ PMD-only transceiver.  RM0522 Rev. 1 doesn't document the register, or
 reference manual documents it.  (A full 10BASE-T1S PHY on MII/RMII needs no
 MAC support, so other chips aren't affected.)
 
+### HASH: SHA-384/512 registers missing (C59x/C5Ax)
+
+All C5 SVDs (v1.0) describe the gen-1 HASH: 2-bit ALGO, no HR8-HR15.
+RM0522 Rev. 1 (table 231) gives C59x/C5Ax SHA2-384/512 (4-bit ALGO[3:0],
+HR0-HR15).  The shared ST/HASH model covers it; `gen` is 2 on C59x_C5A3 and 1
+on the other C5 subfamilies.
+
 ## ST STM32F7
 
 References:
@@ -376,6 +383,30 @@ The H543/H553 SVDs (DFP v2.3.1) have ICACHE HWCFGR, VERR, IPIDR and SIDR at
 are left out of the shared ST/ICACHE model until RM0481 documents them.  The
 model itself is sourced from H573 (with CRR0-3, param `has_remap`); H503 and
 H7R/H7S have no remap regions.
+
+### HASH generations (H5)
+
+RM0481 table 397: SHA-1/SHA-2 (incl. SHA-384/512) on every RM0481 die,
+SHA-3/SHAKE on H543/553 only (HR0-HR41, 6-bit NBWP/NBWE).  RM0517 adds SHA-3
+on H5Ex/H5Fx too.  H503 is gen 1.  The shared ST/HASH model is sourced from
+H553 (N645 + the SHA-3 registers).  `gen` is 1 on H503, 2 on H523/533/56x and
+3 on H543/553 and H5Ex/H5Fx (was 1 family-wide).  The U385 SVD lists
+HR16-HR49, but RM0487 Rev. 3 documents no SHA-3 and only HR0-HR15, so those
+are left out.
+
+### RNG: SVDs omit RM-documented registers (shared model, all families)
+
+The shared ST/RNG model now follows the reference manuals (source C591, the
+only SVD with the complete layout).  SVD/RM discrepancies found:
+- H523/H533/H562/H563/H573 SVDs: no HTCR1-3, HTSR0/1, NSMR, SR.BUSY.
+  RM0481 documents them for every die (the H543/H553 SVDs have HTCR1-3 and
+  BUSY, but no HTSR/NSMR).  Covered by `ext_health`.
+- U5 (RM0456) and U0 (RM0503) SVDs: no NSCR, which both RMs document.  U0's
+  has only EN_OSC1-2, so `nscr_osc` is 2 there.
+- RNG_CONFIG1 is 8 bits (27:20) in RM0477/RM0486/RM0487/RM0517/RM0522, but
+  the N645 SVD says 6.  RM0481 says 6 bits, while RM0517 (the same IP)
+  says 8; the model has 8.
+- G0 SVDs: CR.BYP (bit 6), which RM0444 Rev. 5 marks reserved.  Left out.
 
 ### PWR PMCR: two layouts (not an SVD bug)
 

@@ -1,19 +1,20 @@
 name: HASH
-description: Register bank (full SHA-2/SHA-3)
+description: Hash processor (HASH)
 groupName: HASH
-source: STM32N645 SVD v1.0
+source: STM32H5xx_DFP v2.3.1/STM32H553 SVD v1.0
 params:
   - name: gen
     type: int
     default: 0
-    max: 2
-    description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-512 (4-bit ALGO)'
+    max: 3
+    description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-384/512 (4-bit ALGO, HR8-HR15), 3=+SHA-3/SHAKE (HR16-HR41, 6-bit NBWP/NBWE)'
 registers:
   - name: CR
     displayName: CR
     description: Control register
     addressOffset: 0
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -32,7 +33,7 @@ registers:
             description: DMA transfers disabled
             value: 0
           - name: B_0x1
-            description: DMA transfers enabled. A DMA request is sent as soon as the hash core is ready to receive data.
+            description: DMA transfers enabled.
             value: 1
       - name: DATATYPE
         description: Data type selection
@@ -41,16 +42,16 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: 32-bit data. The data written into HASH_DIN are directly used by the HASH processing, without reordering.
+            description: 32-bit data.
             value: 0
           - name: B_0x1
-            description: 16-bit data or half-word. The data written into HASH_DIN are considered as two half-words, and are swapped before being used by the HASH processing.
+            description: 16-bit data or half-word.
             value: 1
           - name: B_0x2
-            description: 8-bit data or bytes. The data written into HASH_DIN are considered as four bytes, and are swapped before being used by the HASH processing.
+            description: 8-bit data or bytes.
             value: 2
           - name: B_0x3
-            description: bit data or bit string. The data written into HASH_DIN are considered as 32 bits (1st bit of the string at position 0), and are swapped before being used by the HASH processing (1st bit of the string at position 31).
+            description: bit data or bit string.
             value: 3
       - name: MODE
         description: Mode selection
@@ -62,7 +63,7 @@ registers:
             description: Hash mode selected
             value: 0
           - name: B_0x1
-            description: HMAC mode selected. LKEY bit must be set if the key being used is longer than the algorithm block size.
+            description: HMAC mode selected.
             value: 1
       - name: NBW
         description: Number of words already pushed
@@ -93,10 +94,10 @@ registers:
         access: read-write
         enumeratedValues:
           - name: B_0x0
-            description: HMAC key is shorter or equal to the block size (short key). The actual key value written in HASH_DIN is used during the HMAC computation.
+            description: HMAC key is shorter or equal to the block size (short key).
             value: 0
           - name: B_0x1
-            description: HMAC key is longer than the block size (long key). The hash of the key is used instead of the real key during the HMAC computation.
+            description: HMAC key is longer than the block size (long key).
             value: 1
       - name: ALGO
         description: Algorithm selection
@@ -125,11 +126,35 @@ registers:
           - name: B_0xF
             description: SHA2-512
             value: 15
+          - name: B_0x4
+            description: SHA3-224
+            value: 4
+          - name: B_0x5
+            description: SHA3-256
+            value: 5
+          - name: B_0x6
+            description: SHA3-384
+            value: 6
+          - name: B_0x7
+            description: SHA3-512
+            value: 7
+          - name: B_0x8
+            description: SHAKE128
+            value: 8
+          - name: B_0x9
+            description: SHAKE256
+            value: 9
+      - name: ALGO0
+        bitOffset: 7
+        bitWidth: 1
+        access: read-write
+        description: 'Algorithm selection bit 0 (gen 0 only).  Gen 0 encodes the algorithm as ALGO1:ALGO0, with ALGO1 = bit 18 = ALGO[1]: 00 SHA-1, 01 MD5, 10 SHA-224, 11 SHA-256'
   - name: DIN
     displayName: DIN
     description: Data input register
     addressOffset: 4
     size: 32
+    access: write-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -143,6 +168,7 @@ registers:
     description: Start register
     addressOffset: 8
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -177,6 +203,7 @@ registers:
     description: Aliased digest register 0
     addressOffset: 12
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -190,6 +217,7 @@ registers:
     description: Aliased digest register 1
     addressOffset: 16
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -203,6 +231,7 @@ registers:
     description: Aliased digest register 2
     addressOffset: 20
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -216,6 +245,7 @@ registers:
     description: Aliased digest register 3
     addressOffset: 24
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -229,6 +259,7 @@ registers:
     description: Aliased digest register 4
     addressOffset: 28
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -242,6 +273,7 @@ registers:
     description: Interrupt enable register
     addressOffset: 32
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -274,6 +306,7 @@ registers:
     description: Status register
     addressOffset: 36
     size: 32
+    access: read-write
     resetValue: 1114113
     resetMask: 4294967295
     fields:
@@ -287,7 +320,7 @@ registers:
             description: Less than 16 locations are free in the input buffer
             value: 0
           - name: B_0x1
-            description: A new block can be entered into the input buffer. An interrupt is generated if the DINIE bit is set in the HASH_IMR register.
+            description: A new block can be entered into the input buffer.
             value: 1
       - name: DCIS
         description: Digest calculation completion interrupt status
@@ -299,7 +332,7 @@ registers:
             description: No digest available in the HASH_HRx registers (zeros are returned)
             value: 0
           - name: B_0x1
-            description: Digest calculation complete, a digest is available in the HASH_HRx registers. An interrupt is generated if the DCIE bit is set in the HASH_IMR register.
+            description: Digest calculation complete, a digest is available in the HASH_HRx registers.
             value: 1
       - name: DMAS
         description: DMA Status
@@ -308,10 +341,10 @@ registers:
         access: read-only
         enumeratedValues:
           - name: B_0x0
-            description: DMA interface is disabled (DMAE = 0) and no transfer is ongoing
+            description: DMA interface is disabled (DMAE=0) and no transfer is ongoing
             value: 0
           - name: B_0x1
-            description: DMA interface is enabled (DMAE = 1) or a transfer is ongoing
+            description: DMA interface is enabled (DMAE=1) or a transfer is ongoing
             value: 1
       - name: BUSY
         description: Busy bit
@@ -328,7 +361,7 @@ registers:
       - name: NBWP
         description: Number of words already pushed
         bitOffset: 9
-        bitWidth: 5
+        bitWidth: 6
         access: read-only
       - name: DINNE
         description: DIN not empty
@@ -345,13 +378,14 @@ registers:
       - name: NBWE
         description: Number of words expected
         bitOffset: 16
-        bitWidth: 5
+        bitWidth: 6
         access: read-only
   - name: CSR0
     displayName: CSR0
     description: Context swap register 0
     addressOffset: 248
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -365,6 +399,7 @@ registers:
     description: Context swap register 1
     addressOffset: 252
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -378,6 +413,7 @@ registers:
     description: Context swap register 2
     addressOffset: 256
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -391,6 +427,7 @@ registers:
     description: Context swap register 3
     addressOffset: 260
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -404,6 +441,7 @@ registers:
     description: Context swap register 4
     addressOffset: 264
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -417,6 +455,7 @@ registers:
     description: Context swap register 5
     addressOffset: 268
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -430,6 +469,7 @@ registers:
     description: Context swap register 6
     addressOffset: 272
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -443,6 +483,7 @@ registers:
     description: Context swap register 7
     addressOffset: 276
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -456,6 +497,7 @@ registers:
     description: Context swap register 8
     addressOffset: 280
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -469,6 +511,7 @@ registers:
     description: Context swap register 9
     addressOffset: 284
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -482,6 +525,7 @@ registers:
     description: Context swap register 10
     addressOffset: 288
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -495,6 +539,7 @@ registers:
     description: Context swap register 11
     addressOffset: 292
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -508,6 +553,7 @@ registers:
     description: Context swap register 12
     addressOffset: 296
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -521,6 +567,7 @@ registers:
     description: Context swap register 13
     addressOffset: 300
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -534,6 +581,7 @@ registers:
     description: Context swap register 14
     addressOffset: 304
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -547,6 +595,7 @@ registers:
     description: Context swap register 15
     addressOffset: 308
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -560,6 +609,7 @@ registers:
     description: Context swap register 16
     addressOffset: 312
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -573,6 +623,7 @@ registers:
     description: Context swap register 17
     addressOffset: 316
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -586,6 +637,7 @@ registers:
     description: Context swap register 18
     addressOffset: 320
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -599,6 +651,7 @@ registers:
     description: Context swap register 19
     addressOffset: 324
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -612,6 +665,7 @@ registers:
     description: Context swap register 20
     addressOffset: 328
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -625,6 +679,7 @@ registers:
     description: Context swap register 21
     addressOffset: 332
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -638,6 +693,7 @@ registers:
     description: Context swap register 22
     addressOffset: 336
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -651,6 +707,7 @@ registers:
     description: Context swap register 23
     addressOffset: 340
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -664,6 +721,7 @@ registers:
     description: Context swap register 24
     addressOffset: 344
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -677,6 +735,7 @@ registers:
     description: Context swap register 25
     addressOffset: 348
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -690,6 +749,7 @@ registers:
     description: Context swap register 26
     addressOffset: 352
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -703,6 +763,7 @@ registers:
     description: Context swap register 27
     addressOffset: 356
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -716,6 +777,7 @@ registers:
     description: Context swap register 28
     addressOffset: 360
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -729,6 +791,7 @@ registers:
     description: Context swap register 29
     addressOffset: 364
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -742,6 +805,7 @@ registers:
     description: Context swap register 30
     addressOffset: 368
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -755,6 +819,7 @@ registers:
     description: Context swap register 31
     addressOffset: 372
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -768,6 +833,7 @@ registers:
     description: Context swap register 32
     addressOffset: 376
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -781,6 +847,7 @@ registers:
     description: Context swap register 33
     addressOffset: 380
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -794,6 +861,7 @@ registers:
     description: Context swap register 34
     addressOffset: 384
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -807,6 +875,7 @@ registers:
     description: Context swap register 35
     addressOffset: 388
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -820,6 +889,7 @@ registers:
     description: Context swap register 36
     addressOffset: 392
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -833,6 +903,7 @@ registers:
     description: Context swap register 37
     addressOffset: 396
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -846,6 +917,7 @@ registers:
     description: Context swap register 38
     addressOffset: 400
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -859,6 +931,7 @@ registers:
     description: Context swap register 39
     addressOffset: 404
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -872,6 +945,7 @@ registers:
     description: Context swap register 40
     addressOffset: 408
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -885,6 +959,7 @@ registers:
     description: Context swap register 41
     addressOffset: 412
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -898,6 +973,7 @@ registers:
     description: Context swap register 42
     addressOffset: 416
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -911,6 +987,7 @@ registers:
     description: Context swap register 43
     addressOffset: 420
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -924,6 +1001,7 @@ registers:
     description: Context swap register 44
     addressOffset: 424
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -937,6 +1015,7 @@ registers:
     description: Context swap register 45
     addressOffset: 428
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -950,6 +1029,7 @@ registers:
     description: Context swap register 46
     addressOffset: 432
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -963,6 +1043,7 @@ registers:
     description: Context swap register 47
     addressOffset: 436
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -976,6 +1057,7 @@ registers:
     description: Context swap register 48
     addressOffset: 440
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -989,6 +1071,7 @@ registers:
     description: Context swap register 49
     addressOffset: 444
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1002,6 +1085,7 @@ registers:
     description: Context swap register 50
     addressOffset: 448
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1015,6 +1099,7 @@ registers:
     description: Context swap register 51
     addressOffset: 452
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1028,6 +1113,7 @@ registers:
     description: Context swap register 52
     addressOffset: 456
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1041,6 +1127,7 @@ registers:
     description: Context swap register 53
     addressOffset: 460
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1054,6 +1141,7 @@ registers:
     description: Context swap register 54
     addressOffset: 464
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1067,6 +1155,7 @@ registers:
     description: Context swap register 55
     addressOffset: 468
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1080,6 +1169,7 @@ registers:
     description: Context swap register 56
     addressOffset: 472
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1093,6 +1183,7 @@ registers:
     description: Context swap register 57
     addressOffset: 476
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1106,6 +1197,7 @@ registers:
     description: Context swap register 58
     addressOffset: 480
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1119,6 +1211,7 @@ registers:
     description: Context swap register 59
     addressOffset: 484
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1132,6 +1225,7 @@ registers:
     description: Context swap register 60
     addressOffset: 488
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1145,6 +1239,7 @@ registers:
     description: Context swap register 61
     addressOffset: 492
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1158,6 +1253,7 @@ registers:
     description: Context swap register 62
     addressOffset: 496
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1171,6 +1267,7 @@ registers:
     description: Context swap register 63
     addressOffset: 500
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1184,6 +1281,7 @@ registers:
     description: Context swap register 64
     addressOffset: 504
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1197,6 +1295,7 @@ registers:
     description: Context swap register 65
     addressOffset: 508
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1210,6 +1309,7 @@ registers:
     description: Context swap register 66
     addressOffset: 512
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1223,6 +1323,7 @@ registers:
     description: Context swap register 67
     addressOffset: 516
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1236,6 +1337,7 @@ registers:
     description: Context swap register 68
     addressOffset: 520
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1249,6 +1351,7 @@ registers:
     description: Context swap register 69
     addressOffset: 524
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1262,6 +1365,7 @@ registers:
     description: Context swap register 70
     addressOffset: 528
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1275,6 +1379,7 @@ registers:
     description: Context swap register 71
     addressOffset: 532
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1288,6 +1393,7 @@ registers:
     description: Context swap register 72
     addressOffset: 536
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1301,6 +1407,7 @@ registers:
     description: Context swap register 73
     addressOffset: 540
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1314,6 +1421,7 @@ registers:
     description: Context swap register 74
     addressOffset: 544
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1327,6 +1435,7 @@ registers:
     description: Context swap register 75
     addressOffset: 548
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1340,6 +1449,7 @@ registers:
     description: Context swap register 76
     addressOffset: 552
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1353,6 +1463,7 @@ registers:
     description: Context swap register 77
     addressOffset: 556
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1366,6 +1477,7 @@ registers:
     description: Context swap register 78
     addressOffset: 560
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1379,6 +1491,7 @@ registers:
     description: Context swap register 79
     addressOffset: 564
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1392,6 +1505,7 @@ registers:
     description: Context swap register 80
     addressOffset: 568
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1405,6 +1519,7 @@ registers:
     description: Context swap register 81
     addressOffset: 572
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1418,6 +1533,7 @@ registers:
     description: Context swap register 82
     addressOffset: 576
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1431,6 +1547,7 @@ registers:
     description: Context swap register 83
     addressOffset: 580
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1444,6 +1561,7 @@ registers:
     description: Context swap register 84
     addressOffset: 584
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1457,6 +1575,7 @@ registers:
     description: Context swap register 85
     addressOffset: 588
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1470,6 +1589,7 @@ registers:
     description: Context swap register 86
     addressOffset: 592
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1483,6 +1603,7 @@ registers:
     description: Context swap register 87
     addressOffset: 596
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1496,6 +1617,7 @@ registers:
     description: Context swap register 88
     addressOffset: 600
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1509,6 +1631,7 @@ registers:
     description: Context swap register 89
     addressOffset: 604
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1522,6 +1645,7 @@ registers:
     description: Context swap register 90
     addressOffset: 608
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1535,6 +1659,7 @@ registers:
     description: Context swap register 91
     addressOffset: 612
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1548,6 +1673,7 @@ registers:
     description: Context swap register 92
     addressOffset: 616
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1561,6 +1687,7 @@ registers:
     description: Context swap register 93
     addressOffset: 620
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1574,6 +1701,7 @@ registers:
     description: Context swap register 94
     addressOffset: 624
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1587,6 +1715,7 @@ registers:
     description: Context swap register 95
     addressOffset: 628
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1600,6 +1729,7 @@ registers:
     description: Context swap register 96
     addressOffset: 632
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1613,6 +1743,7 @@ registers:
     description: Context swap register 97
     addressOffset: 636
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1626,6 +1757,7 @@ registers:
     description: Context swap register 98
     addressOffset: 640
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1639,6 +1771,7 @@ registers:
     description: Context swap register 99
     addressOffset: 644
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1652,6 +1785,7 @@ registers:
     description: Context swap register 100
     addressOffset: 648
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1665,6 +1799,7 @@ registers:
     description: Context swap register 101
     addressOffset: 652
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1678,6 +1813,7 @@ registers:
     description: Context swap register 102
     addressOffset: 656
     size: 32
+    access: read-write
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1691,6 +1827,7 @@ registers:
     description: Digest register 0
     addressOffset: 784
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1704,6 +1841,7 @@ registers:
     description: Digest register 1
     addressOffset: 788
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1717,6 +1855,7 @@ registers:
     description: Digest register 2
     addressOffset: 792
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1730,6 +1869,7 @@ registers:
     description: Digest register 3
     addressOffset: 796
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1743,6 +1883,7 @@ registers:
     description: Digest register 4
     addressOffset: 800
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1756,6 +1897,7 @@ registers:
     description: Supplementary digest register 5
     addressOffset: 804
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1769,6 +1911,7 @@ registers:
     description: Supplementary digest register 6
     addressOffset: 808
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1782,6 +1925,7 @@ registers:
     description: Supplementary digest register 7
     addressOffset: 812
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1795,6 +1939,7 @@ registers:
     description: Supplementary digest register 8
     addressOffset: 816
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1808,6 +1953,7 @@ registers:
     description: Supplementary digest register 9
     addressOffset: 820
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1821,6 +1967,7 @@ registers:
     description: Supplementary digest register 10
     addressOffset: 824
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1834,6 +1981,7 @@ registers:
     description: Supplementary digest register 11
     addressOffset: 828
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1847,6 +1995,7 @@ registers:
     description: Supplementary digest register 12
     addressOffset: 832
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1860,6 +2009,7 @@ registers:
     description: Supplementary digest register 13
     addressOffset: 836
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1873,6 +2023,7 @@ registers:
     description: Supplementary digest register 14
     addressOffset: 840
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
@@ -1886,10 +2037,375 @@ registers:
     description: Supplementary digest register 15
     addressOffset: 844
     size: 32
+    access: read-only
     resetValue: 0
     resetMask: 4294967295
     fields:
       - name: H15
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR16
+    displayName: HR16
+    description: Supplementary digest register 16
+    addressOffset: 848
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H16
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR17
+    displayName: HR17
+    description: Supplementary digest register 17
+    addressOffset: 852
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H17
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR18
+    displayName: HR18
+    description: Supplementary digest register 18
+    addressOffset: 856
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H18
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR19
+    displayName: HR19
+    description: Supplementary digest register 19
+    addressOffset: 860
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H19
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR20
+    displayName: HR20
+    description: Supplementary digest register 20
+    addressOffset: 864
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H20
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR21
+    displayName: HR21
+    description: Supplementary digest register 21
+    addressOffset: 868
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H21
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR22
+    displayName: HR22
+    description: Supplementary digest register 22
+    addressOffset: 872
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H22
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR23
+    displayName: HR23
+    description: Supplementary digest register 23
+    addressOffset: 876
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H23
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR24
+    displayName: HR24
+    description: Supplementary digest register 24
+    addressOffset: 880
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H24
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR25
+    displayName: HR25
+    description: Supplementary digest register 25
+    addressOffset: 884
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H25
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR26
+    displayName: HR26
+    description: Supplementary digest register 26
+    addressOffset: 888
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H26
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR27
+    displayName: HR27
+    description: Supplementary digest register 27
+    addressOffset: 892
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H27
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR28
+    displayName: HR28
+    description: Supplementary digest register 28
+    addressOffset: 896
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H28
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR29
+    displayName: HR29
+    description: Supplementary digest register 29
+    addressOffset: 900
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H29
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR30
+    displayName: HR30
+    description: Supplementary digest register 30
+    addressOffset: 904
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H30
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR31
+    displayName: HR31
+    description: Supplementary digest register 31
+    addressOffset: 908
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H31
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR32
+    displayName: HR32
+    description: Supplementary digest register 32
+    addressOffset: 912
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H32
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR33
+    displayName: HR33
+    description: Supplementary digest register 33
+    addressOffset: 916
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H33
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR34
+    displayName: HR34
+    description: Supplementary digest register 34
+    addressOffset: 920
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H34
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR35
+    displayName: HR35
+    description: Supplementary digest register 35
+    addressOffset: 924
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H35
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR36
+    displayName: HR36
+    description: Supplementary digest register 36
+    addressOffset: 928
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H36
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR37
+    displayName: HR37
+    description: Supplementary digest register 37
+    addressOffset: 932
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H37
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR38
+    displayName: HR38
+    description: Supplementary digest register 38
+    addressOffset: 936
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H38
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR39
+    displayName: HR39
+    description: Supplementary digest register 39
+    addressOffset: 940
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H39
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR40
+    displayName: HR40
+    description: Supplementary digest register 40
+    addressOffset: 944
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H40
+        description: Hash data x
+        bitOffset: 0
+        bitWidth: 32
+        access: read-only
+  - name: HR41
+    displayName: HR41
+    description: Supplementary digest register 41
+    addressOffset: 948
+    size: 32
+    access: read-only
+    resetValue: 0
+    resetMask: 4294967295
+    fields:
+      - name: H41
         description: Hash data x
         bitOffset: 0
         bitWidth: 32

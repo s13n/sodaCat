@@ -38,20 +38,38 @@ shared_blocks:
       # Rename PR field to PRESCALER to avoid C++ name collision with register PR
       - {type: renameFields, register: PR, pattern: ^PR$, replacement: PRESCALER}
   RNG:
-    # Random Number Generator (Gen 0-3 superset chain)
+    # Random Number Generator.  `gen` is the CR progression; after gen 2
+    # the IP splits into two branches, described by flags (per the RMs):
     # Gen 0 (basic): CR{RNGEN,IE}, SR{DRDY,CECS,SECS,CEIS,SEIS}, DR — F4
     # Gen 1 (+CED): +CED in CR — F7, L0, L4, L4+(L4R/S), G0, G4, H7(non-H73x)
     # Gen 2 (+config): +CONFIG3/NISTC/CONFIG2/CLKDIV/CONFIG1/CONDRST/CONFIGLOCK, +HTCR — L5, L4+(L4P/Q), H7(H73x)
-    # Gen 3 (+ARDIS+NSCR): +ARDIS in CR, +NSCR register — H5, H7RS, U0, U5, N6
-    # U3 stays separate (8-bit CONFIG1, BUSY in SR, 4 HTCR registers)
-    from: STM32N645.RNG
+    # Gen 3 (+ARDIS) — H503, U0, U5, H7RS, N6, H5 (RM0481), H5Ex, U3, C5
+    #   has_nscr (NSCR, nscr_osc oscillator enables): U0 (2), U5/H7RS/N6 (6),
+    #     H5 (RM0481)/H5Ex/U3/C5 (3); not H503
+    #   ext_health (HTCR1-3, HTSR0/1, NSMR, SR.BUSY): H5 (RM0481), H5Ex, U3, C5
+    #   (SR.BUSY also on H7RS/N6.)  RNG_CONFIG1 is 8 bits on H7RS/N6/H5Ex/U3/C5,
+    #   6 bits elsewhere (RM0481 says 6; RM0517, the same IP, says 8).
+    # Source C591: the complete ext_health layout with 8-bit CONFIG1.  EN_OSC4-6
+    # (6-oscillator NSCR, RM0456/RM0477/RM0486) are added from N645's layout.
+    from: STM32C591.RNG
     outputs:
       INTR:
         pattern: '^RNG$'
     params:
-      - {name: gen, type: int, default: 1, max: 3, description: 'RNG generation: 0=basic (CR:RNGEN+IE), 1=+CED, 2=+HTCR/config/CONDRST/CONFIGLOCK, 3=+ARDIS+NSCR'}
+      - {name: gen, type: int, default: 1, max: 3, description: 'RNG generation: 0=basic (CR:RNGEN+IE), 1=+CED, 2=+HTCR/config/CONDRST/CONFIGLOCK, 3=+ARDIS'}
+      - {name: has_nscr, type: bool, default: false, description: 'Noise source control register NSCR present'}
+      - {name: nscr_osc, type: int, default: 6, description: 'Number of NSCR oscillator enables EN_OSCx (2, 3 or 6); meaningful only with has_nscr'}
+      - {name: ext_health, type: bool, default: false, description: 'Extended health tests: HTCR1-HTCR3, HTSR0/HTSR1, NSMR and SR.BUSY'}
     transforms:
-      - {type: patchAddressBlock, size: 20}
+      # Keep the established name: older RMs call it RNG_HTCR, newer ones RNG_HTCR0.
+      - {type: renameRegisters, pattern: '^HTCR0$', replacement: HTCR}
+      - type: patchFields
+        register: NSCR
+        fields:
+          - {name: EN_OSC4, bitOffset: 9, bitWidth: 3, access: read-write, description: 'Oscillator 4 enable (6-oscillator NSCR only, nscr_osc = 6)'}
+          - {name: EN_OSC5, bitOffset: 12, bitWidth: 3, access: read-write, description: 'Oscillator 5 enable (6-oscillator NSCR only, nscr_osc = 6)'}
+          - {name: EN_OSC6, bitOffset: 15, bitWidth: 3, access: read-write, description: 'Oscillator 6 enable (6-oscillator NSCR only, nscr_osc = 6)'}
+      - {type: patchAddressBlock, size: 52}    # 0x34: up to the end of NSMR
   CRYP:
     # Cryptographic processor (Gen 0-2 superset chain)
     # Gen 0 (basic): CR{ALGODIR,ALGOMODE,DATATYPE,KEYSIZE,FFLUSH,CRYPEN,GCM_CCMPH,ALGOMODE_1}, SR{IFEM-BUSY} — F4, F7, H7(H742_H753)
@@ -95,19 +113,31 @@ shared_blocks:
         pattern: '^(AES|AES_RNG)$'
     description: AES co-processor V3 (separate IER/ISR/ICR, key mode)
   HASH:
-    # Hash processor (Gen 0-2 superset chain)
+    # Hash processor (Gen 0-3 superset chain)
     # Gen 0 (basic): CR{ALGO0[7]+ALGO1[18] split}, SR{DINIS,DCIS,DMAS,BUSY} — F4, F7, H7, L4, L4+, L5
-    # Gen 1 (+extended SR): CR{ALGO[17:18] unified 2-bit}, SR{+NBWP,DINNE,NBWE} — H5, U5
-    # Gen 2 (+SHA-512): CR{ALGO[17:20] unified 4-bit, +SHA-384/512}, SR extended — H7RS, N6, U3
-    from: STM32N645.HASH
+    # Gen 1 (+extended SR): CR{ALGO[17:18] unified 2-bit}, SR{+NBWP,DINNE,NBWE} — H503, U5, C53x-C56x
+    # Gen 2 (+SHA-384/512): CR{ALGO[17:20] unified 4-bit}, HR8-15 — H523/533/56x, H7RS, N6, U3, C59x/C5Ax
+    # Gen 3 (+SHA-3/SHAKE): HR16-41, NBWP/NBWE 6 bits — H543/553, H5Ex/H5Fx (RM0481 table 397, RM0517)
+    # Source H553 = N645 (former source) + the gen-3 registers, field names identical.
+    from: STM32H553.HASH
+    description: Hash processor (HASH)
     outputs:
       INTR:
+        description: Global interrupt
         pattern: '^HASH$'
       IN_DMA:
         description: DMA request for input data (hash result is read from registers, no OUT DMA)
         pattern: '^IN_DMA$'
+    transforms:
+      # Gen 0 splits the algorithm selection into ALGO0 (bit 7) and ALGO1
+      # (bit 18).  Bit 18 is bit 1 of the unified ALGO field (bits 20:17), so
+      # only ALGO0 needs adding; bit 7 is reserved in gen 1-3.
+      - type: patchFields
+        register: CR
+        fields:
+          - {name: ALGO0, bitOffset: 7, bitWidth: 1, access: read-write, description: 'Algorithm selection bit 0 (gen 0 only).  Gen 0 encodes the algorithm as ALGO1:ALGO0, with ALGO1 = bit 18 = ALGO[1]: 00 SHA-1, 01 MD5, 10 SHA-224, 11 SHA-256'}
     params:
-      - {name: gen, type: int, default: 0, max: 2, description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-512 (4-bit ALGO)'}
+      - {name: gen, type: int, default: 0, max: 3, description: 'HASH generation: 0=basic (split ALGO0+ALGO1, 4-field SR), 1=+extended SR (unified 2-bit ALGO, NBWP/DINNE/NBWE), 2=+SHA-384/512 (4-bit ALGO, HR8-HR15), 3=+SHA-3/SHAKE (HR16-HR41, 6-bit NBWP/NBWE)'}
   PKA:
     # Public key accelerator (Gen 0-3 superset chain)
     # Gen 0 (basic): CR{EN,START,MODE,PROCENDIE,RAMERRIE,ADDRERRIE}, SR{BUSY,PROCENDF,RAMERRF,ADDRERRF} — L5
@@ -2401,7 +2431,7 @@ families:
           INTR:
             pattern: '^RCC$'
       RNG:
-        from: ''  # TBD: newer RNG gen with expanded health test regs
+        uses: RNG
         instances: [RNG]
         outputs:
           INTR:
@@ -2461,10 +2491,14 @@ families:
           LPUART1: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
           SPI: {has_i2s: true}
           PKA: {gen: 3}
-          HASH: {gen: 2}
+          HASH: {gen: 1}             # SHA-384/512 only on C59x/C5Ax (RM0522 table 231)
+          RNG: {gen: 3, has_nscr: true, nscr_osc: 3, ext_health: true}
           CRS: {trim_width: 7}
           RTC: {has_binary: true, has_privcfgr: true}
           ETH: {has_mdio_intr: true, gen: 2}
+      C59x_C5A3:
+        _all:
+          HASH: {gen: 2}
     chip_connections:
       _all:
         _all:
@@ -6109,8 +6143,8 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 3}
-          RNG: {gen: 3}
-          HASH: {gen: 1}
+          RNG: {gen: 3, has_nscr: true, nscr_osc: 3, ext_health: true}
+          HASH: {gen: 2}             # H503 gen 1; H543/H553 and H5Ex gen 3
           CRS: {trim_width: 7}
           TAMP: {sec: 2, rpcfg: 2}
           LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
@@ -6197,6 +6231,8 @@ families:
       H503:
         _all:
           ICACHE: {has_remap: false}
+          RNG: {has_nscr: false, ext_health: false}   # RM0492: no NSCR
+          HASH: {gen: 1}
       H52x_H57x:
         _all:
           SDMMC: {has_dlyb: true}
@@ -6208,13 +6244,16 @@ families:
           PWR: {pmcr_alt1: true}
           # RM0481 ch. 64 Ethernet (newer IP than H563/H573's ch. 63)
           ETH: {has_mdio_intr: true, gen: 2}
+          HASH: {gen: 3}             # SHA-3 (RM0481 table 397)
         STM32H553:
           PWR: {pmcr_alt1: true}
           # RM0481 ch. 64 Ethernet (newer IP than H563/H573's ch. 63)
           ETH: {has_mdio_intr: true, gen: 2}
+          HASH: {gen: 3}             # SHA-3 (RM0481 table 397)
       H5Ex_H5Fx:
         _all:
           ETH: {has_mdio_intr: true, gen: 2}
+          HASH: {gen: 3}             # SHA-3 (RM0517)
           SDMMC: {has_dlyb: true}
   H7:
     svd:
@@ -15487,7 +15526,7 @@ families:
           ICACHE: {has_remap: false}     # no CRR0-3 on H7R/H7S
           WWDG: {cfr_version: 2}
           IWDG: {gen: 3}
-          RNG: {gen: 3}
+          RNG: {gen: 3, has_nscr: true}
           CRYP: {gen: 2}
           HASH: {gen: 2}
           DMA2D: {gen: 3}
@@ -17179,7 +17218,7 @@ families:
       _all:
         _all:
           WWDG: {cfr_version: 2}
-          RNG: {gen: 3}
+          RNG: {gen: 3, has_nscr: true}
           CRYP: {gen: 2}
           HASH: {gen: 2}
           DMA2D: {gen: 3}
@@ -17388,7 +17427,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 3}
-          RNG: {gen: 3}
+          RNG: {gen: 3, has_nscr: true, nscr_osc: 2}
           CRC: {has_rtype: true}
           TSC: {groups: 7}
           TAMP: {pom: true}
@@ -17603,11 +17642,8 @@ families:
           INTR:
             pattern: '^RCC$'
       RNG:
-        from: STM32U375.RNG
+        uses: RNG
         instances: [RNG]
-        outputs:
-          INTR:
-            pattern: '^RNG$'
       RTC:
         uses: RTC_V2
         instances: [RTC]
@@ -17654,6 +17690,7 @@ families:
     chip_params:
       _all:
         _all:
+          RNG: {gen: 3, has_nscr: true, nscr_osc: 3, ext_health: true}
           WWDG: {cfr_version: 2}
           IWDG: {gen: 2}
           CRC: {has_rtype: true}
@@ -18018,7 +18055,7 @@ families:
         _all:
           WWDG: {cfr_version: 2}
           IWDG: {gen: 2}
-          RNG: {gen: 3}
+          RNG: {gen: 3, has_nscr: true}
           DMA2D: {gen: 2}
           TAMP: {sec: 1, rpcfg: 2}
           OCTOSPI: {has_maxtran: true}
