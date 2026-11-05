@@ -29,6 +29,14 @@ ETH is present only on C59x/C5A3 chips. Worked around via `chip_interrupts`
 (INTR at 94, WKUP at 95).
 
 
+### OPAMP: two different IPs
+
+C53x/C54x have the op-amp with CSR + TCMR (the G4/G5 type, now shared as
+TCOPAMP).  C55x/C56x have CSR + OTR + HSOTR + OR, which is the shared HSOPAMP.
+C5's old OPAMP model came from C531 and was used for every C5 chip, so it was
+wrong for C55x/C56x.  The C5 OPAMP block now has a C55x_C562 variant using
+HSOPAMP.
+
 ### ETH: MAC10BT1SCR deliberately not modelled
 
 The C59x/C5Ax SVDs (v1.0) have ETH_MAC10BT1SCR at 0x220 (10BASE-T1S control:
@@ -302,6 +310,38 @@ STM32F730 SVD (v1.5) correctly names this peripheral "AES".
 The real CRYP crypto processor (a completely different, much larger peripheral)
 exists only on F74x and F76x devices.
 
+
+## ST STM32G5
+
+SVDs: ST's device family pack on GitHub (STMicroelectronics/stm32g5xx-dfp
+2.0.0); st.com has no G5 archive yet.  Checked against RM0514 Rev. 1.
+
+### ADC: AWDySR shifted (G534/G544)
+
+The G534/G544 SVDs put AWD1SR/AWD2SR at 0x078/0x07C and omit AWD3SR.  RM0514's
+register map has ADC_AWD1SR-AWD3SR at 0x074/0x078/0x07C on both dies, as in
+the G553-G564 SVDs.  (RM0514's register description says "0x070 + 0x004 *
+(y-1)", which contradicts its own map; 0x070 is GCOMP.)  The G5 ADC model is
+taken from G564 without merging G544.  The G534/G544 SVDs also call CFGR3 bit 0
+JOVSEXT, which RM0514 names JOVSPAR.
+
+### SVD-only bits, not modelled
+
+- I3C BCR1/BCR3/BCR4/BCR5: RM0514 has only BCR0, BCR2 and BCR6 as
+  configurable; the other BCR bits are fixed by hardware.
+- XSPI CR.ADOFFEN/BERRIE, DCR1.ADOFF, SR.BERRF, FCR.CBERRF: not in RM0514.
+
+### IWDG: EWIF moved, ICR added (also N6)
+
+EWIF is at SR bit 15 and is cleared through ICR at 0x18 (EWIC), where the
+other families have EWIF at bit 14 and EWIC in EWCR.  The shared IWDG
+model has `gen` 4 for this, with an SR_ALT1 view and an ICR register.  N6 has
+the same layout and now uses the shared model too.
+
+### BasicTimer SR width
+
+UIOVRF is at SR bit 24 (G5, C5).  The N645 SVD, the shared model's source,
+declares SR 16 bits wide; it is 32 bits in the RMs, so the model widens it.
 
 ## ST STM32H5
 

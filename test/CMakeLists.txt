@@ -183,9 +183,10 @@ generate_header(soc-data-modules cxx ESP/P4/USB_WRAP .hpp)
 
 add_subdirectory(h7_base)
 add_subdirectory(h5)
+add_subdirectory(g5)
 
 add_executable(soc-data-test main.cpp test_stm32h7.cpp test_microchip.cpp test_cirrus.cpp)
-add_dependencies(soc-data-test soc-data-h7-base soc-data-h5)
+add_dependencies(soc-data-test soc-data-h7-base soc-data-h5 soc-data-g5)
 target_link_libraries(soc-data-test PRIVATE soc-data-modules)
 target_compile_definitions(soc-data-test PRIVATE $<$<BOOL:${FOR_MODULES}>:REGISTERS_MODULE>)
 target_compile_options(soc-data-test PUBLIC $<$<BOOL:${FOR_MODULES}>:-fmodules-ts>)

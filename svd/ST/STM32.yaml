@@ -32,9 +32,32 @@ shared_blocks:
       INTR:
         pattern: '^IWDG$'
     params:
-      - {name: gen, type: int, default: 1, max: 3, description: 'IWDG generation: 0=basic (KR/PR/RLR/SR), 1=+window (WINR/WVU), 2=+early wakeup (EWCR/4-bit PR/EWU/EWIF), 3=+ONF status'}
+      - {name: gen, type: int, default: 1, max: 3, description: 'IWDG generation: 0=basic (KR/PR/RLR/SR), 1=+window (WINR/WVU), 2=+early wakeup (EWCR/4-bit PR/EWU/EWIF), 3=+ONF status, 4=EWIF moved to SR[15] (SR_ALT1) and cleared via ICR (N6, G5)'}
     transforms:
-      - {type: patchAddressBlock, size: 24}
+      # gen 4 (N6, G5; RM0486/RM0514): EWIF at SR bit 15 instead of 14, and
+      # EWIC moved from EWCR to a separate ICR register at 0x18.
+      - type: cloneRegister
+        source: SR
+        name: SR_ALT1
+        removeFields: [EWIF]
+        description: Status register (gen 4 layout, EWIF at bit 15)
+      - type: patchFields
+        register: SR_ALT1
+        fields:
+          - {name: EWIF, description: Watchdog early interrupt flag, bitOffset: 15, bitWidth: 1, access: read-only}
+      - type: patchRegisters
+        registers:
+          - {name: SR_ALT1, alternateRegister: SR}
+          - name: ICR
+            displayName: ICR
+            description: Interrupt clear register (gen 4 only)
+            addressOffset: 24
+            size: 32
+            access: write-only
+            resetValue: 0
+            fields:
+              - {name: EWIC, description: Watchdog early interrupt acknowledge, bitOffset: 15, bitWidth: 1, access: write-only}
+      - {type: patchAddressBlock, size: 28}    # 0x1C: up to the end of ICR (gen 4)
       # Rename PR field to PRESCALER to avoid C++ name collision with register PR
       - {type: renameFields, register: PR, pattern: ^PR$, replacement: PRESCALER}
   RNG:
@@ -496,6 +519,11 @@ shared_blocks:
       TRGO:
         description: Trigger output (MMS-field-selected; basic timers expose this for ADC/DAC/HRTIM routing per RM0399 Table 102)
         pattern: '^TRGO$'
+    transforms:
+      # UIOVRF (SR bit 24): RM0514 (G5); also in the C5 SVDs.  SR is a 32-bit
+      # register (the N645 SVD declares it 16 bits wide; nothing sits at 0x12).
+      - {type: patchRegisters, registers: [{name: SR, size: 32, resetMask: 4294967295}]}
+      - {type: patchFields, register: SR, fields: [{name: UIOVRF, description: 'Update interrupt overrun flag (STM32G5/C5)', bitOffset: 24, bitWidth: 1, access: read-write}]}
   I2C:
     from: STM32U535.I2C1
     outputs:
@@ -1128,6 +1156,9 @@ shared_blocks:
     description: General-purpose DMA controller
     transforms:
       - {type: createClusterArray, pattern: C(\d+)(.+), name: C, description: DMA channel, template: 12}
+      # FIFO drain (after createClusterArray built C[%s]); (RM0514, G5 only)
+      - {type: patchFields, register: 'C[%s].SR', fields: [{name: DRAININGF, description: 'FIFO draining flag (STM32G5 only)', bitOffset: 1, bitWidth: 1, access: read-only}]}
+      - {type: patchFields, register: 'C[%s].CR', fields: [{name: DRAINFIFO, description: 'Empty FIFO, write-only (STM32G5 only)', bitOffset: 3, bitWidth: 1, access: write-only}]}
     params:
       - {name: max_channel, type: int, default: 15, max: 31, description: Highest DMA channel index (0-based)}
       - {name: enhanced_channels, type: int, default: 4, max: 32, description: Number of enhanced channels with 2D transfer support (last N channels)}
@@ -1752,6 +1783,12 @@ shared_blocks:
       INTR:
         pattern: '^(DCACHE|DCACHE1|DCACHE2)$'
     description: Data cache controller (DCACHE)
+    transforms:
+      # ECC (RM0514, G5 only)
+      - {type: patchFields, register: CR, fields: [{name: ECCEN, description: 'ECC enable (STM32G5 only)', bitOffset: 4, bitWidth: 1, access: read-write}]}
+      - {type: patchFields, register: SR, fields: [{name: SERRF, description: 'ECC single-bit error flag (STM32G5 only)', bitOffset: 8, bitWidth: 1, access: read-only}, {name: DERRF, description: 'ECC double-bit error flag (STM32G5 only)', bitOffset: 9, bitWidth: 1, access: read-only}]}
+      - {type: patchFields, register: IER, fields: [{name: SERRIE, description: 'ECC single-bit error interrupt enable (STM32G5 only)', bitOffset: 8, bitWidth: 1, access: read-write}, {name: DERRIE, description: 'ECC double-bit error interrupt enable (STM32G5 only)', bitOffset: 9, bitWidth: 1, access: read-write}]}
+      - {type: patchFields, register: FCR, fields: [{name: CSERRF, description: 'Clear ECC single-bit error flag (STM32G5 only)', bitOffset: 8, bitWidth: 1, access: write-only}, {name: CDERRF, description: 'Clear ECC double-bit error flag (STM32G5 only)', bitOffset: 9, bitWidth: 1, access: write-only}]}
   ICACHE:
     # Instruction cache: C5, H5, H7RS.  Source with the remap regions
     # (CRR0-3); H503 and H7R/H7S lack them (has_remap: false).  The H543/H553
@@ -1764,6 +1801,12 @@ shared_blocks:
     description: Instruction cache controller (ICACHE)
     params:
       - {name: has_remap, type: bool, default: true, description: 'Region remapping (CRR0-CRR3); absent on STM32H503 and STM32H7R/H7S'}
+    transforms:
+      # ECC (RM0514, G5 only)
+      - {type: patchFields, register: CR, fields: [{name: ECCEN, description: 'ECC enable (STM32G5 only)', bitOffset: 4, bitWidth: 1, access: read-write}]}
+      - {type: patchFields, register: SR, fields: [{name: SERRF, description: 'ECC single-bit error flag (STM32G5 only)', bitOffset: 8, bitWidth: 1, access: read-only}, {name: DERRF, description: 'ECC double-bit error flag (STM32G5 only)', bitOffset: 9, bitWidth: 1, access: read-only}]}
+      - {type: patchFields, register: IER, fields: [{name: SERRIE, description: 'ECC single-bit error interrupt enable (STM32G5 only)', bitOffset: 8, bitWidth: 1, access: read-write}, {name: DERRIE, description: 'ECC double-bit error interrupt enable (STM32G5 only)', bitOffset: 9, bitWidth: 1, access: read-write}]}
+      - {type: patchFields, register: FCR, fields: [{name: CSERRF, description: 'Clear ECC single-bit error flag (STM32G5 only)', bitOffset: 8, bitWidth: 1, access: write-only}, {name: CDERRF, description: 'Clear ECC double-bit error flag (STM32G5 only)', bitOffset: 9, bitWidth: 1, access: write-only}]}
   SAES:
     # Secure AES coprocessor: C5, H5, H7RS, N6, U3, U5
     from: STM32H533.SAES
@@ -1870,9 +1913,18 @@ shared_blocks:
     params:
       - {name: pom, type: bool, default: false, description: 'CR2/CR3 tamper output control: false=NOER (no-erase), true=POM (potential output masking)'}
       - {name: sec, type: int, default: 0, description: 'Security config register at 0x020: 0=none, 1=SECCFGR (TrustZone), 2=CFGR (zone boundaries), 3=SMCR (L5 DPROT naming)'}
-      - {name: or_reg, type: int, default: 0, description: 'Option register at 0x050: 0=none, 1=OR (VCOREMEN/BSEN), 2=OR_Remap (IN2/IN3_RMP), 3=MONCFGR (monitoring config), 4=OR_Remap2 (H5 OUT3/OUT5/IN2-4 remap)'}
+      - {name: or_reg, type: int, default: 0, description: 'Option register at 0x050: 0=none, 1=OR (VCOREMEN/BSEN), 2=OR_Remap (IN2/IN3_RMP), 3=MONCFGR (monitoring config), 4=OR_Remap2 (H5 OUT3/OUT5/IN2-4 remap), 5=OR_Remap3 (G5 IN1/IN2/OUT1/OUT2 remap)'}
       - {name: rpcfg, type: int, default: 0, description: 'Resource protection at 0x054: 0=none, 1=RPCFGR (multi-resource), 2=ERCFGR (single-resource)'}
     transforms:
+      # ITAMP14 and RPCFG6-8 (RM0514, G5)
+      - {type: patchFields, register: CR1, fields: [{name: ITAMP14E, description: 'Internal tamper 14 enable (STM32G5)', bitOffset: 29, bitWidth: 1, access: read-write}]}
+      - {type: patchFields, register: CR3, fields: [{name: ITAMP14POM, description: 'Internal tamper 14 potential mode (STM32G5)', bitOffset: 13, bitWidth: 1, access: read-write}]}
+      - {type: patchFields, register: IER, fields: [{name: ITAMP14IE, description: 'Internal tamper 14 interrupt enable (STM32G5)', bitOffset: 29, bitWidth: 1, access: read-write}]}
+      - {type: patchFields, register: SR, fields: [{name: ITAMP14F, description: 'Internal tamper 14 flag (STM32G5)', bitOffset: 29, bitWidth: 1, access: read-only}]}
+      - {type: patchFields, register: MISR, fields: [{name: ITAMP14MF, description: 'Internal tamper 14 masked flag (STM32G5)', bitOffset: 29, bitWidth: 1, access: read-only}]}
+      - {type: patchFields, register: SMISR, fields: [{name: ITAMP14MF, description: 'Internal tamper 14 secure masked flag (STM32G5)', bitOffset: 29, bitWidth: 1, access: read-only}]}
+      - {type: patchFields, register: SCR, fields: [{name: CITAMP14F, description: 'Clear internal tamper 14 flag (STM32G5)', bitOffset: 29, bitWidth: 1, access: write-only}]}
+      - {type: patchFields, register: RPCFGR, fields: [{name: RPCFG6, bitOffset: 6, bitWidth: 1, access: read-write}, {name: RPCFG7, bitOffset: 7, bitWidth: 1, access: read-write}, {name: RPCFG8, bitOffset: 8, bitWidth: 1, access: read-write}]}
       # --- Superset field additions (N6 has 7 ext tampers; add TAMP8/ITAMP12-15) ---
       - type: patchFields
         register: CR1
@@ -2032,6 +2084,18 @@ shared_blocks:
           - {name: IN2_RMP, description: TAMP_IN2 mapping, bitOffset: 8, bitWidth: 1, access: read-write}
           - {name: IN3_RMP, description: TAMP_IN3 mapping, bitOffset: 9, bitWidth: 1, access: read-write}
           - {name: IN4_RMP, description: TAMP_IN4 mapping, bitOffset: 10, bitWidth: 1, access: read-write}
+      # --- Union: OR_Remap3 (G5 variant of OR at 0x050, RM0514) ---
+      - type: cloneRegister
+        source: OR
+        name: OR_Remap3
+        removeFields: [VCOREMEN, BSEN]
+      - type: patchFields
+        register: OR_Remap3
+        fields:
+          - {name: IN1_RMP, description: TAMP_IN1 mapping, bitOffset: 0, bitWidth: 1, access: read-write}
+          - {name: IN2_RMP, description: TAMP_IN2 mapping, bitOffset: 2, bitWidth: 1, access: read-write}
+          - {name: OUT1_RMP, description: TAMP_OUT1 mapping, bitOffset: 4, bitWidth: 1, access: read-write}
+          - {name: OUT2_RMP, description: 'TAMP_OUT2 mapping (not on G53x/G54x)', bitOffset: 6, bitWidth: 1, access: read-write}
       # --- Union: ERCFGR (H5/U5 variant of RPCFGR) ---
       - type: cloneRegister
         source: RPCFGR
@@ -4419,6 +4483,356 @@ families:
           COMP5: {OUT: [TIM1.ETR.5, TIM2.ETR.5, TIM3.ETR.5, TIM4.ETR.5, TIM5.ETR.5, TIM8.ETR.5, TIM20.ETR.5, TIM1.ocref_clr.4, TIM2.ocref_clr.4, TIM3.ocref_clr.4, TIM8.ocref_clr.4, TIM15.ocref_clr.4, TIM16.ocref_clr.4, TIM17.ocref_clr.4, TIM20.ocref_clr.4, TIM1.BRK.5, TIM8.BRK.5, TIM15.BRK.5, TIM16.BRK.5, TIM17.BRK.5, TIM20.BRK.5, TIM1.BRK2.5, TIM8.BRK2.5, TIM20.BRK2.5, LPTIM1.ext_trg.10, EXTI.31, HRTIM.evt4_4, HRTIM.evt9_2]}
           COMP6: {OUT: [TIM1.ETR.6, TIM2.ETR.6, TIM3.ETR.6, TIM4.ETR.6, TIM5.ETR.6, TIM8.ETR.6, TIM20.ETR.6, TIM1.ocref_clr.5, TIM2.ocref_clr.5, TIM3.ocref_clr.5, TIM8.ocref_clr.5, TIM15.ocref_clr.5, TIM16.ocref_clr.5, TIM17.ocref_clr.5, TIM20.ocref_clr.5, TIM1.BRK.6, TIM8.BRK.6, TIM15.BRK.6, TIM16.BRK.6, TIM17.BRK.6, TIM20.BRK.6, TIM1.BRK2.6, TIM8.BRK2.6, TIM20.BRK2.6, LPTIM1.ext_trg.11, EXTI.32, HRTIM.evt3_2, HRTIM.evt8_2]}
           COMP7: {OUT: [TIM1.ETR.7, TIM2.ETR.7, TIM3.ETR.7, TIM4.ETR.7, TIM5.ETR.7, TIM8.ETR.7, TIM20.ETR.7, TIM1.ocref_clr.6, TIM2.ocref_clr.6, TIM3.ocref_clr.6, TIM8.ocref_clr.6, TIM15.ocref_clr.6, TIM16.ocref_clr.6, TIM17.ocref_clr.6, TIM20.ocref_clr.6, TIM1.BRK.7, TIM8.BRK.7, TIM15.BRK.7, TIM16.BRK.7, TIM17.BRK.7, TIM20.BRK.7, TIM1.BRK2.7, TIM8.BRK2.7, TIM20.BRK2.7, LPTIM1.ext_trg.12, EXTI.33, HRTIM.evt5_4, HRTIM.evt10_2]}
+  G5:
+    svd:
+      # No G5 archive on st.com yet (2026-11-05): all chips come from ST's own
+      # device family pack on GitHub, pinned by tag and per-file sha256.
+      supplement:
+        repo: https://github.com/STMicroelectronics/stm32g5xx-dfp.git
+        tag: 2.0.0
+        path: SVD
+        chips:
+          STM32G534: 5bdcc8de65349080695fdae9b97ee200fce311ef3228ae11feaeabed52e26a0d
+          STM32G544: 0b571ab683f17fe2e9bacbb2b42bd2a5ac12610cc8c433835eb4fcfeb7a7a601
+          STM32G553: f5d8636b2cd70b7cc3bc1db23f3c7afd73e7256d7ef422db6d669f67d072cafa
+          STM32G554: 48f4d1d254f22697bb89a34f9a077d2bafbd6307416e558f649e708132ce5baf
+          STM32G563: 39a705d3ef7182d1a19c11bafef664422c424f56f0007b8ad99d946b31b3bcc0
+          STM32G564: ce7855d4fad8b845af6e59e14c9fc0b03945d62e0b20ea5f2467e8cd58ab1b60
+    subfamilies:
+      # Two dies (RM0514).  Within a die the parts differ only in presence:
+      # HRTIM on Gxx4, crypto (AES; SAES/CCB/OTFDEC) on G544/G563/G564.
+      G53x_G54x:
+        ref_manual: {name: RM0514, rev: '1', title: STM32G53x/G54x/G55x/G56x Arm®-based 32-bit MCUs}
+        chips:
+          - STM32G534
+          - STM32G544
+      G55x_G56x:
+        ref_manual: {name: RM0514, rev: '1', title: STM32G53x/G54x/G55x/G56x Arm®-based 32-bit MCUs}
+        chips:
+          - STM32G553
+          - STM32G554
+          - STM32G563
+          - STM32G564
+    blocks:
+      # Family-local blocks are sourced from G564 (the largest part) and merged
+      # with the other parts (mergeFrom), so presence-only differences are
+      # annotated.  Timers are G5-local for now: they are a newer TimerV2
+      # generation (see tasks/g5-family.md).
+      ADC:
+        # No mergeFrom: the G534/G544 SVDs shift AWD1SR-AWD3SR by 4 (and drop
+        # AWD3SR); RM0514's map has them at 0x074-0x07C on both dies, as in
+        # the G564 SVD (SVD_ERRATA.md).
+        from: STM32G564.ADC1
+        instances: [ADC1, ADC1_S, ADC2, ADC2_S, ADC3, ADC3_S]
+        outputs:
+          INTR:
+            pattern: '^ADC[1-3]$'
+      ADC_Common:
+        from: STM32G564.ADCC12
+        instances: [ADCC12, ADCC12_S, ADCC3, ADCC3_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544]}
+      AES:
+        uses: AES_V3
+        instances: [AES, AES_S]
+      BasicTimer:
+        uses: BasicTimer
+        instances: [TIM6, TIM6_S, TIM7, TIM7_S, TIM26, TIM26_S, TIM27, TIM27_S]
+        outputs:
+          INTR:
+            pattern: '^TIM(6|7|26|27)$'
+      CCB:
+        uses: CCB
+        instances: [CCB, CCB_S]
+      COMP:
+        from: STM32G564.COMP1
+        instances: [COMP1, COMP1_S, COMP2, COMP2_S, COMP3, COMP3_S, COMP4, COMP4_S, COMP5, COMP5_S, COMP6, COMP6_S, COMP7, COMP7_S, COMP8, COMP8_S]
+        outputs:
+          INTR:
+            pattern: '^COMP[1-8]$'
+      CORDIC:
+        uses: CORDIC
+        instances: [CORDIC1, CORDIC1_S]
+        outputs:
+          INTR:
+            pattern: '^CORDIC1$'
+      CRC:
+        uses: CRC
+        instances: [CRC, CRC_S]
+      CRS:
+        uses: CRS
+        instances: [CRS, CRS_S]
+      DAC:
+        from: STM32G564.DAC1
+        instances: [DAC1, DAC1_S, DAC2, DAC2_S, DAC5, DAC5_S, DAC6, DAC6_S, DAC7, DAC7_S, DAC8, DAC8_S, DAC9, DAC9_S, DAC10, DAC10_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544]}
+        outputs:
+          INTR:
+            pattern: '^DAC([0-9]+)$'
+      DBGMCU:
+        from: STM32G564.DBGMCU
+        instances: [DBGMCU, DBGMCU_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544, STM32G534, STM32G553, STM32G554, STM32G563]}
+      DCACHE:
+        uses: DCACHE
+        instances: [DCACHE, DCACHE_S]
+      DLYB:
+        uses: DLYB
+        instances: [DLYB, DLYB_S]
+      DTS:
+        uses: DTS
+        instances: [DTS, DTS_S]
+      EXTI:
+        from: STM32G564.EXTI
+        instances: [EXTI, EXTI_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544, STM32G534, STM32G553, STM32G554, STM32G563]}
+        outputs:
+          INTR0: {pattern: '^EXTI0$'}
+          INTR1: {pattern: '^EXTI1$'}
+          INTR2: {pattern: '^EXTI2$'}
+          INTR3: {pattern: '^EXTI3$'}
+          INTR4: {pattern: '^EXTI4$'}
+          INTR5: {pattern: '^EXTI5$'}
+          INTR6: {pattern: '^EXTI6$'}
+          INTR7: {pattern: '^EXTI7$'}
+          INTR8: {pattern: '^EXTI8$'}
+          INTR9: {pattern: '^EXTI9$'}
+          INTR10: {pattern: '^EXTI10$'}
+          INTR11: {pattern: '^EXTI11$'}
+          INTR12: {pattern: '^EXTI12$'}
+          INTR13: {pattern: '^EXTI13$'}
+          INTR14: {pattern: '^EXTI14$'}
+          INTR15: {pattern: '^EXTI15$'}
+      FDCAN:
+        uses: FDCAN
+        instances: [FDCAN1, FDCAN1_S, FDCAN2, FDCAN2_S, FDCAN3, FDCAN3_S]
+        outputs:
+          IT0: {pattern: '^FDCAN[1-3]_IT0$'}
+          IT1: {pattern: '^FDCAN[1-3]_IT1$'}
+      Flash:
+        from: STM32G564.FLASH
+        instances: [FLASH, FLASH_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544, STM32G534, STM32G553, STM32G554, STM32G563]}
+        outputs:
+          INTR:
+            pattern: '^FLASH$'
+          INTR_S:
+            description: Secure flash interrupt (TrustZone secure world)
+            pattern: '^FLASH_S$'
+      FMAC:
+        uses: FMAC
+        instances: [FMAC1, FMAC1_S, FMAC2, FMAC2_S]
+        outputs:
+          INTR:
+            pattern: '^FMAC[12]$'
+      GPDMA:
+        uses: GPDMA
+        instances: [GPDMA1, GPDMA1_S, GPDMA2, GPDMA2_S]
+      GPIO:
+        uses: GPIO
+        instances: [GPIOA, GPIOA_S, GPIOB, GPIOB_S, GPIOC, GPIOC_S, GPIOD, GPIOD_S, GPIOE, GPIOE_S, GPIOF, GPIOF_S, GPIOG, GPIOG_S, GPIOH, GPIOH_S]
+      HASH:
+        uses: HASH
+        instances: [HASH, HASH_S]
+      HRTIM:
+        from: STM32G564.HRTIM1
+        instances: [HRTIM1, HRTIM1_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544]}
+        outputs:
+          MST: {description: Master timer interrupt, pattern: '^HRTIM1_M$'}
+          TIMA: {pattern: '^HRTIM1_TIMA$'}
+          TIMB: {pattern: '^HRTIM1_TIMB$'}
+          TIMC: {pattern: '^HRTIM1_TIMC$'}
+          TIMD: {pattern: '^HRTIM1_TIMD$'}
+          TIME: {pattern: '^HRTIM1_TIME$'}
+          TIMF: {pattern: '^HRTIM1_TIMF$'}
+          FLT: {description: Fault interrupt, pattern: '^HRTIM1_FLT$'}
+      I2C:
+        uses: I2C
+        instances: [I2C1, I2C1_S, I2C2, I2C2_S, I2C3, I2C3_S, I2C4, I2C4_S]
+        outputs:
+          EV: {pattern: '^I2C[1-4]_EV$'}
+          ERR: {pattern: '^I2C[1-4]_ERR$'}
+      I3C:
+        uses: I3C
+        instances: [I3C1, I3C1_S]
+      ICACHE:
+        uses: ICACHE
+        instances: [ICACHE, ICACHE_S]
+      IWDG:
+        uses: IWDG
+        instances: [IWDG, IWDG_S]
+      LPTIM:
+        uses: LPTIM
+        instances: [LPTIM1, LPTIM1_S]
+      LPUART:
+        uses: USART
+        instances: [LPUART, LPUART_S]
+        # RM0514 calls the instance LPUART1; the SVD says LPUART.
+        rename_instances: {LPUART: LPUART1, LPUART_S: LPUART1_S}
+      OPAMP:
+        uses: TCOPAMP
+        instances: [OPAMP1, OPAMP1_S, OPAMP2, OPAMP2_S, OPAMP3, OPAMP3_S]
+      OTFDEC:
+        uses: OTFDEC
+        instances: [OTFDEC1, OTFDEC1_S]
+      PKA:
+        uses: PKA
+        instances: [PKA, PKA_S]
+      PLAY:
+        uses: PLAY
+        instances: [PLAY1, PLAY1_S]
+        outputs:
+          INTR: {pattern: '^PLAY1$'}
+          INTR_S:
+            description: Secure PLAY interrupt (TrustZone secure world)
+            pattern: '^PLAY1_S$'
+      POSENC:
+        # Position encoder interface (RM0514 ch. "POSENC"), G55x/G56x
+        from: STM32G564.POSENC1
+        instances: [POSENC1, POSENC1_S, POSENC2, POSENC2_S]
+        outputs:
+          INTR:
+            pattern: '^POSENC[12]$'
+      PWR:
+        from: STM32G564.PWR
+        instances: [PWR, PWR_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544, STM32G534, STM32G553, STM32G554, STM32G563]}
+        outputs:
+          INTR:
+            description: PVD/AVD interrupt
+            pattern: '^PWR_PVD_AVD$'
+      RAMCFG:
+        from: STM32G564.RAMCFG
+        instances: [RAMCFG, RAMCFG_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544]}
+        outputs:
+          INTR:
+            pattern: '^RAMCFG$'
+      RCC:
+        from: STM32G564.RCC
+        instances: [RCC, RCC_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544, STM32G534, STM32G553, STM32G554, STM32G563]}
+        outputs:
+          INTR:
+            pattern: '^RCC$'
+          INTR_S:
+            description: Secure RCC interrupt (TrustZone secure world)
+            pattern: '^RCC_S$'
+      RNG:
+        uses: RNG
+        instances: [RNG, RNG_S]
+      RTC:
+        uses: RTC_V2
+        instances: [RTC, RTC_S]
+        outputs:
+          INTR: {pattern: '^RTC$'}
+          S: {pattern: '^RTC_S$'}
+      SAES:
+        uses: SAES
+        instances: [SAES, SAES_S]
+      SBS:
+        from: STM32G564.SBS
+        instances: [SBS, SBS_S]
+        transforms:
+          - {type: mergeFrom, chips: [STM32G544]}
+      SPI:
+        uses: ModernSPI
+        instances: [SPI1, SPI1_S, SPI2, SPI2_S, SPI3, SPI3_S]
+      TAMP:
+        uses: TAMP
+        instances: [TAMP, TAMP_S]
+      Timer:
+        # G5-local for now; TIM1 covers every other G5 timer except the 32-bit
+        # counters of TIM2-5, widened here as in TimerV2 (CNT[30:0]+UIFCPY).
+        from: STM32G564.TIM1
+        instances: [TIM1, TIM1_S, TIM2, TIM2_S, TIM3, TIM3_S, TIM4, TIM4_S, TIM5, TIM5_S, TIM8, TIM8_S, TIM9, TIM9_S, TIM10, TIM10_S, TIM11, TIM11_S, TIM12, TIM12_S, TIM13, TIM13_S, TIM14, TIM14_S, TIM15, TIM15_S, TIM16, TIM16_S, TIM17, TIM17_S, TIM20, TIM20_S]
+        transforms:
+          - {type: patchFields, register: CNT, fields: [{name: CNT, bitWidth: 31}]}
+          - {type: patchFields, register: ARR, fields: [{name: ARR, bitWidth: 32}]}
+          - {type: patchFields, register: CCR1, fields: [{name: CCR1, bitWidth: 32}]}
+          - {type: patchFields, register: CCR2, fields: [{name: CCR2, bitWidth: 32}]}
+          - {type: patchFields, register: CCR3, fields: [{name: CCR3, bitWidth: 32}]}
+          - {type: patchFields, register: CCR4, fields: [{name: CCR4, bitWidth: 32}]}
+        outputs:
+          BRK: {description: Break / transition error / index error, pattern: '^TIM(1|8|20)_BRK_TERR_IERR$'}
+          UP: {description: Update, pattern: '^TIM(1|8|20)_UPD$'}
+          TRG_COM: {description: Trigger / commutation / direction / index, pattern: '^TIM(1|8|20)_TRGI_COM_DIR_IDX$'}
+          CC: {description: Capture compare, pattern: '^TIM(1|8|20)_CC$'}
+          INTR: {description: Global interrupt, pattern: '^TIM(2|3|4|5|9|1[0-7])$'}
+      UCPD:
+        uses: UCPD
+        instances: [UCPD1, UCPD1_S]
+      USART:
+        uses: USART
+        instances: [USART1, USART1_S, USART2, USART2_S, USART3, USART3_S, UART4, UART4_S, UART5, UART5_S, UART6, UART6_S]
+        outputs:
+          INTR:
+            pattern: '^(USART[1-3]|UART[4-6])$'
+      USB:
+        uses: USB_DRD
+        instances: [USB, USB_S]
+        outputs:
+          INTR:
+            pattern: '^USB_DRD_FS$'
+      USBSRAM:
+        uses: USBSRAM
+        instances: [USBSRAM, USBSRAM_S]
+      VREFBUF:
+        uses: VREFBUF
+        instances: [VREFBUF, VREFBUF_S]
+      WWDG:
+        uses: WWDG
+        instances: [WWDG, WWDG_S]
+      XSPI:
+        uses: XSPI
+        instances: [XSPI1, XSPI1_S]
+    chip_params:
+      _all:
+        _all:
+          WWDG: {cfr_version: 2}
+          IWDG: {gen: 4}
+          RNG: {gen: 3, has_nscr: true, nscr_osc: 3, ext_health: true}
+          HASH: {gen: 2}
+          CRC: {has_rtype: true}
+          TAMP: {pom: true, sec: 1, rpcfg: 1, or_reg: 5}
+          RTC: {has_binary: true, has_privcfgr: true, has_seccfgr: true, has_smisr: true, has_tamptscr: true}
+          GPIO: {has_seccfgr: true}
+          LPTIM: {max_channel: 1}
+          LPUART: {lpbaud: true, synchronous: 0, irda: false, lin: false, autobaud: false}
+          UART4: {synchronous: 0}
+          UART5: {synchronous: 0}
+          UART6: {synchronous: 0}
+          SPI: {has_i2s: true}
+          XSPI: {variant: 2}
+          USB: {has_dcd: false}
+          GPDMA: {max_channel: 7, enhanced_channels: 2}
+      G53x_G54x:
+        _all:
+          GPDMA: {max_channel: 5, enhanced_channels: 2}
+          LPTIM: {max_channel: 1, has_cfgr2: false}
+    chip_connections:
+      _all:
+        _all:
+          # The SVDs attach the secure vectors to the _S aliases; keep both
+          # vectors on the base instance (as for H5).  The base keys are also
+          # block names, so the aliases need explicit entries.
+          RCC: {INTR: [NVIC.29], INTR_S: [NVIC.28]}
+          RCC_S: {INTR_S: []}
+          FLASH: {INTR: [NVIC.24], INTR_S: [NVIC.23]}
+          FLASH_S: {INTR_S: []}
+          RTC: {INTR: [NVIC.34], S: [NVIC.33]}
+          RTC_S: {S: []}
+          PLAY1: {INTR: [NVIC.163], INTR_S: [NVIC.162]}
+          PLAY1_S: {INTR_S: []}
   H5:
     svd:
       zip: stm32h5-svd.zip
@@ -17186,7 +17600,7 @@ families:
         uses: I3C
         instances: [I3C1, I3C2]
       IWDG:
-        from: STM32N645.IWDG
+        uses: IWDG
         instances: [IWDG]
       JPEG:
         uses: JPEG
@@ -17313,6 +17727,7 @@ families:
     chip_params:
       _all:
         _all:
+          IWDG: {gen: 4}
           WWDG: {cfr_version: 2}
           RNG: {gen: 3, has_nscr: true}
           CRYP: {gen: 2}
