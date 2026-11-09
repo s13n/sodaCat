@@ -1,11 +1,22 @@
 # sodaCat.cmake - Integration module for sodaCat resources
 
-set(SODACAT_LOCAL_DIR "${CMAKE_BINARY_DIR}/models" CACHE STRING "sodaCat local download dir")
-
-if(SODACAT_URL_BASE)
-    message(VERBOSE "Using sodaCat repository in ${SODACAT_URL_BASE}")
+# When this file is loaded from a sodaCat checkout (rather than a downloaded
+# copy of just this file), that checkout's generators/ and models/ are used
+# directly instead of downloading them.  A client project can thus test local
+# sodaCat changes by putting <checkout>/cmake on CMAKE_MODULE_PATH.
+get_filename_component(_sodacat_root "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+if(EXISTS "${_sodacat_root}/generators" AND EXISTS "${_sodacat_root}/models")
+    set_property(GLOBAL PROPERTY SODACAT_CHECKOUT "${_sodacat_root}")
+    set(SODACAT_LOCAL_DIR "${_sodacat_root}/models" CACHE STRING "sodaCat local model dir")
+    message(STATUS "Using sodaCat checkout ${_sodacat_root}")
 else()
-    message(WARNING "Variable SODACAT_URL_BASE not defined. Can't download models.")
+    set_property(GLOBAL PROPERTY SODACAT_CHECKOUT "")
+    set(SODACAT_LOCAL_DIR "${CMAKE_BINARY_DIR}/models" CACHE STRING "sodaCat local download dir")
+    if(SODACAT_URL_BASE)
+        message(VERBOSE "Using sodaCat repository in ${SODACAT_URL_BASE}")
+    else()
+        message(WARNING "Variable SODACAT_URL_BASE not defined. Can't download models.")
+    endif()
 endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -17,13 +28,17 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 function(sodacat_fetch_generator language)
     string(TOUPPER "${language}" lang_upper)
 
-    # If generators exist locally (sodaCat repo checkout), use them directly
-    set(local_dir "${CMAKE_SOURCE_DIR}/generators/${language}")
-    if(EXISTS "${local_dir}/generate_header.py")
-        set(SODACAT_GENERATOR_${lang_upper} "${local_dir}" CACHE INTERNAL "" FORCE)
-        _sodacat_collect_generator_scripts("${lang_upper}" "${local_dir}")
-        return()
-    endif()
+    # If generators exist locally (the sodaCat checkout this file was loaded
+    # from, or the project itself being sodaCat), use them directly
+    get_property(_checkout GLOBAL PROPERTY SODACAT_CHECKOUT)
+    foreach(local_dir IN ITEMS "${_checkout}/generators/${language}"
+                               "${CMAKE_SOURCE_DIR}/generators/${language}")
+        if(EXISTS "${local_dir}/generate_header.py")
+            set(SODACAT_GENERATOR_${lang_upper} "${local_dir}" CACHE INTERNAL "" FORCE)
+            _sodacat_collect_generator_scripts("${lang_upper}" "${local_dir}")
+            return()
+        endif()
+    endforeach()
 
     if(NOT SODACAT_URL_BASE)
         message(FATAL_ERROR "Generator '${language}' not found locally and SODACAT_URL_BASE not set")
