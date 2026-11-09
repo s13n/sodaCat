@@ -1,11 +1,22 @@
 # sodaCat.cmake - Integration module for sodaCat resources
 
-set(SODACAT_LOCAL_DIR "${CMAKE_BINARY_DIR}/models" CACHE STRING "sodaCat local download dir")
-
-if(SODACAT_URL_BASE)
-    message(VERBOSE "Using sodaCat repository in ${SODACAT_URL_BASE}")
+# When this file is loaded from a sodaCat checkout (rather than a downloaded
+# copy of just this file), that checkout's generators/ and models/ are used
+# directly instead of downloading them.  A client project can thus test local
+# sodaCat changes by putting <checkout>/cmake on CMAKE_MODULE_PATH.
+get_filename_component(_sodacat_root "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+if(EXISTS "${_sodacat_root}/generators" AND EXISTS "${_sodacat_root}/models")
+    set_property(GLOBAL PROPERTY SODACAT_CHECKOUT "${_sodacat_root}")
+    set(SODACAT_LOCAL_DIR "${_sodacat_root}/models" CACHE STRING "sodaCat local model dir")
+    message(STATUS "Using sodaCat checkout ${_sodacat_root}")
 else()
-    message(WARNING "Variable SODACAT_URL_BASE not defined. Can't download models.")
+    set_property(GLOBAL PROPERTY SODACAT_CHECKOUT "")
+    set(SODACAT_LOCAL_DIR "${CMAKE_BINARY_DIR}/models" CACHE STRING "sodaCat local download dir")
+    if(SODACAT_URL_BASE)
+        message(VERBOSE "Using sodaCat repository in ${SODACAT_URL_BASE}")
+    else()
+        message(WARNING "Variable SODACAT_URL_BASE not defined. Can't download models.")
+    endif()
 endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -17,13 +28,17 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 function(sodacat_fetch_generator language)
     string(TOUPPER "${language}" lang_upper)
 
-    # If generators exist locally (sodaCat repo checkout), use them directly
-    set(local_dir "${CMAKE_SOURCE_DIR}/generators/${language}")
-    if(EXISTS "${local_dir}/generate_header.py")
-        set(SODACAT_GENERATOR_${lang_upper} "${local_dir}" CACHE INTERNAL "" FORCE)
-        _sodacat_collect_generator_scripts("${lang_upper}" "${local_dir}")
-        return()
-    endif()
+    # If generators exist locally (the sodaCat checkout this file was loaded
+    # from, or the project itself being sodaCat), use them directly
+    get_property(_checkout GLOBAL PROPERTY SODACAT_CHECKOUT)
+    foreach(local_dir IN ITEMS "${_checkout}/generators/${language}"
+                               "${CMAKE_SOURCE_DIR}/generators/${language}")
+        if(EXISTS "${local_dir}/generate_header.py")
+            set(SODACAT_GENERATOR_${lang_upper} "${local_dir}" CACHE INTERNAL "" FORCE)
+            _sodacat_collect_generator_scripts("${lang_upper}" "${local_dir}")
+            return()
+        endif()
+    endforeach()
 
     if(NOT SODACAT_URL_BASE)
         message(FATAL_ERROR "Generator '${language}' not found locally and SODACAT_URL_BASE not set")
@@ -178,8 +193,9 @@ function(generate_header target language model_path suffix)
     # namespace because the same peripheral may be re-emitted into a sibling
     # namespace if its `namespace:` key changes between revisions.  It includes
     # the binary directory because outputs land there: a dependency generated
-    # in another directory is invisible to targets here, so it must be
-    # generated again (e.g. a shared block used by chips in two directories).
+    # in another directory is invisible to targets here unless they link the
+    # target that generates it, so it may need generating again (e.g. a shared
+    # block used by chips in two directories) -- see "Reuse" below.
     string(REPLACE "/" "_" _path_key "${model_path}")
     string(MAKE_C_IDENTIFIER "${CMAKE_CURRENT_BINARY_DIR}" _dir_key)
     set(dedup_key "${_dir_key}_${_ns}_${_path_key}")
@@ -217,6 +233,94 @@ function(generate_header target language model_path suffix)
     if(clocktree_dep)
         generate_header(${target} ${language} ${clocktree_dep} ${suffix})
     endif()
+
+    # Reuse rather than regenerate: when another target (in another binary
+    # directory -- same-directory duplicates were skipped above) already
+    # generates this model, a second copy is only needed if that target's
+    # module is not visible here.  If ${target} links it, directly or
+    # transitively, a second copy would be harmful: a TU importing both the
+    # owner's modules and this one sees two different BMIs for the same module
+    # (GCC: "import 'X' has CRC mismatch").  That is the normal case for a
+    # library such as peLua's `stm32` providing the peripheral blocks and the
+    # product generating the chip model that imports them.
+    #
+    # Whether ${target} links the owner is only known once its
+    # target_link_libraries() calls have been made, which commonly come after
+    # generate_header().  So the decision is deferred to the end of the
+    # current directory.
+    string(MAKE_C_IDENTIFIER "${_ns}_${model_path}" _model_key)
+    get_property(_owners GLOBAL PROPERTY _SODACAT_OWNERS_${_model_key})
+    if(_owners)
+        cmake_language(EVAL CODE
+            "cmake_language(DEFER CALL _sodacat_emit_unless_linked [[${target}]] [[${language}]] [[${model_path}]] [[${suffix}]] [[${_ns}]] [[${GH_ENDIAN}]])")
+        return()
+    endif()
+    _sodacat_emit("${target}" "${language}" "${model_path}" "${suffix}" "${_ns}" "${GH_ENDIAN}")
+endfunction()
+
+# Deferred part of generate_header(): emit the model for ${target} unless a
+# target that already generates it is in ${target}'s link closure.
+function(_sodacat_emit_unless_linked target language model_path suffix ns endian)
+    string(MAKE_C_IDENTIFIER "${ns}_${model_path}" _model_key)
+    get_property(_owners GLOBAL PROPERTY _SODACAT_OWNERS_${_model_key})
+    _sodacat_link_closure("${target}" _linked)
+    foreach(_owner IN LISTS _owners)
+        if(_owner STREQUAL target OR _owner IN_LIST _linked)
+            message(VERBOSE "generate_header: ${target} uses ${ns}/${model_path} from linked target ${_owner}")
+            return()
+        endif()
+    endforeach()
+    _sodacat_emit("${target}" "${language}" "${model_path}" "${suffix}" "${ns}" "${endian}")
+endfunction()
+
+# Set ${out} to every target ${target} links, directly or transitively
+# (aliases resolved; $<LINK_ONLY:...> counted; other generator expressions,
+# plain flags and non-target names ignored).
+function(_sodacat_link_closure target out)
+    set(_seen "")
+    set(_queue "")
+    foreach(_prop IN ITEMS LINK_LIBRARIES INTERFACE_LINK_LIBRARIES)
+        get_target_property(_libs "${target}" ${_prop})
+        if(_libs)
+            list(APPEND _queue ${_libs})
+        endif()
+    endforeach()
+    # Not while(_queue): a list whose last element ends in -NOTFOUND is false.
+    list(LENGTH _queue _n)
+    while(_n GREATER 0)
+        list(POP_FRONT _queue _l)
+        list(LENGTH _queue _n)
+        if(_l MATCHES "^\\$<LINK_ONLY:([^>]+)>$")
+            set(_l "${CMAKE_MATCH_1}")
+        endif()
+        if(NOT _l OR _l MATCHES "^(\\$<|::@|-)" OR NOT TARGET "${_l}")
+            continue()
+        endif()
+        get_target_property(_aliased "${_l}" ALIASED_TARGET)
+        if(_aliased)
+            set(_l "${_aliased}")
+        endif()
+        if(_l IN_LIST _seen)
+            continue()
+        endif()
+        list(APPEND _seen "${_l}")
+        get_target_property(_ilibs "${_l}" INTERFACE_LINK_LIBRARIES)
+        if(_ilibs)
+            list(APPEND _queue ${_ilibs})
+            list(LENGTH _queue _n)
+        endif()
+    endwhile()
+    set(${out} "${_seen}" PARENT_SCOPE)
+endfunction()
+
+# Emit the custom command generating ${model_path} and add the result to
+# ${target}.  Records ${target} as an owner of the model, so that targets in
+# other directories can reuse it (see generate_header).
+function(_sodacat_emit target language model_path suffix _ns endian)
+    get_filename_component(model "${model_path}" NAME)
+    set(model_file "${SODACAT_LOCAL_DIR}/${model_path}.yaml")
+    string(MAKE_C_IDENTIFIER "${_ns}_${model_path}" _model_key)
+    set_property(GLOBAL APPEND PROPERTY _SODACAT_OWNERS_${_model_key} "${target}")
 
     # Resolve generator directory
     string(TOUPPER "${language}" lang_upper)
@@ -264,8 +368,8 @@ function(generate_header target language model_path suffix)
     # uses the same resolver as cmake here), so no namespace argument is
     # forwarded.
     set(_endian_arg "")
-    if(GH_ENDIAN)
-        set(_endian_arg --endian ${GH_ENDIAN})
+    if(endian)
+        set(_endian_arg --endian ${endian})
     endif()
     get_filename_component(model_stem "${model}${suffix}" NAME_WE)
     add_custom_command(OUTPUT "${_out_dir}/${model}${suffix}"
